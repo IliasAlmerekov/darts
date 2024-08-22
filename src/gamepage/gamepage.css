@@ -1,0 +1,31 @@
+.Gamepage {
+    gap: 10px;
+    display: grid;
+}
+
+.Roundcounter {
+    width: 518px;
+    height: 145px;
+    left: 252px;
+    top: 311px;
+    background: #FF2001;
+    border-radius: 15px;
+    font-size: xxx-large;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+}
+
+.box {
+    border-radius: 5%;
+}
+
+.input {
+    width: 50px;
+}
+
+.Numberstyle {
+    margin-top: 100px;
+    margin-bottom: 50px;
+}
