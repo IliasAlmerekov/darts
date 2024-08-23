@@ -3,6 +3,7 @@ import { useState, useEffect } from "react";
 import './gamepage.css';
 import { UserProps } from "../home";
 import clsx from "clsx";
+import { throws } from "assert";
 
 type GameProps = {
     userList: UserProps[],
@@ -13,7 +14,8 @@ type PlayerProps = {
     name: string,
     score: number,
     isActive: boolean,
-    index: number
+    index: number,
+    throws?: number[],
 }
 
 function Boxes(props: any) {
@@ -34,9 +36,11 @@ function GamePage({ userList }: GameProps) {
     const [rounds, setRounds] = useState(1)
     const [playerList, setPlayerList] = useState<PlayerProps[]>([])
     const [activePlayer, setActivePlayer] = useState<PlayerProps>()
-    const initialPlayerlist: PlayerProps[] = [];
+    const [throws, setThrows] = useState<number[]>([])
+
 
     function initializePlayerList() {
+        const initialPlayerlist: PlayerProps[] = [];
         userList.forEach((user: UserProps, i) => {
             const player = { id: user.id, name: user.name, score: 301, isActive: i === 0 ? true : false, index: i }
             initialPlayerlist.push(player)
@@ -54,8 +58,10 @@ function GamePage({ userList }: GameProps) {
             if (!!activePlayer) {
                 const newScore = activePlayer.score - props.value as number
                 const newActivePlayer = { id: activePlayer.id, name: activePlayer.name, score: newScore, isActive: activePlayer.isActive, index: activePlayer.index }
-                console.log(newActivePlayer)
                 setActivePlayer(newActivePlayer)
+                const newThrows = [...throws]
+                newThrows.push(props.value as number)
+                setThrows(newThrows)
             }
 
         }
@@ -64,30 +70,17 @@ function GamePage({ userList }: GameProps) {
 
     }
 
-    function Boxes(props: any) {
-        return (
-            <div className="boxesvertical">
-                <div className="eachbox"></div>
-                <div className="eachbox"></div>
-                <div className="eachbox"></div>
-            </div>
-        )
-    }
-
     useEffect(() => {
         initializePlayerList()
     }, [])
 
-    // useEffect(() => {
-    //     if (activePlayer) {
-    //         const foundPlayer = playerList.filter(player => player.id === activePlayer.id)[0]
-    //         console.log('before', playerList)
-    //         playerList[activePlayer.index] = foundPlayer
-    //         console.log('after', playerList)
-    //         const updatedPlayerList = [...playerList]
-    //         setPlayerList(updatedPlayerList)
-    //     }
-    // }, [activePlayer])
+    useEffect(() => {
+        if (activePlayer) {
+            const updatedPlayerList = [...playerList]
+            updatedPlayerList[activePlayer.index] = activePlayer
+            setPlayerList(updatedPlayerList)
+        }
+    }, [activePlayer])
 
     return (
         <><div className="Gamepage">
