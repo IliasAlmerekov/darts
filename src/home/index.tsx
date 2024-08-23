@@ -2,14 +2,14 @@ import { useState, useEffect } from "react";
 import { Link } from 'react-router-dom';
 import "./home.css"
 
-export type PlayerProps = {
+export type UserProps = {
     id: number,
     name: string,
 }
 
 type HomeProps = {
-    list: PlayerProps[],
-    setList: React.Dispatch<React.SetStateAction<PlayerProps[]>>,
+    list: UserProps[],
+    setList: React.Dispatch<React.SetStateAction<UserProps[]>>,
 }
 
 function Home({ list, setList }: HomeProps) {
@@ -53,7 +53,7 @@ function Home({ list, setList }: HomeProps) {
             </div>
             <div className='content'>
                 <ul className="box">
-                    {list.map((item: PlayerProps) => {
+                    {list.map((item: UserProps) => {
                         return <li id={item.id.toString()}> {item.name}<button className="deletebutton" onClick={() => deletePerson(item.id)}>delete</button></li>;
                     })}
                 </ul>

@@ -2,18 +2,18 @@ import './App.css';
 import GamePage from '../gamepage/gamepage';
 import Home from '../home';
 import { BrowserRouter, Link, Route, Routes } from 'react-router-dom';
-import { PlayerProps } from '../home';
+import { UserProps } from '../home';
 import { useState } from 'react';
 
 
 function App() {
-  const [list, setList] = useState<PlayerProps[]>([]);
+  const [list, setList] = useState<UserProps[]>([]);
   return (
     <div className='App'>
       <BrowserRouter>
         <Routes>
           <Route path="/" element={<Home list={list} setList={setList} />} />
-          <Route path="/game" element={<GamePage list={list} />} />
+          <Route path="/game" element={<GamePage userList={list} />} />
         </Routes>
       </BrowserRouter>
     </div>

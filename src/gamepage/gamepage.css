@@ -29,3 +29,45 @@
     margin-top: 100px;
     margin-bottom: 50px;
 }
+
+.row {
+    display: flex;
+}
+
+.btn {
+    width: 90px;
+    height: 90px;
+}
+
+.specialButton {
+    width: 360px;
+    height: 50px;
+    font-size: 30px;
+}
+
+.countdown {
+    color: white;
+
+}
+
+.PlayerList {
+    justify-content: space-between;
+    display: flex;
+    align-items: center;
+    margin-right: 20px;
+}
+
+.activePlayer {
+    border: 1px solid hotpink;
+}
+
+.boxesvertical {
+    display: flex;
+}
+
+.eachbox {
+    height: 30px;
+    width: 30px;
+    background-color: white;
+    border: solid gray;
+}
