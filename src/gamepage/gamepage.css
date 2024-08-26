@@ -70,4 +70,9 @@
     width: 30px;
     background-color: white;
     border: solid gray;
+    color: hotpink;
+    align-items: center;
+    display: flex;
+    justify-content: center;
+    font-size: x-large;
 }

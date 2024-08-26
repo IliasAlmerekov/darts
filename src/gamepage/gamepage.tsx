@@ -1,70 +1,67 @@
-import React from "react";
 import { useState, useEffect } from "react";
 import './gamepage.css';
 import { UserProps } from "../home";
-import clsx from "clsx";
+import Player from "../components/Player";
+import { PlayerProps } from "../components/Player";
 import { throws } from "assert";
 
 type GameProps = {
     userList: UserProps[],
 }
 
-type PlayerProps = {
-    id: number,
-    name: string,
-    score: number,
-    isActive: boolean,
-    index: number,
-    throws?: number[],
-}
-
-function Boxes(props: any) {
-    return (
-        <div className="boxesvertical">
-            <div className="eachbox"></div>
-            <div className="eachbox"></div>
-            <div className="eachbox"></div>
-        </div>
-    )
-}
-
-function Player({ item }: { item: PlayerProps }) {
-    return <li className={clsx("PlayerList", { ["activePlayer"]: item.isActive === true })} id={item.id.toString()}>{item.name} <li>{item.score}</li> <Boxes /></li>;
-}
-
 function GamePage({ userList }: GameProps) {
     const [rounds, setRounds] = useState(1)
     const [playerList, setPlayerList] = useState<PlayerProps[]>([])
-    const [activePlayer, setActivePlayer] = useState<PlayerProps>()
-    const [throws, setThrows] = useState<number[]>([])
+    const [count, setCount] = useState(0)
+    const [playerTurn, setPlayerTurn] = useState(0)
 
 
     function initializePlayerList() {
         const initialPlayerlist: PlayerProps[] = [];
         userList.forEach((user: UserProps, i) => {
-            const player = { id: user.id, name: user.name, score: 301, isActive: i === 0 ? true : false, index: i }
+            const player = { id: user.id, name: user.name, score: 301, isActive: i === 0 ? true : false, index: i, throws: [] }
             initialPlayerlist.push(player)
 
         })
 
 
         setPlayerList(initialPlayerlist)
-        setActivePlayer(initialPlayerlist[0])
     }
+
+
+    function changeIsActive() {
+        const prevPlayerTurn = playerTurn
+        const newPlayerTurn = playerTurn + 1
+        const newPlayerList: PlayerProps[] = [...playerList]
+
+        playerList.forEach((player, i) => {
+            newPlayerList[prevPlayerTurn].isActive = false
+            newPlayerList[newPlayerTurn > newPlayerList.length - 1 ? 0 : newPlayerTurn].isActive = true
+        });
+        setPlayerList(newPlayerList)
+        setPlayerTurn(newPlayerTurn)
+        setCount(0)
+
+        if (newPlayerTurn > newPlayerList.length - 1) {
+            setPlayerTurn(0)
+            setRounds(rounds + 1)
+        }
+    }
+
 
     function NumberButton(props: any) {
 
         function handleClick() {
-            if (!!activePlayer) {
-                const newScore = activePlayer.score - props.value as number
-                const newActivePlayer = { id: activePlayer.id, name: activePlayer.name, score: newScore, isActive: activePlayer.isActive, index: activePlayer.index }
-                setActivePlayer(newActivePlayer)
-                const newThrows = [...throws]
-                newThrows.push(props.value as number)
-                setThrows(newThrows)
-            }
+            const newScore = playerList[playerTurn].score - props.value as number
+            const newThrows = [...playerList[playerTurn].throws]
+            newThrows.push(parseInt(props.value))
+            playerList[playerTurn].throws = newThrows
+            setCount(count + 1);
+            console.log(playerTurn)
+            console.log("playerlist", playerList.length)
+            playerList[playerTurn].score = newScore
 
-        }
+        };
         return <button className="btn" onClick={handleClick}>{props.value}</button>
 
 
@@ -75,12 +72,10 @@ function GamePage({ userList }: GameProps) {
     }, [])
 
     useEffect(() => {
-        if (activePlayer) {
-            const updatedPlayerList = [...playerList]
-            updatedPlayerList[activePlayer.index] = activePlayer
-            setPlayerList(updatedPlayerList)
+        if (count === 3) {
+            changeIsActive()
         }
-    }, [activePlayer])
+    }, [count])
 
     return (
         <><div className="Gamepage">
@@ -129,6 +124,10 @@ function GamePage({ userList }: GameProps) {
                     <button className="specialButton">Triple</button>
 
                 </div>
+            </div>
+
+            <div>
+                <button onClick={changeIsActive}>{count}</button>
             </div></>
     );
 }
