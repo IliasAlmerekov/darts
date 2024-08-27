@@ -5,16 +5,15 @@ import Player from "../components/Player";
 import { PlayerProps } from "../components/Player";
 import { throws } from "assert";
 
-type GameProps = {
+type UserList = {
     userList: UserProps[],
 }
 
-function GamePage({ userList }: GameProps) {
+function GamePage({ userList }: UserList) {
     const [rounds, setRounds] = useState(1)
     const [playerList, setPlayerList] = useState<PlayerProps[]>([])
     const [count, setCount] = useState(0)
     const [playerTurn, setPlayerTurn] = useState(0)
-
 
     function initializePlayerList() {
         const initialPlayerlist: PlayerProps[] = [];
@@ -42,6 +41,8 @@ function GamePage({ userList }: GameProps) {
         setPlayerTurn(newPlayerTurn)
         setCount(0)
 
+
+
         if (newPlayerTurn > newPlayerList.length - 1) {
             setPlayerTurn(0)
             setRounds(rounds + 1)
@@ -57,15 +58,15 @@ function GamePage({ userList }: GameProps) {
             newThrows.push(parseInt(props.value))
             playerList[playerTurn].throws = newThrows
             setCount(count + 1);
-            console.log(playerTurn)
-            console.log("playerlist", playerList.length)
             playerList[playerTurn].score = newScore
+            console.log(newThrows, playerTurn)
+
+
 
         };
         return <button className="btn" onClick={handleClick}>{props.value}</button>
-
-
     }
+
 
     useEffect(() => {
         initializePlayerList()
@@ -77,16 +78,18 @@ function GamePage({ userList }: GameProps) {
         }
     }, [count])
 
+
     return (
-        <><div className="Gamepage">
-            <div className="Roundcounter">Rounds: {rounds}</div>
-            <div className="box">  {playerList.map((item: PlayerProps) => {
-                return <Player item={item} />;
-            })}
+        <>
+            <div className="Gamepage">
+                <div className="Roundcounter">Rounds: {rounds}</div>
+                <div className="box">  {playerList.map((item: PlayerProps) => {
+                    return <Player item={item} />;
+                })}
+                </div>
+
+
             </div>
-
-
-        </div>
             <div className="Numberstyle">
                 <div className="row">
                     <NumberButton value="1" />

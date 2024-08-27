@@ -5,7 +5,7 @@
   align-items: center;
 
   height: 100vh;
-  justify-content: end;
+  justify-content: center;
 
 }
 
@@ -50,7 +50,6 @@
   flex-direction: column;
   gap: 10px;
   width: 520px;
-  margin-bottom: 300px;
 }
 
 .box {

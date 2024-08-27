@@ -4,7 +4,19 @@ import Home from '../home';
 import { BrowserRouter, Link, Route, Routes } from 'react-router-dom';
 import { UserProps } from '../home';
 import { useState } from 'react';
+import { PlayerProps } from '../components/Player';
 
+export type GameProps = {
+  players: PlayerProps[],
+  rounds: {
+
+  },
+  spielStatus: boolean,
+  date: number,
+  winner: string,
+  counter: number, //ist aber schon in Playerprops (score)
+
+}
 
 function App() {
   const [list, setList] = useState<UserProps[]>([]);

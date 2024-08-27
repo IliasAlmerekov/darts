@@ -1,6 +1,9 @@
 import clsx from "clsx";
+import { useEffect, useState } from "react";
 
-
+export type Round = {
+    throws: number[],
+}
 
 export type PlayerProps = {
     id: number,
@@ -8,8 +11,11 @@ export type PlayerProps = {
     score: number,
     isActive: boolean,
     index: number,
-    throws: number[],
+    rounds: Round[],
 }
+
+
+
 
 
 
