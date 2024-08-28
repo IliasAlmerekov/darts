@@ -1,8 +1,10 @@
 import clsx from "clsx";
-import { useEffect, useState } from "react";
+
 
 export type Round = {
-    throws: number[],
+    throw1?: number,
+    throw2?: number,
+    throw3?: number,
 }
 
 export type PlayerProps = {
@@ -16,19 +18,27 @@ export type PlayerProps = {
 
 
 
+export default function Player({ id, name, score, isActive, rounds }: PlayerProps) {
 
+    function Boxes(props: any) {
+        const currentRound = rounds.length - 1
+        if (rounds[currentRound] === undefined) return (
+            <div className="boxesvertical">
+                <div className="eachbox"></div>
+                <div className="eachbox"></div>
+                <div className="eachbox"></div>
+            </div>
+        )
+        return (
+            <div className="boxesvertical">
+                <div className="eachbox">{rounds[currentRound].throw1}</div>
+                <div className="eachbox">{rounds[currentRound].throw2}</div>
+                <div className="eachbox">{rounds[currentRound].throw3}</div>
+            </div>
+        )
+    }
 
-
-function Boxes(props: any) {
-    return (
-        <div className="boxesvertical">
-            <div className="eachbox">{props.throws[0]}</div>
-            <div className="eachbox">{props.throws[1]}</div>
-            <div className="eachbox">{props.throws[2]}</div>
-        </div>
-    )
+    return <li className={clsx("PlayerList", { ["activePlayer"]: isActive === true })} id={id.toString()}>{name} <div>{score}</div> {<Boxes throws={rounds} />}</li>;
 }
 
-export default function Player({ item }: { item: PlayerProps }) {
-    return <li className={clsx("PlayerList", { ["activePlayer"]: item.isActive === true })} id={item.id.toString()}>{item.name} <div>{item.score}</div> <Boxes throws={item.throws} /></li>;
-}
+

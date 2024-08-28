@@ -3,68 +3,92 @@ import './gamepage.css';
 import { UserProps } from "../home";
 import Player from "../components/Player";
 import { PlayerProps } from "../components/Player";
-import { throws } from "assert";
 
+/* export type GameProps = {
+    player: PlayerProps
+} */
 type UserList = {
+
     userList: UserProps[],
 }
-
+const testUserList = [
+    {
+        id: 1,
+        name: "name 1",
+    },
+    {
+        id: 2,
+        name: "name 2",
+    },
+]
 function GamePage({ userList }: UserList) {
-    const [rounds, setRounds] = useState(1)
+    const [roundsCount, setRoundsCount] = useState(1)
     const [playerList, setPlayerList] = useState<PlayerProps[]>([])
-    const [count, setCount] = useState(0)
+    const [throwCount, setThrowCount] = useState(0)
     const [playerTurn, setPlayerTurn] = useState(0)
 
     function initializePlayerList() {
         const initialPlayerlist: PlayerProps[] = [];
-        userList.forEach((user: UserProps, i) => {
-            const player = { id: user.id, name: user.name, score: 301, isActive: i === 0 ? true : false, index: i, throws: [] }
+        testUserList.forEach((user: UserProps, i) => {
+            const player = {
+                id: user.id, name: user.name, score: 301, isActive: i === 0 ? true : false, index: i, rounds: [], displayThrows: []
+            }
             initialPlayerlist.push(player)
 
-        })
 
+        })
 
         setPlayerList(initialPlayerlist)
     }
 
-
     function changeIsActive() {
-        const prevPlayerTurn = playerTurn
-        const newPlayerTurn = playerTurn + 1
-        const newPlayerList: PlayerProps[] = [...playerList]
+        const prevPlayerTurn = playerTurn;
+        const newPlayerTurn = playerTurn + 1;
+        const newPlayerList: PlayerProps[] = [...playerList];
 
-        playerList.forEach((player, i) => {
-            newPlayerList[prevPlayerTurn].isActive = false
-            newPlayerList[newPlayerTurn > newPlayerList.length - 1 ? 0 : newPlayerTurn].isActive = true
-        });
-        setPlayerList(newPlayerList)
-        setPlayerTurn(newPlayerTurn)
-        setCount(0)
+        newPlayerList[prevPlayerTurn].isActive = false;
+        newPlayerList[newPlayerTurn > newPlayerList.length - 1 ? 0 : newPlayerTurn].isActive = true;
 
-
+        setPlayerList(newPlayerList);
+        setPlayerTurn(newPlayerTurn);
+        setThrowCount(0);
 
         if (newPlayerTurn > newPlayerList.length - 1) {
-            setPlayerTurn(0)
-            setRounds(rounds + 1)
+            setPlayerTurn(0);
+            setRoundsCount(roundsCount + 1);
         }
     }
 
 
     function NumberButton(props: any) {
 
-        function handleClick() {
+        const activePlayer = playerList[playerTurn]
+        function handleThrow(round: number, player: PlayerProps, count: number, value: string) {
+            const currentRound = player.rounds[round - 1]
             const newScore = playerList[playerTurn].score - props.value as number
-            const newThrows = [...playerList[playerTurn].throws]
-            newThrows.push(parseInt(props.value))
-            playerList[playerTurn].throws = newThrows
-            setCount(count + 1);
+
+            if (currentRound === undefined) {
+                player.rounds.push({ throw1: undefined, throw2: undefined, throw3: undefined })
+                if (count === 0) {
+                    player.rounds[round - 1].throw1 = value as unknown as number
+                }
+            }
+
+            if (!!currentRound) {
+                if (count === 1) {
+                    player.rounds[round - 1].throw2 = value as unknown as number
+                }
+                if (count === 2) {
+                    player.rounds[round - 1].throw3 = value as unknown as number
+                }
+            }
+            const updatedPlayerlist = [...playerList]
+            updatedPlayerlist[playerTurn] = player
+            setPlayerList(updatedPlayerlist)
+            setThrowCount(count + 1);
             playerList[playerTurn].score = newScore
-            console.log(newThrows, playerTurn)
-
-
-
         };
-        return <button className="btn" onClick={handleClick}>{props.value}</button>
+        return <button className="btn" onClick={() => handleThrow(roundsCount, activePlayer, throwCount, props.value)}>{props.value}</button>
     }
 
 
@@ -73,18 +97,18 @@ function GamePage({ userList }: UserList) {
     }, [])
 
     useEffect(() => {
-        if (count === 3) {
+        if (throwCount === 3) {
             changeIsActive()
         }
-    }, [count])
+    }, [throwCount])
 
 
     return (
         <>
             <div className="Gamepage">
-                <div className="Roundcounter">Rounds: {rounds}</div>
+                <div className="Roundcounter">Round: {roundsCount}</div>
                 <div className="box">  {playerList.map((item: PlayerProps) => {
-                    return <Player item={item} />;
+                    return <Player {...item} />;
                 })}
                 </div>
 
@@ -130,7 +154,7 @@ function GamePage({ userList }: UserList) {
             </div>
 
             <div>
-                <button onClick={changeIsActive}>{count}</button>
+                <button onClick={changeIsActive}>{throwCount}</button>
             </div></>
     );
 }
