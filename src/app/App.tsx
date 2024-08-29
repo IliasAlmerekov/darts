@@ -1,8 +1,8 @@
 import './App.css';
-import GamePage from '../gamepage/gamepage';
-import Home from '../home';
+import GamePage from '../pages/gamepage/gamepage';
+import Home from '../pages/home';
 import { BrowserRouter, Link, Route, Routes } from 'react-router-dom';
-import { UserProps } from '../home';
+import { UserProps } from '../pages/home';
 import { useState } from 'react';
 
 function App() {
