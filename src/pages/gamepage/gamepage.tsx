@@ -3,7 +3,7 @@ import './gamepage.css';
 import { UserProps } from "../home";
 import Player from "../../components/Player";
 import { PlayerProps } from "../../components/Player";
-import { createBuilderStatusReporter } from "typescript";
+import { KeyboardProps } from "../../components/Keyboard";
 
 /* export type GameProps = {
     player: PlayerProps
@@ -30,12 +30,19 @@ function GamePage({ userList }: UserList) {
     const [playerList, setPlayerList] = useState<PlayerProps[]>([])
     const [throwCount, setThrowCount] = useState(0) // zählt wie oft geworfen wurde
     const [playerTurn, setPlayerTurn] = useState(0)
+    const keyboardNumbers: KeyboardProps = {
+        rows: [
+            [1, 2, 3, 4, 5, 6, 7, 8],
+            [9, 10, 11, 12, 13, 14, 15, 16],
+            [17, 18, 19, 20, 25, 50, 0, 0],
+        ]
+    }
 
     function initializePlayerList() {
         const initialPlayerlist: PlayerProps[] = [];
         testUserList.forEach((user: UserProps, i) => {
             const player = {
-                id: user.id, name: user.name, score: 301, isActive: i === 0 ? true : false, index: i, rounds: [], displayThrows: []
+                id: user.id, name: user.name, score: 25, isActive: i === 0 ? true : false, index: i, rounds: [], displayThrows: []
             }
             initialPlayerlist.push(player)
 
@@ -45,11 +52,12 @@ function GamePage({ userList }: UserList) {
         setPlayerList(initialPlayerlist)
     }
 
+
+
     function changeIsActive() {
         const prevPlayerTurn = playerTurn;
         const newPlayerTurn = playerTurn + 1;
         const newPlayerList: PlayerProps[] = [...playerList];
-
         newPlayerList[prevPlayerTurn].isActive = false;
         newPlayerList[newPlayerTurn > newPlayerList.length - 1 ? 0 : newPlayerTurn].isActive = true;
         newPlayerList[newPlayerTurn > newPlayerList.length - 1 ? 0 : newPlayerTurn].rounds.push({ throw1: undefined, throw2: undefined, throw3: undefined })
@@ -64,13 +72,15 @@ function GamePage({ userList }: UserList) {
     }
 
     function bust() {
-
+        changeIsActive()
+        alert("bust")
     }
 
     function handleThrow(round: number, player: PlayerProps, count: number, value: number) {
         if (!player.rounds.length) {
             player.rounds.push({ throw1: undefined, throw2: undefined, throw3: undefined })
         }
+        console.log(player)
         const currentRound = player.rounds[round - 1]
         const newScore = playerList[playerTurn].score - value
 
@@ -87,28 +97,27 @@ function GamePage({ userList }: UserList) {
         }
 
         if (playerList[playerTurn].score < value) {
-            /* bust(value) */
-            alert("bust")
-            player.rounds[round - 1] = { throw1: undefined, throw2: undefined, throw3: undefined }
-            changeIsActive()
+            bust()
         }
 
         if (playerList[playerTurn].score === value) {
-            alert("you won")
+
+            window.location.replace('/winner')
         }
 
         if (playerList[playerTurn].score >= value) {
             playerList[playerTurn].score = newScore
+            setThrowCount(count + 1);
         }
         const updatedPlayerlist = [...playerList]
         updatedPlayerlist[playerTurn] = player
         setPlayerList(updatedPlayerlist)
-        setThrowCount(count + 1);
+
         console.log(playerList)
     };
 
     function NumberButton(props: any) {
-        return <button className="btn" onClick={() => handleThrow(roundsCount, playerList[playerTurn], throwCount, props.value)}>{props.value}</button> // keyboard komponente
+        return <button className="btn" onClick={() => handleThrow(roundsCount, playerList[playerTurn], throwCount, props.value)}>{props.value}</button>
     }
 
     useEffect(() => {
@@ -130,46 +139,21 @@ function GamePage({ userList }: UserList) {
                 })}
                 </div>
 
+
             </div>
             <div className="Numberstyle">
-                <div className="row">
-                    <NumberButton value={1} />
-                    <NumberButton value={2} />
-                    <NumberButton value={3} />
-                    <NumberButton value={4} />
-                    <NumberButton value={5} />
-                    <NumberButton value={6} />
-                    <NumberButton value={7} />
-                    <NumberButton value={8} />
-                </div>
-                <div className="row">
-                    <NumberButton value={9} />
-                    <NumberButton value={10} />
-                    <NumberButton value={11} />
-                    <NumberButton value={12} />
-                    <NumberButton value={13} />
-                    <NumberButton value={14} />
-                    <NumberButton value={15} />
-                    <NumberButton value={16} />
-
-                </div>
-                <div className="row">
-                    <NumberButton value={17} />
-                    <NumberButton value={18} />
-                    <NumberButton value={19} />
-                    <NumberButton value={20} />
-                    <NumberButton value={25} />
-                    <NumberButton value={50} />
-                    <NumberButton value={0} />
-                    <NumberButton value="" />
-                </div>
+                {keyboardNumbers.rows.map((row) =>
+                    <div className="row">
+                        {row.map((number) =>
+                            <NumberButton value={number} />
+                        )}:
+                    </div>
+                )}
                 <div className="row">
                     <button className="specialButton">Double</button>
                     <button className="specialButton">Triple</button>
-
                 </div>
             </div>
-
             <div>
                 <button onClick={changeIsActive}>{throwCount}</button>
             </div></>
