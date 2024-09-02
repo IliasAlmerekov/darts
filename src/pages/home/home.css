@@ -66,12 +66,15 @@
 .startButton {
   height: 111px;
   padding-left: 30px;
-  color: white;
   background: #000021;
   border-radius: 20px;
   align-items: center;
   display: flex;
-  font-size: 48px;
+  font-style: normal;
+  font-weight: bold;
+  font-size: 50px;
+  line-height: 100%;
+  color: #FFFFFF;
   text-decoration: none;
 }
 

@@ -57,8 +57,8 @@ function Home({ list, setList }: HomeProps) {
                         return <li id={item.id.toString()}> {item.name}<button className="deletebutton" onClick={() => deletePerson(item.id)}>delete</button></li>;
                     })}
                 </ul>
-                <Link to="/game">
-                    <div className='startButton'>Start game</div>
+                <Link to="/game" className='startButton'>
+                    <div >Start game</div>
                 </Link>
             </div>
             <div className='maximumreach'>
