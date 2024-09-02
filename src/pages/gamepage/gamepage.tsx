@@ -27,7 +27,7 @@ const testUserList = [
 ]
 
 function GamePage({ userList }: UserList) {
-    const [playerScore, setPlayerScore] = useState(25)
+    const [playerScore, setPlayerScore] = useState(15)
     const [roundsCount, setRoundsCount] = useState(1) //Rundenanzeige
     const [playerList, setPlayerList] = useState<PlayerProps[]>([])
     const [throwCount, setThrowCount] = useState(0) // zählt wie oft geworfen wurde
@@ -74,25 +74,23 @@ function GamePage({ userList }: UserList) {
         }
     }
 
-    function bust(score: number, value: number) {
+    function bust(playerBustScore: number, value: number) {
         const firstThrow = playerList[playerTurn].rounds[roundsCount - 1].throw1
         const secondThrow = playerList[playerTurn].rounds[roundsCount - 1].throw2
         const thirdThrow = playerList[playerTurn].rounds[roundsCount - 1].throw3
         //alert("bust")
-
-        // bust on third throw
+        let oldThrowScore = 0;
         if (firstThrow && secondThrow && thirdThrow && thirdThrow > playerList[playerTurn].score) {
-            playerList[playerTurn].score = firstThrow + secondThrow + score;
+            // bust on third throw
+            console.log("bust on third throw")
+            oldThrowScore = firstThrow + secondThrow + playerBustScore;
         } else if (firstThrow && secondThrow && secondThrow > playerList[playerTurn].score) {
             // bust on second throw
-            let oldScore = firstThrow + score;
-            console.log("OLD SCORE", oldScore)
-            console.log("score before", playerList[playerTurn].score)
-            setPlayerScore(score)
-            console.log("score after", playerList[playerTurn].score)
+            console.log("bust on second throw")
+            oldThrowScore = firstThrow + playerBustScore;
         }
-        //playerList[playerTurn].score = playerScore
-        console.log("playerscore", playerList[playerTurn].name && playerScore)
+        console.log("oldThrowScore", oldThrowScore)
+        playerList[playerTurn].score = oldThrowScore
         changeActivePlayer()
     }
 
@@ -116,20 +114,19 @@ function GamePage({ userList }: UserList) {
             player.rounds[round - 1].throw3 = value as unknown as number
         }
 
-        if (playerList[playerTurn].score < value) {
-            bust(playerScore, value)
-        }
-
-        if (playerList[playerTurn].score === 0) {
-            /* window.location.replace('/winner') */
-            alert("winner winner chicken dinner")
-
-        }
-
-        if (playerList[playerTurn].score >= value) {
+        if (playerList[playerTurn].score > value) {
             playerList[playerTurn].score = newsScore
             setThrowCount(count + 1);
         }
+        
+        if (playerList[playerTurn].score - value === 0) {
+            /* window.location.replace('/winner') */
+            alert("winner winner chicken dinner")
+            
+        } else if (playerList[playerTurn].score < value) {
+            bust(playerScore, value)
+        }
+
         const updatedPlayerlist = [...playerList]
         updatedPlayerlist[playerTurn] = player
         setPlayerList(updatedPlayerlist)
