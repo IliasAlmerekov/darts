@@ -79,7 +79,7 @@ function GamePage({ userList }: UserList) {
         const secondThrow = playerList[playerTurn].rounds[roundsCount - 1].throw2
         const thirdThrow = playerList[playerTurn].rounds[roundsCount - 1].throw3
         //alert("bust")
-        let oldThrowScore = 0;
+        let oldThrowScore = playerScore;
         if (firstThrow && secondThrow && thirdThrow && thirdThrow > playerList[playerTurn].score) {
             // bust on third throw
             console.log("bust on third throw")
@@ -118,11 +118,11 @@ function GamePage({ userList }: UserList) {
             playerList[playerTurn].score = newsScore
             setThrowCount(count + 1);
         }
-        
+
         if (playerList[playerTurn].score - value === 0) {
             /* window.location.replace('/winner') */
             alert("winner winner chicken dinner")
-            
+
         } else if (playerList[playerTurn].score < value) {
             bust(playerScore, value)
         }
@@ -154,9 +154,8 @@ function GamePage({ userList }: UserList) {
                     return <Player {...item} />;
                 })}
                 </div>
-
-
             </div>
+
             <div className="Numberstyle">
                 {keyboardNumbers.rows.map((row) =>
                     <div className="row">
