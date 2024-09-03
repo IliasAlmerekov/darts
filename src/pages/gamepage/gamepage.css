@@ -1,78 +1,77 @@
 .Gamepage {
-    gap: 10px;
-    display: grid;
-    margin-top: 100px;
+  gap: 10px;
+  display: grid;
+  margin-top: 100px;
 }
 
 .Roundcounter {
-    width: 520px;
-    height: 145px;
-    left: 252px;
-    top: 311px;
-    background: #FF2001;
-    border-radius: 15px;
-    font-size: xxx-large;
-    display: flex;
-    align-items: center;
-    justify-content: center;
+  width: 520px;
+  height: 145px;
+  left: 252px;
+  top: 311px;
+  background: #ff2001;
+  border-radius: 15px;
+  font-size: xxx-large;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .box {
-    border-radius: 5%;
+  border-radius: 5%;
 }
 
 .input {
-    width: 50px;
+  width: 50px;
 }
 
 .Numberstyle {
-    margin: 50px 0px;
+  margin: 50px 0px;
 }
 
 .row {
-    display: flex;
+  display: flex;
 }
 
 .btn {
-    width: 90px;
-    height: 90px;
+  width: 90px;
+  height: 90px;
 }
 
 .specialButton {
-    width: 360px;
-    height: 50px;
-    font-size: 30px;
+  width: 360px;
+  height: 50px;
+  font-size: 30px;
 }
 
 .countdown {
-    color: white;
-
+  color: white;
 }
 
 .PlayerList {
-    justify-content: space-between;
-    display: flex;
-    align-items: center;
-    margin-right: 20px;
+  justify-content: space-between;
+  display: flex;
+  align-items: center;
+  margin-right: 20px;
 }
 
 .activePlayer {
-    border: 1px solid hotpink;
+  border: 1px solid hotpink;
 }
 
 .boxesvertical {
-    display: flex;
+  display: flex;
 }
 
 .eachbox {
-    height: 30px;
-    width: 30px;
-    background-color: white;
-    border: solid gray;
-    color: hotpink;
-    font-weight: bold;
-    align-items: center;
-    display: flex;
-    justify-content: center;
-    font-size: x-large;
+  height: 30px;
+  width: 30px;
+  background-color: white;
+  border: solid gray;
+  color: hotpink;
+  font-weight: bold;
+  align-items: center;
+  display: flex;
+  justify-content: center;
+  font-size: x-large;
 }
