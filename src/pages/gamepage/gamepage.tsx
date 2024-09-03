@@ -78,17 +78,21 @@ function GamePage({ userList }: UserList) {
         const firstThrow = playerList[playerTurn].rounds[roundsCount - 1].throw1
         const secondThrow = playerList[playerTurn].rounds[roundsCount - 1].throw2
         const thirdThrow = playerList[playerTurn].rounds[roundsCount - 1].throw3
-        //alert("bust")
+
         let oldThrowScore = playerScore;
-        if (firstThrow && secondThrow && thirdThrow && thirdThrow > playerList[playerTurn].score) {
+
+        if (firstThrow && secondThrow && thirdThrow && thirdThrow > playerList[playerTurn].score) { //6,3,3 bust?
             // bust on third throw
             console.log("bust on third throw")
-            oldThrowScore = firstThrow + secondThrow + playerBustScore;
+            oldThrowScore = firstThrow + secondThrow + playerBustScore; //updated nicht 
+            console.log("ergebnis", firstThrow + secondThrow + playerBustScore)
         } else if (firstThrow && secondThrow && secondThrow > playerList[playerTurn].score) {
             // bust on second throw
             console.log("bust on second throw")
-            oldThrowScore = firstThrow + playerBustScore;
+            console.log("ergebnis2", firstThrow + playerBustScore)
+            oldThrowScore = firstThrow + playerBustScore;//updated manchmal\\  
         }
+
         console.log("oldThrowScore", oldThrowScore)
         playerList[playerTurn].score = oldThrowScore
         changeActivePlayer()
@@ -113,18 +117,19 @@ function GamePage({ userList }: UserList) {
         if (count === 2) {
             player.rounds[round - 1].throw3 = value as unknown as number
         }
-
+        if (playerList[playerTurn].score < value) {
+            bust(playerScore, value)
+            console.log("value", value)
+            console.log("bust")
+        }
         if (playerList[playerTurn].score > value) {
             playerList[playerTurn].score = newsScore
             setThrowCount(count + 1);
         }
 
-        if (playerList[playerTurn].score - value === 0) {
-            /* window.location.replace('/winner') */
+        if (newsScore === 0) { //1,2,6 winner?
+            window.location.replace('/winner')
             alert("winner winner chicken dinner")
-
-        } else if (playerList[playerTurn].score < value) {
-            bust(playerScore, value)
         }
 
         const updatedPlayerlist = [...playerList]
