@@ -4,6 +4,7 @@ import { UserProps } from "../home";
 import Player from "../../components/Player";
 import { PlayerProps } from "../../components/Player";
 import { Link } from "react-router-dom";
+import { mockUserList } from "../../mockdata";
 
 /* export type GameProps = {
     player: PlayerProps
@@ -12,20 +13,6 @@ import { Link } from "react-router-dom";
 type UserList = {
     userList?: UserProps[];
 };
-
-const mockUserList = [
-    {
-        id: 1,
-        name: "Player 1",
-    },
-    {
-        id: 2,
-        name: "Player 2",
-    }, {
-        id: 3,
-        name: "Player 3",
-    },
-];
 
 function GamePage({ userList }: UserList) {
     const [playerScore, setPlayerScore] = useState(15); // change after testing to 301
