@@ -4,11 +4,6 @@ import Player from "../../components/Player";
 import { Link } from "react-router-dom";
 import { mockUserList } from "../../mockdata";
 
-
-/* export type GameProps = {
-    player: PlayerProps
-} */
-
 function GamePage({ userList }: BASIC.UserList) {
     const [playerScore, setPlayerScore] = useState(15); // change after testing to 301
     const [roundsCount, setRoundsCount] = useState(1); //Rundenanzeige
@@ -20,7 +15,7 @@ function GamePage({ userList }: BASIC.UserList) {
         rows: [
             [1, 2, 3, 4, 5, 6, 7, 8],
             [9, 10, 11, 12, 13, 14, 15, 16],
-            [17, 18, 19, 20, 25, 50, 0, 0],
+            [17, 18, 19, 20, 25, 0,],
         ],
     };
     const toggleModal = () => {
@@ -216,11 +211,14 @@ function GamePage({ userList }: BASIC.UserList) {
                         ))}
                     </div>
                 ))}
+
                 <div className="row">
+
 
                     <button className="specialButton">Double</button>
                     <button className="specialButton">Triple</button>
                 </div>
+                <button className="backspace">zurück</button>
             </div>
             <div>
                 <button onClick={changeActivePlayer}>{throwCount}</button>

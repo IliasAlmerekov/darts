@@ -28,10 +28,37 @@ export const mockGamesList: BASIC.GamesList = [
             {
                 id: 1,
                 name: "Hugh",
-                score: 50,
+                score: 74,
                 isActive: true,
                 index: 0,
-                rounds: [],
+                rounds: [
+                    {
+                        "throw1": 5,
+                        "throw2": 6,
+                        "throw3": 4
+                    },
+                    {
+                        "throw1": 20,
+                        "throw2": 25,
+                        "throw3": 10
+                    },
+                    {
+                        "throw1": 10,
+                        "throw2": 13,
+                        "throw3": 11
+                    },
+                    {
+                        "throw1": 50,
+                        "throw2": 25,
+                        "throw3": 0
+                    },
+                    {
+                        "throw1": 25,
+                        "throw2": 20,
+                        "throw3": 14
+
+                    },
+                ],
             },
             {
                 id: 2,
@@ -39,7 +66,38 @@ export const mockGamesList: BASIC.GamesList = [
                 score: 0,
                 isActive: false,
                 index: 1,
-                rounds: [],
+                rounds: [
+                    {
+                        "throw1": 20,
+                        "throw2": 11,
+                        "throw3": 3
+                    },
+                    {
+                        "throw1": 20,
+                        "throw2": 15,
+                        "throw3": 10
+                    },
+                    {
+                        "throw1": 20,
+                        "throw2": 20,
+                        "throw3": 20
+                    },
+                    {
+                        "throw1": 18,
+                        "throw2": 25,
+                        "throw3": 7
+                    },
+                    {
+                        "throw1": 25,
+                        "throw2": 20,
+                        "throw3": 10
+                    },
+                    {
+                        "throw1": 20,
+                        "throw2": 17,
+                        "throw3": 20
+                    },
+                ],
             }
         ]
 
@@ -53,18 +111,35 @@ export const mockGamesList: BASIC.GamesList = [
             {
                 id: 1,
                 name: "Hugh",
-                score: 50,
+                score: 260,
                 isActive: true,
                 index: 0,
-                rounds: [],
+                rounds: [
+                    {
+                        "throw1": 20,
+                        "throw2": 11,
+                        "throw3": 3
+                    },
+                    {
+                        "throw1": 5,
+                        "throw2": 2,
+                        "throw3": 0
+                    },
+                ],
             },
             {
                 id: 2,
                 name: "Norman",
-                score: 220,
+                score: 290,
                 isActive: false,
                 index: 1,
-                rounds: [],
+                rounds: [
+                    {
+                        "throw1": 8,
+                        "throw2": 6,
+                        "throw3": 7
+                    },
+                ],
             }
         ]
 
