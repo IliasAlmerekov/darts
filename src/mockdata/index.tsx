@@ -144,4 +144,104 @@ export const mockGamesList: BASIC.GamesList = [
         ]
 
     },
+    {
+
+        isFinished: true,
+        round: 8,
+        date: "2024-09-05T09:10:27+00:00",
+        playerlist: [
+            {
+                id: 1,
+                name: "Hugh",
+                score: 10,
+                isActive: true,
+                index: 0,
+                rounds: [
+                    {
+                        "throw1": 10,
+                        "throw2": 6,
+                        "throw3": 14
+                    },
+                    {
+                        "throw1": 20,
+                        "throw2": 17,
+                        "throw3": 0
+                    },
+                    {
+                        "throw1": 25,
+                        "throw2": 20,
+                        "throw3": 20
+                    },
+                    {
+                        "throw1": 50,
+                        "throw2": 25,
+                        "throw3": 0
+                    },
+                    {
+                        "throw1": 25,
+                        "throw2": 20,
+                        "throw3": 25,
+
+                    },
+                    {
+                        "throw1": 12,
+                        "throw2": 5,
+                        "throw3": undefined,
+                        isRoundBust: true
+                    },
+                    {
+                        "throw1": 3,
+                        "throw2": 7,
+                        "throw3": 4
+                    },
+                ],
+            },
+            {
+                id: 2,
+                name: "Norman",
+                score: 0,
+                isActive: false,
+                index: 1,
+                rounds: [
+                    {
+                        "throw1": 6,
+                        "throw2": 16,
+                        "throw3": 4
+                    },
+                    {
+                        "throw1": 25,
+                        "throw2": 16,
+                        "throw3": 0
+                    },
+                    {
+                        "throw1": 20,
+                        "throw2": 20,
+                        "throw3": 5
+                    },
+                    {
+                        "throw1": 7,
+                        "throw2": 20,
+                        "throw3": 9
+                    },
+                    {
+                        "throw1": 25,
+                        "throw2": 20,
+                        "throw3": 10
+                    },
+                    {
+                        "throw1": 19,
+                        "throw2": 12,
+                        "throw3": 0
+                    },
+                    {
+                        "throw1": 25,
+                        "throw2": 17,
+                        "throw3": 25
+                    },
+                ],
+            }
+        ]
+
+    },
+
 ]
