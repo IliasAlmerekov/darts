@@ -1,19 +1,5 @@
 import clsx from "clsx";
 
-export type Round = {
-  throw1?: number;
-  throw2?: number;
-  throw3?: number;
-};
-
-export type PlayerProps = {
-  id: number;
-  name: string;
-  score: number;
-  isActive: boolean;
-  index: number;
-  rounds: Round[];
-};
 
 export default function Player({
   id,
@@ -21,7 +7,7 @@ export default function Player({
   score,
   isActive,
   rounds,
-}: PlayerProps) {
+}: BASIC.PlayerProps) {
   function Boxes(props: any) {
     const currentRound = rounds.length - 1;
     if (rounds[currentRound] === undefined)

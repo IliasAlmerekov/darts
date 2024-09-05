@@ -2,12 +2,11 @@ import './App.css';
 import GamePage from '../pages/gamepage/gamepage';
 import Home from '../pages/home';
 import { BrowserRouter, Link, Route, Routes } from 'react-router-dom';
-import { UserProps } from '../pages/home';
 import { useState } from 'react';
 import WinnerPage from '../pages/winnerpage/winnerpage';
 
 function App() {
-  const [list, setList] = useState<UserProps[]>([]);
+  const [list, setList] = useState<BASIC.UserProps[]>([]);
   return (
     <div className='App'>
       <BrowserRouter>

@@ -1,23 +1,18 @@
 import { useState, useEffect } from "react";
 import "./gamepage.css";
-import { UserProps } from "../home";
 import Player from "../../components/Player";
-import { PlayerProps } from "../../components/Player";
 import { Link } from "react-router-dom";
 import { mockUserList } from "../../mockdata";
+
 
 /* export type GameProps = {
     player: PlayerProps
 } */
 
-type UserList = {
-    userList?: UserProps[];
-};
-
-function GamePage({ userList }: UserList) {
+function GamePage({ userList }: BASIC.UserList) {
     const [playerScore, setPlayerScore] = useState(15); // change after testing to 301
     const [roundsCount, setRoundsCount] = useState(1); //Rundenanzeige
-    const [playerList, setPlayerList] = useState<PlayerProps[]>([]);
+    const [playerList, setPlayerList] = useState<BASIC.PlayerProps[]>([]);
     const [throwCount, setThrowCount] = useState(0); // zählt wie oft geworfen wurde
     const [playerTurn, setPlayerTurn] = useState(0); // index of player
     const [modal, setModal] = useState(false)
@@ -36,8 +31,8 @@ function GamePage({ userList }: UserList) {
 
     function initializePlayerList() {
         // GOOD
-        const initialPlayerlist: PlayerProps[] = [];
-        mockUserList.forEach((user: UserProps, i) => {
+        const initialPlayerlist: BASIC.PlayerProps[] = [];
+        mockUserList.forEach((user: BASIC.UserProps, i) => {
             const player = {
                 id: user.id,
                 name: user.name,
@@ -45,6 +40,7 @@ function GamePage({ userList }: UserList) {
                 isActive: i === 0 ? true : false, // initial active player with first index for styling
                 index: i,
                 rounds: [{ throw1: undefined, throw2: undefined, throw3: undefined }],
+                isPlaying: true
                 //displayThrows: [], -> DELETE?
             };
             initialPlayerlist.push(player);
@@ -57,7 +53,7 @@ function GamePage({ userList }: UserList) {
         // GOOD
         const prevPlayerTurnIndex = playerTurn;
         const newPlayerTurnIndex = playerTurn + 1;
-        const newPlayerList: PlayerProps[] = [...playerList];
+        const newPlayerList: BASIC.PlayerProps[] = [...playerList];
 
         newPlayerList[prevPlayerTurnIndex].isActive = false;
         const isEndOfArray = newPlayerTurnIndex > newPlayerList.length - 1;
@@ -77,7 +73,7 @@ function GamePage({ userList }: UserList) {
 
     function handleThrow(
         currentRound: number,
-        player: PlayerProps,
+        player: BASIC.PlayerProps,
         currentThrow: number,
         currentScoreAchieved: number
     ) {
@@ -112,6 +108,10 @@ function GamePage({ userList }: UserList) {
         }
         if (playerList[playerTurn].score === 0) { //delete isActive property?, push new property?
             toggleModal()
+            playerList[playerTurn].isPlaying = false
+        }
+        if (playerList[playerTurn].isPlaying === false) {
+            console.log("winner")
         }
 
         const updatedPlayerlist = [...playerList];
@@ -200,7 +200,7 @@ function GamePage({ userList }: UserList) {
                 <div className="Roundcounter">Round: {roundsCount}</div>
                 <div className="box">
                     {" "}
-                    {playerList.map((item: PlayerProps) => {
+                    {playerList.map((item: BASIC.PlayerProps) => {
                         return <Player {...item} />;
                     })}
                 </div>
