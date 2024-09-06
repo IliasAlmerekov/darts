@@ -1,0 +1,13 @@
+@font-face {
+    font-family: "CircularXX";
+    src: local("CircularXX"),
+        url("./CircularXXSub-Regular.woff") format("woff");
+    font-weight: 400;
+}
+
+@font-face {
+    font-family: "CircularXX";
+    src: local("CircularXX"),
+        url("./CircularXXSub-Bold.woff") format("woff");
+    font-weight: 700;
+}
