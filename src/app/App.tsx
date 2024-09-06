@@ -4,6 +4,7 @@ import Home from '../pages/home';
 import { BrowserRouter, Link, Route, Routes } from 'react-router-dom';
 import { useState } from 'react';
 import WinnerPage from '../pages/winnerpage/winnerpage';
+import '../css/index.css';
 
 function App() {
   const [list, setList] = useState<BASIC.UserProps[]>([]);
