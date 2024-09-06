@@ -2,17 +2,9 @@ import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import "./home.css";
 
-export type UserProps = {
-  id: number;
-  name: string;
-};
 
-type HomeProps = {
-  list: UserProps[];
-  setList: React.Dispatch<React.SetStateAction<UserProps[]>>;
-};
 
-function Home({ list, setList }: HomeProps) {
+function Home({ list, setList }: BASIC.HomeProps) {
   const [isMaximumReached, setIsMaximumReached] = useState<boolean>(false);
   const [showButton, setShowButton] = useState<boolean>(false);
 
@@ -66,7 +58,7 @@ function Home({ list, setList }: HomeProps) {
       </div>
       <div className="content">
         <ul className="box">
-          {list.map((item: UserProps) => {
+          {list.map((item: BASIC.UserProps) => {
             return (
               <li id={item.id.toString()}>
                 {" "}

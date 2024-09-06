@@ -1,4 +1,3 @@
-import { UserProps } from '../home'
 import '../winnerpage/winnerpage.css'
 import Banner from "../../components/Banner"
 import { Link } from 'react-router-dom'

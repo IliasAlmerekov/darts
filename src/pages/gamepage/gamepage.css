@@ -107,3 +107,12 @@
     justify-content: center;
     display: flex;
 }
+
+.backspace {
+    position: relative;
+    left: 540px;
+    top: -140px;
+    width: 180px;
+    height: 90px;
+    font-size: 20px;
+}
