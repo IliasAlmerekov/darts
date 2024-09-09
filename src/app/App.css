@@ -38,3 +38,16 @@
     justify-content: center;
     display: flex;
 }
+
+.selectedPlayerItem {
+    display: flex;
+    width: 100%;
+    justify-content: space-between;
+    border-bottom: 1px solid var(--middlegrey);
+    padding: 24px 8px;
+}
+
+.selectedPlayerItem :first-child {
+    display: flex;
+    gap: 16px;
+}
