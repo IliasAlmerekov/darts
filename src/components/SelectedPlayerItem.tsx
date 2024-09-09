@@ -5,9 +5,14 @@ import deleteIcon from '../icons/delete.svg'
 type Props = {
     name: string;
     key: number;
+    isAdded?: boolean;
 }
 
 function SelectedPlayerItem({ ...props }: Props) {
+    function unselectPlayer() {
+        props.isAdded = false
+        console.log("MOIN")
+    }
 
     return (
         <div className="selectedPlayerItem" key={props?.key}>
@@ -16,7 +21,7 @@ function SelectedPlayerItem({ ...props }: Props) {
                 <div>{props?.name}</div>
             </div>
 
-            <img src={deleteIcon} alt="Delete icon" />
+            <img src={deleteIcon} alt="Delete icon" onClick={() => unselectPlayer()} />
         </div>
     )
 

@@ -49,10 +49,15 @@
 }
 
 .unselectedPlayerItem {
-    max-width: 425px;
+    max-width: 267px;
 }
 
 .selectedPlayerItem :first-child {
     display: flex;
-    gap: 16px;
+    gap: 16px
+}
+
+.userplus {
+    width: 24px;
+    height: 24px;
 }

@@ -1,10 +1,10 @@
 import '../app/App.css'
-import { ReactSVG } from 'react-svg'
+import userPLus from '../icons/user-plus.svg'
 
 function PlayerInputButton() {
 
     return (
-        <button className="PlayerInputButtonPB"><ReactSVG src='' /> Player input</button>
+        <button className="PlayerInputButtonPB"><img src={userPLus} alt="add a user" className='userplus' />Player input</button>
     )
 }
 export default PlayerInputButton

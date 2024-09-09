@@ -6,6 +6,7 @@ import { useState } from 'react';
 import WinnerPage from '../pages/winnerpage/winnerpage';
 import '../css/index.css';
 import Test from '../pages/Test';
+import Start from '../pages/start/start';
 
 function App() {
   const [list, setList] = useState<BASIC.UserProps[]>([]);
@@ -17,6 +18,7 @@ function App() {
           <Route path="/game" element={<GamePage userList={list} />} />
           <Route path="/winner" element={<WinnerPage />} />
           <Route path="/test" element={<Test />} />
+          <Route path="/start" element={<Start />} />
         </Routes>
       </BrowserRouter>
     </div>

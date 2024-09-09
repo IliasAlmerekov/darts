@@ -3,6 +3,7 @@ import arrowRight from '../icons/arrow-right.svg'
 
 type Props = {
     name: string;
+    isAdded: boolean;
 }
 
 function UnselectedPlayerItem({ ...props }: Props) {
