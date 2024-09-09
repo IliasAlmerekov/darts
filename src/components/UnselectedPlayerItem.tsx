@@ -1,7 +1,11 @@
 import '../app/App.css'
 import arrowRight from '../icons/arrow-right.svg'
 
-function UnselectedPlayerItem({ ...props }: any) {
+type Props = {
+    name: string;
+}
+
+function UnselectedPlayerItem({ ...props }: Props) {
 
     return (
         <div className="unselectedPlayerItem">

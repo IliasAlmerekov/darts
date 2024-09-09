@@ -2,7 +2,12 @@ import '../app/App.css'
 import moveIcon from '../icons/move.svg'
 import deleteIcon from '../icons/delete.svg'
 
-function SelectedPlayerItem({ ...props }: any) {
+type Props = {
+    name: string;
+    key: number;
+}
+
+function SelectedPlayerItem({ ...props }: Props) {
 
     return (
         <div className="selectedPlayerItem" key={props?.key}>
