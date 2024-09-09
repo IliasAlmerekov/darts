@@ -39,12 +39,17 @@
     display: flex;
 }
 
-.selectedPlayerItem {
-    display: flex;
+.selectedPlayerItem,
+.unselectedPlayerItem {
     width: 100%;
+    display: flex;
     justify-content: space-between;
     border-bottom: 1px solid var(--middlegrey);
     padding: 24px 8px;
+}
+
+.unselectedPlayerItem {
+    max-width: 425px;
 }
 
 .selectedPlayerItem :first-child {

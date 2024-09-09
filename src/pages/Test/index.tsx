@@ -11,7 +11,7 @@ function Test() {
         { name: "UnselectedPlayerItem:", source: UnselectedPlayerItem }]
 
     return (
-        <div>
+        <div style={{ display: "flex", width: "80%", flexDirection: "column" }}>
             {
                 testComponents.map((component: { name: string, source: any, props?: string }) => {
                     return (
