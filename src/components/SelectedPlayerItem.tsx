@@ -1,13 +1,14 @@
 import '../app/App.css'
 import moveIcon from '../icons/move.svg'
 import deleteIcon from '../icons/delete.svg'
-function SelectedPlayerItem() {
+
+function SelectedPlayerItem({ ...props }: any) {
 
     return (
-        <div className="selectedPlayerItem">
+        <div className="selectedPlayerItem" key={props?.key}>
             <div>
                 <img src={moveIcon} alt="Move icon" />
-                <div>Max</div>
+                <div>{props?.name}</div>
             </div>
 
             <img src={deleteIcon} alt="Delete icon" />

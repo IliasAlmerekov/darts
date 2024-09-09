@@ -1,11 +1,11 @@
 import '../app/App.css'
 import arrowRight from '../icons/arrow-right.svg'
 
-function UnselectedPlayerItem() {
+function UnselectedPlayerItem({ ...props }: any) {
 
     return (
         <div className="unselectedPlayerItem">
-            <div>Max</div>
+            <div>{props?.name}</div>
             <img src={arrowRight} alt="Arrow right icon" />
         </div>
     )
