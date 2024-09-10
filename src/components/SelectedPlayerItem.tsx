@@ -6,14 +6,10 @@ type Props = {
     name: string;
     key: number;
     isAdded?: boolean;
+    handleClick: () => void;
 }
 
 function SelectedPlayerItem({ ...props }: Props) {
-    function unselectPlayer() {
-        props.isAdded = false
-        console.log("MOIN")
-    }
-
     return (
         <div className="selectedPlayerItem" key={props?.key}>
             <div>
@@ -21,7 +17,7 @@ function SelectedPlayerItem({ ...props }: Props) {
                 <div>{props?.name}</div>
             </div>
 
-            <img src={deleteIcon} alt="Delete icon" onClick={() => unselectPlayer()} />
+            <img src={deleteIcon} alt="Delete icon" onClick={props.handleClick} />
         </div>
     )
 

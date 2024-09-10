@@ -48,10 +48,6 @@
     padding: 24px 8px;
 }
 
-.unselectedPlayerItem {
-    max-width: 267px;
-}
-
 .selectedPlayerItem :first-child {
     display: flex;
     gap: 16px
@@ -60,4 +56,35 @@
 .userplus {
     width: 24px;
     height: 24px;
+}
+
+.link {
+    font-family: "CircularXX";
+    font-size: 24px;
+    font-weight: 700;
+    line-height: 28.8px;
+    letter-spacing: 0.02em;
+    text-align: left;
+    color: var(--blue);
+    align-items: center;
+    display: flex;
+    bottom: 24px;
+    position: fixed;
+    padding: 0px 8px 0px 0px;
+    gap: 10px;
+}
+
+.overlay {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    line-height: 1.4;
+    background: #f1f1f1;
+    padding: 14px 28px;
+    max-width: 679px;
+    min-width: 415px;
+    border-radius: 16px;
+    justify-content: center;
+    display: grid;
 }
