@@ -5,10 +5,10 @@
 }
 
 .DefaultInputField {
-    background: var(--lightgrey);
+    background: var(--white);
     text-decoration: none;
     border-radius: 8px;
-    padding: 16px 8px 16px 8px;
+    padding: 0px 8px 0px 8px;
     color: var(--darkgrey);
     border: none;
     height: 56px;
@@ -24,8 +24,8 @@
     background-color: var(--blue);
     border: none;
     color: var(--white);
-    width: 203px;
-    height: 61px;
+    width: 392px;
+    height: 56px;
     padding: 16px 0px 0px 0px;
     gap: 8px;
     border-radius: 8px;
@@ -37,6 +37,7 @@
     text-align: left;
     justify-content: center;
     display: flex;
+    margin-top: 24px;
 }
 
 .selectedPlayerItem,
@@ -79,12 +80,17 @@
     top: 50%;
     left: 50%;
     transform: translate(-50%, -50%);
-    line-height: 1.4;
-    background: #f1f1f1;
-    padding: 14px 28px;
-    max-width: 679px;
-    min-width: 415px;
+    background-color: var(--lightgrey);
     border-radius: 16px;
+    width: 679px;
+    height: 415px;
+    align-content: center;
     justify-content: center;
+    display: grid;
+    box-shadow: 10px 10px 10px rgb(116, 116, 116);
+}
+
+.delete {
+    justify-content: right;
     display: grid;
 }

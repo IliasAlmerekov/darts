@@ -9,6 +9,7 @@ import NewPLayerOverlay from '../../components/NewPlayerOverlay';
 
 
 function Start() {
+    const [newPlayer, setNewPlayer] = useState('')
     const [isOverlayOpen, setIsOverlayOpen] = useState(false)
     const [testUserSelected, setTestUserSelected] = useState([
         {
@@ -49,6 +50,9 @@ function Start() {
         testUserUnselected.push({ name, isAdded: false })
     }
 
+    function createPlayer(name: any) {
+        testUserSelected.push({ name, isAdded: true })
+    }
 
 
     return (
@@ -58,7 +62,7 @@ function Start() {
                     <UnselectedPlayerItem {...player} key={index} handleClick={() => handleSelect(player.name)} />
                 ))}
                 <Link label="Create new Player" icon={Plus} handleClick={() => setIsOverlayOpen(!isOverlayOpen)} />
-                <NewPLayerOverlay isOpen={isOverlayOpen} onClose={() => setIsOverlayOpen(!isOverlayOpen)} />
+                <NewPLayerOverlay placeholder="Player Name" isOpen={isOverlayOpen} onClose={() => setIsOverlayOpen(!isOverlayOpen)} handleClick={() => createPlayer(newPlayer)} newPlayer={newPlayer} setNewPlayer={setNewPlayer} />
             </div>
             <div className="AddedPlayerList">
                 {testUserSelected.map((player: { name: string }, index: number) => (

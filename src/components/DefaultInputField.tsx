@@ -1,9 +1,17 @@
 import '../app/App.css'
 
-function DefaultInputField() {
+type Props = {
+    placeholder: string;
+    value: any;
+    onChange: any;
+
+}
+
+
+function DefaultInputField({ ...props }: Props) {
     return (
         <div>
-            <input type="text" placeholder="Player input" className="DefaultInputField" />
+            <input value={props.value} placeholder={props.placeholder} onChange={props.onChange} className="DefaultInputField" />
         </div>
     )
 
