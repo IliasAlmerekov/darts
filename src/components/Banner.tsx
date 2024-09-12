@@ -1,5 +1,3 @@
-import React from "react";
-
 function Banner(props: any) {
   return (
     <div className="banner">

@@ -1,0 +1,42 @@
+.btn {
+    border: none;
+    color: var(--white);
+    width: 392px;
+    height: 56px;
+    padding: 16px 0px 0px 0px;
+    gap: 8px;
+    border-radius: 8px;
+    font-family: "CircularXX";
+    font-size: 24px;
+    font-weight: 700;
+    line-height: 28.8px;
+    letter-spacing: 0.02em;
+    text-align: left;
+    justify-content: center;
+    display: flex;
+    margin-top: 24px;
+}
+
+.btnPrimary {
+    background-color: var(--blue);
+}
+
+.btnSecondary {
+    background-color: var(--red);
+}
+
+.inverted {
+    background-color: white;
+    border: 3px solid var(--blue);
+    color: var(--blue);
+}
+
+.invertedSecondary {
+    background-color: white;
+    border: 3px solid var(--red);
+    color: var(--red);
+}
+
+.disabled {
+    opacity: 50%;
+}

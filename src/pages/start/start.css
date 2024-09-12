@@ -1,0 +1,65 @@
+.existingPlayerList {
+    grid-column: 1 / 3;
+    background-color: var(--lightgrey);
+    padding: 0px 32px 0px 32px;
+}
+
+.addedPlayerList {
+    position: relative;
+    grid-column: 3/7;
+    padding-right: 24px;
+    align-content: baseline;
+}
+
+.headerunselectedPlayers {
+    margin: 32px 0px 48px 0px;
+    color: var(--darkgrey);
+
+}
+
+.headerselectedPlayers {
+    margin: 146px 0px 16px 0px;
+    color: var(--darkgrey);
+}
+
+.deepblueIcon {
+    top: 32px;
+    position: fixed;
+    right: 32px;
+}
+
+.startbtn {
+    bottom: 32px;
+    position: absolute;
+    right: 32px;
+}
+
+.hiddenbtn {
+    opacity: 50%;
+}
+
+
+.playerInputButton {
+    background-color: var(--blue);
+    border: none;
+    color: var(--white);
+    width: 392px;
+    height: 56px;
+    padding: 16px 0px 0px 0px;
+    gap: 8px;
+    border-radius: 8px;
+    font-family: "CircularXX";
+    font-size: 24px;
+    font-weight: 700;
+    line-height: 28.8px;
+    letter-spacing: 0.02em;
+    text-align: left;
+    justify-content: center;
+    display: flex;
+    margin-top: 24px;
+}
+
+.userPlus {
+    width: 24px;
+    height: 24px;
+}

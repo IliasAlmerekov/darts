@@ -7,7 +7,6 @@ import "./home.css";
 function Home({ list, setList }: BASIC.HomeProps) {
   const [isMaximumReached, setIsMaximumReached] = useState<boolean>(false);
   const [showButton, setShowButton] = useState<boolean>(false);
-
   const [player, setPlayer] = useState("");
 
   function addPlayer(name: string) {
@@ -73,7 +72,7 @@ function Home({ list, setList }: BASIC.HomeProps) {
             );
           })}
         </ul>
-        <Link to="/game" className="startButton">
+        <Link to="/gamepage" className="startButton">
           <div>Start game</div>
         </Link>
       </div>
