@@ -5,16 +5,26 @@ import SelectedPlayerItem from '../../components/PlayerItems/SelectedPlayerItem'
 import Plus from '../../icons/plus.svg'
 import NewPLayerOverlay from '../../components/CreateNewPlayerOverlay/NewPlayerOverlay';
 import Madebydeepblue from '../../icons/madeByDeepblue.svg';
-import clsx from 'clsx';
 import userPLus from '../../icons/user-plus.svg'
 import LinkButton from '../../components/LinkButton/LinkButton';
 import Button from '../../components/Button/Button';
 import '../../components/Button/Button.css'
+import settingsCog from '../../icons/settings.svg'
+import arrowRight from '../../icons/arrow-right.svg'
+import '../../components/CreateNewPlayerOverlay/NewPlayerOverlay.css'
+import DeletePLayerOverlay from '../../components/DeletePlayerOverlay/DeletePlayerOverlay';
+import trashIcon from '../../icons/trash-icon.svg'
 
+type PLayerprops = {
+    name: string
+    isAdded: boolean
+}
 
 function Start() {
     const [newPlayer, setNewPlayer] = useState('')
     const [isOverlayOpen, setIsOverlayOpen] = useState(false)
+    const [isSettingsCogOpen, setIsSettingsCogOpen] = useState(false)
+    const [deletePlayerList, setDeletePlayerList] = useState<PLayerprops[]>([])
     const [testUserSelected, setTestUserSelected] = useState([
         {
             name: "Max",
@@ -26,6 +36,18 @@ function Start() {
         },
         {
             name: "Anna",
+            isAdded: true
+        },
+        {
+            name: "Christian",
+            isAdded: true
+        },
+        {
+            name: "Peter",
+            isAdded: true
+        },
+        {
+            name: "Mark",
             isAdded: true
         }
     ]);
@@ -74,13 +96,11 @@ function Start() {
     ]);
     function handleSelect(name: any) {
         if (testUserSelected.length === 10) {
-            alert("Maximum players reached")
 
         } else {
             const newList = testUserUnselected.filter((list) => list.name !== name);
             setTestUserUnselected(newList);
             testUserSelected.push({ name, isAdded: true })
-            console.log(testUserSelected.length)
         }
     }
 
@@ -92,7 +112,6 @@ function Start() {
 
     function createPlayer(name: any) {
         if (testUserSelected.length === 10) {
-            alert("Maximum players reached, the player will be unselected")
             testUserUnselected.push({ name, isAdded: true })
             setIsOverlayOpen(!isOverlayOpen)
             setNewPlayer("")
@@ -103,34 +122,47 @@ function Start() {
         }
     }
 
+    function deletePlayer(name: any) {
+        const newList = deletePlayerList.filter((list) => list.name !== name);
+        setDeletePlayerList(newList);
+    }
+
+    function overlayPlayerlist() {
+        const concatPlayerlist = testUserSelected.concat(testUserUnselected)
+        setDeletePlayerList(concatPlayerlist)
+        setIsSettingsCogOpen(!isSettingsCogOpen)
+    }
+
+    function updateArray() {
+        //if isAdded === true selectedPlayerlist.push else unselectedPlayerlist.push
+    }
+
     return (
         <>
             <div className="existingPlayerList">
-
-                <h4 className='headerunselectedPlayers'>Unselected <br /> Players</h4>
+                <div className='header'>
+                    <h4 className='headerUnelectedPlayers'>Unselected <br /> Players</h4>
+                    <img
+                        src={settingsCog}
+                        alt=""
+                        onClick={() => overlayPlayerlist()} />
+                </div>
                 {testUserUnselected.map((player: { name: string, isAdded: boolean }, index: number) => (
                     <UnselectedPlayerItem
                         {...player}
                         key={index}
-                        handleClick={() => handleSelect(player.name)} />
+                        handleClickOrDelete={() => handleSelect(player.name)}
+                        src={arrowRight} />
                 ))}
-                <LinkButton label="Create new Player" icon={Plus} handleClick={() => setIsOverlayOpen(!isOverlayOpen)} />
-                <NewPLayerOverlay
-                    icon={userPLus}
-                    placeholder="Player Name"
-                    isOpen={isOverlayOpen}
-                    onClose={() => setIsOverlayOpen(!isOverlayOpen)}
-                    handleClick={() => createPlayer(newPlayer)}
-                    newPlayer={newPlayer}
-                    setNewPlayer={setNewPlayer}
-                    label='Player Input'
-                    className='playerInputButton'
-                    iconStyling='userPlus'
-                />
+                <LinkButton
+                    label="Create new Player"
+                    icon={Plus}
+                    handleClick={() => setIsOverlayOpen(!isOverlayOpen)} />
+
             </div>
             <div className="addedPlayerList">
                 <img className='deepblueIcon' src={Madebydeepblue} alt="" />
-                <h4 className='headerselectedPlayers'>Selected Players</h4>
+                <h4 className='headerSelectedPlayers'>Selected Players</h4>
 
                 {testUserSelected.map((player: { name: string }, index: number) => (
                     <SelectedPlayerItem
@@ -138,16 +170,41 @@ function Start() {
                         key={index}
                         handleClick={() => handleUnselect(player.name)} />
                 ))}
-                <div className='startbtn'>
+                <div className='startBtn'>
                     <Button
                         isLink
                         label='Start'
                         link='/game'
                         disabled={testUserSelected.length < 2}
-
+                        type='secondary'
                     />
                 </div>
             </div>
+
+            <DeletePLayerOverlay
+                isOpen={isSettingsCogOpen}
+                onClose={() => setIsSettingsCogOpen(!isSettingsCogOpen)}
+                handleClick={() => updateArray()}
+                label='Done'
+                type='primary'
+                userMap={deletePlayerList}
+                src={trashIcon}
+                handleDelete={(name) => deletePlayer(name)}
+
+            />
+
+            <NewPLayerOverlay
+                icon={userPLus}
+                placeholder="Player Name"
+                isOpen={isOverlayOpen}
+                onClose={() => setIsOverlayOpen(!isOverlayOpen)}
+                handleClick={() => createPlayer(newPlayer)}
+                newPlayer={newPlayer}
+                setNewPlayer={setNewPlayer}
+                label='Player Input'
+                className='playerInputButton'
+                iconStyling='userPlus'
+            />
         </>
     )
 }

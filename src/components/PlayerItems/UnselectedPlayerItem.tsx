@@ -1,10 +1,12 @@
 import './PlayerItems.css'
-import arrowRight from '../../icons/arrow-right.svg'
+
 
 type Props = {
     name: any;
     isAdded?: boolean;
-    handleClick: () => void;
+    handleClickOrDelete: () => void;
+    src: any;
+    alt?: string;
 }
 
 function UnselectedPlayerItem({ ...props }: Props) {
@@ -12,7 +14,7 @@ function UnselectedPlayerItem({ ...props }: Props) {
     return (
         <div className="unselectedPlayerItem">
             <div>{props?.name}</div>
-            <img src={arrowRight} alt="Arrow right icon" onClick={props.handleClick} />
+            <img src={props.src} alt={props.alt} onClick={props.handleClickOrDelete} />
         </div>
     )
 
