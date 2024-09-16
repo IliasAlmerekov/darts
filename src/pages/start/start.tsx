@@ -15,7 +15,7 @@ import '../../components/CreateNewPlayerOverlay/NewPlayerOverlay.css'
 import DeletePLayerOverlay from '../../components/DeletePlayerOverlay/DeletePlayerOverlay';
 import trashIcon from '../../icons/trash-icon.svg'
 
-type PLayerprops = {
+type PlayerProps = {
     name: string
     isAdded: boolean
 }
@@ -24,7 +24,7 @@ function Start() {
     const [newPlayer, setNewPlayer] = useState('')
     const [isOverlayOpen, setIsOverlayOpen] = useState(false)
     const [isSettingsCogOpen, setIsSettingsCogOpen] = useState(false)
-    const [deletePlayerList, setDeletePlayerList] = useState<PLayerprops[]>([])
+    const [deletePlayerList, setDeletePlayerList] = useState<PlayerProps[]>([])
     const [testUserSelected, setTestUserSelected] = useState([
         {
             name: "Max",
@@ -99,15 +99,19 @@ function Start() {
 
         } else {
             const newList = testUserUnselected.filter((list) => list.name !== name);
+            const newSelectedList: PlayerProps[] = [...testUserSelected]
+            newSelectedList.push({ name, isAdded: false })
             setTestUserUnselected(newList);
-            testUserSelected.push({ name, isAdded: true })
+            setTestUserSelected(newSelectedList)
         }
     }
 
     function handleUnselect(name: any) {
         const newList = testUserSelected.filter((list) => list.name !== name);
-        setTestUserSelected(newList);
-        testUserUnselected.push({ name, isAdded: false })
+        const newUnselectedList: PlayerProps[] = [...testUserUnselected]
+        newUnselectedList.push({ name, isAdded: false })
+        setTestUserSelected(newList)
+        setTestUserUnselected(newUnselectedList)
     }
 
     function createPlayer(name: any) {
@@ -130,11 +134,31 @@ function Start() {
     function overlayPlayerlist() {
         const concatPlayerlist = testUserSelected.concat(testUserUnselected)
         setDeletePlayerList(concatPlayerlist)
+
         setIsSettingsCogOpen(!isSettingsCogOpen)
     }
 
     function updateArray() {
-        //if isAdded === true selectedPlayerlist.push else unselectedPlayerlist.push
+        const newSelectedList: PlayerProps[] = []
+        const newUnselectedList: PlayerProps[] = []
+        deletePlayerList.forEach(player => {
+            if (player.isAdded === true) {
+                newSelectedList.push(player)
+            }
+            if (player.isAdded === false) {
+                newUnselectedList.push(player)
+            }
+
+            console.log("uodatetplayerlist", deletePlayerList)
+            console.log("player", player)
+            console.log("testuserunselected", testUserUnselected)
+            console.log("testuserselected", testUserSelected)
+
+        },
+        )
+        setTestUserUnselected(newUnselectedList)
+        setTestUserSelected(newSelectedList)
+        setIsSettingsCogOpen(!isSettingsCogOpen)
     }
 
     return (
