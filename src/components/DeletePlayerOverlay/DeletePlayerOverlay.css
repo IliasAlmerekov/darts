@@ -1,12 +1,10 @@
-.overlay {
+.deleteOverlay {
     position: absolute;
     top: 50%;
     left: 50%;
     transform: translate(-50%, -50%);
     background-color: var(--lightgrey);
     border-radius: 16px;
-    width: 679px;
-    height: 30%;
     align-content: center;
     justify-content: center;
     display: grid;
@@ -16,6 +14,8 @@
         rgba(0, 0, 0, 0.12) 0px 4px 6px,
         rgba(0, 0, 0, 0.17) 0px 12px 13px,
         rgba(0, 0, 0, 0.09) 0px -3px 5px;
+    padding: 32px;
+    height: 80%;
 }
 
 .delete {
@@ -24,6 +24,31 @@
     top: 32px;
 }
 
-.overlayContent {
+.deleteOverlayContent {
     width: 486px;
+    max-height: 900px;
+    overflow: auto;
+    left: 96px;
+    position: relative;
+}
+
+.overlayBottom {
+    padding: 32px 96px 32px 96px;
+    width: 486px;
+}
+
+.overlayTop {
+    font-family: "CircularXX";
+    font-size: 24px;
+    font-weight: 700;
+    line-height: 24px;
+    text-align: left;
+    padding: 64px 96px 24px 96px;
+}
+
+.overlayBackground {
+    width: 100%;
+    height: 100%;
+    position: absolute;
+    background: rgba(0, 0, 0, 0.4);
 }

@@ -11,13 +11,13 @@
     align-content: baseline;
 }
 
-.headerunselectedPlayers {
+.headerUnselectedPlayers {
     margin: 32px 0px 48px 0px;
     color: var(--darkgrey);
 
 }
 
-.headerselectedPlayers {
+.headerSelectedPlayers {
     margin: 146px 0px 16px 0px;
     color: var(--darkgrey);
 }
@@ -28,16 +28,12 @@
     right: 32px;
 }
 
-.startbtn {
+.startBtn {
     bottom: 32px;
     position: absolute;
     right: 32px;
+    width: 300px;
 }
-
-.hiddenbtn {
-    opacity: 50%;
-}
-
 
 .playerInputButton {
     background-color: var(--blue);
@@ -62,4 +58,9 @@
 .userPlus {
     width: 24px;
     height: 24px;
+}
+
+.header {
+    justify-content: space-between;
+    display: flex;
 }

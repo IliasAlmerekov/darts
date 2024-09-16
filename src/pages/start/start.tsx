@@ -5,16 +5,26 @@ import SelectedPlayerItem from '../../components/PlayerItems/SelectedPlayerItem'
 import Plus from '../../icons/plus.svg'
 import NewPLayerOverlay from '../../components/CreateNewPlayerOverlay/NewPlayerOverlay';
 import Madebydeepblue from '../../icons/madeByDeepblue.svg';
-import clsx from 'clsx';
 import userPLus from '../../icons/user-plus.svg'
 import LinkButton from '../../components/LinkButton/LinkButton';
 import Button from '../../components/Button/Button';
 import '../../components/Button/Button.css'
+import settingsCog from '../../icons/settings.svg'
+import arrowRight from '../../icons/arrow-right.svg'
+import '../../components/CreateNewPlayerOverlay/NewPlayerOverlay.css'
+import DeletePLayerOverlay from '../../components/DeletePlayerOverlay/DeletePlayerOverlay';
+import trashIcon from '../../icons/trash-icon.svg'
 
+type PlayerProps = {
+    name: string
+    isAdded: boolean
+}
 
 function Start() {
     const [newPlayer, setNewPlayer] = useState('')
     const [isOverlayOpen, setIsOverlayOpen] = useState(false)
+    const [isSettingsCogOpen, setIsSettingsCogOpen] = useState(false)
+    const [deletePlayerList, setDeletePlayerList] = useState<PlayerProps[]>([])
     const [testUserSelected, setTestUserSelected] = useState([
         {
             name: "Max",
@@ -26,6 +36,18 @@ function Start() {
         },
         {
             name: "Anna",
+            isAdded: true
+        },
+        {
+            name: "Christian",
+            isAdded: true
+        },
+        {
+            name: "Peter",
+            isAdded: true
+        },
+        {
+            name: "Mark",
             isAdded: true
         }
     ]);
@@ -74,25 +96,26 @@ function Start() {
     ]);
     function handleSelect(name: any) {
         if (testUserSelected.length === 10) {
-            alert("Maximum players reached")
 
         } else {
             const newList = testUserUnselected.filter((list) => list.name !== name);
+            const newSelectedList: PlayerProps[] = [...testUserSelected]
+            newSelectedList.push({ name, isAdded: false })
             setTestUserUnselected(newList);
-            testUserSelected.push({ name, isAdded: true })
-            console.log(testUserSelected.length)
+            setTestUserSelected(newSelectedList)
         }
     }
 
     function handleUnselect(name: any) {
         const newList = testUserSelected.filter((list) => list.name !== name);
-        setTestUserSelected(newList);
-        testUserUnselected.push({ name, isAdded: false })
+        const newUnselectedList: PlayerProps[] = [...testUserUnselected]
+        newUnselectedList.push({ name, isAdded: false })
+        setTestUserSelected(newList)
+        setTestUserUnselected(newUnselectedList)
     }
 
     function createPlayer(name: any) {
         if (testUserSelected.length === 10) {
-            alert("Maximum players reached, the player will be unselected")
             testUserUnselected.push({ name, isAdded: true })
             setIsOverlayOpen(!isOverlayOpen)
             setNewPlayer("")
@@ -103,34 +126,67 @@ function Start() {
         }
     }
 
+    function deletePlayer(name: any) {
+        const newList = deletePlayerList.filter((list) => list.name !== name);
+        setDeletePlayerList(newList);
+    }
+
+    function overlayPlayerlist() {
+        const concatPlayerlist = testUserSelected.concat(testUserUnselected)
+        setDeletePlayerList(concatPlayerlist)
+
+        setIsSettingsCogOpen(!isSettingsCogOpen)
+    }
+
+    function updateArray() {
+        const newSelectedList: PlayerProps[] = []
+        const newUnselectedList: PlayerProps[] = []
+        deletePlayerList.forEach(player => {
+            if (player.isAdded === true) {
+                newSelectedList.push(player)
+            }
+            if (player.isAdded === false) {
+                newUnselectedList.push(player)
+            }
+
+            console.log("uodatetplayerlist", deletePlayerList)
+            console.log("player", player)
+            console.log("testuserunselected", testUserUnselected)
+            console.log("testuserselected", testUserSelected)
+
+        },
+        )
+        setTestUserUnselected(newUnselectedList)
+        setTestUserSelected(newSelectedList)
+        setIsSettingsCogOpen(!isSettingsCogOpen)
+    }
+
     return (
         <>
             <div className="existingPlayerList">
-
-                <h4 className='headerunselectedPlayers'>Unselected <br /> Players</h4>
+                <div className='header'>
+                    <h4 className='headerUnelectedPlayers'>Unselected <br /> Players</h4>
+                    <img
+                        src={settingsCog}
+                        alt=""
+                        onClick={() => overlayPlayerlist()} />
+                </div>
                 {testUserUnselected.map((player: { name: string, isAdded: boolean }, index: number) => (
                     <UnselectedPlayerItem
                         {...player}
                         key={index}
-                        handleClick={() => handleSelect(player.name)} />
+                        handleClickOrDelete={() => handleSelect(player.name)}
+                        src={arrowRight} />
                 ))}
-                <LinkButton label="Create new Player" icon={Plus} handleClick={() => setIsOverlayOpen(!isOverlayOpen)} />
-                <NewPLayerOverlay
-                    icon={userPLus}
-                    placeholder="Player Name"
-                    isOpen={isOverlayOpen}
-                    onClose={() => setIsOverlayOpen(!isOverlayOpen)}
-                    handleClick={() => createPlayer(newPlayer)}
-                    newPlayer={newPlayer}
-                    setNewPlayer={setNewPlayer}
-                    label='Player Input'
-                    className='playerInputButton'
-                    iconStyling='userPlus'
-                />
+                <LinkButton
+                    label="Create new Player"
+                    icon={Plus}
+                    handleClick={() => setIsOverlayOpen(!isOverlayOpen)} />
+
             </div>
             <div className="addedPlayerList">
                 <img className='deepblueIcon' src={Madebydeepblue} alt="" />
-                <h4 className='headerselectedPlayers'>Selected Players</h4>
+                <h4 className='headerSelectedPlayers'>Selected Players</h4>
 
                 {testUserSelected.map((player: { name: string }, index: number) => (
                     <SelectedPlayerItem
@@ -138,16 +194,41 @@ function Start() {
                         key={index}
                         handleClick={() => handleUnselect(player.name)} />
                 ))}
-                <div className='startbtn'>
+                <div className='startBtn'>
                     <Button
                         isLink
                         label='Start'
                         link='/game'
                         disabled={testUserSelected.length < 2}
-
+                        type='secondary'
                     />
                 </div>
             </div>
+
+            <DeletePLayerOverlay
+                isOpen={isSettingsCogOpen}
+                onClose={() => setIsSettingsCogOpen(!isSettingsCogOpen)}
+                handleClick={() => updateArray()}
+                label='Done'
+                type='primary'
+                userMap={deletePlayerList}
+                src={trashIcon}
+                handleDelete={(name) => deletePlayer(name)}
+
+            />
+
+            <NewPLayerOverlay
+                icon={userPLus}
+                placeholder="Player Name"
+                isOpen={isOverlayOpen}
+                onClose={() => setIsOverlayOpen(!isOverlayOpen)}
+                handleClick={() => createPlayer(newPlayer)}
+                newPlayer={newPlayer}
+                setNewPlayer={setNewPlayer}
+                label='Player Input'
+                className='playerInputButton'
+                iconStyling='userPlus'
+            />
         </>
     )
 }

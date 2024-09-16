@@ -38,7 +38,7 @@ function Button({ ...props }: ButtonProps) {
         )
     } else {
         return (
-            <Link to={props.disabled ? null : props.link}>
+            <Link className="noUnderline" to={props.disabled ? null : props.link}>
                 <button className={clsx(props?.className, "btn", {
                     ["btnPrimary"]: props.type === 'primary' && !props.isInverted,
                     ["btnSecondary"]: props.type === 'secondary' && !props.isInverted,

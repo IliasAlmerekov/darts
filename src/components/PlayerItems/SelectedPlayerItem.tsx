@@ -23,9 +23,3 @@ function SelectedPlayerItem({ ...props }: Props) {
 
 }
 export default SelectedPlayerItem
-
-
-/*
-hat einen Namen
-Eine "Löschfunktion", die den Spieler wieder zu den UnselectedPlayerItems schiebt 
-Optional: einen Schiebebutton, das es ermöglicht, die Position des SelectedPlayers zu ändern.*/
