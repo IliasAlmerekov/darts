@@ -30,21 +30,20 @@
     overflow: auto;
     left: 96px;
     position: relative;
-
+    -webkit-overflow-scrolling: touch;
     background:
+
         linear-gradient(var(--lightgrey) 30%,
             rgba(255, 255, 255, 0)) center top,
 
         linear-gradient(rgba(255, 255, 255, 0),
             var(--lightgrey) 70%) center bottom,
 
-        radial-gradient(farthest-side at 50% 0,
-            rgba(0, 0, 0, 0.2),
+        linear-gradient(rgba(0, 0, 0, 0.2),
             rgba(0, 0, 0, 0)) center top,
 
-        radial-gradient(farthest-side at 50% 100%,
-            rgba(0, 0, 0, 0.2),
-            rgba(0, 0, 0, 0)) center bottom;
+        linear-gradient(rgba(0, 0, 0, 0),
+            rgba(0, 0, 0, 0.2)) center bottom;
 
     background-repeat: no-repeat;
     background-size: 100% 40px, 100% 40px, 100% 14px, 100% 14px;

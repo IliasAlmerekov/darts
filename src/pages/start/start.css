@@ -1,6 +1,7 @@
 .existingPlayerList {
     grid-column: 1 / 3;
     background-color: var(--lightgrey);
+    position: relative;
 }
 
 .addedPlayerList {
@@ -67,7 +68,7 @@
 
 .testUserUnselectedList {
     overflow: auto;
-    max-height: 1150px;
+    max-height: 84.3vh;
     padding: 0px 32px 0px 32px;
     -webkit-overflow-scrolling: touch;
     background:
@@ -78,13 +79,11 @@
         linear-gradient(rgba(255, 255, 255, 0),
             var(--lightgrey) 70%) center bottom,
 
-        radial-gradient(farthest-side at 50% 0,
-            rgba(0, 0, 0, 0.2),
+        linear-gradient(rgba(0, 0, 0, 0.2),
             rgba(0, 0, 0, 0)) center top,
 
-        radial-gradient(farthest-side at 50% 100%,
-            rgba(0, 0, 0, 0.2),
-            rgba(0, 0, 0, 0)) center bottom;
+        linear-gradient(rgba(0, 0, 0, 0),
+            rgba(0, 0, 0, 0.2)) center bottom;
 
     background-repeat: no-repeat;
     background-size: 100% 40px, 100% 40px, 100% 14px, 100% 14px;
@@ -107,8 +106,9 @@
 }
 
 .bottom {
-    padding: 0px 32px 0px 32px;
     padding: 32px;
     position: absolute;
     bottom: 0;
+    left: 0;
+    right: 0;
 }
