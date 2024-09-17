@@ -17,7 +17,7 @@ type Props = {
     type?: 'primary' | 'secondary';
 }
 
-function NewPLayerOverlay({ ...props }: Props) {
+function NewPlayerOverlay({ ...props }: Props) {
     return (
         <>{
             props.isOpen ? (
@@ -47,5 +47,5 @@ function NewPLayerOverlay({ ...props }: Props) {
     )
 
 }
-export default NewPLayerOverlay
+export default NewPlayerOverlay
 
