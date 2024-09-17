@@ -49,6 +49,18 @@ function Start() {
         {
             name: "Mark",
             isAdded: true
+        },
+        {
+            name: "Tom",
+            isAdded: true
+        },
+        {
+            name: "Thomas",
+            isAdded: true
+        },
+        {
+            name: "Hendrik",
+            isAdded: true
         }
     ]);
 
@@ -80,6 +92,16 @@ function Start() {
         },
         {
             name: "Nico",
+            isAdded: false
+
+        },
+        {
+            name: "Norman",
+            isAdded: false
+
+        },
+        {
+            name: "Ziyi",
             isAdded: false
 
         },
@@ -148,12 +170,6 @@ function Start() {
             if (player.isAdded === false) {
                 newUnselectedList.push(player)
             }
-
-            console.log("uodatetplayerlist", deletePlayerList)
-            console.log("player", player)
-            console.log("testuserunselected", testUserUnselected)
-            console.log("testuserselected", testUserSelected)
-
         },
         )
         setTestUserUnselected(newUnselectedList)
@@ -171,18 +187,22 @@ function Start() {
                         alt=""
                         onClick={() => overlayPlayerlist()} />
                 </div>
-                {testUserUnselected.map((player: { name: string, isAdded: boolean }, index: number) => (
-                    <UnselectedPlayerItem
-                        {...player}
-                        key={index}
-                        handleClickOrDelete={() => handleSelect(player.name)}
-                        src={arrowRight} />
-                ))}
-                <LinkButton
-                    label="Create new Player"
-                    icon={Plus}
-                    handleClick={() => setIsOverlayOpen(!isOverlayOpen)} />
-
+                <div className='testUserUnselectedList'>
+                    {testUserUnselected.map((player: { name: string, isAdded: boolean }, index: number) => (
+                        <UnselectedPlayerItem
+                            {...player}
+                            key={index}
+                            handleClickOrDelete={() => handleSelect(player.name)}
+                            src={arrowRight} />
+                    ))}
+                </div>
+                <div className='bottom'>
+                    <LinkButton
+                        className='createNewPlayerButton'
+                        label="Create new Player"
+                        icon={Plus}
+                        handleClick={() => setIsOverlayOpen(!isOverlayOpen)} />
+                </div>
             </div>
             <div className="addedPlayerList">
                 <img className='deepblueIcon' src={Madebydeepblue} alt="" />
@@ -194,6 +214,7 @@ function Start() {
                         key={index}
                         handleClick={() => handleUnselect(player.name)} />
                 ))}
+
                 <div className='startBtn'>
                     <Button
                         isLink
