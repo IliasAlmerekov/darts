@@ -1,10 +1,25 @@
+import GamePlayerItem from "../../components/GamePlayerItem/GamePlayerItem";
 import Keyboard from "../../components/Keyboard/Keyboard";
+import '../Game/game.css'
+import Back from '../../icons/back.svg'
+import { Link } from "react-router-dom";
+import { useState } from "react";
 
 
 
 function Game() {
+    const [points, setPoints] = useState(310)
+
     return (
-        <Keyboard />
+        <>
+            <Link to="/start" className="Top">
+                <img src={Back} alt="" />
+            </Link>
+            <div className="gamePlayerItemContainer">
+                <GamePlayerItem value={points} name="Max" />
+            </div>
+            <Keyboard />
+        </>
     )
 }
 export default Game; 

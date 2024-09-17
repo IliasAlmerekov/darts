@@ -36,3 +36,47 @@
     border-style: solid;
     border-color: var(--white, #FFFFFF)
 }
+
+.buttonBox {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    position: absolute;
+    bottom: 0px;
+    right: 0px;
+    left: 0px;
+}
+
+.button {
+    background: var(--lightgrey);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: "CircularXX";
+    font-size: 24px;
+    font-weight: 700;
+    line-height: 28.8px;
+    letter-spacing: 0.02em;
+    text-align: left;
+    border-width: 0px, 1px, 1px, 0px;
+    border-style: solid;
+    border-color: var(--white, #FFFFFF);
+    height: 80px;
+}
+
+.Undo {
+    background-color: var(--darkgrey);
+    color: white;
+    grid-column: 6/8;
+}
+
+.Triple {
+    background-color: var(--darkgrey);
+    color: white;
+    grid-column: 4/6;
+}
+
+.Double {
+    background-color: var(--darkgrey);
+    color: white;
+    grid-column: 2/4;
+}
