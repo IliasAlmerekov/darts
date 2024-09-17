@@ -162,7 +162,7 @@ function Start() {
     }
 
     return (
-        <>
+        <div className='start'>
             <div className="existingPlayerList">
                 <div className='header'>
                     <h4 className='headerUnelectedPlayers'>Unselected <br /> Players</h4>
@@ -229,7 +229,7 @@ function Start() {
                 className='playerInputButton'
                 iconStyling='userPlus'
             />
-        </>
+        </div>
     )
 }
 export default Start

@@ -1,9 +1,10 @@
+import Keyboard from "../../components/Keyboard/Keyboard";
 
 
 
 function Game() {
     return (
-        <div>hello</div>
+        <Keyboard />
     )
 }
 export default Game; 
