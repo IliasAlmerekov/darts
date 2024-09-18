@@ -104,16 +104,6 @@ function Start() {
             name: "Ziyi",
             isAdded: false
 
-        },
-        {
-            name: "Norman",
-            isAdded: false
-
-        },
-        {
-            name: "Ziyi",
-            isAdded: false
-
         }
     ]);
     function handleSelect(name: any) {

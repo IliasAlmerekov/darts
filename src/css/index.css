@@ -15,6 +15,12 @@
     --padding-xl: 64px;
     --padding-2xl: 80px;
     --padding-3xl: 96px;
+
+    --font-family: "CircularXX";
+    --font-size: 24px;
+    --font-weight: 700;
+    --line-height: 24px;
+    --text-align: left;
 }
 
 
@@ -24,7 +30,6 @@
     font-weight: 700;
     line-height: 24px;
     text-align: left;
-
 }
 
 .copydefault {

@@ -8,10 +8,11 @@ import { useState } from "react";
 
 
 function Game() {
-    const [points, setPoints] = useState(310)
+    const [points, setPoints] = useState(301)
 
     function handleThrow(value: any) {
         setPoints(points - value)
+        console.log(value)
     }
 
     return (
