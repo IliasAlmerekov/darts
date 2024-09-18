@@ -10,6 +10,10 @@ import { useState } from "react";
 function Game() {
     const [points, setPoints] = useState(310)
 
+    function handleThrow(value: any) {
+        setPoints(points - value)
+    }
+
     return (
         <>
             <Link to="/start" className="Top">
@@ -18,7 +22,7 @@ function Game() {
             <div className="gamePlayerItemContainer">
                 <GamePlayerItem value={points} name="Max" />
             </div>
-            <Keyboard />
+            <Keyboard handleClick={(value) => handleThrow(value)} />
         </>
     )
 }
