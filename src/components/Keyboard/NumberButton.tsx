@@ -10,9 +10,9 @@ type Props = {
 function NumberButton({ ...props }: Props) {
     return (
         <button onClick={props.handleClick} className={clsx("button copylarge", {
-            ["Undo"]: props.value === "Undo",
-            ["Triple"]: props.value === "Triple",
-            ["Double"]: props.value === "Double",
+            ["undo"]: props.value === "Undo",
+            ["triple"]: props.value === "Triple",
+            ["double"]: props.value === "Double",
 
 
         })}>{props.value === "Undo" ? <img src={Undo} /> : props.value}</button>

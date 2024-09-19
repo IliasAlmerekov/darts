@@ -6,37 +6,6 @@
     height: 23.2%;
 }
 
-.keyboardButton {
-    background-color: var(--lightgrey);
-    align-items: center;
-    display: grid;
-    justify-content: center;
-    font-family: "CircularXX";
-    font-size: 24px;
-    font-weight: 700;
-    line-height: 28.8px;
-    letter-spacing: 0.02em;
-    text-align: left;
-    border-style: solid;
-    border-color: var(--white, #FFFFFF)
-}
-
-.keyboardButtonSpecial {
-    background-color: var(--darkgrey);
-    color: var(--white);
-    align-items: center;
-    display: grid;
-    justify-content: center;
-    font-family: "CircularXX";
-    font-size: 24px;
-    font-weight: 700;
-    line-height: 28.8px;
-    letter-spacing: 0.02em;
-    text-align: left;
-    border-style: solid;
-    border-color: var(--white, #FFFFFF)
-}
-
 .buttonBox {
     display: grid;
     grid-template-columns: repeat(7, 1fr);
@@ -57,20 +26,41 @@
     height: 80px;
 }
 
-.Undo {
+.undo {
     background-color: var(--darkgrey);
     color: white;
     grid-column: 6/8;
 }
 
-.Triple {
+.triple {
     background-color: var(--darkgrey);
     color: white;
     grid-column: 4/6;
 }
 
-.Double {
+.double {
     background-color: var(--darkgrey);
     color: white;
     grid-column: 2/4;
+}
+
+.button:active {
+    background-color: var(--darkgrey);
+    transition: background-color 0.2s ease;
+}
+
+.undo:active {
+    background-color: var(--lightgrey);
+    transition: background-color 0.2s ease;
+
+}
+
+.triple:active {
+    background-color: var(--lightgrey);
+    transition: background-color 0.2s ease;
+}
+
+.double:active {
+    background-color: var(--lightgrey);
+    transition: background-color 0.2s ease;
 }
