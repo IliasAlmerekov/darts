@@ -104,16 +104,6 @@ function Start() {
             name: "Ziyi",
             isAdded: false
 
-        },
-        {
-            name: "Norman",
-            isAdded: false
-
-        },
-        {
-            name: "Ziyi",
-            isAdded: false
-
         }
     ]);
     function handleSelect(name: any) {
@@ -178,7 +168,7 @@ function Start() {
     }
 
     return (
-        <>
+        <div className='start'>
             <div className="existingPlayerList">
                 <div className='header'>
                     <h4 className='headerUnelectedPlayers'>Unselected <br /> Players</h4>
@@ -250,7 +240,7 @@ function Start() {
                 className='playerInputButton'
                 iconStyling='userPlus'
             />
-        </>
+        </div>
     )
 }
 export default Start

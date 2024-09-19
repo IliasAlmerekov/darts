@@ -8,12 +8,7 @@
   justify-content: center;
 } */
 
-.App {
-  display: grid;
-  gap: 24px;
-  grid-template-columns: repeat(6, 1fr);
-  height: 100vh;
-}
+.App {}
 
 .App-logo {
   height: 40vmin;
