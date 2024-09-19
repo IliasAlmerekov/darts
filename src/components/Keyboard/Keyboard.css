@@ -26,41 +26,35 @@
     height: 80px;
 }
 
-.undo {
+.undo,
+.triple,
+.double {
     background-color: var(--darkgrey);
     color: white;
+}
+
+.undo {
     grid-column: 6/8;
 }
 
 .triple {
-    background-color: var(--darkgrey);
-    color: white;
     grid-column: 4/6;
 }
 
 .double {
-    background-color: var(--darkgrey);
-    color: white;
     grid-column: 2/4;
 }
 
 .button:active {
     background-color: var(--darkgrey);
     transition: background-color 0.2s ease;
+    color: #FFFFFF;
 }
 
-.undo:active {
-    background-color: var(--lightgrey);
-    transition: background-color 0.2s ease;
-
-}
-
-.triple:active {
-    background-color: var(--lightgrey);
-    transition: background-color 0.2s ease;
-}
-
+.undo:active,
+.triple:active,
 .double:active {
     background-color: var(--lightgrey);
     transition: background-color 0.2s ease;
+    color: var(--black);
 }
