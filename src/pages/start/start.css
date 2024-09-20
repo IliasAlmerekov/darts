@@ -9,7 +9,12 @@
     grid-column: 1 / 3;
     background-color: var(--lightgrey);
     position: relative;
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+    width: 330px;
 }
+
 
 .addedPlayerList {
     position: relative;
@@ -67,16 +72,27 @@
     height: 24px;
 }
 
-.header {
+.header,
+.bottom {
     justify-content: space-between;
     display: flex;
     padding: 0px 32px 0px 32px;
+}
+
+.bottom {
+    padding: 32px;
+    flex-shrink: 0;
+    display: inline-flex;
+    height: 3%;
 }
 
 .testUserUnselectedList {
     overflow: auto;
     max-height: 84.3vh;
     padding: 0px 32px 0px 32px;
+    position: relative;
+    flex-grow: 1;
+    overflow-y: auto;
     -webkit-overflow-scrolling: touch;
     background:
 
@@ -112,10 +128,6 @@
     gap: 10px;
 }
 
-.bottom {
-    padding: 32px;
-    position: absolute;
-    bottom: 0;
-    left: 0;
-    right: 0;
+.settingsCog {
+    width: 50px;
 }
