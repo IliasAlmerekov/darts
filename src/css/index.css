@@ -27,12 +27,6 @@
     --padding-xl: 64px;
     --padding-2xl: 80px;
     --padding-3xl: 96px;
-
-    --font-family: "CircularXX";
-    --font-size: 24px;
-    --font-weight: 700;
-    --line-height: 24px;
-    --text-align: left;
 }
 
 body {
@@ -43,7 +37,6 @@ body {
 }
 
 h1 {
-    font-family: "CircularXX";
     font-size: 48px;
     font-weight: 700;
     line-height: 57.6px;
@@ -52,17 +45,14 @@ h1 {
 }
 
 h2 {
-    font-family: "CircularXX";
     font-size: 36px;
     font-weight: 700;
     line-height: 43.2px;
     letter-spacing: 0.02em;
     text-align: left;
-
 }
 
 h3 {
-    font-family: "CircularXX";
     font-size: 28px;
     font-weight: 700;
     line-height: 33.6px;
@@ -72,7 +62,6 @@ h3 {
 
 
 h4 {
-    font-family: "CircularXX";
     font-size: 24px;
     font-weight: 700;
     line-height: 28.8px;
@@ -81,7 +70,6 @@ h4 {
 }
 
 h5 {
-    font-family: "CircularXX";
     font-size: 18px;
     font-weight: 700;
     line-height: 21.6px;
@@ -90,7 +78,6 @@ h5 {
 }
 
 .copylarge {
-    font-family: "CircularXX";
     font-size: 20px;
     font-weight: 400;
     line-height: 24px;
@@ -98,7 +85,6 @@ h5 {
 }
 
 .copydefault {
-    font-family: "CircularXX";
     font-size: 16px;
     font-weight: 400;
     line-height: 19.2px;
@@ -106,7 +92,6 @@ h5 {
 }
 
 .copysmall {
-    font-family: "CircularXX";
     font-size: 12px;
     font-weight: 400;
     line-height: 14.4px;
