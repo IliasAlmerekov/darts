@@ -192,7 +192,7 @@ function Start() {
 
                 <div className='bottom'>
                     <LinkButton
-                        className='createNewPlayerButton'
+                        className='createNewPlayerButton h4'
                         label="Create new Player"
                         icon={Plus}
                         handleClick={() => setIsOverlayOpen(!isOverlayOpen)} />
@@ -234,14 +234,13 @@ function Start() {
 
             <NewPLayerOverlay
                 icon={userPLus}
-                placeholder="Player Name"
+                placeholder="Playername"
                 isOpen={isOverlayOpen}
                 onClose={() => setIsOverlayOpen(!isOverlayOpen)}
                 handleClick={() => createPlayer(newPlayer)}
                 newPlayer={newPlayer}
                 setNewPlayer={setNewPlayer}
                 label='Player Input'
-                className='playerInputButton'
                 iconStyling='userPlus'
             />
         </div>

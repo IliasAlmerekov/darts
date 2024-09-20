@@ -1,4 +1,3 @@
-import './Button.css'
 
 type Props = {
     href?: string

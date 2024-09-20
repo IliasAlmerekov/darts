@@ -1,4 +1,4 @@
-.DefaultInputField {
+.defaultInputField {
     background: var(--white);
     text-decoration: none;
     border-radius: 8px;
@@ -7,9 +7,4 @@
     border: none;
     height: 56px;
     width: 376px;
-    font-family: "CircularXX";
-    font-size: 20px;
-    font-weight: 400;
-    line-height: 24px;
-    text-align: left;
 }

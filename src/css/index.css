@@ -1,3 +1,15 @@
+@font-face {
+    font-family: "CircularXX";
+    src: url("../fonts/circularXX/CircularXXWeb-Regular.woff") format("woff");
+    font-weight: 400;
+}
+
+@font-face {
+    font-family: "CircularXX";
+    src: url("../fonts/circularXX/CircularXXWeb-Bold.woff") format("woff");
+    font-weight: 700;
+}
+
 :root {
     --white: #FFFFFF;
     --lightgrey: #F1F1F1;
@@ -23,29 +35,11 @@
     --text-align: left;
 }
 
-
-.copylarge {
+body {
+    margin: 0;
     font-family: "CircularXX";
-    font-size: 24px;
-    font-weight: 700;
-    line-height: 24px;
-    text-align: left;
-}
-
-.copydefault {
-    font-family: "CircularXX";
-    font-size: 16px;
-    font-weight: 400;
-    line-height: 19.2px;
-    text-align: left;
-}
-
-.copysmall {
-    font-family: "CircularXX";
-    font-size: 12px;
-    font-weight: 400;
-    line-height: 14.4px;
-    text-align: left;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
 }
 
 h1 {
@@ -92,5 +86,29 @@ h5 {
     font-weight: 700;
     line-height: 21.6px;
     letter-spacing: 0.02em;
+    text-align: left;
+}
+
+.copylarge {
+    font-family: "CircularXX";
+    font-size: 20px;
+    font-weight: 400;
+    line-height: 24px;
+    text-align: left;
+}
+
+.copydefault {
+    font-family: "CircularXX";
+    font-size: 16px;
+    font-weight: 400;
+    line-height: 19.2px;
+    text-align: left;
+}
+
+.copysmall {
+    font-family: "CircularXX";
+    font-size: 12px;
+    font-weight: 400;
+    line-height: 14.4px;
     text-align: left;
 }

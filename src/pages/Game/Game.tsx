@@ -5,8 +5,6 @@ import Back from '../../icons/back.svg'
 import { Link } from "react-router-dom";
 import { useState } from "react";
 
-
-
 function Game() {
     const [points, setPoints] = useState(301)
 
@@ -17,7 +15,7 @@ function Game() {
 
     return (
         <>
-            <Link to="/start" className="Top">
+            <Link to="/" className="top">
                 <img src={Back} alt="" />
             </Link>
             <div className="gamePlayerItemContainer">

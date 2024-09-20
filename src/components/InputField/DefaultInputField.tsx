@@ -11,7 +11,7 @@ type Props = {
 function DefaultInputField({ ...props }: Props) {
     return (
         <div>
-            <input value={props.value} placeholder={props.placeholder} onChange={props.onChange} className="DefaultInputField" />
+            <input value={props.value} placeholder={props.placeholder} onChange={props.onChange} className="defaultInputField copylarge" />
         </div>
     )
 
