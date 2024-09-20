@@ -173,10 +173,13 @@ function Start() {
                 <div className='header'>
                     <h4 className='headerUnelectedPlayers'>Unselected <br /> Players</h4>
                     <img
+                        className='settingsCog'
                         src={settingsCog}
                         alt=""
-                        onClick={() => overlayPlayerlist()} />
+                        onClick={() => overlayPlayerlist()
+                        } />
                 </div>
+
                 <div className='testUserUnselectedList'>
                     {testUserUnselected.map((player: { name: string, isAdded: boolean }, index: number) => (
                         <UnselectedPlayerItem
@@ -186,6 +189,7 @@ function Start() {
                             src={arrowRight} />
                     ))}
                 </div>
+
                 <div className='bottom'>
                     <LinkButton
                         className='createNewPlayerButton'
