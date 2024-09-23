@@ -1,3 +1,15 @@
+@font-face {
+    font-family: "CircularXX";
+    src: url("../fonts/circularXX/CircularXXWeb-Regular.woff") format("woff");
+    font-weight: 400;
+}
+
+@font-face {
+    font-family: "CircularXX";
+    src: url("../fonts/circularXX/CircularXXWeb-Bold.woff") format("woff");
+    font-weight: 700;
+}
+
 :root {
     --white: #FFFFFF;
     --lightgrey: #F1F1F1;
@@ -15,41 +27,16 @@
     --padding-xl: 64px;
     --padding-2xl: 80px;
     --padding-3xl: 96px;
-
-    --font-family: "CircularXX";
-    --font-size: 24px;
-    --font-weight: 700;
-    --line-height: 24px;
-    --text-align: left;
 }
 
-
-.copylarge {
+body {
+    margin: 0;
     font-family: "CircularXX";
-    font-size: 24px;
-    font-weight: 700;
-    line-height: 24px;
-    text-align: left;
-}
-
-.copydefault {
-    font-family: "CircularXX";
-    font-size: 16px;
-    font-weight: 400;
-    line-height: 19.2px;
-    text-align: left;
-}
-
-.copysmall {
-    font-family: "CircularXX";
-    font-size: 12px;
-    font-weight: 400;
-    line-height: 14.4px;
-    text-align: left;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
 }
 
 h1 {
-    font-family: "CircularXX";
     font-size: 48px;
     font-weight: 700;
     line-height: 57.6px;
@@ -58,17 +45,14 @@ h1 {
 }
 
 h2 {
-    font-family: "CircularXX";
     font-size: 36px;
     font-weight: 700;
     line-height: 43.2px;
     letter-spacing: 0.02em;
     text-align: left;
-
 }
 
 h3 {
-    font-family: "CircularXX";
     font-size: 28px;
     font-weight: 700;
     line-height: 33.6px;
@@ -78,7 +62,6 @@ h3 {
 
 
 h4 {
-    font-family: "CircularXX";
     font-size: 24px;
     font-weight: 700;
     line-height: 28.8px;
@@ -87,10 +70,30 @@ h4 {
 }
 
 h5 {
-    font-family: "CircularXX";
     font-size: 18px;
     font-weight: 700;
     line-height: 21.6px;
     letter-spacing: 0.02em;
+    text-align: left;
+}
+
+.copylarge {
+    font-size: 20px;
+    font-weight: 400;
+    line-height: 24px;
+    text-align: left;
+}
+
+.copydefault {
+    font-size: 16px;
+    font-weight: 400;
+    line-height: 19.2px;
+    text-align: left;
+}
+
+.copysmall {
+    font-size: 12px;
+    font-weight: 400;
+    line-height: 14.4px;
     text-align: left;
 }

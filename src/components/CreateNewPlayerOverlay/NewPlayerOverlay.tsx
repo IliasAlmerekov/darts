@@ -12,7 +12,7 @@ type Props = {
     setNewPlayer: any;
     icon: any;
     label: string;
-    className: string
+    className?: string
     iconStyling: string
     type?: 'primary' | 'secondary';
 }

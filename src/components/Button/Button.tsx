@@ -25,7 +25,7 @@ function Button({ ...props }: ButtonProps) {
     }
     if (!props.isLink) {
         return (
-            <button className={clsx(props?.className, "btn", {
+            <button className={clsx(props?.className, "btn h4", {
                 ["btnPrimary"]: props.type === 'primary' && !props.isInverted,
                 ["btnSecondary"]: props.type === 'secondary' && !props.isInverted,
                 ["inverted"]: props.isInverted && props.type !== "secondary",
