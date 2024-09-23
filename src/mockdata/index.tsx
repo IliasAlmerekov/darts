@@ -1,18 +1,18 @@
 export const mockUserList: BASIC.UserProps[] = [
     {
         id: 1,
-        name: "Player 1",
+        name: "Norman",
     },
     {
         id: 2,
-        name: "Player 2",
+        name: "Max",
     }, {
         id: 3,
-        name: "Player 3",
+        name: "Jörg",
     },
     {
         id: 4,
-        name: "Player 4",
+        name: "Tobias",
     }
 ];
 

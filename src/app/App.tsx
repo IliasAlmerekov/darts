@@ -3,7 +3,7 @@ import { useState } from 'react';
 import '../css/index.css';
 import Test from '../pages/Test';
 import Start from '../pages/start/start';
-import Game from '../pages/Game/Game';
+import Game from '../pages/game/game'
 
 function App() {
   const [list, setList] = useState<BASIC.UserProps[]>([]);

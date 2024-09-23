@@ -1,3 +1,4 @@
+import clsx from 'clsx';
 import '../GamePlayerItem/GamePlayerItem.css'
 
 
@@ -6,12 +7,16 @@ type Props = {
     key?: number;
     isActive?: boolean;
     value: number;
+    throw1?: any;
+    throw2?: any;
+    throw3?: any;
+    className: string
 }
 
 
 function GamePlayerItem({ ...props }: Props) {
     return (
-        <div className="gamePlayerItem" key={props?.key}>
+        <div className={props.className} key={props?.key}>
             <div>
                 <div>{props?.name}</div>
 
@@ -19,9 +24,9 @@ function GamePlayerItem({ ...props }: Props) {
 
             <div className='results'>
                 <div className='throwDisplay'>
-                    <div className='divDisplay'></div>
-                    <div className='divDisplay'></div>
-                    <div className='divDisplay'></div>
+                    <div className='divDisplay copylarge'>{props.throw1}</div>
+                    <div className='divDisplay copylarge'>{props.throw2}</div>
+                    <div className='divDisplay copylarge'>{props.throw3}</div>
                 </div>
 
                 <div className='score'>
