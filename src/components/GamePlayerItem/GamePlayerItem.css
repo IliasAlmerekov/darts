@@ -10,6 +10,7 @@
 .throwDisplay {
     gap: 16px;
     display: flex;
+    width: 200px;
 }
 
 .divDisplay {
@@ -24,18 +25,13 @@
     display: flex;
 }
 
-.score {
+.pointer {
     gap: 8px;
-    display: grid;
-    font-size: 20px;
-    font-weight: 400;
-    line-height: 24px;
-    text-align: left;
-    color: var(--darkblue);
-    font-weight: unset;
+    display: flex;
+    width: 110px;
 }
 
-.results {
+.throws {
     justify-content: space-between;
     display: flex;
     gap: 48px;
@@ -50,4 +46,18 @@
     letter-spacing: 0.02em;
     text-align: left;
     color: var(--blue);
+}
+
+.valueDisplay {
+    font-size: 20px;
+    line-height: 24px;
+    text-align: left;
+    color: var(--darkblue);
+}
+
+.scoreDisplay {
+    font-size: 20px;
+    line-height: 24px;
+    text-align: left;
+    color: var(--darkgrey);
 }

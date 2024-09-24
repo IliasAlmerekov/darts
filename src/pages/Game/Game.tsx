@@ -5,13 +5,16 @@ import { Link } from "react-router-dom";
 import { useEffect, useState } from "react";
 import GamePlayerItemList from "../../components/GamePlayerItem/GamplayerItemList";
 import { mockUserList } from "../../mockdata";
+import DeletePLayerOverlay from "../../components/DeletePlayerOverlay/DeletePlayerOverlay";
+import NewPlayerOverlay from "../../components/CreateNewPlayerOverlay/NewPlayerOverlay";
 
 function Game() {
-    const [playerScore, setPlayerScore] = useState(301)
+    const [playerScore, setPlayerScore] = useState(20)
     const [roundsCount, setRoundsCount] = useState(1);
     const [playerList, setPlayerList] = useState<BASIC.PlayerProps[]>([]);
     const [throwCount, setThrowCount] = useState(0);
     const [playerTurn, setPlayerTurn] = useState(0);
+    const [isOverlayOpen, setIsOverlayOpen] = useState(false)
 
     function initializePlayerList() {
         const initialPlayerlist: BASIC.PlayerProps[] = [];
@@ -49,7 +52,7 @@ function Game() {
         }
     }
 
-    function handleThrow(currentThrow: number, currentScoreAchieved: number) {
+    function handleThrow(player: BASIC.PlayerProps, currentThrow: number, currentScoreAchieved: number | any) {
         const newScore = playerList[playerTurn].score - currentScoreAchieved;
         const currentPlayerThrows = playerList[playerTurn].rounds[playerList[playerTurn].rounds.length - 1];
         switch (currentThrow) {
@@ -66,9 +69,58 @@ function Game() {
         }
         setPlayerScore(newScore);
 
-        setPlayerScore(playerScore - currentScoreAchieved)
-        console.log(playerList[playerTurn].rounds)
-        setThrowCount(throwCount + 1)
+        if (currentScoreAchieved > playerList[playerTurn].score) {
+            bust(playerScore);
+        } else {
+            playerList[playerTurn].score = newScore;
+            setThrowCount(currentThrow + 1);
+        }
+        if (playerList[playerTurn].score === 0) {
+            playerList[playerTurn].isPlaying = false
+            setIsOverlayOpen(true)
+        }
+        if (playerList[playerTurn].isPlaying === false) {
+            console.log("winner:", playerList[playerTurn].name)
+            changeActivePlayer()
+        }
+        if (Number.isNaN(playerList[playerTurn].score)) {
+            multiplier(currentScoreAchieved)
+        }
+
+        const updatedPlayerlist = [...playerList];
+        updatedPlayerlist[playerTurn] = player;
+        setPlayerList(updatedPlayerlist);
+    }
+
+    function bust(bustedPlayerScore: number) {
+        const currentRoundOfPlayer = playerList[playerTurn].rounds[roundsCount - 1];
+        const firstThrow = currentRoundOfPlayer.throw1;
+        const secondThrow = currentRoundOfPlayer.throw2;
+        const thirdThrow = currentRoundOfPlayer.throw3;
+        let oldThrowScore = playerList[playerTurn].score;
+
+        if (thirdThrow) {
+            let firstAndSecondThrowScore = 0;
+            if (firstThrow !== undefined && secondThrow !== undefined) {
+                firstAndSecondThrowScore = firstThrow + secondThrow;
+            }
+            oldThrowScore = firstAndSecondThrowScore + bustedPlayerScore;
+        } else if (
+            firstThrow !== undefined &&
+            secondThrow !== undefined &&
+            secondThrow > playerList[playerTurn].score
+        ) {
+            oldThrowScore = firstThrow + bustedPlayerScore;
+        }
+
+        playerList[playerTurn].score = oldThrowScore;
+        changeActivePlayer();
+    }
+
+    function multiplier(currentScoreAchieved: number | any) {
+        if (currentScoreAchieved === "double") {
+
+        }
     }
 
     useEffect(() => {
@@ -81,6 +133,10 @@ function Game() {
         }
     }, [throwCount]);
 
+    if (playerList[playerTurn] === undefined) {
+        return null
+    }
+
     return (
         <>
             <Link to="/" className="top">
@@ -89,15 +145,12 @@ function Game() {
             <div className="gamePlayerItemContainer">
                 <GamePlayerItemList
                     userMap={playerList}
-                    score={playerScore}
-                    throw1={1}
-                    throw2={2}
-                    throw3={3} //playerList[playerTurn].rounds[roundsCount].throw3
+                    score={playerList[playerTurn].score}
+                    round={roundsCount}
                 />
             </div>
-            <Keyboard handleClick={(value) => handleThrow(throwCount, value)} />
-
-            <button onClick={changeActivePlayer}>{throwCount}</button>
+            <Keyboard handleClick={(value) => handleThrow(playerList[playerTurn], throwCount, value)} />
+            <button onClick={changeActivePlayer}>{roundsCount}</button>
         </>
     )
 }
