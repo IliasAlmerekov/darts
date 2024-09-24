@@ -233,6 +233,7 @@ function Start() {
             />
 
             <NewPLayerOverlay
+                header='New Player'
                 icon={userPLus}
                 placeholder="Playername"
                 isOpen={isOverlayOpen}

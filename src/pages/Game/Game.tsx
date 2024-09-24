@@ -81,7 +81,6 @@ function Game() {
         }
         if (playerList[playerTurn].isPlaying === false) {
             console.log("winner:", playerList[playerTurn].name)
-            changeActivePlayer()
         }
         if (Number.isNaN(playerList[playerTurn].score)) {
             multiplier(currentScoreAchieved)
@@ -138,7 +137,17 @@ function Game() {
     }
 
     return (
-        <>
+        <>  <NewPlayerOverlay
+            placeholder="Finish"
+            header='Continue Game?'
+            isOpen={isOverlayOpen}
+            onClose={() => setIsOverlayOpen(!isOverlayOpen)}
+            handleClick={() => {
+                setIsOverlayOpen(!isOverlayOpen)
+                changeActivePlayer()
+            }}
+            label='Continue'
+        />
             <Link to="/" className="top">
                 <img src={Back} alt="" />
             </Link>
@@ -151,6 +160,7 @@ function Game() {
             </div>
             <Keyboard handleClick={(value) => handleThrow(playerList[playerTurn], throwCount, value)} />
             <button onClick={changeActivePlayer}>{roundsCount}</button>
+
         </>
     )
 }

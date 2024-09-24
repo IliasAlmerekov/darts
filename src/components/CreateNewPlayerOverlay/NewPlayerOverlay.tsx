@@ -4,17 +4,18 @@ import './NewPlayerOverlay.css'
 import Button from "../Button/Button";
 
 type Props = {
-    isOpen: boolean
-    onClose: () => void
-    handleClick: () => void
+    isOpen?: boolean
+    onClose?: () => void
+    handleClick?: () => void
     placeholder: string
-    newPlayer: string;
-    setNewPlayer: any;
-    icon: any;
-    label: string;
+    newPlayer?: string;
+    setNewPlayer?: any;
+    icon?: any;
+    label?: string;
     className?: string
-    iconStyling: string
+    iconStyling?: string
     type?: 'primary' | 'secondary';
+    header?: string
 }
 
 function NewPlayerOverlay({ ...props }: Props) {
@@ -25,7 +26,7 @@ function NewPlayerOverlay({ ...props }: Props) {
                     <div className="overlay">
                         <div className="delete" onClick={props.onClose}><img src={DeleteIcon} alt="" /></div>
                         <div>
-                            <p className="copylarge">New Player</p>
+                            <p className="copylarge">{props.header}</p>
                             <DefaultInputField
                                 value={props.newPlayer}
                                 placeholder={props.placeholder}
