@@ -4,6 +4,7 @@ import NumberButton from "./NumberButton";
 
 type Props = {
     handleClick: (value: any) => void;
+    disabled?: boolean
 };
 
 function Keyboard({ ...props }: Props) {
@@ -19,8 +20,11 @@ function Keyboard({ ...props }: Props) {
     const handleButtonClick = (btn: any) => {
         if (btn === "Double") {
             setDoubleNext(!doubleNext);
+            setTripleNext(false);
         } else if (btn === "Triple") {
             setTripleNext(!tripleNext);
+            setDoubleNext(false);
+            props.disabled = true;
         } else {
             if (doubleNext && typeof btn === "number") {
                 props.handleClick(btn * 2);
@@ -45,6 +49,9 @@ function Keyboard({ ...props }: Props) {
                     isActive={
                         (doubleNext && btn === "Double") ||
                         (tripleNext && btn === "Triple")
+                    }
+                    disabled={
+                        (tripleNext && btn === 25)
                     }
                 />
             ))}

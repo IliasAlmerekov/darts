@@ -201,7 +201,6 @@ function Game() {
                     round={roundsCount}
                 />
             </div>
-            <button onClick={changeActivePlayer}>{throwCount}</button>
             <div>
 
                 <NumberButton value="Undo" handleClick={handleUndo} />
