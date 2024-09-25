@@ -1,51 +1,54 @@
 .buttonBox {
-    display: grid;
-    grid-template-columns: repeat(6, 1fr);
-    position: absolute;
-    bottom: 0px;
-    right: 0px;
-    left: 0px;
-    z-index: -1;
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  position: absolute;
+  bottom: 0px;
+  right: 0px;
+  left: 0px;
+  z-index: -1;
 }
 
 .button {
-    background: var(--lightgrey);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    border-width: 0px, 1px, 1px, 0px;
-    border-style: solid;
-    border-color: var(--white, #FFFFFF);
-    height: 80px;
-    font-weight: 700;
+  background: var(--lightgrey);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-width: 0px, 1px, 1px, 0px;
+  border-style: solid;
+  border-color: var(--white, #ffffff);
+  height: 80px;
+  font-weight: 700;
 }
 
 .undo,
 .triple,
 .double {
-    background-color: var(--darkgrey);
-    color: white;
+  background-color: var(--darkgrey);
+  color: white;
 }
 
 .undo {
-    grid-column-start: 6;
-    border-radius: 100px;
-    width: 80px;
-    position: absolute;
-    top: -90px;
-    right: 16px;
+  grid-column-start: 6;
+  border-radius: 100px;
+  width: 80px;
+  margin-left: auto;
+  margin-right: 10px;
+}
+
+.active {
+  background-color: var(--blue);
 }
 
 .button:active {
-    background-color: var(--darkgrey);
-    transition: background-color 0.2s ease;
-    color: #FFFFFF;
+  background-color: var(--darkgrey);
+  transition: background-color 0.2s ease;
+  color: #ffffff;
 }
 
 .undo:active,
 .triple:active,
 .double:active {
-    background-color: var(--lightgrey);
-    transition: background-color 0.2s ease;
-    color: var(--black);
+  background-color: var(--lightgrey);
+  transition: background-color 0.2s ease;
+  color: var(--black);
 }
