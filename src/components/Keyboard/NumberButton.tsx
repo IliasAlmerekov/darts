@@ -5,6 +5,7 @@ import Undo from '../../icons/undo.svg'
 type Props = {
     value: any
     handleClick: () => void
+    isActive?: boolean
 }
 
 function NumberButton({ ...props }: Props) {
@@ -13,8 +14,7 @@ function NumberButton({ ...props }: Props) {
             ["undo"]: props.value === "Undo",
             ["triple"]: props.value === "Triple",
             ["double"]: props.value === "Double",
-
-
+            ["active"]: props.isActive,
         })}>{props.value === "Undo" ? <img src={Undo} /> : props.value}</button>
     )
 }
