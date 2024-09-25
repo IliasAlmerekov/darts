@@ -146,6 +146,7 @@ function Game() {
             setThrowCount(lastState.throwCount);
             setPlayerTurn(lastState.playerTurn);
             setRoundsCount(lastState.roundsCount);
+            console.log('laststate', lastState)
             setHistory([...history]);
         }
     }
@@ -155,7 +156,7 @@ function Game() {
     }, []);
 
     useEffect(() => {
-        if (throwCount === 3) {
+        if (throwCount === 3 && !isOverlayOpen) {
             changeActivePlayer();
         }
     }, [throwCount]);
