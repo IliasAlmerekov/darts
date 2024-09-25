@@ -146,7 +146,6 @@ function Game() {
             setThrowCount(lastState.throwCount);
             setPlayerTurn(lastState.playerTurn);
             setRoundsCount(lastState.roundsCount);
-            console.log('laststate', lastState)
             setHistory([...history]);
         }
     }
