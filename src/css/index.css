@@ -97,3 +97,11 @@ h5 {
     line-height: 14.4px;
     text-align: left;
 }
+
+.App {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    justify-content: space-between;
+    height: 100vh;
+}

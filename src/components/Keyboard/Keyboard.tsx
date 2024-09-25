@@ -1,58 +1,56 @@
 import React, { useState } from "react";
 import "../Keyboard/Keyboard.css";
-import Undo from "../../icons/undo.svg";
-import ButtonBox from "./ButtonBox";
 import NumberButton from "./NumberButton";
 
 type Props = {
-  handleClick: (value: any) => void;
+    handleClick: (value: any) => void;
 };
 
 function Keyboard({ ...props }: Props) {
-  const [doubleNext, setDoubleNext] = useState(false);
-  const [tripleNext, setTripleNext] = useState(false);
+    const [doubleNext, setDoubleNext] = useState(false);
+    const [tripleNext, setTripleNext] = useState(false);
 
-  const btnValues = [
-    [1, 2, 3, 4, 5, "Double", 6, 7, 8],
-    [9, 10, "Triple", 11, 12, 13, 14, 15, 16],
-    [17, 18, , 19, 20, 25, 0],
-  ];
+    const btnValues = [
+        [1, 2, 3, 4, 5, "Double", 6, 7, 8],
+        [9, 10, "Triple", 11, 12, 13, 14, 15, 16],
+        [17, 18, 19, 20, 25, 0],
+    ];
 
-  const handleButtonClick = (btn: any) => {
-    if (btn === "Double") {
-      setDoubleNext(!doubleNext);
-    } else if (btn === "Triple") {
-      setTripleNext(!tripleNext);
-    } else {
-      if (doubleNext && typeof btn === "number") {
-        props.handleClick(btn * 2);
-        setDoubleNext(false);
-      } else if (tripleNext && typeof btn === "number") {
-        props.handleClick(btn * 3);
-        setTripleNext(false);
-      } else {
-        props.handleClick(btn);
-      }
-    }
-  };
-
-  return (
-    <div>
-      <ButtonBox>
-        {btnValues.flat().map((btn, i) => (
-          <NumberButton
-            handleClick={() => handleButtonClick(btn)}
-            value={btn}
-            key={i}
-            isActive={
-              (doubleNext && btn === "Double") ||
-              (tripleNext && btn === "Triple")
+    const handleButtonClick = (btn: any) => {
+        if (btn === "Double") {
+            setDoubleNext(!doubleNext);
+        } else if (btn === "Triple") {
+            setTripleNext(!tripleNext);
+        } else {
+            if (doubleNext && typeof btn === "number") {
+                props.handleClick(btn * 2);
+                setDoubleNext(false);
+            } else if (tripleNext && typeof btn === "number") {
+                props.handleClick(btn * 3);
+                setTripleNext(false);
+            } else {
+                props.handleClick(btn);
             }
-          />
-        ))}
-      </ButtonBox>
-    </div>
-  );
+        }
+    };
+
+    return (
+
+        <div className="keyboard">
+            {btnValues.flat().map((btn, i) => (
+                <NumberButton
+                    handleClick={() => handleButtonClick(btn)}
+                    value={btn}
+                    key={i}
+                    isActive={
+                        (doubleNext && btn === "Double") ||
+                        (tripleNext && btn === "Triple")
+                    }
+                />
+            ))}
+        </div>
+
+    );
 }
 
 export default Keyboard;
