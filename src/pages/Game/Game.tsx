@@ -5,8 +5,8 @@ import { Link } from "react-router-dom";
 import { useEffect, useState } from "react";
 import GamePlayerItemList from "../../components/GamePlayerItem/GamplayerItemList";
 import { mockUserList } from "../../mockdata";
-import DeletePLayerOverlay from "../../components/DeletePlayerOverlay/DeletePlayerOverlay";
-import NewPlayerOverlay from "../../components/CreateNewPlayerOverlay/NewPlayerOverlay";
+import Overlay from "../../components/Overlay/Overlay";
+import Button from "../../components/Button/Button";
 
 function Game() {
     const [playerScore, setPlayerScore] = useState(20)
@@ -82,9 +82,6 @@ function Game() {
         if (playerList[playerTurn].isPlaying === false) {
             console.log("winner:", playerList[playerTurn].name)
         }
-        if (Number.isNaN(playerList[playerTurn].score)) {
-            multiplier(currentScoreAchieved)
-        }
 
         const updatedPlayerlist = [...playerList];
         updatedPlayerlist[playerTurn] = player;
@@ -116,12 +113,6 @@ function Game() {
         changeActivePlayer();
     }
 
-    function multiplier(currentScoreAchieved: number | any) {
-        if (currentScoreAchieved === "double") {
-
-        }
-    }
-
     useEffect(() => {
         initializePlayerList();
     }, []);
@@ -137,17 +128,31 @@ function Game() {
     }
 
     return (
-        <>  <NewPlayerOverlay
-            placeholder="Finish"
-            header='Continue Game?'
+        <>  <Overlay
             isOpen={isOverlayOpen}
             onClose={() => setIsOverlayOpen(!isOverlayOpen)}
-            handleClick={() => {
-                setIsOverlayOpen(!isOverlayOpen)
-                changeActivePlayer()
-            }}
-            label='Continue'
-        />
+        >
+            <div className="finishGameOverlay">
+                <p className="copylarge">Continue Game?</p>
+                <div>
+                    <Button
+                        label='Finish'
+                        handleClick={() => console.log("finish game")}
+                        type="secondary"
+                        isInverted={true}
+                    />
+                    <Button
+                        label='Continue'
+                        handleClick={() => {
+                            setIsOverlayOpen(!isOverlayOpen)
+                            changeActivePlayer()
+                        }}
+                        type="primary" />
+                </div>
+            </div>
+
+        </Overlay>
+
             <Link to="/" className="top">
                 <img src={Back} alt="" />
             </Link>
@@ -159,7 +164,7 @@ function Game() {
                 />
             </div>
             <Keyboard handleClick={(value) => handleThrow(playerList[playerTurn], throwCount, value)} />
-            <button onClick={changeActivePlayer}>{roundsCount}</button>
+            <button onClick={changeActivePlayer}>{throwCount}</button>
 
         </>
     )
