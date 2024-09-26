@@ -1,4 +1,5 @@
 import '../GamePlayerItem/GamePlayerItem.css'
+import X from '../../icons/delete.svg'
 
 
 type Props = {
@@ -10,11 +11,22 @@ type Props = {
     throw2?: any;
     throw3?: any;
     className: string
-
+    src?: any;
+    isBust: boolean;
 }
 
 
 function GamePlayerItem({ ...props }: Props) {
+
+    if (props.throw3 === undefined && props.throw2 && props.throw1 && props.isBust) {
+        props.throw3 = <img src={X} alt="" />
+    }
+
+    if (props.throw3 === undefined && props.throw2 === undefined && props.throw1 && props.isBust) {
+        props.throw2 = <img src={X} alt="" />
+        props.throw3 = <img src={X} alt="" />
+    }
+
     return (
         <div className={props.className} key={props?.key}>
             <div>

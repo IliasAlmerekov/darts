@@ -17,6 +17,7 @@ function Game() {
     const [playerTurn, setPlayerTurn] = useState(0);
     const [isOverlayOpen, setIsOverlayOpen] = useState(false);
     const [history, setHistory] = useState<any[]>([]);
+    const [isBust, setIsBust] = useState(false)
 
     function initializePlayerList() {
         const initialPlayerlist: BASIC.PlayerProps[] = [];
@@ -47,6 +48,8 @@ function Game() {
         setPlayerList(newPlayerList);
         setPlayerTurn(handleNewIndex);
         setThrowCount(0);
+        /* setIsBust(false) */
+
 
         if (isEndOfArray) {
             setRoundsCount(roundsCount + 1);
@@ -65,7 +68,6 @@ function Game() {
         currentThrow: number,
         currentScoreAchieved: number | any
     ) {
-        // Save current state to history
         setHistory([
             ...history,
             {
@@ -76,7 +78,6 @@ function Game() {
                 roundsCount,
             },
         ]);
-
         const newScore = playerList[playerTurn].score - currentScoreAchieved;
         const currentPlayerThrows =
             playerList[playerTurn].rounds[playerList[playerTurn].rounds.length - 1];
@@ -95,7 +96,7 @@ function Game() {
         setPlayerScore(newScore);
 
         if (currentScoreAchieved > playerList[playerTurn].score) {
-            bust(playerScore);
+            bust(playerScore)
         } else {
             playerList[playerTurn].score = newScore;
             setThrowCount(currentThrow + 1);
@@ -111,6 +112,7 @@ function Game() {
         const updatedPlayerlist = [...playerList];
         updatedPlayerlist[playerTurn] = player;
         setPlayerList(updatedPlayerlist);
+        console.log(isBust)
     }
 
     function bust(bustedPlayerScore: number) {
@@ -119,6 +121,9 @@ function Game() {
         const secondThrow = currentRoundOfPlayer.throw2;
         const thirdThrow = currentRoundOfPlayer.throw3;
         let oldThrowScore = playerList[playerTurn].score;
+        setIsBust(true)
+        console.log("bust")
+
 
         if (thirdThrow) {
             let firstAndSecondThrowScore = 0;
@@ -126,6 +131,7 @@ function Game() {
                 firstAndSecondThrowScore = firstThrow + secondThrow;
             }
             oldThrowScore = firstAndSecondThrowScore + bustedPlayerScore;
+
         } else if (
             firstThrow !== undefined &&
             secondThrow !== undefined &&
@@ -198,6 +204,7 @@ function Game() {
                     userMap={playerList}
                     score={playerList[playerTurn].score}
                     round={roundsCount}
+                    isBust={isBust}
                 />
             </div>
             <div>
@@ -206,9 +213,11 @@ function Game() {
                 <Keyboard
                     handleClick={(value) =>
                         handleThrow(playerList[playerTurn], throwCount, value)
+
                     }
                 />
             </div>
+
         </>
     );
 }

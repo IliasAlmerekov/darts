@@ -24,7 +24,6 @@ function Keyboard({ ...props }: Props) {
         } else if (btn === "Triple") {
             setTripleNext(!tripleNext);
             setDoubleNext(false);
-            props.disabled = true;
         } else {
             if (doubleNext && typeof btn === "number") {
                 props.handleClick(btn * 2);
