@@ -17,7 +17,6 @@ function Game() {
     const [playerTurn, setPlayerTurn] = useState(0);
     const [isOverlayOpen, setIsOverlayOpen] = useState(false);
     const [history, setHistory] = useState<any[]>([]);
-    const [isBust, setIsBust] = useState(false)
 
     function initializePlayerList() {
         const initialPlayerlist: BASIC.PlayerProps[] = [];
@@ -30,6 +29,7 @@ function Game() {
                 index: i,
                 rounds: [{ throw1: undefined, throw2: undefined, throw3: undefined }],
                 isPlaying: true,
+                isBust: false,
             };
             initialPlayerlist.push(player);
         });
@@ -48,17 +48,17 @@ function Game() {
         setPlayerList(newPlayerList);
         setPlayerTurn(handleNewIndex);
         setThrowCount(0);
-        /* setIsBust(false) */
-
 
         if (isEndOfArray) {
             setRoundsCount(roundsCount + 1);
-            newPlayerList.forEach((player) =>
-                player.rounds.push({
+            newPlayerList.forEach((player) => {
+                player.isBust = false
+                return (player.rounds.push({
                     throw1: undefined,
                     throw2: undefined,
                     throw3: undefined,
-                })
+                }))
+            }
             );
         }
     }
@@ -112,7 +112,6 @@ function Game() {
         const updatedPlayerlist = [...playerList];
         updatedPlayerlist[playerTurn] = player;
         setPlayerList(updatedPlayerlist);
-        console.log(isBust)
     }
 
     function bust(bustedPlayerScore: number) {
@@ -121,7 +120,7 @@ function Game() {
         const secondThrow = currentRoundOfPlayer.throw2;
         const thirdThrow = currentRoundOfPlayer.throw3;
         let oldThrowScore = playerList[playerTurn].score;
-        setIsBust(true)
+        playerList[playerTurn].isBust = true
         console.log("bust")
 
 
@@ -204,7 +203,7 @@ function Game() {
                     userMap={playerList}
                     score={playerList[playerTurn].score}
                     round={roundsCount}
-                    isBust={isBust}
+                    isBust={playerList[playerTurn].isBust}
                 />
             </div>
             <div>

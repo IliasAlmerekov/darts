@@ -1,5 +1,6 @@
 import '../GamePlayerItem/GamePlayerItem.css'
-import X from '../../icons/delete.svg'
+import X from '../../icons/delete-grey.svg'
+import clsx from 'clsx';
 
 
 type Props = {
@@ -12,19 +13,30 @@ type Props = {
     throw3?: any;
     className: string
     src?: any;
-    isBust: boolean;
+    isBust?: boolean;
 }
 
 
 function GamePlayerItem({ ...props }: Props) {
+    //console.log(props.isBust)
 
-    if (props.throw3 === undefined && props.throw2 && props.throw1 && props.isBust) {
-        props.throw3 = <img src={X} alt="" />
+
+    if (props.isBust && props.throw2 && props.throw1 && props.throw3) {
+        console.log("bust on third throw")
+        props.throw3 = props.throw3
+        props.throw2 = props.throw2
+        props.throw1 = props.throw1
     }
 
-    if (props.throw3 === undefined && props.throw2 === undefined && props.throw1 && props.isBust) {
+    else if (props.isBust && props.throw2 && props.throw1) {
+        props.throw3 = <img src={X} alt="" />
+        console.log("bust on second throw")
+    }
+
+    else if (props.isBust && props.throw1) {
         props.throw2 = <img src={X} alt="" />
         props.throw3 = <img src={X} alt="" />
+        console.log("bust on first throw")
     }
 
     return (
@@ -35,9 +47,24 @@ function GamePlayerItem({ ...props }: Props) {
 
             <div className='throws'>
                 <div className='throwDisplay'>
-                    <div className='divDisplay copylarge'>{props.throw1}</div>
-                    <div className='divDisplay copylarge'>{props.throw2}</div>
-                    <div className='divDisplay copylarge'>{props.throw3}</div>
+                    <div className={clsx("divDisplay copylarge", {
+                        "bust":
+                            props.isBust &&
+                            props.throw1
+                    })}>{props.throw1}</div>
+                    <div className={clsx("divDisplay copylarge", {
+                        "bust":
+                            props.isBust &&
+                            props.throw2 &&
+                            props.throw1
+                    })}>{props.throw2}</div>
+                    <div className={clsx("divDisplay copylarge", {
+                        "bust":
+                            props.isBust &&
+                            props.throw2 &&
+                            props.throw1 &&
+                            props.throw3
+                    })}>{props.throw3}</div>
                 </div>
 
                 <div className='pointer'>

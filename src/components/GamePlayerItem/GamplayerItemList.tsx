@@ -11,7 +11,7 @@ type Props = {
     throw2?: any;
     throw3?: any;
     round: number
-    isBust: boolean;
+    isBust?: boolean;
 }
 
 function GamePlayerItemList({ ...props }: Props) {
@@ -29,7 +29,7 @@ function GamePlayerItemList({ ...props }: Props) {
                         throw1={item.rounds[props.round - 1].throw1}
                         throw2={item.rounds[props.round - 1].throw2}
                         throw3={item.rounds[props.round - 1].throw3}
-                        isBust={props.isBust}
+                        isBust={item.isBust}
                     />
                 ))
             }
