@@ -30,9 +30,9 @@ function GamePlayerItemList({ ...props }: Props) {
                         name={item.name}
                         isActive={item.isActive}
                         value={item.score}
-                        throw1={item.rounds[props.round - 1].throw1}
-                        throw2={item.rounds[props.round - 1].throw2}
-                        throw3={item.rounds[props.round - 1].throw3}
+                        throw1={item.rounds[props.round - 1]?.throw1}
+                        throw2={item.rounds[props.round - 1]?.throw2}
+                        throw3={item.rounds[props.round - 1]?.throw3}
                         isBust={item.isBust}
                         throwCount={item.throwCount}
                         isPlaying={item.isPlaying}
