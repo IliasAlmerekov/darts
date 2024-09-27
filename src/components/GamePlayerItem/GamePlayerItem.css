@@ -65,3 +65,11 @@
 .bust {
     color: var(--red);
 }
+
+.hidden {
+    visibility: hidden;
+}
+
+.winner {
+    opacity: 50%;
+}

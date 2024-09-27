@@ -12,6 +12,7 @@ type Props = {
     throw3?: any;
     round: number
     isBust?: boolean;
+    throwCount?: number;
 }
 
 function GamePlayerItemList({ ...props }: Props) {
@@ -20,7 +21,10 @@ function GamePlayerItemList({ ...props }: Props) {
             {
                 props.userMap.map((item: BASIC.PlayerProps) => (
                     <GamePlayerItem
-                        className={clsx("gamePlayerItem", { "activePlayer": item.isActive === true })}
+                        className={clsx("gamePlayerItem", {
+                            "activePlayer": item.isActive === true,
+                            "winner": item.isPlaying === false
+                        })}
                         {...item}
                         key={item.index}
                         name={item.name}
@@ -30,6 +34,8 @@ function GamePlayerItemList({ ...props }: Props) {
                         throw2={item.rounds[props.round - 1].throw2}
                         throw3={item.rounds[props.round - 1].throw3}
                         isBust={item.isBust}
+                        throwCount={item.throwCount}
+                        isPlaying={item.isPlaying}
                     />
                 ))
             }

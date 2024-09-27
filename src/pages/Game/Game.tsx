@@ -30,6 +30,7 @@ function Game() {
                 rounds: [{ throw1: undefined, throw2: undefined, throw3: undefined }],
                 isPlaying: true,
                 isBust: false,
+                throwCount: 0,
             };
             initialPlayerlist.push(player);
         });
@@ -100,9 +101,9 @@ function Game() {
         } else {
             playerList[playerTurn].score = newScore;
             setThrowCount(currentThrow + 1);
+
         }
         if (playerList[playerTurn].score === 0) {
-            playerList[playerTurn].isPlaying = false;
             setIsOverlayOpen(true);
         }
         if (playerList[playerTurn].isPlaying === false) {
@@ -112,6 +113,7 @@ function Game() {
         const updatedPlayerlist = [...playerList];
         updatedPlayerlist[playerTurn] = player;
         setPlayerList(updatedPlayerlist);
+        playerList[playerTurn].throwCount = throwCount
     }
 
     function bust(bustedPlayerScore: number) {
@@ -121,8 +123,6 @@ function Game() {
         const thirdThrow = currentRoundOfPlayer.throw3;
         let oldThrowScore = playerList[playerTurn].score;
         playerList[playerTurn].isBust = true
-        console.log("bust")
-
 
         if (thirdThrow) {
             let firstAndSecondThrowScore = 0;
@@ -140,6 +140,13 @@ function Game() {
         }
 
         playerList[playerTurn].score = oldThrowScore;
+        changeActivePlayer();
+    }
+
+    function handleWinner() {
+        setIsOverlayOpen(!isOverlayOpen);
+        playerList[playerTurn].isPlaying = false;
+        playerList[playerTurn].score = 1.;
         changeActivePlayer();
     }
 
@@ -186,10 +193,7 @@ function Game() {
                         />
                         <Button
                             label="Continue"
-                            handleClick={() => {
-                                setIsOverlayOpen(!isOverlayOpen);
-                                changeActivePlayer();
-                            }}
+                            handleClick={() => { handleWinner() }}
                             type="primary"
                         />
                     </div>
@@ -204,6 +208,7 @@ function Game() {
                     score={playerList[playerTurn].score}
                     round={roundsCount}
                     isBust={playerList[playerTurn].isBust}
+                    throwCount={playerList[playerTurn].throwCount}
                 />
             </div>
             <div>

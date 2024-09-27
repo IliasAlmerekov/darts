@@ -28,6 +28,7 @@ declare namespace BASIC {
         rounds: Round[];
         isPlaying?: boolean;
         isBust?: boolean;
+        throwCount?: number;
     };
 
     type UserProps = {
