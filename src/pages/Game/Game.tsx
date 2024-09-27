@@ -45,6 +45,7 @@ function Game() {
         newPlayerList[prevPlayerTurnIndex].isActive = false;
         const isEndOfArray = newPlayerTurnIndex > newPlayerList.length - 1;
         const handleNewIndex = isEndOfArray ? 0 : newPlayerTurnIndex;
+        //newPlayerList[handleNewIndex].isBust = false;
         newPlayerList[handleNewIndex].isActive = true;
         setPlayerList(newPlayerList);
         setPlayerTurn(handleNewIndex);
@@ -63,6 +64,8 @@ function Game() {
             );
         }
     }
+
+    //console.log(playerList[playerTurn])
 
     function handleThrow(
         player: BASIC.PlayerProps,
@@ -101,7 +104,6 @@ function Game() {
         } else {
             playerList[playerTurn].score = newScore;
             setThrowCount(currentThrow + 1);
-
         }
         if (playerList[playerTurn].score === 0) {
             setIsOverlayOpen(true);
@@ -114,6 +116,7 @@ function Game() {
         updatedPlayerlist[playerTurn] = player;
         setPlayerList(updatedPlayerlist);
         playerList[playerTurn].throwCount = throwCount
+        console.log(playerList[playerTurn].isBust)
     }
 
     function bust(bustedPlayerScore: number) {
@@ -209,6 +212,7 @@ function Game() {
                     round={roundsCount}
                     isBust={playerList[playerTurn].isBust}
                     throwCount={playerList[playerTurn].throwCount}
+                    prevScore={playerList[playerTurn].score}
                 />
             </div>
             <div>

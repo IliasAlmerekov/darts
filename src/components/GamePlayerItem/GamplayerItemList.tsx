@@ -13,6 +13,11 @@ type Props = {
     round: number
     isBust?: boolean;
     throwCount?: number;
+    roundscount?: BASIC.Round
+    prevthrow1?: any
+    prevthrow2?: any
+    prevthrow3?: any
+    prevScore?: any
 }
 
 function GamePlayerItemList({ ...props }: Props) {
@@ -30,12 +35,17 @@ function GamePlayerItemList({ ...props }: Props) {
                         name={item.name}
                         isActive={item.isActive}
                         value={item.score}
+                        prevScore={props.prevScore}
                         throw1={item.rounds[props.round - 1]?.throw1}
                         throw2={item.rounds[props.round - 1]?.throw2}
                         throw3={item.rounds[props.round - 1]?.throw3}
                         isBust={item.isBust}
                         throwCount={item.throwCount}
                         isPlaying={item.isPlaying}
+                        roundsCount={item.rounds}
+                        prevthrow1={item.rounds[props.round - 2]?.throw1}
+                        prevthrow2={item.rounds[props.round - 2]?.throw2}
+                        prevthrow3={item.rounds[props.round - 2]?.throw3}
                     />
                 ))
             }

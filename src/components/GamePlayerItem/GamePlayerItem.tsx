@@ -7,7 +7,7 @@ type Props = {
     name?: string;
     key?: number;
     isActive?: boolean;
-    value?: number;
+    value: number;
     throw1?: any;
     throw2?: any;
     throw3?: any;
@@ -16,14 +16,17 @@ type Props = {
     isBust?: boolean;
     throwCount?: number;
     isPlaying?: boolean;
+    roundsCount: BASIC.Round[];
+    prevthrow1: any
+    prevthrow2: any
+    prevthrow3: any
+    prevScore: any
 }
 
 
 function GamePlayerItem({ ...props }: Props) {
     //console.log(props.isBust)
     //console.log("throw: ", props.throwCount)
-
-
     if (props.isBust && props.throwCount === 2) {
         console.log("bust on third throw")
         props.throw3 = props.throw3
@@ -42,6 +45,22 @@ function GamePlayerItem({ ...props }: Props) {
         console.log("bust on first throw")
     }
 
+    /* else if (props.roundsCount?.length > 1 && !props.isActive) {
+        props.throw3 = props.prevthrow3 || 0
+        props.throw2 = props.prevthrow2 || 0
+        props.throw1 = props.prevthrow1 || 0
+    } */
+
+
+    else if (props.roundsCount?.length > 1 && !props.isActive &&
+        props.throw1 === undefined &&
+        props.throw2 === undefined &&
+        props.throw3 === undefined) { //not working because its changing the 0 with x
+        props.throw3 = props.prevthrow3 || <img src={X} alt="" />
+        props.throw2 = props.prevthrow2 || <img src={X} alt="" />
+        props.throw1 = props.prevthrow1 || <img src={X} alt="" />
+    }
+
     return (
         <div className={props.className} key={props?.key}>
             <div>
@@ -54,17 +73,17 @@ function GamePlayerItem({ ...props }: Props) {
                 })}>
                     <div className={clsx("divDisplay copylarge", {
                         "bust":
-                            props.isBust &&
+                            props.isActive === false &&
                             props.throwCount === 0
                     })}>{props.throw1}</div>
                     <div className={clsx("divDisplay copylarge", {
                         "bust":
-                            props.isBust &&
+                            props.isActive === false &&
                             props.throwCount === 1
                     })}>{props.throw2}</div>
                     <div className={clsx("divDisplay copylarge", {
                         "bust":
-                            props.isBust &&
+                            (props.throw1 + props.throw2 + props.throw3) > props.value && // not working because its checking the value afterwards when not bust 3/4/5
                             props.throwCount === 2
                     })}>{props.throw3}</div>
                 </div>
