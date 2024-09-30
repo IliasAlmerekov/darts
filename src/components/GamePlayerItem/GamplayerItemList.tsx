@@ -17,7 +17,6 @@ type Props = {
     prevthrow1?: any
     prevthrow2?: any
     prevthrow3?: any
-    prevScore?: any
 }
 
 function GamePlayerItemList({ ...props }: Props) {
@@ -35,7 +34,6 @@ function GamePlayerItemList({ ...props }: Props) {
                         name={item.name}
                         isActive={item.isActive}
                         value={item.score}
-                        prevScore={props.prevScore}
                         throw1={item.rounds[props.round - 1]?.throw1}
                         throw2={item.rounds[props.round - 1]?.throw2}
                         throw3={item.rounds[props.round - 1]?.throw3}

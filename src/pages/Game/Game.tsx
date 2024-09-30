@@ -10,7 +10,7 @@ import Button from "../../components/Button/Button";
 import NumberButton from "../../components/Keyboard/NumberButton";
 
 function Game() {
-    const [playerScore, setPlayerScore] = useState(20);
+    const [playerScore, setPlayerScore] = useState(21);
     const [roundsCount, setRoundsCount] = useState(1);
     const [playerList, setPlayerList] = useState<BASIC.PlayerProps[]>([]);
     const [throwCount, setThrowCount] = useState(0);
@@ -45,7 +45,8 @@ function Game() {
         newPlayerList[prevPlayerTurnIndex].isActive = false;
         const isEndOfArray = newPlayerTurnIndex > newPlayerList.length - 1;
         const handleNewIndex = isEndOfArray ? 0 : newPlayerTurnIndex;
-        //newPlayerList[handleNewIndex].isBust = false;
+        newPlayerList[handleNewIndex].isBust = false;
+        //newPlayerList[handleNewIndex].prevScore = playerList[playerTurn].score
         newPlayerList[handleNewIndex].isActive = true;
         setPlayerList(newPlayerList);
         setPlayerTurn(handleNewIndex);
@@ -54,7 +55,6 @@ function Game() {
         if (isEndOfArray) {
             setRoundsCount(roundsCount + 1);
             newPlayerList.forEach((player) => {
-                player.isBust = false
                 return (player.rounds.push({
                     throw1: undefined,
                     throw2: undefined,
@@ -65,7 +65,7 @@ function Game() {
         }
     }
 
-    //console.log(playerList[playerTurn])
+    console.log(playerList[playerTurn])
 
     function handleThrow(
         player: BASIC.PlayerProps,
@@ -116,7 +116,6 @@ function Game() {
         updatedPlayerlist[playerTurn] = player;
         setPlayerList(updatedPlayerlist);
         playerList[playerTurn].throwCount = throwCount
-        console.log(playerList[playerTurn].isBust)
     }
 
     function bust(bustedPlayerScore: number) {
@@ -212,7 +211,6 @@ function Game() {
                     round={roundsCount}
                     isBust={playerList[playerTurn].isBust}
                     throwCount={playerList[playerTurn].throwCount}
-                    prevScore={playerList[playerTurn].score}
                 />
             </div>
             <div>

@@ -20,13 +20,18 @@ type Props = {
     prevthrow1: any
     prevthrow2: any
     prevthrow3: any
-    prevScore: any
 }
 
+const bustIcon = <img src={X} alt="" />
 
 function GamePlayerItem({ ...props }: Props) {
+    //console.log(props.prevthrow1)
+    //console.log(props.prevScore)
     //console.log(props.isBust)
     //console.log("throw: ", props.throwCount)
+    //console.log(props.throw1, "+", props.throw2, "+", props.throw3, ">", props.prevScore)
+    //console.log(props.prevthrow1, props.prevthrow2, props.prevthrow3)
+
     if (props.isBust && props.throwCount === 2) {
         console.log("bust on third throw")
         props.throw3 = props.throw3
@@ -35,32 +40,23 @@ function GamePlayerItem({ ...props }: Props) {
     }
 
     else if (props.isBust && props.throwCount === 1) {
-        props.throw3 = <img src={X} alt="" />
+        props.throw3 = bustIcon
         console.log("bust on second throw")
     }
 
     else if (props.isBust && props.throwCount === 0) {
-        props.throw2 = <img src={X} alt="" />
-        props.throw3 = <img src={X} alt="" />
+        props.throw2 = bustIcon
+        props.throw3 = bustIcon
         console.log("bust on first throw")
     }
 
-    /* else if (props.roundsCount?.length > 1 && !props.isActive) {
-        props.throw3 = props.prevthrow3 || 0
-        props.throw2 = props.prevthrow2 || 0
-        props.throw1 = props.prevthrow1 || 0
-    } */
-
-
-    else if (props.roundsCount?.length > 1 && !props.isActive &&
-        props.throw1 === undefined &&
-        props.throw2 === undefined &&
-        props.throw3 === undefined) { //not working because its changing the 0 with x
-        props.throw3 = props.prevthrow3 || <img src={X} alt="" />
-        props.throw2 = props.prevthrow2 || <img src={X} alt="" />
-        props.throw1 = props.prevthrow1 || <img src={X} alt="" />
+    else if (props.isActive && props.roundsCount?.length > 1) {
+        props.prevthrow1 = undefined
+        props.prevthrow2 = undefined
+        props.prevthrow3 = undefined
     }
 
+    console.log('props', props)
     return (
         <div className={props.className} key={props?.key}>
             <div>
@@ -73,19 +69,19 @@ function GamePlayerItem({ ...props }: Props) {
                 })}>
                     <div className={clsx("divDisplay copylarge", {
                         "bust":
-                            props.isActive === false &&
+                            !props.isActive &&
                             props.throwCount === 0
-                    })}>{props.throw1}</div>
+                    })}>{props.throw1 !== undefined ? props.throw1 : props.prevthrow1 !== undefined ? props.prevthrow1 : undefined}</div>
                     <div className={clsx("divDisplay copylarge", {
                         "bust":
-                            props.isActive === false &&
+                            !props.isActive &&
                             props.throwCount === 1
-                    })}>{props.throw2}</div>
+                    })}>{props.throw2 !== undefined ? props.throw2 : props.prevthrow2 !== undefined ? props.prevthrow2 : undefined}</div>
                     <div className={clsx("divDisplay copylarge", {
                         "bust":
-                            (props.throw1 + props.throw2 + props.throw3) > props.value && // not working because its checking the value afterwards when not bust 3/4/5
+                            props.isBust &&
                             props.throwCount === 2
-                    })}>{props.throw3}</div>
+                    })}>{props.throw3 !== undefined ? props.throw3 : props.prevthrow3 !== undefined ? props.prevthrow3 : undefined}</div>
                 </div>
 
                 <div className='pointer'>
