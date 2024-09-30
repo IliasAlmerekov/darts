@@ -44,7 +44,7 @@ function Game() {
 
         newPlayerList[prevPlayerTurnIndex].isActive = false;
         const isEndOfArray = newPlayerTurnIndex > newPlayerList.length - 1;
-        const handleNewIndex = isEndOfArray ? 0 : newPlayerTurnIndex;
+        const handleNewIndex = !playerList[newPlayerTurnIndex]?.isPlaying && !isEndOfArray ? newPlayerTurnIndex + 1 : isEndOfArray ? 0 : newPlayerTurnIndex;
         newPlayerList[handleNewIndex].isBust = false;
         //newPlayerList[handleNewIndex].prevScore = playerList[playerTurn].score
         newPlayerList[handleNewIndex].isActive = true;
@@ -108,9 +108,6 @@ function Game() {
         if (playerList[playerTurn].score === 0) {
             setIsOverlayOpen(true);
         }
-        if (playerList[playerTurn].isPlaying === false) {
-            console.log("winner:", playerList[playerTurn].name);
-        }
 
         const updatedPlayerlist = [...playerList];
         updatedPlayerlist[playerTurn] = player;
@@ -145,7 +142,7 @@ function Game() {
         changeActivePlayer();
     }
 
-    function handleWinner() {
+    function handleFinishedPlayer() {
         setIsOverlayOpen(!isOverlayOpen);
         playerList[playerTurn].isPlaying = false;
         playerList[playerTurn].score = 1.;
@@ -195,7 +192,7 @@ function Game() {
                         />
                         <Button
                             label="Continue"
-                            handleClick={() => { handleWinner() }}
+                            handleClick={() => { handleFinishedPlayer() }}
                             type="primary"
                         />
                     </div>
