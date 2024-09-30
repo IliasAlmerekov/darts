@@ -66,10 +66,20 @@
     color: var(--red);
 }
 
-.hidden {
-    visibility: hidden;
+.finished {
+    height: 45px;
+    opacity: 50%;
 }
 
-.winner {
-    opacity: 50%;
+.place {
+    font-weight: 700;
+}
+
+.finishedplayers {
+    font-weight: 700;
+    color: var(--darkgrey);
+}
+
+.finishedPlayerList {
+    margin-top: 160px;
 }
