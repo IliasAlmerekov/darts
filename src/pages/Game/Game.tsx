@@ -84,8 +84,8 @@ function Game() {
                 roundsCount,
             },
         ]);
-        console.log('checkedPlayers[playerTurn] - playerturn', playerTurn)
-        console.log('checkedPlayers[playerTurn] - checkedPlayers', checkedPlayers)
+        //console.log('checkedPlayers[playerTurn] - playerturn', playerTurn)
+        //console.log('checkedPlayers[playerTurn] - checkedPlayers', checkedPlayers)
         const newScore = checkedPlayers[playerTurn].score - currentScoreAchieved;
         const currentPlayerThrows =
             checkedPlayers[playerTurn].rounds[checkedPlayers[playerTurn].rounds.length - 1];
@@ -117,6 +117,8 @@ function Game() {
         updatedPlayerlist[playerTurn] = player;
         setPlayerList(updatedPlayerlist);
         checkedPlayers[playerTurn].throwCount = throwCount;
+        console.log(roundsCount)
+        console.log(updatedPlayerlist)
     }
 
     function bust(bustedPlayerScore: number) {
@@ -152,15 +154,23 @@ function Game() {
         finishedPlayers.push(finishedPlayer[0])
         const unfinishedPlayers = playerList.filter((player) => player.isPlaying === true);
 
-        console.log(unfinishedPlayers[playerTurn > unfinishedPlayers.length - 1 ? 0 : playerTurn])
-        unfinishedPlayers[playerTurn > unfinishedPlayers.length - 1 ? 0 : playerTurn].isActive = true // undefined when last player wins 
+        unfinishedPlayers[playerTurn > unfinishedPlayers.length - 1 ? 0 : playerTurn].isActive = true
         setUnfinishedPlayerList(unfinishedPlayers)
         setPlayerList(unfinishedPlayers)
-        setPlayerTurn(playerTurn > unfinishedPlayers.length - 1 ? 0 : playerTurn)
         setFinishedPlayerList(finishedPlayers)
+        setPlayerTurn(playerTurn > unfinishedPlayers.length - 1 ? 0 : playerTurn)
         setThrowCount(0)
+        if (playerTurn + 1 > unfinishedPlayers.length - 1) {
+            changeActivePlayer()
+            const unfinishedPlayers = playerList.filter((player) => player.isPlaying === true);
+            setPlayerList(unfinishedPlayers)
+        }
         setIsOverlayOpen(!isOverlayOpen);
     }
+    //if the last player wins and you undo throws from the first person after that, checkedPlayers[playerTurn] is undefined (only if a player wins) ln89
+    //if a player that is not the last player wins, the throws from the player after it should be empty. 
+    //if a player wins it is still in the playerlist(checkedplayers) until the next player turn??
+    //if the second last player wins we cant go into a next round / also the last player cant win or throw
 
     function handleUndo() {
         if (history.length > 0) {
