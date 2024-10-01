@@ -9,6 +9,8 @@ import Overlay from "../../components/Overlay/Overlay";
 import Button from "../../components/Button/Button";
 import NumberButton from "../../components/Keyboard/NumberButton";
 import FinishedGamePlayerItemList from "../../components/GamePlayerItem/FinishedGamePlayerItemList";
+import LinkButton from "../../components/LinkButton/LinkButton";
+import Undo from '../../icons/undo-copy.svg'
 
 function Game() {
     const [playerScore, setPlayerScore] = useState(21);
@@ -19,6 +21,7 @@ function Game() {
     const [isOverlayOpen, setIsOverlayOpen] = useState(false);
     const [history, setHistory] = useState<any[]>([]);
     const [finishedPlayerList, setFinishedPlayerList] = useState<BASIC.PlayerProps[]>([])
+    const [unfinishedPlayerList, setUnfinishedPlayerList] = useState<BASIC.PlayerProps[]>([])
 
     function initializePlayerList() {
         const initialPlayerlist: BASIC.PlayerProps[] = [];
@@ -48,7 +51,6 @@ function Game() {
         const isEndOfArray = newPlayerTurnIndex > newPlayerList.length - 1;
         const handleNewIndex = isEndOfArray ? 0 : newPlayerTurnIndex;
         newPlayerList[handleNewIndex].isBust = false;
-        //newPlayerList[handleNewIndex].prevScore = playerList[playerTurn].score
         newPlayerList[handleNewIndex].isActive = true;
         setPlayerList(newPlayerList);
         setPlayerTurn(handleNewIndex);
@@ -65,27 +67,28 @@ function Game() {
             });
         }
     }
-
-    console.log(playerList[playerTurn]);
-
     function handleThrow(
         player: BASIC.PlayerProps,
         currentThrow: number,
         currentScoreAchieved: number | any
     ) {
+        let checkedPlayers = playerList
+        checkedPlayers = unfinishedPlayerList.length > 0 ? checkedPlayers.filter(player => unfinishedPlayerList.includes(player)) : playerList
         setHistory([
             ...history,
             {
-                playerList: JSON.parse(JSON.stringify(playerList)),
+                playerList: JSON.parse(JSON.stringify(checkedPlayers)),
                 playerScore,
                 throwCount,
                 playerTurn,
                 roundsCount,
             },
         ]);
-        const newScore = playerList[playerTurn].score - currentScoreAchieved;
+        console.log('checkedPlayers[playerTurn] - playerturn', playerTurn)
+        console.log('checkedPlayers[playerTurn] - checkedPlayers', checkedPlayers)
+        const newScore = checkedPlayers[playerTurn].score - currentScoreAchieved;
         const currentPlayerThrows =
-            playerList[playerTurn].rounds[playerList[playerTurn].rounds.length - 1];
+            checkedPlayers[playerTurn].rounds[checkedPlayers[playerTurn].rounds.length - 1];
         switch (currentThrow) {
             case 0:
                 currentPlayerThrows.throw1 = currentScoreAchieved as unknown as number;
@@ -100,20 +103,20 @@ function Game() {
         }
         setPlayerScore(newScore);
 
-        if (currentScoreAchieved > playerList[playerTurn].score) {
+        if (currentScoreAchieved > checkedPlayers[playerTurn].score) {
             bust(playerScore);
         } else {
-            playerList[playerTurn].score = newScore;
+            checkedPlayers[playerTurn].score = newScore;
             setThrowCount(currentThrow + 1);
         }
-        if (playerList[playerTurn].score === 0) {
+        if (checkedPlayers[playerTurn].score === 0) {
             setIsOverlayOpen(true);
         }
 
-        const updatedPlayerlist = [...playerList];
+        const updatedPlayerlist = [...checkedPlayers];
         updatedPlayerlist[playerTurn] = player;
         setPlayerList(updatedPlayerlist);
-        playerList[playerTurn].throwCount = throwCount;
+        checkedPlayers[playerTurn].throwCount = throwCount;
     }
 
     function bust(bustedPlayerScore: number) {
@@ -144,13 +147,19 @@ function Game() {
 
     function handleFinishedPlayer() {
         playerList[playerTurn].isPlaying = false;
-        const newList = playerList.filter((player) => player.isPlaying === false);
-        playerList.splice(playerTurn, 1)
-        console.log("playerlist", playerList)
-        console.log("newlist", newList)
-        setFinishedPlayerList(newList)
+        const finishedPlayer = playerList.filter((player) => player.isPlaying === false);
+        let finishedPlayers = finishedPlayerList
+        finishedPlayers.push(finishedPlayer[0])
+        const unfinishedPlayers = playerList.filter((player) => player.isPlaying === true);
+
+        console.log(unfinishedPlayers[playerTurn > unfinishedPlayers.length - 1 ? 0 : playerTurn])
+        unfinishedPlayers[playerTurn > unfinishedPlayers.length - 1 ? 0 : playerTurn].isActive = true // undefined when last player wins 
+        setUnfinishedPlayerList(unfinishedPlayers)
+        setPlayerList(unfinishedPlayers)
+        setPlayerTurn(playerTurn > unfinishedPlayers.length - 1 ? 0 : playerTurn)
+        setFinishedPlayerList(finishedPlayers)
+        setThrowCount(0)
         setIsOverlayOpen(!isOverlayOpen);
-        changeActivePlayer();
     }
 
     function handleUndo() {
@@ -175,15 +184,10 @@ function Game() {
         }
     }, [throwCount]);
 
-    if (playerList[playerTurn] === undefined) {
-        return null;
-    }
-
     return (
         <>
             <Overlay
                 isOpen={isOverlayOpen}
-                onClose={() => setIsOverlayOpen(!isOverlayOpen)}
             >
                 <div className="finishGameOverlay">
                     <p className="copylarge">Continue Game?</p>
@@ -201,6 +205,15 @@ function Game() {
                             }}
                             type="primary"
                         />
+                        <LinkButton
+                            icon={Undo}
+                            label="Undo Throw"
+                            handleClick={() => {
+                                setIsOverlayOpen(!isOverlayOpen)
+                                handleUndo()
+                            }}
+                            className="undoThrow"
+                        />
                     </div>
                 </div>
             </Overlay>
@@ -210,14 +223,13 @@ function Game() {
             <div className="gamePlayerItemContainer">
                 <GamePlayerItemList
                     userMap={playerList}
-                    score={playerList[playerTurn].score}
+                    score={playerList[playerTurn]?.score}
                     round={roundsCount}
-                    isBust={playerList[playerTurn].isBust}
-                    throwCount={playerList[playerTurn].throwCount}
+                    isBust={playerList[playerTurn]?.isBust}
+                    throwCount={playerList[playerTurn]?.throwCount}
                 />
                 <FinishedGamePlayerItemList
                     userMap={finishedPlayerList} />
-
             </div>
             <div className="keyboard-and-undo">
                 <NumberButton value="Undo" handleClick={handleUndo} />

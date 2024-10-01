@@ -13,6 +13,7 @@ import arrowRight from '../../icons/arrow-right.svg'
 import trashIcon from '../../icons/trash-icon.svg'
 import Overlay from '../../components/Overlay/Overlay';
 import DefaultInputField from '../../components/InputField/DefaultInputField';
+import deleteIcon from '../../icons/delete.svg'
 
 type PlayerProps = {
     name: string
@@ -220,6 +221,7 @@ function Start() {
             </div>
 
             <Overlay
+                src={deleteIcon}
                 isOpen={isSettingsCogOpen}
                 onClose={() => setIsSettingsCogOpen(!isSettingsCogOpen)}>
                 <div className='deletePlayerOverlay'>
@@ -243,6 +245,7 @@ function Start() {
             </Overlay>
 
             <Overlay
+                src={deleteIcon}
                 isOpen={isOverlayOpen}
                 onClose={() => setIsOverlayOpen(!isOverlayOpen)}>
                 <div className='createPlayerOverlay'>

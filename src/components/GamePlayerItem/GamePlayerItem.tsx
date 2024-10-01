@@ -35,13 +35,11 @@ function GamePlayerItem({ ...props }: Props) {
 
     if (props.isBust && props.throwCount === 1) {
         props.gamePlayerItemThrow3 = bustIcon
-        console.log("bust on second throw")
     }
 
     else if (props.isBust && props.throwCount === 0) {
         props.gamePlayerItemThrow2 = bustIcon
         props.gamePlayerItemThrow3 = bustIcon
-        console.log("bust on first throw")
     }
 
     else if (props.isActive && props.roundsCount?.length > 1) {

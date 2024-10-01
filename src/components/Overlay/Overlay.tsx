@@ -24,7 +24,7 @@ function Overlay({ ...props }: Props) {
             props.isOpen ? (
                 <div className='overlayBackground '>
                     <div className="overlayBox">
-                        <div className="delete" onClick={props.onClose}><img src={DeleteIcon} alt="" /></div>
+                        <div className="delete" onClick={props.onClose}><img src={props.src} alt="" /></div>
                         {props.children}
                     </div>
                 </div>) : null

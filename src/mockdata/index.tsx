@@ -22,7 +22,7 @@ export const mockUserList: BASIC.UserProps[] = [
     {
         id: 6,
         name: "Sophia",
-    },
+    }/* ,
     {
         id: 7,
         name: "Lukas",
@@ -38,7 +38,7 @@ export const mockUserList: BASIC.UserProps[] = [
     {
         id: 10,
         name: "Emma",
-    },
+    }, */
 ];
 
 
