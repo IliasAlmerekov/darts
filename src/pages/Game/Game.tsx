@@ -66,6 +66,7 @@ function Game() {
             });
         }
     }
+
     function handleThrow(
         player: BASIC.PlayerProps,
         currentThrow: number,
@@ -109,7 +110,11 @@ function Game() {
         if (playerList[playerTurn].score === 0) {
             if (playerList.length === 2) {
                 console.log("moin")
-            } else {
+            } else if (finishedPlayerList.length > 0) {
+                handleFinishedPlayer()
+                console.log("playerlist", playerList)
+            }
+            else {
                 setIsOverlayOpen(true);
             }
         }
@@ -120,7 +125,7 @@ function Game() {
         playerList[playerTurn].throwCount = throwCount;
     }
 
-    console.log(playerList)
+    //console.log(playerList)
 
     function bust(bustedPlayerScore: number) {
         const currentRoundOfPlayer = playerList[playerTurn].rounds[roundsCount - 1];
@@ -146,7 +151,6 @@ function Game() {
 
         playerList[playerTurn].score = oldThrowScore;
         changeActivePlayer();
-
     }
 
     function handleFinishedPlayer() {
@@ -160,7 +164,6 @@ function Game() {
         setPlayerList(unfinishedPlayers)
         setFinishedPlayerList(finishedPlayers)
         setPlayerTurn(playerTurn > unfinishedPlayers.length - 1 ? 0 : playerTurn)
-        setIsOverlayOpen(!isOverlayOpen);
     }
 
 
@@ -205,6 +208,7 @@ function Game() {
                             label="Continue"
                             handleClick={() => {
                                 handleFinishedPlayer();
+                                setIsOverlayOpen(!isOverlayOpen);
                             }}
                             type="primary"
                         />

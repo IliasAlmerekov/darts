@@ -6,7 +6,6 @@ import Start from '../pages/start/start';
 import Game from '../pages/game/Game'
 
 function App() {
-  const [list, setList] = useState<BASIC.UserProps[]>([]);
   return (
     <div className='App'>
       <BrowserRouter>

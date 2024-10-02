@@ -25,9 +25,6 @@ type Props = {
 const bustIcon = <img src={X} alt="" />
 
 function GamePlayerItem({ ...props }: Props) {
-    //console.log("isActive", props.isActive)
-    //console.log("roundscount", props.roundsCount)
-
     function handlePoint(currentThrow?: number, prevThrow?: number): number | undefined {
         return currentThrow !== undefined ? currentThrow :
             prevThrow !== undefined ? prevThrow : undefined
