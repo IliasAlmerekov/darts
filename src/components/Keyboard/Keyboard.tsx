@@ -50,7 +50,9 @@ function Keyboard({ ...props }: Props) {
                         (tripleNext && btn === "Triple")
                     }
                     disabled={
-                        (tripleNext && btn === 25)
+                        (tripleNext && btn === 25) ||
+                        (tripleNext && btn === 0) ||
+                        (doubleNext && btn === 0)
                     }
                 />
             ))}

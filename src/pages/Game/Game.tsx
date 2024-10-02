@@ -21,7 +21,6 @@ function Game() {
     const [isOverlayOpen, setIsOverlayOpen] = useState(false);
     const [history, setHistory] = useState<any[]>([]);
     const [finishedPlayerList, setFinishedPlayerList] = useState<BASIC.PlayerProps[]>([])
-    const [unfinishedPlayerList, setUnfinishedPlayerList] = useState<BASIC.PlayerProps[]>([])
 
     function initializePlayerList() {
         const initialPlayerlist: BASIC.PlayerProps[] = [];
@@ -72,23 +71,21 @@ function Game() {
         currentThrow: number,
         currentScoreAchieved: number | any
     ) {
-        let checkedPlayers = playerList
-        checkedPlayers = unfinishedPlayerList.length > 0 ? checkedPlayers.filter(player => unfinishedPlayerList.includes(player)) : playerList
         setHistory([
             ...history,
             {
-                playerList: JSON.parse(JSON.stringify(checkedPlayers)),
+                finishedPlayerList: JSON.parse(JSON.stringify(finishedPlayerList)),
+                playerList: JSON.parse(JSON.stringify(playerList)),
                 playerScore,
                 throwCount,
                 playerTurn,
                 roundsCount,
             },
         ]);
-        //console.log('checkedPlayers[playerTurn] - playerturn', playerTurn)
-        //console.log('checkedPlayers[playerTurn] - checkedPlayers', checkedPlayers)
-        const newScore = checkedPlayers[playerTurn].score - currentScoreAchieved;
+
+        const newScore = playerList[playerTurn].score - currentScoreAchieved;
         const currentPlayerThrows =
-            checkedPlayers[playerTurn].rounds[checkedPlayers[playerTurn].rounds.length - 1];
+            playerList[playerTurn].rounds[playerList[playerTurn].rounds.length - 1];
         switch (currentThrow) {
             case 0:
                 currentPlayerThrows.throw1 = currentScoreAchieved as unknown as number;
@@ -103,23 +100,27 @@ function Game() {
         }
         setPlayerScore(newScore);
 
-        if (currentScoreAchieved > checkedPlayers[playerTurn].score) {
+        if (currentScoreAchieved > playerList[playerTurn].score) {
             bust(playerScore);
         } else {
-            checkedPlayers[playerTurn].score = newScore;
+            playerList[playerTurn].score = newScore;
             setThrowCount(currentThrow + 1);
         }
-        if (checkedPlayers[playerTurn].score === 0) {
-            setIsOverlayOpen(true);
+        if (playerList[playerTurn].score === 0) {
+            if (playerList.length === 2) {
+                console.log("moin")
+            } else {
+                setIsOverlayOpen(true);
+            }
         }
 
-        const updatedPlayerlist = [...checkedPlayers];
+        const updatedPlayerlist = [...playerList];
         updatedPlayerlist[playerTurn] = player;
         setPlayerList(updatedPlayerlist);
-        checkedPlayers[playerTurn].throwCount = throwCount;
-        console.log(roundsCount)
-        console.log(updatedPlayerlist)
+        playerList[playerTurn].throwCount = throwCount;
     }
+
+    console.log(playerList)
 
     function bust(bustedPlayerScore: number) {
         const currentRoundOfPlayer = playerList[playerTurn].rounds[roundsCount - 1];
@@ -145,6 +146,7 @@ function Game() {
 
         playerList[playerTurn].score = oldThrowScore;
         changeActivePlayer();
+
     }
 
     function handleFinishedPlayer() {
@@ -153,28 +155,19 @@ function Game() {
         let finishedPlayers = finishedPlayerList
         finishedPlayers.push(finishedPlayer[0])
         const unfinishedPlayers = playerList.filter((player) => player.isPlaying === true);
-
+        changeActivePlayer()
         unfinishedPlayers[playerTurn > unfinishedPlayers.length - 1 ? 0 : playerTurn].isActive = true
-        setUnfinishedPlayerList(unfinishedPlayers)
         setPlayerList(unfinishedPlayers)
         setFinishedPlayerList(finishedPlayers)
         setPlayerTurn(playerTurn > unfinishedPlayers.length - 1 ? 0 : playerTurn)
-        setThrowCount(0)
-        if (playerTurn + 1 > unfinishedPlayers.length - 1) {
-            changeActivePlayer()
-            const unfinishedPlayers = playerList.filter((player) => player.isPlaying === true);
-            setPlayerList(unfinishedPlayers)
-        }
         setIsOverlayOpen(!isOverlayOpen);
     }
-    //if the last player wins and you undo throws from the first person after that, checkedPlayers[playerTurn] is undefined (only if a player wins) ln89
-    //if a player that is not the last player wins, the throws from the player after it should be empty. 
-    //if a player wins it is still in the playerlist(checkedplayers) until the next player turn??
-    //if the second last player wins we cant go into a next round / also the last player cant win or throw
+
 
     function handleUndo() {
         if (history.length > 0) {
             const lastState = history.pop();
+            setFinishedPlayerList(lastState.finishedPlayerList)
             setPlayerList(lastState.playerList);
             setPlayerScore(lastState.playerScore);
             setThrowCount(lastState.throwCount);
