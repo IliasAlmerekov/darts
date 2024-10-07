@@ -1,5 +1,5 @@
 import '../start/start.css'
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import UnselectedPlayerItem from '../../components/PlayerItems/UnselectedPlayerItem';
 import SelectedPlayerItem from '../../components/PlayerItems/SelectedPlayerItem';
 import Plus from '../../icons/plus.svg'
@@ -167,6 +167,33 @@ function Start() {
         setIsSettingsCogOpen(!isSettingsCogOpen)
     }
 
+    const buttonWrapperEl = document.querySelector('.overlayBottom')
+    const sentinalEl = document.querySelector('.sentinal')
+    useEffect(() => {
+        const handler = (entries: any) => {
+            console.log(entries)
+            // entries is an array of observed dom nodes
+            // we're only interested in the first one at [0]
+            // because that's our .sentinal node.
+            // Here observe whether or not that node is in the viewport
+            if (!entries[0].isIntersecting) {
+                buttonWrapperEl?.classList.add('enabled')
+            } else {
+                buttonWrapperEl?.classList.remove('enabled')
+            }
+        }
+
+        // create the observer
+        const observer = new window.IntersectionObserver(handler)
+        // give the observer some dom nodes to keep an eye on
+        if (sentinalEl) {
+
+            observer.observe(sentinalEl)
+        }
+    }, [deletePlayerList.length])
+
+
+
     return (
         <div className='start'>
             <div className="existingPlayerList">
@@ -221,6 +248,7 @@ function Start() {
             </div>
 
             <Overlay
+                className='overlayBox deletePlayerOverlayAdjust'
                 src={deleteIcon}
                 isOpen={isSettingsCogOpen}
                 onClose={() => setIsSettingsCogOpen(!isSettingsCogOpen)}>
@@ -235,9 +263,13 @@ function Start() {
                                 src={trashIcon}
                             />
                         ))}
+                        <div className='sentinal'></div>
                     </div>
 
+                </div>
+                <div className='overlayBottom'>
                     <Button
+                        className='deleteOverlayButton'
                         type="primary"
                         label='Done'
                         handleClick={() => updateArray()} />
@@ -245,6 +277,7 @@ function Start() {
             </Overlay>
 
             <Overlay
+                className='overlayBox'
                 src={deleteIcon}
                 isOpen={isOverlayOpen}
                 onClose={() => setIsOverlayOpen(!isOverlayOpen)}>

@@ -188,6 +188,7 @@ function Game() {
     return (
         <>
             <Overlay
+                className="overlayBox"
                 isOpen={isOverlayOpen}
             >
                 <div className="finishGameOverlay">

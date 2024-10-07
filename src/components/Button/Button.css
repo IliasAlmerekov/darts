@@ -43,3 +43,8 @@
 .noUnderline {
     text-decoration: none;
 }
+
+.deleteOverlayButton {
+    width: 65%;
+    margin-top: 0;
+}
