@@ -13,9 +13,9 @@ declare namespace BASIC {
     };
 
     type Round = {
-        throw1: undefined | number | any;
-        throw2: undefined | number | any;
-        throw3: undefined | number | any;
+        throw1?: number;
+        throw2?: number;
+        throw3?: number;
         isRoundBust?: boolean;
     };
 

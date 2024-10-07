@@ -110,8 +110,6 @@ function Game() {
         if (playerList[playerTurn].score === 0) {
             if (playerList.length === 2) {
                 //route to finished page
-            } else if (finishedPlayerList.length > 0) {
-
             }
             else {
                 setIsOverlayOpen(true);

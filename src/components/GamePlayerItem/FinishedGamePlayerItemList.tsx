@@ -8,8 +8,6 @@ type Props = {
 }
 
 function FinishedGamePlayerItemList({ ...props }: Props) {
-    //console.log(props.userMap.length)
-
     return props.userMap.length > 0 ?
 
         < div className="finishedPlayerList" >

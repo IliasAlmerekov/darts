@@ -1,5 +1,5 @@
 import '../GamePlayerItem/GamePlayerItem.css'
-import X from '../../icons/delete-grey.svg'
+import bustIconX from '../../icons/delete-grey.svg'
 import clsx from 'clsx';
 
 
@@ -8,24 +8,24 @@ type Props = {
     key?: number;
     isActive?: boolean;
     value: number;
-    gamePlayerItemThrow1?: any;
-    gamePlayerItemThrow2?: any;
-    gamePlayerItemThrow3?: any;
+    gamePlayerItemThrow1?: number | JSX.Element;
+    gamePlayerItemThrow2?: number | JSX.Element;
+    gamePlayerItemThrow3?: number | JSX.Element;
     className: string
     src?: any;
     isBust?: boolean;
     throwCount?: number;
     isPlaying?: boolean;
     roundsCount: BASIC.Round[];
-    gamePlayerItemPrevThrow1: any
-    gamePlayerItemPrevThrow2: any
-    gamePlayerItemPrevThrow3: any
+    gamePlayerItemPrevThrow1?: number
+    gamePlayerItemPrevThrow2?: number
+    gamePlayerItemPrevThrow3?: number
 }
 
-const bustIcon = <img src={X} alt="" />
+const bustIcon = <img src={bustIconX} alt="" />
 
 function GamePlayerItem({ ...props }: Props) {
-    function handlePoint(currentThrow?: number, prevThrow?: number): number | undefined {
+    function handlePoint(currentThrow?: number | JSX.Element, prevThrow?: number): number | undefined | JSX.Element {
         return currentThrow !== undefined ? currentThrow :
             prevThrow !== undefined ? prevThrow : undefined
 
