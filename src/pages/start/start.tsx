@@ -15,104 +15,31 @@ import Overlay from '../../components/Overlay/Overlay';
 import DefaultInputField from '../../components/InputField/DefaultInputField';
 import deleteIcon from '../../icons/delete.svg'
 
-type PlayerProps = {
+export type PlayerProps = {
+    id: number
     name: string
     isAdded: boolean
 }
 
 function Start() {
+    const unSelectedPlayerListFromLS: string = localStorage.getItem("selectedPlayer") ?? ''
+    const playersFromLocalStorage = JSON.parse(unSelectedPlayerListFromLS)
+
     const [newPlayer, setNewPlayer] = useState('')
     const [isOverlayOpen, setIsOverlayOpen] = useState(false)
     const [isSettingsCogOpen, setIsSettingsCogOpen] = useState(false)
     const [deletePlayerList, setDeletePlayerList] = useState<PlayerProps[]>([])
-    const [testUserSelected, setTestUserSelected] = useState([
-        {
-            name: "Max",
-            isAdded: true
-        },
-        {
-            name: "Oliver",
-            isAdded: true
-        },
-        {
-            name: "Anna",
-            isAdded: true
-        },
-        {
-            name: "Christian",
-            isAdded: true
-        },
-        {
-            name: "Peter",
-            isAdded: true
-        },
-        {
-            name: "Mark",
-            isAdded: true
-        },
-        {
-            name: "Tom",
-            isAdded: true
-        },
-        {
-            name: "Thomas",
-            isAdded: true
-        },
-        {
-            name: "Hendrik",
-            isAdded: true
-        }
-    ]);
+    const [testUserSelected, setTestUserSelected] = useState<PlayerProps[]>(playersFromLocalStorage);
+    const [testUserUnselected, setTestUserUnselected] = useState<PlayerProps[]>([]);
+    localStorage.setItem("selectedPlayer", JSON.stringify(testUserSelected))
 
-    const [testUserUnselected, setTestUserUnselected] = useState([
-        {
-            name: "Alexander",
-            isAdded: false
-
-        },
-        {
-            name: "Hugh",
-            isAdded: false
-
-        },
-        {
-            name: "Ilias",
-            isAdded: false
-
-        },
-        {
-            name: "Jörg",
-            isAdded: false
-
-        },
-        {
-            name: "Maya",
-            isAdded: false
-
-        },
-        {
-            name: "Nico",
-            isAdded: false
-
-        },
-        {
-            name: "Norman",
-            isAdded: false
-
-        },
-        {
-            name: "Ziyi",
-            isAdded: false
-
-        }
-    ]);
     function handleSelect(name: any) {
         if (testUserSelected.length === 10) {
-
+            return
         } else {
             const newList = testUserUnselected.filter((list) => list.name !== name);
             const newSelectedList: PlayerProps[] = [...testUserSelected]
-            newSelectedList.push({ name, isAdded: false })
+            newSelectedList.push({ name, isAdded: false, id: Number(new Date) })
             setTestUserUnselected(newList);
             setTestUserSelected(newSelectedList)
         }
@@ -121,18 +48,18 @@ function Start() {
     function handleUnselect(name: any) {
         const newList = testUserSelected.filter((list) => list.name !== name);
         const newUnselectedList: PlayerProps[] = [...testUserUnselected]
-        newUnselectedList.push({ name, isAdded: false })
+        newUnselectedList.push({ name, isAdded: false, id: Number(new Date) })
         setTestUserSelected(newList)
         setTestUserUnselected(newUnselectedList)
     }
 
     function createPlayer(name: any) {
         if (testUserSelected.length === 10) {
-            testUserUnselected.push({ name, isAdded: true })
+            testUserUnselected.push({ name, isAdded: true, id: Number(new Date) })
             setIsOverlayOpen(!isOverlayOpen)
             setNewPlayer("")
         } else {
-            testUserSelected.push({ name, isAdded: true })
+            testUserSelected.push({ name, isAdded: true, id: Number(new Date) })
             setIsOverlayOpen(!isOverlayOpen)
             setNewPlayer("")
         }
@@ -198,7 +125,7 @@ function Start() {
                         } />
                 </div>
 
-                <div className='testUserUnselectedList'>
+                {testUserUnselected.length > 0 && <div className='testUserUnselectedList'>
                     {testUserUnselected.map((player: { name: string, isAdded: boolean }, index: number) => (
                         <UnselectedPlayerItem
                             {...player}
@@ -206,7 +133,7 @@ function Start() {
                             handleClickOrDelete={() => handleSelect(player.name)}
                             src={arrowRight} />
                     ))}
-                </div>
+                </div>}
 
                 <div className='bottom'>
                     <LinkButton
@@ -255,7 +182,6 @@ function Start() {
                             />
                         ))}
                     </div>
-
                 </div>
                 <div className='overlayBottom overlayBottomEnabled'>
                     <Button

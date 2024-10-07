@@ -4,7 +4,6 @@ import Back from "../../icons/back.svg";
 import { Link } from "react-router-dom";
 import { useEffect, useState } from "react";
 import GamePlayerItemList from "../../components/GamePlayerItem/GamplayerItemList";
-import { mockUserList } from "../../mockdata";
 import Overlay from "../../components/Overlay/Overlay";
 import Button from "../../components/Button/Button";
 import NumberButton from "../../components/Keyboard/NumberButton";
@@ -21,10 +20,12 @@ function Game() {
     const [isOverlayOpen, setIsOverlayOpen] = useState(false);
     const [history, setHistory] = useState<any[]>([]);
     const [finishedPlayerList, setFinishedPlayerList] = useState<BASIC.PlayerProps[]>([])
+    const selectedPlayerListFromLS: string = localStorage.getItem("selectedPlayer") ?? ''
+    const playersFromLocalStorage = JSON.parse(selectedPlayerListFromLS)
 
     function initializePlayerList() {
         const initialPlayerlist: BASIC.PlayerProps[] = [];
-        mockUserList.forEach((user: BASIC.UserProps, i) => {
+        playersFromLocalStorage.forEach((user: BASIC.UserProps, i: number) => {
             const player = {
                 id: user.id,
                 name: user.name,

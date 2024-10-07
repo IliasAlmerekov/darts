@@ -11,7 +11,6 @@
     position: relative;
     display: flex;
     flex-direction: column;
-    height: 100vh;
 }
 
 
@@ -62,7 +61,8 @@
     padding: 32px;
     flex-shrink: 0;
     display: inline-flex;
-    height: 3%;
+    align-items: end;
+    flex-grow: 1;
 }
 
 .testUserUnselectedList {
