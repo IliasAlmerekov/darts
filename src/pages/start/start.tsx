@@ -167,29 +167,23 @@ function Start() {
         setIsSettingsCogOpen(!isSettingsCogOpen)
     }
 
-    const buttonWrapperEl = document.querySelector('.overlayBottom')
-    const sentinalEl = document.querySelector('.sentinal')
     useEffect(() => {
-        const handler = (entries: any) => {
-            console.log(entries)
-            // entries is an array of observed dom nodes
-            // we're only interested in the first one at [0]
-            // because that's our .sentinal node.
-            // Here observe whether or not that node is in the viewport
-            if (!entries[0].isIntersecting) {
-                buttonWrapperEl?.classList.add('enabled')
+        const deleteOverlayContentEl = document.querySelector('.deleteOverlayContent')
+        const overlayBottomEl = document.querySelector('.overlayBottom')
+        const overlayBoxEl = document.querySelector('.overlayBox')
+
+        const handler = () => {
+            const overlayBoxHeightActual = (overlayBoxEl?.clientHeight ?? 0) + 32
+            const innerWindowHeight = overlayBoxHeightActual - (overlayBottomEl?.clientHeight ?? 0)            
+            console.log('deleteOverlayContentEl?.getBoundingClientRect()?.bottom ?? 0) < innerWindowHeight', deleteOverlayContentEl?.getBoundingClientRect()?.bottom ?? 0, innerWindowHeight)
+            if ((deleteOverlayContentEl?.getBoundingClientRect()?.bottom ?? 0) > innerWindowHeight) {
+                console.log('TRIGGERED')
+                overlayBottomEl?.classList.add('overlayBottomEnabled')
             } else {
-                buttonWrapperEl?.classList.remove('enabled')
+                overlayBottomEl?.classList.remove('overlayBottomEnabled')
             }
         }
-
-        // create the observer
-        const observer = new window.IntersectionObserver(handler)
-        // give the observer some dom nodes to keep an eye on
-        if (sentinalEl) {
-
-            observer.observe(sentinalEl)
-        }
+        handler()
     }, [deletePlayerList.length])
 
 
@@ -263,7 +257,6 @@ function Start() {
                                 src={trashIcon}
                             />
                         ))}
-                        <div className='sentinal'></div>
                     </div>
 
                 </div>
