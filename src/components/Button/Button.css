@@ -25,13 +25,13 @@
 }
 
 .inverted {
-    background-color: white;
+    background-color: transparent;
     border: 3px solid var(--blue);
     color: var(--blue);
 }
 
 .invertedSecondary {
-    background-color: white;
+    background-color: transparent;
     border: 3px solid var(--red);
     color: var(--red);
 }

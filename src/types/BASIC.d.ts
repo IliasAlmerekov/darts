@@ -13,9 +13,9 @@ declare namespace BASIC {
     };
 
     type Round = {
-        throw1: undefined | number;
-        throw2: undefined | number;
-        throw3: undefined | number;
+        throw1?: number;
+        throw2?: number;
+        throw3?: number;
         isRoundBust?: boolean;
     };
 
@@ -27,6 +27,8 @@ declare namespace BASIC {
         index: number;
         rounds: Round[];
         isPlaying?: boolean;
+        isBust?: boolean;
+        throwCount?: number;
     };
 
     type UserProps = {

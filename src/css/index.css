@@ -27,6 +27,9 @@
     --padding-xl: 64px;
     --padding-2xl: 80px;
     --padding-3xl: 96px;
+
+    --box-shadow: 0px 0px 37px 6px rgba(0, 0, 0, 0.3);
+
 }
 
 body {
@@ -96,4 +99,12 @@ h5 {
     font-weight: 400;
     line-height: 14.4px;
     text-align: left;
+}
+
+.App {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    justify-content: space-between;
 }

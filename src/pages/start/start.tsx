@@ -3,7 +3,6 @@ import { useState } from 'react';
 import UnselectedPlayerItem from '../../components/PlayerItems/UnselectedPlayerItem';
 import SelectedPlayerItem from '../../components/PlayerItems/SelectedPlayerItem';
 import Plus from '../../icons/plus.svg'
-import NewPLayerOverlay from '../../components/CreateNewPlayerOverlay/NewPlayerOverlay';
 import Madebydeepblue from '../../icons/madeByDeepblue.svg';
 import userPLus from '../../icons/user-plus.svg'
 import LinkButton from '../../components/LinkButton/LinkButton';
@@ -11,9 +10,10 @@ import Button from '../../components/Button/Button';
 import '../../components/Button/Button.css'
 import settingsCog from '../../icons/settings.svg'
 import arrowRight from '../../icons/arrow-right.svg'
-import '../../components/CreateNewPlayerOverlay/NewPlayerOverlay.css'
-import DeletePLayerOverlay from '../../components/DeletePlayerOverlay/DeletePlayerOverlay';
 import trashIcon from '../../icons/trash-icon.svg'
+import Overlay from '../../components/Overlay/Overlay';
+import DefaultInputField from '../../components/InputField/DefaultInputField';
+import deleteIcon from '../../icons/delete.svg'
 
 type PlayerProps = {
     name: string
@@ -220,29 +220,47 @@ function Start() {
                 </div>
             </div>
 
-            <DeletePLayerOverlay
+            <Overlay
+                src={deleteIcon}
                 isOpen={isSettingsCogOpen}
-                onClose={() => setIsSettingsCogOpen(!isSettingsCogOpen)}
-                handleClick={() => updateArray()}
-                label='Done'
-                type='primary'
-                userMap={deletePlayerList}
-                src={trashIcon}
-                handleDelete={(name) => deletePlayer(name)}
+                onClose={() => setIsSettingsCogOpen(!isSettingsCogOpen)}>
+                <div className='deletePlayerOverlay'>
+                    <p className="copylarge">Delete Player</p>
+                    <div className='deleteOverlayContent'>
+                        {deletePlayerList.map((player: { name: string }, index: number) => (
+                            <UnselectedPlayerItem
+                                {...player}
+                                key={index}
+                                handleClickOrDelete={() => deletePlayer(player.name)}
+                                src={trashIcon}
+                            />
+                        ))}
+                    </div>
 
-            />
+                    <Button
+                        type="primary"
+                        label='Done'
+                        handleClick={() => updateArray()} />
+                </div>
+            </Overlay>
 
-            <NewPLayerOverlay
-                icon={userPLus}
-                placeholder="Playername"
+            <Overlay
+                src={deleteIcon}
                 isOpen={isOverlayOpen}
-                onClose={() => setIsOverlayOpen(!isOverlayOpen)}
-                handleClick={() => createPlayer(newPlayer)}
-                newPlayer={newPlayer}
-                setNewPlayer={setNewPlayer}
-                label='Player Input'
-                iconStyling='userPlus'
-            />
+                onClose={() => setIsOverlayOpen(!isOverlayOpen)}>
+                <div className='createPlayerOverlay'>
+                    <p className="copylarge">New Player</p>
+                    <DefaultInputField
+                        value={newPlayer}
+                        placeholder="Playername"
+                        onChange={(e: any) => setNewPlayer(e.target.value)} />
+                    <Button
+                        iconStyling='userPlus'
+                        label='Player Input'
+                        iconSrc={userPLus}
+                        handleClick={() => createPlayer(newPlayer)} />
+                </div>
+            </Overlay>
         </div>
     )
 }

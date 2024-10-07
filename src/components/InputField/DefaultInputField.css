@@ -2,9 +2,9 @@
     background: var(--white);
     text-decoration: none;
     border-radius: 8px;
-    padding: 0px 8px 0px 8px;
     color: var(--darkgrey);
     border: none;
     height: 56px;
-    width: 376px;
+    width: 100%;
+    padding: 0;
 }

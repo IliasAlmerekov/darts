@@ -12,7 +12,6 @@
     display: flex;
     flex-direction: column;
     height: 100vh;
-    width: 330px;
 }
 
 
@@ -26,7 +25,6 @@
 .headerUnselectedPlayers {
     margin: 32px 0px 48px 0px;
     color: var(--darkgrey);
-
 }
 
 .headerSelectedPlayers {
@@ -110,4 +108,56 @@
 
 .settingsCog {
     width: 50px;
+}
+
+.deleteOverlay {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background-color: var(--lightgrey);
+    border-radius: 16px;
+    align-content: center;
+    justify-content: center;
+    display: grid;
+    box-shadow: var(--box-shadow);
+    padding: 32px;
+    height: 80%;
+}
+
+.deleteOverlayContent {
+    width: 100%;
+    max-height: 82%;
+    overflow: auto;
+    -webkit-overflow-scrolling: touch;
+    background:
+
+        linear-gradient(var(--lightgrey) 30%,
+            rgba(255, 255, 255, 0)) center top,
+
+        linear-gradient(rgba(255, 255, 255, 0),
+            var(--lightgrey) 70%) center bottom,
+
+        linear-gradient(rgba(0, 0, 0, 0.2),
+            rgba(0, 0, 0, 0)) center top,
+
+        linear-gradient(rgba(0, 0, 0, 0),
+            rgba(0, 0, 0, 0.2)) center bottom;
+
+    background-repeat: no-repeat;
+    background-size: 100% 40px, 100% 40px, 100% 14px, 100% 14px;
+    background-attachment: local, local, scroll, scroll;
+}
+
+.createPlayerOverlay {
+    padding: 96px 0px 96px 0px;
+    width: 71.7%;
+}
+
+.deletePlayerOverlay {
+    width: 71.7%;
+    width: 71.7%;
+    justify-content: end;
+    display: flex;
+    flex-direction: column;
 }
