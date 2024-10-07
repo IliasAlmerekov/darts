@@ -128,6 +128,7 @@
 .deleteOverlayContent {
     width: 100%;
     overflow: auto;
+    margin-bottom: 32px;
 }
 
 .createPlayerOverlay {
@@ -160,9 +161,4 @@
 
 .deletePlayerOverlayAdjust {
     height: 80%;
-}
-
-.sentinal {
-    background: hotpink;
-    height: 10px;
 }

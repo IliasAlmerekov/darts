@@ -173,16 +173,15 @@ function Start() {
         const overlayBoxEl = document.querySelector('.overlayBox')
 
         const handler = () => {
-            const innerWindowHeight = (overlayBoxEl?.clientHeight ?? 0) - (overlayBottomEl?.clientHeight ?? 0)
-            const listOfPlayresHeightTotal = (deleteOverlayContentEl?.clientHeight ?? 0) + 160
-            if (listOfPlayresHeightTotal > innerWindowHeight) {
-                overlayBottomEl?.classList.add('overlayBottomEnabled')
-            } else {
+            const overlayBoxHeightActual = (overlayBoxEl?.clientHeight ?? 0)
+            const innerWindowHeight = overlayBoxHeightActual - (overlayBottomEl?.clientHeight ?? 0)
+            console.log('deleteOverlayContentEl?.getBoundingClientRect()?.bottom ?? 0) < innerWindowHeight', deleteOverlayContentEl?.getBoundingClientRect()?.bottom ?? 0, innerWindowHeight)
+            if ((deleteOverlayContentEl?.getBoundingClientRect()?.bottom ?? 0) < innerWindowHeight + 80) {
                 overlayBottomEl?.classList.remove('overlayBottomEnabled')
             }
         }
         handler()
-    }, [deletePlayerList.length])
+    }, [deletePlayerList.length, isSettingsCogOpen])
 
 
 
@@ -258,7 +257,7 @@ function Start() {
                     </div>
 
                 </div>
-                <div className='overlayBottom'>
+                <div className='overlayBottom overlayBottomEnabled'>
                     <Button
                         className='deleteOverlayButton'
                         type="primary"
