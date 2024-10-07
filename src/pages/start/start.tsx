@@ -176,7 +176,7 @@ function Start() {
             const overlayBoxHeightActual = (overlayBoxEl?.clientHeight ?? 0)
             const innerWindowHeight = overlayBoxHeightActual - (overlayBottomEl?.clientHeight ?? 0)
             console.log('deleteOverlayContentEl?.getBoundingClientRect()?.bottom ?? 0) < innerWindowHeight', deleteOverlayContentEl?.getBoundingClientRect()?.bottom ?? 0, innerWindowHeight)
-            if ((deleteOverlayContentEl?.getBoundingClientRect()?.bottom ?? 0) < innerWindowHeight + 80) {
+            if ((deleteOverlayContentEl?.getBoundingClientRect()?.bottom ?? 0) < innerWindowHeight + 60) {
                 overlayBottomEl?.classList.remove('overlayBottomEnabled')
             }
         }
