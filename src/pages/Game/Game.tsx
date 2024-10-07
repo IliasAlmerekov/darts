@@ -109,10 +109,9 @@ function Game() {
         }
         if (playerList[playerTurn].score === 0) {
             if (playerList.length === 2) {
-                console.log("moin")
+                //route to finished page
             } else if (finishedPlayerList.length > 0) {
-                handleFinishedPlayer()
-                console.log("playerlist", playerList)
+
             }
             else {
                 setIsOverlayOpen(true);
@@ -124,8 +123,6 @@ function Game() {
         setPlayerList(updatedPlayerlist);
         playerList[playerTurn].throwCount = throwCount;
     }
-
-    //console.log(playerList)
 
     function bust(bustedPlayerScore: number) {
         const currentRoundOfPlayer = playerList[playerTurn].rounds[roundsCount - 1];
