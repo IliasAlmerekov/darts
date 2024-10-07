@@ -1,5 +1,5 @@
 import '../start/start.css'
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import UnselectedPlayerItem from '../../components/PlayerItems/UnselectedPlayerItem';
 import SelectedPlayerItem from '../../components/PlayerItems/SelectedPlayerItem';
 import Plus from '../../icons/plus.svg'
@@ -167,6 +167,24 @@ function Start() {
         setIsSettingsCogOpen(!isSettingsCogOpen)
     }
 
+    useEffect(() => {
+        const deleteOverlayContentEl = document.querySelector('.deleteOverlayContent')
+        const overlayBottomEl = document.querySelector('.overlayBottom')
+        const overlayBoxEl = document.querySelector('.overlayBox')
+
+        const handler = () => {
+            const overlayBoxHeightActual = (overlayBoxEl?.clientHeight ?? 0)
+            const innerWindowHeight = overlayBoxHeightActual - (overlayBottomEl?.clientHeight ?? 0)
+            console.log('deleteOverlayContentEl?.getBoundingClientRect()?.bottom ?? 0) < innerWindowHeight', deleteOverlayContentEl?.getBoundingClientRect()?.bottom ?? 0, innerWindowHeight)
+            if ((deleteOverlayContentEl?.getBoundingClientRect()?.bottom ?? 0) < innerWindowHeight + 60) {
+                overlayBottomEl?.classList.remove('overlayBottomEnabled')
+            }
+        }
+        handler()
+    }, [deletePlayerList.length, isSettingsCogOpen])
+
+
+
     return (
         <div className='start'>
             <div className="existingPlayerList">
@@ -221,6 +239,7 @@ function Start() {
             </div>
 
             <Overlay
+                className='overlayBox deletePlayerOverlayAdjust'
                 src={deleteIcon}
                 isOpen={isSettingsCogOpen}
                 onClose={() => setIsSettingsCogOpen(!isSettingsCogOpen)}>
@@ -237,7 +256,10 @@ function Start() {
                         ))}
                     </div>
 
+                </div>
+                <div className='overlayBottom overlayBottomEnabled'>
                     <Button
+                        className='deleteOverlayButton'
                         type="primary"
                         label='Done'
                         handleClick={() => updateArray()} />
@@ -245,6 +267,7 @@ function Start() {
             </Overlay>
 
             <Overlay
+                className='overlayBox'
                 src={deleteIcon}
                 isOpen={isOverlayOpen}
                 onClose={() => setIsOverlayOpen(!isOverlayOpen)}>
