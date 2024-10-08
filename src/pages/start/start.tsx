@@ -14,6 +14,8 @@ import trashIcon from '../../icons/trash-icon.svg'
 import Overlay from '../../components/Overlay/Overlay';
 import DefaultInputField from '../../components/InputField/DefaultInputField';
 import deleteIcon from '../../icons/delete.svg'
+import { mockUserList } from '../../mockdata';
+import clsx from 'clsx';
 
 export type PlayerProps = {
     id: number
@@ -22,27 +24,44 @@ export type PlayerProps = {
 }
 
 function Start() {
-    const unSelectedPlayerListFromLS: string = localStorage.getItem("selectedPlayer") ?? ''
+    const unSelectedPlayerListFromLS: string = localStorage.getItem("User") ?? ''
     const playersFromLocalStorage = JSON.parse(unSelectedPlayerListFromLS)
 
     const [newPlayer, setNewPlayer] = useState('')
     const [isOverlayOpen, setIsOverlayOpen] = useState(false)
     const [isSettingsCogOpen, setIsSettingsCogOpen] = useState(false)
     const [deletePlayerList, setDeletePlayerList] = useState<PlayerProps[]>([])
-    const [testUserSelected, setTestUserSelected] = useState<PlayerProps[]>(playersFromLocalStorage);
+    const [testUserSelected, setTestUserSelected] = useState<PlayerProps[]>([]);
     const [testUserUnselected, setTestUserUnselected] = useState<PlayerProps[]>([]);
-    localStorage.setItem("selectedPlayer", JSON.stringify(testUserSelected))
+    const [userList, setUserList] = useState<BASIC.UserProps[]>(playersFromLocalStorage)
+    localStorage.setItem("User", JSON.stringify(userList))
 
-    function handleSelect(name: any) {
+    function initializePlayerList() {
+        const initialPlayerlist: PlayerProps[] = [];
+        playersFromLocalStorage.forEach((user: BASIC.UserProps, i: number) => {
+            const player = {
+                id: user.id,
+                name: user.name,
+                isAdded: false,
+            };
+            initialPlayerlist.push(player);
+        });
+        setTestUserUnselected(initialPlayerlist);
+    }
+
+    function handleSelect(name: any, id: number) {
         if (testUserSelected.length === 10) {
             return
         } else {
             const newList = testUserUnselected.filter((list) => list.name !== name);
             const newSelectedList: PlayerProps[] = [...testUserSelected]
-            newSelectedList.push({ name, isAdded: false, id: Number(new Date) })
+            newSelectedList.push({ name, isAdded: true, id })
             setTestUserUnselected(newList);
             setTestUserSelected(newSelectedList)
+            console.log(testUserUnselected)
+            console.log(testUserSelected)
         }
+
     }
 
     function handleUnselect(name: any) {
@@ -54,15 +73,22 @@ function Start() {
     }
 
     function createPlayer(name: any) {
-        if (testUserSelected.length === 10) {
-            testUserUnselected.push({ name, isAdded: true, id: Number(new Date) })
-            setIsOverlayOpen(!isOverlayOpen)
-            setNewPlayer("")
-        } else {
-            testUserSelected.push({ name, isAdded: true, id: Number(new Date) })
-            setIsOverlayOpen(!isOverlayOpen)
-            setNewPlayer("")
-        }
+        const newUserList: BASIC.UserProps[] = [...userList]
+        newUserList.push({ name, id: Number(new Date) })
+        setUserList(newUserList)
+        setIsOverlayOpen(!isOverlayOpen)
+        setNewPlayer("")
+
+
+        /* if (testUserSelected.length === 10) {
+        testUserUnselected.push({ name, isAdded: true, id: Number(new Date) })
+        setIsOverlayOpen(!isOverlayOpen)
+        setNewPlayer("")
+    } else {
+        testUserSelected.push({ name, isAdded: true, id: Number(new Date) })
+        setIsOverlayOpen(!isOverlayOpen)
+        setNewPlayer("")
+    } */
     }
 
     function deletePlayer(name: any) {
@@ -73,7 +99,6 @@ function Start() {
     function overlayPlayerlist() {
         const concatPlayerlist = testUserSelected.concat(testUserUnselected)
         setDeletePlayerList(concatPlayerlist)
-
         setIsSettingsCogOpen(!isSettingsCogOpen)
     }
 
@@ -102,7 +127,6 @@ function Start() {
         const handler = () => {
             const overlayBoxHeightActual = (overlayBoxEl?.clientHeight ?? 0)
             const innerWindowHeight = overlayBoxHeightActual - (overlayBottomEl?.clientHeight ?? 0)
-            console.log('deleteOverlayContentEl?.getBoundingClientRect()?.bottom ?? 0) < innerWindowHeight', deleteOverlayContentEl?.getBoundingClientRect()?.bottom ?? 0, innerWindowHeight)
             if ((deleteOverlayContentEl?.getBoundingClientRect()?.bottom ?? 0) < innerWindowHeight + 60) {
                 overlayBottomEl?.classList.remove('overlayBottomEnabled')
             }
@@ -110,13 +134,15 @@ function Start() {
         handler()
     }, [deletePlayerList.length, isSettingsCogOpen])
 
-
+    useEffect(() => {
+        initializePlayerList();
+    }, []);
 
     return (
         <div className='start'>
             <div className="existingPlayerList">
                 <div className='header'>
-                    <h4 className='headerUnelectedPlayers'>Unselected <br /> Players</h4>
+                    <h4 className='headerUnselectedPlayers'>Unselected <br /> Players</h4>
                     <img
                         className='settingsCog'
                         src={settingsCog}
@@ -125,12 +151,14 @@ function Start() {
                         } />
                 </div>
 
-                {testUserUnselected.length > 0 && <div className='testUserUnselectedList'>
-                    {testUserUnselected.map((player: { name: string, isAdded: boolean }, index: number) => (
+                {testUserUnselected.length > 0 && <div className={clsx("testUserUnselectedList", {
+                    "enabled": testUserSelected.length === 10
+                })}>
+                    {testUserUnselected.map((player: { name: string, isAdded: boolean, id: number }, index: number) => (
                         <UnselectedPlayerItem
                             {...player}
                             key={index}
-                            handleClickOrDelete={() => handleSelect(player.name)}
+                            handleClickOrDelete={() => handleSelect(player.name, player.id)}
                             src={arrowRight} />
                     ))}
                 </div>}
@@ -145,7 +173,7 @@ function Start() {
             </div>
             <div className="addedPlayerList">
                 <img className='deepblueIcon' src={Madebydeepblue} alt="" />
-                <h4 className='headerSelectedPlayers'>Selected Players</h4>
+                <h4 className='headerSelectedPlayers'>Selected Players <div className='listCount'>{testUserSelected.length}/10</div></h4>
 
                 {testUserSelected.map((player: { name: string }, index: number) => (
                     <SelectedPlayerItem

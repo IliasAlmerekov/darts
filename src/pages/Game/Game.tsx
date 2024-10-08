@@ -20,7 +20,7 @@ function Game() {
     const [isOverlayOpen, setIsOverlayOpen] = useState(false);
     const [history, setHistory] = useState<any[]>([]);
     const [finishedPlayerList, setFinishedPlayerList] = useState<BASIC.PlayerProps[]>([])
-    const selectedPlayerListFromLS: string = localStorage.getItem("selectedPlayer") ?? ''
+    const selectedPlayerListFromLS: string = localStorage.getItem("User") ?? ''
     const playersFromLocalStorage = JSON.parse(selectedPlayerListFromLS)
 
     function initializePlayerList() {
