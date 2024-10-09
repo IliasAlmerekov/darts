@@ -1,5 +1,5 @@
 import '../start/start.css'
-import { useEffect, useState } from 'react';
+import { Dispatch, SetStateAction, useEffect, useState } from 'react';
 import UnselectedPlayerItem from '../../components/PlayerItems/UnselectedPlayerItem';
 import SelectedPlayerItem from '../../components/PlayerItems/SelectedPlayerItem';
 import Plus from '../../icons/plus.svg'
@@ -23,7 +23,12 @@ export type PlayerProps = {
     isAdded: boolean
 }
 
-function Start() {
+export type IProps = {
+    list: PlayerProps[];
+    setList: Dispatch<SetStateAction<PlayerProps[]>>;
+}
+
+function Start({ list, setList }: IProps) {
     const unSelectedPlayerListFromLS: string = localStorage.getItem("User") ?? ''
     const playersFromLocalStorage = JSON.parse(unSelectedPlayerListFromLS)
 
@@ -58,8 +63,9 @@ function Start() {
             newSelectedList.push({ name, isAdded: true, id })
             setTestUserUnselected(newList);
             setTestUserSelected(newSelectedList)
-            console.log(testUserUnselected)
-            console.log(testUserSelected)
+            setList(newSelectedList)
+            console.log("testuserselected", testUserSelected)
+            console.log("list", list)
         }
 
     }
@@ -79,16 +85,15 @@ function Start() {
         setIsOverlayOpen(!isOverlayOpen)
         setNewPlayer("")
 
-
-        /* if (testUserSelected.length === 10) {
-        testUserUnselected.push({ name, isAdded: true, id: Number(new Date) })
-        setIsOverlayOpen(!isOverlayOpen)
-        setNewPlayer("")
-    } else {
-        testUserSelected.push({ name, isAdded: true, id: Number(new Date) })
-        setIsOverlayOpen(!isOverlayOpen)
-        setNewPlayer("")
-    } */
+        if (testUserSelected.length === 10) {
+            testUserUnselected.push({ name, isAdded: true, id: Number(new Date) })
+            setIsOverlayOpen(!isOverlayOpen)
+            setNewPlayer("")
+        } else {
+            testUserSelected.push({ name, isAdded: true, id: Number(new Date) })
+            setIsOverlayOpen(!isOverlayOpen)
+            setNewPlayer("")
+        }
     }
 
     function deletePlayer(name: any) {

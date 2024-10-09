@@ -10,8 +10,9 @@ import NumberButton from "../../components/Keyboard/NumberButton";
 import FinishedGamePlayerItemList from "../../components/GamePlayerItem/FinishedGamePlayerItemList";
 import LinkButton from "../../components/LinkButton/LinkButton";
 import Undo from '../../icons/undo-copy.svg'
+import { IProps, PlayerProps } from "../start/start";
 
-function Game() {
+function Game(list: PlayerProps[]) {
     const [playerScore, setPlayerScore] = useState(21);
     const [roundsCount, setRoundsCount] = useState(1);
     const [playerList, setPlayerList] = useState<BASIC.PlayerProps[]>([]);
@@ -22,6 +23,7 @@ function Game() {
     const [finishedPlayerList, setFinishedPlayerList] = useState<BASIC.PlayerProps[]>([])
     const selectedPlayerListFromLS: string = localStorage.getItem("User") ?? ''
     const playersFromLocalStorage = JSON.parse(selectedPlayerListFromLS)
+    console.log("selectedplayelist", list)
 
     function initializePlayerList() {
         const initialPlayerlist: BASIC.PlayerProps[] = [];
