@@ -10,9 +10,13 @@ import NumberButton from "../../components/Keyboard/NumberButton";
 import FinishedGamePlayerItemList from "../../components/GamePlayerItem/FinishedGamePlayerItemList";
 import LinkButton from "../../components/LinkButton/LinkButton";
 import Undo from '../../icons/undo-copy.svg'
-import { IProps, PlayerProps } from "../start/start";
+import { PlayerProps } from "../start/start";
 
-function Game(list: PlayerProps[]) {
+type Props = {
+    list: PlayerProps[]
+}
+
+function Game(list: Props) {
     const [playerScore, setPlayerScore] = useState(21);
     const [roundsCount, setRoundsCount] = useState(1);
     const [playerList, setPlayerList] = useState<BASIC.PlayerProps[]>([]);
@@ -21,13 +25,12 @@ function Game(list: PlayerProps[]) {
     const [isOverlayOpen, setIsOverlayOpen] = useState(false);
     const [history, setHistory] = useState<any[]>([]);
     const [finishedPlayerList, setFinishedPlayerList] = useState<BASIC.PlayerProps[]>([])
-    const selectedPlayerListFromLS: string = localStorage.getItem("User") ?? ''
-    const playersFromLocalStorage = JSON.parse(selectedPlayerListFromLS)
     console.log("selectedplayelist", list)
+    console.log(playerList)
 
     function initializePlayerList() {
         const initialPlayerlist: BASIC.PlayerProps[] = [];
-        playersFromLocalStorage.forEach((user: BASIC.UserProps, i: number) => {
+        list.list.forEach((user: BASIC.UserProps, i: number) => {
             const player = {
                 id: user.id,
                 name: user.name,

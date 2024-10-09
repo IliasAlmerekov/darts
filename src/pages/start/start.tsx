@@ -26,11 +26,12 @@ export type PlayerProps = {
 export type IProps = {
     list: PlayerProps[];
     setList: Dispatch<SetStateAction<PlayerProps[]>>;
+    userList: BASIC.UserProps[]
 }
 
-function Start({ list, setList }: IProps) {
-    const unSelectedPlayerListFromLS: string = localStorage.getItem("User") ?? ''
-    const playersFromLocalStorage = JSON.parse(unSelectedPlayerListFromLS)
+function Start({ list, setList, userList }: IProps) {
+    //const playersFromLS: string = localStorage.getItem("User") ?? "" //get before set???
+    //const playersFromLocalStorage = JSON.parse(playersFromLS);
 
     const [newPlayer, setNewPlayer] = useState('')
     const [isOverlayOpen, setIsOverlayOpen] = useState(false)
@@ -38,12 +39,14 @@ function Start({ list, setList }: IProps) {
     const [deletePlayerList, setDeletePlayerList] = useState<PlayerProps[]>([])
     const [testUserSelected, setTestUserSelected] = useState<PlayerProps[]>([]);
     const [testUserUnselected, setTestUserUnselected] = useState<PlayerProps[]>([]);
-    const [userList, setUserList] = useState<BASIC.UserProps[]>(playersFromLocalStorage)
-    localStorage.setItem("User", JSON.stringify(userList))
+    const [deleteUserFromLS, setDeleteUserFromLS] = useState<BASIC.UserProps[]>([])
+    //const [userList, setUserList] = useState<BASIC.UserProps[]>(playersFromLocalStorage)
+    //localStorage.setItem("User", JSON.stringify(userList))
+    console.log("userlist in start", userList)
 
     function initializePlayerList() {
         const initialPlayerlist: PlayerProps[] = [];
-        playersFromLocalStorage.forEach((user: BASIC.UserProps, i: number) => {
+        userList.forEach((user: BASIC.UserProps, i: number) => {
             const player = {
                 id: user.id,
                 name: user.name,
@@ -64,33 +67,32 @@ function Start({ list, setList }: IProps) {
             setTestUserUnselected(newList);
             setTestUserSelected(newSelectedList)
             setList(newSelectedList)
-            console.log("testuserselected", testUserSelected)
-            console.log("list", list)
         }
 
     }
 
-    function handleUnselect(name: any) {
+    function handleUnselect(name: any, id: number) {
         const newList = testUserSelected.filter((list) => list.name !== name);
         const newUnselectedList: PlayerProps[] = [...testUserUnselected]
-        newUnselectedList.push({ name, isAdded: false, id: Number(new Date) })
+        newUnselectedList.push({ name, isAdded: false, id })
         setTestUserSelected(newList)
         setTestUserUnselected(newUnselectedList)
     }
 
     function createPlayer(name: any) {
-        const newUserList: BASIC.UserProps[] = [...userList]
-        newUserList.push({ name, id: Number(new Date) })
+        const id = Number(new Date)
+        /* const newUserList: BASIC.UserProps[] = [...userList]
+        newUserList.push({ name, id })
         setUserList(newUserList)
         setIsOverlayOpen(!isOverlayOpen)
-        setNewPlayer("")
+        setNewPlayer("") */
 
         if (testUserSelected.length === 10) {
-            testUserUnselected.push({ name, isAdded: true, id: Number(new Date) })
+            testUserUnselected.push({ name, isAdded: true, id })
             setIsOverlayOpen(!isOverlayOpen)
             setNewPlayer("")
         } else {
-            testUserSelected.push({ name, isAdded: true, id: Number(new Date) })
+            testUserSelected.push({ name, isAdded: true, id })
             setIsOverlayOpen(!isOverlayOpen)
             setNewPlayer("")
         }
@@ -98,7 +100,9 @@ function Start({ list, setList }: IProps) {
 
     function deletePlayer(name: any) {
         const newList = deletePlayerList.filter((list) => list.name !== name);
+        //const newUserList = userList.filter((list) => list.name !== name);
         setDeletePlayerList(newList);
+        //setDeleteUserFromLS(newUserList)
     }
 
     function overlayPlayerlist() {
@@ -122,6 +126,7 @@ function Start({ list, setList }: IProps) {
         setTestUserUnselected(newUnselectedList)
         setTestUserSelected(newSelectedList)
         setIsSettingsCogOpen(!isSettingsCogOpen)
+        //setUserList(deleteUserFromLS)
     }
 
     useEffect(() => {
@@ -159,7 +164,7 @@ function Start({ list, setList }: IProps) {
                 {testUserUnselected.length > 0 && <div className={clsx("testUserUnselectedList", {
                     "enabled": testUserSelected.length === 10
                 })}>
-                    {testUserUnselected.map((player: { name: string, isAdded: boolean, id: number }, index: number) => (
+                    {testUserUnselected.map((player: { name: string, id: number }, index: number) => (
                         <UnselectedPlayerItem
                             {...player}
                             key={index}
@@ -180,11 +185,11 @@ function Start({ list, setList }: IProps) {
                 <img className='deepblueIcon' src={Madebydeepblue} alt="" />
                 <h4 className='headerSelectedPlayers'>Selected Players <div className='listCount'>{testUserSelected.length}/10</div></h4>
 
-                {testUserSelected.map((player: { name: string }, index: number) => (
+                {testUserSelected.map((player: { name: string, id: number }, index: number) => (
                     <SelectedPlayerItem
                         {...player}
                         key={index}
-                        handleClick={() => handleUnselect(player.name)} />
+                        handleClick={() => handleUnselect(player.name, player.id)} />
                 ))}
 
                 <div className='startBtn'>

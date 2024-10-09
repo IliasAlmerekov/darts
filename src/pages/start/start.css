@@ -65,6 +65,8 @@
     flex-shrink: 0;
     display: inline-flex;
     height: 3%;
+    position: sticky;
+    top: calc(100vh - 30px)
 }
 
 .testUserUnselectedList {
