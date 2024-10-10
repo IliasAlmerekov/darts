@@ -7,6 +7,7 @@ import Game from '../pages/game/Game'
 
 function App() {
   const [list, setList] = useState<PlayerProps[]>([]);
+  const [deletePlayer, setDeletePlayer] = useState<BASIC.UserProps[]>([])
 
   function getUserFromLS() {
     if (localStorage.getItem("User") !== null) {
@@ -20,14 +21,22 @@ function App() {
     }
   }
 
+
   const userList = getUserFromLS()
 
   function deleteUserFromLS(id: number) {
-    const userList = getUserFromLS()
+    const userList = getUserFromLS() //can delete only 1 user, because every time deleteUserFromLS runs, it gets the list that is not updated
     const userIndex = userList.findIndex((User: BASIC.UserProps) => User.id === id)
     userList.splice(userIndex, 1)
+    setDeletePlayer(userList)
+
+    console.log("deleteplayer", deletePlayer)
+    console.log(userIndex)
     console.log("userlist", userList)
-    localStorage.setItem("User", JSON.stringify(userList))
+  }
+
+  function resetLS() {
+    localStorage.setItem("User", JSON.stringify(deletePlayer))
   }
 
   function addUserToLS(name: string, id: number) {
@@ -47,6 +56,7 @@ function App() {
             userList={userList}
             addUserToLS={addUserToLS}
             deleteUserFromLS={deleteUserFromLS}
+            resetLS={resetLS}
           />} />
           <Route path="/game" element={<Game list={list} />} />
         </Routes>

@@ -29,22 +29,16 @@ export type IProps = {
     userList: BASIC.UserProps[]
     addUserToLS: (name: string, id: number) => void
     deleteUserFromLS: (id: number) => void
+    resetLS: () => void
 }
 
-function Start({ list, setList, userList, addUserToLS, deleteUserFromLS }: IProps) {
-    //const playersFromLS: string = localStorage.getItem("User") ?? "" //get before set???
-    //const playersFromLocalStorage = JSON.parse(playersFromLS);
-
+function Start({ list, setList, userList, addUserToLS, deleteUserFromLS, resetLS }: IProps) {
     const [newPlayer, setNewPlayer] = useState('')
     const [isOverlayOpen, setIsOverlayOpen] = useState(false)
     const [isSettingsCogOpen, setIsSettingsCogOpen] = useState(false)
     const [deletePlayerList, setDeletePlayerList] = useState<PlayerProps[]>([])
     const [testUserSelected, setTestUserSelected] = useState<PlayerProps[]>([]);
     const [testUserUnselected, setTestUserUnselected] = useState<PlayerProps[]>([]);
-    //const [deleteUserFromLS, setDeleteUserFromLS] = useState<BASIC.UserProps[]>([])
-    //const [userList, setUserList] = useState<BASIC.UserProps[]>(playersFromLocalStorage)
-    //localStorage.setItem("User", JSON.stringify(userList))
-    //console.log("userlist in start", userList)
 
     function initializePlayerList() {
         const initialPlayerlist: PlayerProps[] = [];
@@ -89,11 +83,15 @@ function Start({ list, setList, userList, addUserToLS, deleteUserFromLS }: IProp
         setNewPlayer("")
 
         if (testUserSelected.length === 10) {
-            testUserUnselected.push({ name, isAdded: true, id })
+            const newList = [...testUserUnselected]
+            newList.push({ name, isAdded: true, id })
+            setTestUserUnselected(newList) //mutable immutable
             setIsOverlayOpen(!isOverlayOpen)
             setNewPlayer("")
         } else {
-            testUserSelected.push({ name, isAdded: true, id })
+            const newList = [...testUserSelected]
+            newList.push({ name, isAdded: true, id })
+            setTestUserSelected(newList) // 
             setIsOverlayOpen(!isOverlayOpen)
             setNewPlayer("")
         }
@@ -126,6 +124,7 @@ function Start({ list, setList, userList, addUserToLS, deleteUserFromLS }: IProp
         setTestUserUnselected(newUnselectedList)
         setTestUserSelected(newSelectedList)
         setIsSettingsCogOpen(!isSettingsCogOpen)
+        resetLS()
     }
 
     useEffect(() => {
