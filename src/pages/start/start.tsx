@@ -27,9 +27,11 @@ export type IProps = {
     list: PlayerProps[];
     setList: Dispatch<SetStateAction<PlayerProps[]>>;
     userList: BASIC.UserProps[]
+    addUserToLS: (name: string, id: number) => void
+    deleteUserFromLS: (id: number) => void
 }
 
-function Start({ list, setList, userList }: IProps) {
+function Start({ list, setList, userList, addUserToLS, deleteUserFromLS }: IProps) {
     //const playersFromLS: string = localStorage.getItem("User") ?? "" //get before set???
     //const playersFromLocalStorage = JSON.parse(playersFromLS);
 
@@ -39,10 +41,10 @@ function Start({ list, setList, userList }: IProps) {
     const [deletePlayerList, setDeletePlayerList] = useState<PlayerProps[]>([])
     const [testUserSelected, setTestUserSelected] = useState<PlayerProps[]>([]);
     const [testUserUnselected, setTestUserUnselected] = useState<PlayerProps[]>([]);
-    const [deleteUserFromLS, setDeleteUserFromLS] = useState<BASIC.UserProps[]>([])
+    //const [deleteUserFromLS, setDeleteUserFromLS] = useState<BASIC.UserProps[]>([])
     //const [userList, setUserList] = useState<BASIC.UserProps[]>(playersFromLocalStorage)
     //localStorage.setItem("User", JSON.stringify(userList))
-    console.log("userlist in start", userList)
+    //console.log("userlist in start", userList)
 
     function initializePlayerList() {
         const initialPlayerlist: PlayerProps[] = [];
@@ -81,11 +83,10 @@ function Start({ list, setList, userList }: IProps) {
 
     function createPlayer(name: any) {
         const id = Number(new Date)
-        /* const newUserList: BASIC.UserProps[] = [...userList]
-        newUserList.push({ name, id })
-        setUserList(newUserList)
+
+        addUserToLS(name, id)
         setIsOverlayOpen(!isOverlayOpen)
-        setNewPlayer("") */
+        setNewPlayer("")
 
         if (testUserSelected.length === 10) {
             testUserUnselected.push({ name, isAdded: true, id })
@@ -98,11 +99,10 @@ function Start({ list, setList, userList }: IProps) {
         }
     }
 
-    function deletePlayer(name: any) {
+    function deletePlayer(name: any, id: number) {
+        deleteUserFromLS(id)
         const newList = deletePlayerList.filter((list) => list.name !== name);
-        //const newUserList = userList.filter((list) => list.name !== name);
         setDeletePlayerList(newList);
-        //setDeleteUserFromLS(newUserList)
     }
 
     function overlayPlayerlist() {
@@ -126,7 +126,6 @@ function Start({ list, setList, userList }: IProps) {
         setTestUserUnselected(newUnselectedList)
         setTestUserSelected(newSelectedList)
         setIsSettingsCogOpen(!isSettingsCogOpen)
-        //setUserList(deleteUserFromLS)
     }
 
     useEffect(() => {
@@ -211,11 +210,11 @@ function Start({ list, setList, userList }: IProps) {
                 <div className='deletePlayerOverlay'>
                     <p className="copylarge">Delete Player</p>
                     <div className='deleteOverlayContent'>
-                        {deletePlayerList.map((player: { name: string }, index: number) => (
+                        {deletePlayerList.map((player: { name: string, id: number }, index: number) => (
                             <UnselectedPlayerItem
                                 {...player}
                                 key={index}
-                                handleClickOrDelete={() => deletePlayer(player.name)}
+                                handleClickOrDelete={() => deletePlayer(player.name, player.id)}
                                 src={trashIcon}
                             />
                         ))}

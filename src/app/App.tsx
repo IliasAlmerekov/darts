@@ -7,30 +7,47 @@ import Game from '../pages/game/Game'
 
 function App() {
   const [list, setList] = useState<PlayerProps[]>([]);
-  const [userList, setUserList] = useState<BASIC.UserProps[]>([])
 
-  useEffect(() => {
+  function getUserFromLS() {
     if (localStorage.getItem("User") !== null) {
       const playersFromLS = localStorage.getItem("User");
-      const playersFromLocalStorage = !!playersFromLS && JSON.parse('[{"name":"Alica","id":1728476741608}]');
-      setUserList(playersFromLocalStorage)
-      console.log("playerfromlsstring", playersFromLS)
+      const playersFromLocalStorage = !!playersFromLS && JSON.parse(playersFromLS);
+      return playersFromLocalStorage
     }
     else {
-      localStorage.setItem("User", JSON.stringify(userList))
+      localStorage.setItem("User", JSON.stringify([]))
+      return []
     }
-  }, []);
+  }
 
-  useEffect(() => {
-    console.log("userlist", userList);
-  }, [userList]);
+  const userList = getUserFromLS()
+
+  function deleteUserFromLS(id: number) {
+    const userList = getUserFromLS()
+    const userIndex = userList.findIndex((User: BASIC.UserProps) => User.id === id)
+    userList.splice(userIndex, 1)
+    console.log("userlist", userList)
+    localStorage.setItem("User", JSON.stringify(userList))
+  }
+
+  function addUserToLS(name: string, id: number) {
+    const userList = getUserFromLS()
+    userList.push({ name, id })
+    localStorage.setItem("User", JSON.stringify(userList))
+  }
 
   return (
     <div className='App'>
       <BrowserRouter>
         <Routes>
           <Route path="/test" element={<Test />} />
-          <Route path="/" element={<Start list={list} setList={setList} userList={userList} />} />
+          <Route path="/" element={<Start
+            list={list}
+            setList={setList}
+            userList={userList}
+            addUserToLS={addUserToLS}
+            deleteUserFromLS={deleteUserFromLS}
+          />} />
           <Route path="/game" element={<Game list={list} />} />
         </Routes>
       </BrowserRouter>
