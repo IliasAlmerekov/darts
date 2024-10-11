@@ -14,7 +14,6 @@ import trashIcon from '../../icons/trash-icon.svg'
 import Overlay from '../../components/Overlay/Overlay';
 import DefaultInputField from '../../components/InputField/DefaultInputField';
 import deleteIcon from '../../icons/delete.svg'
-import { mockUserList } from '../../mockdata';
 import clsx from 'clsx';
 
 export type PlayerProps = {
@@ -37,74 +36,68 @@ function Start({ list, setList, userList, addUserToLS, deleteUserFromLS, resetLS
     const [isOverlayOpen, setIsOverlayOpen] = useState(false)
     const [isSettingsCogOpen, setIsSettingsCogOpen] = useState(false)
     const [deletePlayerList, setDeletePlayerList] = useState<PlayerProps[]>([])
-    const [testUserSelected, setTestUserSelected] = useState<PlayerProps[]>([]);
-    const [testUserUnselected, setTestUserUnselected] = useState<PlayerProps[]>([]);
+    const [userSelected, setUserSelected] = useState<PlayerProps[]>([]);
+    const [userUnselected, setUserUnselected] = useState<PlayerProps[]>([]);
 
     function initializePlayerList() {
         const initialPlayerlist: PlayerProps[] = [];
         userList.forEach((user: BASIC.UserProps, i: number) => {
             const player = {
-                id: user.id,
                 name: user.name,
                 isAdded: false,
+                id: user.id
             };
             initialPlayerlist.push(player);
         });
-        setTestUserUnselected(initialPlayerlist);
+        setUserUnselected(initialPlayerlist);
     }
 
     function handleSelect(name: any, id: number) {
-        if (testUserSelected.length === 10) {
+        if (userSelected.length === 10) {
             return
         } else {
-            const newList = testUserUnselected.filter((list) => list.name !== name);
-            const newSelectedList: PlayerProps[] = [...testUserSelected]
+            const newList = userUnselected.filter((list) => list.name !== name);
+            const newSelectedList: PlayerProps[] = [...userSelected]
             newSelectedList.push({ name, isAdded: true, id })
-            setTestUserUnselected(newList);
-            setTestUserSelected(newSelectedList)
+            setUserUnselected(newList);
+            setUserSelected(newSelectedList)
             setList(newSelectedList)
         }
-
     }
 
     function handleUnselect(name: any, id: number) {
-        const newList = testUserSelected.filter((list) => list.name !== name);
-        const newUnselectedList: PlayerProps[] = [...testUserUnselected]
+        const newList = userSelected.filter((list) => list.name !== name);
+        const newUnselectedList: PlayerProps[] = [...userUnselected]
         newUnselectedList.push({ name, isAdded: false, id })
-        setTestUserSelected(newList)
-        setTestUserUnselected(newUnselectedList)
+        setUserSelected(newList)
+        setUserUnselected(newUnselectedList)
     }
 
     function createPlayer(name: any) {
         const id = Number(new Date)
-
         addUserToLS(name, id)
+
+        if (userSelected.length === 10) {
+            const newList = [...userUnselected]
+            newList.push({ name, isAdded: false, id })
+            setUserUnselected(newList)
+        } else {
+            const newList = [...userSelected]
+            newList.push({ name, isAdded: true, id })
+            setUserSelected(newList)
+        }
         setIsOverlayOpen(!isOverlayOpen)
         setNewPlayer("")
-
-        if (testUserSelected.length === 10) {
-            const newList = [...testUserUnselected]
-            newList.push({ name, isAdded: true, id })
-            setTestUserUnselected(newList) //mutable immutable
-            setIsOverlayOpen(!isOverlayOpen)
-            setNewPlayer("")
-        } else {
-            const newList = [...testUserSelected]
-            newList.push({ name, isAdded: true, id })
-            setTestUserSelected(newList) // 
-            setIsOverlayOpen(!isOverlayOpen)
-            setNewPlayer("")
-        }
     }
 
     function deletePlayer(name: any, id: number) {
-        deleteUserFromLS(id)
         const newList = deletePlayerList.filter((list) => list.name !== name);
+        deleteUserFromLS(id);
         setDeletePlayerList(newList);
     }
 
     function overlayPlayerlist() {
-        const concatPlayerlist = testUserSelected.concat(testUserUnselected)
+        const concatPlayerlist = userSelected.concat(userUnselected)
         setDeletePlayerList(concatPlayerlist)
         setIsSettingsCogOpen(!isSettingsCogOpen)
     }
@@ -121,8 +114,8 @@ function Start({ list, setList, userList, addUserToLS, deleteUserFromLS, resetLS
             }
         },
         )
-        setTestUserUnselected(newUnselectedList)
-        setTestUserSelected(newSelectedList)
+        setUserUnselected(newUnselectedList)
+        setUserSelected(newSelectedList)
         setIsSettingsCogOpen(!isSettingsCogOpen)
         resetLS()
     }
@@ -159,10 +152,10 @@ function Start({ list, setList, userList, addUserToLS, deleteUserFromLS, resetLS
                         } />
                 </div>
 
-                {testUserUnselected.length > 0 && <div className={clsx("testUserUnselectedList", {
-                    "enabled": testUserSelected.length === 10
+                {userUnselected.length > 0 && <div className={clsx("testUserUnselectedList", {
+                    "enabled": userSelected.length === 10
                 })}>
-                    {testUserUnselected.map((player: { name: string, id: number }, index: number) => (
+                    {userUnselected.map((player: { name: string, id: number }, index: number) => (
                         <UnselectedPlayerItem
                             {...player}
                             key={index}
@@ -181,9 +174,9 @@ function Start({ list, setList, userList, addUserToLS, deleteUserFromLS, resetLS
             </div>
             <div className="addedPlayerList">
                 <img className='deepblueIcon' src={Madebydeepblue} alt="" />
-                <h4 className='headerSelectedPlayers'>Selected Players <div className='listCount'>{testUserSelected.length}/10</div></h4>
+                <h4 className='headerSelectedPlayers'>Selected Players <div className='listCount'>{userSelected.length}/10</div></h4>
 
-                {testUserSelected.map((player: { name: string, id: number }, index: number) => (
+                {userSelected.map((player: { name: string, id: number }, index: number) => (
                     <SelectedPlayerItem
                         {...player}
                         key={index}
@@ -195,7 +188,7 @@ function Start({ list, setList, userList, addUserToLS, deleteUserFromLS, resetLS
                         isLink
                         label='Start'
                         link='/game'
-                        disabled={testUserSelected.length < 2}
+                        disabled={userSelected.length < 2}
                         type='secondary'
                     />
                 </div>

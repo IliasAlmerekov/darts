@@ -1,5 +1,5 @@
 import { BrowserRouter, Route, Routes } from 'react-router-dom';
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import '../css/index.css';
 import Test from '../pages/Test';
 import Start, { PlayerProps } from '../pages/start/start';
@@ -7,6 +7,7 @@ import Game from '../pages/game/Game'
 
 function App() {
   const [list, setList] = useState<PlayerProps[]>([]);
+  const [userList, setUserList] = useState(getUserFromLS())
   const [deletePlayer, setDeletePlayer] = useState<BASIC.UserProps[]>([])
 
   function getUserFromLS() {
@@ -21,18 +22,12 @@ function App() {
     }
   }
 
-
-  const userList = getUserFromLS()
-
   function deleteUserFromLS(id: number) {
-    const userList = getUserFromLS() //can delete only 1 user, because every time deleteUserFromLS runs, it gets the list that is not updated
-    const userIndex = userList.findIndex((User: BASIC.UserProps) => User.id === id)
-    userList.splice(userIndex, 1)
-    setDeletePlayer(userList)
-
-    console.log("deleteplayer", deletePlayer)
-    console.log(userIndex)
-    console.log("userlist", userList)
+    const newUserList = [...userList]
+    const userIndex = newUserList.findIndex((User: BASIC.UserProps) => User.id === id)
+    newUserList.splice(userIndex, 1)
+    setDeletePlayer(newUserList)
+    setUserList(newUserList)
   }
 
   function resetLS() {
@@ -40,9 +35,10 @@ function App() {
   }
 
   function addUserToLS(name: string, id: number) {
-    const userList = getUserFromLS()
-    userList.push({ name, id })
-    localStorage.setItem("User", JSON.stringify(userList))
+    const newUserList = [...userList]
+    newUserList.push({ name, id })
+    setUserList(newUserList)
+    localStorage.setItem("User", JSON.stringify(newUserList))
   }
 
   return (

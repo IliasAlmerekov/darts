@@ -25,8 +25,6 @@ function Game(list: Props) {
     const [isOverlayOpen, setIsOverlayOpen] = useState(false);
     const [history, setHistory] = useState<any[]>([]);
     const [finishedPlayerList, setFinishedPlayerList] = useState<BASIC.PlayerProps[]>([])
-    console.log("selectedplayelist", list)
-    console.log(playerList)
 
     function initializePlayerList() {
         const initialPlayerlist: BASIC.PlayerProps[] = [];
