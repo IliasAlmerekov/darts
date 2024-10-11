@@ -44,6 +44,9 @@ function GamePlayerItemList({ ...props }: Props) {
                         gamePlayerItemPrevThrow1={item.rounds[props.round - 2]?.throw1}
                         gamePlayerItemPrevThrow2={item.rounds[props.round - 2]?.throw2}
                         gamePlayerItemPrevThrow3={item.rounds[props.round - 2]?.throw3}
+                        id={clsx("", {
+                            "playerid": item.isActive === true
+                        })}
                     />
                 ))
             }
