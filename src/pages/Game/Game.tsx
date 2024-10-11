@@ -13,7 +13,7 @@ import Undo from '../../icons/undo-copy.svg'
 import { PlayerProps } from "../start/start";
 
 type Props = {
-    list: PlayerProps[]
+    players: PlayerProps[]
 }
 
 function Game(list: Props) {
@@ -28,7 +28,7 @@ function Game(list: Props) {
 
     function initializePlayerList() {
         const initialPlayerlist: BASIC.PlayerProps[] = [];
-        list.list.forEach((user: BASIC.UserProps, i: number) => {
+        list.players.forEach((user: BASIC.UserProps, i: number) => {
             const player = {
                 id: user.id,
                 name: user.name,

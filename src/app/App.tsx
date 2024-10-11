@@ -54,7 +54,7 @@ function App() {
             deleteUserFromLS={deleteUserFromLS}
             resetLS={resetLS}
           />} />
-          <Route path="/game" element={<Game list={list} />} />
+          <Route path="/game" element={<Game players={list} />} />
         </Routes>
       </BrowserRouter>
     </div>
