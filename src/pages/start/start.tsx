@@ -1,5 +1,5 @@
 import '../start/start.css'
-import { useEffect, useState } from 'react';
+import { Dispatch, SetStateAction, useEffect, useState } from 'react';
 import UnselectedPlayerItem from '../../components/PlayerItems/UnselectedPlayerItem';
 import SelectedPlayerItem from '../../components/PlayerItems/SelectedPlayerItem';
 import Plus from '../../icons/plus.svg'
@@ -14,139 +14,91 @@ import trashIcon from '../../icons/trash-icon.svg'
 import Overlay from '../../components/Overlay/Overlay';
 import DefaultInputField from '../../components/InputField/DefaultInputField';
 import deleteIcon from '../../icons/delete.svg'
+import clsx from 'clsx';
 
-type PlayerProps = {
+export type PlayerProps = {
+    id: number
     name: string
     isAdded: boolean
 }
 
-function Start() {
+export type IProps = {
+    list: PlayerProps[];
+    setList: Dispatch<SetStateAction<PlayerProps[]>>;
+    userList: BASIC.UserProps[]
+    addUserToLS: (name: string, id: number) => void
+    deleteUserFromLS: (id: number) => void
+    resetLS: () => void
+}
+
+function Start({ list, setList, userList, addUserToLS, deleteUserFromLS, resetLS }: IProps) {
     const [newPlayer, setNewPlayer] = useState('')
     const [isOverlayOpen, setIsOverlayOpen] = useState(false)
     const [isSettingsCogOpen, setIsSettingsCogOpen] = useState(false)
     const [deletePlayerList, setDeletePlayerList] = useState<PlayerProps[]>([])
-    const [testUserSelected, setTestUserSelected] = useState([
-        {
-            name: "Max",
-            isAdded: true
-        },
-        {
-            name: "Oliver",
-            isAdded: true
-        },
-        {
-            name: "Anna",
-            isAdded: true
-        },
-        {
-            name: "Christian",
-            isAdded: true
-        },
-        {
-            name: "Peter",
-            isAdded: true
-        },
-        {
-            name: "Mark",
-            isAdded: true
-        },
-        {
-            name: "Tom",
-            isAdded: true
-        },
-        {
-            name: "Thomas",
-            isAdded: true
-        },
-        {
-            name: "Hendrik",
-            isAdded: true
-        }
-    ]);
+    const [userSelected, setUserSelected] = useState<PlayerProps[]>([]);
+    const [userUnselected, setUserUnselected] = useState<PlayerProps[]>([]);
 
-    const [testUserUnselected, setTestUserUnselected] = useState([
-        {
-            name: "Alexander",
-            isAdded: false
+    function initializePlayerList() {
+        const initialPlayerlist: PlayerProps[] = [];
+        userList.forEach((user: BASIC.UserProps, i: number) => {
+            const player = {
+                name: user.name,
+                isAdded: false,
+                id: user.id
+            };
+            initialPlayerlist.push(player);
+        });
+        setUserUnselected(initialPlayerlist);
+    }
 
-        },
-        {
-            name: "Hugh",
-            isAdded: false
-
-        },
-        {
-            name: "Ilias",
-            isAdded: false
-
-        },
-        {
-            name: "Jörg",
-            isAdded: false
-
-        },
-        {
-            name: "Maya",
-            isAdded: false
-
-        },
-        {
-            name: "Nico",
-            isAdded: false
-
-        },
-        {
-            name: "Norman",
-            isAdded: false
-
-        },
-        {
-            name: "Ziyi",
-            isAdded: false
-
-        }
-    ]);
-    function handleSelect(name: any) {
-        if (testUserSelected.length === 10) {
-
+    function handleSelect(name: any, id: number) {
+        if (userSelected.length === 10) {
+            return
         } else {
-            const newList = testUserUnselected.filter((list) => list.name !== name);
-            const newSelectedList: PlayerProps[] = [...testUserSelected]
-            newSelectedList.push({ name, isAdded: false })
-            setTestUserUnselected(newList);
-            setTestUserSelected(newSelectedList)
+            const newList = userUnselected.filter((list) => list.name !== name);
+            const newSelectedList: PlayerProps[] = [...userSelected]
+            newSelectedList.push({ name, isAdded: true, id })
+            setUserUnselected(newList);
+            setUserSelected(newSelectedList)
+            setList(newSelectedList)
         }
     }
 
-    function handleUnselect(name: any) {
-        const newList = testUserSelected.filter((list) => list.name !== name);
-        const newUnselectedList: PlayerProps[] = [...testUserUnselected]
-        newUnselectedList.push({ name, isAdded: false })
-        setTestUserSelected(newList)
-        setTestUserUnselected(newUnselectedList)
+    function handleUnselect(name: any, id: number) {
+        const newList = userSelected.filter((list) => list.name !== name);
+        const newUnselectedList: PlayerProps[] = [...userUnselected]
+        newUnselectedList.push({ name, isAdded: false, id })
+        setUserSelected(newList)
+        setUserUnselected(newUnselectedList)
     }
 
     function createPlayer(name: any) {
-        if (testUserSelected.length === 10) {
-            testUserUnselected.push({ name, isAdded: true })
-            setIsOverlayOpen(!isOverlayOpen)
-            setNewPlayer("")
+        const id = Number(new Date)
+        addUserToLS(name, id)
+
+        if (userSelected.length === 10) {
+            const newList = [...userUnselected]
+            newList.push({ name, isAdded: false, id })
+            setUserUnselected(newList)
         } else {
-            testUserSelected.push({ name, isAdded: true })
-            setIsOverlayOpen(!isOverlayOpen)
-            setNewPlayer("")
+            const newList = [...userSelected]
+            newList.push({ name, isAdded: true, id })
+            setUserSelected(newList)
         }
+        setIsOverlayOpen(!isOverlayOpen)
+        setNewPlayer("")
     }
 
-    function deletePlayer(name: any) {
+    function deletePlayer(name: any, id: number) {
         const newList = deletePlayerList.filter((list) => list.name !== name);
+        deleteUserFromLS(id);
         setDeletePlayerList(newList);
     }
 
     function overlayPlayerlist() {
-        const concatPlayerlist = testUserSelected.concat(testUserUnselected)
+        const concatPlayerlist = userSelected.concat(userUnselected)
         setDeletePlayerList(concatPlayerlist)
-
         setIsSettingsCogOpen(!isSettingsCogOpen)
     }
 
@@ -162,9 +114,10 @@ function Start() {
             }
         },
         )
-        setTestUserUnselected(newUnselectedList)
-        setTestUserSelected(newSelectedList)
+        setUserUnselected(newUnselectedList)
+        setUserSelected(newSelectedList)
         setIsSettingsCogOpen(!isSettingsCogOpen)
+        resetLS()
     }
 
     useEffect(() => {
@@ -175,7 +128,6 @@ function Start() {
         const handler = () => {
             const overlayBoxHeightActual = (overlayBoxEl?.clientHeight ?? 0)
             const innerWindowHeight = overlayBoxHeightActual - (overlayBottomEl?.clientHeight ?? 0)
-            console.log('deleteOverlayContentEl?.getBoundingClientRect()?.bottom ?? 0) < innerWindowHeight', deleteOverlayContentEl?.getBoundingClientRect()?.bottom ?? 0, innerWindowHeight)
             if ((deleteOverlayContentEl?.getBoundingClientRect()?.bottom ?? 0) < innerWindowHeight + 60) {
                 overlayBottomEl?.classList.remove('overlayBottomEnabled')
             }
@@ -183,13 +135,15 @@ function Start() {
         handler()
     }, [deletePlayerList.length, isSettingsCogOpen])
 
-
+    useEffect(() => {
+        initializePlayerList();
+    }, []);
 
     return (
         <div className='start'>
             <div className="existingPlayerList">
                 <div className='header'>
-                    <h4 className='headerUnelectedPlayers'>Unselected <br /> Players</h4>
+                    <h4 className='headerUnselectedPlayers'>Unselected <br /> Players</h4>
                     <img
                         className='settingsCog'
                         src={settingsCog}
@@ -198,15 +152,17 @@ function Start() {
                         } />
                 </div>
 
-                <div className='testUserUnselectedList'>
-                    {testUserUnselected.map((player: { name: string, isAdded: boolean }, index: number) => (
+                {userUnselected.length > 0 && <div className={clsx("testUserUnselectedList", {
+                    "enabled": userSelected.length === 10
+                })}>
+                    {userUnselected.map((player: { name: string, id: number }, index: number) => (
                         <UnselectedPlayerItem
                             {...player}
                             key={index}
-                            handleClickOrDelete={() => handleSelect(player.name)}
+                            handleClickOrDelete={() => handleSelect(player.name, player.id)}
                             src={arrowRight} />
                     ))}
-                </div>
+                </div>}
 
                 <div className='bottom'>
                     <LinkButton
@@ -218,13 +174,13 @@ function Start() {
             </div>
             <div className="addedPlayerList">
                 <img className='deepblueIcon' src={Madebydeepblue} alt="" />
-                <h4 className='headerSelectedPlayers'>Selected Players</h4>
+                <h4 className='headerSelectedPlayers'>Selected Players <div className='listCount'>{userSelected.length}/10</div></h4>
 
-                {testUserSelected.map((player: { name: string }, index: number) => (
+                {userSelected.map((player: { name: string, id: number }, index: number) => (
                     <SelectedPlayerItem
                         {...player}
                         key={index}
-                        handleClick={() => handleUnselect(player.name)} />
+                        handleClick={() => handleUnselect(player.name, player.id)} />
                 ))}
 
                 <div className='startBtn'>
@@ -232,7 +188,7 @@ function Start() {
                         isLink
                         label='Start'
                         link='/game'
-                        disabled={testUserSelected.length < 2}
+                        disabled={userSelected.length < 2}
                         type='secondary'
                     />
                 </div>
@@ -246,16 +202,15 @@ function Start() {
                 <div className='deletePlayerOverlay'>
                     <p className="copylarge">Delete Player</p>
                     <div className='deleteOverlayContent'>
-                        {deletePlayerList.map((player: { name: string }, index: number) => (
+                        {deletePlayerList.map((player: { name: string, id: number }, index: number) => (
                             <UnselectedPlayerItem
                                 {...player}
                                 key={index}
-                                handleClickOrDelete={() => deletePlayer(player.name)}
+                                handleClickOrDelete={() => deletePlayer(player.name, player.id)}
                                 src={trashIcon}
                             />
                         ))}
                     </div>
-
                 </div>
                 <div className='overlayBottom overlayBottomEnabled'>
                     <Button

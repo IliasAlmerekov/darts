@@ -23,13 +23,15 @@
 }
 
 .headerUnselectedPlayers {
-    margin: 32px 0px 48px 0px;
+    margin: 32px 0px;
     color: var(--darkgrey);
 }
 
 .headerSelectedPlayers {
     margin: 146px 0px 16px 0px;
     color: var(--darkgrey);
+    justify-content: space-between;
+    display: flex;
 }
 
 .deepblueIcon {
@@ -63,6 +65,8 @@
     flex-shrink: 0;
     display: inline-flex;
     height: 3%;
+    position: sticky;
+    top: calc(100vh - 30px)
 }
 
 .testUserUnselectedList {
@@ -161,4 +165,17 @@
 
 .deletePlayerOverlayAdjust {
     height: 80%;
+}
+
+.enabled {
+    opacity: 0.4;
+}
+
+.listCount {
+    font-size: 16px;
+    font-weight: 400;
+    line-height: 19.2px;
+    text-align: right;
+    align-self: flex-end;
+    color: var(--middlegrey);
 }

@@ -4,15 +4,19 @@ import Back from "../../icons/back.svg";
 import { Link } from "react-router-dom";
 import { useEffect, useState } from "react";
 import GamePlayerItemList from "../../components/GamePlayerItem/GamplayerItemList";
-import { mockUserList } from "../../mockdata";
 import Overlay from "../../components/Overlay/Overlay";
 import Button from "../../components/Button/Button";
 import NumberButton from "../../components/Keyboard/NumberButton";
 import FinishedGamePlayerItemList from "../../components/GamePlayerItem/FinishedGamePlayerItemList";
 import LinkButton from "../../components/LinkButton/LinkButton";
 import Undo from '../../icons/undo-copy.svg'
+import { PlayerProps } from "../start/start";
 
-function Game() {
+type Props = {
+    players: PlayerProps[]
+}
+
+function Game(list: Props) {
     const [playerScore, setPlayerScore] = useState(21);
     const [roundsCount, setRoundsCount] = useState(1);
     const [playerList, setPlayerList] = useState<BASIC.PlayerProps[]>([]);
@@ -24,7 +28,7 @@ function Game() {
 
     function initializePlayerList() {
         const initialPlayerlist: BASIC.PlayerProps[] = [];
-        mockUserList.forEach((user: BASIC.UserProps, i) => {
+        list.players.forEach((user: BASIC.UserProps, i: number) => {
             const player = {
                 id: user.id,
                 name: user.name,
