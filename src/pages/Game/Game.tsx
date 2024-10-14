@@ -118,7 +118,8 @@ function Game(list: Props) {
             else if (finishedPlayerList.length < 1) {
                 setIsOverlayOpen(true);
             } else {
-                //handlefinishedplayer without open overlay
+                handleFinishedPlayer()
+                return playerList
             }
         }
         const updatedPlayerlist = [...playerList];

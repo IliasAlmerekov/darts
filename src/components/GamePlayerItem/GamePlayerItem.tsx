@@ -20,7 +20,7 @@ type Props = {
     gamePlayerItemPrevThrow1?: number
     gamePlayerItemPrevThrow2?: number
     gamePlayerItemPrevThrow3?: number
-    id: any
+    id: string
 }
 
 const bustIcon = <img src={bustIconX} alt="" />
