@@ -20,6 +20,7 @@ type Props = {
     gamePlayerItemPrevThrow1?: number
     gamePlayerItemPrevThrow2?: number
     gamePlayerItemPrevThrow3?: number
+    id: string
 }
 
 const bustIcon = <img src={bustIconX} alt="" />
@@ -28,8 +29,6 @@ function GamePlayerItem({ ...props }: Props) {
     function handlePoint(currentThrow?: number | JSX.Element, prevThrow?: number): number | undefined | JSX.Element {
         return currentThrow !== undefined ? currentThrow :
             prevThrow !== undefined ? prevThrow : undefined
-
-
     }
 
     if (props.isBust && props.throwCount === 1) {
@@ -48,7 +47,7 @@ function GamePlayerItem({ ...props }: Props) {
     }
 
     return (
-        <div className={props.className} key={props?.key}>
+        <div className={props.className} key={props?.key} id={props.id}>
             <div>
                 <div>{props?.name}</div>
             </div>

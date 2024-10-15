@@ -115,11 +115,13 @@ function Game(list: Props) {
             if (playerList.length === 2) {
                 //route to finished page
             }
-            else {
+            else if (finishedPlayerList.length < 1) {
                 setIsOverlayOpen(true);
+            } else {
+                handleFinishedPlayer()
+                return playerList
             }
         }
-
         const updatedPlayerlist = [...playerList];
         updatedPlayerlist[playerTurn] = player;
         setPlayerList(updatedPlayerlist);
@@ -155,7 +157,7 @@ function Game(list: Props) {
     function handleFinishedPlayer() {
         playerList[playerTurn].isPlaying = false;
         const finishedPlayer = playerList.filter((player) => player.isPlaying === false);
-        let finishedPlayers = finishedPlayerList
+        const finishedPlayers = finishedPlayerList
         finishedPlayers.push(finishedPlayer[0])
         const unfinishedPlayers = playerList.filter((player) => player.isPlaying === true);
         changeActivePlayer()
@@ -164,7 +166,6 @@ function Game(list: Props) {
         setFinishedPlayerList(finishedPlayers)
         setPlayerTurn(playerTurn > unfinishedPlayers.length - 1 ? 0 : playerTurn)
     }
-
 
     function handleUndo() {
         if (history.length > 0) {
@@ -188,6 +189,26 @@ function Game(list: Props) {
             changeActivePlayer();
         }
     }, [throwCount]);
+
+    useEffect(() => {
+        if (playerTurn === 5) {
+            const player = document.getElementById("playerid")
+            player?.scrollIntoView({
+                behavior: "smooth"
+            })
+        } else if (playerTurn + 1 === playerList.length) {
+            const player = document.getElementById("playerid")
+            player?.scrollIntoView({
+                behavior: "smooth"
+            })
+        }
+        else if (playerTurn === 0) {
+            window.scroll({
+                top: 0,
+                behavior: "smooth"
+            })
+        }
+    }, [playerTurn, playerList.length]);
 
     return (
         <>
