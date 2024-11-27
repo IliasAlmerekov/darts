@@ -1,8 +1,8 @@
 import Keyboard from "../../components/Keyboard/Keyboard";
 import "./game.css";
 import Back from "../../icons/back.svg";
-import { Link } from "react-router-dom";
-import { useEffect, useState } from "react";
+import { Link, Navigate, redirect, useNavigate } from "react-router-dom";
+import { Dispatch, SetStateAction, useEffect, useState } from "react";
 import GamePlayerItemList from "../../components/GamePlayerItem/GamplayerItemList";
 import Overlay from "../../components/Overlay/Overlay";
 import Button from "../../components/Button/Button";
@@ -14,10 +14,16 @@ import { PlayerProps } from "../start/start";
 
 type Props = {
     players: PlayerProps[]
+    setWinnerList: Dispatch<SetStateAction<BASIC.PlayerProps[]>>;
+    undoFromSummary: boolean;
+    setUndoFromSummary: Dispatch<SetStateAction<boolean>>
+    setLastHistory: Dispatch<SetStateAction<any>>
+    lastHistory: any;
 }
 
-function Game(list: Props) {
-    const [playerScore, setPlayerScore] = useState(21);
+function Game({ players, setWinnerList, undoFromSummary, setUndoFromSummary, setLastHistory, lastHistory }: Props) {
+    const navigate = useNavigate();
+    const [playerScore, setPlayerScore] = useState(301);
     const [roundsCount, setRoundsCount] = useState(1);
     const [playerList, setPlayerList] = useState<BASIC.PlayerProps[]>([]);
     const [throwCount, setThrowCount] = useState(0);
@@ -25,10 +31,11 @@ function Game(list: Props) {
     const [isOverlayOpen, setIsOverlayOpen] = useState(false);
     const [history, setHistory] = useState<any[]>([]);
     const [finishedPlayerList, setFinishedPlayerList] = useState<BASIC.PlayerProps[]>([])
+    const [undoLastHistory, setUndoLastHistory] = useState(false)
 
     function initializePlayerList() {
         const initialPlayerlist: BASIC.PlayerProps[] = [];
-        list.players.forEach((user: BASIC.UserProps, i: number) => {
+        players.forEach((user: BASIC.UserProps, i: number) => {
             const player = {
                 id: user.id,
                 name: user.name,
@@ -71,6 +78,18 @@ function Game(list: Props) {
         }
     }
 
+    function playSound(path: string) {
+        var audio = new Audio(path);
+        audio.play();
+        if (path === '/sounds/throw-sound.mp3') {
+            audio.currentTime = 2.3;
+        }
+        else if (path === '/sounds/undo-sound.mp3') {
+            audio.currentTime = 0.2
+            audio.volume = 0.1
+        }
+    }
+
     function handleThrow(
         player: BASIC.PlayerProps,
         currentThrow: number,
@@ -107,20 +126,25 @@ function Game(list: Props) {
 
         if (currentScoreAchieved > playerList[playerTurn].score) {
             bust(playerScore);
+            playSound('/sounds/error-sound.mp3')
         } else {
             playerList[playerTurn].score = newScore;
             setThrowCount(currentThrow + 1);
+            playSound('/sounds/throw-sound.mp3')
         }
         if (playerList[playerTurn].score === 0) {
             if (playerList.length === 2) {
-                //route to finished page
+                handleLastPlayer()
+                return finishedPlayerList
             }
             else if (finishedPlayerList.length < 1) {
                 setIsOverlayOpen(true);
-            } else {
+                playSound('/sounds/win-sound.mp3')
+            }
+            else {
                 handleFinishedPlayer()
                 return playerList
-            }
+            } setWinnerList(finishedPlayerList)
         }
         const updatedPlayerlist = [...playerList];
         updatedPlayerlist[playerTurn] = player;
@@ -165,6 +189,57 @@ function Game(list: Props) {
         setPlayerList(unfinishedPlayers)
         setFinishedPlayerList(finishedPlayers)
         setPlayerTurn(playerTurn > unfinishedPlayers.length - 1 ? 0 : playerTurn)
+        setWinnerList(finishedPlayerList)
+    }
+
+    function handleLastPlayer() {
+        playerList[playerTurn].isPlaying = false;
+        const newList = [...finishedPlayerList]
+        const lastPlayer = playerList.filter(player => player.score !== 0)
+        const secondlastPlayer = playerList.filter(player => player.score == 0)
+        newList.push(secondlastPlayer[0], lastPlayer[0])
+        setFinishedPlayerList(newList)
+    }
+
+    function sortPlayer() {
+        const scoreArray: number[] = []
+        playerList.forEach(player => {
+            scoreArray.push(player.score)
+        })
+
+        allPlayersScoreSort(scoreArray)
+
+        let i = 0
+        const newList = [...finishedPlayerList]
+
+        while (i < playerList.length) {
+
+            playerList.forEach(player => {
+                if (player.score === scoreArray[0]) {
+                    scoreArray.splice(0, 1)
+                    newList.push(player)
+                }
+            }
+            )
+            i += 1
+        }
+        setFinishedPlayerList(newList)
+    }
+
+    function allPlayersScoreSort(arr: number[]) {
+
+        for (let i = 0; i < arr.length; i++) {
+
+            for (let j = 0; j < (arr.length - i - 1); j++) {
+
+                if (arr[j] > arr[j + 1]) {
+
+                    let temp = arr[j]
+                    arr[j] = arr[j + 1]
+                    arr[j + 1] = temp
+                }
+            }
+        }
     }
 
     function handleUndo() {
@@ -177,7 +252,9 @@ function Game(list: Props) {
             setPlayerTurn(lastState.playerTurn);
             setRoundsCount(lastState.roundsCount);
             setHistory([...history]);
+            playSound('/sounds/undo-sound.mp3')
         }
+
     }
 
     useEffect(() => {
@@ -189,6 +266,17 @@ function Game(list: Props) {
             changeActivePlayer();
         }
     }, [throwCount]);
+
+    useEffect(() => {
+        if (finishedPlayerList.length === players.length) {
+            setWinnerList(finishedPlayerList)
+            setLastHistory(history)
+            navigate("/summary");
+            if (players.length === 2) {
+                playSound('/sounds/win-sound.mp3')
+            }
+        }
+    }, [finishedPlayerList.length, players.length]);
 
     useEffect(() => {
         if (playerTurn === 5) {
@@ -210,6 +298,21 @@ function Game(list: Props) {
         }
     }, [playerTurn, playerList.length]);
 
+    useEffect(() => {
+        if (undoFromSummary === true) {
+            setHistory(lastHistory)
+            setUndoFromSummary(false)
+            setUndoLastHistory(true)
+        }
+    }, [undoFromSummary]);
+
+    useEffect(() => {
+        if (undoLastHistory === true) {
+            handleUndo()
+            setUndoLastHistory(false)
+        }
+    }, [undoLastHistory]);
+
     return (
         <>
             <Overlay
@@ -217,11 +320,12 @@ function Game(list: Props) {
                 isOpen={isOverlayOpen}
             >
                 <div className="finishGameOverlay">
-                    <p className="copylarge">Continue Game?</p>
+                    <p className="overlayHeading">Continue Game?</p>
                     <div>
                         <Button
                             label="Finish"
-                            handleClick={() => console.log("finish game")}
+                            isLink
+                            handleClick={() => sortPlayer()}
                             type="secondary"
                             isInverted={true}
                         />
@@ -245,9 +349,12 @@ function Game(list: Props) {
                     </div>
                 </div>
             </Overlay>
-            <Link to="/" className="top">
-                <img src={Back} alt="" />
-            </Link>
+            <div className="gamePageHeader">
+                <Link to="/" className="top">
+                    <img src={Back} alt="" />
+
+                </Link>
+            </div>
             <div className="gamePlayerItemContainer">
                 <GamePlayerItemList
                     userMap={playerList}
@@ -265,6 +372,7 @@ function Game(list: Props) {
                     handleClick={(value) =>
                         handleThrow(playerList[playerTurn], throwCount, value)
                     }
+                    isOverlayOpen={isOverlayOpen}
                 />
 
             </div>

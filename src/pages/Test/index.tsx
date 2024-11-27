@@ -2,7 +2,6 @@ import DefaultInputField from "../../components/InputField/DefaultInputField";
 import Button from "../../components/Button/Button";
 import SelectedPlayerItem from "../../components/PlayerItems/SelectedPlayerItem";
 import UnselectedPlayerItem from "../../components/PlayerItems/UnselectedPlayerItem";
-import { PlayerProps } from "../start/start";
 
 function Test() {
     const testComponents = [

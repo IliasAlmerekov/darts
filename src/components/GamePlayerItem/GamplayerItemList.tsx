@@ -25,6 +25,9 @@ function GamePlayerItemList({ ...props }: Props) {
             {
                 props.userMap.map((item: BASIC.PlayerProps) => (
                     <GamePlayerItem
+                        classNameforName={clsx("playeritemName", {
+                            "activePlayerItemName": item.isActive === true,
+                        })}
                         className={clsx("gamePlayerItem", {
                             "activePlayer": item.isActive === true,
                             "winner": item.isPlaying === false
