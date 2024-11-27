@@ -21,6 +21,7 @@ type Props = {
     gamePlayerItemPrevThrow2?: number
     gamePlayerItemPrevThrow3?: number
     id: string
+    classNameforName?: string
 }
 
 const bustIcon = <img src={bustIconX} alt="" />
@@ -49,7 +50,7 @@ function GamePlayerItem({ ...props }: Props) {
     return (
         <div className={props.className} key={props?.key} id={props.id}>
             <div>
-                <div>{props?.name}</div>
+                <div className={props.classNameforName}>{props?.name}</div>
             </div>
 
             <div className="throws">

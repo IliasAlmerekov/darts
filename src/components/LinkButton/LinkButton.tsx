@@ -1,10 +1,10 @@
 
 type Props = {
     href?: string
-    icon: string
-    label: string
-    handleClick: () => void;
-    className: string;
+    icon?: string
+    label?: string
+    handleClick?: () => void;
+    className?: string;
 }
 
 function LinkButton({ ...props }: Props) {

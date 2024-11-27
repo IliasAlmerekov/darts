@@ -1,0 +1,40 @@
+.leaderboard {
+    color: var(--darkgrey);
+}
+
+.playerInfos {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 16px;
+}
+
+.playerStatistics {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 32px;
+    margin-right: 8px;
+}
+
+.rounds {
+    color: var(--darkgrey);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.numberDisplay {
+    width: 40px;
+    color: var(--darkblue);
+}
+
+.overviewPlayerItem {
+    width: auto;
+    display: flex;
+    justify-content: space-between;
+    border-bottom: 1px solid var(--middlegrey);
+    padding: 24px 8px 24px 8px;
+    align-items: center;
+    height: 53px;
+}

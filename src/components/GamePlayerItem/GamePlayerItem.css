@@ -40,6 +40,7 @@
 
 .activePlayer {
     border-left: 16px solid var(--blue);
+    padding-left: 16px;
     font-size: 24px;
     font-weight: 700;
     line-height: 28.8px;
@@ -82,4 +83,12 @@
 
 .finishedPlayerList {
     margin-top: 160px;
+}
+
+.playeritemName {
+    font-size: 20px;
+}
+
+.activePlayerItemName {
+    font-size: 24px;
 }

@@ -1,13 +1,55 @@
 .selectedPlayerItem,
 .unselectedPlayerItem {
-    width: auto;
-    display: flex;
-    justify-content: space-between;
-    border-bottom: 1px solid var(--middlegrey);
-    padding: 24px 8px;
+  width: auto;
+  display: flex;
+  justify-content: space-between;
+  border-bottom: 1px solid var(--middlegrey);
+  padding: 24px 8px;
+}
+
+.selectedPlayerItem {
+  touch-action: none;
 }
 
 .selectedPlayerItem :first-child {
-    display: flex;
-    gap: 16px
+  display: flex;
+  gap: 16px;
+  background: white;
+  border: none;
+}
+
+.fade-out {
+  animation: fadeOut 0.2s ease-in-out forwards;
+}
+
+.appear {
+  animation: appear 0.2s ease-in-out forwards;
+}
+
+@keyframes appear {
+  0% {
+    opacity: 0;
+  }
+
+  25% {
+    opacity: 0.25;
+  }
+
+  50% {
+    opacity: 0.5;
+  }
+
+  100% {
+    opacity: 1;
+  }
+}
+
+@keyframes fadeOut {
+  0% {
+    opacity: 1;
+  }
+
+  100% {
+    opacity: 0;
+  }
 }
