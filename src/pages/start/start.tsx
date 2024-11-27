@@ -78,7 +78,7 @@ function Start({
     audio.volume = 0.4;
   }
 
-  function handleSelect(name: any, id: number, player: PlayerProps) {
+  function handleSelect(name: any, id: number, player: PlayerProps) {   //handleSelectPlayer
     setClickedPlayerId(id);
     if (userSelected.length === 10) {
       return;
