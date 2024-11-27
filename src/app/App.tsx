@@ -3,7 +3,7 @@ import { useState } from 'react';
 import '../css/index.css';
 import Test from '../pages/Test';
 import Start, { PlayerProps } from '../pages/start/start';
-import Game from '../pages/game/Game'
+import Game from '../pages/Game/Game'
 import Gamesummary from '../pages/gamesummary/Gamesummary';
 
 function App() {
