@@ -2,7 +2,7 @@ import { BrowserRouter, Route, Routes } from 'react-router-dom';
 import { useState } from 'react';
 import '../css/index.css';
 import Test from '../pages/Test';
-import Start, { PlayerProps } from '../pages/start/start';
+import Start, { PlayerProps } from '../pages/Start/Start';
 import Game from '../pages/Game/Game'
 import Gamesummary from '../pages/gamesummary/Gamesummary';
 

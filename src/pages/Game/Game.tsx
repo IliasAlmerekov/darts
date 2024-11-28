@@ -10,7 +10,7 @@ import NumberButton from "../../components/Keyboard/NumberButton";
 import FinishedGamePlayerItemList from "../../components/GamePlayerItem/FinishedGamePlayerItemList";
 import LinkButton from "../../components/LinkButton/LinkButton";
 import Undo from '../../icons/undo-copy.svg'
-import { PlayerProps } from "../start/start";
+import { PlayerProps } from "../Start/Start";
 
 type Props = {
     players: PlayerProps[]
