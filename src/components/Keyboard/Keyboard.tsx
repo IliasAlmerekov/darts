@@ -5,6 +5,7 @@ import NumberButton from "./NumberButton";
 type Props = {
     handleClick: (value: any) => void;
     disabled?: boolean
+    isOverlayOpen?: boolean
 };
 
 function Keyboard({ ...props }: Props) {

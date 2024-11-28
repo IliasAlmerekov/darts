@@ -9,7 +9,7 @@ function FinishedGamePlayerItem({ ...props }: Props) {
     return (
         <div className="gamePlayerItem finished">
             <div>
-                <div>{props?.name}</div>
+                <div className='copylarge'>{props?.name}</div>
             </div>
 
             <div className='place'>{props.place}</div>

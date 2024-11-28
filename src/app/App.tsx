@@ -3,12 +3,16 @@ import { useState } from 'react';
 import '../css/index.css';
 import Test from '../pages/Test';
 import Start, { PlayerProps } from '../pages/start/start';
-import Game from '../pages/game/Game'
+import Game from '../pages/Game/Game'
+import Gamesummary from '../pages/gamesummary/Gamesummary';
 
 function App() {
   const [list, setList] = useState<PlayerProps[]>([]);
   const [userList, setUserList] = useState(getUserFromLS())
   const [deletePlayer, setDeletePlayer] = useState<BASIC.UserProps[]>([])
+  const [winnerList, setWinnerList] = useState<BASIC.PlayerProps[]>([])
+  const [undoFromSummary, setUndoFromSummary] = useState(false)
+  const [lastHistory, setLastHistory] = useState<any[]>([])
 
   function getUserFromLS() {
     if (localStorage.getItem("User") !== null) {
@@ -20,6 +24,10 @@ function App() {
       localStorage.setItem("User", JSON.stringify([]))
       return []
     }
+  }
+
+  function addUnselectedUserListToLs(unselectedPlayers: PlayerProps[]) {
+    localStorage.setItem("UserUnselected", JSON.stringify(unselectedPlayers))
   }
 
   function deleteUserFromLS(id: number) {
@@ -53,8 +61,21 @@ function App() {
             addUserToLS={addUserToLS}
             deleteUserFromLS={deleteUserFromLS}
             resetLS={resetLS}
+            addUnselectedUserListToLs={addUnselectedUserListToLs}
           />} />
-          <Route path="/game" element={<Game players={list} />} />
+          <Route path="/game" element={<Game
+            players={list}
+            setWinnerList={setWinnerList}
+            undoFromSummary={undoFromSummary}
+            setUndoFromSummary={setUndoFromSummary}
+            setLastHistory={setLastHistory}
+            lastHistory={lastHistory}
+          />} />
+          <Route path="/summary" element={<Gamesummary
+            list={winnerList}
+            setUndo={setUndoFromSummary}
+          />}
+          />
         </Routes>
       </BrowserRouter>
     </div>

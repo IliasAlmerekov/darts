@@ -2,9 +2,10 @@
     background: var(--white);
     text-decoration: none;
     border-radius: 8px;
-    color: var(--darkgrey);
+    color: var(--darkblue);
     border: none;
-    height: 56px;
-    width: 100%;
-    padding: 0;
+    height: 24px;
+    width: -moz-available;
+    padding: 16px;
+    width: -webkit-fill-available;
 }

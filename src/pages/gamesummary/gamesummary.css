@@ -1,0 +1,44 @@
+.summary {
+    display: grid;
+    padding: 32px;
+    grid-template-columns: repeat(10, 1fr);
+    gap: 16px;
+    grid-template-rows: 1fr auto 2fr;
+    top: 0px;
+    bottom: 0px;
+    left: 0px;
+    right: 0px;
+    position: absolute;
+}
+
+.podium {
+    padding: 133px 0px 96px 0px;
+    grid-column: 2 / span 8;
+}
+
+.leaderBoard {
+    grid-row: 2;
+    grid-column: 1/ span6;
+}
+
+.backToStartButton {
+    grid-row: 3;
+    align-content: end;
+    grid-column: 8/ span 3;
+}
+
+
+.playAgainButton {
+    grid-row: 3;
+    align-content: end;
+    grid-column: 5/ span 3;
+}
+
+.undoButton {
+    font-size: 24px;
+    font-weight: 700;
+    line-height: 28.8px;
+    letter-spacing: 0.02em;
+    text-align: left;
+    color: var(--blue);
+}

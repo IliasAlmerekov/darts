@@ -1,0 +1,19 @@
+.podium {
+    display: flex;
+    gap: 24px;
+    align-items: center;
+    justify-content: center;
+}
+
+.first {
+    order: 1;
+    transform: translateY(-40px);
+}
+
+.second {
+    order: 1;
+}
+
+.third {
+    order: 0;
+}

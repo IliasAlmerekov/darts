@@ -102,9 +102,9 @@ h5 {
 }
 
 .App {
-    position: relative;
-    display: flex;
-    flex-direction: column;
-    align-items: stretch;
-    justify-content: space-between;
+    height: 100vh;
+}
+
+.overflowHidden {
+    overflow: hidden;
 }

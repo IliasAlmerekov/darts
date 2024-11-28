@@ -46,7 +46,7 @@ function Button({ ...props }: ButtonProps) {
                     ["invertedSecondary"]: props.isInverted && props.type === "secondary",
                     ["disabled"]: props.disabled,
 
-                })} >
+                })} onClick={props.handleClick}>
                     {props.iconSrc && <img src={props?.iconSrc} alt={props?.alt} className={props.iconStyling} />}
                     {props?.label}</button>
             </Link>
