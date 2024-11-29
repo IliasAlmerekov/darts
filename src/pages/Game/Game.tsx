@@ -114,7 +114,7 @@ function Game({
         roundsCount,
       },
     ]);
-/*
+
     const newScore = playerList[playerTurn].score - currentScoreAchieved;
     const currentPlayerThrows =
       playerList[playerTurn].rounds[playerList[playerTurn].rounds.length - 1];
@@ -123,22 +123,6 @@ function Game({
     }` as keyof typeof currentPlayerThrows;
 
     currentPlayerThrows[throwKey] = currentScoreAchieved;
-*/
- const newScore = playerList[playerTurn].score - currentScoreAchieved;
-    const currentPlayerThrows =
-      playerList[playerTurn].rounds[playerList[playerTurn].rounds.length - 1];
-    switch (currentThrow) {
-      case 0:
-        currentPlayerThrows.throw1 = currentScoreAchieved as unknown as number;
-        break;
-      case 1:
-        currentPlayerThrows.throw2 = currentScoreAchieved as unknown as number;
-        break;
-      case 2:
-        currentPlayerThrows.throw3 = currentScoreAchieved as unknown as number;
-        break;
-      default:
-    }
     setPlayerScore(newScore);
 
     if (currentScoreAchieved > playerList[playerTurn].score) {
