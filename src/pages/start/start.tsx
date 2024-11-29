@@ -170,7 +170,7 @@ function Start({
     const newSelectedList: PlayerProps[] = [];
     const newUnselectedList: PlayerProps[] = [];
     deletePlayerList.map((player) => {
-      player.isAdded
+      return player.isAdded
         ? newSelectedList.push(player)
         : newUnselectedList.push(player);
     });
