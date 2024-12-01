@@ -43,9 +43,8 @@ function Game({
   const [undoLastHistory, setUndoLastHistory] = useState(false);
 
   function initializePlayerList() {
-    const initialPlayerlist: BASIC.PlayerProps[] = [];
-    players.forEach((user: BASIC.UserProps, i: number) => {
-      const player = {
+    const initialPlayerlist: BASIC.PlayerProps[] = players.map(
+      (user: BASIC.UserProps, i: number) => ({
         id: user.id,
         name: user.name,
         score: playerScore,
@@ -55,9 +54,8 @@ function Game({
         isPlaying: true,
         isBust: false,
         throwCount: 0,
-      };
-      initialPlayerlist.push(player);
-    });
+      })
+    );
     setPlayerList(initialPlayerlist);
   }
 
@@ -133,6 +131,7 @@ function Game({
       setThrowCount(currentThrow + 1);
       playSound("/sounds/throw-sound.mp3");
     }
+
     if (playerList[playerTurn].score === 0) {
       if (playerList.length === 2) {
         handleLastPlayer();
@@ -147,9 +146,8 @@ function Game({
       setWinnerList(finishedPlayerList);
     }
     const updatedPlayerlist = [...playerList];
-    updatedPlayerlist[playerTurn] = player;
+    updatedPlayerlist[playerTurn] = { ...player, throwCount };
     setPlayerList(updatedPlayerlist);
-    playerList[playerTurn].throwCount = throwCount;
   }
 
   function bust(bustedPlayerScore: number) {
@@ -208,11 +206,7 @@ function Game({
   }
 
   function sortPlayer() {
-    const scoreArray: number[] = [];
-    playerList.forEach((player) => {
-      scoreArray.push(player.score);
-    });
-
+    const scoreArray = playerList.map((player) => player.score);
     allPlayersScoreSort(scoreArray);
 
     let i = 0;
