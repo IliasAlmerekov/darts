@@ -53,13 +53,15 @@ function Start({
   const [isOverlayOpen, setIsOverlayOpen] = useState(false);
   const [isSettingsCogOpen, setIsSettingsCogOpen] = useState(false);
   const [deletePlayerList, setDeletePlayerList] = useState<PlayerProps[]>([]);
-  const [userSelectedList, setUserSelectedList] = useState<PlayerProps[]>([]);
-  const [userUnselectedList, setUserUnselectedList] = useState<PlayerProps[]>(
-    []
-  );
+  const [selectedPlayers, setSelectedPlayers] = useState<PlayerProps[]>([]);
+  const [unselectedPlayers, setUnselectedPlayers] = useState<PlayerProps[]>([]);
   const [dragEnd, setDragEnd] = useState<boolean>();
   const [clickedPlayerId, setClickedPlayerId] = useState<number | null>(null);
   const [errormessage, setErrorMessage] = useState("");
+  const SELECT_PLAYER_SOUND_PATH = "/sounds/select-sound.mp3";
+  const UNSELECT_PLAYER_SOUND_PATH = "/sounds/unselect-sound.mp3";
+  const ADD_PLAYER_SOUND_PATH = "/sounds/add-player-sound.mp3";
+  const ERROR_SOUND_PATH = "/sounds/error-sound.mp3";
 
   function initializePlayerList() {
     const initialPlayerList: PlayerProps[] = userList.map(
@@ -70,7 +72,7 @@ function Start({
         isClicked: clickedPlayerId,
       })
     );
-    setUserUnselectedList(initialPlayerList);
+    setUnselectedPlayers(initialPlayerList);
   }
 
   function playSound(path: string) {
@@ -80,20 +82,20 @@ function Start({
   }
 
   function handleSelectPlayer(name: any, id: number) {
-    if (userSelectedList.length === 10) return;
+    if (selectedPlayers.length === 10) return;
     setClickedPlayerId(id);
     setTimeout(() => {
-      const updatedUnselectedList = userUnselectedList.filter(
+      const updatedUnselectedList = unselectedPlayers.filter(
         (list) => list.id !== id
       );
       const updatedSelectedList: PlayerProps[] = [
-        ...userSelectedList,
+        ...selectedPlayers,
         { name, isAdded: true, id },
       ];
-      setUserUnselectedList(updatedUnselectedList);
-      setUserSelectedList(updatedSelectedList);
+      setUnselectedPlayers(updatedUnselectedList);
+      setSelectedPlayers(updatedSelectedList);
       setList(updatedSelectedList);
-      playSound("/sounds/select-sound.mp3");
+      playSound(SELECT_PLAYER_SOUND_PATH);
     }, 200);
   }
 
@@ -101,21 +103,22 @@ function Start({
     if (event.key === "Enter") {
       setNewPlayer(name);
       createPlayer(newPlayer);
-      playSound("/sounds/add-player-sound.mp3");
     }
   }
 
   function handleUnselect(name: any, id: number) {
     setClickedPlayerId(null);
-    const newList = userSelectedList.filter((list) => list.id !== id);
-    const newUnselectedList: PlayerProps[] = [
-      ...userUnselectedList,
+    const updatedSelectedPlayers = selectedPlayers.filter(
+      (list) => list.id !== id
+    );
+    const updatedUnselectedPlayers: PlayerProps[] = [
+      ...unselectedPlayers,
       { name, isAdded: false, id },
     ];
-    setUserSelectedList(newList);
-    setUserUnselectedList(newUnselectedList);
-    setList(newList);
-    playSound("/sounds/unselect-sound.mp3");
+    setSelectedPlayers(updatedSelectedPlayers);
+    setUnselectedPlayers(updatedUnselectedPlayers);
+    setList(updatedSelectedPlayers);
+    playSound(UNSELECT_PLAYER_SOUND_PATH);
   }
 
   function handleDragEnd(event: DragEndEvent) {
@@ -123,45 +126,56 @@ function Start({
     setDragEnd(true);
 
     if (over && active.id !== over?.id) {
-      const activeIndex = userSelectedList.findIndex(
+      const activeIndex = selectedPlayers.findIndex(
         ({ id }) => id === active.id
       );
-      const overIndex = userSelectedList.findIndex(({ id }) => id === over.id);
-      const newArray = arrayMove(userSelectedList, activeIndex, overIndex);
-      setUserSelectedList(newArray);
+      const overIndex = selectedPlayers.findIndex(({ id }) => id === over.id);
+      const newArray = arrayMove(selectedPlayers, activeIndex, overIndex);
+      setSelectedPlayers(newArray);
       setList(newArray);
     }
   }
 
-  function createPlayer(name: any) {
-    if (!/^[a-zA-Z0-9]{3,}$/.test(name)) {
-      setErrorMessage("Nickname must contain at least 3 letters or digits.");
+  function createPlayer(name: string) {
+    if (!/^[^\s][a-zA-Z0-9 _-]{2,}$/.test(name)) {
+      setErrorMessage(
+        "Nickname must contain at least 3 letters or digits and cannot start with a space."
+      );
+      setNewPlayer("");
+      playSound(ERROR_SOUND_PATH);
       return;
     }
     const id = Number(new Date());
     addUserToLS(name, id);
 
-    if (userSelectedList.length === 10) {
-      const newList = [...userUnselectedList, { name, isAdded: false, id }];
-      setUserUnselectedList(newList);
+    if (selectedPlayers.length === 10) {
+      const updatedUnselectedPlayers = [
+        ...unselectedPlayers,
+        { name, isAdded: false, id },
+      ];
+      setUnselectedPlayers(updatedUnselectedPlayers);
     } else {
-      const newList = [...userSelectedList, { name, isAdded: true, id }];
-      setUserSelectedList(newList);
-      setList(newList);
+      const updatedSelectedPlayers = [
+        ...selectedPlayers,
+        { name, isAdded: true, id },
+      ];
+      setSelectedPlayers(updatedSelectedPlayers);
+      setList(updatedSelectedPlayers);
     }
     setIsOverlayOpen(!isOverlayOpen);
     setNewPlayer("");
     setErrorMessage("");
+    playSound(ADD_PLAYER_SOUND_PATH);
   }
 
-  function deletePlayer(name: any, id: number) {
-    const newList = deletePlayerList.filter((list) => list.id !== id);
+  function deletePlayer(name: string, id: number) {
+    const updatedPlayerList = deletePlayerList.filter((list) => list.id !== id);
     deleteUserFromLS(id);
-    setDeletePlayerList(newList);
+    setDeletePlayerList(updatedPlayerList);
   }
 
   function overlayPlayerlist() {
-    const concatPlayerlist = userSelectedList.concat(userUnselectedList);
+    const concatPlayerlist = selectedPlayers.concat(unselectedPlayers);
     setDeletePlayerList(concatPlayerlist);
     setIsSettingsCogOpen(!isSettingsCogOpen);
   }
@@ -174,8 +188,8 @@ function Start({
         ? newSelectedList.push(player)
         : newUnselectedList.push(player);
     });
-    setUserUnselectedList(newUnselectedList);
-    setUserSelectedList(newSelectedList);
+    setUnselectedPlayers(newUnselectedList);
+    setSelectedPlayers(newSelectedList);
     setIsSettingsCogOpen(!isSettingsCogOpen);
     resetLS();
   }
@@ -209,11 +223,11 @@ function Start({
     if (list.length === 0) {
       initializePlayerList();
     } else {
-      setUserSelectedList(list);
+      setSelectedPlayers(list);
       const playersFromLS = localStorage.getItem("UserUnselected");
       const playersFromLocalStorage =
         !!playersFromLS && JSON.parse(playersFromLS);
-      setUserUnselectedList(playersFromLocalStorage);
+      setUnselectedPlayers(playersFromLocalStorage);
     }
   }, []);
 
@@ -227,26 +241,25 @@ function Start({
           <img
             className={clsx("settingsCog", {
               hide:
-                userSelectedList.length === 0 &&
-                userUnselectedList.length === 0,
+                selectedPlayers.length === 0 && unselectedPlayers.length === 0,
             })}
             src={settingsCog}
             alt=""
             onClick={
-              userSelectedList.length === 0 && userUnselectedList.length === 0
+              selectedPlayers.length === 0 && unselectedPlayers.length === 0
                 ? undefined
                 : () => overlayPlayerlist()
             }
           />
         </div>
 
-        {userUnselectedList.length > 0 && (
+        {unselectedPlayers.length > 0 && (
           <div
             className={clsx("testUserUnselectedList", {
-              enabled: userSelectedList.length === 10,
+              enabled: selectedPlayers.length === 10,
             })}
           >
-            {userUnselectedList.map((player: PlayerProps, index: number) => {
+            {unselectedPlayers.map((player: PlayerProps, index: number) => {
               return (
                 <UnselectedPlayerItem
                   {...player}
@@ -276,7 +289,7 @@ function Start({
         <img className="deepblueIcon" src={Madebydeepblue} alt="" />
         <h4 className="headerSelectedPlayers">
           Selected Players{" "}
-          <div className="listCount">{userSelectedList.length}/10</div>
+          <div className="listCount">{selectedPlayers.length}/10</div>
         </h4>
         <DndContext
           modifiers={[restrictToVerticalAxis]}
@@ -284,10 +297,10 @@ function Start({
           onDragMove={() => setDragEnd(false)}
         >
           <SortableContext
-            items={userSelectedList}
+            items={selectedPlayers}
             strategy={verticalListSortingStrategy}
           >
-            {userSelectedList.map(
+            {selectedPlayers.map(
               (player: { name: string; id: number }, index: number) => (
                 <SelectedPlayerItem
                   {...player}
@@ -306,10 +319,10 @@ function Start({
             isLink
             label="Start"
             link="/game"
-            disabled={userSelectedList.length < 2}
+            disabled={selectedPlayers.length < 2}
             type="secondary"
             handleClick={() => {
-              addUnselectedUserListToLs(userUnselectedList);
+              addUnselectedUserListToLs(unselectedPlayers);
               playSound("/sounds/start-round-sound.mp3");
             }}
           />
@@ -374,7 +387,6 @@ function Start({
             label="Player Input"
             iconSrc={userPLus}
             handleClick={() => {
-              playSound("/sounds/add-player-sound.mp3");
               createPlayer(newPlayer);
             }}
           />

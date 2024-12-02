@@ -67,7 +67,7 @@
   top: calc(100vh - 30px);
 }
 
-.testUserUnselectedList {
+.testUnselectedPlayers {
   overflow: auto;
   max-height: 84.3vh;
   padding: 0px 32px 0px 32px;
