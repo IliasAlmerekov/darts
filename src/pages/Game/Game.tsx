@@ -41,6 +41,10 @@ function Game({
     BASIC.PlayerProps[]
   >([]);
   const [undoLastHistory, setUndoLastHistory] = useState(false);
+  const ERROR_SOUND_PATH = "/sounds/error-sound.mp3";
+  const THROW_SOUND_PATH = "/sounds/throw-sound.mp3";
+  const WIN_SOUND_PATH = "/sounds/win-sound.mp3";
+  const UNDO_SOUND_PATH = "/sounds/undo-sound.mp3";
 
   function initializePlayerList() {
     const initialPlayerlist: BASIC.PlayerProps[] = players.map(
@@ -124,23 +128,24 @@ function Game({
     setPlayerScore(newScore);
 
     if (currentScoreAchieved > playerList[playerTurn].score) {
-      bust(playerScore);
-      playSound("/sounds/error-sound.mp3");
+      handleBust(playerScore);
+      playSound(ERROR_SOUND_PATH);
     } else {
-      playerList[playerTurn].score = newScore;
+      const updatedPlayerList = [...playerList];
+      updatedPlayerList[playerTurn].score = newScore;
       setThrowCount(currentThrow + 1);
-      playSound("/sounds/throw-sound.mp3");
+      playSound(THROW_SOUND_PATH);
     }
-
+    // wir überprüfen, ob der aktuelle Spieler das Spiel beendet hat
     if (playerList[playerTurn].score === 0) {
       if (playerList.length === 2) {
         handleLastPlayer();
         return finishedPlayerList;
       } else if (finishedPlayerList.length < 1) {
-        setIsOverlayOpen(true);
-        playSound("/sounds/win-sound.mp3");
+        setIsOverlayOpen(true); //Victory overlay
+        playSound(WIN_SOUND_PATH);
       } else {
-        handleFinishedPlayer();
+        handlePlayerFinishTurn();
         return playerList;
       }
       setWinnerList(finishedPlayerList);
@@ -150,11 +155,13 @@ function Game({
     setPlayerList(updatedPlayerlist);
   }
 
-  function bust(bustedPlayerScore: number) {
+  function handleBust(bustedPlayerScore: number) {
     const currentRoundOfPlayer = playerList[playerTurn].rounds[roundsCount - 1];
-    const firstThrow = currentRoundOfPlayer.throw1;
-    const secondThrow = currentRoundOfPlayer.throw2;
-    const thirdThrow = currentRoundOfPlayer.throw3;
+    const {
+      throw1: firstThrow,
+      throw2: secondThrow,
+      throw3: thirdThrow,
+    } = currentRoundOfPlayer;
     let oldThrowScore = playerList[playerTurn].score;
     playerList[playerTurn].isBust = true;
 
@@ -176,77 +183,59 @@ function Game({
     changeActivePlayer();
   }
 
-  function handleFinishedPlayer() {
-    playerList[playerTurn].isPlaying = false;
-    const finishedPlayer = playerList.filter(
-      (player) => player.isPlaying === false
-    );
-    const finishedPlayers = finishedPlayerList;
-    finishedPlayers.push(finishedPlayer[0]);
-    const unfinishedPlayers = playerList.filter(
-      (player) => player.isPlaying === true
-    );
+  function handlePlayerFinishTurn() {
+    const updatedPlayerList = [...playerList];
+    updatedPlayerList[playerTurn].isPlaying = false;
+    const finishedPlayers = playerList.filter((player) => !player.isPlaying);
+    finishedPlayerList.push(finishedPlayers[0]);
+
+    const unfinishedPlayers = playerList.filter((player) => player.isPlaying);
     changeActivePlayer();
-    unfinishedPlayers[
-      playerTurn > unfinishedPlayers.length - 1 ? 0 : playerTurn
-    ].isActive = true;
+    const nextPlayerIndex =
+      playerTurn > unfinishedPlayers.length - 1 ? 0 : playerTurn;
+    unfinishedPlayers[nextPlayerIndex].isActive = true;
     setPlayerList(unfinishedPlayers);
-    setFinishedPlayerList(finishedPlayers);
+    setFinishedPlayerList(finishedPlayerList);
     setPlayerTurn(playerTurn > unfinishedPlayers.length - 1 ? 0 : playerTurn);
     setWinnerList(finishedPlayerList);
   }
 
   function handleLastPlayer() {
-    playerList[playerTurn].isPlaying = false;
-    const newList = [...finishedPlayerList];
-    const lastPlayer = playerList.filter((player) => player.score !== 0);
-    const secondlastPlayer = playerList.filter((player) => player.score == 0);
-    newList.push(secondlastPlayer[0], lastPlayer[0]);
-    setFinishedPlayerList(newList);
-  }
+    const updatedPlayerList = [...playerList];
+    updatedPlayerList[playerTurn].isPlaying = false;
 
+    const updatedFinishedPlayerList = [...finishedPlayerList];
+    const playersWithNonZeroScore = playerList.filter(
+      (player) => player.score !== 0
+    );
+    const playersWithZeroScore = playerList.filter(
+      (player) => player.score == 0
+    );
+    updatedFinishedPlayerList.push(
+      playersWithZeroScore[0],
+      playersWithNonZeroScore[0]
+    );
+    setFinishedPlayerList(updatedFinishedPlayerList);
+  }
+  // wir sortieren main-array in absteigender Reihenfolge
   function sortPlayer() {
-    const scoreArray = playerList.map((player) => player.score);
-    allPlayersScoreSort(scoreArray);
-
-    let i = 0;
-    const newList = [...finishedPlayerList];
-
-    while (i < playerList.length) {
-      playerList.forEach((player) => {
-        if (player.score === scoreArray[0]) {
-          scoreArray.splice(0, 1);
-          newList.push(player);
-        }
-      });
-      i += 1;
-    }
-    setFinishedPlayerList(newList);
-  }
-
-  function allPlayersScoreSort(arr: number[]) {
-    for (let i = 0; i < arr.length; i++) {
-      for (let j = 0; j < arr.length - i - 1; j++) {
-        if (arr[j] > arr[j + 1]) {
-          let temp = arr[j];
-          arr[j] = arr[j + 1];
-          arr[j + 1] = temp;
-        }
-      }
-    }
+    const sortedPlayers = [...playerList].sort((a, b) => b.score - a.score);
+    const updatedFinishedPlayerList = [...finishedPlayerList, ...sortedPlayers];
+    setFinishedPlayerList(updatedFinishedPlayerList);
   }
 
   function handleUndo() {
     if (history.length > 0) {
-      const lastState = history.pop();
+      const newHistory = [...history];
+      const lastState = newHistory.pop();
       setFinishedPlayerList(lastState.finishedPlayerList);
       setPlayerList(lastState.playerList);
       setPlayerScore(lastState.playerScore);
       setThrowCount(lastState.throwCount);
       setPlayerTurn(lastState.playerTurn);
       setRoundsCount(lastState.roundsCount);
-      setHistory([...history]);
-      playSound("/sounds/undo-sound.mp3");
+      setHistory(newHistory);
+      playSound(UNDO_SOUND_PATH);
     }
   }
 
@@ -258,7 +247,7 @@ function Game({
     if (throwCount === 3 && !isOverlayOpen) {
       changeActivePlayer();
     }
-  }, [throwCount]);
+  }, [throwCount, isOverlayOpen]);
 
   useEffect(() => {
     if (finishedPlayerList.length === players.length) {
@@ -266,19 +255,16 @@ function Game({
       setLastHistory(history);
       navigate("/summary");
       if (players.length === 2) {
-        playSound("/sounds/win-sound.mp3");
+        playSound(WIN_SOUND_PATH);
       }
     }
   }, [finishedPlayerList.length, players.length]);
 
   useEffect(() => {
-    if (playerTurn === 5) {
-      const player = document.getElementById("playerid");
-      player?.scrollIntoView({
-        behavior: "smooth",
-      });
-    } else if (playerTurn + 1 === playerList.length) {
-      const player = document.getElementById("playerid");
+    if (!playerList || playerList.length === 0) return;
+
+    if (playerTurn === 5 || playerTurn + 1 === playerList.length) {
+      const player = document.getElementById(`playerid-${playerTurn}`);
       player?.scrollIntoView({
         behavior: "smooth",
       });
@@ -314,15 +300,15 @@ function Game({
             <Button
               label="Finish"
               isLink
-              handleClick={() => sortPlayer()}
+              handleClick={sortPlayer}
               type="secondary"
               isInverted={true}
             />
             <Button
               label="Continue"
               handleClick={() => {
-                handleFinishedPlayer();
-                setIsOverlayOpen(!isOverlayOpen);
+                handlePlayerFinishTurn();
+                setIsOverlayOpen(false);
               }}
               type="primary"
             />
@@ -330,7 +316,7 @@ function Game({
               icon={Undo}
               label="Undo Throw"
               handleClick={() => {
-                setIsOverlayOpen(!isOverlayOpen);
+                setIsOverlayOpen(false);
                 handleUndo();
               }}
               className="undoThrow"
@@ -340,7 +326,7 @@ function Game({
       </Overlay>
       <div className="gamePageHeader">
         <Link to="/" className="top">
-          <img src={Back} alt="" />
+          <img src={Back} alt="Back to Home" />
         </Link>
       </div>
       <div className="gamePlayerItemContainer">
