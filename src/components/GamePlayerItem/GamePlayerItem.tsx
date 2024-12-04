@@ -37,15 +37,21 @@ function GamePlayerItem({ ...props }: Props) {
       : undefined;
   }
 
-  if (props.isBust && props.throwCount === 1) {
-    props.gamePlayerItemThrow3 = bustIcon;
-  } else if (props.isBust && props.throwCount === 0) {
-    props.gamePlayerItemThrow2 = bustIcon;
-    props.gamePlayerItemThrow3 = bustIcon;
-  } else if (props.isActive && props.roundsCount?.length > 1) {
-    props.gamePlayerItemPrevThrow1 = undefined;
-    props.gamePlayerItemPrevThrow2 = undefined;
-    props.gamePlayerItemPrevThrow3 = undefined;
+  switch (true) {
+    case props.isActive && props.roundsCount?.length > 1:
+      props.gamePlayerItemPrevThrow1 = undefined;
+      props.gamePlayerItemPrevThrow2 = undefined;
+      props.gamePlayerItemPrevThrow3 = undefined;
+      break;
+    case props.isBust && props.throwCount === 1:
+      props.gamePlayerItemThrow3 = bustIcon;
+      break;
+    case props.isBust && props.throwCount === 0:
+      props.gamePlayerItemThrow2 = bustIcon;
+      props.gamePlayerItemThrow3 = bustIcon;
+      break;
+    default:
+      break;
   }
 
   return (

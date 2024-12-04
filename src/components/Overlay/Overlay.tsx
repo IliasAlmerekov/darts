@@ -4,16 +4,8 @@ type Props = {
     isOpen?: boolean
     onClose?: () => void
     handleClick?: () => void
-    newPlayer?: string;
-    setNewPlayer?: any;
-    icon?: any;
-    label?: string;
     className?: string
-    iconStyling?: string
-    type?: 'primary' | 'secondary';
-    userMap?: any;
-    src?: any;
-    handleDelete?: (name: string) => void
+    src?: string;
     children: any;
 }
 
