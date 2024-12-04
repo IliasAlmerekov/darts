@@ -1,5 +1,4 @@
 import '../Overlay/Overlay.css'
-import DeleteIcon from '../../icons/delete.svg';
 
 type Props = {
     isOpen?: boolean

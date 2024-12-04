@@ -117,7 +117,8 @@ function Game({
       },
     ]);
 
-    const newScore = playerList[playerTurn].score - currentScoreAchieved;
+    const updatedPlayerScore =
+      playerList[playerTurn].score - currentScoreAchieved;
     const currentPlayerThrows =
       playerList[playerTurn].rounds[playerList[playerTurn].rounds.length - 1];
     const throwKey = `throw${
@@ -125,14 +126,14 @@ function Game({
     }` as keyof typeof currentPlayerThrows;
 
     currentPlayerThrows[throwKey] = currentScoreAchieved;
-    setPlayerScore(newScore);
+    setPlayerScore(updatedPlayerScore);
 
     if (currentScoreAchieved > playerList[playerTurn].score) {
       handleBust(playerScore);
       playSound(ERROR_SOUND_PATH);
     } else {
       const updatedPlayerList = [...playerList];
-      updatedPlayerList[playerTurn].score = newScore;
+      updatedPlayerList[playerTurn].score = updatedPlayerScore;
       setThrowCount(currentThrow + 1);
       playSound(THROW_SOUND_PATH);
     }
@@ -154,7 +155,7 @@ function Game({
     updatedPlayerlist[playerTurn] = { ...player, throwCount };
     setPlayerList(updatedPlayerlist);
   }
-
+  // wir prüfen, ob der Spieler überworfen hat
   function handleBust(bustedPlayerScore: number) {
     const currentRoundOfPlayer = playerList[playerTurn].rounds[roundsCount - 1];
     const {

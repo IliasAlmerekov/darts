@@ -62,6 +62,8 @@ function Start({
   const UNSELECT_PLAYER_SOUND_PATH = "/sounds/unselect-sound.mp3";
   const ADD_PLAYER_SOUND_PATH = "/sounds/add-player-sound.mp3";
   const ERROR_SOUND_PATH = "/sounds/error-sound.mp3";
+  const START_SOUND_PATH = "/sounds/start-round-sound.mp3";
+  const TRASH_SOUND_PATH = "/sounds/trash-sound.mp3";
 
   function initializePlayerList() {
     const initialPlayerList: PlayerProps[] = userList.map(
@@ -323,7 +325,7 @@ function Start({
             type="secondary"
             handleClick={() => {
               addUnselectedUserListToLs(unselectedPlayers);
-              playSound("/sounds/start-round-sound.mp3");
+              playSound(START_SOUND_PATH);
             }}
           />
         </div>
@@ -344,7 +346,7 @@ function Start({
                   {...player}
                   key={index}
                   handleClickOrDelete={() => {
-                    playSound("/sounds/trash-sound.mp3");
+                    playSound(TRASH_SOUND_PATH);
                     deletePlayer(player.name, player.id);
                   }}
                   src={trashIcon}
