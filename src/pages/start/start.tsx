@@ -87,16 +87,16 @@ function Start({
     if (selectedPlayers.length === 10) return;
     setClickedPlayerId(id);
     setTimeout(() => {
-      const updatedUnselectedList = unselectedPlayers.filter(
+      const updatedUnselectedPlayerList = unselectedPlayers.filter(
         (list) => list.id !== id
       );
-      const updatedSelectedList: PlayerProps[] = [
+      const updatedSelectedPlayerList: PlayerProps[] = [
         ...selectedPlayers,
         { name, isAdded: true, id },
       ];
-      setUnselectedPlayers(updatedUnselectedList);
-      setSelectedPlayers(updatedSelectedList);
-      setList(updatedSelectedList);
+      setUnselectedPlayers(updatedUnselectedPlayerList);
+      setSelectedPlayers(updatedSelectedPlayerList);
+      setList(updatedSelectedPlayerList);
       playSound(SELECT_PLAYER_SOUND_PATH);
     }, 200);
   }
@@ -257,7 +257,7 @@ function Start({
 
         {unselectedPlayers.length > 0 && (
           <div
-            className={clsx("testUserUnselectedList", {
+            className={clsx("testUnselectedPlayers", {
               enabled: selectedPlayers.length === 10,
             })}
           >

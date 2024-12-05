@@ -92,9 +92,9 @@ function Game({
   function playSound(path: string) {
     var audio = new Audio(path);
     audio.play();
-    if (path === "/sounds/throw-sound.mp3") {
+    if (path === THROW_SOUND_PATH) {
       audio.currentTime = 2.3;
-    } else if (path === "/sounds/undo-sound.mp3") {
+    } else if (path === UNDO_SOUND_PATH) {
       audio.currentTime = 0.2;
       audio.volume = 0.1;
     }
@@ -183,7 +183,7 @@ function Game({
     playerList[playerTurn].score = oldThrowScore;
     changeActivePlayer();
   }
-
+    //wir prüfen, ob der Spieler seinen Zug beendet hat
   function handlePlayerFinishTurn() {
     const updatedPlayerList = [...playerList];
     updatedPlayerList[playerTurn].isPlaying = false;
