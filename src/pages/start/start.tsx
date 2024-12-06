@@ -257,7 +257,7 @@ function Start({
 
         {unselectedPlayers.length > 0 && (
           <div
-            className={clsx("testUnselectedPlayers", {
+            className={clsx("unselectedPlayers", {
               enabled: selectedPlayers.length === 10,
             })}
           >
