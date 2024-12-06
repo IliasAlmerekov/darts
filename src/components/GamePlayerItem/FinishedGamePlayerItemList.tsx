@@ -1,28 +1,41 @@
-import '../GamePlayerItem/GamePlayerItem.css'
-import FinishedGamePlayerItem from "./finishedGamePlayerItem";
+import "../GamePlayerItem/GamePlayerItem.css";
 
 type Props = {
-    userMap?: any;
+  userMap?: { name: string }[];
+};
+
+function FinishedGamePlayerItemList({ userMap }: Props) {
+  const FinishedGamePlayerItem = ({
+    name,
+    place,
+  }: {
     name?: string;
-    place?: any;
+    place?: string;
+  }) => (
+    <div className="gamePlayerItem finished">
+      <div>
+        <div className="copylarge">{name}</div>
+      </div>
+      <div className="place">{place}</div>
+    </div>
+  );
+
+  if (!userMap || userMap.length === 0) {
+    return <></>;
+  }
+
+  return (
+    <div className="finishedPlayerList">
+      <div className="copylarge finishedplayers">Finished Players</div>
+      {userMap.map((item, index) => (
+        <FinishedGamePlayerItem
+          key={index}
+          name={item.name}
+          place={`${index + 1}.`}
+        />
+      ))}
+    </div>
+  );
 }
 
-function FinishedGamePlayerItemList({ ...props }: Props) {
-    return props.userMap.length > 0 ?
-
-        < div className="finishedPlayerList" >
-            <div className="copylarge finishedplayers">Finished Players</div>
-            {
-                props.userMap.map((item: BASIC.PlayerProps) => (
-                    <FinishedGamePlayerItem
-                        name={item.name}
-                        place={props.userMap.indexOf(item) + 1 + "."}
-                    />
-                ))
-            }
-        </div >
-
-        :
-        <></>
-}
-export default FinishedGamePlayerItemList
+export default FinishedGamePlayerItemList;

@@ -48,7 +48,6 @@ function SelectedPlayerItem({ ...props }: Props) {
         >
             <div>
                 <button
-                    className='moveButton'
                     {...attributes}
                     {...listeners}
                 >
