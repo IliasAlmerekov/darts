@@ -1,5 +1,5 @@
 import "./start.css";
-import { Dispatch, SetStateAction, useEffect, useState } from "react";
+import React, { Dispatch, SetStateAction, useEffect, useState } from "react";
 import UnselectedPlayerItem from "../../components/PlayerItems/UnselectedPlayerItem";
 import SelectedPlayerItem from "../../components/PlayerItems/SelectedPlayerItem";
 import Plus from "../../icons/plus.svg";
@@ -78,12 +78,12 @@ function Start({
   }
 
   function playSound(path: string) {
-    var audio = new Audio(path);
+    const audio = new Audio(path);
     audio.play();
     audio.volume = 0.4;
   }
 
-  function handleSelectPlayer(name: any, id: number) {
+  function handleSelectPlayer(name: string, id: number) {
     if (selectedPlayers.length === 10) return;
     setClickedPlayerId(id);
     setTimeout(() => {
@@ -101,14 +101,19 @@ function Start({
     }, 200);
   }
 
-  function handleKeyPess(name: string, event: any) {
-    if (event.key === "Enter") {
-      setNewPlayer(name);
-      createPlayer(newPlayer);
-    }
+  function handleChange(e: React.ChangeEvent<HTMLInputElement>) {
+    setNewPlayer(e.target.value);
   }
 
-  function handleUnselect(name: any, id: number) {
+  const handleKeyPess =
+    (name: string) => (e: React.KeyboardEvent<HTMLInputElement>) => {
+      if (e.key === "Enter") {
+        setNewPlayer(name);
+        createPlayer(newPlayer);
+      }
+    };
+
+  function handleUnselect(name: string, id: number) {
     setClickedPlayerId(null);
     const updatedSelectedPlayers = selectedPlayers.filter(
       (list) => list.id !== id
@@ -261,7 +266,7 @@ function Start({
               enabled: selectedPlayers.length === 10,
             })}
           >
-            {unselectedPlayers.map((player: PlayerProps, index: number) => {
+            {unselectedPlayers.map((player: PlayerProps) => {
               return (
                 <UnselectedPlayerItem
                   {...player}
@@ -380,8 +385,9 @@ function Start({
           <DefaultInputField
             value={newPlayer}
             placeholder="Playername"
-            onChange={(e: any) => setNewPlayer(e.target.value)}
-            onKeyDown={(name) => (e) => handleKeyPess(name.target?.value, e)}
+            onChange={handleChange}
+            onKeyDown={handleKeyPess}
+            name={""}
           />
           {errormessage && <p id="error-message">{errormessage}</p>}
           <Button

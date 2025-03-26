@@ -2,14 +2,18 @@ import clsx from "clsx";
 import PodiumPlayerCard from "../PodiumPlayerCard/PodiumPlayerCard";
 import "./Podium.css";
 import "../PodiumPlayerCard/PodiumPlayerCard.css";
+import React from "react";
 
 type Props = {
   name?: string;
-  userMap?: any;
-  list?: any;
+  userMap?: BASIC.PlayerProps[];
+  list?: BASIC.PlayerProps[];
 };
 
-function Podium({ ...props }: Props) {
+function Podium({ ...props }: Props): JSX.Element {
+  if (!props.userMap || props.userMap.length === 0) {
+    return <div className="podium" />;
+  }
   return (
     <div className="podium">
       {props.userMap.map((item: BASIC.PlayerProps, index: number) => {
@@ -25,6 +29,7 @@ function Podium({ ...props }: Props) {
 
         return (
           <PodiumPlayerCard
+            key={index}
             className={clsx("podiumPlayerCard", {
               first: index === 0,
               second: index === 1,

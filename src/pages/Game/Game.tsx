@@ -2,7 +2,7 @@ import Keyboard from "../../components/Keyboard/Keyboard";
 import "./game.css";
 import Back from "../../icons/back.svg";
 import { Link, useNavigate } from "react-router-dom";
-import { Dispatch, SetStateAction, useEffect, useState } from "react";
+import React, { Dispatch, SetStateAction, useEffect, useState } from "react";
 import GamePlayerItemList from "../../components/GamePlayerItem/GamplayerItemList";
 import Overlay from "../../components/Overlay/Overlay";
 import Button from "../../components/Button/Button";
@@ -12,13 +12,24 @@ import LinkButton from "../../components/LinkButton/LinkButton";
 import Undo from "../../icons/undo-copy.svg";
 import { PlayerProps } from "../Start/Start";
 
+interface GameState {
+  finishedPlayerList: BASIC.PlayerProps[];
+  playerList: BASIC.PlayerProps[];
+  playerScore: number;
+  roundsCount: number;
+  throwCount: number;
+  playerTurn: number;
+}
+
 type Props = {
   players: PlayerProps[];
   setWinnerList: Dispatch<SetStateAction<BASIC.PlayerProps[]>>;
   undoFromSummary: boolean;
   setUndoFromSummary: Dispatch<SetStateAction<boolean>>;
-  setLastHistory: Dispatch<SetStateAction<any>>;
-  lastHistory: any;
+  setLastHistory: Dispatch<SetStateAction<GameState[]>>;
+  lastHistory: GameState[];
+  setUndoLastHistory: Dispatch<SetStateAction<boolean>>;
+  undoLastHistory: boolean;
 };
 
 function Game({
@@ -36,7 +47,7 @@ function Game({
   const [throwCount, setThrowCount] = useState(0);
   const [playerTurn, setPlayerTurn] = useState(0);
   const [isOverlayOpen, setIsOverlayOpen] = useState(false);
-  const [history, setHistory] = useState<any[]>([]);
+  const [history, setHistory] = useState<GameState[]>([]);
   const [finishedPlayerList, setFinishedPlayerList] = useState<
     BASIC.PlayerProps[]
   >([]);
@@ -54,7 +65,13 @@ function Game({
         score: playerScore,
         isActive: i === 0 ? true : false,
         index: i,
-        rounds: [{ throw1: undefined, throw2: undefined, throw3: undefined }],
+        rounds: [
+          {
+            throw1: undefined,
+            throw2: undefined,
+            throw3: undefined,
+          } as BASIC.Round,
+        ],
         isPlaying: true,
         isBust: false,
         throwCount: 0,
@@ -84,13 +101,13 @@ function Game({
           throw1: undefined,
           throw2: undefined,
           throw3: undefined,
-        });
+        } as BASIC.Round);
       });
     }
   }
 
   function playSound(path: string) {
-    var audio = new Audio(path);
+    const audio = new Audio(path);
     audio.play();
     if (path === THROW_SOUND_PATH) {
       audio.currentTime = 2.3;
@@ -103,7 +120,7 @@ function Game({
   function handleThrow(
     player: BASIC.PlayerProps,
     currentThrow: number,
-    currentScoreAchieved: number | any
+    currentScoreAchieved: number
   ) {
     setHistory([
       ...history,
@@ -119,11 +136,12 @@ function Game({
 
     const updatedPlayerScore =
       playerList[playerTurn].score - currentScoreAchieved;
-    const currentPlayerThrows =
+    const currentPlayerThrows: BASIC.Round =
       playerList[playerTurn].rounds[playerList[playerTurn].rounds.length - 1];
-    const throwKey = `throw${
-      currentThrow + 1
-    }` as keyof typeof currentPlayerThrows;
+    const throwKey = `throw${currentThrow + 1}` as
+      | "throw1"
+      | "throw2"
+      | "throw3";
 
     currentPlayerThrows[throwKey] = currentScoreAchieved;
     setPlayerScore(updatedPlayerScore);
@@ -183,7 +201,7 @@ function Game({
     playerList[playerTurn].score = oldThrowScore;
     changeActivePlayer();
   }
-    //wir prüfen, ob der Spieler seinen Zug beendet hat
+  //wir prüfen, ob der Spieler seinen Zug beendet hat
   function handlePlayerFinishTurn() {
     const updatedPlayerList = [...playerList];
     updatedPlayerList[playerTurn].isPlaying = false;
@@ -210,7 +228,7 @@ function Game({
       (player) => player.score !== 0
     );
     const playersWithZeroScore = playerList.filter(
-      (player) => player.score == 0
+      (player) => player.score === 0
     );
     updatedFinishedPlayerList.push(
       playersWithZeroScore[0],
@@ -229,14 +247,16 @@ function Game({
     if (history.length > 0) {
       const newHistory = [...history];
       const lastState = newHistory.pop();
-      setFinishedPlayerList(lastState.finishedPlayerList);
-      setPlayerList(lastState.playerList);
-      setPlayerScore(lastState.playerScore);
-      setThrowCount(lastState.throwCount);
-      setPlayerTurn(lastState.playerTurn);
-      setRoundsCount(lastState.roundsCount);
-      setHistory(newHistory);
-      playSound(UNDO_SOUND_PATH);
+      if (lastState) {
+        setFinishedPlayerList(lastState.finishedPlayerList);
+        setPlayerList(lastState.playerList);
+        setPlayerScore(lastState.playerScore);
+        setThrowCount(lastState.throwCount);
+        setPlayerTurn(lastState.playerTurn);
+        setRoundsCount(lastState.roundsCount);
+        setHistory(newHistory);
+        playSound(UNDO_SOUND_PATH);
+      }
     }
   }
 
@@ -278,15 +298,21 @@ function Game({
   }, [playerTurn, playerList.length]);
 
   useEffect(() => {
-    if (undoFromSummary === true) {
+    if (undoFromSummary) {
       setHistory(lastHistory);
       setUndoFromSummary(false);
       setUndoLastHistory(true);
     }
-  }, [undoFromSummary]);
+  }, [
+    undoFromSummary,
+    lastHistory,
+    setLastHistory,
+    setUndoFromSummary,
+    setUndoLastHistory,
+  ]);
 
   useEffect(() => {
-    if (undoLastHistory === true) {
+    if (undoLastHistory) {
       handleUndo();
       setUndoLastHistory(false);
     }

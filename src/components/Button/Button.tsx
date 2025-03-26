@@ -1,19 +1,20 @@
 import clsx from "clsx";
-import { Link } from "react-router-dom";
+import { Link, To } from "react-router-dom";
+import React from "react";
 
 export interface ButtonProps {
   isLink?: boolean;
-  href?: string | any;
+  href?: string;
   target?: string;
   isInverted?: boolean;
-  iconSrc?: any;
+  iconSrc?: string;
   handleClick?: () => void;
   label?: string;
   class?: string;
   type?: "primary" | "secondary";
   className?: string;
   iconStyling?: string;
-  link?: any;
+  link?: To;
   alt?: string;
   disabled?: boolean;
 }
@@ -44,7 +45,7 @@ function Button({ ...props }: ButtonProps) {
 
   if (props.isLink) {
     return (
-      <Link className="noUnderline" to={props.disabled ? null : props.link}>
+      <Link className="noUnderline" to={props.disabled ? "" : props.link || ""}>
         <button className={buttonClasses} onClick={props.handleClick}>
           {buttonContent}
         </button>

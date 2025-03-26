@@ -1,7 +1,8 @@
 import OverviewPlayerItem from "./OverviewPlayerItem";
+import React from "react";
 
 type Props = {
-  userMap: any;
+  userMap: BASIC.PlayerProps[];
 };
 
 function OverviewPlayerItemList({ ...props }: Props) {
@@ -20,6 +21,7 @@ function OverviewPlayerItemList({ ...props }: Props) {
 
         return (
           <OverviewPlayerItem
+            key={item.index}
             name={item.name}
             placement={index + 4}
             className="overviewPlayerItem"

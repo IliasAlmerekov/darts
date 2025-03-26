@@ -1,4 +1,5 @@
 import './PodiumPlayerCard.css'
+import React from 'react'
 
 type Props = {
     name?: string

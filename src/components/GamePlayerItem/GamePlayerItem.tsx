@@ -1,6 +1,7 @@
 import "../GamePlayerItem/GamePlayerItem.css";
 import bustIconX from "../../icons/delete-grey.svg";
 import clsx from "clsx";
+import React from "react";
 
 type Props = {
   name?: string;
@@ -11,7 +12,7 @@ type Props = {
   gamePlayerItemThrow2?: number | JSX.Element;
   gamePlayerItemThrow3?: number | JSX.Element;
   className: string;
-  src?: any;
+  src?: string;
   isBust?: boolean;
   throwCount?: number;
   isPlaying?: boolean;
@@ -23,7 +24,7 @@ type Props = {
   classNameforName?: string;
 };
 
-const bustIcon = <img src={bustIconX} alt="" />;
+const bustIcon = <img src={bustIconX} alt="Bust icon" />;
 
 function GamePlayerItem({ ...props }: Props) {
   function handlePoint(
