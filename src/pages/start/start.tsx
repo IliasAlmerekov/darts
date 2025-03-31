@@ -23,8 +23,7 @@ import {
 } from "@dnd-kit/sortable";
 import { restrictToVerticalAxis } from "@dnd-kit/modifiers";
 import { newSettings } from "../../stores/settings";
-import { UserContext } from "../../provider/UserProvider";
-import useUser from "../../hooks/useUser";
+import { useUser } from "../../provider/UserProvider";
 
 export type PlayerProps = {
   id: number;
@@ -69,7 +68,7 @@ function Start({
   const START_SOUND_PATH = "/sounds/start-round-sound.mp3";
   const TRASH_SOUND_PATH = "/sounds/trash-sound.mp3";
 
-  const { state, actions } = useUser()
+  const { event, setEvent } = useUser()
 
   function initializePlayerList() {
     const initialPlayerList: PlayerProps[] = userList.map(
@@ -109,8 +108,8 @@ function Start({
 
   function handleKeyPess(name: string, event: any) {
     if (event.key === "Enter") {
-      actions.setNewPlayer(name);
-      createPlayer(state.newPlayer);
+      setEvent({newPlayer: name});
+      createPlayer(event.newPlayer);
     }
   }
 
@@ -149,7 +148,7 @@ function Start({
       setErrorMessage(
         "Nickname must contain at least 3 letters or digits and cannot start with a space."
       );
-      actions.setNewPlayer("");
+      setEvent({newPlayer: ""});
       playSound(ERROR_SOUND_PATH);
       return;
     }
@@ -170,8 +169,7 @@ function Start({
       setSelectedPlayers(updatedSelectedPlayers);
       setList(updatedSelectedPlayers);
     }
-    actions.setIsOverlayOpen(!state.isOverlayOpen);
-    actions.setNewPlayer("");
+    setEvent({newPlayer: '', isOverlayOpen: !event.isOverlayOpen});
     setErrorMessage("");
     playSound(ADD_PLAYER_SOUND_PATH);
   }
@@ -297,7 +295,7 @@ function Start({
             className="createNewPlayerButton h4"
             label="Create new Player"
             icon={Plus}
-            handleClick={() => actions.setIsOverlayOpen(true)}
+            handleClick={() => setEvent({ isOverlayOpen: true})}
           />
         </div>
       </div>
@@ -391,18 +389,18 @@ function Start({
       <Overlay
         className="overlayBox"
         src={deleteIcon}
-        isOpen={state.isOverlayOpen}
+        isOpen={event.isOverlayOpen}
         onClose={() => {
-          actions.setIsOverlayOpen(false);
-          actions.setNewPlayer("");
+          setEvent({newPlayer: "", isOverlayOpen: false});
         }}
       >
         <div className="createPlayerOverlay">
           <p className="overlayHeading">New Player</p>
           <DefaultInputField
-            value={state.newPlayer}
+            value={event.newPlayer}
             placeholder="Playername"
-            onChange={(e: any) => actions.setNewPlayer(e.target.value)}
+            onChange={(e: any) => setEvent({newPlayer: e.target.value})}
+
             onKeyDown={(name) => (e) => handleKeyPess(name.target?.value, e)}
           />
           {errormessage && <p id="error-message">{errormessage}</p>}
@@ -411,7 +409,7 @@ function Start({
             label="Player Input"
             iconSrc={userPLus}
             handleClick={() => {
-              createPlayer(state.newPlayer);
+              createPlayer(event.newPlayer);
             }}
             link={""}
           />
