@@ -11,6 +11,8 @@ import FinishedGamePlayerItemList from "../../components/GamePlayerItem/Finished
 import LinkButton from "../../components/LinkButton/LinkButton";
 import Undo from "../../icons/undo-copy.svg";
 import { PlayerProps } from "../Start/Start";
+import { $settings, SettingsType } from "../../stores/settings";
+import { useStore } from "@nanostores/react";
 
 type Props = {
   players: PlayerProps[];
@@ -30,7 +32,8 @@ function Game({
   lastHistory,
 }: Props) {
   const navigate = useNavigate();
-  const [playerScore, setPlayerScore] = useState(301);
+  const settings: SettingsType = useStore($settings);
+  const [playerScore, setPlayerScore] = useState(settings.points);
   const [roundsCount, setRoundsCount] = useState(1);
   const [playerList, setPlayerList] = useState<BASIC.PlayerProps[]>([]);
   const [throwCount, setThrowCount] = useState(0);
@@ -103,7 +106,7 @@ function Game({
   function handleThrow(
     player: BASIC.PlayerProps,
     currentThrow: number,
-    currentScoreAchieved: number | any
+    currentScoreAchieved: number | string | any
   ) {
     setHistory([
       ...history,
@@ -117,8 +120,22 @@ function Game({
       },
     ]);
 
-    const updatedPlayerScore =
-      playerList[playerTurn].score - currentScoreAchieved;
+    let actualScore = 0;
+    let type = ""
+    if (typeof currentScoreAchieved === "string") {
+      type = currentScoreAchieved.charAt(0);
+      const value = parseInt(currentScoreAchieved.substring(1));
+
+      if (type === "D") {
+        actualScore = value * 2;
+      } else if (type === "T") {
+        actualScore = value * 3;
+      }
+    } else {
+      actualScore = currentScoreAchieved;
+    }
+
+    const updatedPlayerScore = playerList[playerTurn].score - actualScore;
     const currentPlayerThrows =
       playerList[playerTurn].rounds[playerList[playerTurn].rounds.length - 1];
     const throwKey = `throw${
@@ -128,7 +145,7 @@ function Game({
     currentPlayerThrows[throwKey] = currentScoreAchieved;
     setPlayerScore(updatedPlayerScore);
 
-    if (currentScoreAchieved > playerList[playerTurn].score) {
+    if (actualScore > playerList[playerTurn].score) {
       handleBust(playerScore);
       playSound(ERROR_SOUND_PATH);
     } else {
@@ -137,6 +154,7 @@ function Game({
       setThrowCount(currentThrow + 1);
       playSound(THROW_SOUND_PATH);
     }
+
     // wir überprüfen, ob der aktuelle Spieler das Spiel beendet hat
     if (playerList[playerTurn].score === 0) {
       if (playerList.length === 2) {
@@ -183,7 +201,7 @@ function Game({
     playerList[playerTurn].score = oldThrowScore;
     changeActivePlayer();
   }
-    //wir prüfen, ob der Spieler seinen Zug beendet hat
+  //wir prüfen, ob der Spieler seinen Zug beendet hat
   function handlePlayerFinishTurn() {
     const updatedPlayerList = [...playerList];
     updatedPlayerList[playerTurn].isPlaying = false;
@@ -210,7 +228,7 @@ function Game({
       (player) => player.score !== 0
     );
     const playersWithZeroScore = playerList.filter(
-      (player) => player.score == 0
+      (player) => player.score === 0
     );
     updatedFinishedPlayerList.push(
       playersWithZeroScore[0],
@@ -304,6 +322,7 @@ function Game({
               handleClick={sortPlayer}
               type="secondary"
               isInverted={true}
+              link={""}
             />
             <Button
               label="Continue"
@@ -312,6 +331,7 @@ function Game({
                 setIsOverlayOpen(false);
               }}
               type="primary"
+              link={""}
             />
             <LinkButton
               icon={Undo}
@@ -325,6 +345,7 @@ function Game({
           </div>
         </div>
       </Overlay>
+
       <div className="gamePageHeader">
         <Link to="/" className="top">
           <img src={Back} alt="Back to Home" />

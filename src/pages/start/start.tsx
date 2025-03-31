@@ -1,5 +1,5 @@
 import "./start.css";
-import { Dispatch, SetStateAction, useEffect, useState } from "react";
+import { Dispatch, SetStateAction, useEffect, useState, useContext } from "react";
 import UnselectedPlayerItem from "../../components/PlayerItems/UnselectedPlayerItem";
 import SelectedPlayerItem from "../../components/PlayerItems/SelectedPlayerItem";
 import Plus from "../../icons/plus.svg";
@@ -22,6 +22,9 @@ import {
   verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
 import { restrictToVerticalAxis } from "@dnd-kit/modifiers";
+import { newSettings } from "../../stores/settings";
+import { UserContext } from "../../provider/UserProvider";
+import useUser from "../../hooks/useUser";
 
 export type PlayerProps = {
   id: number;
@@ -49,9 +52,10 @@ function Start({
   resetLS,
   addUnselectedUserListToLs,
 }: IProps) {
-  const [newPlayer, setNewPlayer] = useState("");
-  const [isOverlayOpen, setIsOverlayOpen] = useState(false);
   const [isSettingsCogOpen, setIsSettingsCogOpen] = useState(false);
+  const [isSettingsOverlayOpen, setIsSettingsOverlayOpen] = useState(false);
+  const [selectedGameMode, setSelectedGameMode] = useState("single-out");
+  const [selectedPoints, setSelectedPoints] = useState(301);
   const [deletePlayerList, setDeletePlayerList] = useState<PlayerProps[]>([]);
   const [selectedPlayers, setSelectedPlayers] = useState<PlayerProps[]>([]);
   const [unselectedPlayers, setUnselectedPlayers] = useState<PlayerProps[]>([]);
@@ -64,6 +68,8 @@ function Start({
   const ERROR_SOUND_PATH = "/sounds/error-sound.mp3";
   const START_SOUND_PATH = "/sounds/start-round-sound.mp3";
   const TRASH_SOUND_PATH = "/sounds/trash-sound.mp3";
+
+  const { state, actions } = useUser()
 
   function initializePlayerList() {
     const initialPlayerList: PlayerProps[] = userList.map(
@@ -103,8 +109,8 @@ function Start({
 
   function handleKeyPess(name: string, event: any) {
     if (event.key === "Enter") {
-      setNewPlayer(name);
-      createPlayer(newPlayer);
+      actions.setNewPlayer(name);
+      createPlayer(state.newPlayer);
     }
   }
 
@@ -143,7 +149,7 @@ function Start({
       setErrorMessage(
         "Nickname must contain at least 3 letters or digits and cannot start with a space."
       );
-      setNewPlayer("");
+      actions.setNewPlayer("");
       playSound(ERROR_SOUND_PATH);
       return;
     }
@@ -164,8 +170,8 @@ function Start({
       setSelectedPlayers(updatedSelectedPlayers);
       setList(updatedSelectedPlayers);
     }
-    setIsOverlayOpen(!isOverlayOpen);
-    setNewPlayer("");
+    actions.setIsOverlayOpen(!state.isOverlayOpen);
+    actions.setNewPlayer("");
     setErrorMessage("");
     playSound(ADD_PLAYER_SOUND_PATH);
   }
@@ -195,6 +201,14 @@ function Start({
     setIsSettingsCogOpen(!isSettingsCogOpen);
     resetLS();
   }
+
+  const handleGameModeClick = (gameMode: string) => {
+    setSelectedGameMode(gameMode);
+  };
+
+  const handlePointsClick = (points: number) => {
+    setSelectedPoints(points);
+  };
 
   useEffect(() => {
     const handleOverlay = () => {
@@ -283,7 +297,7 @@ function Start({
             className="createNewPlayerButton h4"
             label="Create new Player"
             icon={Plus}
-            handleClick={() => setIsOverlayOpen(!isOverlayOpen)}
+            handleClick={() => actions.setIsOverlayOpen(true)}
           />
         </div>
       </div>
@@ -316,6 +330,7 @@ function Start({
             )}
           </SortableContext>
         </DndContext>
+
         <div className="startBtn">
           <Button
             isLink
@@ -329,13 +344,19 @@ function Start({
             }}
           />
         </div>
+
+        <LinkButton
+          className="settingsBtn"
+          label="Settings"
+          handleClick={() => setIsSettingsOverlayOpen(true)}
+        />
       </div>
 
       <Overlay
         className="overlayBox deletePlayerOverlayAdjust"
         src={deleteIcon}
         isOpen={isSettingsCogOpen}
-        onClose={() => setIsSettingsCogOpen(!isSettingsCogOpen)}
+        onClose={() => setIsSettingsCogOpen(false)}
       >
         <div className="deletePlayerOverlay">
           <p className="overlayHeading">Delete Player</p>
@@ -362,6 +383,7 @@ function Start({
             type="primary"
             label="Done"
             handleClick={() => updateArray()}
+            link={""}
           />
         </div>
       </Overlay>
@@ -369,18 +391,18 @@ function Start({
       <Overlay
         className="overlayBox"
         src={deleteIcon}
-        isOpen={isOverlayOpen}
+        isOpen={state.isOverlayOpen}
         onClose={() => {
-          setIsOverlayOpen(!isOverlayOpen);
-          setNewPlayer("");
+          actions.setIsOverlayOpen(false);
+          actions.setNewPlayer("");
         }}
       >
         <div className="createPlayerOverlay">
           <p className="overlayHeading">New Player</p>
           <DefaultInputField
-            value={newPlayer}
+            value={state.newPlayer}
             placeholder="Playername"
-            onChange={(e: any) => setNewPlayer(e.target.value)}
+            onChange={(e: any) => actions.setNewPlayer(e.target.value)}
             onKeyDown={(name) => (e) => handleKeyPess(name.target?.value, e)}
           />
           {errormessage && <p id="error-message">{errormessage}</p>}
@@ -389,8 +411,117 @@ function Start({
             label="Player Input"
             iconSrc={userPLus}
             handleClick={() => {
-              createPlayer(newPlayer);
+              createPlayer(state.newPlayer);
             }}
+            link={""}
+          />
+        </div>
+      </Overlay>
+
+      <Overlay
+        className="overlayBox"
+        src={deleteIcon}
+        isOpen={isSettingsOverlayOpen}
+        onClose={() => {
+          setIsSettingsOverlayOpen(false);
+        }}
+      >
+        <div className="settingsOverlay">
+          <p className="overlayHeading">Settings</p>
+
+          <div className="overlayBody">
+            <div className="settingsContainer">
+              <div>Game Mode</div>
+              <div className="buttonContainer">
+                <button
+                  className={`${
+                    selectedGameMode === "single-out" ? "active" : ""
+                  }`}
+                  onClick={() => handleGameModeClick("single-out")}
+                >
+                  Single-out
+                </button>
+                <button
+                  className={`${
+                    selectedGameMode === "double-out" ? "active" : ""
+                  }`}
+                  onClick={() => handleGameModeClick("double-out")}
+                >
+                  Double-out
+                </button>
+                <button
+                  className={`${
+                    selectedGameMode === "triple-out" ? "active" : ""
+                  }`}
+                  onClick={() => handleGameModeClick("triple-out")}
+                >
+                  Triple-out
+                </button>
+              </div>
+            </div>
+            <div className="settingsContainer">
+              <div>Punkte</div>
+              <div className="buttonContainer">
+                <button
+                  className={`${selectedPoints === 101 ? "active" : ""}`}
+                  onClick={() => handlePointsClick(101)}
+                >
+                  101
+                </button>
+                <button
+                  className={`${selectedPoints === 201 ? "active" : ""}`}
+                  onClick={() => handlePointsClick(201)}
+                >
+                  201
+                </button>
+                <button
+                  className={`${selectedPoints === 301 ? "active" : ""}`}
+                  onClick={() => handlePointsClick(301)}
+                >
+                  301
+                </button>
+                <button
+                  className={`${selectedPoints === 401 ? "active" : ""}`}
+                  onClick={() => handlePointsClick(401)}
+                >
+                  401
+                </button>
+                <button
+                  className={`${selectedPoints === 501 ? "active" : ""}`}
+                  onClick={() => handlePointsClick(501)}
+                >
+                  501
+                </button>
+              </div>
+            </div>
+            <div className="settingsContainer">
+              <div>Sätze</div>
+              <div className="buttonContainer">
+                <button className="active">1</button>
+                <button>2</button>
+                <button>3</button>
+                <button>4</button>
+              </div>
+            </div>
+            <div className="settingsContainer">
+              <div>Legs</div>
+              <div className="buttonContainer">
+                <button className="active">1</button>
+                <button>2</button>
+                <button>3</button>
+                <button>4</button>
+              </div>
+            </div>
+          </div>
+          <Button
+            className="settingsOverlayBtn"
+            type="primary"
+            label="Save"
+            handleClick={() => {
+              newSettings(selectedGameMode, selectedPoints, 1, 1);
+              setIsSettingsOverlayOpen(false);
+            }}
+            link={""}
           />
         </div>
       </Overlay>

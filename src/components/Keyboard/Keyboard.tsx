@@ -5,7 +5,7 @@ import NumberButton from "./NumberButton";
 type Props = {
   handleClick: (value: any) => void;
   disabled?: boolean;
-  isOverlayOpen?: boolean;
+  isOverlayOpen?: boolean
 };
 
 function Keyboard({ ...props }: Props) {
@@ -21,19 +21,19 @@ function Keyboard({ ...props }: Props) {
   const handleButtonClick = (btn: any) => {
     switch (true) {
       case btn === "Double":
-        setDoubleNext(true);
+        setDoubleNext((prev) => !prev);
         setTripleNext(false);
         break;
       case btn === "Triple":
-        setTripleNext(true);
+        setTripleNext((prev) => !prev);
         setDoubleNext(false);
         break;
       case doubleNext && typeof btn === "number":
-        props.handleClick(btn * 2);
+        props.handleClick(`D${btn}`);
         setDoubleNext(false);
         break;
       case tripleNext && typeof btn === "number":
-        props.handleClick(btn * 3);
+        props.handleClick(`T${btn}`);
         setTripleNext(false);
         break;
       default:

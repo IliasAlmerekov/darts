@@ -7,6 +7,7 @@ type Props = {
     className?: string
     src?: string;
     children: any;
+    activeOverlay?: "" | "deletePlayer" | "createPlayer" | "Settings"
 }
 
 function Overlay({ ...props }: Props) {
