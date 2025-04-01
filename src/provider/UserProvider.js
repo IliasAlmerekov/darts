@@ -4,7 +4,13 @@ const UserContext = createContext();
 
 const initialValues = {
   newPlayer: "",
-  isOverlayOpen: false
+  isOverlayOpen: false,
+  selectedPlayers: [], /* <PlayerProps[]> */
+  unselectedPlayers: [], /* <PlayerProps[]> */
+  dragEnd: undefined, /* <boolean> */
+  clickedPlayerId: null, /* <number | null> */
+  errormessage: "",
+  activeTab: "game",
 };
 
 const reducer = (prev, next) => {
@@ -17,12 +23,18 @@ export const UserProvider = ({ children }) => {
   const [event, updateEvent] = useReducer(reducer, initialValues);
 
   // logic here...
+  function handleTabClick(id) {
+    updateEvent({ activeTab: id });
+  }
+
+  const functions = { handleTabClick };
 
   return (
     <UserContext.Provider
       value={{
         event,
         updateEvent,
+        functions
       }}
     >
       {children}

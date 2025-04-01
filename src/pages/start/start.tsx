@@ -1,5 +1,9 @@
 import "./start.css";
-import { Dispatch, SetStateAction, useEffect, useState, useContext } from "react";
+import {
+  Dispatch,
+  SetStateAction,
+  useEffect
+} from "react";
 import UnselectedPlayerItem from "../../components/PlayerItems/UnselectedPlayerItem";
 import SelectedPlayerItem from "../../components/PlayerItems/SelectedPlayerItem";
 import Plus from "../../icons/plus.svg";
@@ -73,26 +77,15 @@ function Start({
   setList,
   userList,
   addUserToLS,
-  deleteUserFromLS,
-  resetLS,
   addUnselectedUserListToLs,
 }: IProps) {
-  const [isSettingsCogOpen, setIsSettingsCogOpen] = useState(false);
-  const [deletePlayerList, setDeletePlayerList] = useState<PlayerProps[]>([]);
-  const [selectedPlayers, setSelectedPlayers] = useState<PlayerProps[]>([]);
-  const [unselectedPlayers, setUnselectedPlayers] = useState<PlayerProps[]>([]);
-  const [dragEnd, setDragEnd] = useState<boolean>();
-  const [clickedPlayerId, setClickedPlayerId] = useState<number | null>(null);
-  const [errormessage, setErrorMessage] = useState("");
-  const [activeTab, setActiveTab] = useState("game");
-
   const SELECT_PLAYER_SOUND_PATH = "/sounds/select-sound.mp3";
   const UNSELECT_PLAYER_SOUND_PATH = "/sounds/unselect-sound.mp3";
   const ADD_PLAYER_SOUND_PATH = "/sounds/add-player-sound.mp3";
   const ERROR_SOUND_PATH = "/sounds/error-sound.mp3";
   const START_SOUND_PATH = "/sounds/start-round-sound.mp3";
 
-  const { event, updateEvent } = useUser()
+  const { event, updateEvent, functions } = useUser();
 
   function initializePlayerList() {
     const initialPlayerList: PlayerProps[] = userList.map(
@@ -100,10 +93,10 @@ function Start({
         name: user.name,
         id: user.id,
         isAdded: false,
-        isClicked: clickedPlayerId,
+        isClicked: event.clickedPlayerId,
       })
     );
-    setUnselectedPlayers(initialPlayerList);
+    updateEvent({ unselectedPlayers: initialPlayerList });
   }
 
   function playSound(path: string) {
@@ -112,146 +105,114 @@ function Start({
     audio.volume = 0.4;
   }
 
-  function handleTabClick(id: string) {
-      setActiveTab(id)
-}
+
 
   function handleSelectPlayer(name: string, id: number) {
-    if (selectedPlayers.length === 10) return;
-    setClickedPlayerId(id);
+    if (event.selectedPlayers.length === 10) return;
+    updateEvent({clickedPlayerId: id})
     setTimeout(() => {
-      const updatedUnselectedPlayerList = unselectedPlayers.filter(
-        (list) => list.id !== id
+      const updatedUnselectedPlayerList = event.unselectedPlayers.filter(
+        (list: any) => list.id !== id
       );
       const updatedSelectedPlayerList: PlayerProps[] = [
-        ...selectedPlayers,
+        ...event.selectedPlayers,
         { name, isAdded: true, id },
       ];
-      setUnselectedPlayers(updatedUnselectedPlayerList);
-      setSelectedPlayers(updatedSelectedPlayerList);
-      setList(updatedSelectedPlayerList);
+      updateEvent({
+        selectedPlayers: updatedSelectedPlayerList,
+        unselectedPlayers: updatedUnselectedPlayerList,
+      });
+      setList(updatedSelectedPlayerList)
       playSound(SELECT_PLAYER_SOUND_PATH);
     }, 200);
   }
 
   function handleChange(e: React.ChangeEvent<HTMLInputElement>) {
-    updateEvent({newPlayer: e.target.value})
+    updateEvent({ newPlayer: e.target.value });
   }
 
-  const handleKeyPess = (name: string) => (e:React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === "Enter") {
-      updateEvent({newPlayer: name});
-      createPlayer(event.newPlayer);
-    }
-  }
+  const handleKeyPess =
+    (name: string) => (e: React.KeyboardEvent<HTMLInputElement>) => {
+      if (e.key === "Enter") {
+        updateEvent({ newPlayer: name });
+        createPlayer(event.newPlayer);
+      }
+    };
 
   function handleUnselect(name: string, id: number) {
-    setClickedPlayerId(null);
-    const updatedSelectedPlayers = selectedPlayers.filter(
-      (list) => list.id !== id
+    updateEvent({clickedPlayerId: null})
+    const updatedSelectedPlayers = event.selectedPlayers.filter(
+      (list: any) => list.id !== id
     );
     const updatedUnselectedPlayers: PlayerProps[] = [
-      ...unselectedPlayers,
+      ...event.unselectedPlayers,
       { name, isAdded: false, id },
     ];
-    setSelectedPlayers(updatedSelectedPlayers);
-    setUnselectedPlayers(updatedUnselectedPlayers);
-    setList(updatedSelectedPlayers);
+    updateEvent({
+      selectedPlayers: updatedSelectedPlayers,
+      unselectedPlayers: updatedUnselectedPlayers,
+    });
+    setList(updatedSelectedPlayers)
     playSound(UNSELECT_PLAYER_SOUND_PATH);
   }
 
-  function handleDragEnd(event: DragEndEvent) {
-    const { active, over } = event;
-    setDragEnd(true);
+  function handleDragEnd(e: DragEndEvent) {
+    const { active, over } = e;
+    updateEvent({dragEnd: true})
 
     if (over && active.id !== over?.id) {
-      const activeIndex = selectedPlayers.findIndex(
-        ({ id }) => id === active.id
+      const activeIndex = event.selectedPlayers.findIndex(
+        ({ id }: any) => id === active.id
       );
-      const overIndex = selectedPlayers.findIndex(({ id }) => id === over.id);
-      const newArray = arrayMove(selectedPlayers, activeIndex, overIndex);
-      setSelectedPlayers(newArray);
-      setList(newArray);
+      const overIndex = event.selectedPlayers.findIndex(({ id }: any) => id === over.id);
+      const newArray: PlayerProps[] = arrayMove(event.selectedPlayers, activeIndex, overIndex);
+      updateEvent({
+        selectedPlayers: newArray,
+      });
+      setList(newArray)
     }
   }
 
   function createPlayer(name: string) {
     if (!/^[^\s][a-zA-Z0-9 _-]{2,}$/.test(name)) {
-      setErrorMessage(
-        "Nickname must contain at least 3 letters or digits and cannot start with a space."
-      );
-      updateEvent({newPlayer: ""});
+      updateEvent({ newPlayer: "",
+        errormessage: "Nickname must contain at least 3 letters or digits and cannot start with a space."
+       });
       playSound(ERROR_SOUND_PATH);
       return;
     }
     const id = Number(new Date());
     addUserToLS(name, id);
 
-    if (selectedPlayers.length === 10) {
+    if (event.selectedPlayers.length === 10) {
       const updatedUnselectedPlayers = [
-        ...unselectedPlayers,
+        ...event.unselectedPlayers,
         { name, isAdded: false, id },
       ];
-      setUnselectedPlayers(updatedUnselectedPlayers);
+      updateEvent({unselectedPlayers: updatedUnselectedPlayers})
     } else {
       const updatedSelectedPlayers = [
-        ...selectedPlayers,
+        ...event.selectedPlayers,
         { name, isAdded: true, id },
       ];
-      setSelectedPlayers(updatedSelectedPlayers);
-      setList(updatedSelectedPlayers);
+      updateEvent({
+        selectedPlayers: updatedSelectedPlayers,
+      });
+      setList(updatedSelectedPlayers)
     }
-    updateEvent({newPlayer: '', isOverlayOpen: !event.isOverlayOpen});
-    setErrorMessage("");
+    updateEvent({ newPlayer: "", isOverlayOpen: !event.isOverlayOpen, errormessage: "" });
     playSound(ADD_PLAYER_SOUND_PATH);
   }
-
-  function deletePlayer(name: string, id: number) {
-    const updatedPlayerList = deletePlayerList.filter((list) => list.id !== id);
-    deleteUserFromLS(id);
-    setDeletePlayerList(updatedPlayerList);
-  }
-
-  /* function overlayPlayerlist() {
-    const concatPlayerlist = selectedPlayers.concat(unselectedPlayers);
-    setDeletePlayerList(concatPlayerlist);
-    setIsSettingsCogOpen(!isSettingsCogOpen);
-  } */
-
-  useEffect(() => {
-    const handleOverlay = () => {
-      const deleteOverlayContentEl = document.querySelector(
-        ".deleteOverlayContent"
-      );
-      const overlayBottomEl = document.querySelector(".overlayBottom");
-      const overlayBoxEl = document.querySelector(".overlayBox");
-
-      if (!deleteOverlayContentEl || !overlayBottomEl || !overlayBoxEl) return;
-
-      const overlayBoxHeightActual = overlayBoxEl?.clientHeight ?? 0;
-      const overlayBottomHeight = overlayBottomEl.clientHeight ?? 0;
-      const innerWindowHeight = overlayBoxHeightActual - overlayBottomHeight;
-
-      const deleteOverlayContentBottom =
-        deleteOverlayContentEl.getBoundingClientRect()?.bottom ?? 0;
-
-      if (deleteOverlayContentBottom < innerWindowHeight + 60) {
-        overlayBottomEl.classList.remove("overlayBottomEnabled");
-      }
-    };
-
-    handleOverlay();
-  }, [deletePlayerList.length, isSettingsCogOpen]);
 
   useEffect(() => {
     if (list.length === 0) {
       initializePlayerList();
     } else {
-      setSelectedPlayers(list);
+      updateEvent({selectedPlayers: list})
       const playersFromLS = localStorage.getItem("UserUnselected");
       const playersFromLocalStorage =
         !!playersFromLS && JSON.parse(playersFromLS);
-      setUnselectedPlayers(playersFromLocalStorage);
+      updateEvent({unselectedPlayers: playersFromLocalStorage})
     }
     // eslint-disable-next-line
   }, []);
@@ -262,10 +223,10 @@ function Start({
         {navItems.map((item) => (
           <button
             key={item.id}
-            onClick={() => handleTabClick(item.id)}
+            onClick={() => functions.handleTabClick(item.id)}
             className={clsx("tab-button", {
-              active: activeTab === item.id,
-              inactive: !(activeTab === item.id),
+              active: event.activeTab === item.id,
+              inactive: !(event.activeTab === item.id),
             })}
           >
             {/* {item.id === "settings" && (
@@ -287,7 +248,7 @@ function Start({
             <span>
               <img
                 src={
-                  item.id === activeTab ? item.activeIcon : item.inActiveIcon
+                  item.id === event.activeTab ? item.activeIcon : item.inActiveIcon
                 }
                 alt={item.label}
               />
@@ -296,11 +257,9 @@ function Start({
           </button>
         ))}
       </div>
-      {activeTab === "statistics" ? (
-        <Statistics  list={list}
-        setList={setList}
-        />
-      ) : activeTab === "settings" ? (
+      {event.activeTab === "statistics" ? (
+        <Statistics list={list} setList={setList} />
+      ) : event.activeTab === "settings" ? (
         <Settings />
       ) : (
         <>
@@ -311,13 +270,13 @@ function Start({
               </h4>
             </div>
 
-            {unselectedPlayers.length > 0 && (
+            {event.unselectedPlayers.length > 0 && (
               <div
                 className={clsx("unselectedPlayers", {
-                  enabled: selectedPlayers.length === 10,
+                  enabled: event.selectedPlayers.length === 10,
                 })}
               >
-                {unselectedPlayers.map((player: PlayerProps) => {
+                {event.unselectedPlayers.map((player: PlayerProps) => {
                   return (
                     <UnselectedPlayerItem
                       {...player}
@@ -327,67 +286,67 @@ function Start({
                       }}
                       src={arrowRight}
                       alt="Select player arrow"
-                      isClicked={clickedPlayerId === player.id}
+                      isClicked={event.clickedPlayerId === player.id}
                     />
                   );
                 })}
               </div>
             )}
 
-        <div className="bottom">
-          <LinkButton
-            className="createNewPlayerButton h4"
-            label="Create new Player"
-            icon={Plus}
-            handleClick={() => updateEvent({ isOverlayOpen: true})}
-          />
-        </div>
-      </div>
-      <div className="addedPlayerList">
-        <img className="deepblueIcon" src={Madebydeepblue} alt="" />
-        <h4 className="headerSelectedPlayers">
-          Selected Players{" "}
-          <div className="listCount">{selectedPlayers.length}/10</div>
-        </h4>
-        <DndContext
-          modifiers={[restrictToVerticalAxis]}
-          onDragEnd={handleDragEnd}
-          onDragMove={() => setDragEnd(false)}
-        >
-          <SortableContext
-            items={selectedPlayers}
-            strategy={verticalListSortingStrategy}
-          >
-            {selectedPlayers.map(
-              (player: { name: string; id: number }, index: number) => (
-                <SelectedPlayerItem
-                  {...player}
-                  key={index}
-                  user={player}
-                  handleClick={() => handleUnselect(player.name, player.id)}
-                  alt="Unselect player cross"
-                  dragEnd={dragEnd}
-                />
-              )
-            )}
-          </SortableContext>
-        </DndContext>
+            <div className="bottom">
+              <LinkButton
+                className="createNewPlayerButton h4"
+                label="Create new Player"
+                icon={Plus}
+                handleClick={() => updateEvent({ isOverlayOpen: true })}
+              />
+            </div>
+          </div>
+          <div className="addedPlayerList">
+            <img className="deepblueIcon" src={Madebydeepblue} alt="" />
+            <h4 className="headerSelectedPlayers">
+              Selected Players{" "}
+              <div className="listCount">{event.selectedPlayers.length}/10</div>
+            </h4>
+            <DndContext
+              modifiers={[restrictToVerticalAxis]}
+              onDragEnd={handleDragEnd}
+              onDragMove={() => updateEvent({dragEnd: false})}
+            >
+              <SortableContext
+                items={event.selectedPlayers}
+                strategy={verticalListSortingStrategy}
+              >
+                {event.selectedPlayers.map(
+                  (player: { name: string; id: number }, index: number) => (
+                    <SelectedPlayerItem
+                      {...player}
+                      key={index}
+                      user={player}
+                      handleClick={() => handleUnselect(player.name, player.id)}
+                      alt="Unselect player cross"
+                      dragEnd={event.dragEnd}
+                    />
+                  )
+                )}
+              </SortableContext>
+            </DndContext>
 
-        <div className="startBtn">
-          <Button
-            isLink
-            label="Start"
-            link="/game"
-            disabled={selectedPlayers.length < 2}
-            type="secondary"
-            handleClick={() => {
-              addUnselectedUserListToLs(unselectedPlayers);
-              playSound(START_SOUND_PATH);
-            }}
-          />
-        </div>
-      </div>
-</>
+            <div className="startBtn">
+              <Button
+                isLink
+                label="Start"
+                link="/game"
+                disabled={event.selectedPlayers.length < 2}
+                type="secondary"
+                handleClick={() => {
+                  addUnselectedUserListToLs(event.unselectedPlayers);
+                  playSound(START_SOUND_PATH);
+                }}
+              />
+            </div>
+          </div>
+        </>
       )}
 
       <Overlay
@@ -395,7 +354,7 @@ function Start({
         src={deleteIcon}
         isOpen={event.isOverlayOpen}
         onClose={() => {
-          updateEvent({newPlayer: "", isOverlayOpen: false});
+          updateEvent({ newPlayer: "", isOverlayOpen: false });
         }}
       >
         <div className="createPlayerOverlay">
@@ -405,11 +364,9 @@ function Start({
             value={event.newPlayer}
             placeholder="Playername"
             onChange={handleChange}
-
             onKeyDown={handleKeyPess}
-        
           />
-          {errormessage && <p id="error-message">{errormessage}</p>}
+          {event.errormessage && <p id="error-message">{event.errormessage}</p>}
           <Button
             iconStyling="userPlus"
             label="Player Input"
@@ -421,7 +378,6 @@ function Start({
           />
         </div>
       </Overlay>
-
     </div>
   );
 }
