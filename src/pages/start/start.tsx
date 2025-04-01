@@ -3,16 +3,22 @@ import { Dispatch, SetStateAction, useEffect, useState, useContext } from "react
 import UnselectedPlayerItem from "../../components/PlayerItems/UnselectedPlayerItem";
 import SelectedPlayerItem from "../../components/PlayerItems/SelectedPlayerItem";
 import Plus from "../../icons/plus.svg";
+import Statistics from "../../components/Statistics/Statistics";
 import Madebydeepblue from "../../icons/madeByDeepblue.svg";
 import userPLus from "../../icons/user-plus.svg";
 import LinkButton from "../../components/LinkButton/LinkButton";
 import Button from "../../components/Button/Button";
 import "../../components/Button/Button.css";
+import settingsCogInactive from "../../icons/settings-inactive.svg";
 import settingsCog from "../../icons/settings.svg";
+import dartIcon from "../../icons/dart.svg";
+import dartIconInactive from "../../icons/dart-inactive.svg";
+import statisticIcon from "../../icons/statistics.svg";
+import statisticIconInactive from "../../icons/statistics-inactive.svg";
 import arrowRight from "../../icons/arrow-right.svg";
-import trashIcon from "../../icons/trash-icon.svg";
 import Overlay from "../../components/Overlay/Overlay";
 import DefaultInputField from "../../components/InputField/DefaultInputField";
+import Settings from "../../components/Settings/Settings";
 import deleteIcon from "../../icons/delete.svg";
 import clsx from "clsx";
 import { DndContext, DragEndEvent } from "@dnd-kit/core";
@@ -22,7 +28,6 @@ import {
   verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
 import { restrictToVerticalAxis } from "@dnd-kit/modifiers";
-import { newSettings } from "../../stores/settings";
 import { useUser } from "../../provider/UserProvider";
 
 export type PlayerProps = {
@@ -42,6 +47,27 @@ export type IProps = {
   addUnselectedUserListToLs: (unselectedPlayers: PlayerProps[]) => void;
 };
 
+const navItems = [
+  {
+    label: "Statistics",
+    activeIcon: statisticIcon,
+    inActiveIcon: statisticIconInactive,
+    id: "statistics",
+  },
+  {
+    label: "Game",
+    activeIcon: dartIcon,
+    inActiveIcon: dartIconInactive,
+    id: "game",
+  },
+  {
+    label: "Settings",
+    activeIcon: settingsCog,
+    inActiveIcon: settingsCogInactive,
+    id: "settings",
+  },
+];
+
 function Start({
   list,
   setList,
@@ -52,21 +78,19 @@ function Start({
   addUnselectedUserListToLs,
 }: IProps) {
   const [isSettingsCogOpen, setIsSettingsCogOpen] = useState(false);
-  const [isSettingsOverlayOpen, setIsSettingsOverlayOpen] = useState(false);
-  const [selectedGameMode, setSelectedGameMode] = useState("single-out");
-  const [selectedPoints, setSelectedPoints] = useState(301);
   const [deletePlayerList, setDeletePlayerList] = useState<PlayerProps[]>([]);
   const [selectedPlayers, setSelectedPlayers] = useState<PlayerProps[]>([]);
   const [unselectedPlayers, setUnselectedPlayers] = useState<PlayerProps[]>([]);
   const [dragEnd, setDragEnd] = useState<boolean>();
   const [clickedPlayerId, setClickedPlayerId] = useState<number | null>(null);
   const [errormessage, setErrorMessage] = useState("");
+  const [activeTab, setActiveTab] = useState("game");
+
   const SELECT_PLAYER_SOUND_PATH = "/sounds/select-sound.mp3";
   const UNSELECT_PLAYER_SOUND_PATH = "/sounds/unselect-sound.mp3";
   const ADD_PLAYER_SOUND_PATH = "/sounds/add-player-sound.mp3";
   const ERROR_SOUND_PATH = "/sounds/error-sound.mp3";
   const START_SOUND_PATH = "/sounds/start-round-sound.mp3";
-  const TRASH_SOUND_PATH = "/sounds/trash-sound.mp3";
 
   const { event, updateEvent } = useUser()
 
@@ -87,6 +111,10 @@ function Start({
     audio.play();
     audio.volume = 0.4;
   }
+
+  function handleTabClick(id: string) {
+      setActiveTab(id)
+}
 
   function handleSelectPlayer(name: string, id: number) {
     if (selectedPlayers.length === 10) return;
@@ -184,33 +212,11 @@ function Start({
     setDeletePlayerList(updatedPlayerList);
   }
 
-  function overlayPlayerlist() {
+  /* function overlayPlayerlist() {
     const concatPlayerlist = selectedPlayers.concat(unselectedPlayers);
     setDeletePlayerList(concatPlayerlist);
     setIsSettingsCogOpen(!isSettingsCogOpen);
-  }
-
-  function updateArray() {
-    const newSelectedList: PlayerProps[] = [];
-    const newUnselectedList: PlayerProps[] = [];
-    deletePlayerList.map((player) => {
-      return player.isAdded
-        ? newSelectedList.push(player)
-        : newUnselectedList.push(player);
-    });
-    setUnselectedPlayers(newUnselectedList);
-    setSelectedPlayers(newSelectedList);
-    setIsSettingsCogOpen(!isSettingsCogOpen);
-    resetLS();
-  }
-
-  const handleGameModeClick = (gameMode: string) => {
-    setSelectedGameMode(gameMode);
-  };
-
-  const handlePointsClick = (points: number) => {
-    setSelectedPoints(points);
-  };
+  } */
 
   useEffect(() => {
     const handleOverlay = () => {
@@ -247,52 +253,86 @@ function Start({
         !!playersFromLS && JSON.parse(playersFromLS);
       setUnselectedPlayers(playersFromLocalStorage);
     }
+    // eslint-disable-next-line
   }, []);
 
   return (
     <div className="start">
-      <div className="existingPlayerList">
-        <div className="header">
-          <h4 className="headerUnselectedPlayers">
-            Unselected <br /> Players
-          </h4>
-          <img
-            className={clsx("settingsCog", {
-              hide:
-                selectedPlayers.length === 0 && unselectedPlayers.length === 0,
-            })}
-            src={settingsCog}
-            alt=""
-            onClick={
-              selectedPlayers.length === 0 && unselectedPlayers.length === 0
-                ? undefined
-                : () => overlayPlayerlist()
-            }
-          />
-        </div>
-
-        {unselectedPlayers.length > 0 && (
-          <div
-            className={clsx("unselectedPlayers", {
-              enabled: selectedPlayers.length === 10,
+      <div className="navigation">
+        {navItems.map((item) => (
+          <button
+            key={item.id}
+            onClick={() => handleTabClick(item.id)}
+            className={clsx("tab-button", {
+              active: activeTab === item.id,
+              inactive: !(activeTab === item.id),
             })}
           >
-            {unselectedPlayers.map((player: PlayerProps) => {
-              return (
-                <UnselectedPlayerItem
-                  {...player}
-                  key={player.id}
-                  handleClickOrDelete={() => {
-                    handleSelectPlayer(player.name, player.id);
-                  }}
-                  src={arrowRight}
-                  alt="Select player arrow"
-                  isClicked={clickedPlayerId === player.id}
-                />
-              );
-            })}
-          </div>
-        )}
+            {/* {item.id === "settings" && (
+              <img
+                className={clsx("settingsCog", {
+                  hide:
+                    selectedPlayers.length === 0 &&
+                    unselectedPlayers.length === 0,
+                })}
+                src={settingsCog}
+                alt=""
+                onClick={
+                  selectedPlayers.length === 0 && unselectedPlayers.length === 0
+                    ? undefined
+                    : () => overlayPlayerlist()
+                }
+              />
+            )} */}
+            <span>
+              <img
+                src={
+                  item.id === activeTab ? item.activeIcon : item.inActiveIcon
+                }
+                alt={item.label}
+              />
+              {item.label}
+            </span>
+          </button>
+        ))}
+      </div>
+      {activeTab === "statistics" ? (
+        <Statistics  list={list}
+        setList={setList}
+        />
+      ) : activeTab === "settings" ? (
+        <Settings />
+      ) : (
+        <>
+          <div className="existingPlayerList">
+            <div className="header">
+              <h4 className="headerUnselectedPlayers">
+                Unselected <br /> Players
+              </h4>
+            </div>
+
+            {unselectedPlayers.length > 0 && (
+              <div
+                className={clsx("unselectedPlayers", {
+                  enabled: selectedPlayers.length === 10,
+                })}
+              >
+                {unselectedPlayers.map((player: PlayerProps) => {
+                  return (
+                    <UnselectedPlayerItem
+                      {...player}
+                      key={player.id}
+                      handleClickOrDelete={() => {
+                        handleSelectPlayer(player.name, player.id);
+                      }}
+                      src={arrowRight}
+                      alt="Select player arrow"
+                      isClicked={clickedPlayerId === player.id}
+                    />
+                  );
+                })}
+              </div>
+            )}
 
         <div className="bottom">
           <LinkButton
@@ -346,49 +386,9 @@ function Start({
             }}
           />
         </div>
-
-        <LinkButton
-          className="settingsBtn"
-          label="Settings"
-          handleClick={() => setIsSettingsOverlayOpen(true)}
-        />
       </div>
-
-      <Overlay
-        className="overlayBox deletePlayerOverlayAdjust"
-        src={deleteIcon}
-        isOpen={isSettingsCogOpen}
-        onClose={() => setIsSettingsCogOpen(false)}
-      >
-        <div className="deletePlayerOverlay">
-          <p className="overlayHeading">Delete Player</p>
-          <div className="deleteOverlayContent">
-            {deletePlayerList.map(
-              (player: { name: string; id: number }, index: number) => (
-                <UnselectedPlayerItem
-                  {...player}
-                  key={index}
-                  handleClickOrDelete={() => {
-                    playSound(TRASH_SOUND_PATH);
-                    deletePlayer(player.name, player.id);
-                  }}
-                  src={trashIcon}
-                  alt="Delete player trashcan"
-                />
-              )
-            )}
-          </div>
-        </div>
-        <div className="overlayBottom overlayBottomEnabled">
-          <Button
-            className="deleteOverlayButton"
-            type="primary"
-            label="Done"
-            handleClick={() => updateArray()}
-            link={""}
-          />
-        </div>
-      </Overlay>
+</>
+      )}
 
       <Overlay
         className="overlayBox"
@@ -422,113 +422,6 @@ function Start({
         </div>
       </Overlay>
 
-      <Overlay
-        className="overlayBox"
-        src={deleteIcon}
-        isOpen={isSettingsOverlayOpen}
-        onClose={() => {
-          setIsSettingsOverlayOpen(false);
-        }}
-      >
-        <div className="settingsOverlay">
-          <p className="overlayHeading">Settings</p>
-
-          <div className="overlayBody">
-            <div className="settingsContainer">
-              <div>Game Mode</div>
-              <div className="buttonContainer">
-                <button
-                  className={`${
-                    selectedGameMode === "single-out" ? "active" : ""
-                  }`}
-                  onClick={() => handleGameModeClick("single-out")}
-                >
-                  Single-out
-                </button>
-                <button
-                  className={`${
-                    selectedGameMode === "double-out" ? "active" : ""
-                  }`}
-                  onClick={() => handleGameModeClick("double-out")}
-                >
-                  Double-out
-                </button>
-                <button
-                  className={`${
-                    selectedGameMode === "triple-out" ? "active" : ""
-                  }`}
-                  onClick={() => handleGameModeClick("triple-out")}
-                >
-                  Triple-out
-                </button>
-              </div>
-            </div>
-            <div className="settingsContainer">
-              <div>Punkte</div>
-              <div className="buttonContainer">
-                <button
-                  className={`${selectedPoints === 101 ? "active" : ""}`}
-                  onClick={() => handlePointsClick(101)}
-                >
-                  101
-                </button>
-                <button
-                  className={`${selectedPoints === 201 ? "active" : ""}`}
-                  onClick={() => handlePointsClick(201)}
-                >
-                  201
-                </button>
-                <button
-                  className={`${selectedPoints === 301 ? "active" : ""}`}
-                  onClick={() => handlePointsClick(301)}
-                >
-                  301
-                </button>
-                <button
-                  className={`${selectedPoints === 401 ? "active" : ""}`}
-                  onClick={() => handlePointsClick(401)}
-                >
-                  401
-                </button>
-                <button
-                  className={`${selectedPoints === 501 ? "active" : ""}`}
-                  onClick={() => handlePointsClick(501)}
-                >
-                  501
-                </button>
-              </div>
-            </div>
-            <div className="settingsContainer">
-              <div>Sätze</div>
-              <div className="buttonContainer">
-                <button className="active">1</button>
-                <button>2</button>
-                <button>3</button>
-                <button>4</button>
-              </div>
-            </div>
-            <div className="settingsContainer">
-              <div>Legs</div>
-              <div className="buttonContainer">
-                <button className="active">1</button>
-                <button>2</button>
-                <button>3</button>
-                <button>4</button>
-              </div>
-            </div>
-          </div>
-          <Button
-            className="settingsOverlayBtn"
-            type="primary"
-            label="Save"
-            handleClick={() => {
-              newSettings(selectedGameMode, selectedPoints, 1, 1);
-              setIsSettingsOverlayOpen(false);
-            }}
-            link={""}
-          />
-        </div>
-      </Overlay>
     </div>
   );
 }

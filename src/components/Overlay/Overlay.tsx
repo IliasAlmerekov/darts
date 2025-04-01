@@ -18,7 +18,7 @@ function Overlay({ ...props }: Props) {
         <div className="overlayBackground">
           <div className={props.className}>
             <div className="delete" onClick={props.onClose}>
-              <img src={props.src} alt="" />
+              <img src={props.src} alt="Close overlay" />
             </div>
             {props.children}
           </div>

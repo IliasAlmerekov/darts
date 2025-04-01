@@ -9,9 +9,10 @@ import Button from "../../components/Button/Button";
 import NumberButton from "../../components/Keyboard/NumberButton";
 import FinishedGamePlayerItemList from "../../components/GamePlayerItem/FinishedGamePlayerItemList";
 import LinkButton from "../../components/LinkButton/LinkButton";
+import deleteIcon from "../../icons/delete.svg";
 import Undo from "../../icons/undo-copy.svg";
 import { PlayerProps } from "../Start/start";
-import { $settings, SettingsType } from "../../stores/settings";
+import { $settings, newSettings, SettingsType } from "../../stores/settings";
 import { useStore } from "@nanostores/react";
 
 interface GameState {
@@ -50,6 +51,9 @@ function Game({
   const [throwCount, setThrowCount] = useState(0);
   const [playerTurn, setPlayerTurn] = useState(0);
   const [isOverlayOpen, setIsOverlayOpen] = useState(false);
+  const [isSettingsOverlayOpen, setIsSettingsOverlayOpen] = useState(false);
+  const [selectedPoints, setSelectedPoints] = useState(301);
+  const [selectedGameMode, setSelectedGameMode] = useState("single-out");
   const [history, setHistory] = useState<GameState[]>([]);
   const [finishedPlayerList, setFinishedPlayerList] = useState<
     BASIC.PlayerProps[]
@@ -59,6 +63,8 @@ function Game({
   const THROW_SOUND_PATH = "/sounds/throw-sound.mp3";
   const WIN_SOUND_PATH = "/sounds/win-sound.mp3";
   const UNDO_SOUND_PATH = "/sounds/undo-sound.mp3";
+
+
 
   function initializePlayerList() {
     const initialPlayerlist: BASIC.PlayerProps[] = players.map(
@@ -108,6 +114,14 @@ function Game({
       });
     }
   }
+
+  const handleGameModeClick = (gameMode: string) => {
+    setSelectedGameMode(gameMode);
+  };
+
+  const handlePointsClick = (points: number) => {
+    setSelectedPoints(points);
+  };
 
   function playSound(path: string) {
     const audio = new Audio(path);
@@ -336,6 +350,7 @@ function Game({
     }
   }, [undoLastHistory]);
 
+
   return (
     <>
       <Overlay className="overlayBox" isOpen={isOverlayOpen}>
@@ -372,6 +387,97 @@ function Game({
         </div>
       </Overlay>
 
+      <Overlay
+        className="overlayBox"
+        src={deleteIcon}
+        isOpen={isSettingsOverlayOpen}
+        onClose={() => {
+          setIsSettingsOverlayOpen(false);
+        }}
+      >
+        <div className="settingsOverlay">
+          <p className="overlayHeading">Settings</p>
+
+          <div className="overlayBody">
+            <div className="settingsContainer">
+              <div>Game Mode</div>
+              <div className="buttonContainer">
+                <button
+                  className={`${
+                    selectedGameMode === "single-out" ? "active" : ""
+                  }`}
+                  onClick={() => handleGameModeClick("single-out")}
+                >
+                  Single-out
+                </button>
+                <button
+                  className={`${
+                    selectedGameMode === "double-out" ? "active" : ""
+                  }`}
+                  onClick={() => handleGameModeClick("double-out")}
+                >
+                  Double-out
+                </button>
+                <button
+                  className={`${
+                    selectedGameMode === "triple-out" ? "active" : ""
+                  }`}
+                  onClick={() => handleGameModeClick("triple-out")}
+                >
+                  Triple-out
+                </button>
+              </div>
+            </div>
+            <div className="settingsContainer">
+              <div>Punkte</div>
+              <div className="buttonContainer">
+                <button
+                  className={`${selectedPoints === 101 ? "active" : ""}`}
+                  onClick={() => handlePointsClick(101)}
+                >
+                  101
+                </button>
+                <button
+                  className={`${selectedPoints === 201 ? "active" : ""}`}
+                  onClick={() => handlePointsClick(201)}
+                >
+                  201
+                </button>
+                <button
+                  className={`${selectedPoints === 301 ? "active" : ""}`}
+                  onClick={() => handlePointsClick(301)}
+                >
+                  301
+                </button>
+                <button
+                  className={`${selectedPoints === 401 ? "active" : ""}`}
+                  onClick={() => handlePointsClick(401)}
+                >
+                  401
+                </button>
+                <button
+                  className={`${selectedPoints === 501 ? "active" : ""}`}
+                  onClick={() => handlePointsClick(501)}
+                >
+                  501
+                </button>
+              </div>
+            </div>
+          </div>
+          <Button
+            className="settingsOverlayBtn"
+            type="primary"
+            label="Save"
+            handleClick={() => {
+              newSettings(selectedGameMode, selectedPoints);
+              console.log("test", selectedGameMode, selectedPoints)
+              setIsSettingsOverlayOpen(false);
+            }}
+            link={""}
+          />
+        </div>
+      </Overlay>
+
       <div className="gamePageHeader">
         <Link to="/" className="top">
           <img src={Back} alt="Back to Home" />
@@ -396,6 +502,12 @@ function Game({
           isOverlayOpen={isOverlayOpen}
         />
       </div>
+      <LinkButton
+          className="settingsBtn"
+          label="Settings"
+          handleClick={() => setIsSettingsOverlayOpen(true)
+          }
+        />
     </>
   );
 }

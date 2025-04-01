@@ -2,6 +2,7 @@
   display: grid;
   gap: 24px;
   grid-template-columns: repeat(6, 1fr);
+  grid-template-rows: auto 1fr;
   height: 100vh;
 }
 
@@ -11,12 +12,15 @@
   position: relative;
   display: flex;
   flex-direction: column;
-  height: 100vh;
+  height: auto;
+  margin-left: 32px;
+  border-radius: 16px;
 }
 
 .addedPlayerList {
   position: relative;
   grid-column: 3/7;
+  padding-top: 32px;
   padding-right: 24px;
   align-content: baseline;
 }
@@ -27,7 +31,7 @@
 }
 
 .headerSelectedPlayers {
-  margin: 146px 0px 16px 0px;
+  margin: 0px 0px 16px 0px;
   color: var(--darkgrey);
   justify-content: space-between;
   display: flex;
@@ -100,7 +104,8 @@
 }
 
 .settingsCog {
-  width: 50px;
+  width: 24px;
+  height: 24px;
 }
 
 .deleteOverlay {
@@ -182,54 +187,51 @@
   color: #ff2001;
 }
 
-.settingsBtn {
-  font-size: 24px;
-  font-weight: 700;
-  line-height: 28.8px;
-  letter-spacing: 0.02em;
-  text-align: left;
-  color: var(--blue);
+
+.navigation {
+  grid-column: 1 / -1;
+  display: flex;
+  margin: 60px 0 24px 32px;
+  justify-content: space-between;
+  background-color: #ffffff;
   align-items: center;
-  position: absolute;
-  top: 32px;
-  right: 32px;
-  width: 300px;
+  width: 100%;
+  max-width: 95%;
+  box-shadow: 0px 4px 20px 0px #00000026;
+  border-radius: 9999px;
+  height: 48px;
+}
+
+.tab-button {
   display: flex;
-  padding: 0px 8px 0px 0px;
-  gap: 10px;
-}
-
-.settingsOverlayBtn {
+  align-items: center;
+  justify-content: center;
   width: 100%;
+  gap: 16px;
+  padding: 8px 16px;
+  border: none;
+  background: none;
+  color: #000021;
+  border-radius: 9999px;
+  background: transparent;
+  transition: all 0.2s ease;
 }
 
-.settingsOverlay {
-  width: 100%;
-}
-
-.settingsContainer {
-  display: grid;
-  grid-template-columns: repeat(12, 1fr);
-  padding: 8px 0;
-}
-
-.settingsContainer > div:first-child {
-  grid-column: span 4;
-  }
-
-.buttonContainer {
-  grid-column: span 8;
+.tab-button span {
   display: flex;
-  width: 100%;
-  justify-content: stretch;
+  align-items: center;
+  font-family: "CircularXX";
+  font-size: 16px;
+  gap: 16px;
 }
 
-.buttonContainer button {
-  flex: 1;
-  padding: 8px 0;
+.tab-button.active {
+  background-color: #0000db;
+  color: #ffffff;
+  font-weight: 700;
 }
 
-.active {
-  color: white;
-  background-color: var(--blue);
+.tab-button.inactive {
+  color: #000021;
+  font-weight: 700;
 }
