@@ -1,4 +1,5 @@
-import '../Overlay/Overlay.css'
+import "../Overlay/Overlay.css";
+import React from "react";
 
 type Props = {
     isOpen?: boolean
@@ -11,18 +12,19 @@ type Props = {
 }
 
 function Overlay({ ...props }: Props) {
-    return (
-        <>{
-            props.isOpen ? (
-                <div className='overlayBackground'>
-                    <div className={props.className}>
-                        <div className="delete" onClick={props.onClose}><img src={props.src} alt="" /></div>
-                        {props.children}
-                    </div>
-                </div>) : null
-        }
-
-        </>
-    )
+  return (
+    <>
+      {props.isOpen ? (
+        <div className="overlayBackground">
+          <div className={props.className}>
+            <div className="delete" onClick={props.onClose}>
+              <img src={props.src} alt="" />
+            </div>
+            {props.children}
+          </div>
+        </div>
+      ) : null}
+    </>
+  );
 }
-export default Overlay
+export default Overlay;

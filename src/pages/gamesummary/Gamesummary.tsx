@@ -4,14 +4,14 @@ import Button from "../../components/Button/Button";
 import Podium from "../../components/Podium/Podium";
 import Undo from "../../icons/undolinkbutton.svg";
 import { Link } from "react-router-dom";
-import { Dispatch, SetStateAction } from "react";
+import React, { Dispatch, SetStateAction } from "react";
 
 type Props = {
   list: BASIC.PlayerProps[];
   setUndo: Dispatch<SetStateAction<boolean>>;
 };
 
-function Gamesummary({ list, setUndo }: Props) {
+function Gamesummary({ list, setUndo }: Props): JSX.Element {
   const newList = [...list];
   const podiumList = newList.slice(0, 3);
   const leaderBoardList = newList.slice(3, list.length + 1);

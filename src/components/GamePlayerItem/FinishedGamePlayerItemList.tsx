@@ -1,4 +1,5 @@
 import "../GamePlayerItem/GamePlayerItem.css";
+import React from "react";
 
 type Props = {
   userMap?: { name: string }[];

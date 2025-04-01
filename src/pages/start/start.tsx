@@ -83,12 +83,12 @@ function Start({
   }
 
   function playSound(path: string) {
-    var audio = new Audio(path);
+    const audio = new Audio(path);
     audio.play();
     audio.volume = 0.4;
   }
 
-  function handleSelectPlayer(name: any, id: number) {
+  function handleSelectPlayer(name: string, id: number) {
     if (selectedPlayers.length === 10) return;
     setClickedPlayerId(id);
     setTimeout(() => {
@@ -113,7 +113,7 @@ function Start({
     }
   }
 
-  function handleUnselect(name: any, id: number) {
+  function handleUnselect(name: string, id: number) {
     setClickedPlayerId(null);
     const updatedSelectedPlayers = selectedPlayers.filter(
       (list) => list.id !== id
@@ -273,7 +273,7 @@ function Start({
               enabled: selectedPlayers.length === 10,
             })}
           >
-            {unselectedPlayers.map((player: PlayerProps, index: number) => {
+            {unselectedPlayers.map((player: PlayerProps) => {
               return (
                 <UnselectedPlayerItem
                   {...player}
@@ -397,6 +397,7 @@ function Start({
         <div className="createPlayerOverlay">
           <p className="overlayHeading">New Player</p>
           <DefaultInputField
+            name="newPlayer"
             value={event.newPlayer}
             placeholder="Playername"
             onChange={(e: any) => setEvent({newPlayer: e.target.value})}

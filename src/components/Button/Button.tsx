@@ -1,12 +1,13 @@
+import React from "react";
 import clsx from "clsx";
 import { Link, To } from "react-router-dom";
 
 export interface ButtonProps {
   isLink?: boolean;
-  href?: string | any;
+  href?: string;
   target?: string;
   isInverted?: boolean;
-  iconSrc?: any;
+  iconSrc?: string;
   handleClick?: () => void;
   label?: string;
   class?: string;
@@ -44,7 +45,7 @@ function Button({ ...props }: ButtonProps) {
 
   if (props.isLink) {
     return (
-      <Link className="noUnderline" to={props.disabled ? "" : props.link}>
+      <Link className="noUnderline" to={props.disabled ? '' : props.link}>
         <button className={buttonClasses} onClick={props.handleClick}>
           {buttonContent}
         </button>

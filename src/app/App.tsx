@@ -1,10 +1,18 @@
 import { BrowserRouter, Route, Routes } from "react-router-dom";
-import { useState } from "react";
+import React, { useState } from "react";
 import "../css/index.css";
-import Test from "../pages/Test";
 import Start, { PlayerProps } from "../pages/Start/Start";
 import Game from "../pages/Game/Game";
 import Gamesummary from "../pages/gamesummary/Gamesummary";
+
+interface GameState {
+  finishedPlayerList: BASIC.PlayerProps[];
+  playerList: BASIC.PlayerProps[];
+  playerScore: number;
+  roundsCount: number;
+  throwCount: number;
+  playerTurn: number;
+}
 
 function App() {
   const [list, setList] = useState<PlayerProps[]>([]);
@@ -12,7 +20,7 @@ function App() {
   const [deletePlayer, setDeletePlayer] = useState<BASIC.UserProps[]>([]);
   const [winnerList, setWinnerList] = useState<BASIC.PlayerProps[]>([]);
   const [undoFromSummary, setUndoFromSummary] = useState(false);
-  const [lastHistory, setLastHistory] = useState<any[]>([]);
+  const [lastHistory, setLastHistory] = useState<GameState[]>([]);
 
   function getUserFromLS() {
     if (localStorage.getItem("User") !== null) {
@@ -55,7 +63,6 @@ function App() {
     <div className="App">
       <BrowserRouter>
         <Routes>
-          <Route path="/test" element={<Test />} />
           <Route
             path="/"
             element={
@@ -80,6 +87,10 @@ function App() {
                 setUndoFromSummary={setUndoFromSummary}
                 setLastHistory={setLastHistory}
                 lastHistory={lastHistory}
+                setUndoLastHistory={function (): void {
+                  throw new Error("Function not implemented.");
+                }}
+                undoLastHistory={false}
               />
             }
           />
