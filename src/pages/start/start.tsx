@@ -3,12 +3,18 @@ import React, { Dispatch, SetStateAction, useEffect, useState } from "react";
 import UnselectedPlayerItem from "../../components/PlayerItems/UnselectedPlayerItem";
 import SelectedPlayerItem from "../../components/PlayerItems/SelectedPlayerItem";
 import Plus from "../../icons/plus.svg";
+import Statistics from "../../components/Statistics/Statistics";
 import Madebydeepblue from "../../icons/madeByDeepblue.svg";
 import userPLus from "../../icons/user-plus.svg";
 import LinkButton from "../../components/LinkButton/LinkButton";
 import Button from "../../components/Button/Button";
 import "../../components/Button/Button.css";
+import settingsCogInactive from "../../icons/settings-inactive.svg";
 import settingsCog from "../../icons/settings.svg";
+import dartIcon from "../../icons/dart.svg";
+import dartIconInactive from "../../icons/dart-inactive.svg";
+import statisticIcon from "../../icons/statistics.svg";
+import statisticIconInactive from "../../icons/statistics-inactive.svg";
 import arrowRight from "../../icons/arrow-right.svg";
 import trashIcon from "../../icons/trash-icon.svg";
 import Overlay from "../../components/Overlay/Overlay";
@@ -40,6 +46,27 @@ export type IProps = {
   addUnselectedUserListToLs: (unselectedPlayers: PlayerProps[]) => void;
 };
 
+const navItems = [
+  {
+    label: "Statistics",
+    activeIcon: statisticIcon,
+    inActiveIcon: statisticIconInactive,
+    id: "statistics",
+  },
+  {
+    label: "Game",
+    activeIcon: dartIcon,
+    inActiveIcon: dartIconInactive,
+    id: "game",
+  },
+  {
+    label: "Settings",
+    activeIcon: settingsCog,
+    inActiveIcon: settingsCogInactive,
+    id: "settings",
+  },
+];
+
 function Start({
   list,
   setList,
@@ -58,6 +85,9 @@ function Start({
   const [dragEnd, setDragEnd] = useState<boolean>();
   const [clickedPlayerId, setClickedPlayerId] = useState<number | null>(null);
   const [errormessage, setErrorMessage] = useState("");
+  const [activeTab, setActiveTab] = useState("game");
+  const [previousTab, setPreviousTab] = useState("game");
+
   const SELECT_PLAYER_SOUND_PATH = "/sounds/select-sound.mp3";
   const UNSELECT_PLAYER_SOUND_PATH = "/sounds/unselect-sound.mp3";
   const ADD_PLAYER_SOUND_PATH = "/sounds/add-player-sound.mp3";
@@ -81,6 +111,17 @@ function Start({
     const audio = new Audio(path);
     audio.play();
     audio.volume = 0.4;
+  }
+
+  function handleTabClick(id: string) {
+    if (id === "settings") {
+      setPreviousTab(activeTab);
+      overlayPlayerlist();
+      setActiveTab("settings");
+    } else {
+      setActiveTab(id);
+      setPreviousTab(id);
+    }
   }
 
   function handleSelectPlayer(name: string, id: number) {
@@ -198,6 +239,7 @@ function Start({
     setUnselectedPlayers(newUnselectedList);
     setSelectedPlayers(newSelectedList);
     setIsSettingsCogOpen(!isSettingsCogOpen);
+    setActiveTab(previousTab);
     resetLS();
   }
 
@@ -236,111 +278,147 @@ function Start({
         !!playersFromLS && JSON.parse(playersFromLS);
       setUnselectedPlayers(playersFromLocalStorage);
     }
+    // eslint-disable-next-line
   }, []);
 
   return (
     <div className="start">
-      <div className="existingPlayerList">
-        <div className="header">
-          <h4 className="headerUnselectedPlayers">
-            Unselected <br /> Players
-          </h4>
-          <img
-            className={clsx("settingsCog", {
-              hide:
-                selectedPlayers.length === 0 && unselectedPlayers.length === 0,
-            })}
-            src={settingsCog}
-            alt=""
-            onClick={
-              selectedPlayers.length === 0 && unselectedPlayers.length === 0
-                ? undefined
-                : () => overlayPlayerlist()
-            }
-          />
-        </div>
-
-        {unselectedPlayers.length > 0 && (
-          <div
-            className={clsx("unselectedPlayers", {
-              enabled: selectedPlayers.length === 10,
+      <div className="navigation">
+        {navItems.map((item) => (
+          <button
+            key={item.id}
+            onClick={() => handleTabClick(item.id)}
+            className={clsx("tab-button", {
+              active: activeTab === item.id,
+              inactive: !(activeTab === item.id),
             })}
           >
-            {unselectedPlayers.map((player: PlayerProps) => {
-              return (
-                <UnselectedPlayerItem
-                  {...player}
-                  key={player.id}
-                  handleClickOrDelete={() => {
-                    handleSelectPlayer(player.name, player.id);
-                  }}
-                  src={arrowRight}
-                  alt="Select player arrow"
-                  isClicked={clickedPlayerId === player.id}
-                />
-              );
-            })}
-          </div>
-        )}
-
-        <div className="bottom">
-          <LinkButton
-            className="createNewPlayerButton h4"
-            label="Create new Player"
-            icon={Plus}
-            handleClick={() => setIsOverlayOpen(!isOverlayOpen)}
-          />
-        </div>
+            {/* {item.id === "settings" && (
+              <img
+                className={clsx("settingsCog", {
+                  hide:
+                    selectedPlayers.length === 0 &&
+                    unselectedPlayers.length === 0,
+                })}
+                src={settingsCog}
+                alt=""
+                onClick={
+                  selectedPlayers.length === 0 && unselectedPlayers.length === 0
+                    ? undefined
+                    : () => overlayPlayerlist()
+                }
+              />
+            )} */}
+            <span>
+              <img
+                src={
+                  item.id === activeTab ? item.activeIcon : item.inActiveIcon
+                }
+                alt={item.label}
+              />
+              {item.label}
+            </span>
+          </button>
+        ))}
       </div>
-      <div className="addedPlayerList">
-        <img className="deepblueIcon" src={Madebydeepblue} alt="" />
-        <h4 className="headerSelectedPlayers">
-          Selected Players{" "}
-          <div className="listCount">{selectedPlayers.length}/10</div>
-        </h4>
-        <DndContext
-          modifiers={[restrictToVerticalAxis]}
-          onDragEnd={handleDragEnd}
-          onDragMove={() => setDragEnd(false)}
-        >
-          <SortableContext
-            items={selectedPlayers}
-            strategy={verticalListSortingStrategy}
-          >
-            {selectedPlayers.map(
-              (player: { name: string; id: number }, index: number) => (
-                <SelectedPlayerItem
-                  {...player}
-                  key={index}
-                  user={player}
-                  handleClick={() => handleUnselect(player.name, player.id)}
-                  alt="Unselect player cross"
-                  dragEnd={dragEnd}
-                />
-              )
+      {activeTab === "statistics" ? (
+        <Statistics  list={list}
+        setList={setList}
+        />
+      ) : (
+        <>
+          <div className="existingPlayerList">
+            <div className="header">
+              <h4 className="headerUnselectedPlayers">
+                Unselected <br /> Players
+              </h4>
+            </div>
+
+            {unselectedPlayers.length > 0 && (
+              <div
+                className={clsx("unselectedPlayers", {
+                  enabled: selectedPlayers.length === 10,
+                })}
+              >
+                {unselectedPlayers.map((player: PlayerProps) => {
+                  return (
+                    <UnselectedPlayerItem
+                      {...player}
+                      key={player.id}
+                      handleClickOrDelete={() => {
+                        handleSelectPlayer(player.name, player.id);
+                      }}
+                      src={arrowRight}
+                      alt="Select player arrow"
+                      isClicked={clickedPlayerId === player.id}
+                    />
+                  );
+                })}
+              </div>
             )}
-          </SortableContext>
-        </DndContext>
-        <div className="startBtn">
-          <Button
-            isLink
-            label="Start"
-            link="/game"
-            disabled={selectedPlayers.length < 2}
-            type="secondary"
-            handleClick={() => {
-              addUnselectedUserListToLs(unselectedPlayers);
-              playSound(START_SOUND_PATH);
-            }}
-          />
-        </div>
-      </div>
 
+            <div className="bottom">
+              <LinkButton
+                className="createNewPlayerButton h4"
+                label="Create new Player"
+                icon={Plus}
+                handleClick={() => setIsOverlayOpen(!isOverlayOpen)}
+              />
+            </div>
+          </div>
+          <div className="addedPlayerList">
+            <img className="deepblueIcon" src={Madebydeepblue} alt="" />
+            <h4 className="headerSelectedPlayers">
+              Selected Players{" "}
+              <div className="listCount">{selectedPlayers.length}/10</div>
+            </h4>
+            <DndContext
+              modifiers={[restrictToVerticalAxis]}
+              onDragEnd={handleDragEnd}
+              onDragMove={() => setDragEnd(false)}
+            >
+              <SortableContext
+                items={selectedPlayers}
+                strategy={verticalListSortingStrategy}
+              >
+                {selectedPlayers.map(
+                  (player: { name: string; id: number }, index: number) => (
+                    <SelectedPlayerItem
+                      {...player}
+                      key={index}
+                      user={player}
+                      handleClick={() => handleUnselect(player.name, player.id)}
+                      alt="Unselect player cross"
+                      dragEnd={dragEnd}
+                    />
+                  )
+                )}
+              </SortableContext>
+            </DndContext>
+            <div className="startBtn">
+              <Button
+                isLink
+                label="Start"
+                link="/game"
+                disabled={selectedPlayers.length < 2}
+                type="secondary"
+                handleClick={() => {
+                  addUnselectedUserListToLs(unselectedPlayers);
+                  playSound(START_SOUND_PATH);
+                }}
+              />
+            </div>
+          </div>
+        </>
+      ) }
       <Overlay
         className="overlayBox deletePlayerOverlayAdjust"
         src={deleteIcon}
         isOpen={isSettingsCogOpen}
-        onClose={() => setIsSettingsCogOpen(!isSettingsCogOpen)}
+        onClose={() => {
+          setIsSettingsCogOpen(!isSettingsCogOpen);
+          setActiveTab(previousTab);
+        }}
       >
         <div className="deletePlayerOverlay">
           <p className="overlayHeading">Delete Player</p>
@@ -376,6 +454,7 @@ function Start({
         src={deleteIcon}
         isOpen={isOverlayOpen}
         onClose={() => {
+          setActiveTab(previousTab);
           setIsOverlayOpen(!isOverlayOpen);
           setNewPlayer("");
         }}
