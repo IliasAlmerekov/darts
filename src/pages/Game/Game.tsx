@@ -10,7 +10,7 @@ import NumberButton from "../../components/Keyboard/NumberButton";
 import FinishedGamePlayerItemList from "../../components/GamePlayerItem/FinishedGamePlayerItemList";
 import LinkButton from "../../components/LinkButton/LinkButton";
 import Undo from "../../icons/undo-copy.svg";
-import { PlayerProps } from "../Start/Start";
+import { PlayerProps } from "../Start/start";
 import { $settings, SettingsType } from "../../stores/settings";
 import { useStore } from "@nanostores/react";
 
@@ -123,7 +123,7 @@ function Game({
   function handleThrow(
     player: BASIC.PlayerProps,
     currentThrow: number,
-    currentScoreAchieved: number
+    currentScoreAchieved: number | string | any
   ) {
     setHistory([
       ...history,
@@ -137,7 +137,7 @@ function Game({
       },
     ]);
 
-    let actualScore = 0;
+    let actualScore: number = 0;
     let type = ""
     if (typeof currentScoreAchieved === "string") {
       type = currentScoreAchieved.charAt(0);

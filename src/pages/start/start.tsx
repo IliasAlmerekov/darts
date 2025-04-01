@@ -68,7 +68,7 @@ function Start({
   const START_SOUND_PATH = "/sounds/start-round-sound.mp3";
   const TRASH_SOUND_PATH = "/sounds/trash-sound.mp3";
 
-  const { event, setEvent } = useUser()
+  const { event, updateEvent } = useUser()
 
   function initializePlayerList() {
     const initialPlayerList: PlayerProps[] = userList.map(
@@ -106,9 +106,13 @@ function Start({
     }, 200);
   }
 
-  function handleKeyPess(name: string, event: any) {
-    if (event.key === "Enter") {
-      setEvent({newPlayer: name});
+  function handleChange(e: React.ChangeEvent<HTMLInputElement>) {
+    updateEvent({newPlayer: e.target.value})
+  }
+
+  const handleKeyPess = (name: string) => (e:React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === "Enter") {
+      updateEvent({newPlayer: name});
       createPlayer(event.newPlayer);
     }
   }
@@ -148,7 +152,7 @@ function Start({
       setErrorMessage(
         "Nickname must contain at least 3 letters or digits and cannot start with a space."
       );
-      setEvent({newPlayer: ""});
+      updateEvent({newPlayer: ""});
       playSound(ERROR_SOUND_PATH);
       return;
     }
@@ -169,7 +173,7 @@ function Start({
       setSelectedPlayers(updatedSelectedPlayers);
       setList(updatedSelectedPlayers);
     }
-    setEvent({newPlayer: '', isOverlayOpen: !event.isOverlayOpen});
+    updateEvent({newPlayer: '', isOverlayOpen: !event.isOverlayOpen});
     setErrorMessage("");
     playSound(ADD_PLAYER_SOUND_PATH);
   }
@@ -295,7 +299,7 @@ function Start({
             className="createNewPlayerButton h4"
             label="Create new Player"
             icon={Plus}
-            handleClick={() => setEvent({ isOverlayOpen: true})}
+            handleClick={() => updateEvent({ isOverlayOpen: true})}
           />
         </div>
       </div>
@@ -391,18 +395,19 @@ function Start({
         src={deleteIcon}
         isOpen={event.isOverlayOpen}
         onClose={() => {
-          setEvent({newPlayer: "", isOverlayOpen: false});
+          updateEvent({newPlayer: "", isOverlayOpen: false});
         }}
       >
         <div className="createPlayerOverlay">
           <p className="overlayHeading">New Player</p>
           <DefaultInputField
-            name="newPlayer"
+            name={""}
             value={event.newPlayer}
             placeholder="Playername"
-            onChange={(e: any) => setEvent({newPlayer: e.target.value})}
+            onChange={handleChange}
 
-            onKeyDown={(name) => (e) => handleKeyPess(name.target?.value, e)}
+            onKeyDown={handleKeyPess}
+        
           />
           {errormessage && <p id="error-message">{errormessage}</p>}
           <Button

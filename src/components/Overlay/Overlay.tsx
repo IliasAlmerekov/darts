@@ -7,7 +7,7 @@ type Props = {
     handleClick?: () => void
     className?: string
     src?: string;
-    children: any;
+    children: React.ReactNode;
     activeOverlay?: "" | "deletePlayer" | "createPlayer" | "Settings"
 }
 

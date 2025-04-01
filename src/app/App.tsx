@@ -1,7 +1,7 @@
 import { BrowserRouter, Route, Routes } from "react-router-dom";
 import React, { useState } from "react";
 import "../css/index.css";
-import Start, { PlayerProps } from "../pages/Start/Start";
+import Start, { PlayerProps } from "../pages/Start/start";
 import Game from "../pages/Game/Game";
 import Gamesummary from "../pages/gamesummary/Gamesummary";
 

@@ -3,7 +3,7 @@ import "../Keyboard/Keyboard.css";
 import NumberButton from "./NumberButton";
 
 type Props = {
-  handleClick: (value: number) => void;
+  handleClick: (value: string | number) => void;
   disabled?: boolean;
   isOverlayOpen?: boolean
 };
@@ -29,15 +29,16 @@ function Keyboard({ handleClick }: Props) {
         setDoubleNext(false);
         break;
       case doubleNext && typeof btn === "number":
-        props.handleClick(`D${btn}`);
+        handleClick(`D${btn}`);
         setDoubleNext(false);
         break;
       case tripleNext && typeof btn === "number":
-        props.handleClick(`T${btn}`);
+        handleClick(`T${btn}`);
         setTripleNext(false);
-      } else {
+        break;
+      default:
         handleClick(btn);
-      }
+        break;
     }
   };
 
