@@ -2,13 +2,13 @@ import OverviewPlayerItem from "./OverviewPlayerItem";
 import React from "react";
 
 type Props = {
-  userMap: BASIC.PlayerProps[];
+  userMap: BASIC.WinnerPlayerProps[];
 };
 
 function OverviewPlayerItemList({ ...props }: Props) {
   return (
     <>
-      {props.userMap.map((item: BASIC.PlayerProps, index: number) => {
+      {props.userMap.map((item: BASIC.WinnerPlayerProps, index: number) => {
         const completedRounds =
           item.rounds[item.rounds.length - 1].throw1 === undefined
             ? item.rounds.length - 1

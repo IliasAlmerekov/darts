@@ -6,8 +6,8 @@ import React from "react";
 
 type Props = {
   name?: string;
-  userMap?: BASIC.PlayerProps[];
-  list?: BASIC.PlayerProps[];
+  userMap?: BASIC.WinnerPlayerProps[];
+  list?: BASIC.WinnerPlayerProps[];
 };
 
 function Podium({ ...props }: Props): JSX.Element {
@@ -16,7 +16,7 @@ function Podium({ ...props }: Props): JSX.Element {
   }
   return (
     <div className="podium">
-      {props.userMap.map((item: BASIC.PlayerProps, index: number) => {
+      {props.userMap.map((item: BASIC.WinnerPlayerProps, index: number) => {
         const completedRound =
           item.rounds[item.rounds.length - 1].throw1 === undefined
             ? item.rounds.length - 1

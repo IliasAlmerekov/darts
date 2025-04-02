@@ -19,7 +19,7 @@ declare namespace BASIC {
     isRoundBust?: boolean;
   };
 
-  type PlayerProps = {
+  type WinnerPlayerProps = {
     id: number;
     name: string;
     score: number;
@@ -40,4 +40,13 @@ declare namespace BASIC {
     list: UserProps[];
     setList: React.Dispatch<React.SetStateAction<UserProps[]>>;
   };
+
+  interface GameState {
+    finishedPlayerList: BASIC.WinnerPlayerProps[];
+    playerList: BASIC.WinnerPlayerProps[];
+    playerScore: number;
+    roundsCount: number;
+    throwCount: number;
+    playerTurn: number;
+  }
 }

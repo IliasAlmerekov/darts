@@ -7,7 +7,7 @@ type Props = {
   key?: number;
   isActive?: boolean;
   score: number;
-  userMap: BASIC.PlayerProps[];
+  userMap: BASIC.WinnerPlayerProps[];
   gamePlayerItemThrow1?: BASIC.Round;
   gamePlayerItemThrow2?: BASIC.Round;
   gamePlayerItemThrow3?: BASIC.Round;
@@ -23,7 +23,7 @@ type Props = {
 function GamePlayerItemList({ ...props }: Props) {
   return (
     <>
-      {props.userMap.map((item: BASIC.PlayerProps) => (
+      {props.userMap.map((item: BASIC.WinnerPlayerProps) => (
         <GamePlayerItem
           classNameforName={clsx("playeritemName", {
             activePlayerItemName: item.isActive === true,

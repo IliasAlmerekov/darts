@@ -16,8 +16,8 @@ import { $settings, newSettings, SettingsType } from "../../stores/settings";
 import { useStore } from "@nanostores/react";
 
 interface GameState {
-  finishedPlayerList: BASIC.PlayerProps[];
-  playerList: BASIC.PlayerProps[];
+  finishedPlayerList: BASIC.WinnerPlayerProps[];
+  playerList: BASIC.WinnerPlayerProps[];
   playerScore: number;
   roundsCount: number;
   throwCount: number;
@@ -26,10 +26,10 @@ interface GameState {
 
 type Props = {
   players: PlayerProps[];
-  setWinnerList: Dispatch<SetStateAction<BASIC.PlayerProps[]>>;
+  setWinnerList: Dispatch<BASIC.WinnerPlayerProps[] | undefined>;
   undoFromSummary: boolean;
-  setUndoFromSummary: Dispatch<SetStateAction<boolean>>;
-  setLastHistory: Dispatch<SetStateAction<GameState[]>>;
+  setUndoFromSummary: Dispatch<boolean | undefined>;
+  setLastHistory: Dispatch<GameState[]>;
   lastHistory: GameState[];
   setUndoLastHistory: Dispatch<SetStateAction<boolean>>;
   undoLastHistory: boolean;
@@ -47,7 +47,7 @@ function Game({
   const settings: SettingsType = useStore($settings);
   const [playerScore, setPlayerScore] = useState(settings.points);
   const [roundsCount, setRoundsCount] = useState(1);
-  const [playerList, setPlayerList] = useState<BASIC.PlayerProps[]>([]);
+  const [playerList, setPlayerList] = useState<BASIC.WinnerPlayerProps[]>([]);
   const [throwCount, setThrowCount] = useState(0);
   const [playerTurn, setPlayerTurn] = useState(0);
   const [isOverlayOpen, setIsOverlayOpen] = useState(false);
@@ -56,7 +56,7 @@ function Game({
   const [selectedGameMode, setSelectedGameMode] = useState("single-out");
   const [history, setHistory] = useState<GameState[]>([]);
   const [finishedPlayerList, setFinishedPlayerList] = useState<
-    BASIC.PlayerProps[]
+    BASIC.WinnerPlayerProps[]
   >([]);
   const [undoLastHistory, setUndoLastHistory] = useState(false);
   const ERROR_SOUND_PATH = "/sounds/error-sound.mp3";
@@ -67,7 +67,7 @@ function Game({
 
 
   function initializePlayerList() {
-    const initialPlayerlist: BASIC.PlayerProps[] = players.map(
+    const initialPlayerlist: BASIC.WinnerPlayerProps[] = players.map(
       (user: BASIC.UserProps, i: number) => ({
         id: user.id,
         name: user.name,
@@ -92,7 +92,7 @@ function Game({
   function changeActivePlayer() {
     const prevPlayerTurnIndex = playerTurn;
     const newPlayerTurnIndex = playerTurn + 1;
-    const newPlayerList: BASIC.PlayerProps[] = [...playerList];
+    const newPlayerList: BASIC.WinnerPlayerProps[] = [...playerList];
 
     newPlayerList[prevPlayerTurnIndex].isActive = false;
     const isEndOfArray = newPlayerTurnIndex > newPlayerList.length - 1;
@@ -135,7 +135,7 @@ function Game({
   }
 
   function handleThrow(
-    player: BASIC.PlayerProps,
+    player: BASIC.WinnerPlayerProps,
     currentThrow: number,
     currentScoreAchieved: number | string | any
   ) {

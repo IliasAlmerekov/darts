@@ -8,7 +8,7 @@ type Props = {
   handleClickOrDelete: () => void;
   src: string;
   alt?: string;
-  isClicked?: boolean;
+  isClicked?: number | null;
 };
 
 function UnselectedPlayerItem({ ...props }: Props) {

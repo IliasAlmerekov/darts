@@ -25,9 +25,8 @@ import DefaultInputField from "../../components/InputField/DefaultInputField";
 import Settings from "../../components/Settings/Settings";
 import deleteIcon from "../../icons/delete.svg";
 import clsx from "clsx";
-import { DndContext, DragEndEvent } from "@dnd-kit/core";
+import { DndContext} from "@dnd-kit/core";
 import {
-  arrayMove,
   SortableContext,
   verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
@@ -37,7 +36,7 @@ import { useUser } from "../../provider/UserProvider";
 export type PlayerProps = {
   id: number;
   name: string;
-  isAdded: boolean;
+  isAdded?: boolean;
   isClicked?: number | null;
 };
 
@@ -46,8 +45,6 @@ export type IProps = {
   setList: Dispatch<SetStateAction<PlayerProps[]>>;
   userList: BASIC.UserProps[];
   addUserToLS: (name: string, id: number) => void;
-  deleteUserFromLS: (id: number) => void;
-  resetLS: () => void;
   addUnselectedUserListToLs: (unselectedPlayers: PlayerProps[]) => void;
 };
 
@@ -72,143 +69,16 @@ const navItems = [
   },
 ];
 
-function Start({
-  list,
-  setList,
-  userList,
-  addUserToLS,
-  addUnselectedUserListToLs,
-}: IProps) {
-  const SELECT_PLAYER_SOUND_PATH = "/sounds/select-sound.mp3";
-  const UNSELECT_PLAYER_SOUND_PATH = "/sounds/unselect-sound.mp3";
-  const ADD_PLAYER_SOUND_PATH = "/sounds/add-player-sound.mp3";
-  const ERROR_SOUND_PATH = "/sounds/error-sound.mp3";
+function Start() {
   const START_SOUND_PATH = "/sounds/start-round-sound.mp3";
 
   const { event, updateEvent, functions } = useUser();
 
-  function initializePlayerList() {
-    const initialPlayerList: PlayerProps[] = userList.map(
-      (user: BASIC.UserProps) => ({
-        name: user.name,
-        id: user.id,
-        isAdded: false,
-        isClicked: event.clickedPlayerId,
-      })
-    );
-    updateEvent({ unselectedPlayers: initialPlayerList });
-  }
-
-  function playSound(path: string) {
-    const audio = new Audio(path);
-    audio.play();
-    audio.volume = 0.4;
-  }
-
-
-
-  function handleSelectPlayer(name: string, id: number) {
-    if (event.selectedPlayers.length === 10) return;
-    updateEvent({clickedPlayerId: id})
-    setTimeout(() => {
-      const updatedUnselectedPlayerList = event.unselectedPlayers.filter(
-        (list: any) => list.id !== id
-      );
-      const updatedSelectedPlayerList: PlayerProps[] = [
-        ...event.selectedPlayers,
-        { name, isAdded: true, id },
-      ];
-      updateEvent({
-        selectedPlayers: updatedSelectedPlayerList,
-        unselectedPlayers: updatedUnselectedPlayerList,
-      });
-      setList(updatedSelectedPlayerList)
-      playSound(SELECT_PLAYER_SOUND_PATH);
-    }, 200);
-  }
-
-  function handleChange(e: React.ChangeEvent<HTMLInputElement>) {
-    updateEvent({ newPlayer: e.target.value });
-  }
-
-  const handleKeyPess =
-    (name: string) => (e: React.KeyboardEvent<HTMLInputElement>) => {
-      if (e.key === "Enter") {
-        updateEvent({ newPlayer: name });
-        createPlayer(event.newPlayer);
-      }
-    };
-
-  function handleUnselect(name: string, id: number) {
-    updateEvent({clickedPlayerId: null})
-    const updatedSelectedPlayers = event.selectedPlayers.filter(
-      (list: any) => list.id !== id
-    );
-    const updatedUnselectedPlayers: PlayerProps[] = [
-      ...event.unselectedPlayers,
-      { name, isAdded: false, id },
-    ];
-    updateEvent({
-      selectedPlayers: updatedSelectedPlayers,
-      unselectedPlayers: updatedUnselectedPlayers,
-    });
-    setList(updatedSelectedPlayers)
-    playSound(UNSELECT_PLAYER_SOUND_PATH);
-  }
-
-  function handleDragEnd(e: DragEndEvent) {
-    const { active, over } = e;
-    updateEvent({dragEnd: true})
-
-    if (over && active.id !== over?.id) {
-      const activeIndex = event.selectedPlayers.findIndex(
-        ({ id }: any) => id === active.id
-      );
-      const overIndex = event.selectedPlayers.findIndex(({ id }: any) => id === over.id);
-      const newArray: PlayerProps[] = arrayMove(event.selectedPlayers, activeIndex, overIndex);
-      updateEvent({
-        selectedPlayers: newArray,
-      });
-      setList(newArray)
-    }
-  }
-
-  function createPlayer(name: string) {
-    if (!/^[^\s][a-zA-Z0-9 _-]{2,}$/.test(name)) {
-      updateEvent({ newPlayer: "",
-        errormessage: "Nickname must contain at least 3 letters or digits and cannot start with a space."
-       });
-      playSound(ERROR_SOUND_PATH);
-      return;
-    }
-    const id = Number(new Date());
-    addUserToLS(name, id);
-
-    if (event.selectedPlayers.length === 10) {
-      const updatedUnselectedPlayers = [
-        ...event.unselectedPlayers,
-        { name, isAdded: false, id },
-      ];
-      updateEvent({unselectedPlayers: updatedUnselectedPlayers})
-    } else {
-      const updatedSelectedPlayers = [
-        ...event.selectedPlayers,
-        { name, isAdded: true, id },
-      ];
-      updateEvent({
-        selectedPlayers: updatedSelectedPlayers,
-      });
-      setList(updatedSelectedPlayers)
-    }
-    updateEvent({ newPlayer: "", isOverlayOpen: !event.isOverlayOpen, errormessage: "" });
-    playSound(ADD_PLAYER_SOUND_PATH);
-  }
-
   useEffect(() => {
-    if (list.length === 0) {
-      initializePlayerList();
+    if (event.list?.length === 0) {
+      functions.initializePlayerList();
     } else {
-      updateEvent({selectedPlayers: list})
+      updateEvent({selectedPlayers: event.list})
       const playersFromLS = localStorage.getItem("UserUnselected");
       const playersFromLocalStorage =
         !!playersFromLS && JSON.parse(playersFromLS);
@@ -258,7 +128,7 @@ function Start({
         ))}
       </div>
       {event.activeTab === "statistics" ? (
-        <Statistics list={list} setList={setList} />
+        <Statistics />
       ) : event.activeTab === "settings" ? (
         <Settings />
       ) : (
@@ -282,11 +152,11 @@ function Start({
                       {...player}
                       key={player.id}
                       handleClickOrDelete={() => {
-                        handleSelectPlayer(player.name, player.id);
+                        functions.handleSelectPlayer(player.name, player.id);
                       }}
                       src={arrowRight}
                       alt="Select player arrow"
-                      isClicked={event.clickedPlayerId === player.id}
+                      isClicked={event.clickedPlayerId === player.id ? event.clickedPlayerId : undefined}
                     />
                   );
                 })}
@@ -310,7 +180,7 @@ function Start({
             </h4>
             <DndContext
               modifiers={[restrictToVerticalAxis]}
-              onDragEnd={handleDragEnd}
+              onDragEnd={functions.handleDragEnd}
               onDragMove={() => updateEvent({dragEnd: false})}
             >
               <SortableContext
@@ -323,7 +193,7 @@ function Start({
                       {...player}
                       key={index}
                       user={player}
-                      handleClick={() => handleUnselect(player.name, player.id)}
+                      handleClick={() => functions.handleUnselect(player.name, player.id)}
                       alt="Unselect player cross"
                       dragEnd={event.dragEnd}
                     />
@@ -340,8 +210,8 @@ function Start({
                 disabled={event.selectedPlayers.length < 2}
                 type="secondary"
                 handleClick={() => {
-                  addUnselectedUserListToLs(event.unselectedPlayers);
-                  playSound(START_SOUND_PATH);
+                  functions.addUnselectedUserListToLs(event.unselectedPlayers);
+                  functions.playSound(START_SOUND_PATH);
                 }}
               />
             </div>
@@ -363,8 +233,8 @@ function Start({
             name={""}
             value={event.newPlayer}
             placeholder="Playername"
-            onChange={handleChange}
-            onKeyDown={handleKeyPess}
+            onChange={functions.handleChange}
+            onKeyDown={() => functions.handleKeyPess}
           />
           {event.errormessage && <p id="error-message">{event.errormessage}</p>}
           <Button
@@ -372,7 +242,7 @@ function Start({
             label="Player Input"
             iconSrc={userPLus}
             handleClick={() => {
-              createPlayer(event.newPlayer);
+              functions.createPlayer(event.newPlayer);
             }}
             link={""}
           />

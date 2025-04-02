@@ -5,12 +5,7 @@ import sortScore from "../../icons/sorting-score.svg";
 import clsx from "clsx";
 import { PlayerProps } from "../../pages/Start/start";
 
-export type IProps = {
-  list?: PlayerProps[];
-  setList?: React.Dispatch<React.SetStateAction<PlayerProps[]>>;
-};
-
-const Statistics = ({ list = [] }: IProps) => {
+const Statistics = () => {
   const [sortBy, setSortBy] = useState<"alphabetically" | "score">(
     "alphabetically"
   );

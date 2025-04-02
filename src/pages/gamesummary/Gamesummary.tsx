@@ -5,16 +5,19 @@ import Podium from "../../components/Podium/Podium";
 import Undo from "../../icons/undolinkbutton.svg";
 import { Link } from "react-router-dom";
 import React, { Dispatch, SetStateAction } from "react";
+import { useUser } from "../../provider/UserProvider";
 
 type Props = {
-  list: BASIC.PlayerProps[];
+  winnerList: BASIC.WinnerPlayerProps[];
   setUndo: Dispatch<SetStateAction<boolean>>;
 };
 
-function Gamesummary({ list, setUndo }: Props): JSX.Element {
-  const newList = [...list];
+function Gamesummary(): JSX.Element {
+  const { event, updateEvent} = useUser();
+
+  const newList = [...event.winnerList];
   const podiumList = newList.slice(0, 3);
-  const leaderBoardList = newList.slice(3, list.length + 1);
+  const leaderBoardList = newList.slice(3, event.winnerList.length + 1);
   const podiumListWithPlaceholder = [...podiumList];
   podiumListWithPlaceholder.push({
     id: 0,
@@ -30,11 +33,11 @@ function Gamesummary({ list, setUndo }: Props): JSX.Element {
   return (
     <div className="summary">
       <div>
-        <Link to="/game" className="undoButton" onClick={() => setUndo(true)}>
+        <Link to="/game" className="undoButton" onClick={() => updateEvent({undoFromSummary: true})}>
           <img src={Undo} alt="Undo last action" />
         </Link>
       </div>
-      <Podium userMap={podiumData} list={list} />
+      <Podium userMap={podiumData} list={event.winnerList} />
       <div className="leaderBoard">
         <OverviewPlayerItemList userMap={leaderBoardList} />
       </div>
