@@ -2,7 +2,13 @@ import Keyboard from "../../components/Keyboard/Keyboard";
 import "./game.css";
 import Back from "../../icons/back.svg";
 import { Link, useNavigate } from "react-router-dom";
-import React, { Dispatch, SetStateAction, useEffect, useState } from "react";
+import React, {
+  Dispatch,
+  SetStateAction,
+  useEffect,
+  useRef,
+  useState,
+} from "react";
 import GamePlayerItemList from "../../components/GamePlayerItem/GamplayerItemList";
 import Overlay from "../../components/Overlay/Overlay";
 import Button from "../../components/Button/Button";
@@ -45,15 +51,16 @@ function Game({
 }: Props) {
   const navigate = useNavigate();
   const settings: SettingsType = useStore($settings);
-  const [playerScore, setPlayerScore] = useState(settings.points);
+  const [playerScore, setPlayerScore] = useState<number>(settings.points);
+  const startingScoreRef = useRef<number | null>(null);
   const [roundsCount, setRoundsCount] = useState(1);
   const [playerList, setPlayerList] = useState<BASIC.PlayerProps[]>([]);
   const [throwCount, setThrowCount] = useState(0);
   const [playerTurn, setPlayerTurn] = useState(0);
   const [isOverlayOpen, setIsOverlayOpen] = useState(false);
   const [isSettingsOverlayOpen, setIsSettingsOverlayOpen] = useState(false);
-  const [selectedPoints, setSelectedPoints] = useState(301);
-  const [selectedGameMode, setSelectedGameMode] = useState("single-out");
+  const [selectedPoints, setSelectedPoints] = useState(settings.points);
+  const [selectedGameMode, setSelectedGameMode] = useState(settings.gameMode);
   const [history, setHistory] = useState<GameState[]>([]);
   const [finishedPlayerList, setFinishedPlayerList] = useState<
     BASIC.PlayerProps[]
@@ -63,8 +70,6 @@ function Game({
   const THROW_SOUND_PATH = "/sounds/throw-sound.mp3";
   const WIN_SOUND_PATH = "/sounds/win-sound.mp3";
   const UNDO_SOUND_PATH = "/sounds/undo-sound.mp3";
-
-
 
   function initializePlayerList() {
     const initialPlayerlist: BASIC.PlayerProps[] = players.map(
@@ -134,6 +139,12 @@ function Game({
     }
   }
 
+  const isDouble = (throwValue: string) =>
+    typeof throwValue === "string" && throwValue.startsWith("D");
+
+  const isTriple = (throwValue: string) =>
+    typeof throwValue === "string" && throwValue.startsWith("T");
+
   function handleThrow(
     player: BASIC.PlayerProps,
     currentThrow: number,
@@ -152,7 +163,7 @@ function Game({
     ]);
 
     let actualScore: number = 0;
-    let type = ""
+    let type = "";
     if (typeof currentScoreAchieved === "string") {
       type = currentScoreAchieved.charAt(0);
       const value = parseInt(currentScoreAchieved.substring(1));
@@ -166,6 +177,10 @@ function Game({
       actualScore = currentScoreAchieved;
     }
 
+    if (currentThrow === 0) {
+      startingScoreRef.current = playerList[playerTurn].score;
+    }
+
     const updatedPlayerScore = playerList[playerTurn].score - actualScore;
     const currentPlayerThrows =
       playerList[playerTurn].rounds[playerList[playerTurn].rounds.length - 1];
@@ -177,8 +192,25 @@ function Game({
     currentPlayerThrows[throwKey] = currentScoreAchieved;
     setPlayerScore(updatedPlayerScore);
 
-    if (actualScore > playerList[playerTurn].score) {
-      handleBust(playerScore);
+    const isDoubleOutMode = selectedGameMode === "double-out";
+    const isTripleOutMode = selectedGameMode === "triple-out";
+    const wouldFinishGame = updatedPlayerScore === 0;
+    const isDoubleThrow = isDouble(currentScoreAchieved);
+    const isTripleThrow = isTriple(currentScoreAchieved);
+
+    const startingScoreThisRound =
+      startingScoreRef.current ?? playerList[playerTurn].score;
+
+    if (
+      actualScore > startingScoreThisRound ||
+      updatedPlayerScore < 0 ||
+      (isDoubleOutMode && updatedPlayerScore === 1) ||
+      (isTripleOutMode && updatedPlayerScore === 1) ||
+      (isTripleOutMode && updatedPlayerScore === 2) ||
+      (wouldFinishGame && isDoubleOutMode && !isDoubleThrow) ||
+      (wouldFinishGame && isTripleOutMode && !isTripleThrow)
+    ) {
+      handleBust(startingScoreThisRound);
       playSound(ERROR_SOUND_PATH);
     } else {
       const updatedPlayerList = [...playerList];
@@ -188,12 +220,17 @@ function Game({
     }
 
     // wir überprüfen, ob der aktuelle Spieler das Spiel beendet hat
-    if (playerList[playerTurn].score === 0) {
+
+    if (
+      (updatedPlayerScore === 0 && isDoubleOutMode && isDoubleThrow) ||
+      (updatedPlayerScore === 0 && !isDoubleOutMode && !isTripleOutMode) ||
+      (updatedPlayerScore === 0 && isTripleOutMode && isTripleThrow)
+    ) {
       if (playerList.length === 2) {
         handleLastPlayer();
         return finishedPlayerList;
       } else if (finishedPlayerList.length < 1) {
-        setIsOverlayOpen(true); //Victory overlay
+        setIsOverlayOpen(true);
         playSound(WIN_SOUND_PATH);
       } else {
         handlePlayerFinishTurn();
@@ -206,31 +243,9 @@ function Game({
     setPlayerList(updatedPlayerlist);
   }
   // wir prüfen, ob der Spieler überworfen hat
-  function handleBust(bustedPlayerScore: number) {
-    const currentRoundOfPlayer = playerList[playerTurn].rounds[roundsCount - 1];
-    const {
-      throw1: firstThrow,
-      throw2: secondThrow,
-      throw3: thirdThrow,
-    } = currentRoundOfPlayer;
-    let oldThrowScore = playerList[playerTurn].score;
+  function handleBust(startingScore: number) {
     playerList[playerTurn].isBust = true;
-
-    if (thirdThrow) {
-      let firstAndSecondThrowScore = 0;
-      if (firstThrow !== undefined && secondThrow !== undefined) {
-        firstAndSecondThrowScore = firstThrow + secondThrow;
-      }
-      oldThrowScore = firstAndSecondThrowScore + bustedPlayerScore;
-    } else if (
-      firstThrow !== undefined &&
-      secondThrow !== undefined &&
-      secondThrow > playerList[playerTurn].score
-    ) {
-      oldThrowScore = firstThrow + bustedPlayerScore;
-    }
-
-    playerList[playerTurn].score = oldThrowScore;
+    playerList[playerTurn].score = startingScore;
     changeActivePlayer();
   }
   //wir prüfen, ob der Spieler seinen Zug beendet hat
@@ -349,11 +364,9 @@ function Game({
       setUndoLastHistory(false);
     }
   }, [undoLastHistory]);
-
-
   return (
     <>
-      <Overlay className="overlayBox" isOpen={isOverlayOpen}>
+      <Overlay className="overlayBox" isOpen={isOverlayOpen} src={undefined}>
         <div className="finishGameOverlay">
           <p className="overlayHeading">Continue Game?</p>
           <div>
@@ -470,7 +483,7 @@ function Game({
             label="Save"
             handleClick={() => {
               newSettings(selectedGameMode, selectedPoints);
-              console.log("test", selectedGameMode, selectedPoints)
+              console.log("test", selectedGameMode, selectedPoints);
               setIsSettingsOverlayOpen(false);
             }}
             link={""}
@@ -503,11 +516,10 @@ function Game({
         />
       </div>
       <LinkButton
-          className="settingsBtn"
-          label="Settings"
-          handleClick={() => setIsSettingsOverlayOpen(true)
-          }
-        />
+        className="settingsBtn"
+        label="Settings"
+        handleClick={() => setIsSettingsOverlayOpen(true)}
+      />
     </>
   );
 }

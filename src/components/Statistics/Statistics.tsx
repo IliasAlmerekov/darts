@@ -3,6 +3,7 @@ import "./Statistics.css";
 import sortAZ from "../../icons/sorting-az.svg";
 import sortScore from "../../icons/sorting-score.svg";
 import clsx from "clsx";
+import Madebydeepblue from "../../icons/madeByDeepblue.svg";
 import { PlayerProps } from "../../pages/Start/start";
 
 export type IProps = {
@@ -10,7 +11,7 @@ export type IProps = {
   setList?: React.Dispatch<React.SetStateAction<PlayerProps[]>>;
 };
 
-const Statistics = ({ list = [] }: IProps) => {
+const Statistics = () => {
   const [sortBy, setSortBy] = useState<"alphabetically" | "score">(
     "alphabetically"
   );
@@ -19,6 +20,7 @@ const Statistics = ({ list = [] }: IProps) => {
     <div className="player-stats">
       <div className="header">
         <h1>Playerstats</h1>
+        <img className="deepblueIcon" src={Madebydeepblue} alt="" />
         <div className="sort-options">
           <button
             className={clsx("sort-button", {
@@ -54,7 +56,7 @@ const Statistics = ({ list = [] }: IProps) => {
           <span className="rank">.</span>
           <span className="name"></span>
           <span className="stats">
-            <span className="round">Ⓖ Round</span>
+            <span className="round"> Round</span>
             <span className="games-played">Played games:</span>
           </span>
         </li>
