@@ -1,24 +1,38 @@
 import "./DefaultInputField.css";
-import React from "react";
+import React, { useEffect, useRef } from "react";
 
 type Props = {
-  placeholder: string;
-  value: number;
-  onChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
-  onKeyDown: (
-    name: string
-  ) => (e: React.KeyboardEvent<HTMLInputElement>) => void;
   name: string;
+  value: string;
+  placeholder?: string;
+  onChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
+  onKeyDown?: (e: React.KeyboardEvent<HTMLInputElement>, name: string) => void;
+  autoFocus?: boolean;
 };
 
-function DefaultInputField({ ...props }: Props) {
+function DefaultInputField({
+  onKeyDown,
+  name,
+  value,
+  placeholder,
+  onChange,
+  autoFocus,
+}: Props) {
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    if (autoFocus) {
+      inputRef.current?.focus();
+    }
+  }, [autoFocus]);
+
   return (
     <input
-      onKeyDown={props.onKeyDown(props.name)}
-      autoFocus
-      value={props.value}
-      placeholder={props.placeholder}
-      onChange={props.onChange}
+      ref={inputRef}
+      onKeyDown={(e) => onKeyDown?.(e, name)}
+      value={value}
+      placeholder={placeholder}
+      onChange={onChange}
       className="copylarge defaultInputField"
     />
   );

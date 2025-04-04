@@ -5,6 +5,7 @@ import { Link, useNavigate } from "react-router-dom";
 import React, {
   Dispatch,
   SetStateAction,
+  useCallback,
   useEffect,
   useRef,
   useState,
@@ -71,28 +72,38 @@ function Game({
   const WIN_SOUND_PATH = "/sounds/win-sound.mp3";
   const UNDO_SOUND_PATH = "/sounds/undo-sound.mp3";
 
-  function initializePlayerList() {
-    const initialPlayerlist: BASIC.WinnerPlayerProps[] = players.map(
+  const resetGame = useCallback(() => {
+    setPlayerScore(settings.points);
+    setRoundsCount(1);
+    setThrowCount(0);
+    setPlayerTurn(0);
+    setFinishedPlayerList([]);
+    setHistory([]);
+    const initialPlayerList: BASIC.WinnerPlayerProps[] = players.map(
       (user: BASIC.UserProps, i: number) => ({
         id: user.id,
         name: user.name,
-        score: playerScore,
-        isActive: i === 0 ? true : false,
+        score: settings.points,
+        isActive: i === 0,
         index: i,
         rounds: [
           {
             throw1: undefined,
             throw2: undefined,
             throw3: undefined,
-          } as BASIC.Round,
-        ],
+          },
+        ] as BASIC.Round[],
         isPlaying: true,
         isBust: false,
         throwCount: 0,
       })
     );
-    setPlayerList(initialPlayerlist);
-  }
+    setPlayerList(initialPlayerList);
+  }, [settings.points, players]);
+
+  useEffect(() => {
+    resetGame();
+  }, [resetGame]);
 
   function changeActivePlayer() {
     const prevPlayerTurnIndex = playerTurn;
@@ -308,14 +319,10 @@ function Game({
   }
 
   useEffect(() => {
-    initializePlayerList();
-  }, []);
-
-  useEffect(() => {
     if (throwCount === 3 && !isOverlayOpen) {
       changeActivePlayer();
     }
-  }, [throwCount, isOverlayOpen]);
+  }, [throwCount, isOverlayOpen, changeActivePlayer]);
 
   useEffect(() => {
     if (finishedPlayerList.length === players.length) {

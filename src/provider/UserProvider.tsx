@@ -1,4 +1,10 @@
-import { createContext, ReactNode, useContext, useReducer } from "react";
+import React, {
+  createContext,
+  ReactNode,
+  useCallback,
+  useContext,
+  useReducer,
+} from "react";
 import { arrayMove } from "@dnd-kit/sortable";
 import { DragEndEvent } from "@dnd-kit/core";
 
@@ -6,7 +12,7 @@ const SELECT_PLAYER_SOUND_PATH = "/sounds/select-sound.mp3";
 const UNSELECT_PLAYER_SOUND_PATH = "/sounds/unselect-sound.mp3";
 const ADD_PLAYER_SOUND_PATH = "/sounds/add-player-sound.mp3";
 const ERROR_SOUND_PATH = "/sounds/error-sound.mp3";
-const START_SOUND_PATH = "/sounds/start-round-sound.mp3";
+
 
 interface PlayerProps {
   id: number;
@@ -89,7 +95,7 @@ export const UserProvider = ({ children }: UserProviderProps) => {
   const [event, updateEvent] = useReducer(reducer, initialValues);
 
   //Start.tsx functions
-  function initializePlayerList() {
+  const initializePlayerList = useCallback(() => {
     const initialPlayerList: PlayerProps[] = event.userList.map(
       (user: BASIC.UserProps) => ({
         name: user.name,
@@ -99,7 +105,7 @@ export const UserProvider = ({ children }: UserProviderProps) => {
       })
     );
     updateEvent({ unselectedPlayers: initialPlayerList });
-  }
+  }, [event.userList, event.clickedPlayerId, updateEvent]);
 
   function playSound(path: string) {
     const audio = new Audio(path);

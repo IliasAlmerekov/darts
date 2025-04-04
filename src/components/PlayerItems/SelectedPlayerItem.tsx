@@ -56,7 +56,13 @@ function SelectedPlayerItem({ ...props }: Props) {
         </button>
         <div className="copylarge">{props?.name}</div>
       </div>
-      <img src={deleteIcon} alt={props.alt} onClick={props.handleClick} />
+      <button
+        onClick={props.handleClick}
+        className="deleteButton"
+        aria-label="Delete player"
+      >
+        <img src={deleteIcon} alt={props.alt || "Delete"} />
+      </button>
     </div>
   );
 }

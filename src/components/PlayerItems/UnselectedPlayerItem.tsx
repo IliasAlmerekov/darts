@@ -19,11 +19,13 @@ function UnselectedPlayerItem({ ...props }: Props) {
       })}
     >
       <div className="copylarge">{props?.name}</div>
-      <img
-        src={props.src}
-        alt={props.alt}
+      <button
         onClick={props.handleClickOrDelete}
-      />
+        className="moveButton"
+        aria-label="Move Button"
+      >
+        <img src={props.src} alt={props.alt} />
+      </button>
     </div>
   );
 }

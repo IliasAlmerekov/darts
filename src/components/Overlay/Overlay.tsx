@@ -17,9 +17,9 @@ function Overlay({ ...props }: Props) {
       {props.isOpen ? (
         <div className="overlayBackground">
           <div className={props.className}>
-            <div className="delete" onClick={props.onClose}>
+            <button className="delete" onClick={props.onClose} aria-label="Close overlay">
               <img src={props.src} alt="Close overlay" />
-            </div>
+            </button>
             {props.children}
           </div>
         </div>
