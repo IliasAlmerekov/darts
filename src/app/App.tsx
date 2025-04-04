@@ -21,18 +21,7 @@ function App() {
           <Route
             path="/game"
             element={
-              <Game
-                players={event.list}
-                setWinnerList={(newWinnerList) => updateEvent({winnerList: newWinnerList})}
-                undoFromSummary={event.undoFromSummary}
-                setUndoFromSummary={(newUndoFromSummary) => updateEvent({undoFromSummary: newUndoFromSummary})}
-                setLastHistory={(newLastHistory) => updateEvent({lastHistory: newLastHistory})}
-                lastHistory={event.lastHistory}
-                setUndoLastHistory={function (): void {
-                  throw new Error("Function not implemented.");
-                }}
-                undoLastHistory={false}
-              />
+              <Game />
             }
           />
           <Route

@@ -13,7 +13,7 @@ type Props = {
 };
 
 function Gamesummary(): JSX.Element {
-  const { event, updateEvent} = useUser();
+  const { event, updateEvent, functions} = useUser();
 
   const newList = [...event.winnerList];
   const podiumList = newList.slice(0, 3);
@@ -33,7 +33,7 @@ function Gamesummary(): JSX.Element {
   return (
     <div className="summary">
       <div>
-        <Link to="/game" className="undoButton" onClick={() => updateEvent({undoFromSummary: true})}>
+        <Link onClick={() => functions.undoFromSummary()} to="/game" className="undoButton" >
           <img src={Undo} alt="Undo last action" />
         </Link>
       </div>
@@ -50,6 +50,7 @@ function Gamesummary(): JSX.Element {
           type="primary"
           isInverted
           className="playAgainButton"
+          handleClick={() => functions.resetGame()}
         />
       </div>
       <div className="backToStartButton">

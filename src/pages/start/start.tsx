@@ -1,7 +1,5 @@
 import "./start.css";
 import {
-  Dispatch,
-  SetStateAction,
   useEffect
 } from "react";
 import UnselectedPlayerItem from "../../components/PlayerItems/UnselectedPlayerItem";
@@ -40,13 +38,6 @@ export type PlayerProps = {
   isClicked?: number | null;
 };
 
-export type IProps = {
-  list: PlayerProps[];
-  setList: Dispatch<SetStateAction<PlayerProps[]>>;
-  userList: BASIC.UserProps[];
-  addUserToLS: (name: string, id: number) => void;
-  addUnselectedUserListToLs: (unselectedPlayers: PlayerProps[]) => void;
-};
 
 const navItems = [
   {
@@ -168,7 +159,7 @@ function Start() {
                 className="createNewPlayerButton h4"
                 label="Create new Player"
                 icon={Plus}
-                handleClick={() => updateEvent({ isOverlayOpen: true })}
+                handleClick={() => updateEvent({ isNewPlayerOverlayOpen: true })}
               />
             </div>
           </div>
@@ -212,6 +203,7 @@ function Start() {
                 handleClick={() => {
                   functions.addUnselectedUserListToLs(event.unselectedPlayers);
                   functions.playSound(START_SOUND_PATH);
+                  functions.resetGame()
                 }}
               />
             </div>
@@ -222,9 +214,9 @@ function Start() {
       <Overlay
         className="overlayBox"
         src={deleteIcon}
-        isOpen={event.isOverlayOpen}
+        isOpen={event.isNewPlayerOverlayOpen}
         onClose={() => {
-          updateEvent({ newPlayer: "", isOverlayOpen: false });
+          updateEvent({ newPlayer: "", isNewPlayerOverlayOpen: false });
         }}
       >
         <div className="createPlayerOverlay">

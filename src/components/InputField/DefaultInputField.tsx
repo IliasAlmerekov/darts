@@ -3,7 +3,7 @@ import React from "react";
 
 type Props = {
   placeholder: string;
-  value: number;
+  value: string;
   onChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
   onKeyDown: (
     name: string
