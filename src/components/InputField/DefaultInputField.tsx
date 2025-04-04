@@ -2,6 +2,7 @@ import "./DefaultInputField.css";
 import React, { useEffect, useRef } from "react";
 
 type Props = {
+  name: string;
   placeholder: string;
   value: string;
   onChange: (e: React.ChangeEvent<HTMLInputElement>) => void;

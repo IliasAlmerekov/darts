@@ -233,7 +233,7 @@ function Start() {
         <div className="createPlayerOverlay">
           <p className="overlayHeading">New Player</p>
           <DefaultInputField
-           
+           name={""}
             value={event.newPlayer}
             placeholder="Playername"
             onChange={functions.handleChange}

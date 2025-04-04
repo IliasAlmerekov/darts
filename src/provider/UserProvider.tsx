@@ -1,6 +1,7 @@
 import {
   createContext,
   ReactNode,
+  useCallback,
   useContext,
   useEffect,
   useReducer,
@@ -146,7 +147,7 @@ export const UserProvider = ({ children }: UserProviderProps) => {
       })
     );
     updateEvent({ unselectedPlayers: initialPlayerList });
-  }
+  }, [event.list, event.selectedPlayers, event.unselectedPlayers]);
 
   function handleTabClick(id: string) {
     updateEvent({ activeTab: id });

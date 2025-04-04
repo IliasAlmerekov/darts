@@ -8,7 +8,7 @@ import React from "react";
 import { useUser } from "../../provider/UserProvider";
 
 function Gamesummary(): JSX.Element {
-  const { event, updateEvent, functions} = useUser();
+  const { event, functions} = useUser();
 
   const newList = [...event.winnerList];
   const podiumList = newList.slice(0, 3);

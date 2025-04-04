@@ -3,10 +3,8 @@ import "../css/index.css";
 import Start from "../pages/Start/start";
 import Game from "../pages/Game/Game";
 import Gamesummary from "../pages/gamesummary/Gamesummary";
-import { useUser } from "../provider/UserProvider";
 
 function App() {
-  const { event, updateEvent } = useUser();
 
   return (
     <div className="App">
