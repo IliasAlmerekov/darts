@@ -4,13 +4,8 @@ import Button from "../../components/Button/Button";
 import Podium from "../../components/Podium/Podium";
 import Undo from "../../icons/undolinkbutton.svg";
 import { Link } from "react-router-dom";
-import React, { Dispatch, SetStateAction } from "react";
+import React from "react";
 import { useUser } from "../../provider/UserProvider";
-
-type Props = {
-  winnerList: BASIC.WinnerPlayerProps[];
-  setUndo: Dispatch<SetStateAction<boolean>>;
-};
 
 function Gamesummary(): JSX.Element {
   const { event, updateEvent, functions} = useUser();

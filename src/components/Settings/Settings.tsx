@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { newSettings } from "../../stores/settings";
 
 import Madebydeepblue from "../../icons/madeByDeepblue.svg";
@@ -18,6 +18,10 @@ const Settings = () => {
     setSelectedPoints(points);
     newSettings(selectedGameMode, points);
   };
+
+  useEffect(() => {
+    newSettings(selectedGameMode, selectedPoints);
+  }, [selectedGameMode, selectedPoints]);
 
   return (
     <div className="settingsOverlay">

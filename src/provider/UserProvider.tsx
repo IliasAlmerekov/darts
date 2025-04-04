@@ -136,7 +136,7 @@ export const UserProvider = ({ children }: UserProviderProps) => {
   }
 
   //Start.tsx functions
-  function initializePlayerList() {
+  const initializePlayerList = useCallback(() => {
     const initialPlayerList: PlayerProps[] = event.userList.map(
       (user: BASIC.UserProps) => ({
         name: user.name,

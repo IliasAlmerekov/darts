@@ -1,6 +1,7 @@
 import "./start.css";
 import {
-  useEffect
+  useEffect,
+  useRef
 } from "react";
 import UnselectedPlayerItem from "../../components/PlayerItems/UnselectedPlayerItem";
 import SelectedPlayerItem from "../../components/PlayerItems/SelectedPlayerItem";
@@ -23,7 +24,7 @@ import DefaultInputField from "../../components/InputField/DefaultInputField";
 import Settings from "../../components/Settings/Settings";
 import deleteIcon from "../../icons/delete.svg";
 import clsx from "clsx";
-import { DndContext} from "@dnd-kit/core";
+import { DndContext } from "@dnd-kit/core";
 import {
   SortableContext,
   verticalListSortingStrategy,
@@ -64,19 +65,23 @@ function Start() {
   const START_SOUND_PATH = "/sounds/start-round-sound.mp3";
 
   const { event, updateEvent, functions } = useUser();
+  const isFirstRender = useRef(true);
 
   useEffect(() => {
-    if (event.list?.length === 0) {
-      functions.initializePlayerList();
-    } else {
-      updateEvent({selectedPlayers: event.list})
-      const playersFromLS = localStorage.getItem("UserUnselected");
-      const playersFromLocalStorage =
-        !!playersFromLS && JSON.parse(playersFromLS);
-      updateEvent({unselectedPlayers: playersFromLocalStorage})
+    if (isFirstRender.current) {
+      isFirstRender.current = false;
+
+      if (event.list?.length === 0) {
+        functions.initializePlayerList();
+      } else {
+        updateEvent({ selectedPlayers: event.list });
+        const playersFromLS = localStorage.getItem("UserUnselected");
+        const playersFromLocalStorage =
+          !!playersFromLS && JSON.parse(playersFromLS);
+        updateEvent({ unselectedPlayers: playersFromLocalStorage });
+      }
     }
-    // eslint-disable-next-line
-  }, []);
+  }, [event.list, functions, updateEvent]);
 
   return (
     <div className="start">
@@ -109,7 +114,9 @@ function Start() {
             <span>
               <img
                 src={
-                  item.id === event.activeTab ? item.activeIcon : item.inActiveIcon
+                  item.id === event.activeTab
+                    ? item.activeIcon
+                    : item.inActiveIcon
                 }
                 alt={item.label}
               />
@@ -147,7 +154,11 @@ function Start() {
                       }}
                       src={arrowRight}
                       alt="Select player arrow"
-                      isClicked={event.clickedPlayerId === player.id ? event.clickedPlayerId : undefined}
+                      isClicked={
+                        event.clickedPlayerId === player.id
+                          ? event.clickedPlayerId
+                          : undefined
+                      }
                     />
                   );
                 })}
@@ -172,7 +183,7 @@ function Start() {
             <DndContext
               modifiers={[restrictToVerticalAxis]}
               onDragEnd={functions.handleDragEnd}
-              onDragMove={() => updateEvent({dragEnd: false})}
+              onDragMove={() => updateEvent({ dragEnd: false })}
             >
               <SortableContext
                 items={event.selectedPlayers}
@@ -222,7 +233,7 @@ function Start() {
         <div className="createPlayerOverlay">
           <p className="overlayHeading">New Player</p>
           <DefaultInputField
-            name={""}
+           
             value={event.newPlayer}
             placeholder="Playername"
             onChange={functions.handleChange}

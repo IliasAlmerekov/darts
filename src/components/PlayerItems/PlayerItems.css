@@ -10,7 +10,17 @@
 .selectedPlayerItem {
   touch-action: none;
 }
+.deleteButton,
+.moveButton {
+  border: none;
+  padding: 0;
+  margin: 0;
+}
 
+.deleteButton img {
+  width: 100%;
+  padding: 1px;
+}
 .selectedPlayerItem :first-child {
   display: flex;
   gap: 16px;
