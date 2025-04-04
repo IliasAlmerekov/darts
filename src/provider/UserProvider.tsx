@@ -1,4 +1,4 @@
-import {
+import React, {
   createContext,
   ReactNode,
   useCallback,
@@ -11,15 +11,6 @@ import { arrayMove } from "@dnd-kit/sortable";
 import { DragEndEvent } from "@dnd-kit/core";
 import { $settings } from "../stores/settings";
 import { useStore } from "@nanostores/react";
-import { useNavigate } from "react-router-dom";
-
-const SELECT_PLAYER_SOUND_PATH = "/sounds/select-sound.mp3";
-const UNSELECT_PLAYER_SOUND_PATH = "/sounds/unselect-sound.mp3";
-const ADD_PLAYER_SOUND_PATH = "/sounds/add-player-sound.mp3";
-const ERROR_SOUND_PATH = "/sounds/error-sound.mp3";
-const THROW_SOUND_PATH = "/sounds/throw-sound.mp3";
-const WIN_SOUND_PATH = "/sounds/win-sound.mp3";
-const UNDO_SOUND_PATH = "/sounds/undo-sound.mp3";
 
 interface PlayerProps {
   id: number;
@@ -27,6 +18,18 @@ interface PlayerProps {
   isAdded?: boolean;
   isClicked?: number | null;
 }
+
+const getUserFromLS = (): PlayerProps[] => {
+  if (localStorage.getItem("User") !== null) {
+    const playersFromLS = localStorage.getItem("User");
+    const playersFromLocalStorage =
+      !!playersFromLS && JSON.parse(playersFromLS);
+    return playersFromLocalStorage;
+  } else {
+    localStorage.setItem("User", JSON.stringify([]));
+    return [];
+  }
+};
 
 interface GameState {
   newPlayer: string;
@@ -54,10 +57,74 @@ interface GameState {
   finishedPlayerList: BASIC.WinnerPlayerProps[];
 }
 
+interface GameFunctions {
+  initializePlayerList: () => void;
+  playSound: (soundType: string) => void;
+  handleTabClick: (id: string) => void;
+  handleSelectPlayer: (name: string, id: number) => void;
+  handleChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
+  handleKeyPess: (
+    name: string
+  ) => (e: React.KeyboardEvent<HTMLInputElement>) => void;
+  handleUnselect: (name: string, id: number) => void;
+  handleDragEnd: (e: DragEndEvent) => void;
+  createPlayer: (name: string) => void;
+  getUserFromLS: () => PlayerProps[] | null;
+  addUnselectedUserListToLs: (players: PlayerProps[]) => void;
+  addUserToLS: (name: string, id: number) => void;
+  resetGame: () => void;
+  undoFromSummary: () => void;
+  handleUndo: () => void;
+  handleGameModeClick: (mode: string) => void;
+  handlePointsClick: (points: number) => void;
+  handleThrow: (
+    value: BASIC.WinnerPlayerProps,
+    throwCount: number,
+    playerList: string | number
+  ) => void;
+  handleBust: (startingScore: number) => void;
+  handlePlayerFinishTurn: () => void;
+  handleLastPlayer: () => void;
+  sortPlayer: () => void;
+  changeActivePlayer: () => void;
+}
+
+const defaultFunctions: GameFunctions = {
+  initializePlayerList: () => {},
+  playSound: () => {},
+  handleTabClick: () => {},
+  handleSelectPlayer: () => {},
+  handleChange: () => {},
+  handleUnselect: () => {},
+  handleDragEnd: () => {},
+  createPlayer: () => {},
+  addUnselectedUserListToLs: () => {},
+  addUserToLS: () => {},
+  resetGame: () => {},
+  undoFromSummary: () => {},
+  handleUndo: () => {},
+  handleGameModeClick: () => {},
+  handlePointsClick: () => {},
+  handleThrow: () => {},
+  handleBust: () => {},
+  handlePlayerFinishTurn: () => {},
+  handleLastPlayer: () => {},
+  sortPlayer: () => {},
+  changeActivePlayer: () => {},
+  handleKeyPess: function (): (
+    e: React.KeyboardEvent<HTMLInputElement>
+  ) => void {
+    throw new Error("Function not implemented.");
+  },
+  getUserFromLS: function (): PlayerProps[] | null {
+    throw new Error("Function not implemented.");
+  },
+};
+
 interface UserContextType {
   event: GameState;
-  updateEvent: (next: Partial<GameState>) => void;
-  functions: Record<string, (...args: any[]) => void>;
+  updateEvent: React.Dispatch<Partial<GameState>>;
+  functions: GameFunctions;
 }
 
 const initialValues: GameState = {
@@ -94,25 +161,11 @@ const initialValues: GameState = {
 export const UserContext = createContext<UserContextType>({
   event: initialValues,
   updateEvent: () => {},
-  functions: {},
+  functions: defaultFunctions,
 });
 
-function getUserFromLS() {
-  if (localStorage.getItem("User") !== null) {
-    const playersFromLS = localStorage.getItem("User");
-    const playersFromLocalStorage =
-      !!playersFromLS && JSON.parse(playersFromLS);
-    return playersFromLocalStorage;
-  } else {
-    localStorage.setItem("User", JSON.stringify([]));
-    return [];
-  }
-}
-
-const reducer = (prev: GameState, next: Partial<GameState>) => {
-  const newEvent = { ...prev, ...next };
-  // guards
-  return newEvent;
+const reducer = (prev: GameState, next: Partial<GameState>): GameState => {
+  return { ...prev, ...next };
 };
 
 type UserProviderProps = {
@@ -124,9 +177,16 @@ export const UserProvider = ({ children }: UserProviderProps) => {
   const [event, updateEvent] = useReducer(reducer, initialValues);
   const startingScoreRef = useRef<number | null>(null);
 
+  const SELECT_PLAYER_SOUND_PATH = "/sounds/select-sound.mp3";
+  const UNSELECT_PLAYER_SOUND_PATH = "/sounds/unselect-sound.mp3";
+  const ADD_PLAYER_SOUND_PATH = "/sounds/add-player-sound.mp3";
+  const ERROR_SOUND_PATH = "/sounds/error-sound.mp3";
+  const THROW_SOUND_PATH = "/sounds/throw-sound.mp3";
+  const WIN_SOUND_PATH = "/sounds/win-sound.mp3";
+  const UNDO_SOUND_PATH = "/sounds/undo-sound.mp3";
+
   function playSound(path: string) {
     const audio = new Audio(path);
-    audio.play();
     audio.volume = 0.4;
     if (path === THROW_SOUND_PATH) {
       audio.currentTime = 2.3;
@@ -134,6 +194,7 @@ export const UserProvider = ({ children }: UserProviderProps) => {
       audio.currentTime = 0.2;
       audio.volume = 0.1;
     }
+    audio.play();
   }
 
   //Start.tsx functions
@@ -147,7 +208,7 @@ export const UserProvider = ({ children }: UserProviderProps) => {
       })
     );
     updateEvent({ unselectedPlayers: initialPlayerList });
-  }, [event.list, event.selectedPlayers, event.unselectedPlayers]);
+  }, [event.clickedPlayerId, event.userList, updateEvent]);
 
   function handleTabClick(id: string) {
     updateEvent({ activeTab: id });
@@ -158,7 +219,7 @@ export const UserProvider = ({ children }: UserProviderProps) => {
     updateEvent({ clickedPlayerId: id });
     setTimeout(() => {
       const updatedUnselectedPlayerList = event.unselectedPlayers.filter(
-        (list: any) => list.id !== id
+        (list: PlayerProps) => list.id !== id
       );
       const updatedSelectedPlayerList: PlayerProps[] = [
         ...event.selectedPlayers,
@@ -181,14 +242,14 @@ export const UserProvider = ({ children }: UserProviderProps) => {
     (name: string) => (e: React.KeyboardEvent<HTMLInputElement>) => {
       if (e.key === "Enter") {
         updateEvent({ newPlayer: name });
-        functions.createPlayer(event.newPlayer);
+        functions.createPlayer(name);
       }
     };
 
   function handleUnselect(name: string, id: number) {
     updateEvent({ clickedPlayerId: null });
     const updatedSelectedPlayers = event.selectedPlayers.filter(
-      (list: any) => list.id !== id
+      (list: PlayerProps) => list.id !== id
     );
     const updatedUnselectedPlayers: PlayerProps[] = [
       ...event.unselectedPlayers,
@@ -208,10 +269,10 @@ export const UserProvider = ({ children }: UserProviderProps) => {
 
     if (over && active.id !== over?.id) {
       const activeIndex = event.selectedPlayers.findIndex(
-        ({ id }: any) => id === active.id
+        ({ id }: PlayerProps) => id === active.id
       );
       const overIndex = event.selectedPlayers.findIndex(
-        ({ id }: any) => id === over.id
+        ({ id }: PlayerProps) => id === over.id
       );
       const newArray: PlayerProps[] = arrayMove(
         event.selectedPlayers,
@@ -373,7 +434,7 @@ export const UserProvider = ({ children }: UserProviderProps) => {
   function handleThrow(
     player: BASIC.WinnerPlayerProps,
     currentThrow: number,
-    currentScoreAchieved: number | string | any
+    currentScoreAchieved: number | string
   ) {
     updateEvent({
       history: [
@@ -392,16 +453,16 @@ export const UserProvider = ({ children }: UserProviderProps) => {
     });
 
     let actualScore: number = 0;
-    let type = "";
     if (typeof currentScoreAchieved === "string") {
-      type = currentScoreAchieved.charAt(0);
-      const value = parseInt(currentScoreAchieved.substring(1));
-
-      if (type === "D") {
-        actualScore = value * 2;
-      } else if (type === "T") {
-        actualScore = value * 3;
+      const type = currentScoreAchieved.charAt(0);
+      const value = parseInt(currentScoreAchieved.slice(1));
+      if (isNaN(value)) {
+        console.error("Invalid value:", currentScoreAchieved);
+        return;
       }
+      if (type === "D") actualScore = value * 2;
+      else if (type === "T") actualScore = value * 3;
+      else actualScore = value;
     } else {
       actualScore = currentScoreAchieved;
     }
@@ -421,14 +482,18 @@ export const UserProvider = ({ children }: UserProviderProps) => {
       | "throw2"
       | "throw3";
 
-    currentPlayerThrows[throwKey] = currentScoreAchieved;
+    currentPlayerThrows[throwKey] = actualScore;
     updateEvent({ playerScore: updatedPlayerScore });
 
     const isDoubleOutMode = event.selectedGameMode === "double-out";
     const isTripleOutMode = event.selectedGameMode === "triple-out";
     const wouldFinishGame = updatedPlayerScore === 0;
-    const isDoubleThrow = isDouble(currentScoreAchieved);
-    const isTripleThrow = isTriple(currentScoreAchieved);
+    const isDoubleThrow =
+      typeof currentScoreAchieved === "string" &&
+      isDouble(currentScoreAchieved);
+    const isTripleThrow =
+      typeof currentScoreAchieved === "string" &&
+      isTriple(currentScoreAchieved);
 
     const startingScoreThisRound =
       startingScoreRef.current ?? event.playerList[event.playerTurn].score;
@@ -537,7 +602,7 @@ export const UserProvider = ({ children }: UserProviderProps) => {
     updateEvent({ finishedPlayerList: updatedFinishedPlayerList });
   }
 
-  const functions = {
+  const functions: GameFunctions = {
     initializePlayerList,
     playSound,
     handleTabClick,

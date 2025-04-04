@@ -2,7 +2,7 @@ import Keyboard from "../../components/Keyboard/Keyboard";
 import "./game.css";
 import Back from "../../icons/back.svg";
 import { Link, useNavigate } from "react-router-dom";
-import { useEffect } from "react";
+import React, { useEffect } from "react";
 import GamePlayerItemList from "../../components/GamePlayerItem/GamplayerItemList";
 import Overlay from "../../components/Overlay/Overlay";
 import Button from "../../components/Button/Button";
@@ -18,24 +18,35 @@ function Game() {
   const { event, updateEvent, functions } = useUser();
 
   const navigate = useNavigate();
-  
+
   const WIN_SOUND_PATH = "/sounds/win-sound.mp3";
 
   useEffect(() => {
     if (event.throwCount === 3 && !event.isFinishGameOverlayOpen) {
       functions.changeActivePlayer();
     }
-  }, [event.throwCount, event.isFinishGameOverlayOpen]);
+  }, [event.throwCount, event.isFinishGameOverlayOpen, functions]);
 
   useEffect(() => {
     if (event.finishedPlayerList.length === event.list.length) {
-      updateEvent({winnerList: event.finishedPlayerList, lastHistory: event.history})
+      updateEvent({
+        winnerList: event.finishedPlayerList,
+        lastHistory: event.history,
+      });
       navigate("/summary");
       if (event.list.length === 2) {
         functions.playSound(WIN_SOUND_PATH);
       }
     }
-  }, [event.finishedPlayerList.length, event.list.length]);
+  }, [
+    event.finishedPlayerList.length,
+    event.list.length,
+    event.finishedPlayerList,
+    event.history,
+    functions,
+    navigate,
+    updateEvent,
+  ]);
 
   useEffect(() => {
     if (!event.playerList || event.playerList.length === 0) return;
@@ -54,9 +65,8 @@ function Game() {
         behavior: "smooth",
       });
     }
-  }, [event.playerTurn, event.playerList.length]);
+  }, [event.playerTurn, event.playerList.length, event.playerList]);
 
-  
   return (
     <>
       <Overlay
