@@ -19,6 +19,31 @@ interface PlayerProps {
   isClicked?: number | null;
 }
 
+interface SavedGamePlayer {
+  id: number;
+  name: string;
+  totaScore: number;
+  rounds: {
+    throw1?: number;
+    throw2?: number;
+    throw3?: number;
+  }[];
+  won: boolean;
+}
+
+interface SavedGame {
+  id: string;
+  date: string;
+  players: SavedGamePlayer[];
+}
+
+interface GameSummury {
+  date: string;
+  playersCount: number;
+  winnerName: string;
+  winnerRounds: number;
+}
+
 const getUserFromLS = (): PlayerProps[] => {
   if (localStorage.getItem("User") !== null) {
     const playersFromLS = localStorage.getItem("User");
@@ -70,6 +95,14 @@ interface GameFunctions {
   handleDragEnd: (e: DragEndEvent) => void;
   createPlayer: (name: string) => void;
   getUserFromLS: () => PlayerProps[] | null;
+  savedFinishedGameToLS: (players: BASIC.WinnerPlayerProps[]) => void;
+  getAllPlayerStats: () => {
+    id: number;
+    name: string;
+    games: number;
+    averageRoundScore: number;
+  }[];
+  getFinishedGamesSummary(): GameSummury[];
   addUnselectedUserListToLs: (players: PlayerProps[]) => void;
   addUserToLS: (name: string, id: number) => void;
   resetGame: () => void;
@@ -111,12 +144,17 @@ const defaultFunctions: GameFunctions = {
   handleLastPlayer: () => {},
   sortPlayer: () => {},
   changeActivePlayer: () => {},
+  getAllPlayerStats: () => [],
+  getFinishedGamesSummary: () => [],
   handleKeyPess: function (): (
     e: React.KeyboardEvent<HTMLInputElement>
   ) => void {
     throw new Error("Function not implemented.");
   },
   getUserFromLS: function (): PlayerProps[] | null {
+    throw new Error("Function not implemented.");
+  },
+  savedFinishedGameToLS: function (): void {
     throw new Error("Function not implemented.");
   },
 };
@@ -177,6 +215,7 @@ export const UserProvider = ({ children }: UserProviderProps) => {
   const [event, updateEvent] = useReducer(reducer, initialValues);
   const startingScoreRef = useRef<number | null>(null);
 
+  // all sounds
   const SELECT_PLAYER_SOUND_PATH = "/sounds/select-sound.mp3";
   const UNSELECT_PLAYER_SOUND_PATH = "/sounds/unselect-sound.mp3";
   const ADD_PLAYER_SOUND_PATH = "/sounds/add-player-sound.mp3";
@@ -324,6 +363,128 @@ export const UserProvider = ({ children }: UserProviderProps) => {
   }
 
   //App.tsx functions
+
+  //save finished Game to LS
+  function savedFinishedGameToLS(players: BASIC.WinnerPlayerProps[]) {
+    const savedGames = JSON.parse(
+      localStorage.getItem("FinishedGames") || "[]"
+    );
+
+    const gameId = players
+      .map((p) => p.id)
+      .sort((a, b) => a - b)
+      .join("");
+
+    const isDuplicate = savedGames.some(
+      (game: SavedGame) => game.id === gameId
+    );
+    if (isDuplicate) {
+      return;
+    }
+    const gameSummary = {
+      id: gameId,
+      date: new Date().toISOString(),
+      players: players.map((player) => ({
+        id: player.id,
+        name: player.name,
+        totalScore: player.score,
+        rounds: Array.isArray(player.rounds) ? player.rounds : [],
+        won: player.score === 0,
+      })),
+    };
+    savedGames.push(gameSummary);
+    localStorage.setItem("FinishedGames", JSON.stringify(savedGames));
+    console.log("Saved games", gameSummary);
+  }
+
+  //get all Players with AverageScore from LS
+  function getAllPlayerStats(): {
+    id: number;
+    name: string;
+    games: number;
+    averageRoundScore: number;
+  }[] {
+    const savedGames = JSON.parse(
+      localStorage.getItem("FinishedGames") || "[]"
+    );
+
+    const statMap: Record<
+      number,
+      {
+        id: number;
+        name: string;
+        games: number;
+        totalScore: number;
+        totalRounds: number;
+      }
+    > = {};
+
+    for (const game of savedGames) {
+      for (const player of game.players) {
+        if (!statMap[player.id]) {
+          statMap[player.id] = {
+            id: player.id,
+            name: player.name,
+            games: 0,
+            totalScore: 0,
+            totalRounds: 0,
+          };
+        }
+
+        statMap[player.id].games += 1;
+
+        if (Array.isArray(player.rounds)) {
+          for (const round of player.rounds) {
+            let roundScore = 0;
+            for (const throwKey of ["throw1", "throw2", "throw3"]) {
+              const value = round[throwKey];
+              if (typeof value === "number") {
+                roundScore += value;
+              }
+            }
+            statMap[player.id].totalScore += roundScore;
+            statMap[player.id].totalRounds += 1;
+          }
+        } else {
+          console.warn("Missed a player without rounds", player);
+        }
+      }
+    }
+
+    return Object.values(statMap).map((player) => ({
+      id: player.id,
+      name: player.name,
+      games: player.games,
+      averageRoundScore:
+        player.totalRounds > 0
+          ? Number((player.totalScore / player.totalRounds).toFixed(2))
+          : 0,
+    }));
+  }
+
+  function getFinishedGamesSummary(): GameSummury[] {
+    const savedGames: SavedGame[] = JSON.parse(
+      localStorage.getItem("FinishedGames") || "[]"
+    );
+
+    return savedGames.map((game: SavedGame) => {
+      const players = Array.isArray(game.players) ? game.players : [];
+      const playersCount = players.length;
+
+      const winner = players.find((p: SavedGamePlayer) => p.won);
+      const winnerName = winner?.name || "";
+      const winnerRounds =
+        winner && Array.isArray(winner?.rounds) ? winner.rounds.length : 0;
+
+      return {
+        date: game.date || "",
+        playersCount,
+        winnerName,
+        winnerRounds,
+      };
+    });
+  }
+
   function addUnselectedUserListToLs(unselectedPlayers: PlayerProps[]) {
     localStorage.setItem("UserUnselected", JSON.stringify(unselectedPlayers));
   }
@@ -603,6 +764,9 @@ export const UserProvider = ({ children }: UserProviderProps) => {
   }
 
   const functions: GameFunctions = {
+    getFinishedGamesSummary,
+    savedFinishedGameToLS,
+    getAllPlayerStats,
     initializePlayerList,
     playSound,
     handleTabClick,

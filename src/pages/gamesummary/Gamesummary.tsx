@@ -4,13 +4,15 @@ import Button from "../../components/Button/Button";
 import Podium from "../../components/Podium/Podium";
 import Undo from "../../icons/undolinkbutton.svg";
 import { Link } from "react-router-dom";
-import React from "react";
+import React, { useEffect, useMemo } from "react";
 import { useUser } from "../../provider/UserProvider";
 
 function Gamesummary(): JSX.Element {
-  const { event, functions} = useUser();
+  const { event, functions } = useUser();
 
-  const newList = [...event.winnerList];
+  const newList: BASIC.WinnerPlayerProps[] = useMemo(() => {
+    return [...event.winnerList];
+  }, [event.winnerList]);
   const podiumList = newList.slice(0, 3);
   const leaderBoardList = newList.slice(3, event.winnerList.length + 1);
   const podiumListWithPlaceholder = [...podiumList];
@@ -24,11 +26,18 @@ function Gamesummary(): JSX.Element {
   });
   const podiumData =
     podiumList.length === 2 ? podiumListWithPlaceholder : podiumList;
+  useEffect(() => {
+    functions.savedFinishedGameToLS(newList);
+  }, [newList, functions]);
 
   return (
     <div className="summary">
       <div>
-        <Link onClick={() => functions.undoFromSummary()} to="/game" className="undoButton" >
+        <Link
+          onClick={() => functions.undoFromSummary()}
+          to="/game"
+          className="undoButton"
+        >
           <img src={Undo} alt="Undo last action" />
         </Link>
       </div>

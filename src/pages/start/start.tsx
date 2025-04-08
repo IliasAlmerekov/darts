@@ -1,5 +1,6 @@
 import "./start.css";
 import React, { useEffect, useRef } from "react";
+import NavigationBar from "../../components/NavigationBar/NavigationBar";
 import UnselectedPlayerItem from "../../components/PlayerItems/UnselectedPlayerItem";
 import SelectedPlayerItem from "../../components/PlayerItems/SelectedPlayerItem";
 import Plus from "../../icons/plus.svg";
@@ -9,12 +10,6 @@ import userPLus from "../../icons/user-plus.svg";
 import LinkButton from "../../components/LinkButton/LinkButton";
 import Button from "../../components/Button/Button";
 import "../../components/Button/Button.css";
-import settingsCogInactive from "../../icons/settings-inactive.svg";
-import settingsCog from "../../icons/settings.svg";
-import dartIcon from "../../icons/dart.svg";
-import dartIconInactive from "../../icons/dart-inactive.svg";
-import statisticIcon from "../../icons/statistics.svg";
-import statisticIconInactive from "../../icons/statistics-inactive.svg";
 import arrowRight from "../../icons/arrow-right.svg";
 import Overlay from "../../components/Overlay/Overlay";
 import DefaultInputField from "../../components/InputField/DefaultInputField";
@@ -35,27 +30,6 @@ export type PlayerProps = {
   isAdded?: boolean;
   isClicked?: number | null;
 };
-
-const navItems = [
-  {
-    label: "Statistics",
-    activeIcon: statisticIcon,
-    inActiveIcon: statisticIconInactive,
-    id: "statistics",
-  },
-  {
-    label: "Game",
-    activeIcon: dartIcon,
-    inActiveIcon: dartIconInactive,
-    id: "game",
-  },
-  {
-    label: "Settings",
-    activeIcon: settingsCog,
-    inActiveIcon: settingsCogInactive,
-    id: "settings",
-  },
-];
 
 function Start() {
   const START_SOUND_PATH = "/sounds/start-round-sound.mp3";
@@ -81,46 +55,7 @@ function Start() {
 
   return (
     <div className="start">
-      <div className="navigation">
-        {navItems.map((item) => (
-          <button
-            key={item.id}
-            onClick={() => functions.handleTabClick(item.id)}
-            className={clsx("tab-button", {
-              active: event.activeTab === item.id,
-              inactive: !(event.activeTab === item.id),
-            })}
-          >
-            {/* {item.id === "settings" && (
-              <img
-                className={clsx("settingsCog", {
-                  hide:
-                    selectedPlayers.length === 0 &&
-                    unselectedPlayers.length === 0,
-                })}
-                src={settingsCog}
-                alt=""
-                onClick={
-                  selectedPlayers.length === 0 && unselectedPlayers.length === 0
-                    ? undefined
-                    : () => overlayPlayerlist()
-                }
-              />
-            )} */}
-            <span>
-              <img
-                src={
-                  item.id === event.activeTab
-                    ? item.activeIcon
-                    : item.inActiveIcon
-                }
-                alt={item.label}
-              />
-              {item.label}
-            </span>
-          </button>
-        ))}
-      </div>
+      <NavigationBar />
       {event.activeTab === "statistics" ? (
         <Statistics />
       ) : event.activeTab === "settings" ? (

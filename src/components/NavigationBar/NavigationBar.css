@@ -1,0 +1,47 @@
+.navigation {
+  grid-column: 1 / -1;
+  display: flex;
+  margin: 60px 0 24px 32px;
+  justify-content: space-between;
+  background-color: #ffffff;
+  align-items: center;
+  width: 100%;
+  max-width: 95%;
+  box-shadow: 0px 4px 20px 0px #00000026;
+  border-radius: 9999px;
+  height: 48px;
+}
+
+.tab-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  gap: 16px;
+  padding: 8px 16px;
+  border: none;
+  background: none;
+  color: #000021;
+  border-radius: 9999px;
+  background: transparent;
+  transition: all 0.2s ease;
+}
+
+.tab-button span {
+  display: flex;
+  align-items: center;
+  font-family: "CircularXX";
+  font-size: 16px;
+  gap: 16px;
+}
+
+.tab-button.active {
+  background-color: #0000db;
+  color: #ffffff;
+  font-weight: 700;
+}
+
+.tab-button.inactive {
+  color: #000021;
+  font-weight: 700;
+}
