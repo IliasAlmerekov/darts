@@ -31,11 +31,18 @@
   "scripts": {
     "start": "react-scripts start",
     "build": "react-scripts build",
-    "test": "react-scripts test --watchAll=false",
     "eject": "react-scripts eject",
     "eslint": "eslint ./src",
     "stylelint": "stylelint **/*.css",
     "prepare": "husky"
+  },
+  "lint-staged": {
+    "*.{js, tsx}": [
+      "eslint ./src"
+    ],
+    "*.{css}": [
+      "stylelint **/*.css"
+    ]
   },
   "browserslist": {
     "production": [
