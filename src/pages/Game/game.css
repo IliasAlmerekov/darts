@@ -1,5 +1,5 @@
-.gamePlayerItemContainer {
-    padding: 133px 32px 0px 32px;
+.game-player-item-container {
+    padding: 133px 32px 0;
 }
 
 .top {
@@ -8,12 +8,12 @@
     position: absolute;
 }
 
-.finishGameOverlay {
+.finish-game-overlay {
     width: 71.7%;
-    padding: 96px 0px;
+    padding: 96px 0;
 }
 
-.undoThrow {
+.undo-throw {
     justify-content: center;
     display: flex;
     margin-top: 28px;

@@ -1,25 +1,24 @@
 @font-face {
-  font-family: "CircularXX";
+  font-family: CircularXX;
   src: url("../fonts/circularXX/CircularXXWeb-Regular.woff") format("woff");
   font-weight: 400;
 }
 
 @font-face {
-  font-family: "CircularXX";
+  font-family: CircularXX;
   src: url("../fonts/circularXX/CircularXXWeb-Bold.woff") format("woff");
   font-weight: 700;
 }
 
 :root {
-  --white: #ffffff;
+  --white: #fff;
   --lightgrey: #f1f1f1;
   --middlegrey: #a7a7a7;
   --darkgrey: #5f5f5f;
   --red: #ff2001;
   --blue: #0000db;
-  --oxfordBlue: #2d3944;
+  --oxfordblue: #2d3944;
   --darkblue: #000021;
-
   --padding-xs: 8px;
   --padding-sm: 16px;
   --padding-md: 24px;
@@ -27,13 +26,24 @@
   --padding-xl: 64px;
   --padding-2xl: 80px;
   --padding-3xl: 96px;
-
-  --box-shadow: 0px 0px 37px 6px rgba(0, 0, 0, 0.3);
+  --box-shadow: 0px 0px 37px 6px rgb(0 0 0 / 30%);
 }
 
-body {
+#root {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.app {
+  flex: 1;
+}
+
+body,
+html {
+  height: 100%;
   margin: 0;
-  font-family: "CircularXX";
+  font-family: CircularXX, sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
@@ -44,6 +54,7 @@ h1 {
   line-height: 57.6px;
   letter-spacing: 0.02em;
   text-align: left;
+  color: var(--darkblue);
 }
 
 h2 {
@@ -60,6 +71,7 @@ h3 {
   line-height: 33.6px;
   letter-spacing: 0.02em;
   text-align: left;
+  color: var(--oxfordblue);
 }
 
 h4 {
@@ -68,6 +80,7 @@ h4 {
   line-height: 28.8px;
   letter-spacing: 0.02em;
   text-align: left;
+  color: var(--darkblue);
 }
 
 h5 {
@@ -99,10 +112,6 @@ h5 {
   text-align: left;
 }
 
-.App {
-  height: 100vh;
-}
-
-.overflowHidden {
+.overflowhidden {
   overflow: hidden;
 }

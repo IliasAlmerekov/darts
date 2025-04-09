@@ -1,3 +1,9 @@
+.game-overview {
+  display: flex;
+  flex-direction: column;
+  padding: 24px 32px;
+}
+
 .overview {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(472px, 1fr));
@@ -26,7 +32,7 @@
 }
 
 .game-container h4 {
-  margin: 0 0 32px 0;
+  margin: 0 0 32px;
 }
 
 .details-link {
@@ -36,5 +42,11 @@
 }
 
 .details-link a {
-  color: #000000;
+  color: #000;
+}
+
+.heading {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
 }

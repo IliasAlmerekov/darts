@@ -70,11 +70,11 @@ function Game() {
   return (
     <>
       <Overlay
-        className="overlayBox"
+        className="overlay-box"
         isOpen={event.isFinishGameOverlayOpen}
         src={deleteIcon}
       >
-        <div className="finishGameOverlay">
+        <div className="finish-game-overlay">
           <p className="overlayHeading">Continue Game?</p>
           <div>
             <Button
@@ -101,14 +101,14 @@ function Game() {
                 updateEvent({ isFinishGameOverlayOpen: false });
                 functions.handleUndo();
               }}
-              className="undoThrow"
+              className="undo-throw"
             />
           </div>
         </div>
       </Overlay>
 
       <Overlay
-        className="overlayBox"
+        className="overlay-box"
         src={deleteIcon}
         isOpen={event.isSettingsOverlayOpen}
         onClose={() => {
@@ -203,7 +203,7 @@ function Game() {
           <img src={Back} alt="Back to Home" />
         </Link>
       </div>
-      <div className="gamePlayerItemContainer">
+      <div className="game-player-item-container">
         <GamePlayerItemList
           userMap={event.playerList}
           score={event.playerList[event.playerTurn]?.score}

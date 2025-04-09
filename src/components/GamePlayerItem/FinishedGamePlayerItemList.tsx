@@ -13,7 +13,7 @@ function FinishedGamePlayerItemList({ userMap }: Props) {
     name?: string;
     place?: string;
   }) => (
-    <div className="gamePlayerItem finished">
+    <div className="game-player-item finished">
       <div>
         <div className="copylarge">{name}</div>
       </div>
@@ -26,7 +26,7 @@ function FinishedGamePlayerItemList({ userMap }: Props) {
   }
 
   return (
-    <div className="finishedPlayerList">
+    <div className="finished-player-list">
       <div className="copylarge finishedplayers">Finished Players</div>
       {userMap.map((item, index) => (
         <FinishedGamePlayerItem

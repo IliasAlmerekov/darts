@@ -12,14 +12,14 @@ type Props = {
 function PodiumPlayerCard({ ...props }: Props) {
     return (
         <div className={props.className}>
-            <h4 className='centerAlign playerName'>{props.name}</h4>
-            <div className='copylarge centerAlign color'>Rounds
+            <h4 className='center-align player-name'>{props.name}</h4>
+            <div className='copylarge center-align color'>Rounds
                 <h4 className='number'>{props.rounds}</h4>
             </div>
-            <div className='copylarge centerAlign color'>Ø Round
+            <div className='copylarge center-align color'>Ø Round
                 <h4 className='number'>{props.averagePerRound}</h4>
             </div>
-            <div className='copylarge placementRound'>{props.placement}</div>
+            <div className='copylarge placement-round'>{props.placement}</div>
         </div>
     )
 }

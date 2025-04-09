@@ -1,18 +1,18 @@
-"use client";
-
 import React, { useEffect, useState } from "react";
 import "./Statistics.css";
 import sortAZIcon from "../../icons/sorting-az.svg";
 import sortScoreIcon from "../../icons/sorting-score.svg";
 import clsx from "clsx";
 import { useUser } from "../../provider/UserProvider";
-import GamesOverview from "../GamesOverview/GamesOverview";
+import NavigationBar from "../NavigationBar/NavigationBar";
+import ViewToogleButton from "../Button/ViewToogleBtn";
 
 export default function Playerstats(): JSX.Element {
   const { functions } = useUser();
-  const [activeView, setActiveView] = useState("players");
   const [sortMethod, setSortMethod] = useState("alphabetically");
   const allStats = functions.getAllPlayerStats();
+
+  console.log(allStats);
 
   const sortedStats = [...allStats].sort((a, b) => {
     if (sortMethod === "alphabetically") {
@@ -28,92 +28,63 @@ export default function Playerstats(): JSX.Element {
 
   return (
     <div className="playerstats-container">
+      <NavigationBar />
       <div className="content">
         <div className="navigation-item">
-          {activeView === "players" ? (
-            <h1>Playerstats</h1>
-          ) : (
-            <h1>Games Overview</h1>
-          )}
-          {activeView === "players" ? (
-            <div className="sort-options">
-              <button
-                className={clsx("sort-button", {
-                  activeBtn: sortMethod === "alphabetically",
-                })}
-                onClick={() => setSortMethod("alphabetically")}
-              >
-                <span className="sort-icon">
-                  <img src={sortAZIcon} alt="sort-icon" />
-                </span>{" "}
-                Alphabetically
-              </button>
-              <span className="separator">|</span>
-              <button
-                className={clsx("sort-button", {
-                  activeBtn: sortMethod === "score",
-                })}
-                onClick={() => setSortMethod("score")}
-              >
-                <span className="sort-icon">
-                  <img src={sortScoreIcon} alt="sort-icon" />
-                </span>{" "}
-                Score
-              </button>
-            </div>
-          ) : (
-            ""
-          )}
-
-          <div className="view-toggle">
+          <h1>Playerstats</h1>
+          <div className="sort-options">
             <button
-              className={clsx("view-button", {
-                activeBtn: activeView === "players",
+              className={clsx("sort-button", {
+                "active-btn": sortMethod === "alphabetically",
               })}
-              onClick={() => setActiveView("players")}
+              onClick={() => setSortMethod("alphabetically")}
             >
-              Players
+              <span className="sort-icon">
+                <img src={sortAZIcon} alt="sort-icon" />
+              </span>{" "}
+              Alphabetically
             </button>
+            <span className="separator">|</span>
             <button
-              className={clsx("view-button", {
-                activeBtn: activeView === "games",
+              className={clsx("sort-button", {
+                "active-btn": sortMethod === "score",
               })}
-              onClick={() => setActiveView("games")}
+              onClick={() => setSortMethod("score")}
             >
-              Games
+              <span className="sort-icon">
+                <img src={sortScoreIcon} alt="sort-icon" />
+              </span>{" "}
+              Score
             </button>
           </div>
+          <ViewToogleButton />
         </div>
-        {activeView === "players" ? (
-          <div className="player-list">
-            {sortedStats.map((player, index) => (
-              <div key={player.id} className="player-row">
-                <div className="player-number">{index + 1}.</div>
-                <div className="player-name">{player.name}</div>
-                <div className="player-stats">
-                  <div className="round-stat">
-                    <span className="stat-label">
-                      Ø Round{" "}
-                      <span className="stat-value">
-                        {Math.floor(player.averageRoundScore)}
-                      </span>
+        <div className="player-list">
+          {sortedStats.map((player, index) => (
+            <div key={player.id} className="player-row">
+              <div className="player-number">{index + 1}.</div>
+              <div className="player-name">{player.name}</div>
+              <div className="player-stats">
+                <div className="round-stat">
+                  <span className="stat-label">
+                    Ø Round{" "}
+                    <span className="stat-value">
+                      {Math.round(player.averageRoundScore)}
                     </span>
-                  </div>
-                  <div className="games-stat">
-                    <span className="stat-label">
-                      Played games{" "}
-                      <span className="stat-value">
-                        {Math.floor(player.games)}
-                      </span>
+                  </span>
+                </div>
+                <div className="games-stat">
+                  <span className="stat-label">
+                    Played games{" "}
+                    <span className="stat-value">
+                      {Math.round(player.games)}
                     </span>
-                  </div>
+                  </span>
                 </div>
               </div>
-            ))}
-          </div>
-        ) : (
-          <GamesOverview />
-        )}
+            </div>
+          ))}
+        </div>
       </div>
     </div>
   );

@@ -15,7 +15,7 @@ function Overlay({ ...props }: Props) {
   return (
     <>
       {props.isOpen ? (
-        <div className="overlayBackground">
+        <div className="overlay-background">
           <div className={props.className}>
             <button
               className="delete"

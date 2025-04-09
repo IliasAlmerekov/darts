@@ -11,6 +11,7 @@ import { arrayMove } from "@dnd-kit/sortable";
 import { DragEndEvent } from "@dnd-kit/core";
 import { $settings } from "../stores/settings";
 import { useStore } from "@nanostores/react";
+import { NavigateFunction } from "react-router-dom";
 
 interface PlayerProps {
   id: number;
@@ -38,10 +39,12 @@ interface SavedGame {
 }
 
 interface GameSummury {
+  id: string;
   date: string;
   playersCount: number;
   winnerName: string;
   winnerRounds: number;
+  players: SavedGamePlayer[];
 }
 
 const getUserFromLS = (): PlayerProps[] => {
@@ -85,7 +88,7 @@ interface GameState {
 interface GameFunctions {
   initializePlayerList: () => void;
   playSound: (soundType: string) => void;
-  handleTabClick: (id: string) => void;
+  handleTabClick: (id: string, navigate: NavigateFunction) => void;
   handleSelectPlayer: (name: string, id: number) => void;
   handleChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
   handleKeyPess: (
@@ -249,9 +252,34 @@ export const UserProvider = ({ children }: UserProviderProps) => {
     updateEvent({ unselectedPlayers: initialPlayerList });
   }, [event.clickedPlayerId, event.userList, updateEvent]);
 
-  function handleTabClick(id: string) {
+  // NavigationBar
+  function handleTabClick(id: string, navigate: NavigateFunction) {
     updateEvent({ activeTab: id });
+
+    switch (id) {
+      case "game":
+        navigate("/");
+        break;
+      case "settings":
+        navigate("/settings");
+        break;
+      case "statistics":
+        navigate("/statistics");
+        break;
+      default:
+        break;
+    }
   }
+
+  useEffect(() => {
+    if (location.pathname.includes("statistics")) {
+      updateEvent({ activeTab: "statistics" });
+    } else if (location.pathname.includes("settings")) {
+      updateEvent({ activeTab: "settings" });
+    } else if (location.pathname.includes("game")) {
+      updateEvent({ activeTab: "game" });
+    }
+  }, []);
 
   function handleSelectPlayer(name: string, id: number) {
     if (event.selectedPlayers.length === 10) return;
@@ -267,8 +295,12 @@ export const UserProvider = ({ children }: UserProviderProps) => {
       updateEvent({
         selectedPlayers: updatedSelectedPlayerList,
         unselectedPlayers: updatedUnselectedPlayerList,
+        list: updatedSelectedPlayerList,
       });
-      updateEvent({ list: updatedSelectedPlayerList });
+      localStorage.setItem(
+        "UserUnselected",
+        JSON.stringify(updatedUnselectedPlayerList)
+      );
       functions.playSound(SELECT_PLAYER_SOUND_PATH);
     }, 200);
   }
@@ -299,6 +331,8 @@ export const UserProvider = ({ children }: UserProviderProps) => {
       unselectedPlayers: updatedUnselectedPlayers,
       list: updatedSelectedPlayers,
     });
+
+    addUnselectedUserListToLs(updatedUnselectedPlayers);
     functions.playSound(UNSELECT_PLAYER_SOUND_PATH);
   }
 
@@ -366,35 +400,65 @@ export const UserProvider = ({ children }: UserProviderProps) => {
 
   //save finished Game to LS
   function savedFinishedGameToLS(players: BASIC.WinnerPlayerProps[]) {
+    if (!Array.isArray(players) || players.length === 0) {
+      console.warn("There are no players to save");
+      return null;
+    }
     const savedGames = JSON.parse(
       localStorage.getItem("FinishedGames") || "[]"
     );
 
-    const gameId = players
-      .map((p) => p.id)
-      .sort((a, b) => a - b)
-      .join("");
+    const isDuplicate = savedGames.some((game: SavedGame) => {
+      const samePlayers =
+        game.players.length === players.length &&
+        game.players.every((p, i) => p.id === players[i].id);
 
-    const isDuplicate = savedGames.some(
-      (game: SavedGame) => game.id === gameId
-    );
+      const closeDate =
+        Math.abs(new Date(game.date).getTime() - new Date().getTime()) < 2000;
+
+      return samePlayers && closeDate;
+    });
+
     if (isDuplicate) {
+      console.warn("Duplicate game not saved");
       return;
     }
     const gameSummary = {
-      id: gameId,
+      id: Date.now().toString(),
       date: new Date().toISOString(),
-      players: players.map((player) => ({
-        id: player.id,
-        name: player.name,
-        totalScore: player.score,
-        rounds: Array.isArray(player.rounds) ? player.rounds : [],
-        won: player.score === 0,
-      })),
+      players: players.map((player) => {
+        const rounds = Array.isArray(player.rounds) ? player.rounds : [];
+        const roundCount = rounds.length;
+
+        let totalScorePoints = 0;
+
+        for (const round of rounds) {
+          for (const throwKey of ["throw1", "throw2", "throw3"] as const) {
+            const value = round[throwKey];
+            if (typeof value === "number") {
+              totalScorePoints += value;
+            }
+          }
+        }
+
+        const scoreAverage =
+          roundCount > 0
+            ? Number((totalScorePoints / roundCount).toFixed(2))
+            : 0;
+
+        return {
+          id: player.id,
+          name: player.name,
+          totalScore: totalScorePoints,
+          roundCount,
+          scoreAverage,
+          rounds,
+          won: player.score === 0,
+        };
+      }),
     };
     savedGames.push(gameSummary);
     localStorage.setItem("FinishedGames", JSON.stringify(savedGames));
-    console.log("Saved games", gameSummary);
   }
 
   //get all Players with AverageScore from LS
@@ -403,6 +467,7 @@ export const UserProvider = ({ children }: UserProviderProps) => {
     name: string;
     games: number;
     averageRoundScore: number;
+    scoreAverage: number;
   }[] {
     const savedGames = JSON.parse(
       localStorage.getItem("FinishedGames") || "[]"
@@ -414,8 +479,10 @@ export const UserProvider = ({ children }: UserProviderProps) => {
         id: number;
         name: string;
         games: number;
+        roundsCount: number;
         totalScore: number;
         totalRounds: number;
+        rounds: [];
       }
     > = {};
 
@@ -424,10 +491,12 @@ export const UserProvider = ({ children }: UserProviderProps) => {
         if (!statMap[player.id]) {
           statMap[player.id] = {
             id: player.id,
+            roundsCount: 0,
             name: player.name,
             games: 0,
             totalScore: 0,
             totalRounds: 0,
+            rounds: Array.isArray(player.rounds) ? player.rounds : [],
           };
         }
 
@@ -444,6 +513,7 @@ export const UserProvider = ({ children }: UserProviderProps) => {
             }
             statMap[player.id].totalScore += roundScore;
             statMap[player.id].totalRounds += 1;
+            statMap[player.id].roundsCount = player.rounds.length;
           }
         } else {
           console.warn("Missed a player without rounds", player);
@@ -455,6 +525,10 @@ export const UserProvider = ({ children }: UserProviderProps) => {
       id: player.id,
       name: player.name,
       games: player.games,
+      scoreAverage:
+        player.totalRounds > 0
+          ? Number((player.totalScore / player.roundsCount).toFixed(2))
+          : 0,
       averageRoundScore:
         player.totalRounds > 0
           ? Number((player.totalScore / player.totalRounds).toFixed(2))
@@ -477,7 +551,9 @@ export const UserProvider = ({ children }: UserProviderProps) => {
         winner && Array.isArray(winner?.rounds) ? winner.rounds.length : 0;
 
       return {
+        id: game.id,
         date: game.date || "",
+        players: players,
         playersCount,
         winnerName,
         winnerRounds,

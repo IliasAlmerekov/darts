@@ -1,4 +1,4 @@
-.podiumPlayerCard {
+.podium-player-card {
     height: 142px;
     width: 197px;
     padding: 23px;
@@ -6,7 +6,7 @@
     border-radius: 8px;
 }
 
-.centerAlign {
+.center-align {
     margin-top: 16px;
     justify-content: center;
     display: flex;
@@ -23,11 +23,11 @@
     color: var(--darkblue);
 }
 
-.playerName {
+.player-name {
     margin: 16px
 }
 
-.placementRound {
+.placement-round {
     color: var(--white);
     display: flex;
     height: 40px;

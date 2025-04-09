@@ -4,8 +4,6 @@ import NavigationBar from "../../components/NavigationBar/NavigationBar";
 import UnselectedPlayerItem from "../../components/PlayerItems/UnselectedPlayerItem";
 import SelectedPlayerItem from "../../components/PlayerItems/SelectedPlayerItem";
 import Plus from "../../icons/plus.svg";
-import Statistics from "../../components/Statistics/Statistics";
-import Madebydeepblue from "../../icons/madeByDeepblue.svg";
 import userPLus from "../../icons/user-plus.svg";
 import LinkButton from "../../components/LinkButton/LinkButton";
 import Button from "../../components/Button/Button";
@@ -13,7 +11,6 @@ import "../../components/Button/Button.css";
 import arrowRight from "../../icons/arrow-right.svg";
 import Overlay from "../../components/Overlay/Overlay";
 import DefaultInputField from "../../components/InputField/DefaultInputField";
-import Settings from "../../components/Settings/Settings";
 import deleteIcon from "../../icons/delete.svg";
 import clsx from "clsx";
 import { DndContext } from "@dnd-kit/core";
@@ -48,7 +45,7 @@ function Start() {
         const playersFromLS = localStorage.getItem("UserUnselected");
         const playersFromLocalStorage =
           !!playersFromLS && JSON.parse(playersFromLS);
-        updateEvent({ unselectedPlayers: playersFromLocalStorage });
+        updateEvent({ unselectedPlayers: playersFromLocalStorage || [] });
       }
     }
   }, [event.list, functions, updateEvent]);
@@ -56,68 +53,61 @@ function Start() {
   return (
     <div className="start">
       <NavigationBar />
-      {event.activeTab === "statistics" ? (
-        <Statistics />
-      ) : event.activeTab === "settings" ? (
-        <Settings />
-      ) : (
-        <>
-          <div className="existingPlayerList">
-            <div className="header">
-              <h4 className="headerUnselectedPlayers">
-                Unselected <br /> Players
-              </h4>
-            </div>
-
-            {event.unselectedPlayers.length > 0 && (
-              <div
-                className={clsx("unselectedPlayers", {
-                  enabled: event.selectedPlayers.length === 10,
-                })}
-              >
-                {event.unselectedPlayers.map((player: PlayerProps) => {
-                  return (
-                    <UnselectedPlayerItem
-                      {...player}
-                      key={player.id}
-                      handleClickOrDelete={() => {
-                        functions.handleSelectPlayer(player.name, player.id);
-                      }}
-                      src={arrowRight}
-                      alt="Select player arrow"
-                      isClicked={
-                        event.clickedPlayerId === player.id
-                          ? event.clickedPlayerId
-                          : undefined
-                      }
-                    />
-                  );
-                })}
-              </div>
-            )}
-
-            <div className="bottom">
-              <LinkButton
-                className="createNewPlayerButton h4"
-                label="Create new Player"
-                icon={Plus}
-                handleClick={() =>
-                  updateEvent({ isNewPlayerOverlayOpen: true })
-                }
-              />
-            </div>
-          </div>
-          <div className="addedPlayerList">
-            <img className="deepblueIcon" src={Madebydeepblue} alt="" />
-            <h4 className="headerSelectedPlayers">
-              Selected Players{" "}
-              <div className="listCount">{event.selectedPlayers.length}/10</div>
+      <>
+        <div className="existingPlayerList">
+          <div className="header">
+            <h4 className="headerUnselectedPlayers">
+              Unselected <br /> Players
             </h4>
-            <DndContext
-              modifiers={[restrictToVerticalAxis]}
-              onDragEnd={functions.handleDragEnd}
-              onDragMove={() => updateEvent({ dragEnd: false })}
+          </div>
+
+          {event.unselectedPlayers.length > 0 && (
+            <div
+              className={clsx("unselectedPlayers", {
+                enabled: event.selectedPlayers.length === 10,
+              })}
             >
+              {event.unselectedPlayers.map((player: PlayerProps) => {
+                return (
+                  <UnselectedPlayerItem
+                    {...player}
+                    key={player.id}
+                    handleClickOrDelete={() => {
+                      functions.handleSelectPlayer(player.name, player.id);
+                    }}
+                    src={arrowRight}
+                    alt="Select player arrow"
+                    isClicked={
+                      event.clickedPlayerId === player.id
+                        ? event.clickedPlayerId
+                        : undefined
+                    }
+                  />
+                );
+              })}
+            </div>
+          )}
+
+          <div className="bottom">
+            <LinkButton
+              className="createNewPlayerButton h4"
+              label="Create new Player"
+              icon={Plus}
+              handleClick={() => updateEvent({ isNewPlayerOverlayOpen: true })}
+            />
+          </div>
+        </div>
+        <div className="addedPlayerList">
+          <h4 className="headerSelectedPlayers">
+            Selected Players{" "}
+            <div className="listCount">{event.selectedPlayers.length}/10</div>
+          </h4>
+          <DndContext
+            modifiers={[restrictToVerticalAxis]}
+            onDragEnd={functions.handleDragEnd}
+            onDragMove={() => updateEvent({ dragEnd: false })}
+          >
+            <div className="selectedPlayerListScroll">
               <SortableContext
                 items={event.selectedPlayers}
                 strategy={verticalListSortingStrategy}
@@ -137,28 +127,27 @@ function Start() {
                   )
                 )}
               </SortableContext>
-            </DndContext>
-
-            <div className="startBtn">
-              <Button
-                isLink
-                label="Start"
-                link="/game"
-                disabled={event.selectedPlayers.length < 2}
-                type="secondary"
-                handleClick={() => {
-                  functions.addUnselectedUserListToLs(event.unselectedPlayers);
-                  functions.playSound(START_SOUND_PATH);
-                  functions.resetGame();
-                }}
-              />
             </div>
-          </div>
-        </>
-      )}
+          </DndContext>
 
+          <div className="startBtn">
+            <Button
+              isLink
+              label="Start"
+              link="/game"
+              disabled={event.selectedPlayers.length < 2}
+              type="secondary"
+              handleClick={() => {
+                functions.addUnselectedUserListToLs(event.unselectedPlayers);
+                functions.playSound(START_SOUND_PATH);
+                functions.resetGame();
+              }}
+            />
+          </div>
+        </div>
+      </>
       <Overlay
-        className="overlayBox"
+        className="overlay-box"
         src={deleteIcon}
         isOpen={event.isNewPlayerOverlayOpen}
         onClose={() => {

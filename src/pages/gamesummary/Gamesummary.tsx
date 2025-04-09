@@ -41,25 +41,27 @@ function Gamesummary(): JSX.Element {
           <img src={Undo} alt="Undo last action" />
         </Link>
       </div>
-      <Podium userMap={podiumData} list={event.winnerList} />
-      <div className="leaderBoard">
+      <div className="podium-board">
+        <Podium userMap={podiumData} list={event.winnerList} />
+      </div>
+      <div className="leader-board">
         <OverviewPlayerItemList userMap={leaderBoardList} />
       </div>
 
-      <div className="playAgainButton">
+      <div className="play-again-button">
         <Button
           isLink
           link={"/game"}
           label="Play Again"
           type="primary"
           isInverted
-          className="playAgainButton"
+          className="play-again-button"
           handleClick={() => functions.resetGame()}
         />
       </div>
-      <div className="backToStartButton">
+      <div className="back-to-start-button">
         <Button
-          className="backToStartButton"
+          className="back-to-start-button"
           link={"/"}
           isLink
           label="Back To Start"

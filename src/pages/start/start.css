@@ -1,9 +1,11 @@
 .start {
   display: grid;
+  overflow: hidden;
   gap: 24px;
   grid-template-columns: repeat(6, 1fr);
   grid-template-rows: auto 1fr;
-  height: 100vh;
+  height: calc(100vh - 48px);
+  padding: 24px 32px;
 }
 
 .existingPlayerList {
@@ -12,26 +14,26 @@
   position: relative;
   display: flex;
   flex-direction: column;
-  height: auto;
-  margin-left: 32px;
+  height: 100%;
   border-radius: 16px;
+  overflow: hidden;
 }
 
 .addedPlayerList {
+  height: 100%;
   position: relative;
+  overflow: hidden;
   grid-column: 3/7;
   padding-top: 32px;
-  padding-right: 24px;
-  align-content: baseline;
 }
 
 .headerUnselectedPlayers {
-  margin: 32px 0px;
+  margin: 32px 0;
   color: var(--darkgrey);
 }
 
 .headerSelectedPlayers {
-  margin: 0px 0px 16px 0px;
+  margin: 0 0 16px;
   color: var(--darkgrey);
   justify-content: space-between;
   display: flex;
@@ -59,7 +61,7 @@
 .bottom {
   justify-content: space-between;
   display: flex;
-  padding: 0px 32px 0px 32px;
+  padding: 0 32px;
 }
 
 .bottom {
@@ -71,20 +73,22 @@
   top: calc(100vh - 30px);
 }
 
+.selectedPlayerListScroll {
+  overflow-y: auto;
+  height: calc(100% - 80px);
+  padding-right: 16px;
+}
+
 .unselectedPlayers {
-  overflow: auto;
-  max-height: 84.3vh;
-  padding: 0px 32px 0px 32px;
-  position: relative;
+  padding: 0 32px;
   flex-grow: 1;
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
-  background: linear-gradient(var(--lightgrey) 30%, rgba(255, 255, 255, 0))
+  background: linear-gradient(var(--lightgrey) 30%, rgb(255 255 255 / 0%))
       center top,
-    linear-gradient(rgba(255, 255, 255, 0), var(--lightgrey) 70%) center bottom,
-    linear-gradient(rgba(0, 0, 0, 0.2), rgba(0, 0, 0, 0)) center top,
-    linear-gradient(rgba(0, 0, 0, 0), rgba(0, 0, 0, 0.2)) center bottom;
-
+    linear-gradient(rgb(255 255 255 / 0%), var(--lightgrey) 70%) center bottom,
+    linear-gradient(rgb(0 0 0 / 20%), rgb(0 0 0 / 0%)) center top,
+    linear-gradient(rgb(0 0 0 / 0%), rgb(0 0 0 / 20%)) center bottom;
   background-repeat: no-repeat;
   background-size: 100% 40px, 100% 40px, 100% 14px, 100% 14px;
   background-attachment: local, local, scroll, scroll;
@@ -99,7 +103,7 @@
   color: var(--blue);
   align-items: center;
   display: flex;
-  padding: 0px 8px 0px 0px;
+  padding: 0 8px 0 0;
   gap: 10px;
 }
 
@@ -115,8 +119,7 @@
   transform: translate(-50%, -50%);
   background-color: var(--lightgrey);
   border-radius: 16px;
-  align-content: center;
-  justify-content: center;
+  place-content: center center;
   display: grid;
   box-shadow: var(--box-shadow);
   padding: 32px;
@@ -130,7 +133,7 @@
 }
 
 .createPlayerOverlay {
-  padding: 96px 0px;
+  padding: 96px 0;
   width: 71.7%;
 }
 
@@ -146,11 +149,11 @@
   justify-content: center;
   display: flex;
   width: 100%;
-  bottom: 0px;
+  bottom: 0;
   position: absolute;
   height: 11.2%;
   background-color: var(--lightgrey);
-  border-radius: 0px 0px 16px 16px;
+  border-radius: 0 0 16px 16px;
 }
 
 .overlayBottomEnabled {
@@ -183,6 +186,7 @@
 .hide {
   opacity: 0.5;
 }
+
 #error-message {
   color: #ff2001;
 }

@@ -1,7 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { newSettings } from "../../stores/settings";
-
-import Madebydeepblue from "../../icons/madeByDeepblue.svg";
+import NavigationBar from "../NavigationBar/NavigationBar";
 
 import "./Settings.css";
 import clsx from "clsx";
@@ -54,10 +53,10 @@ const Settings = () => {
 
   return (
     <div className="settings">
+      <NavigationBar />
       <h1>Settings</h1>
       <section className="settings-section">
         <h2>Game</h2>
-        <img className="deepblueIcon" src={Madebydeepblue} alt="" />
         <div className="settings-body">
           <div className="settings-container">
             <div className="game-settings">Game Mode</div>

@@ -2,29 +2,24 @@ import OverviewPlayerItem from "./OverviewPlayerItem";
 import React from "react";
 
 type Props = {
+  name?: string;
   userMap: BASIC.WinnerPlayerProps[];
 };
 
-function OverviewPlayerItemList({ ...props }: Props) {
+function OverviewPlayerItemList({ ...props }: Props): JSX.Element {
   return (
     <>
       {props.userMap.map((item: BASIC.WinnerPlayerProps, index: number) => {
-        const completedRounds =
-          item.rounds[item.rounds.length - 1].throw1 === undefined
-            ? item.rounds.length - 1
-            : item.rounds.length;
+        const completedRounds = item.roundCount;
 
-        const averageScore =
-          completedRounds === 0
-            ? 0
-            : Math.round((301 - item.score) / completedRounds);
+        const averageScore = item.scoreAverage;
 
         return (
           <OverviewPlayerItem
             key={item.index}
             name={item.name}
             placement={index + 4}
-            className="overviewPlayerItem"
+            className="overview-player-item"
             rounds={completedRounds}
             averagePerRound={averageScore}
           />

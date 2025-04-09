@@ -63,13 +63,13 @@ function GamePlayerItem({ ...props }: Props) {
 
       <div className="throws">
         <div
-          className={clsx("throwDisplay", {
+          className={clsx("throw-display", {
             hidden: props.isPlaying === false,
           })}
         >
           <div
-            className={clsx("divDisplay copylarge", {
-              handleBust: !props.isActive && props.throwCount === 0,
+            className={clsx("div-display copylarge", {
+              "handle-bust": !props.isActive && props.throwCount === 0,
             })}
           >
             {handlePoint(
@@ -79,8 +79,8 @@ function GamePlayerItem({ ...props }: Props) {
           </div>
 
           <div
-            className={clsx("divDisplay copylarge", {
-              handleBust: !props.isActive && props.throwCount === 1,
+            className={clsx("div-display copylarge", {
+              "handle-bust": !props.isActive && props.throwCount === 1,
             })}
           >
             {handlePoint(
@@ -90,8 +90,8 @@ function GamePlayerItem({ ...props }: Props) {
           </div>
 
           <div
-            className={clsx("divDisplay copylarge", {
-              handleBust: props.isBust && props.throwCount === 2,
+            className={clsx("div-display copylarge", {
+              "handle-bust": props.isBust && props.throwCount === 2,
             })}
           >
             {handlePoint(
@@ -103,13 +103,13 @@ function GamePlayerItem({ ...props }: Props) {
 
         <div className="pointer">
           <div
-            className={clsx("scoreDisplay", {
+            className={clsx("score-display", {
               hidden: props.isPlaying === false,
             })}
           >
             Score
           </div>
-          <div className="valueDisplay">{props.value}</div>
+          <div className="value-display">{props.value}</div>
         </div>
       </div>
     </div>

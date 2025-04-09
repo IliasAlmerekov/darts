@@ -1,11 +1,8 @@
 .playerstats-container {
-  grid-column: 1 / -1;
-  width: 100%;
-  max-width: 95%;
-  margin: 0 auto;
   background-color: var(--white);
-  padding: 0 auto;
+  padding: 24px 32px;
 }
+
 .navigation-item {
   display: flex;
   justify-content: space-between;
@@ -18,7 +15,7 @@
   margin-bottom: 20px;
   background-color: var(--lightgrey);
   height: 40px;
-  padding: 8px 16px 8px 16px;
+  padding: 8px 16px;
   border-radius: 100px;
 }
 
@@ -34,7 +31,7 @@
   color: var(--darkblue);
 }
 
-.sort-button.activeBtn {
+.sort-button.active-btn {
   color: var(--blue);
 }
 
@@ -45,28 +42,6 @@
 .separator {
   margin: 0 10px;
   color: #ccc;
-}
-
-.view-toggle {
-  display: flex;
-  gap: 10px;
-  margin-bottom: 20px;
-}
-
-.view-button {
-  padding: 8px 20px;
-  border-radius: 50px;
-  border: 1px solid var(--middlegrey);
-  background: var(--white);
-  cursor: pointer;
-  font-size: 16px;
-  font-weight: 700;
-  transition: all 0.2s ease;
-}
-
-.view-button.activeBtn {
-  color: var(--blue);
-  border-color: var(--blue);
 }
 
 .player-list {

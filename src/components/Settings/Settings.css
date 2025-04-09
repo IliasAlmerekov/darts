@@ -1,8 +1,6 @@
 .settings {
   grid-column: 1 / -1;
-  width: 100%;
-  max-width: 95%;
-  padding-left: 32px;
+  padding: 24px 32px;
 }
 
 .settings-body {
@@ -10,6 +8,7 @@
   flex-direction: column;
   gap: 12px;
 }
+
 .settings-container {
   display: grid;
   grid-template-columns: repeat(6, 1fr);
@@ -20,6 +19,7 @@
     font-weight: 700;
     font-size: 20px;
   }
+
   .button-container {
     grid-column: 3 / 7;
     display: flex;
@@ -39,9 +39,11 @@
       max-height: 60px;
       text-align: center;
     }
+
     .settings-button:last-child {
       border-right: none;
     }
+
     .settings-button.active {
       background-color: var(--blue);
       color: var(--white);

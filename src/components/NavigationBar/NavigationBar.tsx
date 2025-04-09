@@ -8,9 +8,12 @@ import statisticIconInactive from "../../icons/statistics-inactive.svg";
 import clsx from "clsx";
 import { useUser } from "../../provider/UserProvider";
 import "./NavigationBar.css";
+import { useNavigate } from "react-router-dom";
+import Madebydeepblue from "../../icons/madeByDeepblue.svg";
 
 export default function NavigationBar() {
   const { event, functions } = useUser();
+  const navigate = useNavigate();
 
   const navItems = [
     {
@@ -34,10 +37,11 @@ export default function NavigationBar() {
   ];
   return (
     <div className="navigation">
+      <img className="deepblueIcon" src={Madebydeepblue} alt="" />
       {navItems.map((item) => (
         <button
           key={item.id}
-          onClick={() => functions.handleTabClick(item.id)}
+          onClick={() => functions.handleTabClick(item.id, navigate)}
           className={clsx("tab-button", {
             active: event.activeTab === item.id,
             inactive: !(event.activeTab === item.id),

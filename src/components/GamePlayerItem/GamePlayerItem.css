@@ -1,23 +1,23 @@
-.gamePlayerItem {
+.game-player-item {
     width: auto;
     display: flex;
     justify-content: space-between;
     border-bottom: 1px solid var(--middlegrey);
-    padding: 24px 8px 24px 8px;
+    padding: 24px 8px;
     align-items: center;
 }
 
-.throwDisplay {
+.throw-display {
     gap: 16px;
     display: flex;
     width: 200px;
 }
 
-.divDisplay {
+.div-display {
     color: var(--darkblue);
     width: 41px;
     height: 31px;
-    padding: 7px 13px 7px 13px;
+    padding: 7px 13px;
     border-radius: 4px;
     background-color: var(--lightgrey);
     align-items: center;
@@ -38,7 +38,7 @@
     align-items: center;
 }
 
-.activePlayer {
+.active-player {
     border-left: 16px solid var(--blue);
     padding-left: 16px;
     font-size: 24px;
@@ -49,27 +49,27 @@
     color: var(--blue);
 }
 
-.valueDisplay {
+.value-display {
     font-size: 20px;
     line-height: 24px;
     text-align: left;
     color: var(--darkblue);
 }
 
-.scoreDisplay {
+.score-display {
     font-size: 20px;
     line-height: 24px;
     text-align: left;
     color: var(--darkgrey);
 }
 
-.handleBust {
+.handle-bust {
     color: var(--red);
 }
 
 .finished {
     height: 45px;
-    opacity: 50%;
+    opacity: 0.5;
 }
 
 .place {
@@ -81,14 +81,14 @@
     color: var(--darkgrey);
 }
 
-.finishedPlayerList {
+.finished-player-list {
     margin-top: 160px;
 }
 
-.playeritemName {
+.playeritem-name {
     font-size: 20px;
 }
 
-.activePlayerItemName {
+.active-player-item-name {
     font-size: 24px;
 }

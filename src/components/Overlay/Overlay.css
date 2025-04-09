@@ -1,4 +1,4 @@
-.overlayBox {
+.overlay-box {
   position: absolute;
   top: 50%;
   left: 50%;
@@ -28,10 +28,10 @@
   padding: 1px;
 }
 
-.overlayBackground {
+.overlay-background {
   width: 100%;
   height: 100%;
   position: fixed;
-  background: rgba(0, 0, 0, 0.4);
+  background: rgb(0 0 0 / 40%);
   z-index: 1000;
 }

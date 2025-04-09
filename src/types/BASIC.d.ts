@@ -29,6 +29,8 @@ declare namespace BASIC {
     isPlaying?: boolean;
     isBust?: boolean;
     throwCount?: number;
+    scoreAverage?: number;
+    roundCount?: number;
   };
 
   type UserProps = {

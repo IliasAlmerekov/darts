@@ -1,11 +1,10 @@
-.defaultInputField {
+.default-input-field {
     background: var(--white);
     text-decoration: none;
     border-radius: 8px;
     color: var(--darkblue);
     border: none;
     height: 24px;
-    width: -moz-available;
     padding: 16px;
     width: -webkit-fill-available;
 }
