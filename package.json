@@ -8,25 +8,17 @@
     "@dnd-kit/sortable": "^8.0.0",
     "@dnd-kit/utilities": "^3.2.2",
     "@nanostores/react": "^0.8.4",
-    "@testing-library/jest-dom": "^5.14.1",
-    "@testing-library/react": "^13.0.0",
-    "@testing-library/user-event": "^13.2.1",
     "@types/jest": "^27.0.1",
-    "@types/node": "^16.7.13",
+    "@types/node": "^22.14.0",
     "@types/react": "^18.0.0",
     "@types/react-dom": "^18.0.0",
     "clsx": "^2.1.1",
-    "cors": "^2.8.5",
-    "express": "^4.21.2",
-    "mysql2": "^3.12.0",
     "nanostores": "^0.11.4",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "react-router-dom": "^6.26.1",
     "react-scripts": "5.0.1",
-    "react-svg": "^16.1.34",
-    "typescript": "^4.4.2",
-    "web-vitals": "^2.1.0"
+    "typescript": "^5.8.3"
   },
   "scripts": {
     "start": "react-scripts start",
@@ -34,8 +26,11 @@
     "eject": "react-scripts eject",
     "eslint": "eslint ./src",
     "stylelint": "stylelint **/*.css",
+    "stylelint:fix": "stylelint **/*.css --fix",
     "prepare": "husky",
-    "husky": "npm run stylelint npm run eslint"
+    "husky": "npm run stylelint npm run eslint",
+    "commitlint": "commitlint --edit",
+    "knip": "knip"
   },
   "browserslist": {
     "production": [
@@ -50,16 +45,26 @@
     ]
   },
   "devDependencies": {
+    "@commitlint/cli": "^19.8.0",
+    "@commitlint/config-conventional": "^19.8.0",
     "@eslint/js": "^9.23.0",
     "eslint": "^8.57.1",
-    "eslint-config-react-app": "^7.0.1",
     "eslint-plugin-jsx-a11y": "^6.10.2",
     "eslint-plugin-react": "^7.37.4",
     "eslint-plugin-react-hooks": "^5.2.0",
-    "globals": "^16.0.0",
     "husky": "^9.1.7",
+    "knip": "^5.50.1",
+    "lint-staged": "^15.5.0",
+    "prettier": "^3.5.3",
     "stylelint": "^16.18.0",
+    "stylelint-config-prettier": "^9.0.5",
     "stylelint-config-standard": "^38.0.0",
+    "stylelint-prettier": "^5.0.3",
     "typescript-eslint": "^8.29.0"
+  },
+  "lint-staged": {
+    "*.{js,ts,jsx,tsx}": [
+      "eslint --fix"
+    ]
   }
 }
