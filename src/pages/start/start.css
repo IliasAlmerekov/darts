@@ -83,14 +83,19 @@
   padding: 0 32px;
   flex-grow: 1;
   overflow-y: auto;
+  scroll-behavior: smooth;
   -webkit-overflow-scrolling: touch;
-  background: linear-gradient(var(--lightgrey) 30%, rgb(255 255 255 / 0%))
-      center top,
+  background:
+    linear-gradient(var(--lightgrey) 30%, rgb(255 255 255 / 0%)) center top,
     linear-gradient(rgb(255 255 255 / 0%), var(--lightgrey) 70%) center bottom,
     linear-gradient(rgb(0 0 0 / 20%), rgb(0 0 0 / 0%)) center top,
     linear-gradient(rgb(0 0 0 / 0%), rgb(0 0 0 / 20%)) center bottom;
   background-repeat: no-repeat;
-  background-size: 100% 40px, 100% 40px, 100% 14px, 100% 14px;
+  background-size:
+    100% 40px,
+    100% 40px,
+    100% 14px,
+    100% 14px;
   background-attachment: local, local, scroll, scroll;
 }
 

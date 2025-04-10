@@ -1,26 +1,26 @@
 .game-player-item-container {
-    padding: 133px 32px 0;
+  padding: 133px 32px 0;
 }
 
 .top {
-    left: 32px;
-    top: 32px;
-    position: absolute;
+  left: 32px;
+  top: 32px;
+  position: absolute;
 }
 
 .finish-game-overlay {
-    width: 71.7%;
-    padding: 96px 0;
+  width: 71.7%;
+  padding: 96px 0;
 }
 
 .undo-throw {
-    justify-content: center;
-    display: flex;
-    margin-top: 28px;
-    font-size: 24px;
-    font-weight: 700;
-    line-height: 28.8px;
-    letter-spacing: 0.02em;
-    text-align: left;
-    gap: 8px;
+  justify-content: center;
+  display: flex;
+  margin-top: 28px;
+  font-size: 24px;
+  font-weight: 700;
+  line-height: 28.8px;
+  letter-spacing: 0.02em;
+  text-align: left;
+  gap: 8px;
 }

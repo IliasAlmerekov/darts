@@ -1,42 +1,42 @@
 .podium-player-card {
-    height: 142px;
-    width: 197px;
-    padding: 23px;
-    background-color: var(--lightgrey);
-    border-radius: 8px;
+  height: 142px;
+  width: 197px;
+  padding: 23px;
+  background-color: var(--lightgrey);
+  border-radius: 8px;
 }
 
 .center-align {
-    margin-top: 16px;
-    justify-content: center;
-    display: flex;
-    align-items: center;
-    gap: 8px;
+  margin-top: 16px;
+  justify-content: center;
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 
 .color {
-    height: 24px;
-    color: var(--darkgrey);
+  height: 24px;
+  color: var(--darkgrey);
 }
 
 .number {
-    color: var(--darkblue);
+  color: var(--darkblue);
 }
 
 .player-name {
-    margin: 16px
+  margin: 16px;
 }
 
 .placement-round {
-    color: var(--white);
-    display: flex;
-    height: 40px;
-    width: 40px;
-    background-color: var(--red);
-    align-items: center;
-    justify-content: center;
-    border-radius: 100px;
-    position: relative;
-    left: 40%;
-    bottom: -20px;
+  color: var(--white);
+  display: flex;
+  height: 40px;
+  width: 40px;
+  background-color: var(--red);
+  align-items: center;
+  justify-content: center;
+  border-radius: 100px;
+  position: relative;
+  left: 40%;
+  bottom: -20px;
 }
