@@ -54,16 +54,16 @@ function Start() {
     <div className="start">
       <NavigationBar />
       <>
-        <div className="existingPlayerList">
+        <div className="existing-player-list">
           <div className="header">
-            <h4 className="headerUnselectedPlayers">
+            <h4 className="header-unselected-players">
               Unselected <br /> Players
             </h4>
           </div>
 
           {event.unselectedPlayers.length > 0 && (
             <div
-              className={clsx("unselectedPlayers", {
+              className={clsx("unselected-players", {
                 enabled: event.selectedPlayers.length === 10,
               })}
             >
@@ -90,15 +90,15 @@ function Start() {
 
           <div className="bottom">
             <LinkButton
-              className="createNewPlayerButton h4"
+              className="create-new-player-button h4"
               label="Create new Player"
               icon={Plus}
               handleClick={() => updateEvent({ isNewPlayerOverlayOpen: true })}
             />
           </div>
         </div>
-        <div className="addedPlayerList">
-          <h4 className="headerSelectedPlayers">
+        <div className="added-player-list">
+          <h4 className="header-selected-players">
             Selected Players{" "}
             <div className="listCount">{event.selectedPlayers.length}/10</div>
           </h4>
@@ -130,7 +130,7 @@ function Start() {
             </div>
           </DndContext>
 
-          <div className="startBtn">
+          <div className="start-btn">
             <Button
               isLink
               label="Start"
@@ -154,8 +154,8 @@ function Start() {
           updateEvent({ newPlayer: "", isNewPlayerOverlayOpen: false });
         }}
       >
-        <div className="createPlayerOverlay">
-          <p className="overlayHeading">New Player</p>
+        <div className="create-player-overlay">
+          <p className="overlay-heading">New Player</p>
           <DefaultInputField
             name={""}
             value={event.newPlayer}
@@ -165,7 +165,7 @@ function Start() {
           />
           {event.errormessage && <p id="error-message">{event.errormessage}</p>}
           <Button
-            iconStyling="userPlus"
+            iconStyling="user-plus"
             label="Player Input"
             iconSrc={userPLus}
             handleClick={() => {

@@ -37,7 +37,7 @@ export default function NavigationBar() {
   ];
   return (
     <div className="navigation">
-      <img className="deepblueIcon" src={Madebydeepblue} alt="" />
+      <img className="deepblue-icon" src={Madebydeepblue} alt="" />
       {navItems.map((item) => (
         <button
           key={item.id}

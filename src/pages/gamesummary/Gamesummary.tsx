@@ -36,7 +36,7 @@ function Gamesummary(): JSX.Element {
         <Link
           onClick={() => functions.undoFromSummary()}
           to="/game"
-          className="undoButton"
+          className="undo-button"
         >
           <img src={Undo} alt="Undo last action" />
         </Link>

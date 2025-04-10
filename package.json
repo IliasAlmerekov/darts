@@ -34,15 +34,8 @@
     "eject": "react-scripts eject",
     "eslint": "eslint ./src",
     "stylelint": "stylelint **/*.css",
-    "prepare": "husky"
-  },
-  "lint-staged": {
-    "*.{js, tsx}": [
-      "eslint ./src"
-    ],
-    "*.{css}": [
-      "stylelint **/*.css"
-    ]
+    "prepare": "husky",
+    "husky": "npm run stylelint npm run eslint"
   },
   "browserslist": {
     "production": [

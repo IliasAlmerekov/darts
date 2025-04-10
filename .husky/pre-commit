@@ -1,3 +1,5 @@
 echo "🔍 Checking the code before committing..."
 
-npx lint-staged
+npm run eslint
+
+npm run stylelint

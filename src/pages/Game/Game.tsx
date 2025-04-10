@@ -75,7 +75,7 @@ function Game() {
         src={deleteIcon}
       >
         <div className="finish-game-overlay">
-          <p className="overlayHeading">Continue Game?</p>
+          <p className="overlay-heading">Continue Game?</p>
           <div>
             <Button
               label="Finish"
@@ -116,7 +116,7 @@ function Game() {
         }}
       >
         <div className="settingsOverlay">
-          <p className="overlayHeading">Settings</p>
+          <p className="overlay-heading">Settings</p>
 
           <div className="overlayBody">
             <div className="settingsContainer">

@@ -27,7 +27,7 @@ function FinishedGamePlayerItemList({ userMap }: Props) {
 
   return (
     <div className="finished-player-list">
-      <div className="copylarge finishedplayers">Finished Players</div>
+      <div className="copylarge finished-players">Finished Players</div>
       {userMap.map((item, index) => (
         <FinishedGamePlayerItem
           key={index}
