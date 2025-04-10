@@ -28,7 +28,10 @@ function Game() {
   }, [event.throwCount, event.isFinishGameOverlayOpen, functions]);
 
   useEffect(() => {
-    if (event.finishedPlayerList.length === event.list.length) {
+    if (
+      event.list.length > 0 &&
+      event.finishedPlayerList.length === event.list.length
+    ) {
       updateEvent({
         winnerList: event.finishedPlayerList,
         lastHistory: event.history,
@@ -220,7 +223,7 @@ function Game() {
             functions.handleThrow(
               event.playerList[event.playerTurn],
               event.throwCount,
-              value
+              value,
             )
           }
           isOverlayOpen={event.isFinishGameOverlayOpen}

@@ -1,4 +1,4 @@
-import "./OverviewPlayerItem";
+import "./OverviewPlayerItem.css";
 import React from "react";
 
 type Props = {

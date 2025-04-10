@@ -30,6 +30,8 @@ function Gamesummary(): JSX.Element {
     functions.savedFinishedGameToLS(newList);
   }, [newList, functions]);
 
+  localStorage.removeItem("OngoinGame");
+
   return (
     <div className="summary">
       <div>
