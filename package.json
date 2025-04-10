@@ -49,6 +49,7 @@
     "@commitlint/config-conventional": "^19.8.0",
     "@eslint/js": "^9.23.0",
     "eslint": "^8.57.1",
+    "eslint-config-prettier": "^10.1.2",
     "eslint-plugin-jsx-a11y": "^6.10.2",
     "eslint-plugin-react": "^7.37.4",
     "eslint-plugin-react-hooks": "^5.2.0",
@@ -56,15 +57,22 @@
     "knip": "^5.50.1",
     "lint-staged": "^15.5.0",
     "prettier": "^3.5.3",
-    "stylelint": "^16.18.0",
+    "stylelint": "^14.16.1",
     "stylelint-config-prettier": "^9.0.5",
-    "stylelint-config-standard": "^38.0.0",
-    "stylelint-prettier": "^5.0.3",
+    "stylelint-config-standard": "^29.0.0",
     "typescript-eslint": "^8.29.0"
   },
   "lint-staged": {
     "*.{js,ts,jsx,tsx}": [
+      "prettier --write",
       "eslint --fix"
+    ],
+    "*.{css}": [
+      "stylelint --fix",
+      "prettier --write"
+    ],
+    "*.{json,md}": [
+      "prettier --write"
     ]
   }
 }
