@@ -13,9 +13,9 @@ declare namespace BASIC {
   };
 
   type Round = {
-    throw1?: number;
-    throw2?: number;
-    throw3?: number;
+    throw1?: number | string;
+    throw2?: number | string;
+    throw3?: number | string;
     isRoundBust?: boolean;
   };
 
