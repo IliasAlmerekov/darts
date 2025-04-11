@@ -11,15 +11,15 @@ import FinishedGamePlayerItemList from "../../components/GamePlayerItem/Finished
 import LinkButton from "../../components/LinkButton/LinkButton";
 import deleteIcon from "../../icons/delete.svg";
 import Undo from "../../icons/undo-copy.svg";
-import { newSettings } from "../../stores/settings";
 import { useUser } from "../../provider/UserProvider";
+import settingsIcon from "../../icons/settings-inactive.svg";
+import SettingsGroupBtn from "../../components/Button/SettingsGroupBtn";
 
 function Game() {
-  const { event, updateEvent, functions } = useUser();
-
-  const navigate = useNavigate();
-
   const WIN_SOUND_PATH = "/sounds/win-sound.mp3";
+
+  const { event, updateEvent, functions } = useUser();
+  const navigate = useNavigate();
 
   useEffect(() => {
     if (event.throwCount === 3 && !event.isFinishGameOverlayOpen) {
@@ -108,77 +108,38 @@ function Game() {
           updateEvent({ isSettingsOverlayOpen: false });
         }}
       >
-        <div className="settingsOverlay">
-          <p className="overlay-heading">Settings</p>
-
-          <div className="overlayBody">
-            <div className="settingsContainer">
-              <div>Game Mode</div>
-              <div className="buttonContainer">
-                <button
-                  className={`${event.selectedGameMode === "single-out" ? "active" : ""}`}
-                  onClick={() => functions.handleGameModeClick("single-out")}
-                >
-                  Single-out
-                </button>
-                <button
-                  className={`${event.selectedGameMode === "double-out" ? "active" : ""}`}
-                  onClick={() => functions.handleGameModeClick("double-out")}
-                >
-                  Double-out
-                </button>
-                <button
-                  className={`${event.selectedGameMode === "triple-out" ? "active" : ""}`}
-                  onClick={() => functions.handleGameModeClick("triple-out")}
-                >
-                  Triple-out
-                </button>
-              </div>
-            </div>
-            <div className="settingsContainer">
-              <div>Punkte</div>
-              <div className="buttonContainer">
-                <button
-                  className={`${event.selectedPoints === 101 ? "active" : ""}`}
-                  onClick={() => functions.handlePointsClick(101)}
-                >
-                  101
-                </button>
-                <button
-                  className={`${event.selectedPoints === 201 ? "active" : ""}`}
-                  onClick={() => functions.handlePointsClick(201)}
-                >
-                  201
-                </button>
-                <button
-                  className={`${event.selectedPoints === 301 ? "active" : ""}`}
-                  onClick={() => functions.handlePointsClick(301)}
-                >
-                  301
-                </button>
-                <button
-                  className={`${event.selectedPoints === 401 ? "active" : ""}`}
-                  onClick={() => functions.handlePointsClick(401)}
-                >
-                  401
-                </button>
-                <button
-                  className={`${event.selectedPoints === 501 ? "active" : ""}`}
-                  onClick={() => functions.handlePointsClick(501)}
-                >
-                  501
-                </button>
-              </div>
-            </div>
+        <div className="settings-overlay">
+          <h3 className="overlay-headline">Settings</h3>
+          <div className="settings-body-container">
+            <SettingsGroupBtn
+              title="Game Mode"
+              options={[
+                { label: "Single-out", id: "single-out" },
+                { label: "Double-out", id: "double-out" },
+                { label: "Triple-out", id: "triple-out" },
+              ]}
+              selectedId={event.selectedGameMode}
+              onClick={functions.handleGameModeClick}
+            />
+            <SettingsGroupBtn
+              title="Punkte"
+              options={[
+                { label: "101", id: 101 },
+                { label: "201", id: 201 },
+                { label: "301", id: 301 },
+                { label: "401", id: 401 },
+                { label: "501", id: 501 },
+              ]}
+              selectedId={event.selectedPoints}
+              onClick={functions.handlePointsClick}
+            />
           </div>
           <Button
             className="settingsOverlayBtn"
             type="primary"
             label="Save"
             handleClick={() => {
-              newSettings(event.selectedGameMode, event.selectedPoints);
-              console.log("test", event.selectedGameMode, event.selectedPoints);
-              updateEvent({ isSettingsOverlayOpen: false });
+              window.location.reload();
             }}
             link={""}
           />
@@ -210,8 +171,8 @@ function Game() {
         />
       </div>
       <LinkButton
-        className="settingsBtn"
-        label="Settings"
+        className="settings-btn"
+        label={<img src={settingsIcon} alt="Settings" />}
         handleClick={() => updateEvent({ isSettingsOverlayOpen: true })}
       />
     </>

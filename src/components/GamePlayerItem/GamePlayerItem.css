@@ -49,6 +49,15 @@
   color: var(--blue);
 }
 
+.active-player-name {
+  font-size: 24px;
+  font-weight: 700;
+  line-height: 28.8px;
+  letter-spacing: 0.02em;
+  text-align: left;
+  color: var(--blue);
+}
+
 .value-display {
   font-size: 20px;
   line-height: 24px;

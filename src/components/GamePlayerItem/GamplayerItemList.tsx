@@ -8,16 +8,10 @@ type Props = {
   isActive?: boolean;
   score: number;
   userMap: BASIC.WinnerPlayerProps[];
-  gamePlayerItemThrow1?: BASIC.Round;
-  gamePlayerItemThrow2?: BASIC.Round;
-  gamePlayerItemThrow3?: BASIC.Round;
   round: number;
   isBust?: boolean;
   throwCount?: number;
   roundscount?: BASIC.Round;
-  gamePlayerItemPrevThrow1?: BASIC.Round;
-  gamePlayerItemPrevThrow2?: BASIC.Round;
-  gamePlayerItemPrevThrow3?: BASIC.Round;
 };
 
 function GamePlayerItemList({ ...props }: Props) {

@@ -19,7 +19,7 @@
   gap: 16px;
   padding: 8px 16px;
   border: none;
-  color: #000021;
+  color: var(--darkblue);
   border-radius: 9999px;
   background: transparent;
   transition: all 0.2s ease;
@@ -34,12 +34,12 @@
 }
 
 .tab-button.active {
-  background-color: #0000db;
-  color: #fff;
+  background-color: var(--blue);
+  color: var(--white);
   font-weight: 700;
 }
 
 .tab-button.inactive {
-  color: #000021;
+  color: var(--darkblue);
   font-weight: 700;
 }

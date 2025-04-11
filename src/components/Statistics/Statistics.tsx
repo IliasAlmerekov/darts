@@ -12,8 +12,6 @@ export default function Playerstats(): JSX.Element {
   const [sortMethod, setSortMethod] = useState("alphabetically");
   const allStats = functions.getAllPlayerStats();
 
-  console.log(allStats);
-
   const sortedStats = [...allStats].sort((a, b) => {
     if (sortMethod === "alphabetically") {
       return a.name.localeCompare(b.name);
@@ -68,17 +66,12 @@ export default function Playerstats(): JSX.Element {
                 <div className="round-stat">
                   <span className="stat-label">
                     Ø Round{" "}
-                    <span className="stat-value">
-                      {Math.round(player.averageRoundScore)}
-                    </span>
+                    <span className="stat-value">{Math.round(player.averageRoundScore)}</span>
                   </span>
                 </div>
                 <div className="games-stat">
                   <span className="stat-label">
-                    Played games{" "}
-                    <span className="stat-value">
-                      {Math.round(player.games)}
-                    </span>
+                    Played games <span className="stat-value">{Math.round(player.games)}</span>
                   </span>
                 </div>
               </div>

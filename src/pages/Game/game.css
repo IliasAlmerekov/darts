@@ -24,3 +24,28 @@
   text-align: left;
   gap: 8px;
 }
+
+.settings-btn {
+  right: 32px;
+  top: 32px;
+  position: absolute;
+}
+
+.overlay-headline {
+  font-weight: 700;
+  line-height: 24px;
+  color: #000;
+  margin: 0;
+}
+
+.setting-overlay {
+  width: 100%;
+  padding: 48px;
+}
+
+.settings-body-container {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding-top: 48px;
+}

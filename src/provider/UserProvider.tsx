@@ -9,7 +9,7 @@ import React, {
 } from "react";
 import { arrayMove } from "@dnd-kit/sortable";
 import { DragEndEvent } from "@dnd-kit/core";
-import { $settings } from "../stores/settings";
+import { $settings, newSettings } from "../stores/settings";
 import { useStore } from "@nanostores/react";
 import { NavigateFunction } from "react-router-dom";
 
@@ -109,8 +109,8 @@ interface GameFunctions {
   resetGame: () => void;
   undoFromSummary: () => void;
   handleUndo: () => void;
-  handleGameModeClick: (mode: string) => void;
-  handlePointsClick: (points: number) => void;
+  handleGameModeClick: (mode: string | number) => void;
+  handlePointsClick: (points: string | number) => void;
   handleThrow: (
     value: BASIC.WinnerPlayerProps,
     throwCount: number,
@@ -669,14 +669,6 @@ export const UserProvider = ({ children }: UserProviderProps) => {
     }
   }
 
-  const handleGameModeClick = (gameMode: string) => {
-    updateEvent({ selectedGameMode: gameMode });
-  };
-
-  const handlePointsClick = (points: number) => {
-    updateEvent({ selectedPoints: points });
-  };
-
   const isDouble = (throwValue: string) =>
     typeof throwValue === "string" && throwValue.startsWith("D");
 
@@ -728,7 +720,7 @@ export const UserProvider = ({ children }: UserProviderProps) => {
       ];
     const throwKey = `throw${currentThrow + 1}` as "throw1" | "throw2" | "throw3";
 
-    currentPlayerThrows[throwKey] = actualScore;
+    currentPlayerThrows[throwKey] = currentScoreAchieved;
     updateEvent({ playerScore: updatedPlayerScore });
 
     const isDoubleOutMode = event.selectedGameMode === "double-out";
@@ -827,6 +819,17 @@ export const UserProvider = ({ children }: UserProviderProps) => {
     const updatedFinishedPlayerList = [...event.finishedPlayerList, ...sortedPlayers];
     updateEvent({ finishedPlayerList: updatedFinishedPlayerList });
   }
+
+  const handleGameModeClick = (id: string | number) => {
+    const mode = id.toString();
+    newSettings(mode, storeSettings.points);
+    console.log(mode);
+  };
+
+  const handlePointsClick = (id: string | number) => {
+    const points = Number(id);
+    newSettings(storeSettings.gameMode, points);
+  };
 
   const functions: GameFunctions = {
     getFinishedGamesSummary,

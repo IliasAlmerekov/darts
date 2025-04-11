@@ -14,10 +14,7 @@ import DefaultInputField from "../../components/InputField/DefaultInputField";
 import deleteIcon from "../../icons/delete.svg";
 import clsx from "clsx";
 import { DndContext } from "@dnd-kit/core";
-import {
-  SortableContext,
-  verticalListSortingStrategy,
-} from "@dnd-kit/sortable";
+import { SortableContext, verticalListSortingStrategy } from "@dnd-kit/sortable";
 import { restrictToVerticalAxis } from "@dnd-kit/modifiers";
 import { useUser } from "../../provider/UserProvider";
 
@@ -43,109 +40,14 @@ function Start() {
       } else {
         updateEvent({ selectedPlayers: event.list });
         const playersFromLS = localStorage.getItem("UserUnselected");
-        const playersFromLocalStorage =
-          !!playersFromLS && JSON.parse(playersFromLS);
+        const playersFromLocalStorage = !!playersFromLS && JSON.parse(playersFromLS);
         updateEvent({ unselectedPlayers: playersFromLocalStorage || [] });
       }
     }
   }, [event.list, functions, updateEvent]);
 
   return (
-    <div className="start">
-      <NavigationBar />
-      <>
-        <div className="existing-player-list">
-          <div className="header">
-            <h4 className="header-unselected-players">
-              Unselected <br /> Players
-            </h4>
-          </div>
-
-          {event.unselectedPlayers.length > 0 && (
-            <div
-              className={clsx("unselected-players", {
-                enabled: event.selectedPlayers.length === 10,
-              })}
-            >
-              {event.unselectedPlayers.map((player: PlayerProps) => {
-                return (
-                  <UnselectedPlayerItem
-                    {...player}
-                    key={player.id}
-                    handleClickOrDelete={() => {
-                      functions.handleSelectPlayer(player.name, player.id);
-                    }}
-                    src={arrowRight}
-                    alt="Select player arrow"
-                    isClicked={
-                      event.clickedPlayerId === player.id
-                        ? event.clickedPlayerId
-                        : undefined
-                    }
-                  />
-                );
-              })}
-            </div>
-          )}
-
-          <div className="bottom">
-            <LinkButton
-              className="create-new-player-button h4"
-              label="Create new Player"
-              icon={Plus}
-              handleClick={() => updateEvent({ isNewPlayerOverlayOpen: true })}
-            />
-          </div>
-        </div>
-        <div className="added-player-list">
-          <h4 className="header-selected-players">
-            Selected Players{" "}
-            <div className="listCount">{event.selectedPlayers.length}/10</div>
-          </h4>
-          <DndContext
-            modifiers={[restrictToVerticalAxis]}
-            onDragEnd={functions.handleDragEnd}
-            onDragMove={() => updateEvent({ dragEnd: false })}
-          >
-            <div className="selectedPlayerListScroll">
-              <SortableContext
-                items={event.selectedPlayers}
-                strategy={verticalListSortingStrategy}
-              >
-                {event.selectedPlayers.map(
-                  (player: { name: string; id: number }, index: number) => (
-                    <SelectedPlayerItem
-                      {...player}
-                      key={index}
-                      user={player}
-                      handleClick={() =>
-                        functions.handleUnselect(player.name, player.id)
-                      }
-                      alt="Unselect player cross"
-                      dragEnd={event.dragEnd}
-                    />
-                  )
-                )}
-              </SortableContext>
-            </div>
-          </DndContext>
-
-          <div className="start-btn">
-            <Button
-              isLink
-              label="Start"
-              link="/game"
-              disabled={event.selectedPlayers.length < 2}
-              type="secondary"
-              handleClick={() => {
-                functions.addUnselectedUserListToLs(event.unselectedPlayers);
-                functions.playSound(START_SOUND_PATH);
-                functions.resetGame();
-              }}
-            />
-          </div>
-        </div>
-      </>
+    <div className="main">
       <Overlay
         className="overlay-box"
         src={deleteIcon}
@@ -175,6 +77,97 @@ function Start() {
           />
         </div>
       </Overlay>
+      <div className="start">
+        <NavigationBar />
+        <>
+          <div className="existing-player-list">
+            <div className="header">
+              <h4 className="header-unselected-players">
+                Unselected <br /> Players
+              </h4>
+            </div>
+
+            {event.unselectedPlayers.length > 0 && (
+              <div
+                className={clsx("unselected-players", {
+                  enabled: event.selectedPlayers.length === 10,
+                })}
+              >
+                {event.unselectedPlayers.map((player: PlayerProps) => {
+                  return (
+                    <UnselectedPlayerItem
+                      {...player}
+                      key={player.id}
+                      handleClickOrDelete={() => {
+                        functions.handleSelectPlayer(player.name, player.id);
+                      }}
+                      src={arrowRight}
+                      alt="Select player arrow"
+                      isClicked={
+                        event.clickedPlayerId === player.id ? event.clickedPlayerId : undefined
+                      }
+                    />
+                  );
+                })}
+              </div>
+            )}
+
+            <div className="bottom">
+              <LinkButton
+                className="create-new-player-button h4"
+                label="Create new Player"
+                icon={Plus}
+                handleClick={() => updateEvent({ isNewPlayerOverlayOpen: true })}
+              />
+            </div>
+          </div>
+          <div className="added-player-list">
+            <h4 className="header-selected-players">
+              Selected Players <div className="listCount">{event.selectedPlayers.length}/10</div>
+            </h4>
+            <DndContext
+              modifiers={[restrictToVerticalAxis]}
+              onDragEnd={functions.handleDragEnd}
+              onDragMove={() => updateEvent({ dragEnd: false })}
+            >
+              <div className="selectedPlayerListScroll">
+                <SortableContext
+                  items={event.selectedPlayers}
+                  strategy={verticalListSortingStrategy}
+                >
+                  {event.selectedPlayers.map(
+                    (player: { name: string; id: number }, index: number) => (
+                      <SelectedPlayerItem
+                        {...player}
+                        key={index}
+                        user={player}
+                        handleClick={() => functions.handleUnselect(player.name, player.id)}
+                        alt="Unselect player cross"
+                        dragEnd={event.dragEnd}
+                      />
+                    ),
+                  )}
+                </SortableContext>
+              </div>
+            </DndContext>
+
+            <div className="start-btn">
+              <Button
+                isLink
+                label="Start"
+                link="/game"
+                disabled={event.selectedPlayers.length < 2}
+                type="secondary"
+                handleClick={() => {
+                  functions.addUnselectedUserListToLs(event.unselectedPlayers);
+                  functions.playSound(START_SOUND_PATH);
+                  functions.resetGame();
+                }}
+              />
+            </div>
+          </div>
+        </>
+      </div>
     </div>
   );
 }
