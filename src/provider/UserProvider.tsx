@@ -50,8 +50,7 @@ interface GameSummury {
 const getUserFromLS = (): PlayerProps[] => {
   if (localStorage.getItem("User") !== null) {
     const playersFromLS = localStorage.getItem("User");
-    const playersFromLocalStorage =
-      !!playersFromLS && JSON.parse(playersFromLS);
+    const playersFromLocalStorage = !!playersFromLS && JSON.parse(playersFromLS);
     return playersFromLocalStorage;
   } else {
     localStorage.setItem("User", JSON.stringify([]));
@@ -92,9 +91,7 @@ interface GameFunctions {
   handleTabClick: (id: string, navigate: NavigateFunction) => void;
   handleSelectPlayer: (name: string, id: number) => void;
   handleChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
-  handleKeyPess: (
-    name: string,
-  ) => (e: React.KeyboardEvent<HTMLInputElement>) => void;
+  handleKeyPess: (name: string) => (e: React.KeyboardEvent<HTMLInputElement>) => void;
   handleUnselect: (name: string, id: number) => void;
   handleDragEnd: (e: DragEndEvent) => void;
   createPlayer: (name: string) => void;
@@ -150,9 +147,7 @@ const defaultFunctions: GameFunctions = {
   changeActivePlayer: () => {},
   getAllPlayerStats: () => [],
   getFinishedGamesSummary: () => [],
-  handleKeyPess: function (): (
-    e: React.KeyboardEvent<HTMLInputElement>,
-  ) => void {
+  handleKeyPess: function (): (e: React.KeyboardEvent<HTMLInputElement>) => void {
     throw new Error("Function not implemented.");
   },
   getUserFromLS: function (): PlayerProps[] | null {
@@ -243,14 +238,12 @@ export const UserProvider = ({ children }: UserProviderProps) => {
 
   //Start.tsx functions
   const initializePlayerList = useCallback(() => {
-    const initialPlayerList: PlayerProps[] = event.userList.map(
-      (user: BASIC.UserProps) => ({
-        name: user.name,
-        id: user.id,
-        isAdded: false,
-        isClicked: event.clickedPlayerId,
-      }),
-    );
+    const initialPlayerList: PlayerProps[] = event.userList.map((user: BASIC.UserProps) => ({
+      name: user.name,
+      id: user.id,
+      isAdded: false,
+      isClicked: event.clickedPlayerId,
+    }));
     updateEvent({ unselectedPlayers: initialPlayerList });
   }, [event.clickedPlayerId, event.userList, updateEvent]);
 
@@ -299,10 +292,7 @@ export const UserProvider = ({ children }: UserProviderProps) => {
         unselectedPlayers: updatedUnselectedPlayerList,
         list: updatedSelectedPlayerList,
       });
-      localStorage.setItem(
-        "UserUnselected",
-        JSON.stringify(updatedUnselectedPlayerList),
-      );
+      localStorage.setItem("UserUnselected", JSON.stringify(updatedUnselectedPlayerList));
       functions.playSound(SELECT_PLAYER_SOUND_PATH);
     }, 200);
   }
@@ -311,13 +301,12 @@ export const UserProvider = ({ children }: UserProviderProps) => {
     updateEvent({ newPlayer: e.target.value });
   }
 
-  const handleKeyPess =
-    (name: string) => (e: React.KeyboardEvent<HTMLInputElement>) => {
-      if (e.key === "Enter") {
-        updateEvent({ newPlayer: name });
-        functions.createPlayer(name);
-      }
-    };
+  const handleKeyPess = (name: string) => (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === "Enter") {
+      updateEvent({ newPlayer: name });
+      functions.createPlayer(name);
+    }
+  };
 
   function handleUnselect(name: string, id: number) {
     updateEvent({ clickedPlayerId: null });
@@ -346,14 +335,8 @@ export const UserProvider = ({ children }: UserProviderProps) => {
       const activeIndex = event.selectedPlayers.findIndex(
         ({ id }: PlayerProps) => id === active.id,
       );
-      const overIndex = event.selectedPlayers.findIndex(
-        ({ id }: PlayerProps) => id === over.id,
-      );
-      const newArray: PlayerProps[] = arrayMove(
-        event.selectedPlayers,
-        activeIndex,
-        overIndex,
-      );
+      const overIndex = event.selectedPlayers.findIndex(({ id }: PlayerProps) => id === over.id);
+      const newArray: PlayerProps[] = arrayMove(event.selectedPlayers, activeIndex, overIndex);
       updateEvent({
         selectedPlayers: newArray,
         list: newArray,
@@ -375,16 +358,10 @@ export const UserProvider = ({ children }: UserProviderProps) => {
     addUserToLS(name, id);
 
     if (event.selectedPlayers.length === 10) {
-      const updatedUnselectedPlayers = [
-        ...event.unselectedPlayers,
-        { name, isAdded: false, id },
-      ];
+      const updatedUnselectedPlayers = [...event.unselectedPlayers, { name, isAdded: false, id }];
       updateEvent({ unselectedPlayers: updatedUnselectedPlayers });
     } else {
-      const updatedSelectedPlayers = [
-        ...event.selectedPlayers,
-        { name, isAdded: true, id },
-      ];
+      const updatedSelectedPlayers = [...event.selectedPlayers, { name, isAdded: true, id }];
       updateEvent({
         selectedPlayers: updatedSelectedPlayers,
         list: updatedSelectedPlayers,
@@ -406,17 +383,14 @@ export const UserProvider = ({ children }: UserProviderProps) => {
       console.warn("There are no players to save");
       return null;
     }
-    const savedGames = JSON.parse(
-      localStorage.getItem("FinishedGames") || "[]",
-    );
+    const savedGames = JSON.parse(localStorage.getItem("FinishedGames") || "[]");
 
     const isDuplicate = savedGames.some((game: SavedGame) => {
       const samePlayers =
         game.players.length === players.length &&
         game.players.every((p, i) => p.id === players[i].id);
 
-      const closeDate =
-        Math.abs(new Date(game.date).getTime() - new Date().getTime()) < 2000;
+      const closeDate = Math.abs(new Date(game.date).getTime() - new Date().getTime()) < 2000;
 
       return samePlayers && closeDate;
     });
@@ -430,11 +404,14 @@ export const UserProvider = ({ children }: UserProviderProps) => {
       date: new Date().toISOString(),
       players: players.map((player) => {
         const rounds = Array.isArray(player.rounds) ? player.rounds : [];
-        const roundCount = rounds.length;
+
+        const completedRounds =
+          rounds[rounds.length - 1]?.throw1 === undefined ? rounds.length - 1 : rounds.length;
 
         let totalScorePoints = 0;
 
-        for (const round of rounds) {
+        for (let i = 0; i < completedRounds; i++) {
+          const round = rounds[i];
           for (const throwKey of ["throw1", "throw2", "throw3"] as const) {
             const value = round[throwKey];
             if (typeof value === "number") {
@@ -442,17 +419,14 @@ export const UserProvider = ({ children }: UserProviderProps) => {
             }
           }
         }
-
         const scoreAverage =
-          roundCount > 0
-            ? Number((totalScorePoints / roundCount).toFixed(2))
-            : 0;
+          completedRounds > 0 ? Number((totalScorePoints / completedRounds).toFixed(2)) : 0;
 
         return {
           id: player.id,
           name: player.name,
           totalScore: totalScorePoints,
-          roundCount,
+          roundCount: completedRounds,
           scoreAverage,
           rounds,
           won: player.score === 0,
@@ -471,9 +445,7 @@ export const UserProvider = ({ children }: UserProviderProps) => {
     averageRoundScore: number;
     scoreAverage: number;
   }[] {
-    const savedGames = JSON.parse(
-      localStorage.getItem("FinishedGames") || "[]",
-    );
+    const savedGames = JSON.parse(localStorage.getItem("FinishedGames") || "[]");
 
     const statMap: Record<
       number,
@@ -481,10 +453,8 @@ export const UserProvider = ({ children }: UserProviderProps) => {
         id: number;
         name: string;
         games: number;
-        roundsCount: number;
         totalScore: number;
-        totalRounds: number;
-        rounds: [];
+        completedRounds: number;
       }
     > = {};
 
@@ -493,32 +463,32 @@ export const UserProvider = ({ children }: UserProviderProps) => {
         if (!statMap[player.id]) {
           statMap[player.id] = {
             id: player.id,
-            roundsCount: 0,
             name: player.name,
             games: 0,
             totalScore: 0,
-            totalRounds: 0,
-            rounds: Array.isArray(player.rounds) ? player.rounds : [],
+            completedRounds: 0,
           };
         }
 
         statMap[player.id].games += 1;
 
         if (Array.isArray(player.rounds)) {
-          for (const round of player.rounds) {
-            let roundScore = 0;
-            for (const throwKey of ["throw1", "throw2", "throw3"]) {
-              const value = round[throwKey];
+          const rounds = player.rounds;
+          const completedRounds =
+            rounds[rounds.length - 1]?.throw1 === undefined ? rounds.length - 1 : rounds.length;
+
+          let totalScore = 0;
+          for (let i = 0; i < completedRounds; i++) {
+            const round = rounds[i];
+            for (const key of ["throw1", "throw2", "throw3"] as const) {
+              const value = round[key];
               if (typeof value === "number") {
-                roundScore += value;
+                totalScore += value;
               }
             }
-            statMap[player.id].totalScore += roundScore;
-            statMap[player.id].totalRounds += 1;
-            statMap[player.id].roundsCount = player.rounds.length;
           }
-        } else {
-          console.warn("Missed a player without rounds", player);
+          statMap[player.id].totalScore += totalScore;
+          statMap[player.id].completedRounds += completedRounds;
         }
       }
     }
@@ -528,21 +498,19 @@ export const UserProvider = ({ children }: UserProviderProps) => {
       name: player.name,
       games: player.games,
       scoreAverage:
-        player.totalRounds > 0
-          ? Number((player.totalScore / player.roundsCount).toFixed(2))
+        player.completedRounds > 0
+          ? Number((player.totalScore / player.completedRounds).toFixed(2))
           : 0,
       averageRoundScore:
-        player.totalRounds > 0
-          ? Number((player.totalScore / player.totalRounds).toFixed(2))
+        player.completedRounds > 0
+          ? Number((player.totalScore / player.completedRounds).toFixed(2))
           : 0,
     }));
   }
 
   // diese Funktion holt alle Spieldaten aus dem LS, um sie auf der Seite Games Overview anzuzeigen
   function getFinishedGamesSummary(): GameSummury[] {
-    const savedGames: SavedGame[] = JSON.parse(
-      localStorage.getItem("FinishedGames") || "[]",
-    );
+    const savedGames: SavedGame[] = JSON.parse(localStorage.getItem("FinishedGames") || "[]");
 
     return savedGames.map((game: SavedGame) => {
       const players = Array.isArray(game.players) ? game.players : [];
@@ -550,8 +518,7 @@ export const UserProvider = ({ children }: UserProviderProps) => {
 
       const winner = players.find((p: SavedGamePlayer) => p.won);
       const winnerName = winner?.name || "";
-      const winnerRounds =
-        winner && Array.isArray(winner?.rounds) ? winner.rounds.length : 0;
+      const winnerRounds = winner && Array.isArray(winner?.rounds) ? winner.rounds.length : 0;
 
       return {
         id: game.id,
@@ -596,6 +563,7 @@ export const UserProvider = ({ children }: UserProviderProps) => {
       selectedGameMode: event.selectedGameMode,
       history: event.history,
       list: event.list,
+      winnerList: event.winnerList,
     };
     localStorage.setItem("OngoingGame", JSON.stringify(gameStateToSave));
   }, [
@@ -609,6 +577,7 @@ export const UserProvider = ({ children }: UserProviderProps) => {
     event.selectedPoints,
     event.history,
     event.list,
+    event.winnerList,
   ]);
 
   function addUserToLS(name: string, id: number) {
@@ -723,9 +692,7 @@ export const UserProvider = ({ children }: UserProviderProps) => {
       history: [
         ...event.history,
         {
-          finishedPlayerList: JSON.parse(
-            JSON.stringify(event.finishedPlayerList),
-          ),
+          finishedPlayerList: JSON.parse(JSON.stringify(event.finishedPlayerList)),
           playerList: JSON.parse(JSON.stringify(event.playerList)),
           playerScore: event.playerScore,
           throwCount: event.throwCount,
@@ -754,16 +721,12 @@ export const UserProvider = ({ children }: UserProviderProps) => {
       startingScoreRef.current = event.playerList[event.playerTurn].score;
     }
 
-    const updatedPlayerScore =
-      event.playerList[event.playerTurn].score - actualScore;
+    const updatedPlayerScore = event.playerList[event.playerTurn].score - actualScore;
     const currentPlayerThrows =
       event.playerList[event.playerTurn].rounds[
         event.playerList[event.playerTurn].rounds.length - 1
       ];
-    const throwKey = `throw${currentThrow + 1}` as
-      | "throw1"
-      | "throw2"
-      | "throw3";
+    const throwKey = `throw${currentThrow + 1}` as "throw1" | "throw2" | "throw3";
 
     currentPlayerThrows[throwKey] = actualScore;
     updateEvent({ playerScore: updatedPlayerScore });
@@ -772,11 +735,9 @@ export const UserProvider = ({ children }: UserProviderProps) => {
     const isTripleOutMode = event.selectedGameMode === "triple-out";
     const wouldFinishGame = updatedPlayerScore === 0;
     const isDoubleThrow =
-      typeof currentScoreAchieved === "string" &&
-      isDouble(currentScoreAchieved);
+      typeof currentScoreAchieved === "string" && isDouble(currentScoreAchieved);
     const isTripleThrow =
-      typeof currentScoreAchieved === "string" &&
-      isTriple(currentScoreAchieved);
+      typeof currentScoreAchieved === "string" && isTriple(currentScoreAchieved);
 
     const startingScoreThisRound =
       startingScoreRef.current ?? event.playerList[event.playerTurn].score;
@@ -835,23 +796,17 @@ export const UserProvider = ({ children }: UserProviderProps) => {
   function handlePlayerFinishTurn() {
     const updatedPlayerList = [...event.playerList];
     updatedPlayerList[event.playerTurn].isPlaying = false;
-    const finishedPlayers = event.playerList.filter(
-      (player) => !player.isPlaying,
-    );
+    const finishedPlayers = event.playerList.filter((player) => !player.isPlaying);
     event.finishedPlayerList.push(finishedPlayers[0]);
 
-    const unfinishedPlayers = event.playerList.filter(
-      (player) => player.isPlaying,
-    );
+    const unfinishedPlayers = event.playerList.filter((player) => player.isPlaying);
     changeActivePlayer();
-    const nextPlayerIndex =
-      event.playerTurn > unfinishedPlayers.length - 1 ? 0 : event.playerTurn;
+    const nextPlayerIndex = event.playerTurn > unfinishedPlayers.length - 1 ? 0 : event.playerTurn;
     unfinishedPlayers[nextPlayerIndex].isActive = true;
     updateEvent({
       playerList: unfinishedPlayers,
       finishedPlayerList: event.finishedPlayerList,
-      playerTurn:
-        event.playerTurn > unfinishedPlayers.length - 1 ? 0 : event.playerTurn,
+      playerTurn: event.playerTurn > unfinishedPlayers.length - 1 ? 0 : event.playerTurn,
     });
     updateEvent({ winnerList: event.finishedPlayerList });
   }
@@ -861,27 +816,15 @@ export const UserProvider = ({ children }: UserProviderProps) => {
     updatedPlayerList[event.playerTurn].isPlaying = false;
 
     const updatedFinishedPlayerList = [...event.finishedPlayerList];
-    const playersWithNonZeroScore = event.playerList.filter(
-      (player) => player.score !== 0,
-    );
-    const playersWithZeroScore = event.playerList.filter(
-      (player) => player.score === 0,
-    );
-    updatedFinishedPlayerList.push(
-      playersWithZeroScore[0],
-      playersWithNonZeroScore[0],
-    );
+    const playersWithNonZeroScore = event.playerList.filter((player) => player.score !== 0);
+    const playersWithZeroScore = event.playerList.filter((player) => player.score === 0);
+    updatedFinishedPlayerList.push(playersWithZeroScore[0], playersWithNonZeroScore[0]);
     updateEvent({ finishedPlayerList: updatedFinishedPlayerList });
   }
   // wir sortieren main-array in absteigender Reihenfolge
   function sortPlayer() {
-    const sortedPlayers = [...event.playerList].sort(
-      (a, b) => b.score - a.score,
-    );
-    const updatedFinishedPlayerList = [
-      ...event.finishedPlayerList,
-      ...sortedPlayers,
-    ];
+    const sortedPlayers = [...event.playerList].sort((a, b) => b.score - a.score);
+    const updatedFinishedPlayerList = [...event.finishedPlayerList, ...sortedPlayers];
     updateEvent({ finishedPlayerList: updatedFinishedPlayerList });
   }
 

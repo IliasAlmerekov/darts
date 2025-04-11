@@ -28,10 +28,7 @@ function Game() {
   }, [event.throwCount, event.isFinishGameOverlayOpen, functions]);
 
   useEffect(() => {
-    if (
-      event.list.length > 0 &&
-      event.finishedPlayerList.length === event.list.length
-    ) {
+    if (event.list.length > 0 && event.finishedPlayerList.length === event.list.length) {
       updateEvent({
         winnerList: event.finishedPlayerList,
         lastHistory: event.history,
@@ -54,10 +51,7 @@ function Game() {
   useEffect(() => {
     if (!event.playerList || event.playerList.length === 0) return;
 
-    if (
-      event.playerTurn === 5 ||
-      event.playerTurn + 1 === event.playerList.length
-    ) {
+    if (event.playerTurn === 5 || event.playerTurn + 1 === event.playerList.length) {
       const player = document.getElementById(`playerid-${event.playerTurn}`);
       player?.scrollIntoView({
         behavior: "smooth",
@@ -72,11 +66,7 @@ function Game() {
 
   return (
     <>
-      <Overlay
-        className="overlay-box"
-        isOpen={event.isFinishGameOverlayOpen}
-        src={deleteIcon}
-      >
+      <Overlay className="overlay-box" isOpen={event.isFinishGameOverlayOpen} src={deleteIcon}>
         <div className="finish-game-overlay">
           <p className="overlay-heading">Continue Game?</p>
           <div>
@@ -126,25 +116,19 @@ function Game() {
               <div>Game Mode</div>
               <div className="buttonContainer">
                 <button
-                  className={`${
-                    event.selectedGameMode === "single-out" ? "active" : ""
-                  }`}
+                  className={`${event.selectedGameMode === "single-out" ? "active" : ""}`}
                   onClick={() => functions.handleGameModeClick("single-out")}
                 >
                   Single-out
                 </button>
                 <button
-                  className={`${
-                    event.selectedGameMode === "double-out" ? "active" : ""
-                  }`}
+                  className={`${event.selectedGameMode === "double-out" ? "active" : ""}`}
                   onClick={() => functions.handleGameModeClick("double-out")}
                 >
                   Double-out
                 </button>
                 <button
-                  className={`${
-                    event.selectedGameMode === "triple-out" ? "active" : ""
-                  }`}
+                  className={`${event.selectedGameMode === "triple-out" ? "active" : ""}`}
                   onClick={() => functions.handleGameModeClick("triple-out")}
                 >
                   Triple-out
@@ -220,11 +204,7 @@ function Game() {
         <NumberButton value="Undo" handleClick={functions.handleUndo} />
         <Keyboard
           handleClick={(value) =>
-            functions.handleThrow(
-              event.playerList[event.playerTurn],
-              event.throwCount,
-              value,
-            )
+            functions.handleThrow(event.playerList[event.playerTurn], event.throwCount, value)
           }
           isOverlayOpen={event.isFinishGameOverlayOpen}
         />

@@ -21,13 +21,15 @@ function Podium({ ...props }: Props): JSX.Element {
       {props.userMap.map((item: BASIC.WinnerPlayerProps, index: number) => {
         const completedRound =
           item.roundCount ??
-          item.rounds[item.rounds.length - 1].throw1 === undefined
+          (item.rounds[item.rounds.length - 1]?.throw1 === undefined
             ? item.rounds.length - 1
-            : item.rounds.length;
+            : item.rounds.length);
 
         const averageScore =
-          item.scoreAverage ??
-          Math.round((event.selectedPoints - item.score) / completedRound);
+          completedRound > 0
+            ? (item.scoreAverage ??
+              Math.round((event.selectedPoints - item.score) / completedRound))
+            : 0;
 
         return (
           <PodiumPlayerCard

@@ -4,7 +4,7 @@ import Button from "../../components/Button/Button";
 import Podium from "../../components/Podium/Podium";
 import Undo from "../../icons/undolinkbutton.svg";
 import { Link } from "react-router-dom";
-import React, { useEffect, useMemo } from "react";
+import React, { useMemo } from "react";
 import { useUser } from "../../provider/UserProvider";
 
 function Gamesummary(): JSX.Element {
@@ -24,22 +24,12 @@ function Gamesummary(): JSX.Element {
     index: 0,
     rounds: [{ throw1: undefined, throw2: undefined, throw3: undefined }],
   });
-  const podiumData =
-    podiumList.length === 2 ? podiumListWithPlaceholder : podiumList;
-  useEffect(() => {
-    functions.savedFinishedGameToLS(newList);
-  }, [newList, functions]);
-
-  localStorage.removeItem("OngoinGame");
+  const podiumData = podiumList.length === 2 ? podiumListWithPlaceholder : podiumList;
 
   return (
     <div className="summary">
       <div>
-        <Link
-          onClick={() => functions.undoFromSummary()}
-          to="/game"
-          className="undo-button"
-        >
+        <Link onClick={() => functions.undoFromSummary()} to="/game" className="undo-button">
           <img src={Undo} alt="Undo last action" />
         </Link>
       </div>
@@ -58,7 +48,11 @@ function Gamesummary(): JSX.Element {
           type="primary"
           isInverted
           className="play-again-button"
-          handleClick={() => functions.resetGame()}
+          handleClick={() => {
+            functions.resetGame();
+            functions.savedFinishedGameToLS(newList);
+            localStorage.removeItem("OngoingGame");
+          }}
         />
       </div>
       <div className="back-to-start-button">
@@ -68,6 +62,10 @@ function Gamesummary(): JSX.Element {
           isLink
           label="Back To Start"
           type="primary"
+          handleClick={() => {
+            functions.savedFinishedGameToLS(newList);
+            localStorage.removeItem("OngoingGame");
+          }}
         />
       </div>
     </div>
