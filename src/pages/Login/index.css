@@ -127,6 +127,7 @@ h1 {
   cursor: pointer;
   font-weight: 500;
   transition: all 0.15s ease-in-out;
+  margin-top: 0px;
 }
 
 .btn-primary {
@@ -143,48 +144,4 @@ h1 {
 .btn-primary:active {
   background-color: #0a58ca;
   transform: translateY(0);
-}
-
-.register-link {
-  display: flex;
-  align-items: center;
-}
-
-.register-link a {
-  color: #0d6efd;
-  text-decoration: none;
-  font-size: 14px;
-}
-
-.register-link a:hover {
-  text-decoration: underline;
-}
-
-/* Responsive Design */
-@media (max-width: 768px) {
-  .login-card-body {
-    padding: 1.5rem;
-  }
-
-  h1 {
-    font-size: 1.5rem;
-  }
-
-  .btn {
-    font-size: 1rem;
-  }
-
-  .form-footer {
-    flex-direction: column;
-    align-items: stretch;
-  }
-
-  .btn-primary {
-    width: 100%;
-  }
-
-  .register-link {
-    justify-content: center;
-    margin-top: 0.5rem;
-  }
 }

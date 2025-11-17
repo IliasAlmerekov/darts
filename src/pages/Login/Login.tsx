@@ -1,41 +1,9 @@
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import "./index.css";
 
 function Login() {
-  const [formData, setFormData] = useState({
-    _username: "", // Wichtig: Symfony erwartet _username
-    _password: "", // Wichtig: Symfony erwartet _password
-  });
-  const [csrfToken, setCsrfToken] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
-
-  const API_URL = process.env.REACT_APP_API_URL || "http://localhost:8001";
-
-  // CSRF Token beim Laden holen
-  useEffect(() => {
-    fetchCsrfToken();
-  }, []);
-
-  const fetchCsrfToken = async () => {
-    try {
-      const response = await fetch(`${API_URL}/api/csrf-token`, {
-        credentials: "include", // Wichtig für Cookies/Sessions
-      });
-      const data = await response.json();
-      setCsrfToken(data.token);
-    } catch (err) {
-      console.error("Failed to fetch CSRF token", err);
-    }
-  };
-
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value } = e.target;
-    setFormData((prev) => ({
-      ...prev,
-      [name]: value,
-    }));
-  };
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -43,37 +11,29 @@ function Login() {
     setLoading(true);
 
     try {
-      const response = await fetch(`${API_URL}/api/login`, {
+      const formData = new FormData(e.currentTarget);
+
+      const response = await fetch(`http://localhost:8001/login`, {
         method: "POST",
+        credentials: "include",
         headers: {
-          "Content-Type": "application/json",
-          "X-Requested-With": "XMLHttpRequest",
+          Accept: "application/json",
         },
-        credentials: "include", // Wichtig für Cookies/Sessions
-        body: JSON.stringify({
-          _username: formData._username,
-          _password: formData._password,
-          _csrf_token: csrfToken,
-        }),
+        body: formData,
       });
 
-      const data = await response.json();
-
       if (!response.ok) {
-        throw new Error(data.message || "Invalid credentials");
+        throw new Error("Invalid credentials");
       }
 
-      if (data.success) {
-        console.log("Login successful", data);
-        // Redirect oder State Update
-        window.location.href = "/dashboard";
-      } else {
-        throw new Error(data.message || "Login failed");
+      const data = await response.json();
+      console.log("Login successful:", data);
+
+      if (data.redirect) {
+        window.location.href = data.redirect;
       }
     } catch (err: any) {
-      setError(err.message);
-      // CSRF Token neu laden nach Fehler
-      fetchCsrfToken();
+      setError(err.message || "Login failed");
     } finally {
       setLoading(false);
     }
@@ -100,9 +60,6 @@ function Login() {
                     name="_username"
                     id="_username"
                     className="form-control"
-                    value={formData._username}
-                    onChange={handleInputChange}
-                    autoComplete="email"
                     required
                     autoFocus
                     disabled={loading}
@@ -119,9 +76,6 @@ function Login() {
                     name="_password"
                     id="_password"
                     className="form-control"
-                    value={formData._password}
-                    onChange={handleInputChange}
-                    autoComplete="current-password"
                     required
                     disabled={loading}
                   />
@@ -135,9 +89,6 @@ function Login() {
                   >
                     {loading ? "Signing in..." : "Sign in"}
                   </button>
-                  <div className="register-link">
-                    <a href="/register">Don't have an account?</a>
-                  </div>
                 </div>
               </form>
             </div>
