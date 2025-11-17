@@ -1,8 +1,5 @@
 import "./start.css";
-import {
-  useEffect,
-  useRef
-} from "react";
+import { useEffect, useRef } from "react";
 import UnselectedPlayerItem from "../../components/PlayerItems/UnselectedPlayerItem";
 import SelectedPlayerItem from "../../components/PlayerItems/SelectedPlayerItem";
 import Plus from "../../icons/plus.svg";
@@ -31,6 +28,7 @@ import {
 } from "@dnd-kit/sortable";
 import { restrictToVerticalAxis } from "@dnd-kit/modifiers";
 import { useUser } from "../../provider/UserProvider";
+import { createNewGame } from "../../api";
 
 export type PlayerProps = {
   id: number;
@@ -38,7 +36,6 @@ export type PlayerProps = {
   isAdded?: boolean;
   isClicked?: number | null;
 };
-
 
 const navItems = [
   {
@@ -168,9 +165,9 @@ function Start() {
             <div className="bottom">
               <LinkButton
                 className="createNewPlayerButton h4"
-                label="Create new Player"
+                label="Create Game"
                 icon={Plus}
-                handleClick={() => updateEvent({ isNewPlayerOverlayOpen: true })}
+                handleClick={() => createNewGame()}
               />
             </div>
           </div>
@@ -195,7 +192,9 @@ function Start() {
                       {...player}
                       key={index}
                       user={player}
-                      handleClick={() => functions.handleUnselect(player.name, player.id)}
+                      handleClick={() =>
+                        functions.handleUnselect(player.name, player.id)
+                      }
                       alt="Unselect player cross"
                       dragEnd={event.dragEnd}
                     />
@@ -214,7 +213,7 @@ function Start() {
                 handleClick={() => {
                   functions.addUnselectedUserListToLs(event.unselectedPlayers);
                   functions.playSound(START_SOUND_PATH);
-                  functions.resetGame()
+                  functions.resetGame();
                 }}
               />
             </div>
@@ -233,7 +232,7 @@ function Start() {
         <div className="createPlayerOverlay">
           <p className="overlayHeading">New Player</p>
           <DefaultInputField
-           name={""}
+            name={""}
             value={event.newPlayer}
             placeholder="Playername"
             onChange={functions.handleChange}
