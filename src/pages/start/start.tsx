@@ -28,7 +28,6 @@ import {
 } from "@dnd-kit/sortable";
 import { restrictToVerticalAxis } from "@dnd-kit/modifiers";
 import { useUser } from "../../provider/UserProvider";
-import { createNewGame } from "../../api";
 
 export type PlayerProps = {
   id: number;
@@ -167,7 +166,7 @@ function Start() {
                 className="createNewPlayerButton h4"
                 label="Create Game"
                 icon={Plus}
-                handleClick={() => createNewGame()}
+                handleClick={() => console.log("Create new player")}
               />
             </div>
           </div>
