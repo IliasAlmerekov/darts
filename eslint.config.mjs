@@ -10,6 +10,7 @@ export default [
   ...tseslint.configs.recommended,
   {
     files: ["**/*.ts", "**/*.tsx"],
+    ignores: ["**/*.config.ts", "**/*.config.js", "**/*.config.mjs"],
     languageOptions: {
       parser: tseslint.parser,
       parserOptions: {
