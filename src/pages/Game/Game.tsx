@@ -28,19 +28,22 @@ function Game() {
   }, [event.throwCount, event.isFinishGameOverlayOpen, functions]);
 
   useEffect(() => {
-    if (event.list.length > 0 && event.finishedPlayerList.length === event.list.length) {
+    if (
+      event.playerList.length > 0 &&
+      event.finishedPlayerList.length === event.playerList.length
+    ) {
       updateEvent({
         winnerList: event.finishedPlayerList,
         lastHistory: event.history,
       });
       navigate("/summary");
-      if (event.list.length === 2) {
+      if (event.playerList.length === 2) {
         functions.playSound(WIN_SOUND_PATH);
       }
     }
   }, [
     event.finishedPlayerList.length,
-    event.list.length,
+    event.playerList.length,
     event.finishedPlayerList,
     event.history,
     functions,

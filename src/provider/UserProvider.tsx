@@ -47,13 +47,12 @@ interface GameSummury {
   players: SavedGamePlayer[];
 }
 
-const getUserFromLS = (): PlayerProps[] => {
-  if (localStorage.getItem("User") !== null) {
-    const playersFromLS = localStorage.getItem("User");
+const getSelectedPlayersFromLS = (): PlayerProps[] => {
+  if (localStorage.getItem("SelectedPlayers") !== null) {
+    const playersFromLS = localStorage.getItem("SelectedPlayers");
     const playersFromLocalStorage = !!playersFromLS && JSON.parse(playersFromLS);
     return playersFromLocalStorage;
   } else {
-    localStorage.setItem("User", JSON.stringify([]));
     return [];
   }
 };
@@ -95,7 +94,8 @@ interface GameFunctions {
   handleUnselect: (name: string, id: number) => void;
   handleDragEnd: (e: DragEndEvent) => void;
   createPlayer: (name: string) => void;
-  getUserFromLS: () => PlayerProps[] | null;
+  // getUserFromLS: () => PlayerProps[] | null;
+  getSelectedPlayersFromLS: () => PlayerProps[];
   savedFinishedGameToLS: (players: BASIC.WinnerPlayerProps[]) => void;
   getAllPlayerStats: () => {
     id: number;
@@ -150,7 +150,10 @@ const defaultFunctions: GameFunctions = {
   handleKeyPess: function (): (e: React.KeyboardEvent<HTMLInputElement>) => void {
     throw new Error("Function not implemented.");
   },
-  getUserFromLS: function (): PlayerProps[] | null {
+  // getUserFromLS: function (): PlayerProps[] | null {
+  //   throw new Error("Function not implemented.");
+  // },
+  getSelectedPlayersFromLS: function (): PlayerProps[] {
     throw new Error("Function not implemented.");
   },
   savedFinishedGameToLS: function (): void {
@@ -168,7 +171,7 @@ const initialValues: GameState = {
   //Start.tsx
   newPlayer: "",
   isNewPlayerOverlayOpen: false,
-  selectedPlayers: [] /* <PlayerProps[]> */,
+  selectedPlayers: getSelectedPlayersFromLS() /* <PlayerProps[]> */,
   unselectedPlayers: [] /* <PlayerProps[]> */,
   dragEnd: undefined /* <boolean> */,
   clickedPlayerId: null /* <number | null> */,
@@ -177,7 +180,7 @@ const initialValues: GameState = {
 
   //App.tsx:
   list: [] /* <PlayerProps[]> */,
-  userList: getUserFromLS(),
+  userList: getSelectedPlayersFromLS(),
   winnerList: [] /* <BASIC.WinnerPlayerProps[]> */,
   lastHistory: [] /* <BASIC.GameState[]> */,
 
@@ -562,7 +565,7 @@ export const UserProvider = ({ children }: UserProviderProps) => {
       selectedPoints: event.selectedPoints,
       selectedGameMode: event.selectedGameMode,
       history: event.history,
-      list: event.list,
+      list: event.selectedPlayers,
       winnerList: event.winnerList,
     };
     localStorage.setItem("OngoingGame", JSON.stringify(gameStateToSave));
@@ -576,9 +579,14 @@ export const UserProvider = ({ children }: UserProviderProps) => {
     event.selectedGameMode,
     event.selectedPoints,
     event.history,
-    event.list,
+    event.selectedPlayers,
     event.winnerList,
   ]);
+
+  // Save selectedPlayers to localStorage
+  useEffect(() => {
+    localStorage.setItem("SelectedPlayers", JSON.stringify(event.selectedPlayers));
+  }, [event.selectedPlayers]);
 
   function addUserToLS(name: string, id: number) {
     const newUserList = [...event.userList];
@@ -596,8 +604,8 @@ export const UserProvider = ({ children }: UserProviderProps) => {
       finishedPlayerList: [],
       history: [],
     });
-    const initialPlayerList: BASIC.WinnerPlayerProps[] = event.list.map(
-      (user: BASIC.UserProps, i: number) => ({
+    const initialPlayerList: BASIC.WinnerPlayerProps[] = event.selectedPlayers.map(
+      (user: PlayerProps, i: number) => ({
         id: user.id,
         name: user.name,
         score: event.selectedPoints,
@@ -844,7 +852,7 @@ export const UserProvider = ({ children }: UserProviderProps) => {
     handleUnselect,
     handleDragEnd,
     createPlayer,
-    getUserFromLS,
+    getSelectedPlayersFromLS,
     addUnselectedUserListToLs,
     addUserToLS,
     resetGame,
