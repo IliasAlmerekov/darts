@@ -33,7 +33,7 @@ function DefaultInputField({
       value={value}
       placeholder={placeholder}
       onChange={onChange}
-      className="copylarge defaultInputField"
+      className="copylarge default-input-field"
     />
   );
 }

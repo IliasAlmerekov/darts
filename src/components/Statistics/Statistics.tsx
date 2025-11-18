@@ -1,39 +1,39 @@
-"use client";
-
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import "./Statistics.css";
 import sortAZIcon from "../../icons/sorting-az.svg";
 import sortScoreIcon from "../../icons/sorting-score.svg";
 import clsx from "clsx";
+import { useUser } from "../../provider/UserProvider";
+import NavigationBar from "../NavigationBar/NavigationBar";
+import ViewToogleButton from "../Button/ViewToogleBtn";
 
 export default function Playerstats(): JSX.Element {
-  const [activeView, setActiveView] = useState("players");
+  const { functions } = useUser();
   const [sortMethod, setSortMethod] = useState("alphabetically");
+  const allStats = functions.getAllPlayerStats();
 
-  const players = [
-    { id: 1, name: "Name", round: 23, games: 89 },
-    { id: 2, name: "Name", round: 23, games: 89 },
-    { id: 3, name: "Name", round: 23, games: 89 },
-    { id: 4, name: "Name", round: 23, games: 89 },
-    { id: 5, name: "Name", round: 23, games: 89 },
-    { id: 6, name: "Name", round: 23, games: 89 },
-    { id: 7, name: "Name", round: 23, games: 89 },
-    { id: 8, name: "Name", round: 23, games: 89 },
-    { id: 9, name: "Name", round: 23, games: 89 },
-    { id: 10, name: "Name", round: 23, games: 89 },
-    { id: 15, name: "Name", round: 23, games: 89 },
-    { id: 99, name: "Name", round: 23, games: 89 },
-  ];
+  const sortedStats = [...allStats].sort((a, b) => {
+    if (sortMethod === "alphabetically") {
+      return a.name.localeCompare(b.name);
+    }
+    if (sortMethod === "score") {
+      return b.averageRoundScore - a.averageRoundScore;
+    }
+    return 0;
+  });
+
+  useEffect(() => {}, [sortedStats]);
 
   return (
     <div className="playerstats-container">
+      <NavigationBar />
       <div className="content">
         <div className="navigation-item">
           <h1>Playerstats</h1>
           <div className="sort-options">
             <button
               className={clsx("sort-button", {
-                activeBtn: sortMethod === "alphabetically",
+                "active-btn": sortMethod === "alphabetically",
               })}
               onClick={() => setSortMethod("alphabetically")}
             >
@@ -45,7 +45,7 @@ export default function Playerstats(): JSX.Element {
             <span className="separator">|</span>
             <button
               className={clsx("sort-button", {
-                activeBtn: sortMethod === "score",
+                "active-btn": sortMethod === "score",
               })}
               onClick={() => setSortMethod("score")}
             >
@@ -55,40 +55,24 @@ export default function Playerstats(): JSX.Element {
               Score
             </button>
           </div>
-
-          <div className="view-toggle">
-            <button
-              className={clsx("view-button", {
-                activeBtn: activeView === "players",
-              })}
-              onClick={() => setActiveView("players")}
-            >
-              Players
-            </button>
-            <button
-              className={clsx("view-button", {
-                activeBtn: activeView === "games",
-              })}
-              onClick={() => setActiveView("games")}
-            >
-              Games
-            </button>
-          </div>
+          <ViewToogleButton />
         </div>
-
         <div className="player-list">
-          {players.map((player) => (
+          {sortedStats.map((player, index) => (
             <div key={player.id} className="player-row">
-              <div className="player-number">{player.id}.</div>
+              <div className="player-number">{index + 1}.</div>
               <div className="player-name">{player.name}</div>
               <div className="player-stats">
                 <div className="round-stat">
-                  <span className="stat-label">Ø Round</span>
-                  <span className="stat-value">{player.round}</span>
+                  <span className="stat-label">
+                    Ø Round{" "}
+                    <span className="stat-value">{Math.round(player.averageRoundScore)}</span>
+                  </span>
                 </div>
                 <div className="games-stat">
-                  <span className="stat-label">Played games</span>
-                  <span className="stat-value">{player.games}</span>
+                  <span className="stat-label">
+                    Played games <span className="stat-value">{Math.round(player.games)}</span>
+                  </span>
                 </div>
               </div>
             </div>

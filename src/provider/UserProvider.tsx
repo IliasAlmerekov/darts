@@ -1,4 +1,4 @@
-import {
+import React, {
   createContext,
   ReactNode,
   useCallback,
@@ -9,17 +9,9 @@ import {
 } from "react";
 import { arrayMove } from "@dnd-kit/sortable";
 import { DragEndEvent } from "@dnd-kit/core";
-import { $settings } from "../stores/settings";
+import { $settings, newSettings } from "../stores/settings";
 import { useStore } from "@nanostores/react";
-import { useNavigate } from "react-router-dom";
-
-const SELECT_PLAYER_SOUND_PATH = "/sounds/select-sound.mp3";
-const UNSELECT_PLAYER_SOUND_PATH = "/sounds/unselect-sound.mp3";
-const ADD_PLAYER_SOUND_PATH = "/sounds/add-player-sound.mp3";
-const ERROR_SOUND_PATH = "/sounds/error-sound.mp3";
-const THROW_SOUND_PATH = "/sounds/throw-sound.mp3";
-const WIN_SOUND_PATH = "/sounds/win-sound.mp3";
-const UNDO_SOUND_PATH = "/sounds/undo-sound.mp3";
+import { NavigateFunction } from "react-router-dom";
 
 interface PlayerProps {
   id: number;
@@ -27,6 +19,44 @@ interface PlayerProps {
   isAdded?: boolean;
   isClicked?: number | null;
 }
+
+interface SavedGamePlayer {
+  id: number;
+  name: string;
+  totaScore: number;
+  rounds: {
+    throw1?: number;
+    throw2?: number;
+    throw3?: number;
+  }[];
+  won: boolean;
+}
+
+interface SavedGame {
+  id: string;
+  date: string;
+  players: SavedGamePlayer[];
+}
+
+interface GameSummury {
+  id: string;
+  date: string;
+  playersCount: number;
+  winnerName: string;
+  winnerRounds: number;
+  players: SavedGamePlayer[];
+}
+
+const getUserFromLS = (): PlayerProps[] => {
+  if (localStorage.getItem("User") !== null) {
+    const playersFromLS = localStorage.getItem("User");
+    const playersFromLocalStorage = !!playersFromLS && JSON.parse(playersFromLS);
+    return playersFromLocalStorage;
+  } else {
+    localStorage.setItem("User", JSON.stringify([]));
+    return [];
+  }
+};
 
 interface GameState {
   newPlayer: string;
@@ -52,12 +82,86 @@ interface GameState {
   selectedGameMode: string;
   history: BASIC.GameState[];
   finishedPlayerList: BASIC.WinnerPlayerProps[];
+  isInitialized: boolean;
 }
+
+interface GameFunctions {
+  initializePlayerList: () => void;
+  playSound: (soundType: string) => void;
+  handleTabClick: (id: string, navigate: NavigateFunction) => void;
+  handleSelectPlayer: (name: string, id: number) => void;
+  handleChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
+  handleKeyPess: (name: string) => (e: React.KeyboardEvent<HTMLInputElement>) => void;
+  handleUnselect: (name: string, id: number) => void;
+  handleDragEnd: (e: DragEndEvent) => void;
+  createPlayer: (name: string) => void;
+  getUserFromLS: () => PlayerProps[] | null;
+  savedFinishedGameToLS: (players: BASIC.WinnerPlayerProps[]) => void;
+  getAllPlayerStats: () => {
+    id: number;
+    name: string;
+    games: number;
+    averageRoundScore: number;
+  }[];
+  getFinishedGamesSummary(): GameSummury[];
+  addUnselectedUserListToLs: (players: PlayerProps[]) => void;
+  addUserToLS: (name: string, id: number) => void;
+  resetGame: () => void;
+  undoFromSummary: () => void;
+  handleUndo: () => void;
+  handleGameModeClick: (mode: string | number) => void;
+  handlePointsClick: (points: string | number) => void;
+  handleThrow: (
+    value: BASIC.WinnerPlayerProps,
+    throwCount: number,
+    playerList: string | number,
+  ) => void;
+  handleBust: (startingScore: number) => void;
+  handlePlayerFinishTurn: () => void;
+  handleLastPlayer: () => void;
+  sortPlayer: () => void;
+  changeActivePlayer: () => void;
+}
+
+const defaultFunctions: GameFunctions = {
+  initializePlayerList: () => {},
+  playSound: () => {},
+  handleTabClick: () => {},
+  handleSelectPlayer: () => {},
+  handleChange: () => {},
+  handleUnselect: () => {},
+  handleDragEnd: () => {},
+  createPlayer: () => {},
+  addUnselectedUserListToLs: () => {},
+  addUserToLS: () => {},
+  resetGame: () => {},
+  undoFromSummary: () => {},
+  handleUndo: () => {},
+  handleGameModeClick: () => {},
+  handlePointsClick: () => {},
+  handleThrow: () => {},
+  handleBust: () => {},
+  handlePlayerFinishTurn: () => {},
+  handleLastPlayer: () => {},
+  sortPlayer: () => {},
+  changeActivePlayer: () => {},
+  getAllPlayerStats: () => [],
+  getFinishedGamesSummary: () => [],
+  handleKeyPess: function (): (e: React.KeyboardEvent<HTMLInputElement>) => void {
+    throw new Error("Function not implemented.");
+  },
+  getUserFromLS: function (): PlayerProps[] | null {
+    throw new Error("Function not implemented.");
+  },
+  savedFinishedGameToLS: function (): void {
+    throw new Error("Function not implemented.");
+  },
+};
 
 interface UserContextType {
   event: GameState;
-  updateEvent: (next: Partial<GameState>) => void;
-  functions: Record<string, (...args: any[]) => void>;
+  updateEvent: React.Dispatch<Partial<GameState>>;
+  functions: GameFunctions;
 }
 
 const initialValues: GameState = {
@@ -89,30 +193,17 @@ const initialValues: GameState = {
   selectedGameMode: "" /* settings.gameMode */,
   history: [] /* <GameState[]> */,
   finishedPlayerList: [] /* <BASIC.WinnerPlayerProps[]> */,
+  isInitialized: false,
 };
 
 export const UserContext = createContext<UserContextType>({
   event: initialValues,
   updateEvent: () => {},
-  functions: {},
+  functions: defaultFunctions,
 });
 
-function getUserFromLS() {
-  if (localStorage.getItem("User") !== null) {
-    const playersFromLS = localStorage.getItem("User");
-    const playersFromLocalStorage =
-      !!playersFromLS && JSON.parse(playersFromLS);
-    return playersFromLocalStorage;
-  } else {
-    localStorage.setItem("User", JSON.stringify([]));
-    return [];
-  }
-}
-
-const reducer = (prev: GameState, next: Partial<GameState>) => {
-  const newEvent = { ...prev, ...next };
-  // guards
-  return newEvent;
+const reducer = (prev: GameState, next: Partial<GameState>): GameState => {
+  return { ...prev, ...next };
 };
 
 type UserProviderProps = {
@@ -124,9 +215,17 @@ export const UserProvider = ({ children }: UserProviderProps) => {
   const [event, updateEvent] = useReducer(reducer, initialValues);
   const startingScoreRef = useRef<number | null>(null);
 
+  // all sounds
+  const SELECT_PLAYER_SOUND_PATH = "/sounds/select-sound.mp3";
+  const UNSELECT_PLAYER_SOUND_PATH = "/sounds/unselect-sound.mp3";
+  const ADD_PLAYER_SOUND_PATH = "/sounds/add-player-sound.mp3";
+  const ERROR_SOUND_PATH = "/sounds/error-sound.mp3";
+  const THROW_SOUND_PATH = "/sounds/throw-sound.mp3";
+  const WIN_SOUND_PATH = "/sounds/win-sound.mp3";
+  const UNDO_SOUND_PATH = "/sounds/undo-sound.mp3";
+
   function playSound(path: string) {
     const audio = new Audio(path);
-    audio.play();
     audio.volume = 0.4;
     if (path === THROW_SOUND_PATH) {
       audio.currentTime = 2.3;
@@ -134,31 +233,55 @@ export const UserProvider = ({ children }: UserProviderProps) => {
       audio.currentTime = 0.2;
       audio.volume = 0.1;
     }
+    audio.play();
   }
 
   //Start.tsx functions
   const initializePlayerList = useCallback(() => {
-    const initialPlayerList: PlayerProps[] = event.userList.map(
-      (user: BASIC.UserProps) => ({
-        name: user.name,
-        id: user.id,
-        isAdded: false,
-        isClicked: event.clickedPlayerId,
-      })
-    );
+    const initialPlayerList: PlayerProps[] = event.userList.map((user: BASIC.UserProps) => ({
+      name: user.name,
+      id: user.id,
+      isAdded: false,
+      isClicked: event.clickedPlayerId,
+    }));
     updateEvent({ unselectedPlayers: initialPlayerList });
-  }, [event.list, event.selectedPlayers, event.unselectedPlayers]);
+  }, [event.clickedPlayerId, event.userList, updateEvent]);
 
-  function handleTabClick(id: string) {
+  // NavigationBar
+  function handleTabClick(id: string, navigate: NavigateFunction) {
     updateEvent({ activeTab: id });
+
+    switch (id) {
+      case "game":
+        navigate("/");
+        break;
+      case "settings":
+        navigate("/settings");
+        break;
+      case "statistics":
+        navigate("/statistics");
+        break;
+      default:
+        break;
+    }
   }
+
+  useEffect(() => {
+    if (location.pathname.includes("statistics")) {
+      updateEvent({ activeTab: "statistics" });
+    } else if (location.pathname.includes("settings")) {
+      updateEvent({ activeTab: "settings" });
+    } else if (location.pathname.includes("game")) {
+      updateEvent({ activeTab: "game" });
+    }
+  }, []);
 
   function handleSelectPlayer(name: string, id: number) {
     if (event.selectedPlayers.length === 10) return;
     updateEvent({ clickedPlayerId: id });
     setTimeout(() => {
       const updatedUnselectedPlayerList = event.unselectedPlayers.filter(
-        (list: any) => list.id !== id
+        (list: PlayerProps) => list.id !== id,
       );
       const updatedSelectedPlayerList: PlayerProps[] = [
         ...event.selectedPlayers,
@@ -167,8 +290,9 @@ export const UserProvider = ({ children }: UserProviderProps) => {
       updateEvent({
         selectedPlayers: updatedSelectedPlayerList,
         unselectedPlayers: updatedUnselectedPlayerList,
+        list: updatedSelectedPlayerList,
       });
-      updateEvent({ list: updatedSelectedPlayerList });
+      localStorage.setItem("UserUnselected", JSON.stringify(updatedUnselectedPlayerList));
       functions.playSound(SELECT_PLAYER_SOUND_PATH);
     }, 200);
   }
@@ -177,18 +301,17 @@ export const UserProvider = ({ children }: UserProviderProps) => {
     updateEvent({ newPlayer: e.target.value });
   }
 
-  const handleKeyPess =
-    (name: string) => (e: React.KeyboardEvent<HTMLInputElement>) => {
-      if (e.key === "Enter") {
-        updateEvent({ newPlayer: name });
-        functions.createPlayer(event.newPlayer);
-      }
-    };
+  const handleKeyPess = (name: string) => (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === "Enter") {
+      updateEvent({ newPlayer: name });
+      functions.createPlayer(name);
+    }
+  };
 
   function handleUnselect(name: string, id: number) {
     updateEvent({ clickedPlayerId: null });
     const updatedSelectedPlayers = event.selectedPlayers.filter(
-      (list: any) => list.id !== id
+      (list: PlayerProps) => list.id !== id,
     );
     const updatedUnselectedPlayers: PlayerProps[] = [
       ...event.unselectedPlayers,
@@ -199,6 +322,8 @@ export const UserProvider = ({ children }: UserProviderProps) => {
       unselectedPlayers: updatedUnselectedPlayers,
       list: updatedSelectedPlayers,
     });
+
+    addUnselectedUserListToLs(updatedUnselectedPlayers);
     functions.playSound(UNSELECT_PLAYER_SOUND_PATH);
   }
 
@@ -208,16 +333,10 @@ export const UserProvider = ({ children }: UserProviderProps) => {
 
     if (over && active.id !== over?.id) {
       const activeIndex = event.selectedPlayers.findIndex(
-        ({ id }: any) => id === active.id
+        ({ id }: PlayerProps) => id === active.id,
       );
-      const overIndex = event.selectedPlayers.findIndex(
-        ({ id }: any) => id === over.id
-      );
-      const newArray: PlayerProps[] = arrayMove(
-        event.selectedPlayers,
-        activeIndex,
-        overIndex
-      );
+      const overIndex = event.selectedPlayers.findIndex(({ id }: PlayerProps) => id === over.id);
+      const newArray: PlayerProps[] = arrayMove(event.selectedPlayers, activeIndex, overIndex);
       updateEvent({
         selectedPlayers: newArray,
         list: newArray,
@@ -239,16 +358,10 @@ export const UserProvider = ({ children }: UserProviderProps) => {
     addUserToLS(name, id);
 
     if (event.selectedPlayers.length === 10) {
-      const updatedUnselectedPlayers = [
-        ...event.unselectedPlayers,
-        { name, isAdded: false, id },
-      ];
+      const updatedUnselectedPlayers = [...event.unselectedPlayers, { name, isAdded: false, id }];
       updateEvent({ unselectedPlayers: updatedUnselectedPlayers });
     } else {
-      const updatedSelectedPlayers = [
-        ...event.selectedPlayers,
-        { name, isAdded: true, id },
-      ];
+      const updatedSelectedPlayers = [...event.selectedPlayers, { name, isAdded: true, id }];
       updateEvent({
         selectedPlayers: updatedSelectedPlayers,
         list: updatedSelectedPlayers,
@@ -263,9 +376,209 @@ export const UserProvider = ({ children }: UserProviderProps) => {
   }
 
   //App.tsx functions
+
+  // diese Funktion speichert das beendete Spiel im LS
+  function savedFinishedGameToLS(players: BASIC.WinnerPlayerProps[]) {
+    if (!Array.isArray(players) || players.length === 0) {
+      console.warn("There are no players to save");
+      return null;
+    }
+    const savedGames = JSON.parse(localStorage.getItem("FinishedGames") || "[]");
+
+    const isDuplicate = savedGames.some((game: SavedGame) => {
+      const samePlayers =
+        game.players.length === players.length &&
+        game.players.every((p, i) => p.id === players[i].id);
+
+      const closeDate = Math.abs(new Date(game.date).getTime() - new Date().getTime()) < 2000;
+
+      return samePlayers && closeDate;
+    });
+
+    if (isDuplicate) {
+      console.warn("Duplicate game not saved");
+      return;
+    }
+    const gameSummary = {
+      id: Date.now().toString(),
+      date: new Date().toISOString(),
+      players: players.map((player) => {
+        const rounds = Array.isArray(player.rounds) ? player.rounds : [];
+
+        const completedRounds =
+          rounds[rounds.length - 1]?.throw1 === undefined ? rounds.length - 1 : rounds.length;
+
+        let totalScorePoints = 0;
+
+        for (let i = 0; i < completedRounds; i++) {
+          const round = rounds[i];
+          for (const throwKey of ["throw1", "throw2", "throw3"] as const) {
+            const value = round[throwKey];
+            if (typeof value === "number") {
+              totalScorePoints += value;
+            }
+          }
+        }
+        const scoreAverage =
+          completedRounds > 0 ? Number((totalScorePoints / completedRounds).toFixed(2)) : 0;
+
+        return {
+          id: player.id,
+          name: player.name,
+          totalScore: totalScorePoints,
+          roundCount: completedRounds,
+          scoreAverage,
+          rounds,
+          won: player.score === 0,
+        };
+      }),
+    };
+    savedGames.push(gameSummary);
+    localStorage.setItem("FinishedGames", JSON.stringify(savedGames));
+  }
+
+  // diese Funktion holt alle Spielerstatisitken aus dem LS, um sie auf der Seite PlayerStats anzuzeigen
+  function getAllPlayerStats(): {
+    id: number;
+    name: string;
+    games: number;
+    averageRoundScore: number;
+    scoreAverage: number;
+  }[] {
+    const savedGames = JSON.parse(localStorage.getItem("FinishedGames") || "[]");
+
+    const statMap: Record<
+      number,
+      {
+        id: number;
+        name: string;
+        games: number;
+        totalScore: number;
+        completedRounds: number;
+      }
+    > = {};
+
+    for (const game of savedGames) {
+      for (const player of game.players) {
+        if (!statMap[player.id]) {
+          statMap[player.id] = {
+            id: player.id,
+            name: player.name,
+            games: 0,
+            totalScore: 0,
+            completedRounds: 0,
+          };
+        }
+
+        statMap[player.id].games += 1;
+
+        if (Array.isArray(player.rounds)) {
+          const rounds = player.rounds;
+          const completedRounds =
+            rounds[rounds.length - 1]?.throw1 === undefined ? rounds.length - 1 : rounds.length;
+
+          let totalScore = 0;
+          for (let i = 0; i < completedRounds; i++) {
+            const round = rounds[i];
+            for (const key of ["throw1", "throw2", "throw3"] as const) {
+              const value = round[key];
+              if (typeof value === "number") {
+                totalScore += value;
+              }
+            }
+          }
+          statMap[player.id].totalScore += totalScore;
+          statMap[player.id].completedRounds += completedRounds;
+        }
+      }
+    }
+
+    return Object.values(statMap).map((player) => ({
+      id: player.id,
+      name: player.name,
+      games: player.games,
+      scoreAverage:
+        player.completedRounds > 0
+          ? Number((player.totalScore / player.completedRounds).toFixed(2))
+          : 0,
+      averageRoundScore:
+        player.completedRounds > 0
+          ? Number((player.totalScore / player.completedRounds).toFixed(2))
+          : 0,
+    }));
+  }
+
+  // diese Funktion holt alle Spieldaten aus dem LS, um sie auf der Seite Games Overview anzuzeigen
+  function getFinishedGamesSummary(): GameSummury[] {
+    const savedGames: SavedGame[] = JSON.parse(localStorage.getItem("FinishedGames") || "[]");
+
+    return savedGames.map((game: SavedGame) => {
+      const players = Array.isArray(game.players) ? game.players : [];
+      const playersCount = players.length;
+
+      const winner = players.find((p: SavedGamePlayer) => p.won);
+      const winnerName = winner?.name || "";
+      const winnerRounds = winner && Array.isArray(winner?.rounds) ? winner.rounds.length : 0;
+
+      return {
+        id: game.id,
+        date: game.date || "",
+        players: players,
+        playersCount,
+        winnerName,
+        winnerRounds,
+      };
+    });
+  }
+
   function addUnselectedUserListToLs(unselectedPlayers: PlayerProps[]) {
     localStorage.setItem("UserUnselected", JSON.stringify(unselectedPlayers));
   }
+  // dieser UseEffect holt das gespeicherte Spiel aus dem LS und stellt es wieder her
+  useEffect(() => {
+    const savedGame = localStorage.getItem("OngoingGame");
+    if (savedGame) {
+      try {
+        const parsed = JSON.parse(savedGame);
+        if (parsed.playerList && parsed.playerList.length > 0) {
+          updateEvent(parsed);
+        }
+      } catch (error) {
+        console.error("Error parce Ongoinggame", error);
+      }
+    }
+    updateEvent({ isInitialized: true });
+  }, [updateEvent]);
+
+  // dieser UseEffect speichert das begonnene Spiel in LS, um es bei einer Fensteraktualisierung alles wiederherzustellen
+  useEffect(() => {
+    if (!event.isInitialized) return;
+    const gameStateToSave = {
+      playerList: event.playerList,
+      finishedPlayerList: event.finishedPlayerList,
+      roundsCount: event.roundsCount,
+      throwCount: event.throwCount,
+      playerTurn: event.playerTurn,
+      selectedPoints: event.selectedPoints,
+      selectedGameMode: event.selectedGameMode,
+      history: event.history,
+      list: event.list,
+      winnerList: event.winnerList,
+    };
+    localStorage.setItem("OngoingGame", JSON.stringify(gameStateToSave));
+  }, [
+    event.isInitialized,
+    event.playerList,
+    event.finishedPlayerList,
+    event.roundsCount,
+    event.throwCount,
+    event.playerTurn,
+    event.selectedGameMode,
+    event.selectedPoints,
+    event.history,
+    event.list,
+    event.winnerList,
+  ]);
 
   function addUserToLS(name: string, id: number) {
     const newUserList = [...event.userList];
@@ -273,7 +586,7 @@ export const UserProvider = ({ children }: UserProviderProps) => {
     updateEvent({ userList: newUserList });
     localStorage.setItem("User", JSON.stringify(newUserList));
   }
-
+  // diese Funktion ist für den PlayAgain button
   function resetGame() {
     updateEvent({
       playerScore: event.selectedPoints,
@@ -300,7 +613,7 @@ export const UserProvider = ({ children }: UserProviderProps) => {
         isPlaying: true,
         isBust: false,
         throwCount: 0,
-      })
+      }),
     );
     updateEvent({ playerList: initialPlayerList });
   }
@@ -356,14 +669,6 @@ export const UserProvider = ({ children }: UserProviderProps) => {
     }
   }
 
-  const handleGameModeClick = (gameMode: string) => {
-    updateEvent({ selectedGameMode: gameMode });
-  };
-
-  const handlePointsClick = (points: number) => {
-    updateEvent({ selectedPoints: points });
-  };
-
   const isDouble = (throwValue: string) =>
     typeof throwValue === "string" && throwValue.startsWith("D");
 
@@ -373,15 +678,13 @@ export const UserProvider = ({ children }: UserProviderProps) => {
   function handleThrow(
     player: BASIC.WinnerPlayerProps,
     currentThrow: number,
-    currentScoreAchieved: number | string | any
+    currentScoreAchieved: number | string,
   ) {
     updateEvent({
       history: [
         ...event.history,
         {
-          finishedPlayerList: JSON.parse(
-            JSON.stringify(event.finishedPlayerList)
-          ),
+          finishedPlayerList: JSON.parse(JSON.stringify(event.finishedPlayerList)),
           playerList: JSON.parse(JSON.stringify(event.playerList)),
           playerScore: event.playerScore,
           throwCount: event.throwCount,
@@ -392,16 +695,16 @@ export const UserProvider = ({ children }: UserProviderProps) => {
     });
 
     let actualScore: number = 0;
-    let type = "";
     if (typeof currentScoreAchieved === "string") {
-      type = currentScoreAchieved.charAt(0);
-      const value = parseInt(currentScoreAchieved.substring(1));
-
-      if (type === "D") {
-        actualScore = value * 2;
-      } else if (type === "T") {
-        actualScore = value * 3;
+      const type = currentScoreAchieved.charAt(0);
+      const value = parseInt(currentScoreAchieved.slice(1));
+      if (isNaN(value)) {
+        console.error("Invalid value:", currentScoreAchieved);
+        return;
       }
+      if (type === "D") actualScore = value * 2;
+      else if (type === "T") actualScore = value * 3;
+      else actualScore = value;
     } else {
       actualScore = currentScoreAchieved;
     }
@@ -410,16 +713,12 @@ export const UserProvider = ({ children }: UserProviderProps) => {
       startingScoreRef.current = event.playerList[event.playerTurn].score;
     }
 
-    const updatedPlayerScore =
-      event.playerList[event.playerTurn].score - actualScore;
+    const updatedPlayerScore = event.playerList[event.playerTurn].score - actualScore;
     const currentPlayerThrows =
       event.playerList[event.playerTurn].rounds[
         event.playerList[event.playerTurn].rounds.length - 1
       ];
-    const throwKey = `throw${currentThrow + 1}` as
-      | "throw1"
-      | "throw2"
-      | "throw3";
+    const throwKey = `throw${currentThrow + 1}` as "throw1" | "throw2" | "throw3";
 
     currentPlayerThrows[throwKey] = currentScoreAchieved;
     updateEvent({ playerScore: updatedPlayerScore });
@@ -427,8 +726,10 @@ export const UserProvider = ({ children }: UserProviderProps) => {
     const isDoubleOutMode = event.selectedGameMode === "double-out";
     const isTripleOutMode = event.selectedGameMode === "triple-out";
     const wouldFinishGame = updatedPlayerScore === 0;
-    const isDoubleThrow = isDouble(currentScoreAchieved);
-    const isTripleThrow = isTriple(currentScoreAchieved);
+    const isDoubleThrow =
+      typeof currentScoreAchieved === "string" && isDouble(currentScoreAchieved);
+    const isTripleThrow =
+      typeof currentScoreAchieved === "string" && isTriple(currentScoreAchieved);
 
     const startingScoreThisRound =
       startingScoreRef.current ?? event.playerList[event.playerTurn].score;
@@ -487,23 +788,17 @@ export const UserProvider = ({ children }: UserProviderProps) => {
   function handlePlayerFinishTurn() {
     const updatedPlayerList = [...event.playerList];
     updatedPlayerList[event.playerTurn].isPlaying = false;
-    const finishedPlayers = event.playerList.filter(
-      (player) => !player.isPlaying
-    );
+    const finishedPlayers = event.playerList.filter((player) => !player.isPlaying);
     event.finishedPlayerList.push(finishedPlayers[0]);
 
-    const unfinishedPlayers = event.playerList.filter(
-      (player) => player.isPlaying
-    );
+    const unfinishedPlayers = event.playerList.filter((player) => player.isPlaying);
     changeActivePlayer();
-    const nextPlayerIndex =
-      event.playerTurn > unfinishedPlayers.length - 1 ? 0 : event.playerTurn;
+    const nextPlayerIndex = event.playerTurn > unfinishedPlayers.length - 1 ? 0 : event.playerTurn;
     unfinishedPlayers[nextPlayerIndex].isActive = true;
     updateEvent({
       playerList: unfinishedPlayers,
       finishedPlayerList: event.finishedPlayerList,
-      playerTurn:
-        event.playerTurn > unfinishedPlayers.length - 1 ? 0 : event.playerTurn,
+      playerTurn: event.playerTurn > unfinishedPlayers.length - 1 ? 0 : event.playerTurn,
     });
     updateEvent({ winnerList: event.finishedPlayerList });
   }
@@ -513,31 +808,33 @@ export const UserProvider = ({ children }: UserProviderProps) => {
     updatedPlayerList[event.playerTurn].isPlaying = false;
 
     const updatedFinishedPlayerList = [...event.finishedPlayerList];
-    const playersWithNonZeroScore = event.playerList.filter(
-      (player) => player.score !== 0
-    );
-    const playersWithZeroScore = event.playerList.filter(
-      (player) => player.score === 0
-    );
-    updatedFinishedPlayerList.push(
-      playersWithZeroScore[0],
-      playersWithNonZeroScore[0]
-    );
+    const playersWithNonZeroScore = event.playerList.filter((player) => player.score !== 0);
+    const playersWithZeroScore = event.playerList.filter((player) => player.score === 0);
+    updatedFinishedPlayerList.push(playersWithZeroScore[0], playersWithNonZeroScore[0]);
     updateEvent({ finishedPlayerList: updatedFinishedPlayerList });
   }
   // wir sortieren main-array in absteigender Reihenfolge
   function sortPlayer() {
-    const sortedPlayers = [...event.playerList].sort(
-      (a, b) => b.score - a.score
-    );
-    const updatedFinishedPlayerList = [
-      ...event.finishedPlayerList,
-      ...sortedPlayers,
-    ];
+    const sortedPlayers = [...event.playerList].sort((a, b) => b.score - a.score);
+    const updatedFinishedPlayerList = [...event.finishedPlayerList, ...sortedPlayers];
     updateEvent({ finishedPlayerList: updatedFinishedPlayerList });
   }
 
-  const functions = {
+  const handleGameModeClick = (id: string | number) => {
+    const mode = id.toString();
+    newSettings(mode, storeSettings.points);
+    console.log(mode);
+  };
+
+  const handlePointsClick = (id: string | number) => {
+    const points = Number(id);
+    newSettings(storeSettings.gameMode, points);
+  };
+
+  const functions: GameFunctions = {
+    getFinishedGamesSummary,
+    savedFinishedGameToLS,
+    getAllPlayerStats,
     initializePlayerList,
     playSound,
     handleTabClick,

@@ -17,7 +17,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  border-width: 0px 1px 1px 0px;
+  border-width: 0 1px 1px 0;
   border-style: solid;
   border-color: var(--white);
   height: 80px;
@@ -28,7 +28,7 @@
 .undo,
 .triple,
 .double {
-  background-color: var(--oxfordBlue);
+  background-color: var(--oxfordblue);
   color: var(--white);
 }
 
@@ -50,7 +50,7 @@
 }
 
 .button:active {
-  background-color: var(--oxfordBlue);
+  background-color: var(--oxfordblue);
   transition: background-color 0.2s ease;
   color: var(--white);
 }

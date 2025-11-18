@@ -1,94 +1,103 @@
-.gamePlayerItem {
-    width: auto;
-    display: flex;
-    justify-content: space-between;
-    border-bottom: 1px solid var(--middlegrey);
-    padding: 24px 8px 24px 8px;
-    align-items: center;
+.game-player-item {
+  width: auto;
+  display: flex;
+  justify-content: space-between;
+  border-bottom: 1px solid var(--middlegrey);
+  padding: 24px 8px;
+  align-items: center;
 }
 
-.throwDisplay {
-    gap: 16px;
-    display: flex;
-    width: 200px;
+.throw-display {
+  gap: 16px;
+  display: flex;
+  width: 200px;
 }
 
-.divDisplay {
-    color: var(--darkblue);
-    width: 41px;
-    height: 31px;
-    padding: 7px 13px 7px 13px;
-    border-radius: 4px;
-    background-color: var(--lightgrey);
-    align-items: center;
-    justify-content: center;
-    display: flex;
+.div-display {
+  color: var(--darkblue);
+  width: 41px;
+  height: 31px;
+  padding: 7px 13px;
+  border-radius: 4px;
+  background-color: var(--lightgrey);
+  align-items: center;
+  justify-content: center;
+  display: flex;
 }
 
 .pointer {
-    gap: 8px;
-    display: flex;
-    width: 110px;
+  gap: 8px;
+  display: flex;
+  width: 110px;
 }
 
 .throws {
-    justify-content: space-between;
-    display: flex;
-    gap: 48px;
-    align-items: center;
+  justify-content: space-between;
+  display: flex;
+  gap: 48px;
+  align-items: center;
 }
 
-.activePlayer {
-    border-left: 16px solid var(--blue);
-    padding-left: 16px;
-    font-size: 24px;
-    font-weight: 700;
-    line-height: 28.8px;
-    letter-spacing: 0.02em;
-    text-align: left;
-    color: var(--blue);
+.active-player {
+  border-left: 16px solid var(--blue);
+  padding-left: 16px;
+  font-size: 24px;
+  font-weight: 700;
+  line-height: 28.8px;
+  letter-spacing: 0.02em;
+  text-align: left;
+  color: var(--blue);
 }
 
-.valueDisplay {
-    font-size: 20px;
-    line-height: 24px;
-    text-align: left;
-    color: var(--darkblue);
+.active-player-name {
+  font-size: 24px;
+  font-weight: 700;
+  line-height: 28.8px;
+  letter-spacing: 0.02em;
+  text-align: left;
+  color: var(--blue);
 }
 
-.scoreDisplay {
-    font-size: 20px;
-    line-height: 24px;
-    text-align: left;
-    color: var(--darkgrey);
+.value-display {
+  font-size: 20px;
+  line-height: 24px;
+  text-align: left;
+  color: var(--darkblue);
 }
 
-.handleBust {
-    color: var(--red);
+.score-display {
+  font-size: 20px;
+  line-height: 24px;
+  text-align: left;
+  color: var(--darkgrey);
+}
+
+.handle-bust {
+  color: var(--red);
 }
 
 .finished {
-    height: 45px;
-    opacity: 50%;
+  height: 45px;
+  opacity: 0.5;
 }
 
 .place {
-    font-weight: 700;
+  font-weight: 700;
 }
 
-.finishedplayers {
-    font-weight: 700;
-    color: var(--darkgrey);
+.finished-players {
+  font-weight: 700;
+  color: var(--darkgrey);
 }
 
-.finishedPlayerList {
-    margin-top: 160px;
+.finished-player-list {
+  margin-top: 160px;
 }
 
-.playeritemName {
-    font-size: 20px;
+.playeritem-name {
+  font-size: 20px;
 }
 
-.activePlayerItemName {
-    font-size: 24px;
+.active-player-item-name {
+  font-size: 24px;
 }

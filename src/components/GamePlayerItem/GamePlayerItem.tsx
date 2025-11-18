@@ -5,21 +5,20 @@ import React from "react";
 
 type Props = {
   name?: string;
-  key?: number;
   isActive?: boolean;
   value: number;
-  gamePlayerItemThrow1?: number | JSX.Element;
-  gamePlayerItemThrow2?: number | JSX.Element;
-  gamePlayerItemThrow3?: number | JSX.Element;
+  gamePlayerItemThrow1?: number | string | JSX.Element;
+  gamePlayerItemThrow2?: number | string | JSX.Element;
+  gamePlayerItemThrow3?: number | string | JSX.Element;
   className: string;
   src?: string;
   isBust?: boolean;
   throwCount?: number;
   isPlaying?: boolean;
   roundsCount: BASIC.Round[];
-  gamePlayerItemPrevThrow1?: number;
-  gamePlayerItemPrevThrow2?: number;
-  gamePlayerItemPrevThrow3?: number;
+  gamePlayerItemPrevThrow1?: number | string | JSX.Element;
+  gamePlayerItemPrevThrow2?: number | string | JSX.Element;
+  gamePlayerItemPrevThrow3?: number | string | JSX.Element;
   id: string;
   classNameforName?: string;
 };
@@ -28,14 +27,14 @@ const bustIcon = <img src={bustIconX} alt="Bust icon" />;
 
 function GamePlayerItem({ ...props }: Props) {
   function handlePoint(
-    currentThrow?: number | JSX.Element,
-    prevThrow?: number
-  ): number | undefined | JSX.Element {
+    currentThrow?: number | string | JSX.Element,
+    prevThrow?: number | string | JSX.Element,
+  ): number | undefined | string | JSX.Element {
     return currentThrow !== undefined
       ? currentThrow
       : prevThrow !== undefined
-      ? prevThrow
-      : undefined;
+        ? prevThrow
+        : undefined;
   }
 
   switch (true) {
@@ -56,60 +55,51 @@ function GamePlayerItem({ ...props }: Props) {
   }
 
   return (
-    <div className={props.className} key={props?.key} id={props.id}>
+    <div className={props.className} id={props.id}>
       <div>
         <div className={props.classNameforName}>{props?.name}</div>
       </div>
 
       <div className="throws">
         <div
-          className={clsx("throwDisplay", {
+          className={clsx("throw-display", {
             hidden: props.isPlaying === false,
           })}
         >
           <div
-            className={clsx("divDisplay copylarge", {
-              handleBust: !props.isActive && props.throwCount === 0,
+            className={clsx("div-display copylarge", {
+              "handle-bust": !props.isActive && props.throwCount === 0,
             })}
           >
-            {handlePoint(
-              props.gamePlayerItemThrow1,
-              props.gamePlayerItemPrevThrow1
-            )}
+            {handlePoint(props.gamePlayerItemThrow1, props.gamePlayerItemPrevThrow1)}
           </div>
 
           <div
-            className={clsx("divDisplay copylarge", {
-              handleBust: !props.isActive && props.throwCount === 1,
+            className={clsx("div-display copylarge", {
+              "handle-bust": !props.isActive && props.throwCount === 1,
             })}
           >
-            {handlePoint(
-              props.gamePlayerItemThrow2,
-              props.gamePlayerItemPrevThrow2
-            )}
+            {handlePoint(props.gamePlayerItemThrow2, props.gamePlayerItemPrevThrow2)}
           </div>
 
           <div
-            className={clsx("divDisplay copylarge", {
-              handleBust: props.isBust && props.throwCount === 2,
+            className={clsx("div-display copylarge", {
+              "handle-bust": props.isBust && props.throwCount === 2,
             })}
           >
-            {handlePoint(
-              props.gamePlayerItemThrow3,
-              props.gamePlayerItemPrevThrow3
-            )}
+            {handlePoint(props.gamePlayerItemThrow3, props.gamePlayerItemPrevThrow3)}
           </div>
         </div>
 
         <div className="pointer">
           <div
-            className={clsx("scoreDisplay", {
+            className={clsx("score-display", {
               hidden: props.isPlaying === false,
             })}
           >
             Score
           </div>
-          <div className="valueDisplay">{props.value}</div>
+          <div className="value-display">{props.value}</div>
         </div>
       </div>
     </div>
