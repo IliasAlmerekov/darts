@@ -14,14 +14,14 @@ type Props = {
 function UnselectedPlayerItem({ ...props }: Props) {
   return (
     <div
-      className={clsx("unselectedPlayerItem", {
+      className={clsx("unselected-player-item", {
         "fade-out": !!props.isClicked,
       })}
     >
       <div className="copylarge">{props?.name}</div>
       <button
         onClick={props.handleClickOrDelete}
-        className="moveButton"
+        className="move-button"
         aria-label="Move Button"
       >
         <img src={props.src} alt={props.alt} />

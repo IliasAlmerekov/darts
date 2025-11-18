@@ -1,26 +1,51 @@
-.gamePlayerItemContainer {
-    padding: 133px 32px 0px 32px;
+.game-player-item-container {
+  padding: 133px 32px 0;
 }
 
 .top {
-    left: 32px;
-    top: 32px;
-    position: absolute;
+  left: 32px;
+  top: 32px;
+  position: absolute;
 }
 
-.finishGameOverlay {
-    width: 71.7%;
-    padding: 96px 0px;
+.finish-game-overlay {
+  width: 71.7%;
+  padding: 96px 0;
 }
 
-.undoThrow {
-    justify-content: center;
-    display: flex;
-    margin-top: 28px;
-    font-size: 24px;
-    font-weight: 700;
-    line-height: 28.8px;
-    letter-spacing: 0.02em;
-    text-align: left;
-    gap: 8px;
+.undo-throw {
+  justify-content: center;
+  display: flex;
+  margin-top: 28px;
+  font-size: 24px;
+  font-weight: 700;
+  line-height: 28.8px;
+  letter-spacing: 0.02em;
+  text-align: left;
+  gap: 8px;
+}
+
+.settings-btn {
+  right: 32px;
+  top: 32px;
+  position: absolute;
+}
+
+.overlay-headline {
+  font-weight: 700;
+  line-height: 24px;
+  color: #000;
+  margin: 0;
+}
+
+.setting-overlay {
+  width: 100%;
+  padding: 48px;
+}
+
+.settings-body-container {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding-top: 48px;
 }

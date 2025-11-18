@@ -47,7 +47,7 @@ function SelectedPlayerItem({ ...props }: Props) {
     <div
       ref={setNodeRef}
       style={style}
-      className="selectedPlayerItem"
+      className="selected-player-item"
       key={props?.key}
     >
       <div>
@@ -58,7 +58,7 @@ function SelectedPlayerItem({ ...props }: Props) {
       </div>
       <button
         onClick={props.handleClick}
-        className="deleteButton"
+        className="delete-button"
         aria-label="Delete player"
       >
         <img src={deleteIcon} alt={props.alt || "Delete"} />

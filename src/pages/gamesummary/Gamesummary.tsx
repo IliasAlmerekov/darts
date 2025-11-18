@@ -4,13 +4,15 @@ import Button from "../../components/Button/Button";
 import Podium from "../../components/Podium/Podium";
 import Undo from "../../icons/undolinkbutton.svg";
 import { Link } from "react-router-dom";
-import React from "react";
+import React, { useMemo } from "react";
 import { useUser } from "../../provider/UserProvider";
 
 function Gamesummary(): JSX.Element {
-  const { event, functions} = useUser();
+  const { event, functions } = useUser();
 
-  const newList = [...event.winnerList];
+  const newList: BASIC.WinnerPlayerProps[] = useMemo(() => {
+    return [...event.winnerList];
+  }, [event.winnerList]);
   const podiumList = newList.slice(0, 3);
   const leaderBoardList = newList.slice(3, event.winnerList.length + 1);
   const podiumListWithPlaceholder = [...podiumList];
@@ -22,39 +24,48 @@ function Gamesummary(): JSX.Element {
     index: 0,
     rounds: [{ throw1: undefined, throw2: undefined, throw3: undefined }],
   });
-  const podiumData =
-    podiumList.length === 2 ? podiumListWithPlaceholder : podiumList;
+  const podiumData = podiumList.length === 2 ? podiumListWithPlaceholder : podiumList;
 
   return (
     <div className="summary">
       <div>
-        <Link onClick={() => functions.undoFromSummary()} to="/game" className="undoButton" >
+        <Link onClick={() => functions.undoFromSummary()} to="/game" className="undo-button">
           <img src={Undo} alt="Undo last action" />
         </Link>
       </div>
-      <Podium userMap={podiumData} list={event.winnerList} />
-      <div className="leaderBoard">
+      <div className="podium-board">
+        <Podium userMap={podiumData} list={event.winnerList} />
+      </div>
+      <div className="leader-board">
         <OverviewPlayerItemList userMap={leaderBoardList} />
       </div>
 
-      <div className="playAgainButton">
+      <div className="play-again-button">
         <Button
           isLink
           link={"/game"}
           label="Play Again"
           type="primary"
           isInverted
-          className="playAgainButton"
-          handleClick={() => functions.resetGame()}
+          className="play-again-button"
+          handleClick={() => {
+            functions.resetGame();
+            functions.savedFinishedGameToLS(newList);
+            localStorage.removeItem("OngoingGame");
+          }}
         />
       </div>
-      <div className="backToStartButton">
+      <div className="back-to-start-button">
         <Button
-          className="backToStartButton"
+          className="back-to-start-button"
           link={"/"}
           isLink
           label="Back To Start"
           type="primary"
+          handleClick={() => {
+            functions.savedFinishedGameToLS(newList);
+            localStorage.removeItem("OngoingGame");
+          }}
         />
       </div>
     </div>

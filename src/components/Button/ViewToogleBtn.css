@@ -1,0 +1,21 @@
+.view-toggle {
+  display: flex;
+  gap: 16px;
+  margin-bottom: 20px;
+}
+
+.view-button {
+  padding: 8px 20px;
+  border-radius: 50px;
+  border: 1px solid var(--middlegrey);
+  background: var(--white);
+  cursor: pointer;
+  font-size: 16px;
+  font-weight: 700;
+  transition: all 0.2s ease;
+}
+
+.view-button.active-btn {
+  color: var(--blue);
+  border-color: var(--blue);
+}

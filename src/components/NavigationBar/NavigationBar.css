@@ -1,0 +1,45 @@
+.navigation {
+  grid-column: 1 / -1;
+  display: flex;
+  margin-top: 40px;
+  justify-content: space-between;
+  background-color: #fff;
+  align-items: center;
+  width: 100%;
+  box-shadow: 0 4px 20px 0 #00000026;
+  border-radius: 9999px;
+  height: 48px;
+}
+
+.tab-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  gap: 16px;
+  padding: 8px 16px;
+  border: none;
+  color: var(--darkblue);
+  border-radius: 9999px;
+  background: transparent;
+  transition: all 0.2s ease;
+}
+
+.tab-button span {
+  display: flex;
+  align-items: center;
+  font-family: CircularXX, sans-serif;
+  font-size: 16px;
+  gap: 16px;
+}
+
+.tab-button.active {
+  background-color: var(--blue);
+  color: var(--white);
+  font-weight: 700;
+}
+
+.tab-button.inactive {
+  color: var(--darkblue);
+  font-weight: 700;
+}

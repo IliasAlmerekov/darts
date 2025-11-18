@@ -23,11 +23,11 @@ function Button({ ...props }: ButtonProps) {
   const buttonType = props.type || "primary";
 
   const buttonClasses = clsx(props?.className, "btn h4", {
-    btnPrimary: buttonType === "primary" && !props.isInverted,
-    btnSecondary: buttonType === "secondary" && !props.isInverted,
-    inverted: props.isInverted && buttonType !== "secondary",
-    invertedSecondary: props.isInverted && buttonType === "secondary",
-    disabled: props.disabled,
+    "btn-primary": buttonType === "primary" && !props.isInverted,
+    "btn-secondary": buttonType === "secondary" && !props.isInverted,
+    "inverted": props.isInverted && buttonType !== "secondary",
+    "inverted-secondary": props.isInverted && buttonType === "secondary",
+    "disabled": props.disabled,
   });
 
   const buttonContent = (
@@ -45,7 +45,7 @@ function Button({ ...props }: ButtonProps) {
 
   if (props.isLink) {
     return (
-      <Link className="noUnderline" to={props.disabled ? '' : props.link}>
+      <Link className="no-underline" to={props.disabled ? '' : props.link}>
         <button className={buttonClasses} onClick={props.handleClick}>
           {buttonContent}
         </button>

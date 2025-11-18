@@ -1,0 +1,13 @@
+{
+  "$schema": "https://unpkg.com/knip@latest/schema.json",
+  "entry": ["src/index.tsx"],
+  "project": ["src"],
+  "ignore": ["**/*.test.ts", "**/*.spec.ts", "**/*.stories.tsx"],
+  "rules": {
+    "unusedExports": "error",
+    "unusedFiles": "error",
+    "unlisted": "warn",
+    "unusedDependencies": "warn",
+    "unusedClass": "error"
+  }
+}
