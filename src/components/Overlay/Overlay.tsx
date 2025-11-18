@@ -1,7 +1,7 @@
 import "../Overlay/Overlay.css";
 import React from "react";
 
-type Props = {
+type OverlayProps = {
   isOpen?: boolean;
   onClose?: () => void;
   handleClick?: () => void;
@@ -11,20 +11,16 @@ type Props = {
   activeOverlay?: "" | "deletePlayer" | "createPlayer" | "Settings";
 };
 
-function Overlay({ ...props }: Props) {
+function Overlay({ isOpen, onClose, className, src, children }: OverlayProps) {
   return (
     <>
-      {props.isOpen ? (
+      {isOpen ? (
         <div className="overlay-background">
-          <div className={props.className}>
-            <button
-              className="delete"
-              onClick={props.onClose}
-              aria-label="Close overlay"
-            >
-              <img src={props.src} alt="Close overlay" />
+          <div className={className}>
+            <button className="delete" onClick={onClose} aria-label="Close overlay">
+              <img src={src} alt="Close overlay" />
             </button>
-            {props.children}
+            {children}
           </div>
         </div>
       ) : null}

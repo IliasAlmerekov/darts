@@ -20,7 +20,6 @@ type Props = {
   gamePlayerItemPrevThrow2?: number | string | JSX.Element;
   gamePlayerItemPrevThrow3?: number | string | JSX.Element;
   id: string;
-  classNameforName?: string;
 };
 
 const bustIcon = <img src={bustIconX} alt="Bust icon" />;
@@ -57,7 +56,7 @@ function GamePlayerItem({ ...props }: Props) {
   return (
     <div className={props.className} id={props.id}>
       <div>
-        <div className={props.classNameforName}>{props?.name}</div>
+        <div>{props?.name}</div>
       </div>
 
       <div className="throws">
