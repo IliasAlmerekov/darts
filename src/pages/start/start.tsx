@@ -117,7 +117,7 @@ function Start() {
                 className="create-new-player-button h4"
                 label="Create new Player"
                 icon={Plus}
-                handleClick={() => updateEvent({ isNewPlayerOverlayOpen: true })}
+                handleClick={() => console.log("Create new player")}
               />
             </div>
           </div>
