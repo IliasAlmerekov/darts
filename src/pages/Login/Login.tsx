@@ -57,13 +57,13 @@ function Login() {
         if (response.ok) {
           const data = await response.json();
           if (data.success) {
-            console.log("Already logged in, redirecting...");
+            window.location.href = data.redirect;
+            return;
           }
         }
+        setChecking(false);
       } catch (err) {
         console.error("Auth check failed:", err);
-      } finally {
-        setChecking(false);
       }
     };
 
