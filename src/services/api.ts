@@ -59,3 +59,24 @@ export const getGamePlayers = async (gameId: number) => {
     throw err;
   }
 };
+
+export const deletePlayerFromGame = async (gameId: number, playerId: number) => {
+  try {
+    const response = await fetch(`/api/room/${gameId}?playerId=${playerId}`, {
+      method: "DELETE",
+      credentials: "include",
+      headers: {
+        Accept: "application/json",
+      },
+    });
+
+    if (!response.ok) {
+      throw new Error("Failed to delete player from game");
+    }
+
+    return await response.json();
+  } catch (err) {
+    console.error("Error deleting player from game:", err);
+    throw err;
+  }
+};

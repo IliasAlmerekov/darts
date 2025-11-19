@@ -12,6 +12,7 @@ import { DragEndEvent } from "@dnd-kit/core";
 import { $settings, newSettings } from "../stores/settings";
 import { useStore } from "@nanostores/react";
 import { NavigateFunction } from "react-router-dom";
+import { deletePlayerFromGame } from "../services/api";
 
 interface PlayerProps {
   id: number;
@@ -91,7 +92,7 @@ interface GameFunctions {
   handleSelectPlayer: (name: string, id: number) => void;
   handleChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
   handleKeyPess: (name: string) => (e: React.KeyboardEvent<HTMLInputElement>) => void;
-  handleUnselect: (name: string, id: number) => void;
+  handleUnselect: (id: number, gameId?: number | null) => void;
   handleDragEnd: (e: DragEndEvent) => void;
   createPlayer: (name: string) => void;
   // getUserFromLS: () => PlayerProps[] | null;
@@ -311,23 +312,32 @@ export const UserProvider = ({ children }: UserProviderProps) => {
     }
   };
 
-  function handleUnselect(name: string, id: number) {
+  function handleUnselect(id: number, gameId?: number | null) {
     updateEvent({ clickedPlayerId: null });
-    const updatedSelectedPlayers = event.selectedPlayers.filter(
-      (list: PlayerProps) => list.id !== id,
-    );
-    const updatedUnselectedPlayers: PlayerProps[] = [
-      ...event.unselectedPlayers,
-      { name, isAdded: false, id },
-    ];
-    updateEvent({
-      selectedPlayers: updatedSelectedPlayers,
-      unselectedPlayers: updatedUnselectedPlayers,
-      list: updatedSelectedPlayers,
-    });
 
-    addUnselectedUserListToLs(updatedUnselectedPlayers);
-    functions.playSound(UNSELECT_PLAYER_SOUND_PATH);
+    const removePlayerLocally = () => {
+      const updatedSelectedPlayers = event.selectedPlayers.filter(
+        (list: PlayerProps) => list.id !== id,
+      );
+      updateEvent({
+        selectedPlayers: updatedSelectedPlayers,
+        list: updatedSelectedPlayers,
+      });
+
+      localStorage.setItem("SelectedPlayers", JSON.stringify(updatedSelectedPlayers));
+      functions.playSound(UNSELECT_PLAYER_SOUND_PATH);
+    };
+
+    if (typeof gameId === "number") {
+      deletePlayerFromGame(gameId, id)
+        .then(removePlayerLocally)
+        .catch((error) => {
+          console.error("Failed to remove player from game:", error);
+        });
+      return;
+    }
+
+    removePlayerLocally();
   }
 
   function handleDragEnd(e: DragEndEvent) {

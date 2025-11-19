@@ -17,10 +17,11 @@ export interface EventState {
 
 export interface UserFunctions {
   initializePlayerList: () => void;
+
   handleChange: (event: React.ChangeEvent<HTMLInputElement>) => void;
   createPlayer: (name: string) => void;
   handleDragEnd: (e: DragEndEvent) => void;
-  handleUnselect: (name: string, id: number) => void;
+  handleUnselect: (id: number, gameId?: number | null) => void;
   playSound: (soundPath: string) => void;
   resetGame: () => void;
 }

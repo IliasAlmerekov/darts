@@ -28,24 +28,23 @@ function Game() {
   }, [event.throwCount, event.isFinishGameOverlayOpen, functions]);
 
   useEffect(() => {
-    if (
-      event.playerList.length > 0 &&
-      event.finishedPlayerList.length === event.playerList.length
-    ) {
+    const initialPlayerCount = event.userList.length;
+
+    if (initialPlayerCount > 0 && event.finishedPlayerList.length === initialPlayerCount) {
       updateEvent({
         winnerList: event.finishedPlayerList,
         lastHistory: event.history,
       });
       navigate("/summary");
-      if (event.playerList.length === 2) {
+      if (initialPlayerCount === 2) {
         functions.playSound(WIN_SOUND_PATH);
       }
     }
   }, [
     event.finishedPlayerList.length,
-    event.playerList.length,
     event.finishedPlayerList,
     event.history,
+    event.userList.length,
     functions,
     navigate,
     updateEvent,
@@ -150,7 +149,7 @@ function Game() {
       </Overlay>
 
       <div className="gamePageHeader">
-        <Link to="/" className="top">
+        <Link to="/start" className="top">
           <img src={Back} alt="Back to Home" />
         </Link>
       </div>
