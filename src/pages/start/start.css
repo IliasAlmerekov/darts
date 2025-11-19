@@ -8,6 +8,12 @@
   padding: 24px 32px;
 }
 
+.qr-code-section {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
 .existing-player-list {
   grid-column: 1 / 3;
   background-color: var(--lightgrey);

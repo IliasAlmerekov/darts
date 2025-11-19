@@ -1,48 +1,33 @@
-import { useEffect, useState } from "react";
-import { getGamePlayers } from "../services/api";
+import { useCallback, useMemo, useState } from "react";
+import { useEventSource } from "./useEventSource";
 
 interface Player {
   id: number;
   name: string;
 }
 
-export const useGamePlayers = (gameId: number | null, pollingInterval: number = 3000) => {
+type PlayersEventPayload = {
+  players?: Player[];
+};
+
+export const useGamePlayers = (gameId: number | null) => {
   const [players, setPlayers] = useState<Player[]>([]);
-  const [loading, setLoading] = useState<boolean>(false);
-  const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    if (!gameId) {
-      setPlayers([]);
-      return;
+  const url = useMemo(() => (gameId ? `/api/room/${gameId}/stream` : null), [gameId]);
+
+  const handlePlayers = useCallback((event: MessageEvent<string>) => {
+    try {
+      const payload = JSON.parse(event.data) as PlayersEventPayload;
+
+      if (Array.isArray(payload.players)) {
+        setPlayers(payload.players);
+      }
+    } catch (error) {
+      console.error("[useGamePlayers] Failed to parse players event data:", error);
     }
+  }, []);
 
-    const fetchPlayers = async () => {
-      try {
-        setLoading(true);
-        const data = await getGamePlayers(gameId);
+  useEventSource(url, "players", handlePlayers, { withCredentials: true });
 
-        if (data.players && Array.isArray(data.players)) {
-          setPlayers(data.players);
-        }
-        setError(null);
-      } catch (err) {
-        setError(err instanceof Error ? err.message : "Failed to fetch players");
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchPlayers();
-
-    const intervalId = setInterval(fetchPlayers, pollingInterval);
-
-    return () => {
-      if (intervalId) {
-        clearInterval(intervalId);
-      }
-    };
-  }, [gameId, pollingInterval]);
-
-  return { players, loading, error };
+  return { players, count: players.length };
 };

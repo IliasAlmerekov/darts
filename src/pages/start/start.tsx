@@ -1,152 +1,66 @@
 import "./start.css";
-import React, { useEffect, useRef, useState } from "react";
+import React from "react";
 import NavigationBar from "../../components/NavigationBar/NavigationBar";
 import SelectedPlayerItem from "../../components/PlayerItems/SelectedPlayerItem";
 import Plus from "../../icons/plus.svg";
-import userPLus from "../../icons/user-plus.svg";
 import LinkButton from "../../components/LinkButton/LinkButton";
 import Button from "../../components/Button/Button";
 import "../../components/Button/Button.css";
-import Overlay from "../../components/Overlay/Overlay";
-import DefaultInputField from "../../components/InputField/DefaultInputField";
-import deleteIcon from "../../icons/delete.svg";
 import { DndContext } from "@dnd-kit/core";
 import { SortableContext, verticalListSortingStrategy } from "@dnd-kit/sortable";
 import { restrictToVerticalAxis } from "@dnd-kit/modifiers";
 import { useUser } from "../../provider/UserProvider";
-import { handleCreateGame } from "../../services/api";
 import QRCode from "../../components/QRCode/QRCode";
-import { useGamePlayers } from "../../hooks/useGamePlayers";
-
-export type PlayerProps = {
-  id: number;
-  name: string;
-  isAdded?: boolean;
-  isClicked?: number | null;
-};
+import { UseInitializePlayers } from "../../hooks/useInitializePlayers";
+import { useRoomInvitation } from "../../hooks/useRoomInvitation";
+import { UseSyncLivePlayersWithEvent } from "../../hooks/useSyncLivePlayersWithEvent";
 
 function Start() {
   const START_SOUND_PATH = "/sounds/start-round-sound.mp3";
   const frontendBaseUrl = "http://localhost:5173";
 
   const { event, updateEvent, functions } = useUser();
-  const isFirstRender = useRef(true);
-  const previousLivePlayersRef = useRef<Set<number>>(new Set());
-  const selectedPlayersRef = useRef(event.selectedPlayers);
-  const [invitation, setInvitation] = useState<{
-    gameId: number;
-    invitationLink: string;
-  } | null>(null);
 
-  useEffect(() => {
-    selectedPlayersRef.current = event.selectedPlayers;
-  }, [event.selectedPlayers]);
+  // Initialize Players on first render
+  UseInitializePlayers({ event, updateEvent, functions });
 
-  const { players: livePlayers } = useGamePlayers(invitation ? invitation.gameId : null, 3000);
+  // Invitation and handling room creation
+  const { invitation, createRoom } = useRoomInvitation();
 
-  const handleCreateRoom = async () => {
-    try {
-      const data = await handleCreateGame();
-      setInvitation(data);
-    } catch (err) {
-      console.error("Error during room creation:", err);
-    }
-  };
-
-  useEffect(() => {
-    if (livePlayers.length > 0) {
-      const currentLivePlayerIds = new Set(livePlayers.map((p) => p.id));
-      const previousLivePlayerIds = previousLivePlayersRef.current;
-
-      const newPlayers = livePlayers.filter(
-        (livePlayer) => !previousLivePlayerIds.has(livePlayer.id),
-      );
-
-      if (newPlayers.length > 0) {
-        const playersToAdd = newPlayers.map((p) => ({
-          id: p.id,
-          name: p.name,
-          isAdded: true,
-        }));
-
-        updateEvent({
-          selectedPlayers: [...selectedPlayersRef.current, ...playersToAdd],
-        });
-      }
-
-      previousLivePlayersRef.current = currentLivePlayerIds;
-    }
-  }, [livePlayers, updateEvent]);
-
-  useEffect(() => {
-    if (isFirstRender.current) {
-      isFirstRender.current = false;
-
-      if (event.list?.length === 0) {
-        functions.initializePlayerList();
-      } else {
-        updateEvent({ selectedPlayers: event.list });
-        const playersFromLS = localStorage.getItem("UserUnselected");
-        const playersFromLocalStorage = !!playersFromLS && JSON.parse(playersFromLS);
-        updateEvent({ unselectedPlayers: playersFromLocalStorage || [] });
-      }
-    }
-  }, [event.list, functions, updateEvent]);
+  // Auto-sync live players with event selected players
+  UseSyncLivePlayersWithEvent({
+    gameId: invitation?.gameId ?? null,
+    selectedPlayers: event.selectedPlayers,
+    updateEvent,
+  });
 
   return (
     <div className="main">
-      <Overlay
-        className="overlay-box"
-        src={deleteIcon}
-        isOpen={event.isNewPlayerOverlayOpen}
-        onClose={() => {
-          updateEvent({ newPlayer: "", isNewPlayerOverlayOpen: false });
-        }}
-      >
-        <div className="create-player-overlay">
-          <p className="overlay-heading">New Player</p>
-          <DefaultInputField
-            name={""}
-            value={event.newPlayer}
-            placeholder="Playername"
-            onChange={functions.handleChange}
-            onKeyDown={() => functions.handleKeyPess}
-          />
-          {event.errormessage && <p id="error-message">{event.errormessage}</p>}
-          <Button
-            iconStyling="user-plus"
-            label="Player Input"
-            iconSrc={userPLus}
-            handleClick={() => {
-              functions.createPlayer(event.newPlayer);
-            }}
-            link={""}
-          />
-        </div>
-      </Overlay>
       <div className="start">
         <NavigationBar />
         <>
           <div className="existing-player-list">
             <div className="header">
-              <h4 className="header-unselected-players">QR Code Invitation</h4>
+              <h4 className="header-unselected-players">Login</h4>
             </div>
-            {invitation && (
-              <QRCode
-                invitationLink={frontendBaseUrl + invitation.invitationLink}
-                gameId={invitation.gameId}
-              />
-            )}
-
+            <div className="qr-code-section">
+              {invitation && (
+                <QRCode
+                  invitationLink={frontendBaseUrl + invitation.invitationLink}
+                  gameId={invitation.gameId}
+                />
+              )}
+            </div>
             <div className="bottom">
               <LinkButton
                 className="create-new-player-button h4"
-                label="Create Game"
+                label={invitation ? "Create New Game" : "Create Game"}
                 icon={Plus}
-                handleClick={handleCreateRoom}
+                handleClick={createRoom}
               />
             </div>
           </div>
+
           <div className="added-player-list">
             <h4 className="header-selected-players">
               Selected Players <div className="listCount">{event.selectedPlayers.length}/10</div>
