@@ -103,18 +103,3 @@
 .qr-code-actions .btn {
   flex: 1;
 }
-
-@media (max-width: 600px) {
-  .qr-code-container {
-    padding: 1.5rem;
-  }
-
-  .qr-code-heading {
-    font-size: 1.5rem;
-  }
-
-  .qr-code-wrapper svg {
-    width: 200px !important;
-    height: 200px !important;
-  }
-}

@@ -256,7 +256,7 @@ export const UserProvider = ({ children }: UserProviderProps) => {
 
     switch (id) {
       case "game":
-        navigate("/");
+        navigate("/start");
         break;
       case "settings":
         navigate("/settings");
