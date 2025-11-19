@@ -1,7 +1,7 @@
 import React from "react";
 import { BrowserRouter, Route, Routes } from "react-router-dom";
 import "../css/index.css";
-import Start from "../pages/start/start";
+import Start from "../pages/Start/Start";
 import Game from "../pages/Game/Game";
 import Gamesummary from "../pages/gamesummary/Gamesummary";
 import JoinedGame from "../pages/JoinedGame/JoinedGame";
