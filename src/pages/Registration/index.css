@@ -1,3 +1,4 @@
+/* Registration form uses the same styling as the login form */
 .login-container {
   margin-top: 3rem;
   padding: 0 15px;
@@ -16,11 +17,11 @@
 }
 
 .login-card {
-  background: #fff; /* Bereits #fff */
+  background: #fff; /* BEHOBEN: #ffffff zu #fff */
   border-radius: 8px;
   box-shadow:
     0 4px 6px rgb(0 0 0 / 10%),
-    /* Geändert: rgba zu rgb und 0.1 zu 10% */ 0 1px 3px rgb(0 0 0 / 8%); /* Geändert: rgba zu rgb und 0.08 zu 8% */
+    /* BEHOBEN: rgba(0, 0, 0, 0.1) zu rgb(0 0 0 / 10%) */ 0 1px 3px rgb(0 0 0 / 8%); /* BEHOBEN: rgba(0, 0, 0, 0.08) zu rgb(0 0 0 / 8%) */
 }
 
 .login-card-body {
@@ -86,7 +87,7 @@ h1 {
 
 .input-group:focus-within {
   border-color: #86b7fe;
-  box-shadow: 0 0 0 0.25rem rgb(13 110 253 / 25%); /* Geändert: rgba zu rgb und 0.25 zu 25% */
+  box-shadow: 0 0 0 0.25rem rgb(13 110 253 / 25%); /* BEHOBEN: rgba(13, 110, 253, 0.25) zu rgb(13 110 253 / 25%) */
 }
 
 .icon {
@@ -136,18 +137,18 @@ h1 {
   cursor: pointer;
   font-weight: 500;
   transition: all 0.15s ease-in-out;
-  margin-top: 0; /* Geändert: 0px zu 0 */
+  margin-top: 0; /* BEHOBEN: 0px zu 0 */
 }
 
 .btn-primary {
   background-color: #0d6efd;
-  color: #fff; /* Geändert: #ffffff zu #fff */
+  color: #fff; /* BEHOBEN: #ffffff zu #fff */
 }
 
 .btn-primary:hover {
   background-color: #0b5ed7;
   transform: translateY(-1px);
-  box-shadow: 0 4px 8px rgb(13 110 253 / 30%); /* Geändert: rgba zu rgb und 0.3 zu 30% */
+  box-shadow: 0 4px 8px rgb(13 110 253 / 30%); /* BEHOBEN: rgba(13, 110, 253, 0.3) zu rgb(13 110 253 / 30%) */
 }
 
 .btn-primary:active {

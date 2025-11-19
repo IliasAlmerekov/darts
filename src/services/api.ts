@@ -1,8 +1,6 @@
-const API_BASE_URL = "http://localhost:8001";
-
 export const handleCreateGame = async () => {
   try {
-    const createResponse = await fetch(`${API_BASE_URL}/room/create`, {
+    const createResponse = await fetch(`/api/room/create`, {
       method: "POST",
       credentials: "include",
       headers: {
@@ -16,7 +14,7 @@ export const handleCreateGame = async () => {
 
     const createData = await createResponse.json();
 
-    const inviteResponse = await fetch(`${API_BASE_URL}/invite/create/${createData.gameId}`, {
+    const inviteResponse = await fetch(`/api/invite/create/${createData.gameId}`, {
       method: "GET",
       credentials: "include",
       headers: {
@@ -42,7 +40,7 @@ export const handleCreateGame = async () => {
 
 export const getGamePlayers = async (gameId: number) => {
   try {
-    const response = await fetch(`${API_BASE_URL}/room/${gameId}`, {
+    const response = await fetch(`/api/room/${gameId}`, {
       method: "GET",
       credentials: "include",
       headers: {

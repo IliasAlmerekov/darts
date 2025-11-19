@@ -27,6 +27,7 @@ export type PlayerProps = {
 
 function Start() {
   const START_SOUND_PATH = "/sounds/start-round-sound.mp3";
+  const frontendBaseUrl = "http://localhost:5173";
 
   const { event, updateEvent, functions } = useUser();
   const isFirstRender = useRef(true);
@@ -131,7 +132,10 @@ function Start() {
               <h4 className="header-unselected-players">QR Code Invitation</h4>
             </div>
             {invitation && (
-              <QRCode invitationLink={invitation.invitationLink} gameId={invitation.gameId} />
+              <QRCode
+                invitationLink={frontendBaseUrl + invitation.invitationLink}
+                gameId={invitation.gameId}
+              />
             )}
 
             <div className="bottom">
