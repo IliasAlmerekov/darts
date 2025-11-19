@@ -1,0 +1,88 @@
+.skeleton {
+  background: linear-gradient(90deg, #e0e0e0 0%, #f0f0f0 50%, #e0e0e0 100%);
+  background-size: 200% 100%;
+  animation: loading 1.5s ease-in-out infinite;
+  border-radius: 8px;
+}
+
+@keyframes loading {
+  0% {
+    background-position: 200% 0;
+  }
+
+  100% {
+    background-position: -200% 0;
+  }
+}
+
+.skeleton-title-left {
+  width: 120px;
+  height: 28px;
+  margin: 32px 0;
+}
+
+.skeleton-nav {
+  grid-column: 1 / -1;
+  display: flex;
+  margin-top: 40px;
+  justify-content: space-between;
+  background-color: #fff;
+  align-items: center;
+  width: 100%;
+  box-shadow: 0 4px 20px 0 #00000026;
+  border-radius: 9999px;
+  height: 48px;
+  padding: 0;
+  gap: 0;
+}
+
+.skeleton-logo {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  margin-left: 4px;
+}
+
+.skeleton-title {
+  width: 120px;
+  height: 28px;
+}
+
+.skeleton-qr {
+  width: 200px;
+  height: 200px;
+  border-radius: 16px;
+}
+
+.skeleton-button {
+  width: 100%;
+  height: 48px;
+  border-radius: 8px;
+}
+
+.skeleton-count {
+  width: 50px;
+  height: 24px;
+}
+
+.skeleton-player-item {
+  height: 56px;
+  margin-bottom: 12px;
+  border-radius: 8px;
+}
+
+.skeleton-start-button {
+  width: 100%;
+  height: 56px;
+  border-radius: 8px;
+}
+
+.skeleton-deepblue-icon {
+  position: fixed;
+  top: 32px;
+  right: 32px;
+  width: 120px;
+  height: 40px;
+  border-radius: 8px;
+}

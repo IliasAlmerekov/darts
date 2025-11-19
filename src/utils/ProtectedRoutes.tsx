@@ -1,5 +1,8 @@
 import { Navigate, Outlet } from "react-router-dom";
 import React, { useState, useEffect } from "react";
+import StartPageSkeleton from "../components/StartPageSkeleton/StartPageSkeleton";
+import LoginSuccessSkeleton from "../components/LoginSuccessSkeleton/LoginSuccessSkeleton";
+import UniversalSkeleton from "../components/Universalskeleton/UniversalSkeleton";
 
 type ProtectedRoutesProps = {
   allowedRoles?: string[];
@@ -45,7 +48,13 @@ const ProtectedRoutes: React.FC<ProtectedRoutesProps> = ({ allowedRoles = ["ROLE
   }, []);
 
   if (checking) {
-    return <div>Loading...</div>;
+    if (location.pathname.includes("/start")) {
+      return <StartPageSkeleton />;
+    }
+    if (location.pathname.includes("/joined")) {
+      return <LoginSuccessSkeleton />;
+    }
+    return <UniversalSkeleton />;
   }
 
   const roles = loggedInUser?.roles;
