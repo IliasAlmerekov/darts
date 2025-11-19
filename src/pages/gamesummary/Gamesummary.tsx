@@ -7,7 +7,7 @@ import { Link } from "react-router-dom";
 import React, { useMemo } from "react";
 import { useUser } from "../../provider/UserProvider";
 
-function Gamesummary(): JSX.Element {
+function Gamesummary(): React.JSX.Element {
   const { event, functions } = useUser();
 
   const newList: BASIC.WinnerPlayerProps[] = useMemo(() => {
@@ -58,7 +58,7 @@ function Gamesummary(): JSX.Element {
       <div className="back-to-start-button">
         <Button
           className="back-to-start-button"
-          link={"/"}
+          link={"/start"}
           isLink
           label="Back To Start"
           type="primary"

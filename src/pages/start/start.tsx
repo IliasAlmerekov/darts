@@ -81,7 +81,9 @@ function Start() {
                         {...player}
                         key={index}
                         user={player}
-                        handleClick={() => functions.handleUnselect(player.name, player.id)}
+                        handleClick={() =>
+                          functions.handleUnselect(player.id, invitation ? invitation.gameId : null)
+                        }
                         alt="Unselect player cross"
                         dragEnd={event.dragEnd}
                       />

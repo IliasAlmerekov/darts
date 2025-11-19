@@ -14,7 +14,7 @@ import Login from "../pages/Login/Login";
 import Registration from "../pages/Registration/Registration";
 import ProtectedRoutes from "../utils/ProtectedRoutes";
 
-function App() {
+function App(): React.JSX.Element {
   return (
     <div className="app">
       <BrowserRouter>

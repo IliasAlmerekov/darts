@@ -29,8 +29,10 @@ export function UseSyncLivePlayersWithEvent({
     const currentLivePlayersIds = new Set(livePlayers.map((p) => p.id));
     const previousLivePlayerIds = previousLivePlayersRef.current;
 
+    const selectedIds = new Set(selectedPlayersRef.current.map((player) => player.id));
+
     const newPlayers = livePlayers.filter(
-      (livePlayer) => !previousLivePlayerIds.has(livePlayer.id),
+      (livePlayer) => !previousLivePlayerIds.has(livePlayer.id) && !selectedIds.has(livePlayer.id),
     );
 
     if (newPlayers.length > 0) {
