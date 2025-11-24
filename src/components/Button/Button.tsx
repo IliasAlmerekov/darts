@@ -14,7 +14,7 @@ export interface ButtonProps {
   type?: "primary" | "secondary";
   className?: string;
   iconStyling?: string;
-  link: To;
+  link?: To;
   alt?: string;
   disabled?: boolean;
 }
@@ -25,27 +25,21 @@ function Button({ ...props }: ButtonProps) {
   const buttonClasses = clsx(props?.className, "btn h4", {
     "btn-primary": buttonType === "primary" && !props.isInverted,
     "btn-secondary": buttonType === "secondary" && !props.isInverted,
-    "inverted": props.isInverted && buttonType !== "secondary",
+    inverted: props.isInverted && buttonType !== "secondary",
     "inverted-secondary": props.isInverted && buttonType === "secondary",
-    "disabled": props.disabled,
+    disabled: props.disabled,
   });
 
   const buttonContent = (
     <>
-      {props.iconSrc && (
-        <img
-          src={props.iconSrc}
-          alt={props.alt}
-          className={props.iconStyling}
-        />
-      )}
+      {props.iconSrc && <img src={props.iconSrc} alt={props.alt} className={props.iconStyling} />}
       {props.label}
     </>
   );
 
   if (props.isLink) {
     return (
-      <Link className="no-underline" to={props.disabled ? '' : props.link}>
+      <Link className="no-underline" to={props.disabled ? "" : props.link}>
         <button className={buttonClasses} onClick={props.handleClick}>
           {buttonContent}
         </button>

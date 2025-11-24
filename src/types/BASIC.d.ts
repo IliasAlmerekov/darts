@@ -51,4 +51,10 @@ declare namespace BASIC {
     throwCount: number;
     playerTurn: number;
   }
+
+  interface RematchResponse {
+    success: boolean;
+    gameId: number;
+    invitationLink: string;
+  }
 }

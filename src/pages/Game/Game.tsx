@@ -28,7 +28,7 @@ function Game() {
   }, [event.throwCount, event.isFinishGameOverlayOpen, functions]);
 
   useEffect(() => {
-    const initialPlayerCount = event.userList.length;
+    const initialPlayerCount = event.selectedPlayers.length;
 
     if (initialPlayerCount > 0 && event.finishedPlayerList.length === initialPlayerCount) {
       updateEvent({
@@ -36,15 +36,15 @@ function Game() {
         lastHistory: event.history,
       });
       navigate("/summary");
+
       if (initialPlayerCount === 2) {
         functions.playSound(WIN_SOUND_PATH);
       }
     }
   }, [
-    event.finishedPlayerList.length,
     event.finishedPlayerList,
     event.history,
-    event.userList.length,
+    event.selectedPlayers.length,
     functions,
     navigate,
     updateEvent,

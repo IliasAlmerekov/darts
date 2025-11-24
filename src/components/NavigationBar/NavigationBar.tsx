@@ -11,7 +11,7 @@ import "./NavigationBar.css";
 import { useNavigate } from "react-router-dom";
 import Madebydeepblue from "../../icons/madeByDeepblue.svg";
 
-export default function NavigationBar() {
+export default function NavigationBar(): React.JSX.Element {
   const { event, functions } = useUser();
   const navigate = useNavigate();
 
@@ -49,11 +49,7 @@ export default function NavigationBar() {
         >
           <span>
             <img
-              src={
-                item.id === event.activeTab
-                  ? item.activeIcon
-                  : item.inActiveIcon
-              }
+              src={item.id === event.activeTab ? item.activeIcon : item.inActiveIcon}
               alt={item.label}
             />
             {item.label}

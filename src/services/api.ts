@@ -80,3 +80,53 @@ export const deletePlayerFromGame = async (gameId: number, playerId: number) => 
     throw err;
   }
 };
+
+export async function createRematch(previousGameId: number): Promise<BASIC.RematchResponse> {
+  const response = await fetch(`/api/room/${previousGameId}/rematch`, {
+    method: "POST",
+    credentials: "include",
+    headers: {
+      Accept: "application/json",
+    },
+  });
+
+  if (!response.ok) {
+    throw new Error("Failed to create rematch");
+  }
+
+  return await response.json();
+}
+
+export async function startGame(
+  gameId: number,
+  config: {
+    startScore: number;
+    doubleOut: boolean;
+    tripleOut: boolean;
+    round?: number;
+    status?: string;
+  },
+) {
+  const response = await fetch(`/api/game/${gameId}/start`, {
+    method: "POST",
+    credentials: "include",
+    headers: {
+      Accept: "application/json",
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      status: config.status,
+      round: config.round,
+      startscore: config.startScore,
+      doubleout: config.doubleOut,
+      tripleout: config.tripleOut,
+    }),
+  });
+
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(error.error || "Failed to start game");
+  }
+
+  return response.json();
+}
