@@ -11,6 +11,7 @@ import { UserProvider } from "../provider/UserProvider";
 import Settings from "../components/Settings/Settings";
 import Statistic from "../components/Statistics/Statistics";
 import Login from "../pages/Login/Login";
+import Playerprofile from "../pages/Playerprofile/Playerprofile";
 import Registration from "../pages/Registration/Registration";
 import ProtectedRoutes from "../utils/ProtectedRoutes";
 
@@ -35,6 +36,7 @@ function App(): React.JSX.Element {
 
             <Route element={<ProtectedRoutes allowedRoles={["ROLE_PLAYER"]} />}>
               <Route path="/joined" element={<JoinedGame />} />
+              <Route path="/playerprofile" element={<Playerprofile />} />
             </Route>
           </Routes>
         </UserProvider>

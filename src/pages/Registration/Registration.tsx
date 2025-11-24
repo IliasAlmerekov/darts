@@ -3,10 +3,12 @@ import "./index.css";
 import emailIcon from "../../icons/email.svg";
 import passwordIcon from "../../icons/password.svg";
 import userIcon from "../../icons/user.svg";
+import { useNavigate } from "react-router-dom";
 
 const Registration = () => {
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const navigate = useNavigate();
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -46,7 +48,7 @@ const Registration = () => {
       const data = await response.json();
       console.log("Registration successful:", data);
       if (data.redirect) {
-        window.location.href = data.redirect;
+        navigate(data.redirect);
       }
     } catch (err) {
       console.error("Auth check failed:", err);
