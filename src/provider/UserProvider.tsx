@@ -12,7 +12,9 @@ import { DragEndEvent } from "@dnd-kit/core";
 import { $settings, newSettings } from "../stores/settings";
 import { useStore } from "@nanostores/react";
 import { NavigateFunction } from "react-router-dom";
-import { deletePlayerFromGame } from "../services/api";
+import { createRematch, deletePlayerFromGame } from "../services/api";
+import { persistInvitationToStorage, readInvitationFromStorage } from "../hooks/useRoomInvitation";
+// import { UseInitializePlayers } from "../hooks/useInitializePlayers";
 
 interface PlayerProps {
   id: number;
@@ -49,8 +51,8 @@ interface GameSummury {
 }
 
 const getSelectedPlayersFromLS = (): PlayerProps[] => {
-  if (localStorage.getItem("SelectedPlayers") !== null) {
-    const playersFromLS = localStorage.getItem("SelectedPlayers");
+  if (sessionStorage.getItem("SelectedPlayers") !== null) {
+    const playersFromLS = sessionStorage.getItem("SelectedPlayers");
     const playersFromLocalStorage = !!playersFromLS && JSON.parse(playersFromLS);
     return playersFromLocalStorage;
   } else {
@@ -59,18 +61,23 @@ const getSelectedPlayersFromLS = (): PlayerProps[] => {
 };
 
 interface GameState {
+  // Start.tsx
   newPlayer: string;
   isNewPlayerOverlayOpen: boolean;
   selectedPlayers: PlayerProps[];
-  unselectedPlayers: PlayerProps[];
+  // unselectedPlayers: PlayerProps[];
   dragEnd?: boolean;
   clickedPlayerId: number | null;
   errormessage: string;
   activeTab: string;
   list: PlayerProps[];
   userList: PlayerProps[];
+
+  // summary
   winnerList: BASIC.WinnerPlayerProps[];
   lastHistory: BASIC.GameState[];
+
+  // Game.tsx
   playerScore: number;
   roundsCount: number;
   playerList: BASIC.WinnerPlayerProps[];
@@ -83,18 +90,19 @@ interface GameState {
   history: BASIC.GameState[];
   finishedPlayerList: BASIC.WinnerPlayerProps[];
   isInitialized: boolean;
+  currentGameId: number | null;
 }
 
 interface GameFunctions {
   initializePlayerList: () => void;
   playSound: (soundType: string) => void;
   handleTabClick: (id: string, navigate: NavigateFunction) => void;
-  handleSelectPlayer: (name: string, id: number) => void;
+  // handleSelectPlayer: (name: string, id: number) => void;
   handleChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
-  handleKeyPess: (name: string) => (e: React.KeyboardEvent<HTMLInputElement>) => void;
+  // handleKeyPess: (name: string) => (e: React.KeyboardEvent<HTMLInputElement>) => void;
   handleUnselect: (id: number, gameId?: number | null) => void;
   handleDragEnd: (e: DragEndEvent) => void;
-  createPlayer: (name: string) => void;
+  // createPlayer: (name: string) => void;
   // getUserFromLS: () => PlayerProps[] | null;
   getSelectedPlayersFromLS: () => PlayerProps[];
   savedFinishedGameToLS: (players: BASIC.WinnerPlayerProps[]) => void;
@@ -105,7 +113,7 @@ interface GameFunctions {
     averageRoundScore: number;
   }[];
   getFinishedGamesSummary(): GameSummury[];
-  addUnselectedUserListToLs: (players: PlayerProps[]) => void;
+  // addUnselectedUserListToLs: (players: PlayerProps[]) => void;
   addUserToLS: (name: string, id: number) => void;
   resetGame: () => void;
   undoFromSummary: () => void;
@@ -122,18 +130,19 @@ interface GameFunctions {
   handleLastPlayer: () => void;
   sortPlayer: () => void;
   changeActivePlayer: () => void;
+  startRematch: (mode: "play-again" | "back-to-start") => Promise<void>;
 }
 
 const defaultFunctions: GameFunctions = {
   initializePlayerList: () => {},
   playSound: () => {},
   handleTabClick: () => {},
-  handleSelectPlayer: () => {},
+  // handleSelectPlayer: () => {},
   handleChange: () => {},
   handleUnselect: () => {},
   handleDragEnd: () => {},
-  createPlayer: () => {},
-  addUnselectedUserListToLs: () => {},
+  // createPlayer: () => {},
+  // addUnselectedUserListToLs: () => {},
   addUserToLS: () => {},
   resetGame: () => {},
   undoFromSummary: () => {},
@@ -146,11 +155,12 @@ const defaultFunctions: GameFunctions = {
   handleLastPlayer: () => {},
   sortPlayer: () => {},
   changeActivePlayer: () => {},
+  startRematch: () => Promise.resolve(),
   getAllPlayerStats: () => [],
   getFinishedGamesSummary: () => [],
-  handleKeyPess: function (): (e: React.KeyboardEvent<HTMLInputElement>) => void {
-    throw new Error("Function not implemented.");
-  },
+  // // handleKeyPess: function (): (e: React.KeyboardEvent<HTMLInputElement>) => void {
+  //   throw new Error("Function not implemented.");
+  // },
   // getUserFromLS: function (): PlayerProps[] | null {
   //   throw new Error("Function not implemented.");
   // },
@@ -168,12 +178,14 @@ interface UserContextType {
   functions: GameFunctions;
 }
 
+const initialInvitation = readInvitationFromStorage();
+
 const initialValues: GameState = {
   //Start.tsx
   newPlayer: "",
   isNewPlayerOverlayOpen: false,
   selectedPlayers: getSelectedPlayersFromLS() /* <PlayerProps[]> */,
-  unselectedPlayers: [] /* <PlayerProps[]> */,
+  // unselectedPlayers: [] /* <PlayerProps[]> */,
   dragEnd: undefined /* <boolean> */,
   clickedPlayerId: null /* <number | null> */,
   errormessage: "",
@@ -198,6 +210,7 @@ const initialValues: GameState = {
   history: [] /* <GameState[]> */,
   finishedPlayerList: [] /* <BASIC.WinnerPlayerProps[]> */,
   isInitialized: false,
+  currentGameId: initialInvitation?.gameId ?? null,
 };
 
 export const UserContext = createContext<UserContextType>({
@@ -220,9 +233,9 @@ export const UserProvider = ({ children }: UserProviderProps) => {
   const startingScoreRef = useRef<number | null>(null);
 
   // all sounds
-  const SELECT_PLAYER_SOUND_PATH = "/sounds/select-sound.mp3";
+  // const SELECT_PLAYER_SOUND_PATH = "/sounds/select-sound.mp3";
   const UNSELECT_PLAYER_SOUND_PATH = "/sounds/unselect-sound.mp3";
-  const ADD_PLAYER_SOUND_PATH = "/sounds/add-player-sound.mp3";
+  // const ADD_PLAYER_SOUND_PATH = "/sounds/add-player-sound.mp3";
   const ERROR_SOUND_PATH = "/sounds/error-sound.mp3";
   const THROW_SOUND_PATH = "/sounds/throw-sound.mp3";
   const WIN_SOUND_PATH = "/sounds/win-sound.mp3";
@@ -248,7 +261,7 @@ export const UserProvider = ({ children }: UserProviderProps) => {
       isAdded: false,
       isClicked: event.clickedPlayerId,
     }));
-    updateEvent({ unselectedPlayers: initialPlayerList });
+    updateEvent({ selectedPlayers: initialPlayerList });
   }, [event.clickedPlayerId, event.userList, updateEvent]);
 
   // NavigationBar
@@ -280,37 +293,37 @@ export const UserProvider = ({ children }: UserProviderProps) => {
     }
   }, []);
 
-  function handleSelectPlayer(name: string, id: number) {
-    if (event.selectedPlayers.length === 10) return;
-    updateEvent({ clickedPlayerId: id });
-    setTimeout(() => {
-      const updatedUnselectedPlayerList = event.unselectedPlayers.filter(
-        (list: PlayerProps) => list.id !== id,
-      );
-      const updatedSelectedPlayerList: PlayerProps[] = [
-        ...event.selectedPlayers,
-        { name, isAdded: true, id },
-      ];
-      updateEvent({
-        selectedPlayers: updatedSelectedPlayerList,
-        unselectedPlayers: updatedUnselectedPlayerList,
-        list: updatedSelectedPlayerList,
-      });
-      localStorage.setItem("UserUnselected", JSON.stringify(updatedUnselectedPlayerList));
-      functions.playSound(SELECT_PLAYER_SOUND_PATH);
-    }, 200);
-  }
+  // function handleSelectPlayer(name: string, id: number) {
+  //   if (event.selectedPlayers.length === 10) return;
+  //   updateEvent({ clickedPlayerId: id });
+  //   setTimeout(() => {
+  //     const updatedUnselectedPlayerList = event.unselectedPlayers.filter(
+  //       (list: PlayerProps) => list.id !== id,
+  //     );
+  //     const updatedSelectedPlayerList: PlayerProps[] = [
+  //       ...event.selectedPlayers,
+  //       { name, isAdded: true, id },
+  //     ];
+  //     updateEvent({
+  //       selectedPlayers: updatedSelectedPlayerList,
+  //       unselectedPlayers: updatedUnselectedPlayerList,
+  //       list: updatedSelectedPlayerList,
+  //     });
+  //     localStorage.setItem("UserUnselected", JSON.stringify(updatedUnselectedPlayerList));
+  //     functions.playSound(SELECT_PLAYER_SOUND_PATH);
+  //   }, 200);
+  // }
 
   function handleChange(e: React.ChangeEvent<HTMLInputElement>) {
     updateEvent({ newPlayer: e.target.value });
   }
 
-  const handleKeyPess = (name: string) => (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === "Enter") {
-      updateEvent({ newPlayer: name });
-      functions.createPlayer(name);
-    }
-  };
+  // const handleKeyPess = (name: string) => (e: React.KeyboardEvent<HTMLInputElement>) => {
+  //   if (e.key === "Enter") {
+  //     updateEvent({ newPlayer: name });
+  //     functions.createPlayer(name);
+  //   }
+  // };
 
   function handleUnselect(id: number, gameId?: number | null) {
     updateEvent({ clickedPlayerId: null });
@@ -324,7 +337,7 @@ export const UserProvider = ({ children }: UserProviderProps) => {
         list: updatedSelectedPlayers,
       });
 
-      localStorage.setItem("SelectedPlayers", JSON.stringify(updatedSelectedPlayers));
+      sessionStorage.setItem("SelectedPlayers", JSON.stringify(updatedSelectedPlayers));
       functions.playSound(UNSELECT_PLAYER_SOUND_PATH);
     };
 
@@ -357,36 +370,36 @@ export const UserProvider = ({ children }: UserProviderProps) => {
     }
   }
 
-  function createPlayer(name: string) {
-    if (!/^[^\s][a-zA-Z0-9 _-]{2,}$/.test(name)) {
-      updateEvent({
-        newPlayer: "",
-        errormessage:
-          "Nickname must contain at least 3 letters or digits and cannot start with a space.",
-      });
-      functions.playSound(ERROR_SOUND_PATH);
-      return;
-    }
-    const id = Number(new Date());
-    addUserToLS(name, id);
+  // function createPlayer(name: string) {
+  //   if (!/^[^\s][a-zA-Z0-9 _-]{2,}$/.test(name)) {
+  //     updateEvent({
+  //       newPlayer: "",
+  //       errormessage:
+  //         "Nickname must contain at least 3 letters or digits and cannot start with a space.",
+  //     });
+  //     functions.playSound(ERROR_SOUND_PATH);
+  //     return;
+  //   }
+  //   const id = Number(new Date());
+  //   addUserToLS(name, id);
 
-    if (event.selectedPlayers.length === 10) {
-      const updatedUnselectedPlayers = [...event.unselectedPlayers, { name, isAdded: false, id }];
-      updateEvent({ unselectedPlayers: updatedUnselectedPlayers });
-    } else {
-      const updatedSelectedPlayers = [...event.selectedPlayers, { name, isAdded: true, id }];
-      updateEvent({
-        selectedPlayers: updatedSelectedPlayers,
-        list: updatedSelectedPlayers,
-      });
-    }
-    updateEvent({
-      newPlayer: "",
-      isNewPlayerOverlayOpen: !event.isNewPlayerOverlayOpen,
-      errormessage: "",
-    });
-    functions.playSound(ADD_PLAYER_SOUND_PATH);
-  }
+  //   if (event.selectedPlayers.length === 10) {
+  //     // const updatedUnselectedPlayers = [...event.unselectedPlayers, { name, isAdded: false, id }];
+  //     // updateEvent({ unselectedPlayers: updatedUnselectedPlayers });
+  //   } else {
+  //     const updatedSelectedPlayers = [...event.selectedPlayers, { name, isAdded: true, id }];
+  //     updateEvent({
+  //       selectedPlayers: updatedSelectedPlayers,
+  //       list: updatedSelectedPlayers,
+  //     });
+  //   }
+  //   updateEvent({
+  //     newPlayer: "",
+  //     isNewPlayerOverlayOpen: !event.isNewPlayerOverlayOpen,
+  //     errormessage: "",
+  //   });
+  //   functions.playSound(ADD_PLAYER_SOUND_PATH);
+  // }
 
   //App.tsx functions
 
@@ -544,9 +557,9 @@ export const UserProvider = ({ children }: UserProviderProps) => {
     });
   }
 
-  function addUnselectedUserListToLs(unselectedPlayers: PlayerProps[]) {
-    localStorage.setItem("UserUnselected", JSON.stringify(unselectedPlayers));
-  }
+  // function addUnselectedUserListToLs(unselectedPlayers: PlayerProps[]) {
+  //   localStorage.setItem("UserUnselected", JSON.stringify(unselectedPlayers));
+  // }
   // dieser UseEffect holt das gespeicherte Spiel aus dem LS und stellt es wieder her
   useEffect(() => {
     const savedGame = localStorage.getItem("OngoingGame");
@@ -595,14 +608,14 @@ export const UserProvider = ({ children }: UserProviderProps) => {
 
   // Save selectedPlayers to localStorage
   useEffect(() => {
-    localStorage.setItem("SelectedPlayers", JSON.stringify(event.selectedPlayers));
+    sessionStorage.setItem("SelectedPlayers", JSON.stringify(event.selectedPlayers));
   }, [event.selectedPlayers]);
 
   function addUserToLS(name: string, id: number) {
     const newUserList = [...event.userList];
     newUserList.push({ name, id });
     updateEvent({ userList: newUserList });
-    localStorage.setItem("User", JSON.stringify(newUserList));
+    sessionStorage.setItem("User", JSON.stringify(newUserList));
   }
   // diese Funktion ist für den PlayAgain button
   function resetGame() {
@@ -772,30 +785,63 @@ export const UserProvider = ({ children }: UserProviderProps) => {
 
     // wir überprüfen, ob der aktuelle Spieler das Spiel beendet hat
 
-    if (
+    const isGameFinished =
       (updatedPlayerScore === 0 && isDoubleOutMode && isDoubleThrow) ||
       (updatedPlayerScore === 0 && !isDoubleOutMode && !isTripleOutMode) ||
-      (updatedPlayerScore === 0 && isTripleOutMode && isTripleThrow)
-    ) {
+      (updatedPlayerScore === 0 && isTripleOutMode && isTripleThrow);
+
+    if (isGameFinished) {
+      // wenn nur noch 2 Spieler und einer gewinnt, dann ist das Spiel vorbei
       if (event.playerList.length === 2) {
         functions.handleLastPlayer();
-        return event.finishedPlayerList;
-      } else if (event.finishedPlayerList.length < 1) {
+        playSound(WIN_SOUND_PATH);
+        return;
+      }
+
+      // wenn mehr als 2 Spieler, aber ein Spieler gewinnt, wir zeigen das Overlay an
+      if (event.finishedPlayerList.length < 1) {
         updateEvent({ isFinishGameOverlayOpen: true });
         playSound(WIN_SOUND_PATH);
-      } else {
-        functions.handlePlayerFinishTurn();
-        return event.playerList;
+        return;
       }
-      updateEvent({ winnerList: event.finishedPlayerList });
+
+      // jemand hat gewonnen und jemand bis 0 erreicht
+      functions.handlePlayerFinishTurn();
+      return;
     }
-    const updatedPlayerlist = [...event.playerList];
-    updatedPlayerlist[event.playerTurn] = {
+
+    const updatedPlayerList = [...event.playerList];
+    updatedPlayerList[event.playerTurn] = {
       ...player,
       throwCount: event.throwCount,
     };
-    updateEvent({ playerList: updatedPlayerlist });
+    updateEvent({ playerList: updatedPlayerList });
   }
+
+  // if (
+  //   (updatedPlayerScore === 0 && isDoubleOutMode && isDoubleThrow) ||
+  //   (updatedPlayerScore === 0 && !isDoubleOutMode && !isTripleOutMode) ||
+  //   (updatedPlayerScore === 0 && isTripleOutMode && isTripleThrow)
+  // ) {
+  //   if (event.playerList.length === 2) {
+  //     functions.handleLastPlayer();
+  //   } else if (event.finishedPlayerList.length < 1) {
+  //     updateEvent({ isFinishGameOverlayOpen: true, winnerList: event.finishedPlayerList });
+  //     playSound(WIN_SOUND_PATH);
+  //     return;
+  //   } else {
+  //     functions.handlePlayerFinishTurn();
+  //   }
+  //   }
+  //   updateEvent({ winnerList: event.finishedPlayerList });
+  //   }
+  //   const updatedPlayerlist = [...event.playerList];
+  //   updatedPlayerlist[event.playerTurn] = {
+  //     ...player,
+  //     throwCount: event.throwCount,
+  //   };
+  //   updateEvent({ playerList: updatedPlayerlist });
+  // }
   // wir prüfen, ob der Spieler überworfen hat
   function handleBust(startingScore: number) {
     event.playerList[event.playerTurn].isBust = true;
@@ -822,14 +868,24 @@ export const UserProvider = ({ children }: UserProviderProps) => {
   }
 
   function handleLastPlayer() {
-    const updatedPlayerList = [...event.playerList];
-    updatedPlayerList[event.playerTurn].isPlaying = false;
+    const currentPlayerList = [...event.playerList];
+    currentPlayerList[event.playerTurn].isPlaying = false;
 
-    const updatedFinishedPlayerList = [...event.finishedPlayerList];
-    const playersWithNonZeroScore = event.playerList.filter((player) => player.score !== 0);
-    const playersWithZeroScore = event.playerList.filter((player) => player.score === 0);
-    updatedFinishedPlayerList.push(playersWithZeroScore[0], playersWithNonZeroScore[0]);
-    updateEvent({ finishedPlayerList: updatedFinishedPlayerList });
+    // sortieren der Spieler in Gewinner und Verlierer
+    const playersWithZeroScore = currentPlayerList.filter((player) => player.score === 0);
+    const playersWithNonZeroScore = currentPlayerList.filter((player) => player.score !== 0);
+
+    const updatedFinishedPlayerList = [
+      ...event.finishedPlayerList,
+      playersWithZeroScore[0],
+      playersWithNonZeroScore[0],
+    ];
+
+    updateEvent({
+      playerList: [],
+      finishedPlayerList: updatedFinishedPlayerList,
+      winnerList: updatedFinishedPlayerList,
+    });
   }
   // wir sortieren main-array in absteigender Reihenfolge
   function sortPlayer() {
@@ -841,13 +897,53 @@ export const UserProvider = ({ children }: UserProviderProps) => {
   const handleGameModeClick = (id: string | number) => {
     const mode = id.toString();
     newSettings(mode, storeSettings.points);
-    console.log(mode);
   };
 
   const handlePointsClick = (id: string | number) => {
     const points = Number(id);
     newSettings(storeSettings.gameMode, points);
   };
+
+  async function startRematch(mode: "play-again" | "back-to-start"): Promise<void> {
+    const storedInvitation = readInvitationFromStorage();
+    const prevGameId = event.currentGameId ?? storedInvitation?.gameId ?? null;
+
+    if (!prevGameId) {
+      console.warn("No previous game ID found for rematch.");
+      return;
+    }
+
+    try {
+      const rematch = await createRematch(prevGameId); // { success, gameId, invitationLink }
+
+      persistInvitationToStorage({
+        gameId: rematch.gameId,
+        invitationLink: rematch.invitationLink,
+      });
+
+      updateEvent({
+        currentGameId: rematch.gameId,
+      });
+
+      if (mode === "play-again") {
+        resetGame();
+        return;
+      }
+
+      updateEvent({
+        playerList: [],
+        finishedPlayerList: [],
+        winnerList: [],
+        history: [],
+        throwCount: 0,
+        roundsCount: 1,
+        playerTurn: 0,
+        list: event.selectedPlayers,
+      });
+    } catch (error) {
+      console.error("Failed to start rematch:", error);
+    }
+  }
 
   const functions: GameFunctions = {
     getFinishedGamesSummary,
@@ -856,14 +952,14 @@ export const UserProvider = ({ children }: UserProviderProps) => {
     initializePlayerList,
     playSound,
     handleTabClick,
-    handleSelectPlayer,
+    // handleSelectPlayer,
     handleChange,
-    handleKeyPess,
+    // handleKeyPess,
     handleUnselect,
     handleDragEnd,
-    createPlayer,
+    // createPlayer,
     getSelectedPlayersFromLS,
-    addUnselectedUserListToLs,
+    //addUnselectedUserListToLs,
     addUserToLS,
     resetGame,
     undoFromSummary,
@@ -871,6 +967,7 @@ export const UserProvider = ({ children }: UserProviderProps) => {
     handleGameModeClick,
     handlePointsClick,
     handleThrow,
+    startRematch,
     handleBust,
     handlePlayerFinishTurn,
     handleLastPlayer,

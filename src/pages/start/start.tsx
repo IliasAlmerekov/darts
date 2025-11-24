@@ -1,5 +1,5 @@
 import "./start.css";
-import React from "react";
+import React, { useEffect } from "react";
 import NavigationBar from "../../components/NavigationBar/NavigationBar";
 import SelectedPlayerItem from "../../components/PlayerItems/SelectedPlayerItem";
 import Plus from "../../icons/plus.svg";
@@ -14,6 +14,7 @@ import QRCode from "../../components/QRCode/QRCode";
 import { UseInitializePlayers } from "../../hooks/useInitializePlayers";
 import { useRoomInvitation } from "../../hooks/useRoomInvitation";
 import { UseSyncLivePlayersWithEvent } from "../../hooks/useSyncLivePlayersWithEvent";
+import { startGame } from "../../services/api";
 
 function Start() {
   const START_SOUND_PATH = "/sounds/start-round-sound.mp3";
@@ -27,12 +28,22 @@ function Start() {
   // Invitation and handling room creation
   const { invitation, createRoom } = useRoomInvitation();
 
+  const necessaryGameId = event.currentGameId ?? invitation?.gameId ?? null;
+  const isDoubleOut = event.selectedGameMode === "double-out";
+  const isTripleOutMode = event.selectedGameMode === "triple-out";
+
   // Auto-sync live players with event selected players
   UseSyncLivePlayersWithEvent({
-    gameId: invitation?.gameId ?? null,
+    gameId: necessaryGameId,
     selectedPlayers: event.selectedPlayers,
     updateEvent,
   });
+
+  useEffect(() => {
+    if (invitation?.gameId) {
+      updateEvent({ currentGameId: invitation.gameId });
+    }
+  }, [invitation?.gameId, updateEvent]);
 
   return (
     <div className="main">
@@ -100,9 +111,15 @@ function Start() {
                 link="/game"
                 disabled={event.selectedPlayers.length < 2}
                 type="secondary"
-                handleClick={() => {
-                  functions.addUnselectedUserListToLs(event.unselectedPlayers);
+                handleClick={async () => {
                   functions.playSound(START_SOUND_PATH);
+                  await startGame(necessaryGameId!, {
+                    startScore: event.selectedPoints,
+                    doubleOut: isDoubleOut,
+                    tripleOut: isTripleOutMode,
+                    round: event.roundsCount ?? 0,
+                    status: "started",
+                  });
                   functions.resetGame();
                 }}
               />

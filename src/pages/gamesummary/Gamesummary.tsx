@@ -3,16 +3,18 @@ import "./gamesummary.css";
 import Button from "../../components/Button/Button";
 import Podium from "../../components/Podium/Podium";
 import Undo from "../../icons/undolinkbutton.svg";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import React, { useMemo } from "react";
 import { useUser } from "../../provider/UserProvider";
 
 function Gamesummary(): React.JSX.Element {
   const { event, functions } = useUser();
+  const navigate = useNavigate();
 
   const newList: BASIC.WinnerPlayerProps[] = useMemo(() => {
     return [...event.winnerList];
   }, [event.winnerList]);
+
   const podiumList = newList.slice(0, 3);
   const leaderBoardList = newList.slice(3, event.winnerList.length + 1);
   const podiumListWithPlaceholder = [...podiumList];
@@ -42,29 +44,31 @@ function Gamesummary(): React.JSX.Element {
 
       <div className="play-again-button">
         <Button
-          isLink
-          link={"/game"}
           label="Play Again"
           type="primary"
           isInverted
           className="play-again-button"
-          handleClick={() => {
-            functions.resetGame();
+          handleClick={async () => {
             functions.savedFinishedGameToLS(newList);
-            localStorage.removeItem("OngoingGame");
+            sessionStorage.removeItem("OngoingGame");
+
+            await functions.startRematch("play-again");
+            navigate("/game");
           }}
         />
       </div>
+
       <div className="back-to-start-button">
         <Button
           className="back-to-start-button"
-          link={"/start"}
-          isLink
           label="Back To Start"
           type="primary"
-          handleClick={() => {
+          handleClick={async () => {
             functions.savedFinishedGameToLS(newList);
-            localStorage.removeItem("OngoingGame");
+            sessionStorage.removeItem("OngoingGame");
+
+            await functions.startRematch("back-to-start");
+            navigate("/start");
           }}
         />
       </div>

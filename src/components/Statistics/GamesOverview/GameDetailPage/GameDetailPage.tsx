@@ -6,7 +6,7 @@ import BackBtn from "../../../../icons/back.svg";
 import NavigationBar from "../../../NavigationBar/NavigationBar";
 import OverviewPlayerItemList from "../../../OverviewPlayerItem/OverviewPlayerItemList";
 
-export default function GameDetailPage(): JSX.Element {
+export default function GameDetailPage(): React.JSX.Element {
   const { id } = useParams();
   const savedGames = JSON.parse(localStorage.getItem("FinishedGames") || "[]");
   const game = savedGames.find((g: { id: string | undefined }) => g.id === id);
@@ -27,8 +27,7 @@ export default function GameDetailPage(): JSX.Element {
       rounds: [],
     });
   }
-  const podiumData =
-    podiumList.length === 2 ? podiumListWithPlaceholder : podiumList;
+  const podiumData = podiumList.length === 2 ? podiumListWithPlaceholder : podiumList;
   return (
     <div className="game-details">
       <NavigationBar />
