@@ -1,13 +1,16 @@
 import React, { useState, useEffect } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import "./index.css";
 import emailIcon from "../../icons/email.svg";
 import passwordIcon from "../../icons/password.svg";
+import LoadingAuth from "../../components/LoginSuccessSkeleton/LoadingAuth";
+import { useAuthenticatedUser } from "../../hooks/useAuthenticatedUser";
 
 function Login() {
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
-  const [checking, setChecking] = useState(true);
+  const navigate = useNavigate();
+  const { user, loading: checking } = useAuthenticatedUser();
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -34,7 +37,7 @@ function Login() {
       console.log("Login successful:", data);
 
       if (data.redirect) {
-        window.location.href = data.redirect;
+        navigate(data.redirect);
       }
     } catch (error) {
       setError((error as Error).message || "Login failed");
@@ -44,48 +47,15 @@ function Login() {
   };
 
   useEffect(() => {
-    const checkAuth = async () => {
-      try {
-        const response = await fetch(`/api/login/success`, {
-          method: "GET",
-          credentials: "include",
-          headers: {
-            Accept: "application/json",
-          },
-        });
-
-        if (response.ok) {
-          const data = await response.json();
-          if (data.success) {
-            window.location.href = data.redirect;
-            return;
-          }
-        }
-        setChecking(false);
-      } catch (err) {
-        console.error("Auth check failed:", err);
-      }
-    };
-
-    checkAuth();
-  }, []);
+    if (user) {
+      navigate(user.redirect);
+    }
+  }, [user, navigate]);
 
   if (checking) {
-    return (
-      <div className="login-container">
-        <div className="login-row">
-          <div className="login-col">
-            <div className="login-card">
-              <div className="login-card-body">
-                <h1>Checking authentication...</h1>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    );
+    return <LoadingAuth />;
   }
-  // Show login form
+
   return (
     <div className="login-container">
       <div className="login-row">
@@ -138,7 +108,7 @@ function Login() {
                 </div>
                 <div style={{ marginTop: "0.75rem" }}>
                   <small>
-                    Don`&apos;`t have an account? <Link to="/register">Create one</Link>
+                    Don&apos;t have an account? <Link to="/register">Create one</Link>
                   </small>
                 </div>
               </form>
