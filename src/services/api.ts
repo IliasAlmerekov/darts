@@ -130,3 +130,47 @@ export async function startGame(
 
   return response.json();
 }
+
+export type ThrowRequestPayload = {
+  playerId: number;
+  value: number;
+  isDouble?: boolean;
+  isTriple?: boolean;
+  isBust?: boolean;
+};
+
+export async function recordThrow(gameId: number, payload: ThrowRequestPayload) {
+  const response = await fetch(`/api/game/${gameId}/throw`, {
+    method: "POST",
+    credentials: "include",
+    headers: {
+      Accept: "application/json",
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(payload),
+  });
+
+  if (!response.ok) {
+    const error = await response.json().catch(() => ({}));
+    throw new Error(error.error || "Failed to record throw");
+  }
+
+  return response.json();
+}
+
+export async function undoLastThrow(gameId: number) {
+  const response = await fetch(`/api/game/${gameId}/throw`, {
+    method: "DELETE",
+    credentials: "include",
+    headers: {
+      Accept: "application/json",
+    },
+  });
+
+  if (!response.ok) {
+    const error = await response.json().catch(() => ({}));
+    throw new Error(error.error || "Failed to undo throw");
+  }
+
+  return response.json();
+}

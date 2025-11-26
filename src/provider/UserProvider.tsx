@@ -12,7 +12,7 @@ import { DragEndEvent } from "@dnd-kit/core";
 import { $settings, newSettings } from "../stores/settings";
 import { useStore } from "@nanostores/react";
 import { NavigateFunction } from "react-router-dom";
-import { createRematch, deletePlayerFromGame } from "../services/api";
+import { createRematch, deletePlayerFromGame, recordThrow, undoLastThrow } from "../services/api";
 import { persistInvitationToStorage, readInvitationFromStorage } from "../hooks/useRoomInvitation";
 // import { UseInitializePlayers } from "../hooks/useInitializePlayers";
 
@@ -117,14 +117,14 @@ interface GameFunctions {
   addUserToLS: (name: string, id: number) => void;
   resetGame: () => void;
   undoFromSummary: () => void;
-  handleUndo: () => void;
+  handleUndo: () => Promise<void>;
   handleGameModeClick: (mode: string | number) => void;
   handlePointsClick: (points: string | number) => void;
   handleThrow: (
     value: BASIC.WinnerPlayerProps,
     throwCount: number,
     playerList: string | number,
-  ) => void;
+  ) => Promise<void>;
   handleBust: (startingScore: number) => void;
   handlePlayerFinishTurn: () => void;
   handleLastPlayer: () => void;
@@ -146,10 +146,10 @@ const defaultFunctions: GameFunctions = {
   addUserToLS: () => {},
   resetGame: () => {},
   undoFromSummary: () => {},
-  handleUndo: () => {},
+  handleUndo: async () => {},
   handleGameModeClick: () => {},
   handlePointsClick: () => {},
-  handleThrow: () => {},
+  handleThrow: async () => {},
   handleBust: () => {},
   handlePlayerFinishTurn: () => {},
   handleLastPlayer: () => {},
@@ -653,10 +653,22 @@ export const UserProvider = ({ children }: UserProviderProps) => {
     functions.handleUndo();
   }
 
-  function handleUndo() {
+  async function handleUndo() {
     if (event.history.length > 0) {
       const newHistory = [...event.history];
       const lastState = newHistory.pop();
+
+      if (event.currentGameId) {
+        try {
+          await undoLastThrow(event.currentGameId);
+        } catch (error) {
+          console.error("Failed to undo throw on server:", error);
+          updateEvent({
+            errormessage: "Error undoing throw on server, try again.",
+          });
+        }
+      }
+
       if (lastState) {
         updateEvent({
           finishedPlayerList: lastState.finishedPlayerList,
@@ -700,13 +712,41 @@ export const UserProvider = ({ children }: UserProviderProps) => {
     }
   }
 
-  const isDouble = (throwValue: string) =>
-    typeof throwValue === "string" && throwValue.startsWith("D");
+  function parseThrowValue(raw: number | string): {
+    baseValue: number;
+    isDoubleThrow: boolean;
+    isTripleThrow: boolean;
+    actualScore: number;
+  } {
+    if (typeof raw === "number") {
+      return {
+        baseValue: raw,
+        isDoubleThrow: false,
+        isTripleThrow: false,
+        actualScore: raw,
+      };
+    }
 
-  const isTriple = (throwValue: string) =>
-    typeof throwValue === "string" && throwValue.startsWith("T");
+    const type = raw.charAt(0);
+    const value = parseInt(raw.slice(1));
+    if (isNaN(value)) {
+      throw new Error("Invalid value: " + raw);
+    }
 
-  function handleThrow(
+    const isDoubleThrow = type === "D";
+    const isTripleThrow = type === "T";
+
+    const multiplier = isTripleThrow ? 3 : isDoubleThrow ? 2 : 1;
+
+    return {
+      baseValue: value,
+      isDoubleThrow,
+      isTripleThrow,
+      actualScore: value * multiplier,
+    };
+  }
+
+  async function handleThrow(
     player: BASIC.WinnerPlayerProps,
     currentThrow: number,
     currentScoreAchieved: number | string,
@@ -725,20 +765,15 @@ export const UserProvider = ({ children }: UserProviderProps) => {
       ],
     });
 
-    let actualScore: number = 0;
-    if (typeof currentScoreAchieved === "string") {
-      const type = currentScoreAchieved.charAt(0);
-      const value = parseInt(currentScoreAchieved.slice(1));
-      if (isNaN(value)) {
-        console.error("Invalid value:", currentScoreAchieved);
-        return;
-      }
-      if (type === "D") actualScore = value * 2;
-      else if (type === "T") actualScore = value * 3;
-      else actualScore = value;
-    } else {
-      actualScore = currentScoreAchieved;
+    let parsedThrow: ReturnType<typeof parseThrowValue>;
+    try {
+      parsedThrow = parseThrowValue(currentScoreAchieved);
+    } catch (error) {
+      console.error(error);
+      return;
     }
+
+    const actualScore = parsedThrow.actualScore;
 
     if (currentThrow === 0) {
       startingScoreRef.current = event.playerList[event.playerTurn].score;
@@ -757,23 +792,37 @@ export const UserProvider = ({ children }: UserProviderProps) => {
     const isDoubleOutMode = event.selectedGameMode === "double-out";
     const isTripleOutMode = event.selectedGameMode === "triple-out";
     const wouldFinishGame = updatedPlayerScore === 0;
-    const isDoubleThrow =
-      typeof currentScoreAchieved === "string" && isDouble(currentScoreAchieved);
-    const isTripleThrow =
-      typeof currentScoreAchieved === "string" && isTriple(currentScoreAchieved);
-
     const startingScoreThisRound =
       startingScoreRef.current ?? event.playerList[event.playerTurn].score;
-
-    if (
+    const isDoubleThrow = parsedThrow.isDoubleThrow;
+    const isTripleThrow = parsedThrow.isTripleThrow;
+    const isBustThrow =
       actualScore > startingScoreThisRound ||
       updatedPlayerScore < 0 ||
       (isDoubleOutMode && updatedPlayerScore === 1) ||
       (isTripleOutMode && updatedPlayerScore === 1) ||
       (isTripleOutMode && updatedPlayerScore === 2) ||
       (wouldFinishGame && isDoubleOutMode && !isDoubleThrow) ||
-      (wouldFinishGame && isTripleOutMode && !isTripleThrow)
-    ) {
+      (wouldFinishGame && isTripleOutMode && !isTripleThrow);
+
+    if (event.currentGameId) {
+      try {
+        await recordThrow(event.currentGameId, {
+          playerId: player.id,
+          value: parsedThrow.baseValue,
+          isDouble: isDoubleThrow,
+          isTriple: isTripleThrow,
+          isBust: isBustThrow,
+        });
+      } catch (error) {
+        console.error("Failed to record throw:", error);
+        updateEvent({
+          errormessage: "Error recording throw on server, try again.",
+        });
+      }
+    }
+
+    if (isBustThrow) {
       functions.handleBust(startingScoreThisRound);
       playSound(ERROR_SOUND_PATH);
     } else {
