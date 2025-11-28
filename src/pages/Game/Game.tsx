@@ -34,8 +34,10 @@ function Game() {
       updateEvent({
         winnerList: event.finishedPlayerList,
         lastHistory: event.history,
+        lastFinishedPlayerIds: event.selectedPlayers.map((p) => p.id),
       });
-      navigate("/summary");
+      const finishedGameId = event.currentGameId ?? functions.getNecessaryGameId();
+      navigate("/summary", { state: { finishedGameId } });
 
       if (initialPlayerCount === 2) {
         functions.playSound(WIN_SOUND_PATH);

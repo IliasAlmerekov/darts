@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
-import { handleCreateGame } from "../services/api";
+import { handleCreateGame, CreateGamePayload } from "../services/api";
 
 export type Invitation = {
   gameId: number;
@@ -45,14 +45,17 @@ export function useRoomInvitation() {
     persistInvitationToStorage(data);
   }, []);
 
-  const createRoom = useCallback(async () => {
-    try {
-      const data = await handleCreateGame();
-      persistInvitation(data);
-    } catch (error) {
-      console.error("Error during room creation:", error);
-    }
-  }, [persistInvitation]);
+  const createRoom = useCallback(
+    async (options?: CreateGamePayload) => {
+      try {
+        const data = await handleCreateGame(options);
+        persistInvitation(data);
+      } catch (error) {
+        console.error("Error during room creation:", error);
+      }
+    },
+    [persistInvitation],
+  );
 
   return { invitation, createRoom };
 }

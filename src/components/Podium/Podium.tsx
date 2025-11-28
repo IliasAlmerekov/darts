@@ -11,7 +11,7 @@ type Props = {
   list?: BASIC.WinnerPlayerProps[];
 };
 
-function Podium({ ...props }: Props): JSX.Element {
+function Podium({ ...props }: Props): React.JSX.Element {
   const { event } = useUser();
   if (!props.userMap || props.userMap.length === 0) {
     return <div className="podium" />;
@@ -25,11 +25,11 @@ function Podium({ ...props }: Props): JSX.Element {
             ? item.rounds.length - 1
             : item.rounds.length);
 
-        const averageScore =
+        const averageScoreRaw =
           completedRound > 0
-            ? (item.scoreAverage ??
-              Math.round((event.selectedPoints - item.score) / completedRound))
+            ? (item.scoreAverage ?? (event.selectedPoints - item.score) / completedRound)
             : 0;
+        const averagePerRound = completedRound > 0 ? averageScoreRaw.toFixed(2) : (0).toFixed(2);
 
         return (
           <PodiumPlayerCard
@@ -43,7 +43,7 @@ function Podium({ ...props }: Props): JSX.Element {
             rounds={completedRound}
             name={item.name}
             placement={index + 1 + "."}
-            averagePerRound={averageScore}
+            averagePerRound={averagePerRound}
           />
         );
       })}
