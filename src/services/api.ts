@@ -1,11 +1,22 @@
-export const handleCreateGame = async () => {
+export type CreateGamePayload = {
+  previousGameId?: number;
+  playerIds?: number[];
+};
+
+export const handleCreateGame = async (payload?: CreateGamePayload) => {
   try {
+    const body =
+      payload && (payload.previousGameId || (payload.playerIds && payload.playerIds.length > 0))
+        ? payload
+        : {};
     const createResponse = await fetch(`/api/room/create`, {
       method: "POST",
       credentials: "include",
       headers: {
         Accept: "application/json",
+        "Content-Type": "application/json",
       },
+      body: JSON.stringify(body),
     });
 
     if (!createResponse.ok) {
@@ -170,6 +181,31 @@ export async function undoLastThrow(gameId: number) {
   if (!response.ok) {
     const error = await response.json().catch(() => ({}));
     throw new Error(error.error || "Failed to undo throw");
+  }
+
+  return response.json();
+}
+
+export type FinishedPlayerResponse = {
+  playerId: number;
+  username: string;
+  position: number;
+  roundsPlayed: number;
+  roundAverage: number;
+};
+
+export async function getFinishedGame(gameId: number): Promise<FinishedPlayerResponse[]> {
+  const response = await fetch(`/api/game/${gameId}/finished`, {
+    method: "GET",
+    credentials: "include",
+    headers: {
+      Accept: "application/json",
+    },
+  });
+
+  if (!response.ok) {
+    const error = await response.json().catch(() => ({}));
+    throw new Error(error.error || "Failed to fetch finished game");
   }
 
   return response.json();

@@ -28,7 +28,8 @@ function Start() {
   // Invitation and handling room creation
   const { invitation, createRoom } = useRoomInvitation();
 
-  const necessaryGameId = event.currentGameId ?? invitation?.gameId ?? null;
+  const necessaryGameId = functions.getNecessaryGameId();
+  const lastFinishedPlayerIds = functions.getLastFinishedPlayerIds();
   const isDoubleOut = event.selectedGameMode === "double-out";
   const isTripleOutMode = event.selectedGameMode === "triple-out";
 
@@ -67,7 +68,12 @@ function Start() {
                 className="create-new-player-button h4"
                 label={invitation ? "Create New Game" : "Create Game"}
                 icon={Plus}
-                handleClick={createRoom}
+                handleClick={() =>
+                  createRoom({
+                    previousGameId: event.lastFinishedGameId ?? undefined,
+                    playerIds: lastFinishedPlayerIds,
+                  })
+                }
               />
             </div>
           </div>
@@ -109,11 +115,12 @@ function Start() {
                 isLink
                 label="Start"
                 link="/game"
-                disabled={event.selectedPlayers.length < 2}
+                disabled={event.selectedPlayers.length < 2 || !necessaryGameId}
                 type="secondary"
                 handleClick={async () => {
+                  if (!necessaryGameId) return;
                   functions.playSound(START_SOUND_PATH);
-                  await startGame(necessaryGameId!, {
+                  await startGame(necessaryGameId, {
                     startScore: event.selectedPoints,
                     doubleOut: isDoubleOut,
                     tripleOut: isTripleOutMode,

@@ -91,6 +91,8 @@ interface GameState {
   finishedPlayerList: BASIC.WinnerPlayerProps[];
   isInitialized: boolean;
   currentGameId: number | null;
+  lastFinishedGameId: number | null;
+  lastFinishedPlayerIds: number[];
 }
 
 interface GameFunctions {
@@ -131,6 +133,8 @@ interface GameFunctions {
   sortPlayer: () => void;
   changeActivePlayer: () => void;
   startRematch: (mode: "play-again" | "back-to-start") => Promise<void>;
+  getNecessaryGameId: () => number | null;
+  getLastFinishedPlayerIds: () => number[];
 }
 
 const defaultFunctions: GameFunctions = {
@@ -156,6 +160,8 @@ const defaultFunctions: GameFunctions = {
   sortPlayer: () => {},
   changeActivePlayer: () => {},
   startRematch: () => Promise.resolve(),
+  getNecessaryGameId: () => null,
+  getLastFinishedPlayerIds: () => [],
   getAllPlayerStats: () => [],
   getFinishedGamesSummary: () => [],
   // // handleKeyPess: function (): (e: React.KeyboardEvent<HTMLInputElement>) => void {
@@ -211,6 +217,8 @@ const initialValues: GameState = {
   finishedPlayerList: [] /* <BASIC.WinnerPlayerProps[]> */,
   isInitialized: false,
   currentGameId: initialInvitation?.gameId ?? null,
+  lastFinishedGameId: null,
+  lastFinishedPlayerIds: [],
 };
 
 export const UserContext = createContext<UserContextType>({
@@ -953,9 +961,39 @@ export const UserProvider = ({ children }: UserProviderProps) => {
     newSettings(storeSettings.gameMode, points);
   };
 
+  const getNecessaryGameId = () => {
+    const latestInvitation = readInvitationFromStorage();
+    return event.currentGameId ?? latestInvitation?.gameId ?? null;
+  };
+
+  const getLastFinishedPlayerIds = () => {
+    if (event.selectedPlayers.length > 0) {
+      return event.selectedPlayers.map((p) => p.id);
+    }
+    return event.lastFinishedPlayerIds;
+  };
+
   async function startRematch(mode: "play-again" | "back-to-start"): Promise<void> {
     const storedInvitation = readInvitationFromStorage();
     const prevGameId = event.currentGameId ?? storedInvitation?.gameId ?? null;
+    const lastFinishedGameId = prevGameId ?? event.lastFinishedGameId ?? null;
+
+    if (mode === "back-to-start") {
+      persistInvitationToStorage(null);
+      updateEvent({
+        currentGameId: null,
+        lastFinishedGameId,
+        playerList: [],
+        finishedPlayerList: [],
+        winnerList: [],
+        history: [],
+        throwCount: 0,
+        roundsCount: 1,
+        playerTurn: 0,
+        list: event.selectedPlayers,
+      });
+      return;
+    }
 
     if (!prevGameId) {
       console.warn("No previous game ID found for rematch.");
@@ -972,23 +1010,10 @@ export const UserProvider = ({ children }: UserProviderProps) => {
 
       updateEvent({
         currentGameId: rematch.gameId,
+        lastFinishedGameId,
       });
 
-      if (mode === "play-again") {
-        resetGame();
-        return;
-      }
-
-      updateEvent({
-        playerList: [],
-        finishedPlayerList: [],
-        winnerList: [],
-        history: [],
-        throwCount: 0,
-        roundsCount: 1,
-        playerTurn: 0,
-        list: event.selectedPlayers,
-      });
+      resetGame();
     } catch (error) {
       console.error("Failed to start rematch:", error);
     }
@@ -1017,6 +1042,8 @@ export const UserProvider = ({ children }: UserProviderProps) => {
     handlePointsClick,
     handleThrow,
     startRematch,
+    getNecessaryGameId,
+    getLastFinishedPlayerIds,
     handleBust,
     handlePlayerFinishTurn,
     handleLastPlayer,
