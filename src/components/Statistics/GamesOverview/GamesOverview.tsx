@@ -1,13 +1,29 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import "./GamesOverview.css";
-import { useUser } from "../../../provider/UserProvider";
 import { Link } from "react-router-dom";
 import NavigationBar from "../../NavigationBar/NavigationBar";
 import ViewToogleButton from "../../Button/ViewToogleBtn";
+import { getGamesOverview } from "../../../services/api";
 
 export default function GamesOverview(): JSX.Element {
-  const { functions } = useUser();
-  const games = functions.getFinishedGamesSummary();
+  const [games, setGames] = useState<BASIC.FinishedGameProps[]>([]);
+  const [offset, setOffset] = useState(0);
+  const [total, setTotal] = useState(0);
+  const limit = 9;
+
+  useEffect(() => {
+    getGamesOverview(limit, offset).then((data: BASIC.GameDataProps) => {
+      if (data.items) {
+        setGames(data.items);
+        setTotal(data.total);
+      } else if (Array.isArray(data)) {
+        setGames(data);
+        setTotal(data.length);
+      }
+      console.log("Fetched game overview:", data);
+    });
+  }, [offset]);
+
   return (
     <div className="game-overview">
       <NavigationBar />
@@ -32,22 +48,19 @@ export default function GamesOverview(): JSX.Element {
                 </h4>
                 <p>
                   <span className="stat-label">
-                    Players{" "}
-                    <span className="stat-value">{game.playersCount}</span>
+                    Players <span className="stat-value">{game.playersCount}</span>
                   </span>
                 </p>
                 <p>
                   {" "}
                   <span className="stat-label">
-                    Player Won:{" "}
-                    <span className="stat-value">{game.winnerName}</span>
+                    Player Won: <span className="stat-value">{game.winnerName}</span>
                   </span>
                 </p>
                 <p>
                   {" "}
                   <span className="stat-label">
-                    Rounds:{" "}
-                    <span className="stat-value">{game.winnerRounds}</span>
+                    Rounds: <span className="stat-value">{game.winnerRounds}</span>
                   </span>
                 </p>
               </div>
@@ -56,6 +69,36 @@ export default function GamesOverview(): JSX.Element {
               </div>
             </div>
           ))}
+      </div>
+      <div
+        className="pagination-controls"
+        style={{
+          display: "flex",
+          justifyContent: "center",
+          gap: "20px",
+          marginTop: "20px",
+          paddingBottom: "20px",
+        }}
+      >
+        <button
+          onClick={() => setOffset(Math.max(0, offset - limit))}
+          disabled={offset === 0}
+          className="sort-button"
+          style={{ opacity: offset === 0 ? 0.5 : 1 }}
+        >
+          Previous
+        </button>
+        <span style={{ alignSelf: "center" }}>
+          Page {Math.floor(offset / limit) + 1} of {Math.ceil(total / limit) || 1}
+        </span>
+        <button
+          onClick={() => setOffset(offset + limit)}
+          disabled={offset + limit >= total}
+          className="sort-button"
+          style={{ opacity: offset + limit >= total ? 0.5 : 1 }}
+        >
+          Next
+        </button>
       </div>
     </div>
   );

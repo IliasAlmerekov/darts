@@ -210,3 +210,45 @@ export async function getFinishedGame(gameId: number): Promise<FinishedPlayerRes
 
   return response.json();
 }
+
+export async function getPlayerStats(
+  limit: number = 10,
+  offset: number = 0,
+  sort: string = "average:desc",
+) {
+  const response = await fetch(`/api/players/stats?limit=${limit}&offset=${offset}&sort=${sort}`, {
+    method: "GET",
+    credentials: "include",
+    headers: {
+      Accept: "application/json",
+    },
+  });
+
+  if (!response.ok) {
+    const error = await response.json().catch(() => ({}));
+    throw new Error(error.error || "Failed to fetch player stats");
+  }
+
+  return response.json();
+}
+
+export async function getGamesOverview(
+  limit: number = 9,
+  offset: number = 0,
+  sort: string = "average:desc",
+) {
+  const response = await fetch(`/api/games/overview?limit=${limit}&offset=${offset}&sort=${sort}`, {
+    method: "GET",
+    credentials: "include",
+    headers: {
+      Accept: "application/json",
+    },
+  });
+
+  if (!response.ok) {
+    const error = await response.json().catch(() => ({}));
+    throw new Error(error.error || "Failed to fetch games overview");
+  }
+
+  return response.json();
+}
