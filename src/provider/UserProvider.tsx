@@ -5,15 +5,15 @@ import React, {
   useContext,
   useEffect,
   useReducer,
-  useRef,
 } from "react";
 import { arrayMove } from "@dnd-kit/sortable";
 import { DragEndEvent } from "@dnd-kit/core";
 import { $settings, newSettings } from "../stores/settings";
 import { useStore } from "@nanostores/react";
 import { NavigateFunction } from "react-router-dom";
-import { createRematch, deletePlayerFromGame, recordThrow, undoLastThrow } from "../services/api";
+import { createRematch, deletePlayerFromGame } from "../services/api";
 import { persistInvitationToStorage, readInvitationFromStorage } from "../hooks/useRoomInvitation";
+import { getGameStates } from "../services/Game/state";
 // import { UseInitializePlayers } from "../hooks/useInitializePlayers";
 
 interface PlayerProps {
@@ -50,7 +50,7 @@ interface GameSummury {
   players: SavedGamePlayer[];
 }
 
-const getSelectedPlayersFromLS = (): PlayerProps[] => {
+/*const getSelectedPlayersFromLS = (): PlayerProps[] => {
   if (sessionStorage.getItem("SelectedPlayers") !== null) {
     const playersFromLS = sessionStorage.getItem("SelectedPlayers");
     const playersFromLocalStorage = !!playersFromLS && JSON.parse(playersFromLS);
@@ -58,37 +58,49 @@ const getSelectedPlayersFromLS = (): PlayerProps[] => {
   } else {
     return [];
   }
-};
+};*/
 
 interface GameState {
   // Start.tsx
   newPlayer: string;
   isNewPlayerOverlayOpen: boolean;
-  selectedPlayers: PlayerProps[];
+  // --- DEPRECATED: Jetzt vom Backend per SSE geholt (useGamePlayers Hook) ---
+  // selectedPlayers?: PlayerProps[]; // Kommt jetzt von SSE: /api/room/{gameId}/stream
+  // --- ENDE DEPRECATED ---
+  selectedPlayers?: PlayerProps[]; // DEPRECATED: Wird durch SSE ersetzt
   // unselectedPlayers: PlayerProps[];
   dragEnd?: boolean;
   clickedPlayerId: number | null;
   errormessage: string;
   activeTab: string;
   list: PlayerProps[];
-  userList: PlayerProps[];
+  userList?: PlayerProps[];
 
   // summary
   winnerList: BASIC.WinnerPlayerProps[];
-  lastHistory: BASIC.GameState[];
+  //lastHistory: BASIC.GameState[];
 
   // Game.tsx
-  playerScore: number;
-  roundsCount: number;
-  playerList: BASIC.WinnerPlayerProps[];
-  throwCount: number;
-  playerTurn: number;
+  // --- JETZT VOM BACKEND GEHOLT (/api/game/{gameId}/throws) ---
+  // playerScore: number;
+  // roundsCount: number;
+  // playerList: BASIC.WinnerPlayerProps[]; // jetzt aus API: gameData.players
+  // throwCount: number; // jetzt aus API: gameData.currentThrowCount
+  // playerTurn: number;
+  // finishedPlayerList: BASIC.WinnerPlayerProps[]; // jetzt aus API: gameData.players gefiltert
+  // history: BASIC.GameState[];
+  // selectedPoints: number; // jetzt aus API: gameData.settings.startScore
+  // selectedGameMode: string; // jetzt aus API: gameData.settings.doubleOut/tripleOut
+  // --- ENDE BACKEND-DATEN ---
+
+  playerList: BASIC.WinnerPlayerProps[]; // DEPRECATED: Wird durch API ersetzt
+  throwCount: number; // DEPRECATED: Wird durch API ersetzt
+  finishedPlayerList: BASIC.WinnerPlayerProps[]; // DEPRECATED: Wird durch API ersetzt
+  selectedPoints: number; // DEPRECATED: Wird durch API ersetzt
+  selectedGameMode: string; // DEPRECATED: Wird durch API ersetzt
+
   isFinishGameOverlayOpen: boolean;
   isSettingsOverlayOpen: boolean;
-  selectedPoints: number;
-  selectedGameMode: string;
-  history: BASIC.GameState[];
-  finishedPlayerList: BASIC.WinnerPlayerProps[];
   isInitialized: boolean;
   currentGameId: number | null;
   lastFinishedGameId: number | null;
@@ -96,45 +108,46 @@ interface GameState {
 }
 
 interface GameFunctions {
-  initializePlayerList: () => void;
-  playSound: (soundType: string) => void;
-  handleTabClick: (id: string, navigate: NavigateFunction) => void;
+  initializePlayerList?: () => void;
+  playSound?: (soundType: string) => void;
+  handleTabClick?: (id: string, navigate: NavigateFunction) => void;
   // handleSelectPlayer: (name: string, id: number) => void;
-  handleChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
+  handleChange?: (e: React.ChangeEvent<HTMLInputElement>) => void;
   // handleKeyPess: (name: string) => (e: React.KeyboardEvent<HTMLInputElement>) => void;
-  handleUnselect: (id: number, gameId?: number | null) => void;
+  handleUnselect?: (id: number, gameId?: number | null) => void;
   handleDragEnd: (e: DragEndEvent) => void;
   // createPlayer: (name: string) => void;
   // getUserFromLS: () => PlayerProps[] | null;
-  getSelectedPlayersFromLS: () => PlayerProps[];
-  savedFinishedGameToLS: (players: BASIC.WinnerPlayerProps[]) => void;
-  getAllPlayerStats: () => {
+  getSelectedPlayersFromLS?: () => PlayerProps[];
+  savedFinishedGameToLS?: (players: BASIC.WinnerPlayerProps[]) => void;
+  getAllPlayerStats?: () => {
     id: number;
     name: string;
     games: number;
     averageRoundScore: number;
   }[];
-  getFinishedGamesSummary(): GameSummury[];
+  getFinishedGamesSummary?(): GameSummury[];
   // addUnselectedUserListToLs: (players: PlayerProps[]) => void;
-  addUserToLS: (name: string, id: number) => void;
-  resetGame: () => void;
-  undoFromSummary: () => void;
-  handleUndo: () => Promise<void>;
-  handleGameModeClick: (mode: string | number) => void;
-  handlePointsClick: (points: string | number) => void;
-  handleThrow: (
+  addUserToLS?: (name: string, id: number) => void;
+  resetGame?: () => void;
+  undoFromSummary?: () => void;
+  handleUndo?: () => Promise<void>;
+  handleGameModeClick?: (mode: string | number) => void;
+  handlePointsClick?: (points: string | number) => void;
+  handleThrow?: (
     value: BASIC.WinnerPlayerProps,
     throwCount: number,
     playerList: string | number,
   ) => Promise<void>;
-  handleBust: (startingScore: number) => void;
-  handlePlayerFinishTurn: () => void;
-  handleLastPlayer: () => void;
-  sortPlayer: () => void;
-  changeActivePlayer: () => void;
-  startRematch: (mode: "play-again" | "back-to-start") => Promise<void>;
-  getNecessaryGameId: () => number | null;
-  getLastFinishedPlayerIds: () => number[];
+  //handleBust?: (startingScore: number) => void;
+  handlePlayerFinishTurn?: () => void;
+  handleLastPlayer?: () => void;
+  //sortPlayer?: () => void;
+  //changeActivePlayer: () => void;
+  startRematch?: (mode: "play-again" | "back-to-start") => Promise<void>;
+  getNecessaryGameId?: () => number | null;
+  getLastFinishedPlayerIds?: () => number[];
+  getGameStates?: (gameId: number) => Promise<unknown>;
 }
 
 const defaultFunctions: GameFunctions = {
@@ -154,16 +167,17 @@ const defaultFunctions: GameFunctions = {
   handleGameModeClick: () => {},
   handlePointsClick: () => {},
   handleThrow: async () => {},
-  handleBust: () => {},
+  //handleBust: () => {},
   handlePlayerFinishTurn: () => {},
   handleLastPlayer: () => {},
-  sortPlayer: () => {},
-  changeActivePlayer: () => {},
+  //sortPlayer: () => {},
+  //changeActivePlayer: () => {},
   startRematch: () => Promise.resolve(),
   getNecessaryGameId: () => null,
   getLastFinishedPlayerIds: () => [],
   getAllPlayerStats: () => [],
   getFinishedGamesSummary: () => [],
+  getGameStates: async () => undefined,
   // // handleKeyPess: function (): (e: React.KeyboardEvent<HTMLInputElement>) => void {
   //   throw new Error("Function not implemented.");
   // },
@@ -190,7 +204,8 @@ const initialValues: GameState = {
   //Start.tsx
   newPlayer: "",
   isNewPlayerOverlayOpen: false,
-  selectedPlayers: getSelectedPlayersFromLS() /* <PlayerProps[]> */,
+  // DEPRECATED: selectedPlayers kommen jetzt von SSE (useGamePlayers)
+  selectedPlayers: undefined /* DEPRECATED - Kommt jetzt von SSE: /api/room/{gameId}/stream */,
   // unselectedPlayers: [] /* <PlayerProps[]> */,
   dragEnd: undefined /* <boolean> */,
   clickedPlayerId: null /* <number | null> */,
@@ -199,22 +214,25 @@ const initialValues: GameState = {
 
   //App.tsx:
   list: [] /* <PlayerProps[]> */,
-  userList: getSelectedPlayersFromLS(),
+  //userList: getSelectedPlayersFromLS(),
   winnerList: [] /* <BASIC.WinnerPlayerProps[]> */,
-  lastHistory: [] /* <BASIC.GameState[]> */,
+  //lastHistory: [] /* <BASIC.GameState[]> */,
 
   //Game.tsx
-  playerScore: 0,
-  roundsCount: 1,
-  playerList: [] /* <BASIC.WinnerPlayerProps[]> */,
-  throwCount: 0,
-  playerTurn: 0,
+  // --- DEPRECATED: Jetzt vom Backend geholt ---
+  //playerScore: 0,
+  //roundsCount: 1,
+  playerList: [] /* DEPRECATED - Kommt jetzt von API: gameData.players */,
+  throwCount: 0 /* DEPRECATED - Kommt jetzt von API: gameData.currentThrowCount */,
+  //playerTurn: 0,
+  selectedPoints: 0 /* DEPRECATED - Kommt jetzt von API: gameData.settings.startScore */,
+  selectedGameMode: "" /* DEPRECATED - Kommt jetzt von API: gameData.settings */,
+  finishedPlayerList: [] /* DEPRECATED - Kommt jetzt von API: gameData.players gefiltert */,
+  //history: [] /* <GameState[]> */,
+  // --- ENDE DEPRECATED ---
+
   isFinishGameOverlayOpen: false,
   isSettingsOverlayOpen: false,
-  selectedPoints: 0,
-  selectedGameMode: "" /* settings.gameMode */,
-  history: [] /* <GameState[]> */,
-  finishedPlayerList: [] /* <BASIC.WinnerPlayerProps[]> */,
   isInitialized: false,
   currentGameId: initialInvitation?.gameId ?? null,
   lastFinishedGameId: null,
@@ -238,15 +256,15 @@ type UserProviderProps = {
 export const UserProvider = ({ children }: UserProviderProps) => {
   const storeSettings = useStore($settings);
   const [event, updateEvent] = useReducer(reducer, initialValues);
-  const startingScoreRef = useRef<number | null>(null);
+  // const startingScoreRef = useRef<number | null>(null);
 
   // all sounds
   // const SELECT_PLAYER_SOUND_PATH = "/sounds/select-sound.mp3";
-  const UNSELECT_PLAYER_SOUND_PATH = "/sounds/unselect-sound.mp3";
+  // const UNSELECT_PLAYER_SOUND_PATH = "/sounds/unselect-sound.mp3";
   // const ADD_PLAYER_SOUND_PATH = "/sounds/add-player-sound.mp3";
-  const ERROR_SOUND_PATH = "/sounds/error-sound.mp3";
+  // const ERROR_SOUND_PATH = "/sounds/error-sound.mp3";
   const THROW_SOUND_PATH = "/sounds/throw-sound.mp3";
-  const WIN_SOUND_PATH = "/sounds/win-sound.mp3";
+  // const WIN_SOUND_PATH = "/sounds/win-sound.mp3";
   const UNDO_SOUND_PATH = "/sounds/undo-sound.mp3";
 
   function playSound(path: string) {
@@ -263,12 +281,13 @@ export const UserProvider = ({ children }: UserProviderProps) => {
 
   //Start.tsx functions
   const initializePlayerList = useCallback(() => {
-    const initialPlayerList: PlayerProps[] = event.userList.map((user: BASIC.UserProps) => ({
-      name: user.name,
-      id: user.id,
-      isAdded: false,
-      isClicked: event.clickedPlayerId,
-    }));
+    const initialPlayerList: PlayerProps[] =
+      event.userList?.map((user: BASIC.UserProps) => ({
+        name: user.name,
+        id: user.id,
+        isAdded: false,
+        isClicked: event.clickedPlayerId,
+      })) || [];
     updateEvent({ selectedPlayers: initialPlayerList });
   }, [event.clickedPlayerId, event.userList, updateEvent]);
 
@@ -337,7 +356,7 @@ export const UserProvider = ({ children }: UserProviderProps) => {
     updateEvent({ clickedPlayerId: null });
 
     const removePlayerLocally = () => {
-      const updatedSelectedPlayers = event.selectedPlayers.filter(
+      const updatedSelectedPlayers = event.selectedPlayers?.filter(
         (list: PlayerProps) => list.id !== id,
       );
       updateEvent({
@@ -346,7 +365,7 @@ export const UserProvider = ({ children }: UserProviderProps) => {
       });
 
       sessionStorage.setItem("SelectedPlayers", JSON.stringify(updatedSelectedPlayers));
-      functions.playSound(UNSELECT_PLAYER_SOUND_PATH);
+      //functions.playSound(UNSELECT_PLAYER_SOUND_PATH);
     };
 
     if (typeof gameId === "number") {
@@ -366,11 +385,15 @@ export const UserProvider = ({ children }: UserProviderProps) => {
     updateEvent({ dragEnd: true });
 
     if (over && active.id !== over?.id) {
-      const activeIndex = event.selectedPlayers.findIndex(
+      const activeIndex = event.selectedPlayers?.findIndex(
         ({ id }: PlayerProps) => id === active.id,
       );
-      const overIndex = event.selectedPlayers.findIndex(({ id }: PlayerProps) => id === over.id);
-      const newArray: PlayerProps[] = arrayMove(event.selectedPlayers, activeIndex, overIndex);
+      const overIndex = event.selectedPlayers?.findIndex(({ id }: PlayerProps) => id === over.id);
+      const newArray: PlayerProps[] = arrayMove(
+        event.selectedPlayers || [],
+        activeIndex || 0,
+        overIndex || 0,
+      );
       updateEvent({
         selectedPlayers: newArray,
         list: newArray,
@@ -568,7 +591,9 @@ export const UserProvider = ({ children }: UserProviderProps) => {
   // function addUnselectedUserListToLs(unselectedPlayers: PlayerProps[]) {
   //   localStorage.setItem("UserUnselected", JSON.stringify(unselectedPlayers));
   // }
+  // DEPRECATED: Backend verwaltet jetzt den Spielstatus
   // dieser UseEffect holt das gespeicherte Spiel aus dem LS und stellt es wieder her
+  /*
   useEffect(() => {
     const savedGame = localStorage.getItem("OngoingGame");
     if (savedGame) {
@@ -583,19 +608,27 @@ export const UserProvider = ({ children }: UserProviderProps) => {
     }
     updateEvent({ isInitialized: true });
   }, [updateEvent]);
+  */
 
+  // Backend ersetzt localStorage - nur isInitialized setzen
+  useEffect(() => {
+    updateEvent({ isInitialized: true });
+  }, [updateEvent]);
+
+  // DEPRECATED: Backend verwaltet jetzt den Spielstatus
   // dieser UseEffect speichert das begonnene Spiel in LS, um es bei einer Fensteraktualisierung alles wiederherzustellen
+  /*
   useEffect(() => {
     if (!event.isInitialized) return;
     const gameStateToSave = {
       playerList: event.playerList,
       finishedPlayerList: event.finishedPlayerList,
-      roundsCount: event.roundsCount,
+      //roundsCount: event.roundsCount,
       throwCount: event.throwCount,
-      playerTurn: event.playerTurn,
+      //playerTurn: event.playerTurn,
       selectedPoints: event.selectedPoints,
       selectedGameMode: event.selectedGameMode,
-      history: event.history,
+      //history: event.history,
       list: event.selectedPlayers,
       winnerList: event.winnerList,
     };
@@ -604,15 +637,16 @@ export const UserProvider = ({ children }: UserProviderProps) => {
     event.isInitialized,
     event.playerList,
     event.finishedPlayerList,
-    event.roundsCount,
+    //event.roundsCount,
     event.throwCount,
-    event.playerTurn,
+    //event.playerTurn,
     event.selectedGameMode,
     event.selectedPoints,
-    event.history,
+    //event.history,
     event.selectedPlayers,
     event.winnerList,
   ]);
+  */
 
   // Save selectedPlayers to localStorage
   useEffect(() => {
@@ -620,22 +654,24 @@ export const UserProvider = ({ children }: UserProviderProps) => {
   }, [event.selectedPlayers]);
 
   function addUserToLS(name: string, id: number) {
-    const newUserList = [...event.userList];
+    const newUserList = [...(event.userList || [])];
     newUserList.push({ name, id });
     updateEvent({ userList: newUserList });
     sessionStorage.setItem("User", JSON.stringify(newUserList));
   }
+  // DEPRECATED: Backend verwaltet jetzt Rematch/Reset über createRematch API
   // diese Funktion ist für den PlayAgain button
+  /*
   function resetGame() {
     updateEvent({
-      playerScore: event.selectedPoints,
-      roundsCount: 1,
+      //playerScore: event.selectedPoints,
+      //roundsCount: 1,
       throwCount: 0,
-      playerTurn: 0,
+      //playerTurn: 0,
       finishedPlayerList: [],
-      history: [],
+      //history: [],
     });
-    const initialPlayerList: BASIC.WinnerPlayerProps[] = event.selectedPlayers.map(
+    const initialPlayerList: BASIC.WinnerPlayerProps[] | any = event.selectedPlayers?.map(
       (user: PlayerProps, i: number) => ({
         id: user.id,
         name: user.name,
@@ -656,12 +692,17 @@ export const UserProvider = ({ children }: UserProviderProps) => {
     );
     updateEvent({ playerList: initialPlayerList });
   }
+  */
+  function resetGame() {
+    // Backend verwaltet das Reset - leere Funktion als Platzhalter
+    console.log("resetGame wird jetzt vom Backend verwaltet");
+  }
   function undoFromSummary() {
-    updateEvent({ history: event.lastHistory });
-    functions.handleUndo();
+    //updateEvent({ history: event.lastHistory });
+    //functions.handleUndo();
   }
 
-  async function handleUndo() {
+  /*async function handleUndo() {
     if (event.history.length > 0) {
       const newHistory = [...event.history];
       const lastState = newHistory.pop();
@@ -681,18 +722,18 @@ export const UserProvider = ({ children }: UserProviderProps) => {
         updateEvent({
           finishedPlayerList: lastState.finishedPlayerList,
           playerList: lastState.playerList,
-          playerScore: lastState.playerScore,
+          //playerScore: lastState.playerScore,
           throwCount: lastState.throwCount,
-          playerTurn: lastState.playerTurn,
-          roundsCount: lastState.roundsCount,
+          //playerTurn: lastState.playerTurn,
+          //roundsCount: lastState.roundsCount,
         });
         updateEvent({ history: newHistory });
         playSound(UNDO_SOUND_PATH);
       }
     }
-  }
+  }*/
 
-  function changeActivePlayer() {
+  /*function changeActivePlayer() {
     if (!event.playerList || event.playerList.length === 0) return;
 
     const prevPlayerTurnIndex = event.playerTurn;
@@ -725,9 +766,9 @@ export const UserProvider = ({ children }: UserProviderProps) => {
         } as BASIC.Round);
       });
     }
-  }
+  }*/
 
-  function parseThrowValue(raw: number | string): {
+  /*function parseThrowValue(raw: number | string): {
     baseValue: number;
     isDoubleThrow: boolean;
     isTripleThrow: boolean;
@@ -778,9 +819,9 @@ export const UserProvider = ({ children }: UserProviderProps) => {
           roundsCount: event.roundsCount,
         },
       ],
-    });
+    });*/
 
-    let parsedThrow: ReturnType<typeof parseThrowValue>;
+  /*let parsedThrow: ReturnType<typeof parseThrowValue>;
     try {
       parsedThrow = parseThrowValue(currentScoreAchieved);
     } catch (error) {
@@ -788,9 +829,9 @@ export const UserProvider = ({ children }: UserProviderProps) => {
       return;
     }
 
-    const actualScore = parsedThrow.actualScore;
+    const actualScore = parsedThrow.actualScore;*/
 
-    if (currentThrow === 0) {
+  /*if (currentThrow === 0) {
       startingScoreRef.current = event.playerList[event.playerTurn].score;
     }
 
@@ -799,19 +840,19 @@ export const UserProvider = ({ children }: UserProviderProps) => {
       event.playerList[event.playerTurn].rounds[
         event.playerList[event.playerTurn].rounds.length - 1
       ];
-    const throwKey = `throw${currentThrow + 1}` as "throw1" | "throw2" | "throw3";
+    const throwKey = `throw${currentThrow + 1}` as "throw1" | "throw2" | "throw3";*/
 
-    currentPlayerThrows[throwKey] = currentScoreAchieved;
-    updateEvent({ playerScore: updatedPlayerScore });
+  //currentPlayerThrows[throwKey] = currentScoreAchieved;
+  //updateEvent({ playerScore: updatedPlayerScore });
 
-    const isDoubleOutMode = event.selectedGameMode === "double-out";
-    const isTripleOutMode = event.selectedGameMode === "triple-out";
-    const wouldFinishGame = updatedPlayerScore === 0;
-    const startingScoreThisRound =
-      startingScoreRef.current ?? event.playerList[event.playerTurn].score;
-    const isDoubleThrow = parsedThrow.isDoubleThrow;
-    const isTripleThrow = parsedThrow.isTripleThrow;
-    const isBustThrow =
+  //const isDoubleOutMode = event.selectedGameMode === "double-out";
+  //const isTripleOutMode = event.selectedGameMode === "triple-out";
+  //const wouldFinishGame = updatedPlayerScore === 0;
+  //const startingScoreThisRound =
+  //  startingScoreRef.current ?? event.playerList[event.playerTurn].score;
+  //const isDoubleThrow = parsedThrow.isDoubleThrow;
+  //const isTripleThrow = parsedThrow.isTripleThrow;
+  /*const isBustThrow =
       actualScore > startingScoreThisRound ||
       updatedPlayerScore < 0 ||
       (isDoubleOutMode && updatedPlayerScore === 1) ||
@@ -827,7 +868,7 @@ export const UserProvider = ({ children }: UserProviderProps) => {
           value: parsedThrow.baseValue,
           isDouble: isDoubleThrow,
           isTriple: isTripleThrow,
-          isBust: isBustThrow,
+          isBust: true, // placeholder, actual bust logic to be implemented from backend
         });
       } catch (error) {
         console.error("Failed to record throw:", error);
@@ -835,9 +876,9 @@ export const UserProvider = ({ children }: UserProviderProps) => {
           errormessage: "Error recording throw on server, try again.",
         });
       }
-    }
+    }*/
 
-    if (isBustThrow) {
+  /*if (isBustThrow) {
       functions.handleBust(startingScoreThisRound);
       playSound(ERROR_SOUND_PATH);
     } else {
@@ -845,11 +886,11 @@ export const UserProvider = ({ children }: UserProviderProps) => {
       updatedPlayerList[event.playerTurn].score = updatedPlayerScore;
       updateEvent({ throwCount: currentThrow + 1 });
       playSound(THROW_SOUND_PATH);
-    }
+    }*/
 
-    // wir überprüfen, ob der aktuelle Spieler das Spiel beendet hat
+  // wir überprüfen, ob der aktuelle Spieler das Spiel beendet hat
 
-    const isGameFinished =
+  /*const isGameFinished =
       (updatedPlayerScore === 0 && isDoubleOutMode && isDoubleThrow) ||
       (updatedPlayerScore === 0 && !isDoubleOutMode && !isTripleOutMode) ||
       (updatedPlayerScore === 0 && isTripleOutMode && isTripleThrow);
@@ -880,7 +921,7 @@ export const UserProvider = ({ children }: UserProviderProps) => {
       throwCount: event.throwCount,
     };
     updateEvent({ playerList: updatedPlayerList });
-  }
+  }*/
 
   // if (
   //   (updatedPlayerScore === 0 && isDoubleOutMode && isDoubleThrow) ||
@@ -907,20 +948,20 @@ export const UserProvider = ({ children }: UserProviderProps) => {
   //   updateEvent({ playerList: updatedPlayerlist });
   // }
   // wir prüfen, ob der Spieler überworfen hat
-  function handleBust(startingScore: number) {
+  /*function handleBust(startingScore: number) {
     event.playerList[event.playerTurn].isBust = true;
     event.playerList[event.playerTurn].score = startingScore;
-    changeActivePlayer();
-  }
+    //changeActivePlayer();
+  }*/
   //wir prüfen, ob der Spieler seinen Zug beendet hat
-  function handlePlayerFinishTurn() {
+  /*function handlePlayerFinishTurn() {
     const updatedPlayerList = [...event.playerList];
     updatedPlayerList[event.playerTurn].isPlaying = false;
     const finishedPlayers = event.playerList.filter((player) => !player.isPlaying);
     event.finishedPlayerList.push(finishedPlayers[0]);
 
     const unfinishedPlayers = event.playerList.filter((player) => player.isPlaying);
-    changeActivePlayer();
+    //changeActivePlayer();
     const nextPlayerIndex = event.playerTurn > unfinishedPlayers.length - 1 ? 0 : event.playerTurn;
     unfinishedPlayers[nextPlayerIndex].isActive = true;
     updateEvent({
@@ -929,9 +970,9 @@ export const UserProvider = ({ children }: UserProviderProps) => {
       playerTurn: event.playerTurn > unfinishedPlayers.length - 1 ? 0 : event.playerTurn,
     });
     updateEvent({ winnerList: event.finishedPlayerList });
-  }
+  }*/
 
-  function handleLastPlayer() {
+  /*function handleLastPlayer() {
     const currentPlayerList = [...event.playerList];
     currentPlayerList[event.playerTurn].isPlaying = false;
 
@@ -956,7 +997,7 @@ export const UserProvider = ({ children }: UserProviderProps) => {
     const sortedPlayers = [...event.playerList].sort((a, b) => b.score - a.score);
     const updatedFinishedPlayerList = [...event.finishedPlayerList, ...sortedPlayers];
     updateEvent({ finishedPlayerList: updatedFinishedPlayerList });
-  }
+  }*/
 
   const handleGameModeClick = (id: string | number) => {
     const mode = id.toString();
@@ -973,12 +1014,22 @@ export const UserProvider = ({ children }: UserProviderProps) => {
     return event.currentGameId ?? latestInvitation?.gameId ?? null;
   };
 
-  const getLastFinishedPlayerIds = () => {
-    if (event.selectedPlayers.length > 0) {
-      return event.selectedPlayers.map((p) => p.id);
+  const fetchGameStates = async (gameId: number) => {
+    try {
+      const data = await getGameStates(gameId);
+      return data;
+    } catch (error) {
+      console.error("Failed to fetch game states:", error);
+      throw error;
+    }
+  };
+
+  /*const getLastFinishedPlayerIds = () => {
+    if (event.selectedPlayers?.length > 0) {
+      return event.selectedPlayers?.map((p) => p.id);
     }
     return event.lastFinishedPlayerIds;
-  };
+  };*/
 
   async function startRematch(mode: "play-again" | "back-to-start"): Promise<void> {
     const storedInvitation = readInvitationFromStorage();
@@ -993,10 +1044,10 @@ export const UserProvider = ({ children }: UserProviderProps) => {
         playerList: [],
         finishedPlayerList: [],
         winnerList: [],
-        history: [],
+        //history: [],
         throwCount: 0,
-        roundsCount: 1,
-        playerTurn: 0,
+        //roundsCount: 1,
+        //playerTurn: 0,
         list: event.selectedPlayers,
       });
       return;
@@ -1039,23 +1090,24 @@ export const UserProvider = ({ children }: UserProviderProps) => {
     handleUnselect,
     handleDragEnd,
     // createPlayer,
-    getSelectedPlayersFromLS,
+    //getSelectedPlayersFromLS,
     //addUnselectedUserListToLs,
     addUserToLS,
     resetGame,
     undoFromSummary,
-    handleUndo,
+    //handleUndo,
     handleGameModeClick,
     handlePointsClick,
-    handleThrow,
+    //handleThrow,
     startRematch,
     getNecessaryGameId,
-    getLastFinishedPlayerIds,
-    handleBust,
-    handlePlayerFinishTurn,
-    handleLastPlayer,
-    sortPlayer,
-    changeActivePlayer,
+    getGameStates: fetchGameStates,
+    //getLastFinishedPlayerIds,
+    //handleBust,
+    //handlePlayerFinishTurn,
+    //handleLastPlayer,
+    //sortPlayer,
+    //changeActivePlayer,
   };
 
   useEffect(() => {

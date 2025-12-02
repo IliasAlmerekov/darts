@@ -11,7 +11,7 @@ type SettingsGroupProps = {
   title: string;
   options: ButtonOption[];
   selectedId?: string | number;
-  onClick: (id: string | number) => void;
+  onClick?: (id: string | number) => void;
 };
 
 const SettingsGroupBtn = ({ title, options, selectedId, onClick }: SettingsGroupProps) => {
@@ -25,7 +25,7 @@ const SettingsGroupBtn = ({ title, options, selectedId, onClick }: SettingsGroup
             className={clsx("settings-button", {
               active: selectedId === btn.id,
             })}
-            onClick={() => onClick(btn.id)}
+            onClick={() => onClick?.(btn.id)}
           >
             {btn.label}
           </button>

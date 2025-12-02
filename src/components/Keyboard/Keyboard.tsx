@@ -3,9 +3,9 @@ import "../Keyboard/Keyboard.css";
 import NumberButton from "./NumberButton";
 
 type Props = {
-  handleClick: (value: string | number) => void;
+  handleClick?: (value: string | number) => void;
   disabled?: boolean;
-  isOverlayOpen?: boolean
+  isOverlayOpen?: boolean;
 };
 
 function Keyboard({ handleClick }: Props) {
@@ -29,15 +29,15 @@ function Keyboard({ handleClick }: Props) {
         setDoubleNext(false);
         break;
       case doubleNext && typeof btn === "number":
-        handleClick(`D${btn}`);
+        handleClick?.(`D${btn}`);
         setDoubleNext(false);
         break;
       case tripleNext && typeof btn === "number":
-        handleClick(`T${btn}`);
+        handleClick?.(`T${btn}`);
         setTripleNext(false);
         break;
       default:
-        handleClick(btn);
+        handleClick?.(btn);
         break;
     }
   };
@@ -49,13 +49,9 @@ function Keyboard({ handleClick }: Props) {
           handleClick={() => handleButtonClick(btn)}
           value={btn}
           key={i}
-          isActive={
-            (doubleNext && btn === "Double") || (tripleNext && btn === "Triple")
-          }
+          isActive={(doubleNext && btn === "Double") || (tripleNext && btn === "Triple")}
           disabled={
-            (tripleNext && btn === 25) ||
-            (tripleNext && btn === 0) ||
-            (doubleNext && btn === 0)
+            (tripleNext && btn === 25) || (tripleNext && btn === 0) || (doubleNext && btn === 0)
           }
         />
       ))}

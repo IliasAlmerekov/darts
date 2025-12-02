@@ -252,3 +252,44 @@ export async function getGamesOverview(
 
   return response.json();
 }
+
+export type GameThrowsResponse = {
+  id: number;
+  status: string;
+  currentRound: number;
+  activePlayerId: number;
+  currentThrowCount: number;
+  players: {
+    id: number;
+    name: string;
+    score: number;
+    isActive: boolean;
+    isBust: boolean;
+    position: number;
+    throwsInCurrentRound: number;
+    roundHistory: unknown[];
+  }[];
+  winnerId: number | null;
+  settings: {
+    startScore: number;
+    doubleOut: boolean;
+    tripleOut: boolean;
+  };
+};
+
+export async function getGameThrows(gameId: number): Promise<GameThrowsResponse> {
+  const response = await fetch(`/api/game/${gameId}`, {
+    method: "GET",
+    credentials: "include",
+    headers: {
+      Accept: "application/json",
+    },
+  });
+
+  if (!response.ok) {
+    const error = await response.json().catch(() => ({}));
+    throw new Error(error.error || "Failed to fetch game throws");
+  }
+
+  return response.json();
+}

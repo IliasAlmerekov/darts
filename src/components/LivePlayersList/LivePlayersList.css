@@ -1,0 +1,19 @@
+.live-players-container {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.no-players-message {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem;
+  text-align: center;
+  color: var(--text-secondary, #888);
+  font-size: 0.9rem;
+}
+
+.no-players-message p {
+  margin: 0;
+}

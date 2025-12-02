@@ -32,10 +32,12 @@ export default [
       ...reactHooks.configs.recommended.rules,
       ...jsxA11y.configs.recommended.rules,
       "@typescript-eslint/no-explicit-any": "error",
+      "react/react-in-jsx-scope": "off",
     },
     settings: {
       react: {
         version: "detect",
+        runtime: "automatic",
       },
     },
   },

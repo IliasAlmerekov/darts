@@ -5,7 +5,7 @@ import React from "react";
 
 type Props = {
   value: number | "Undo" | "Triple" | "Double";
-  handleClick: () => void;
+  handleClick?: () => void;
   isActive?: boolean;
   disabled?: boolean;
 };

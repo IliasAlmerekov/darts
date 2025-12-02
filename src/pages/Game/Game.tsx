@@ -1,8 +1,8 @@
 import Keyboard from "../../components/Keyboard/Keyboard";
 import "./game.css";
 import Back from "../../icons/back.svg";
-import { Link, useNavigate } from "react-router-dom";
-import React, { useEffect } from "react";
+import { Link } from "react-router-dom";
+import React, { useEffect, useState } from "react";
 import GamePlayerItemList from "../../components/GamePlayerItem/GamplayerItemList";
 import Overlay from "../../components/Overlay/Overlay";
 import Button from "../../components/Button/Button";
@@ -11,74 +11,49 @@ import FinishedGamePlayerItemList from "../../components/GamePlayerItem/Finished
 import LinkButton from "../../components/LinkButton/LinkButton";
 import deleteIcon from "../../icons/delete.svg";
 import Undo from "../../icons/undo-copy.svg";
-import { useUser } from "../../provider/UserProvider";
 import settingsIcon from "../../icons/settings-inactive.svg";
 import SettingsGroupBtn from "../../components/Button/SettingsGroupBtn";
+import { useRoomInvitation } from "../../hooks/useRoomInvitation";
+// import { getGameStates } from "../../services/Game/state";
+import { getGameThrows, GameThrowsResponse } from "../../services/api";
+import { useGameThrows } from "../../hooks/useGameThrows";
 
 function Game() {
-  const WIN_SOUND_PATH = "/sounds/win-sound.mp3";
-
-  const { event, updateEvent, functions } = useUser();
-  const navigate = useNavigate();
-
-  useEffect(() => {
-    if (event.throwCount === 3 && !event.isFinishGameOverlayOpen) {
-      functions.changeActivePlayer();
-    }
-  }, [event.throwCount, event.isFinishGameOverlayOpen, functions]);
+  const { invitation } = useRoomInvitation();
+  const [gameData, setGameData] = useState<GameThrowsResponse | null>(null);
+  const latestThrow = useGameThrows(invitation?.gameId || null);
+  // const { event, functions, updateEvent } = useContext(UserContext);
 
   useEffect(() => {
-    const initialPlayerCount = event.selectedPlayers.length;
-
-    if (initialPlayerCount > 0 && event.finishedPlayerList.length === initialPlayerCount) {
-      updateEvent({
-        winnerList: event.finishedPlayerList,
-        lastHistory: event.history,
-        lastFinishedPlayerIds: event.selectedPlayers.map((p) => p.id),
-      });
-      const finishedGameId = event.currentGameId ?? functions.getNecessaryGameId();
-      navigate("/summary", { state: { finishedGameId } });
-
-      if (initialPlayerCount === 2) {
-        functions.playSound(WIN_SOUND_PATH);
+    const fetchData = async () => {
+      if (!invitation?.gameId) return;
+      try {
+        const data = await getGameThrows(invitation.gameId);
+        setGameData(data);
+      } catch (error) {
+        console.error("Failed to fetch game data:", error);
       }
-    }
-  }, [
-    event.finishedPlayerList,
-    event.history,
-    event.selectedPlayers.length,
-    event.currentGameId,
-    functions,
-    navigate,
-    updateEvent,
-  ]);
+    };
+    fetchData();
+  }, [invitation]);
 
-  useEffect(() => {
-    if (!event.playerList || event.playerList.length === 0) return;
-
-    if (event.playerTurn === 5 || event.playerTurn + 1 === event.playerList.length) {
-      const player = document.getElementById(`playerid-${event.playerTurn}`);
-      player?.scrollIntoView({
-        behavior: "smooth",
-      });
-    } else if (event.playerTurn === 0) {
-      window.scroll({
-        top: 0,
-        behavior: "smooth",
-      });
-    }
-  }, [event.playerTurn, event.playerList.length, event.playerList]);
+  // POLLING ENTFERNT - Wird durch SSE vom Backend ersetzt
+  // Das Backend sollte Updates über Server-Sent Events pushen
 
   return (
     <>
-      <Overlay className="overlay-box" isOpen={event.isFinishGameOverlayOpen} src={deleteIcon}>
+      <Overlay
+        className="overlay-box"
+        //isOpen={event.isFinishGameOverlayOpen}
+        src={deleteIcon}
+      >
         <div className="finish-game-overlay">
           <p className="overlay-heading">Continue Game?</p>
           <div>
             <Button
               label="Finish"
               isLink
-              handleClick={functions.sortPlayer}
+              //handleClick={functions.sortPlayer}
               type="secondary"
               isInverted={true}
               link={""}
@@ -86,8 +61,8 @@ function Game() {
             <Button
               label="Continue"
               handleClick={() => {
-                functions.handlePlayerFinishTurn();
-                updateEvent({ isFinishGameOverlayOpen: false });
+                //functions.handlePlayerFinishTurn();
+                //updateEvent({ isFinishGameOverlayOpen: false });
               }}
               type="primary"
               link={""}
@@ -96,8 +71,8 @@ function Game() {
               icon={Undo}
               label="Undo Throw"
               handleClick={() => {
-                updateEvent({ isFinishGameOverlayOpen: false });
-                functions.handleUndo();
+                //updateEvent({ isFinishGameOverlayOpen: false });
+                //functions.handleUndo();
               }}
               className="undo-throw"
             />
@@ -108,9 +83,9 @@ function Game() {
       <Overlay
         className="overlay-box"
         src={deleteIcon}
-        isOpen={event.isSettingsOverlayOpen}
+        //isOpen={event.isSettingsOverlayOpen}
         onClose={() => {
-          updateEvent({ isSettingsOverlayOpen: false });
+          //updateEvent({ isSettingsOverlayOpen: false });
         }}
       >
         <div className="settings-overlay">
@@ -123,8 +98,15 @@ function Game() {
                 { label: "Double-out", id: "double-out" },
                 { label: "Triple-out", id: "triple-out" },
               ]}
-              selectedId={event.selectedGameMode}
-              onClick={functions.handleGameModeClick}
+              // selectedId={event.selectedGameMode}
+              selectedId={
+                gameData?.settings.doubleOut
+                  ? "double-out"
+                  : gameData?.settings.tripleOut
+                    ? "triple-out"
+                    : "single-out"
+              }
+              // onClick={functions.handleGameModeClick}
             />
             <SettingsGroupBtn
               title="Punkte"
@@ -135,8 +117,9 @@ function Game() {
                 { label: "401", id: 401 },
                 { label: "501", id: 501 },
               ]}
-              selectedId={event.selectedPoints}
-              onClick={functions.handlePointsClick}
+              // selectedId={event.selectedPoints}
+              selectedId={gameData?.settings.startScore}
+              // onClick={functions.handlePointsClick}
             />
           </div>
           <Button
@@ -157,28 +140,49 @@ function Game() {
         </Link>
       </div>
       <div className="game-player-item-container">
-        <GamePlayerItemList
-          userMap={event.playerList}
-          score={event.playerList[event.playerTurn]?.score}
-          round={event.roundsCount}
-          isBust={event.playerList[event.playerTurn]?.isBust}
-          throwCount={event.playerList[event.playerTurn]?.throwCount}
-        />
-        <FinishedGamePlayerItemList userMap={event.finishedPlayerList} />
+        {gameData && (
+          <>
+            <GamePlayerItemList
+              userMap={gameData.players.map((player, index) => ({
+                ...player,
+                index: index,
+                rounds: player.roundHistory,
+              }))}
+              score={
+                gameData.players.find((player) => player.id === gameData.activePlayerId)?.score || 0
+              }
+              round={gameData.currentRound}
+              isBust={
+                gameData.players.find((player) => player.id === gameData.activePlayerId)?.isBust ||
+                false
+              }
+              throwCount={gameData.currentThrowCount}
+            />
+            <FinishedGamePlayerItemList
+              // userMap={event.finishedPlayerList}
+              // Backend liefert jetzt winnerId und position in players array
+              userMap={
+                gameData.status === "finished"
+                  ? gameData.players
+                      .filter((p) => p.position > 0)
+                      .sort((a, b) => a.position - b.position)
+                  : []
+              }
+            />
+          </>
+        )}
       </div>
       <div className="keyboard-and-undo">
-        <NumberButton value="Undo" handleClick={functions.handleUndo} />
-        <Keyboard
-          handleClick={(value) =>
-            functions.handleThrow(event.playerList[event.playerTurn], event.throwCount, value)
-          }
-          isOverlayOpen={event.isFinishGameOverlayOpen}
+        <NumberButton
+          value="Undo"
+          //handleClick={functions.handleUndo}
         />
+        <Keyboard handleClick={latestThrow.latestThrow} />
       </div>
       <LinkButton
         className="settings-btn"
         label={<img src={settingsIcon} alt="Settings" />}
-        handleClick={() => updateEvent({ isSettingsOverlayOpen: true })}
+        //handleClick={() => updateEvent({ isSettingsOverlayOpen: true })}
       />
     </>
   );
