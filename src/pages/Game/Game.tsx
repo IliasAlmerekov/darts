@@ -47,6 +47,7 @@ function Game() {
     event.finishedPlayerList,
     event.history,
     event.selectedPlayers.length,
+    event.currentGameId,
     functions,
     navigate,
     updateEvent,

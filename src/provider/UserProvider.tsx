@@ -693,9 +693,16 @@ export const UserProvider = ({ children }: UserProviderProps) => {
   }
 
   function changeActivePlayer() {
+    if (!event.playerList || event.playerList.length === 0) return;
+
     const prevPlayerTurnIndex = event.playerTurn;
     const newPlayerTurnIndex = event.playerTurn + 1;
     const newPlayerList: BASIC.WinnerPlayerProps[] = [...event.playerList];
+
+    if (!newPlayerList[prevPlayerTurnIndex]) {
+      console.warn("Current player not found in playerList", prevPlayerTurnIndex);
+      return;
+    }
 
     newPlayerList[prevPlayerTurnIndex].isActive = false;
     const isEndOfArray = newPlayerTurnIndex > newPlayerList.length - 1;

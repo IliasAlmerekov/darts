@@ -104,8 +104,8 @@ function Gamesummary(): React.JSX.Element {
           label="Back To Start"
           type="primary"
           handleClick={async () => {
-            functions.savedFinishedGameToLS(newList);
-            sessionStorage.removeItem("OngoingGame");
+            /*  functions.savedFinishedGameToLS(newList);
+            sessionStorage.removeItem("OngoingGame");*/
 
             await functions.startRematch("back-to-start");
             navigate("/start");

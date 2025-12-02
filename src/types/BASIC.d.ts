@@ -33,6 +33,32 @@ declare namespace BASIC {
     roundCount?: number;
   };
 
+  type PlayerProps = {
+    gamesPlayed?: number;
+    scoreAverage?: number;
+    id: number;
+    name: string;
+    playerId?: number;
+  };
+
+  type GameDataProps = {
+    items?: FinishedGameProps[];
+    total?: SetStateAction<number>;
+  };
+
+  type PlayerDataProps = {
+    items?: PlayerProps[];
+    total?: SetStateAction<number>;
+  };
+
+  type FinishedGameProps = {
+    id: number;
+    winnerRounds: number;
+    winnerName: string;
+    playersCount: number;
+    date: string;
+  };
+
   type UserProps = {
     id: number;
     name: string;

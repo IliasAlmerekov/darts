@@ -22,10 +22,8 @@ function Start() {
 
   const { event, updateEvent, functions } = useUser();
 
-  // Initialize Players on first render
   UseInitializePlayers({ event, updateEvent, functions });
 
-  // Invitation and handling room creation
   const { invitation, createRoom } = useRoomInvitation();
 
   const necessaryGameId = functions.getNecessaryGameId();
@@ -33,7 +31,6 @@ function Start() {
   const isDoubleOut = event.selectedGameMode === "double-out";
   const isTripleOutMode = event.selectedGameMode === "triple-out";
 
-  // Auto-sync live players with event selected players
   UseSyncLivePlayersWithEvent({
     gameId: necessaryGameId,
     selectedPlayers: event.selectedPlayers,
