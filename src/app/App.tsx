@@ -7,6 +7,7 @@ import Gamesummary from "../pages/gamesummary/Gamesummary";
 import JoinedGame from "../pages/JoinedGame/JoinedGame";
 import GameDetailPage from "../components/Statistics/GamesOverview/GameDetailPage/GameDetailPage";
 import GamesOverview from "../components/Statistics/GamesOverview/GamesOverview";
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 import { UserProvider } from "../provider/UserProvider";
 import Settings from "../components/Settings/Settings";
 import Statistic from "../components/Statistics/Statistics";
@@ -19,27 +20,25 @@ function App(): React.JSX.Element {
   return (
     <div className="app">
       <BrowserRouter>
-        <UserProvider>
-          <Routes>
-            <Route path="/" element={<Login />} />
-            <Route path="/register" element={<Registration />} />
+        <Routes>
+          <Route path="/" element={<Login />} />
+          <Route path="/register" element={<Registration />} />
 
-            <Route element={<ProtectedRoutes allowedRoles={["ROLE_ADMIN"]} />}>
-              <Route path="/start" element={<Start />} />
-              <Route path="/game" element={<Game />} />
-              <Route path="/summary" element={<Gamesummary />} />
-              <Route path="/details/:id" element={<GameDetailPage />} />
-              <Route path="/gamesoverview" element={<GamesOverview />} />
-              <Route path="/settings" element={<Settings />} />
-              <Route path="/statistics" element={<Statistic />} />
-            </Route>
+          <Route element={<ProtectedRoutes allowedRoles={["ROLE_ADMIN"]} />}>
+            <Route path="/start" element={<Start />} />
+            <Route path="/game" element={<Game />} />
+            <Route path="/summary" element={<Gamesummary />} />
+            <Route path="/details/:id" element={<GameDetailPage />} />
+            <Route path="/gamesoverview" element={<GamesOverview />} />
+            <Route path="/settings" element={<Settings />} />
+            <Route path="/statistics" element={<Statistic />} />
+          </Route>
 
-            <Route element={<ProtectedRoutes allowedRoles={["ROLE_PLAYER"]} />}>
-              <Route path="/joined" element={<JoinedGame />} />
-              <Route path="/playerprofile" element={<Playerprofile />} />
-            </Route>
-          </Routes>
-        </UserProvider>
+          <Route element={<ProtectedRoutes allowedRoles={["ROLE_PLAYER"]} />}>
+            <Route path="/joined" element={<JoinedGame />} />
+            <Route path="/playerprofile" element={<Playerprofile />} />
+          </Route>
+        </Routes>
       </BrowserRouter>
     </div>
   );

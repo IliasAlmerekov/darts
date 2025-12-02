@@ -5,16 +5,10 @@ import dartIcon from "../../icons/dart.svg";
 import dartIconInactive from "../../icons/dart-inactive.svg";
 import statisticIcon from "../../icons/statistics.svg";
 import statisticIconInactive from "../../icons/statistics-inactive.svg";
-import clsx from "clsx";
-import { useUser } from "../../provider/UserProvider";
 import "./NavigationBar.css";
-import { useNavigate } from "react-router-dom";
 import Madebydeepblue from "../../icons/madeByDeepblue.svg";
 
 export default function NavigationBar(): React.JSX.Element {
-  const { event, functions } = useUser();
-  const navigate = useNavigate();
-
   const navItems = [
     {
       label: "Statistics",
@@ -41,16 +35,18 @@ export default function NavigationBar(): React.JSX.Element {
       {navItems.map((item) => (
         <button
           key={item.id}
-          onClick={() => functions.handleTabClick(item.id, navigate)}
+          /*onClick={() => functions.handleTabClick(item.id, navigate)}
           className={clsx("tab-button", {
             active: event.activeTab === item.id,
             inactive: !(event.activeTab === item.id),
-          })}
+          })}*/
         >
           <span>
             <img
-              src={item.id === event.activeTab ? item.activeIcon : item.inActiveIcon}
+              src={item.activeIcon}
               alt={item.label}
+              /*src={item.id === event.activeTab ? item.activeIcon : item.inActiveIcon}
+              alt={item.label}*/
             />
             {item.label}
           </span>
