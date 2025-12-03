@@ -11,7 +11,7 @@
   height: 48px;
 }
 
-.tab-button {
+.tabButton {
   display: flex;
   align-items: center;
   justify-content: center;
@@ -25,7 +25,7 @@
   transition: all 0.2s ease;
 }
 
-.tab-button span {
+.tabButton span {
   display: flex;
   align-items: center;
   font-family: CircularXX, sans-serif;
@@ -33,13 +33,19 @@
   gap: 16px;
 }
 
-.tab-button.active {
+.tabButton.active {
   background-color: var(--blue);
   color: var(--white);
   font-weight: 700;
 }
 
-.tab-button.inactive {
+.tabButton.inactive {
   color: var(--darkblue);
   font-weight: 700;
+}
+
+.deepblueIcon {
+  top: 32px;
+  position: fixed;
+  right: 32px;
 }

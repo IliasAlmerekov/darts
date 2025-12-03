@@ -1,6 +1,6 @@
 import { useGamePlayers } from "../../hooks/useGamePlayers";
 import SelectedPlayerItem from "../player-items/SelectedPlayerItem";
-import "./LivePlayersList.css";
+import styles from "./LivePlayersList.module.css";
 
 interface LivePlayersListProps {
   gameId: number | null;
@@ -12,13 +12,13 @@ export const LivePlayersList = ({ gameId, onRemovePlayer, dragEnd }: LivePlayers
   const { players, count } = useGamePlayers(gameId);
 
   return (
-    <div className="live-players-container">
-      <h4 className="header-selected-players">
-        Selected Players <div className="listCount">{count}/10</div>
+    <div className={styles.livePlayersContainer}>
+      <h4 className={styles.headerSelectedPlayers}>
+        Selected Players <div className={styles.listCount}>{count}/10</div>
       </h4>
-      <div className="selectedPlayerListScroll">
+      <div className={styles.selectedPlayerListScroll}>
         {players.length === 0 ? (
-          <div className="no-players-message">
+          <div className={styles.noPlayersMessage}>
             <p>No players yet. Scan the QR code to join!</p>
           </div>
         ) : (

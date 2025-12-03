@@ -1,9 +1,8 @@
 import NavigationBar from "../navigation-bar/NavigationBar";
-import SettingsGroupBtn from "../button/SettingsGroupBtn";
+import SettingsGroupBtn from "../Button/SettingsGroupBtn";
 import { useStore } from "@nanostores/react";
 import { $settings, newSettings } from "../../stores";
-
-import "./Settings.css";
+import styles from "./Settings.module.css";
 
 function Settings(): JSX.Element {
   const settings = useStore($settings);
@@ -19,12 +18,12 @@ function Settings(): JSX.Element {
   };
 
   return (
-    <div className="settings">
+    <div className={styles.settings}>
       <NavigationBar />
       <h1>Settings</h1>
-      <section className="settings-section">
+      <section className={styles.settingsSection}>
         <h2>Game</h2>
-        <div className="settings-body">
+        <div className={styles.settingsBody}>
           <SettingsGroupBtn
             title="Game Mode"
             options={[

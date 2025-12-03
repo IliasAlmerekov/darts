@@ -1,4 +1,4 @@
-import "./PodiumPlayerCard.css";
+import styles from "./PodiumPlayerCard.module.css";
 import React from "react";
 
 type Props = {
@@ -12,16 +12,16 @@ type Props = {
 function PodiumPlayerCard({ ...props }: Props): React.JSX.Element {
   return (
     <div className={props.className}>
-      <h4 className="center-align player-name">{props.name}</h4>
-      <div className="copylarge center-align color">
+      <h4 className={`${styles.centerAlign} ${styles.playerName}`}>{props.name}</h4>
+      <div className={`copylarge ${styles.centerAlign} ${styles.color}`}>
         Rounds
-        <h4 className="number">{props.rounds}</h4>
+        <h4 className={styles.number}>{props.rounds}</h4>
       </div>
-      <div className="copylarge center-align color">
+      <div className={`copylarge ${styles.centerAlign} ${styles.color}`}>
         Ø Round
-        <h4 className="number">{props.averagePerRound}</h4>
+        <h4 className={styles.number}>{props.averagePerRound}</h4>
       </div>
-      <div className="copylarge placement-round">{props.placement}</div>
+      <div className={`copylarge ${styles.placementRound}`}>{props.placement}</div>
     </div>
   );
 }

@@ -1,5 +1,5 @@
-.selected-player-item,
-.unselected-player-item {
+.selectedPlayerItem,
+.unselectedPlayerItem {
   width: auto;
   display: flex;
   justify-content: space-between;
@@ -7,31 +7,31 @@
   padding: 24px 8px;
 }
 
-.selected-player-item {
+.selectedPlayerItem {
   touch-action: none;
 }
 
-.delete-button,
-.move-button {
+.deleteButton,
+.moveButton {
   border: none;
   padding: 0;
   margin: 0;
 }
 
-.delete-button img {
+.deleteButton img {
   width: 100%;
   padding: 1px;
 }
 
-.selected-player-item :first-child {
+.selectedPlayerItem :first-child {
   display: flex;
   gap: 16px;
   background: white;
   border: none;
 }
 
-.fade-out {
-  animation: fade-out 0.2s ease-in-out forwards;
+.fadeOut {
+  animation: fadeOut 0.2s ease-in-out forwards;
 }
 
 .appear {
@@ -56,7 +56,7 @@
   }
 }
 
-@keyframes fade-out {
+@keyframes fadeOut {
   0% {
     opacity: 1;
   }

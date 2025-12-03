@@ -1,5 +1,5 @@
 import clsx from "clsx";
-import "./PlayerItems.css";
+import styles from "./PlayerItems.module.css";
 
 type Props = {
   name: string;
@@ -13,12 +13,16 @@ type Props = {
 function UnselectedPlayerItem({ ...props }: Props) {
   return (
     <div
-      className={clsx("unselected-player-item", {
-        fadeOut: !!props.isClicked,
+      className={clsx(styles.unselectedPlayerItem, {
+        [styles.fadeOut]: !!props.isClicked,
       })}
     >
       <div className="copylarge">{props?.name}</div>
-      <button onClick={props.handleClickOrDelete} className="move-button" aria-label="Move Button">
+      <button
+        onClick={props.handleClickOrDelete}
+        className={styles.moveButton}
+        aria-label="Move Button"
+      >
         <img src={props.src} alt={props.alt} />
       </button>
     </div>

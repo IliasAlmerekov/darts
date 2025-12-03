@@ -1,4 +1,4 @@
-import "./OverviewPlayerItem.css";
+import styles from "./OverviewPlayerItem.module.css";
 
 type Props = {
   className?: string;
@@ -11,16 +11,16 @@ type Props = {
 function OverviewPlayerItem({ ...props }: Props) {
   return (
     <div className={props.className}>
-      <div className="player-infos">
-        <h4 className="leader-board">{props.placement}</h4>
+      <div className={styles.playerInfos}>
+        <h4 className={styles.leaderBoard}>{props.placement}</h4>
         <div className="copylarge ">{props.name}</div>
       </div>
-      <div className="player-statistics">
-        <div className="copylarge rounds">
-          Rounds <h4 className="number-display">{props.rounds}</h4>
+      <div className={styles.playerStatistics}>
+        <div className={`copylarge ${styles.rounds}`}>
+          Rounds <h4 className={styles.numberDisplay}>{props.rounds}</h4>
         </div>
-        <div className="copylarge rounds">
-          Ø Round <h4 className="number-display">{props.averagePerRound}</h4>
+        <div className={`copylarge ${styles.rounds}`}>
+          Ø Round <h4 className={styles.numberDisplay}>{props.averagePerRound}</h4>
         </div>
       </div>
     </div>

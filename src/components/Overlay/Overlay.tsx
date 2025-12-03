@@ -1,4 +1,4 @@
-import "./Overlay.css";
+import styles from "./Overlay.module.css";
 import React from "react";
 
 type OverlayProps = {
@@ -15,9 +15,9 @@ function Overlay({ isOpen, onClose, className, src, children }: OverlayProps) {
   return (
     <>
       {isOpen ? (
-        <div className="overlay-background">
+        <div className={styles.overlayBackground}>
           <div className={className}>
-            <button className="delete" onClick={onClose} aria-label="Close overlay">
+            <button className={styles.delete} onClick={onClose} aria-label="Close overlay">
               <img src={src} alt="Close overlay" />
             </button>
             {children}

@@ -17,3 +17,15 @@
 .third {
   order: 0;
 }
+
+.podiumPlayerCard {
+  height: 142px;
+  width: 197px;
+  padding: 23px;
+  background-color: var(--lightgrey);
+  border-radius: 8px;
+}
+
+.hide {
+  opacity: 0.5;
+}

@@ -6,7 +6,7 @@ import dartIcon from "../../icons/dart.svg";
 import dartIconInactive from "../../icons/dart-inactive.svg";
 import statisticIcon from "../../icons/statistics.svg";
 import statisticIconInactive from "../../icons/statistics-inactive.svg";
-import "./NavigationBar.css";
+import styles from "./NavigationBar.module.css";
 import Madebydeepblue from "../../icons/madeByDeepblue.svg";
 import clsx from "clsx";
 
@@ -43,8 +43,8 @@ export default function NavigationBar(): React.JSX.Element {
   };
 
   return (
-    <div className="navigation">
-      <img className="deepblue-icon" src={Madebydeepblue} alt="" />
+    <div className={styles.navigation}>
+      <img className={styles.deepblueIcon} src={Madebydeepblue} alt="" />
       {navItems.map((item) => {
         const isActive =
           location.pathname === item.path || (item.id === "game" && location.pathname === "/start");
@@ -53,9 +53,9 @@ export default function NavigationBar(): React.JSX.Element {
           <button
             key={item.id}
             onClick={() => handleTabClick(item.path)}
-            className={clsx("tab-button", {
-              active: isActive,
-              inactive: !isActive,
+            className={clsx(styles.tabButton, {
+              [styles.active]: isActive,
+              [styles.inactive]: !isActive,
             })}
           >
             <span>

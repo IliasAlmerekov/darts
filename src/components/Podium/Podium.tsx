@@ -1,7 +1,6 @@
 import clsx from "clsx";
 import PodiumPlayerCard from "../podium-player-card/PodiumPlayerCard";
-import "./Podium.css";
-import "../podium-player-card/PodiumPlayerCard.css";
+import styles from "./Podium.module.css";
 import { useStore } from "@nanostores/react";
 import { $settings } from "../../stores";
 
@@ -15,11 +14,11 @@ function Podium({ userMap, list }: PodiumProps): JSX.Element {
   const settings = useStore($settings);
 
   if (!userMap || userMap.length === 0) {
-    return <div className="podium" />;
+    return <div className={styles.podium} />;
   }
 
   return (
-    <div className="podium">
+    <div className={styles.podium}>
       {userMap.map((item: BASIC.WinnerPlayerProps, index: number) => {
         const completedRound =
           item.roundCount ??
@@ -36,11 +35,11 @@ function Podium({ userMap, list }: PodiumProps): JSX.Element {
         return (
           <PodiumPlayerCard
             key={index}
-            className={clsx("podium-player-card", {
-              first: index === 0,
-              second: index === 1,
-              third: index === 2,
-              hide: list?.length === 2 && index === 2,
+            className={clsx(styles.podiumPlayerCard, {
+              [styles.first]: index === 0,
+              [styles.second]: index === 1,
+              [styles.third]: index === 2,
+              [styles.hide]: list?.length === 2 && index === 2,
             })}
             rounds={completedRound}
             name={item.name}

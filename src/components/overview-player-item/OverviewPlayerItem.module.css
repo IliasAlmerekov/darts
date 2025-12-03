@@ -1,15 +1,15 @@
-.leader-board {
+.leaderBoard {
   color: var(--darkgrey);
 }
 
-.player-infos {
+.playerInfos {
   display: flex;
   justify-content: space-between;
   align-items: center;
   gap: 16px;
 }
 
-.player-statistics {
+.playerStatistics {
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -24,12 +24,12 @@
   gap: 8px;
 }
 
-.number-display {
+.numberDisplay {
   width: 40px;
   color: var(--darkblue);
 }
 
-.overview-player-item {
+.overviewPlayerItem {
   width: auto;
   display: flex;
   justify-content: space-between;

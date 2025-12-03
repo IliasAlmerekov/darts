@@ -45,12 +45,6 @@
   display: flex;
 }
 
-.deepblueIcon {
-  top: 32px;
-  position: fixed;
-  right: 32px;
-}
-
 .startBtn {
   bottom: 32px;
   position: absolute;
