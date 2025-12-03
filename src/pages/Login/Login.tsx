@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import styles from "./Login.module.css";
-import emailIcon from "../../icons/email.svg";
-import passwordIcon from "../../icons/password.svg";
-import LoadingAuth from "../../components/login-success-skeleton/LoadingAuth";
-import { useAuthenticatedUser } from "../../hooks/useAuthenticatedUser";
+import emailIcon from "@/icons/email.svg";
+import passwordIcon from "@/icons/password.svg";
+import LoadingAuth from "@/components/login-success-skeleton/LoadingAuth";
+import { useAuthenticatedUser } from "@/hooks/useAuthenticatedUser";
 
 function Login() {
   const [error, setError] = useState<string | null>(null);

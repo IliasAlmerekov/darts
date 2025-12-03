@@ -1,14 +1,14 @@
-import OverviewPlayerItemList from "../../components/overview-player-item/OverviewPlayerItemList";
+import OverviewPlayerItemList from "@/components/overview-player-item/OverviewPlayerItemList";
 import styles from "./game-summary.module.css";
-import Button from "../../components/button/Button";
-import Podium from "../../components/podium/Podium";
-import Undo from "../../icons/undolinkbutton.svg";
+import Button from "@/components/button/Button";
+import Podium from "@/components/podium/Podium";
+import Undo from "@/icons/undolinkbutton.svg";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import React, { useEffect, useMemo, useState } from "react";
-import { getFinishedGame, FinishedPlayerResponse, createRematch } from "../../services/api";
-import { setInvitation, setLastFinishedGameId, resetRoomStore } from "../../stores";
-import { playSound } from "../../shared/lib/soundPlayer";
-import "../../types/BASIC.d";
+import { getFinishedGame, FinishedPlayerResponse, createRematch } from "@/services/api";
+import { setInvitation, setLastFinishedGameId, resetRoomStore } from "@/stores";
+import { playSound } from "@/shared/lib/soundPlayer";
+import "@/types/BASIC.d";
 
 function Gamesummary(): React.JSX.Element {
   const navigate = useNavigate();

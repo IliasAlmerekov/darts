@@ -1,5 +1,5 @@
 import { atom } from "nanostores";
-import { persistInvitationToStorage, readInvitationFromStorage } from "../hooks/useRoomInvitation";
+import { persistInvitationToStorage, readInvitationFromStorage } from "@/hooks/useRoomInvitation";
 
 export interface Invitation {
   gameId: number;

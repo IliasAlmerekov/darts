@@ -1,6 +1,6 @@
 import "./Keyboard.css";
 import clsx from "clsx";
-import Undo from "../../icons/undo.svg";
+import Undo from "@/icons/undo.svg";
 
 type Props = {
   value: number | "Undo" | "Triple" | "Double";

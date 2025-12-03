@@ -2,7 +2,7 @@ import clsx from "clsx";
 import PodiumPlayerCard from "../podium-player-card/PodiumPlayerCard";
 import styles from "./Podium.module.css";
 import { useStore } from "@nanostores/react";
-import { $settings } from "../../stores";
+import { $settings } from "@/stores";
 
 interface PodiumProps {
   name?: string;

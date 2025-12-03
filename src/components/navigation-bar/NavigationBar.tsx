@@ -1,13 +1,13 @@
 import React from "react";
 import { useNavigate, useLocation } from "react-router-dom";
-import settingsCogInactive from "../../icons/settings-inactive.svg";
-import settingsCog from "../../icons/settings.svg";
-import dartIcon from "../../icons/dart.svg";
-import dartIconInactive from "../../icons/dart-inactive.svg";
-import statisticIcon from "../../icons/statistics.svg";
-import statisticIconInactive from "../../icons/statistics-inactive.svg";
+import settingsCogInactive from "@/icons/settings-inactive.svg";
+import settingsCog from "@/icons/settings.svg";
+import dartIcon from "@/icons/dart.svg";
+import dartIconInactive from "@/icons/dart-inactive.svg";
+import statisticIcon from "@/icons/statistics.svg";
+import statisticIconInactive from "@/icons/statistics-inactive.svg";
 import styles from "./NavigationBar.module.css";
-import Madebydeepblue from "../../icons/madeByDeepblue.svg";
+import Madebydeepblue from "@/icons/madeByDeepblue.svg";
 import clsx from "clsx";
 
 export default function NavigationBar(): React.JSX.Element {

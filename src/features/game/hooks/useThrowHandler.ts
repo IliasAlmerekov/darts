@@ -1,8 +1,8 @@
 import { useCallback } from "react";
-import { GameThrowsResponse, recordThrow, undoLastThrow } from "../../../services/api";
-import { parseThrowValue } from "../../../shared/lib/parseThrowValue";
-import { playSound } from "../../../shared/lib/soundPlayer";
-import { $gameData, setGameData } from "../../../stores";
+import { GameThrowsResponse, recordThrow, undoLastThrow } from "@/services/api";
+import { parseThrowValue } from "@/shared/lib/parseThrowValue";
+import { playSound } from "@/shared/lib/soundPlayer";
+import { $gameData, setGameData } from "@/stores";
 
 interface UseThrowHandlerOptions {
   gameId: number | null;

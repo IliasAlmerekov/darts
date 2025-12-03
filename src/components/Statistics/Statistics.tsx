@@ -1,11 +1,11 @@
 import { useEffect, useState } from "react";
 import "./Statistics.css";
-import sortAZIcon from "../../icons/sorting-az.svg";
-import sortScoreIcon from "../../icons/sorting-score.svg";
+import sortAZIcon from "@/icons/sorting-az.svg";
+import sortScoreIcon from "@/icons/sorting-score.svg";
 import clsx from "clsx";
 import NavigationBar from "../navigation-bar/NavigationBar";
 import ViewToogleButton from "../button/ViewToogleBtn";
-import { getPlayerStats } from "../../services/api";
+import { getPlayerStats } from "@/services/api";
 
 export default function Playerstats(): JSX.Element {
   //const { functions } = useUser();

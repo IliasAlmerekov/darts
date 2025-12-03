@@ -1,5 +1,5 @@
-import moveIcon from "../../icons/move.svg";
-import deleteIcon from "../../icons/delete.svg";
+import moveIcon from "@/icons/move.svg";
+import deleteIcon from "@/icons/delete.svg";
 import styles from "./PlayerItems.module.css";
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";

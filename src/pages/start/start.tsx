@@ -4,17 +4,17 @@ import { useStore } from "@nanostores/react";
 import { DndContext, closestCenter, DragEndEvent } from "@dnd-kit/core";
 import { SortableContext, verticalListSortingStrategy, arrayMove } from "@dnd-kit/sortable";
 import { restrictToVerticalAxis } from "@dnd-kit/modifiers";
-import NavigationBar from "../../components/navigation-bar/NavigationBar";
-import Plus from "../../icons/plus.svg";
-import LinkButton from "../../components/link-button/LinkButton";
-import Button from "../../components/button/Button";
-import "../../components/button/Button.css";
-import QRCode from "../../components/qr-code/QRCode";
-import { useRoomInvitation } from "../../hooks/useRoomInvitation";
-import { startGame, deletePlayerFromGame } from "../../services/api";
-import { LivePlayersList } from "../../components/live-players-list/LivePlayersList";
-import { useGamePlayers } from "../../hooks/useGamePlayers";
-import { $settings, $lastFinishedGameId, setCurrentGameId } from "../../stores";
+import NavigationBar from "@/components/navigation-bar/NavigationBar";
+import Plus from "@/icons/plus.svg";
+import LinkButton from "@/components/link-button/LinkButton";
+import Button from "@/components/button/Button";
+import "@/components/button/Button.css";
+import QRCode from "@/components/qr-code/QRCode";
+import { useRoomInvitation } from "@/hooks/useRoomInvitation";
+import { startGame, deletePlayerFromGame } from "@/services/api";
+import { LivePlayersList } from "@/components/live-players-list/LivePlayersList";
+import { useGamePlayers } from "@/hooks/useGamePlayers";
+import { $settings, $lastFinishedGameId, setCurrentGameId } from "@/stores";
 
 function Start(): React.JSX.Element {
   const START_SOUND_PATH = "/sounds/start-round-sound.mp3";

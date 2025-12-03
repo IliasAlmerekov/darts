@@ -1,5 +1,5 @@
 import { useEffect, useRef } from "react";
-import type { EventState, UserFunctions } from "../types/event";
+import type { EventState, UserFunctions } from "@/types/event";
 
 interface UseInitializePlayersParams {
   event: EventState;

@@ -1,7 +1,7 @@
 import OverviewPlayerItem from "./OverviewPlayerItem";
 import "./OverviewPlayerItem";
 import { useStore } from "@nanostores/react";
-import { $settings } from "../../stores";
+import { $settings } from "@/stores";
 
 interface OverviewPlayerItemListProps {
   name?: string;

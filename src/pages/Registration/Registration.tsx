@@ -1,8 +1,8 @@
 import React, { useState } from "react";
 import styles from "./Registration.module.css";
-import emailIcon from "../../icons/email.svg";
-import passwordIcon from "../../icons/password.svg";
-import userIcon from "../../icons/user.svg";
+import emailIcon from "@/icons/email.svg";
+import passwordIcon from "@/icons/password.svg";
+import userIcon from "@/icons/user.svg";
 import { useNavigate } from "react-router-dom";
 
 const Registration = () => {

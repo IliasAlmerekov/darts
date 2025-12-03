@@ -1,18 +1,18 @@
 import React from "react";
 import { BrowserRouter, Route, Routes } from "react-router-dom";
-import "../css/index.css";
-import Start from "../pages/start/start";
-import Game from "../pages/game/ui/Game";
-import Gamesummary from "../pages/game-summary/GameSummary";
-import JoinedGame from "../pages/joined-game/JoinedGame";
-import GameDetailPage from "../components/Statistics/GamesOverview/game-detail-page/GameDetailPage";
-import GamesOverview from "../components/Statistics/GamesOverview/GamesOverview";
-import Settings from "../components/settings/Settings";
-import Statistic from "../components/Statistics/Statistics";
-import Login from "../pages/Login/Login";
-import Playerprofile from "../pages/player-profile/PlayerProfile";
-import Registration from "../pages/Registration/Registration";
-import ProtectedRoutes from "../utils/ProtectedRoutes";
+import "@/css/index.css";
+import Start from "@/pages/start/start";
+import Game from "@/pages/game/ui/Game";
+import Gamesummary from "@/pages/game-summary/GameSummary";
+import JoinedGame from "@/pages/joined-game/JoinedGame";
+import GameDetailPage from "@/components/Statistics/GamesOverview/game-detail-page/GameDetailPage";
+import GamesOverview from "@/components/Statistics/GamesOverview/GamesOverview";
+import Settings from "@/components/settings/Settings";
+import Statistic from "@/components/Statistics/Statistics";
+import Login from "@/pages/Login/Login";
+import Playerprofile from "@/pages/player-profile/PlayerProfile";
+import Registration from "@/pages/Registration/Registration";
+import ProtectedRoutes from "@/utils/ProtectedRoutes";
 
 function App(): React.JSX.Element {
   return (

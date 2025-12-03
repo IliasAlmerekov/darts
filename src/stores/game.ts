@@ -1,5 +1,5 @@
 import { atom, computed } from "nanostores";
-import { GameThrowsResponse } from "../services/api";
+import { GameThrowsResponse } from "@/services/api";
 
 // Core game state from server
 export const $gameData = atom<GameThrowsResponse | null>(null);

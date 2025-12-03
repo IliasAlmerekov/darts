@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
-import { handleCreateGame, CreateGamePayload } from "../services/api";
+import { handleCreateGame, CreateGamePayload } from "@/services/api";
 
 export type Invitation = {
   gameId: number;

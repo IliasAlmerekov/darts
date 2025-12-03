@@ -1,6 +1,6 @@
 import { useGamePlayers } from "./useGamePlayers";
 import { useEffect, useRef } from "react";
-import type { Player, EventState } from "../types/event";
+import type { Player, EventState } from "@/types/event";
 
 interface UseSyncLivePlayersWithEventParams {
   gameId: number | null;

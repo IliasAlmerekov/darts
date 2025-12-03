@@ -1,9 +1,9 @@
 import { useEffect, useState } from "react";
 import "./GamesOverview.css";
 import { Link } from "react-router-dom";
-import NavigationBar from "../../navigation-bar/NavigationBar";
-import ViewToogleButton from "../../button/ViewToogleBtn";
-import { getGamesOverview } from "../../../services/api";
+import NavigationBar from "@/components/navigation-bar/NavigationBar";
+import ViewToogleButton from "@/components/button/ViewToogleBtn";
+import { getGamesOverview } from "@/services/api";
 
 export default function GamesOverview(): JSX.Element {
   const [games, setGames] = useState<BASIC.FinishedGameProps[]>([]);
