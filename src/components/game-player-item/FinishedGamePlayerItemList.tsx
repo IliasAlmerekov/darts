@@ -1,4 +1,4 @@
-import "../GamePlayerItem/GamePlayerItem.css";
+import "./GamePlayerItem.css";
 
 type Props = {
   userMap?: { name: string }[];

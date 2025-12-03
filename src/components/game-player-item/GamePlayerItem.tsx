@@ -1,4 +1,4 @@
-import "../GamePlayerItem/GamePlayerItem.css";
+import "./GamePlayerItem.css";
 import bustIconX from "../../icons/delete-grey.svg";
 import clsx from "clsx";
 import { useMemo } from "react";

@@ -1,4 +1,4 @@
-import "../Overlay/Overlay.css";
+import "./Overlay.css";
 import React from "react";
 
 type OverlayProps = {

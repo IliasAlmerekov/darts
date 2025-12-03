@@ -1,5 +1,5 @@
 import { useState } from "react";
-import "../Keyboard/Keyboard.css";
+import "./Keyboard.css";
 import NumberButton from "./NumberButton";
 
 type Props = {

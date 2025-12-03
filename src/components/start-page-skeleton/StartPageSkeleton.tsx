@@ -1,5 +1,5 @@
 import "./index.css";
-import "../../pages/start/start.css";
+import "../../pages/start/start.module.css";
 import React from "react";
 
 export default function StartPageSkeleton(): React.JSX.Element {

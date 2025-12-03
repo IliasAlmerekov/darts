@@ -1,7 +1,7 @@
-import OverviewPlayerItemList from "../../components/OverviewPlayerItem/OverviewPlayerItemList";
-import "./gamesummary.css";
-import Button from "../../components/Button/Button";
-import Podium from "../../components/Podium/Podium";
+import OverviewPlayerItemList from "../../components/overview-player-item/OverviewPlayerItemList";
+import "./game-summary.module.css";
+import Button from "../../components/button/Button";
+import Podium from "../../components/podium/Podium";
 import Undo from "../../icons/undolinkbutton.svg";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import React, { useEffect, useMemo, useState } from "react";

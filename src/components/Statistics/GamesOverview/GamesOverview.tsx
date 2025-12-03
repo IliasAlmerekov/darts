@@ -1,8 +1,8 @@
 import { useEffect, useState } from "react";
 import "./GamesOverview.css";
 import { Link } from "react-router-dom";
-import NavigationBar from "../../NavigationBar/NavigationBar";
-import ViewToogleButton from "../../Button/ViewToogleBtn";
+import NavigationBar from "../../navigation-bar/NavigationBar";
+import ViewToogleButton from "../../button/ViewToogleBtn";
 import { getGamesOverview } from "../../../services/api";
 
 export default function GamesOverview(): JSX.Element {

@@ -1,5 +1,5 @@
 import { useGamePlayers } from "../../hooks/useGamePlayers";
-import SelectedPlayerItem from "../PlayerItems/SelectedPlayerItem";
+import SelectedPlayerItem from "../player-items/SelectedPlayerItem";
 import "./LivePlayersList.css";
 
 interface LivePlayersListProps {

@@ -1,8 +1,8 @@
 import { Navigate, Outlet } from "react-router-dom";
 import React from "react";
-import StartPageSkeleton from "../components/StartPageSkeleton/StartPageSkeleton";
-import LoginSuccessSkeleton from "../components/LoginSuccessSkeleton/LoginSuccessSkeleton";
-import UniversalSkeleton from "../components/Universalskeleton/UniversalSkeleton";
+import StartPageSkeleton from "../components/start-page-skeleton/StartPageSkeleton";
+import LoginSuccessSkeleton from "../components/login-success-skeleton/LoginSuccessSkeleton";
+import UniversalSkeleton from "../components/universal-skeleton/UniversalSkeleton";
 import { useAuthenticatedUser } from "../hooks/useAuthenticatedUser";
 
 type ProtectedRoutesProps = {

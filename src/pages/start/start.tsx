@@ -1,15 +1,15 @@
 import styles from "./start.module.css";
 import React, { useEffect } from "react";
 import { useStore } from "@nanostores/react";
-import NavigationBar from "../../components/NavigationBar/NavigationBar";
+import NavigationBar from "../../components/navigation-bar/NavigationBar";
 import Plus from "../../icons/plus.svg";
-import LinkButton from "../../components/LinkButton/LinkButton";
-import Button from "../../components/Button/Button";
-import "../../components/Button/Button.css";
-import QRCode from "../../components/QRCode/QRCode";
+import LinkButton from "../../components/link-button/LinkButton";
+import Button from "../../components/button/Button";
+import "../../components/button/Button.css";
+import QRCode from "../../components/qr-code/QRCode";
 import { useRoomInvitation } from "../../hooks/useRoomInvitation";
 import { startGame, deletePlayerFromGame } from "../../services/api";
-import { LivePlayersList } from "../../components/LivePlayersList/LivePlayersList";
+import { LivePlayersList } from "../../components/live-players-list/LivePlayersList";
 import { useGamePlayers } from "../../hooks/useGamePlayers";
 import { $settings, $lastFinishedGameId, setCurrentGameId } from "../../stores";
 

@@ -1,6 +1,6 @@
 import clsx from "clsx";
 import GamePlayerItem from "./GamePlayerItem";
-import "../GamePlayerItem/GamePlayerItem.css";
+import "./GamePlayerItem.css";
 
 interface GamePlayerItemListProps {
   isActive?: boolean;

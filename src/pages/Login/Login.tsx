@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import "./Login.module.css";
+import "./login.module.css";
 import emailIcon from "../../icons/email.svg";
 import passwordIcon from "../../icons/password.svg";
-import LoadingAuth from "../../components/LoginSuccessSkeleton/LoadingAuth";
+import LoadingAuth from "../../components/login-success-skeleton/LoadingAuth";
 import { useAuthenticatedUser } from "../../hooks/useAuthenticatedUser";
 
 function Login() {

@@ -1,10 +1,10 @@
 import React from "react";
 import "./GameDetailPage.css";
 import { Link, useParams } from "react-router-dom";
-import Podium from "../../../Podium/Podium";
+import Podium from "../../../podium/Podium";
 import BackBtn from "../../../../icons/back.svg";
-import NavigationBar from "../../../NavigationBar/NavigationBar";
-import OverviewPlayerItemList from "../../../OverviewPlayerItem/OverviewPlayerItemList";
+import NavigationBar from "../../../navigation-bar/NavigationBar";
+import OverviewPlayerItemList from "../../../overview-player-item/OverviewPlayerItemList";
 
 export default function GameDetailPage(): React.JSX.Element {
   const { id } = useParams();

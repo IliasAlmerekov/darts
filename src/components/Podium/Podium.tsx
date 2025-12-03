@@ -1,7 +1,7 @@
 import clsx from "clsx";
-import PodiumPlayerCard from "../PodiumPlayerCard/PodiumPlayerCard";
+import PodiumPlayerCard from "../podium-player-card/PodiumPlayerCard";
 import "./Podium.css";
-import "../PodiumPlayerCard/PodiumPlayerCard.css";
+import "../podium-player-card/PodiumPlayerCard.css";
 import { useStore } from "@nanostores/react";
 import { $settings } from "../../stores";
 
