@@ -3,7 +3,7 @@
   padding: 24px 32px;
 }
 
-.settings-body {
+.settingsBody {
   display: flex;
   flex-direction: column;
   gap: 12px;
