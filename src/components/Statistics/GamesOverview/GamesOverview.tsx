@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import "./GamesOverview.css";
 import { Link } from "react-router-dom";
 import NavigationBar from "../../NavigationBar/NavigationBar";

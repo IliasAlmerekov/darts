@@ -1,12 +1,22 @@
-import React from "react";
 import NavigationBar from "../NavigationBar/NavigationBar";
 import SettingsGroupBtn from "../Button/SettingsGroupBtn";
+import { useStore } from "@nanostores/react";
+import { $settings, newSettings } from "../../stores";
 
 import "./Settings.css";
-import { useUser } from "../../provider/UserProvider";
 
-const Settings = () => {
-  const { event, functions } = useUser();
+function Settings(): JSX.Element {
+  const settings = useStore($settings);
+
+  const handleGameModeClick = (id: string | number) => {
+    const mode = id.toString();
+    newSettings(mode, settings.points);
+  };
+
+  const handlePointsClick = (id: string | number) => {
+    const points = Number(id);
+    newSettings(settings.gameMode, points);
+  };
 
   return (
     <div className="settings">
@@ -22,8 +32,8 @@ const Settings = () => {
               { label: "Double-out", id: "double-out" },
               { label: "Triple-out", id: "triple-out" },
             ]}
-            selectedId={event.selectedGameMode}
-            onClick={functions.handleGameModeClick}
+            selectedId={settings.gameMode}
+            onClick={handleGameModeClick}
           />
           <SettingsGroupBtn
             title="Punkte"
@@ -34,13 +44,13 @@ const Settings = () => {
               { label: "401", id: 401 },
               { label: "501", id: 501 },
             ]}
-            selectedId={event.selectedPoints}
-            onClick={functions.handlePointsClick}
+            selectedId={settings.points}
+            onClick={handlePointsClick}
           />
         </div>
       </section>
     </div>
   );
-};
+}
 
 export default Settings;

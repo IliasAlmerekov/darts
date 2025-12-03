@@ -1,7 +1,6 @@
 import "./Keyboard.css";
 import clsx from "clsx";
 import Undo from "../../icons/undo.svg";
-import React from "react";
 
 type Props = {
   value: number | "Undo" | "Triple" | "Double";

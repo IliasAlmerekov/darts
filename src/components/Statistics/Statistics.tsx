@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import "./Statistics.css";
 import sortAZIcon from "../../icons/sorting-az.svg";
 import sortScoreIcon from "../../icons/sorting-score.svg";

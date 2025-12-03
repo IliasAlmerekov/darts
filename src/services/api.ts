@@ -150,6 +150,10 @@ export type ThrowRequestPayload = {
   isBust?: boolean;
 };
 
+/**
+ * Records a throw and returns the complete updated game state.
+ * No need for a separate GET request after this - the response contains full GameThrowsResponse.
+ */
 export async function recordThrow(gameId: number, payload: ThrowRequestPayload) {
   const response = await fetch(`/api/game/${gameId}/throw`, {
     method: "POST",
@@ -166,9 +170,15 @@ export async function recordThrow(gameId: number, payload: ThrowRequestPayload) 
     throw new Error(error.error || "Failed to record throw");
   }
 
-  return response.json();
+  const data = await response.json();
+  console.log("Throw recorded successfully", data);
+  return data;
 }
 
+/**
+ * Undoes the last throw and returns the complete updated game state.
+ * No need for a separate GET request after this - the response contains full GameThrowsResponse.
+ */
 export async function undoLastThrow(gameId: number) {
   const response = await fetch(`/api/game/${gameId}/throw`, {
     method: "DELETE",
@@ -253,6 +263,12 @@ export async function getGamesOverview(
   return response.json();
 }
 
+export type PlayerThrow = {
+  value: number;
+  isDouble?: boolean;
+  isTriple?: boolean;
+};
+
 export type GameThrowsResponse = {
   id: number;
   status: string;
@@ -267,6 +283,7 @@ export type GameThrowsResponse = {
     isBust: boolean;
     position: number;
     throwsInCurrentRound: number;
+    currentRoundThrows: PlayerThrow[];
     roundHistory: unknown[];
   }[];
   winnerId: number | null;

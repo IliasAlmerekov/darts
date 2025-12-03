@@ -1,34 +1,36 @@
 import "./start.css";
 import React, { useEffect } from "react";
+import { useStore } from "@nanostores/react";
 import NavigationBar from "../../components/NavigationBar/NavigationBar";
 import Plus from "../../icons/plus.svg";
 import LinkButton from "../../components/LinkButton/LinkButton";
 import Button from "../../components/Button/Button";
 import "../../components/Button/Button.css";
-import { useUser } from "../../provider/UserProvider";
 import QRCode from "../../components/QRCode/QRCode";
 import { useRoomInvitation } from "../../hooks/useRoomInvitation";
 import { startGame, deletePlayerFromGame } from "../../services/api";
 import { LivePlayersList } from "../../components/LivePlayersList/LivePlayersList";
 import { useGamePlayers } from "../../hooks/useGamePlayers";
+import { $settings, $lastFinishedGameId, setCurrentGameId } from "../../stores";
 
 function Start(): React.JSX.Element {
   const START_SOUND_PATH = "/sounds/start-round-sound.mp3";
   const frontendBaseUrl = "http://localhost:5173";
 
-  const { event, updateEvent, functions } = useUser();
+  const settings = useStore($settings);
+  const lastFinishedGameId = useStore($lastFinishedGameId);
 
   const { invitation, createRoom } = useRoomInvitation();
 
-  const necessaryGameId = functions.getNecessaryGameId?.() ?? invitation?.gameId ?? null;
-  const { count: playerCount } = useGamePlayers(necessaryGameId);
+  const gameId = invitation?.gameId ?? null;
+  const { count: playerCount } = useGamePlayers(gameId);
 
-  const isDoubleOut = event.selectedGameMode === "double-out";
-  const isTripleOutMode = event.selectedGameMode === "triple-out";
+  const isDoubleOut = settings.gameMode === "double-out";
+  const isTripleOut = settings.gameMode === "triple-out";
 
-  const handleRemovePlayer = async (playerId: number, gameId: number) => {
+  const handleRemovePlayer = async (playerId: number, currentGameId: number) => {
     try {
-      await deletePlayerFromGame(gameId, playerId);
+      await deletePlayerFromGame(currentGameId, playerId);
     } catch (error) {
       console.error("Failed to remove player:", error);
     }
@@ -36,9 +38,25 @@ function Start(): React.JSX.Element {
 
   useEffect(() => {
     if (invitation?.gameId) {
-      updateEvent({ currentGameId: invitation.gameId });
+      setCurrentGameId(invitation.gameId);
     }
-  }, [invitation?.gameId, updateEvent]);
+  }, [invitation?.gameId]);
+
+  const handleStartGame = async () => {
+    if (!gameId) return;
+
+    const audio = new Audio(START_SOUND_PATH);
+    audio.volume = 0.4;
+    audio.play().catch(console.error);
+
+    await startGame(gameId, {
+      startScore: settings.points,
+      doubleOut: isDoubleOut,
+      tripleOut: isTripleOut,
+      round: 1,
+      status: "started",
+    });
+  };
 
   return (
     <div className="main">
@@ -64,8 +82,7 @@ function Start(): React.JSX.Element {
                 icon={Plus}
                 handleClick={() =>
                   createRoom({
-                    previousGameId: event.lastFinishedGameId ?? undefined,
-                    //playerIds: lastFinishedPlayerIds,
+                    previousGameId: lastFinishedGameId ?? undefined,
                   })
                 }
               />
@@ -73,31 +90,16 @@ function Start(): React.JSX.Element {
           </div>
 
           <div className="added-player-list">
-            <LivePlayersList
-              gameId={necessaryGameId}
-              onRemovePlayer={handleRemovePlayer}
-              dragEnd={event.dragEnd}
-            />
+            <LivePlayersList gameId={gameId} onRemovePlayer={handleRemovePlayer} dragEnd={false} />
 
             <div className="start-btn">
               <Button
                 isLink
                 label="Start"
                 link="/game"
-                disabled={playerCount < 2 || !necessaryGameId}
+                disabled={playerCount < 2 || !gameId}
                 type="secondary"
-                handleClick={async () => {
-                  if (!necessaryGameId) return;
-                  functions.playSound?.(START_SOUND_PATH);
-                  await startGame(necessaryGameId, {
-                    startScore: event.selectedPoints,
-                    doubleOut: isDoubleOut,
-                    tripleOut: isTripleOutMode,
-                    round: 1,
-                    status: "started",
-                  });
-                  functions.resetGame?.();
-                }}
+                handleClick={handleStartGame}
               />
             </div>
           </div>
@@ -106,4 +108,5 @@ function Start(): React.JSX.Element {
     </div>
   );
 }
+
 export default Start;

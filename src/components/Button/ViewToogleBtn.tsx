@@ -1,5 +1,4 @@
 import clsx from "clsx";
-import React from "react";
 import "./ViewToogleBtn.css";
 import { useLocation, useNavigate } from "react-router-dom";
 
@@ -7,8 +6,7 @@ export default function ViewToogleButton() {
   const location = useLocation();
   const navigate = useNavigate();
 
-  const activeView =
-    location.pathname === "/gamesoverview" ? "games" : "players";
+  const activeView = location.pathname === "/gamesoverview" ? "games" : "players";
   return (
     <div>
       <div className="view-toggle">

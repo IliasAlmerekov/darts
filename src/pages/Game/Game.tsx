@@ -2,7 +2,6 @@ import Keyboard from "../../components/Keyboard/Keyboard";
 import "./game.css";
 import Back from "../../icons/back.svg";
 import { Link } from "react-router-dom";
-import React, { useEffect, useState } from "react";
 import GamePlayerItemList from "../../components/GamePlayerItem/GamplayerItemList";
 import Overlay from "../../components/Overlay/Overlay";
 import Button from "../../components/Button/Button";
@@ -14,31 +13,18 @@ import Undo from "../../icons/undo-copy.svg";
 import settingsIcon from "../../icons/settings-inactive.svg";
 import SettingsGroupBtn from "../../components/Button/SettingsGroupBtn";
 import { useRoomInvitation } from "../../hooks/useRoomInvitation";
-// import { getGameStates } from "../../services/Game/state";
-import { getGameThrows, GameThrowsResponse } from "../../services/api";
-import { useGameThrows } from "../../hooks/useGameThrows";
+import { useGameState } from "../../hooks/useGameState";
+import { useThrowHandler } from "../../features/game/hooks/useThrowHandler";
 
 function Game() {
   const { invitation } = useRoomInvitation();
-  const [gameData, setGameData] = useState<GameThrowsResponse | null>(null);
-  const latestThrow = useGameThrows(invitation?.gameId || null);
-  // const { event, functions, updateEvent } = useContext(UserContext);
+  const gameId = invitation?.gameId ?? null;
 
-  useEffect(() => {
-    const fetchData = async () => {
-      if (!invitation?.gameId) return;
-      try {
-        const data = await getGameThrows(invitation.gameId);
-        setGameData(data);
-      } catch (error) {
-        console.error("Failed to fetch game data:", error);
-      }
-    };
-    fetchData();
-  }, [invitation]);
+  // Load game state - this syncs with nanostores internally
+  const { gameData } = useGameState({ gameId });
 
-  // POLLING ENTFERNT - Wird durch SSE vom Backend ersetzt
-  // Das Backend sollte Updates über Server-Sent Events pushen
+  // Throw handlers - now use nanostores directly
+  const { handleThrow, handleUndo } = useThrowHandler({ gameId });
 
   return (
     <>
@@ -143,11 +129,34 @@ function Game() {
         {gameData && (
           <>
             <GamePlayerItemList
-              userMap={gameData.players.map((player, index) => ({
-                ...player,
-                index: index,
-                rounds: player.roundHistory,
-              }))}
+              userMap={gameData.players.map((player, index) => {
+                // Convert backend roundHistory format to UI Round format
+                const previousRounds: BASIC.Round[] =
+                  (player.roundHistory as any[])?.map((roundData) => {
+                    const throws = roundData.throws || [];
+                    return {
+                      throw1: throws[0]?.value,
+                      throw2: throws[1]?.value,
+                      throw3: throws[2]?.value,
+                    };
+                  }) || [];
+
+                // Convert currentRoundThrows to the round format expected by UI
+                const currentRoundData: BASIC.Round = {
+                  throw1: player.currentRoundThrows?.[0]?.value,
+                  throw2: player.currentRoundThrows?.[1]?.value,
+                  throw3: player.currentRoundThrows?.[2]?.value,
+                };
+
+                // Build rounds array: previous rounds from history + current round
+                const rounds = [...previousRounds, currentRoundData];
+
+                return {
+                  ...player,
+                  index,
+                  rounds,
+                };
+              })}
               score={
                 gameData.players.find((player) => player.id === gameData.activePlayerId)?.score || 0
               }
@@ -159,8 +168,7 @@ function Game() {
               throwCount={gameData.currentThrowCount}
             />
             <FinishedGamePlayerItemList
-              // userMap={event.finishedPlayerList}
-              // Backend liefert jetzt winnerId und position in players array
+              // Backend returns winnerId and position in players array
               userMap={
                 gameData.status === "finished"
                   ? gameData.players
@@ -173,11 +181,8 @@ function Game() {
         )}
       </div>
       <div className="keyboard-and-undo">
-        <NumberButton
-          value="Undo"
-          //handleClick={functions.handleUndo}
-        />
-        <Keyboard handleClick={latestThrow.latestThrow} />
+        <NumberButton value="Undo" handleClick={handleUndo} />
+        <Keyboard handleClick={handleThrow} />
       </div>
       <LinkButton
         className="settings-btn"

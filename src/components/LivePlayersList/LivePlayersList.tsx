@@ -1,5 +1,3 @@
- 
-import React from "react";
 import { useGamePlayers } from "../../hooks/useGamePlayers";
 import SelectedPlayerItem from "../PlayerItems/SelectedPlayerItem";
 import "./LivePlayersList.css";

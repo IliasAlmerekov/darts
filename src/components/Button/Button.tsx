@@ -1,4 +1,3 @@
-import React from "react";
 import clsx from "clsx";
 import { Link, To } from "react-router-dom";
 
@@ -39,7 +38,7 @@ function Button({ ...props }: ButtonProps) {
 
   if (props.isLink) {
     return (
-      <Link className="no-underline" to={props.disabled ? "" : props.link}>
+      <Link className="no-underline" to={props.disabled ? "" : (props.link ?? "")}>
         <button className={buttonClasses} onClick={props.handleClick}>
           {buttonContent}
         </button>

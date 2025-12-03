@@ -7,8 +7,6 @@ import Gamesummary from "../pages/gamesummary/Gamesummary";
 import JoinedGame from "../pages/JoinedGame/JoinedGame";
 import GameDetailPage from "../components/Statistics/GamesOverview/GameDetailPage/GameDetailPage";
 import GamesOverview from "../components/Statistics/GamesOverview/GamesOverview";
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-import { UserProvider } from "../provider/UserProvider";
 import Settings from "../components/Settings/Settings";
 import Statistic from "../components/Statistics/Statistics";
 import Login from "../pages/Login/Login";

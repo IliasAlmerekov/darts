@@ -1,27 +1,28 @@
-import React from "react";
 import OverviewPlayerItem from "./OverviewPlayerItem";
 import "./OverviewPlayerItem";
-import { useUser } from "../../provider/UserProvider";
+import { useStore } from "@nanostores/react";
+import { $settings } from "../../stores";
 
-type Props = {
+interface OverviewPlayerItemListProps {
   name?: string;
   userMap: BASIC.WinnerPlayerProps[];
-};
+}
 
-function OverviewPlayerItemList({ ...props }: Props): JSX.Element {
-  const { event } = useUser();
+function OverviewPlayerItemList({ userMap }: OverviewPlayerItemListProps): JSX.Element {
+  const settings = useStore($settings);
+
   return (
     <>
-      {props.userMap.map((item: BASIC.WinnerPlayerProps, index: number) => {
+      {userMap.map((item: BASIC.WinnerPlayerProps, index: number) => {
         const completedRounds =
-          (item.roundCount ??
-          item.rounds[item.rounds.length - 1].throw1 === undefined)
+          item.roundCount ??
+          (item.rounds[item.rounds.length - 1]?.throw1 === undefined
             ? item.rounds.length - 1
-            : item.rounds.length;
+            : item.rounds.length);
 
         const averageScore =
           item.scoreAverage ??
-          Math.round((event.selectedPoints - item.score) / completedRounds);
+          Math.round((settings.points - item.score) / Math.max(completedRounds, 1));
 
         return (
           <OverviewPlayerItem
@@ -37,4 +38,5 @@ function OverviewPlayerItemList({ ...props }: Props): JSX.Element {
     </>
   );
 }
+
 export default OverviewPlayerItemList;

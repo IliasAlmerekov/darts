@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import { useState } from "react";
 import "../Keyboard/Keyboard.css";
 import NumberButton from "./NumberButton";
 

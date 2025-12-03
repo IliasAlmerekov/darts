@@ -1,6 +1,5 @@
 import clsx from "clsx";
 import "./PlayerItems.css";
-import React from "react";
 
 type Props = {
   name: string;
@@ -19,11 +18,7 @@ function UnselectedPlayerItem({ ...props }: Props) {
       })}
     >
       <div className="copylarge">{props?.name}</div>
-      <button
-        onClick={props.handleClickOrDelete}
-        className="move-button"
-        aria-label="Move Button"
-      >
+      <button onClick={props.handleClickOrDelete} className="move-button" aria-label="Move Button">
         <img src={props.src} alt={props.alt} />
       </button>
     </div>

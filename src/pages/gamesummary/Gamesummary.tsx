@@ -5,15 +5,16 @@ import Podium from "../../components/Podium/Podium";
 import Undo from "../../icons/undolinkbutton.svg";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import React, { useEffect, useMemo, useState } from "react";
-import { useUser } from "../../provider/UserProvider";
-import { getFinishedGame, FinishedPlayerResponse } from "../../services/api";
+import { getFinishedGame, FinishedPlayerResponse, createRematch } from "../../services/api";
+import { setInvitation, setLastFinishedGameId, resetRoomStore } from "../../stores";
+import { playSound } from "../../shared/lib/soundPlayer";
 
 function Gamesummary(): React.JSX.Element {
-  const { event, functions } = useUser();
   const navigate = useNavigate();
   const location = useLocation();
   const [serverFinished, setServerFinished] = useState<FinishedPlayerResponse[]>([]);
   const [error, setError] = useState<string | null>(null);
+
   const finishedGameIdFromRoute = (location.state as { finishedGameId?: number } | null)
     ?.finishedGameId;
 
@@ -23,6 +24,7 @@ function Gamesummary(): React.JSX.Element {
     getFinishedGame(finishedGameIdFromRoute)
       .then((data) => {
         setServerFinished(data);
+        setLastFinishedGameId(finishedGameIdFromRoute);
       })
       .catch((err: unknown) => {
         console.error("Failed to fetch finished game:", err);
@@ -50,8 +52,8 @@ function Gamesummary(): React.JSX.Element {
         };
       });
     }
-    return [...event.winnerList];
-  }, [event.winnerList, serverFinished]);
+    return [];
+  }, [serverFinished]);
 
   const podiumList = newList.slice(0, 3);
   const leaderBoardList = newList.slice(3, newList.length);
@@ -66,10 +68,44 @@ function Gamesummary(): React.JSX.Element {
   });
   const podiumData = podiumList.length === 2 ? podiumListWithPlaceholder : podiumList;
 
+  const handleUndo = () => {
+    playSound("undo");
+  };
+
+  const handlePlayAgain = async () => {
+    sessionStorage.removeItem("OngoingGame");
+
+    if (!finishedGameIdFromRoute) return;
+
+    try {
+      const rematch = await createRematch(finishedGameIdFromRoute);
+
+      setInvitation({
+        gameId: rematch.gameId,
+        invitationLink: rematch.invitationLink,
+      });
+
+      navigate("/game");
+    } catch (err) {
+      console.error("Failed to start rematch:", err);
+    }
+  };
+
+  const handleBackToStart = async () => {
+    sessionStorage.removeItem("OngoingGame");
+    resetRoomStore();
+
+    if (finishedGameIdFromRoute) {
+      setLastFinishedGameId(finishedGameIdFromRoute);
+    }
+
+    navigate("/start");
+  };
+
   return (
     <div className="summary">
       <div>
-        <Link onClick={() => functions.undoFromSummary()} to="/game" className="undo-button">
+        <Link onClick={handleUndo} to="/game" className="undo-button">
           <img src={Undo} alt="Undo last action" />
         </Link>
       </div>
@@ -86,13 +122,7 @@ function Gamesummary(): React.JSX.Element {
           type="primary"
           isInverted
           className="play-again-button"
-          handleClick={async () => {
-            functions.savedFinishedGameToLS(newList);
-            sessionStorage.removeItem("OngoingGame");
-
-            await functions.startRematch("play-again");
-            navigate("/game");
-          }}
+          handleClick={handlePlayAgain}
         />
       </div>
 
@@ -103,16 +133,11 @@ function Gamesummary(): React.JSX.Element {
           className="back-to-start-button"
           label="Back To Start"
           type="primary"
-          handleClick={async () => {
-            /*  functions.savedFinishedGameToLS(newList);
-            sessionStorage.removeItem("OngoingGame");*/
-
-            await functions.startRematch("back-to-start");
-            navigate("/start");
-          }}
+          handleClick={handleBackToStart}
         />
       </div>
     </div>
   );
 }
+
 export default Gamesummary;
