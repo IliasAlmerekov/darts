@@ -132,7 +132,7 @@ function Game() {
               userMap={gameData.players.map((player, index) => {
                 // Convert backend roundHistory format to UI Round format
                 const previousRounds: BASIC.Round[] =
-                  (player.roundHistory as any[])?.map((roundData) => {
+                  (player.roundHistory as Array<{ round: number; throws: Array<{ value: number; isDouble: boolean; isTriple: boolean; isBust: boolean }> }>)?.map((roundData) => {
                     const throws = roundData.throws || [];
                     return {
                       throw1: throws[0]?.value,
