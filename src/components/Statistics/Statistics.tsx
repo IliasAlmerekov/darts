@@ -1,10 +1,10 @@
 import { useEffect, useState } from "react";
-import "./Statistics.css";
+import styles from "./Statistics.module.css";
 import sortAZIcon from "@/icons/sorting-az.svg";
 import sortScoreIcon from "@/icons/sorting-score.svg";
 import clsx from "clsx";
 import NavigationBar from "../navigation-bar/NavigationBar";
-import ViewToogleButton from "../button/ViewToogleBtn";
+import ViewToogleButton from "../Button/ViewToogleBtn";
 import { getPlayerStats } from "@/services/api";
 
 export default function Playerstats(): JSX.Element {
@@ -42,31 +42,31 @@ export default function Playerstats(): JSX.Element {
   };
 
   return (
-    <div className="playerstats-container">
+    <div className={styles.playerstatsContainer}>
       <NavigationBar />
       <div className="content">
-        <div className="navigation-item">
+        <div className={styles.navigationItem}>
           <h1>Playerstats</h1>
-          <div className="sort-options">
+          <div className={styles.sortOptions}>
             <button
-              className={clsx("sort-button", {
-                activeBtn: sortMethod === "alphabetically",
+              className={clsx(styles.sortButton, {
+                [styles.activeBtn]: sortMethod === "alphabetically",
               })}
               onClick={() => handleSortChange("alphabetically")}
             >
-              <span className="sort-icon">
+              <span className={styles.sortIcon}>
                 <img src={sortAZIcon} alt="sort-icon" />
               </span>{" "}
               Alphabetically
             </button>
-            <span className="separator">|</span>
+            <span className={styles.separator}>|</span>
             <button
-              className={clsx("sort-button", {
-                activeBtn: sortMethod === "score",
+              className={clsx(styles.sortButton, {
+                [styles.activeBtn]: sortMethod === "score",
               })}
               onClick={() => handleSortChange("score")}
             >
-              <span className="sort-icon">
+              <span className={styles.sortIcon}>
                 <img src={sortScoreIcon} alt="sort-icon" />
               </span>{" "}
               Score
@@ -74,19 +74,19 @@ export default function Playerstats(): JSX.Element {
           </div>
           <ViewToogleButton />
         </div>
-        <div className="player-list">
+        <div className={styles.playerList}>
           {stats.map((player, index) => (
-            <div key={player.playerId} className="player-row">
-              <div className="player-number">{offset + index + 1}.</div>
-              <div className="player-name">{player.name}</div>
-              <div className="player-stats">
-                <div className="round-stat">
+            <div key={player.playerId} className={styles.playerRow}>
+              <div className={styles.playerNumber}>{offset + index + 1}.</div>
+              <div className={styles.playerName}>{player.name}</div>
+              <div className={styles.playerStats}>
+                <div className={styles.roundStat}>
                   <span className="stat-label">
                     Ø Round{" "}
                     <span className="stat-value">{player.scoreAverage?.toFixed(1) || 0}</span>
                   </span>
                 </div>
-                <div className="games-stat">
+                <div className={styles.gamesStat}>
                   <span className="stat-label">
                     Played games{" "}
                     <span className="stat-value">{Math.round(player.gamesPlayed || 0)}</span>
@@ -109,7 +109,7 @@ export default function Playerstats(): JSX.Element {
           <button
             onClick={() => setOffset(Math.max(0, offset - limit))}
             disabled={offset === 0}
-            className="sort-button"
+            className={styles.sortButton}
             style={{ opacity: offset === 0 ? 0.5 : 1 }}
           >
             Previous
@@ -120,7 +120,7 @@ export default function Playerstats(): JSX.Element {
           <button
             onClick={() => setOffset(offset + limit)}
             disabled={offset + limit >= total}
-            className="sort-button"
+            className={styles.sortButton}
             style={{ opacity: offset + limit >= total ? 0.5 : 1 }}
           >
             Next

@@ -1,0 +1,56 @@
+.keyboardAndUndo {
+  position: fixed;
+  width: 100%;
+  bottom: 0;
+}
+
+.keyboard {
+  width: 100%;
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  box-shadow: var(--box-shadow);
+  background-color: var(--white);
+}
+
+.button {
+  background: var(--lightgrey);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-width: 0 1px 1px 0;
+  border-style: solid;
+  border-color: var(--white);
+  height: 80px;
+  font-weight: 700;
+  color: var(--darkblue);
+}
+
+.undo,
+.triple,
+.double {
+  background-color: var(--oxfordblue);
+  color: var(--white);
+}
+
+.undo {
+  grid-column-start: 6;
+  border-radius: 100px;
+  width: 80px;
+  margin-left: auto;
+  margin-right: 16px;
+  margin-bottom: 16px;
+}
+
+.active {
+  background-color: var(--blue);
+}
+
+.disabled {
+  opacity: 0.5;
+}
+
+.button:active {
+  background-color: var(--oxfordblue);
+  transition: background-color 0.2s ease;
+  color: var(--white);
+}

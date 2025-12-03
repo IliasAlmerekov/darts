@@ -1,10 +1,10 @@
-.view-toggle {
+.viewToggle {
   display: flex;
   gap: 16px;
   margin-bottom: 20px;
 }
 
-.view-button {
+.viewButton {
   padding: 8px 20px;
   border-radius: 50px;
   border: 1px solid var(--middlegrey);
@@ -15,7 +15,7 @@
   transition: all 0.2s ease;
 }
 
-.view-button.active-btn {
+.viewButton.activeBtn {
   color: var(--blue);
   border-color: var(--blue);
 }

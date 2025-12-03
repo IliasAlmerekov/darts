@@ -1,9 +1,3 @@
-.keyboard-and-undo {
-  position: fixed;
-  width: 100%;
-  bottom: 0;
-}
-
 .keyboard {
   width: 100%;
   display: grid;
@@ -23,6 +17,11 @@
   height: 80px;
   font-weight: 700;
   color: var(--darkblue);
+  cursor: pointer;
+}
+
+.button:hover:not(.disabled) {
+  background-color: var(--grey);
 }
 
 .undo,
@@ -47,10 +46,15 @@
 
 .disabled {
   opacity: 0.5;
+  cursor: not-allowed;
 }
 
-.button:active {
+.button:active:not(.disabled) {
   background-color: var(--oxfordblue);
   transition: background-color 0.2s ease;
   color: var(--white);
+}
+
+.copylarge {
+  font-size: var(--font-size-lg);
 }

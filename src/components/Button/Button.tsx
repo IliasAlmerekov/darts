@@ -1,5 +1,6 @@
 import clsx from "clsx";
 import { Link, To } from "react-router-dom";
+import styles from "./Button.module.css";
 
 export interface ButtonProps {
   isLink?: boolean;
@@ -21,12 +22,12 @@ export interface ButtonProps {
 function Button({ ...props }: ButtonProps) {
   const buttonType = props.type || "primary";
 
-  const buttonClasses = clsx(props?.className, "btn h4", {
-    btnPrimary: buttonType === "primary" && !props.isInverted,
-    btnSecondary: buttonType === "secondary" && !props.isInverted,
-    inverted: props.isInverted && buttonType !== "secondary",
-    invertedSecondary: props.isInverted && buttonType === "secondary",
-    disabled: props.disabled,
+  const buttonClasses = clsx(props?.className, styles.btn, styles.h4, {
+    [styles.btnPrimary]: buttonType === "primary" && !props.isInverted,
+    [styles.btnSecondary]: buttonType === "secondary" && !props.isInverted,
+    [styles.inverted]: props.isInverted && buttonType !== "secondary",
+    [styles.invertedSecondary]: props.isInverted && buttonType === "secondary",
+    [styles.disabled]: props.disabled,
   });
 
   const buttonContent = (
@@ -38,7 +39,7 @@ function Button({ ...props }: ButtonProps) {
 
   if (props.isLink) {
     return (
-      <Link className="no-underline" to={props.disabled ? "" : (props.link ?? "")}>
+      <Link className={styles.noUnderline} to={props.disabled ? "" : (props.link ?? "")}>
         <button className={buttonClasses} onClick={props.handleClick}>
           {buttonContent}
         </button>

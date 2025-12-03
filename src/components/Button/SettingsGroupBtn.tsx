@@ -1,5 +1,5 @@
 import clsx from "clsx";
-import "./SettingsGroupBtn.css";
+import styles from "./SettingsGroupBtn.module.css";
 
 type ButtonOption = {
   label: string;
@@ -15,14 +15,14 @@ type SettingsGroupProps = {
 
 const SettingsGroupBtn = ({ title, options, selectedId, onClick }: SettingsGroupProps) => {
   return (
-    <div className="settings-container">
-      <div className="game-settings">{title}</div>
-      <div className="button-container">
+    <div className={styles.settingsContainer}>
+      <div className={styles.gameSettings}>{title}</div>
+      <div className={styles.buttonContainer}>
         {options.map((btn) => (
           <button
             key={btn.id}
-            className={clsx("settings-button", {
-              active: selectedId === btn.id,
+            className={clsx(styles.settingsButton, {
+              [styles.active]: selectedId === btn.id,
             })}
             onClick={() => onClick?.(btn.id)}
           >

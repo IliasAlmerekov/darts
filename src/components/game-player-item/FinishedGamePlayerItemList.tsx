@@ -1,4 +1,4 @@
-import "./GamePlayerItem.css";
+import styles from "./GamePlayerItem.module.css";
 
 type Props = {
   userMap?: { name: string }[];
@@ -6,11 +6,11 @@ type Props = {
 
 function FinishedGamePlayerItemList({ userMap }: Props) {
   const FinishedGamePlayerItem = ({ name, place }: { name?: string; place?: string }) => (
-    <div className="game-player-item finished">
+    <div className={`${styles.gamePlayerItem} ${styles.finished}`}>
       <div>
-        <div className="copylarge">{name}</div>
+        <div className={styles.copylarge}>{name}</div>
       </div>
-      <div className="place">{place}</div>
+      <div className={styles.place}>{place}</div>
     </div>
   );
 
@@ -19,8 +19,8 @@ function FinishedGamePlayerItemList({ userMap }: Props) {
   }
 
   return (
-    <div className="finished-player-list">
-      <div className="copylarge finished-players">Finished Players</div>
+    <div className={styles.finishedPlayerList}>
+      <div className={`${styles.copylarge} ${styles.finishedPlayers}`}>Finished Players</div>
       {userMap.map((item, index) => (
         <FinishedGamePlayerItem key={index} name={item.name} place={`${index + 1}.`} />
       ))}

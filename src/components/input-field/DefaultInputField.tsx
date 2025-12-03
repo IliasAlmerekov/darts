@@ -1,4 +1,4 @@
-import "./DefaultInputField.css";
+import styles from "./DefaultInputField.module.css";
 import React, { useEffect, useRef } from "react";
 
 type Props = {
@@ -10,14 +10,7 @@ type Props = {
   autoFocus?: boolean;
 };
 
-function DefaultInputField({
-  onKeyDown,
-  name,
-  value,
-  placeholder,
-  onChange,
-  autoFocus,
-}: Props) {
+function DefaultInputField({ onKeyDown, name, value, placeholder, onChange, autoFocus }: Props) {
   const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -33,7 +26,7 @@ function DefaultInputField({
       value={value}
       placeholder={placeholder}
       onChange={onChange}
-      className="copylarge default-input-field"
+      className={`copylarge ${styles.defaultInputField}`}
     />
   );
 }

@@ -1,4 +1,4 @@
-import "./Keyboard.css";
+import styles from "./Keyboard.module.css";
 import clsx from "clsx";
 import Undo from "@/icons/undo.svg";
 
@@ -14,12 +14,12 @@ function NumberButton({ ...props }: Props) {
     <button
       disabled={props.disabled}
       onClick={props.handleClick}
-      className={clsx("button copylarge", {
-        undo: props.value === "Undo",
-        triple: props.value === "Triple",
-        double: props.value === "Double",
-        active: props.isActive,
-        disabled: props.disabled,
+      className={clsx(styles.button, "copylarge", {
+        [styles.undo]: props.value === "Undo",
+        [styles.triple]: props.value === "Triple",
+        [styles.double]: props.value === "Double",
+        [styles.active]: props.isActive,
+        [styles.disabled]: props.disabled,
       })}
     >
       {props.value === "Undo" ? <img src={Undo} alt="Undo" /> : props.value}

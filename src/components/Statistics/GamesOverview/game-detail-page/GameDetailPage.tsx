@@ -1,7 +1,7 @@
 import React from "react";
-import "./GameDetailPage.css";
+import styles from "./GameDetailPage.module.css";
 import { Link, useParams } from "react-router-dom";
-import Podium from "@/components/podium/Podium";
+import Podium from "@/components/Podium/Podium";
 import BackBtn from "@/icons/back.svg";
 import NavigationBar from "@/components/navigation-bar/NavigationBar";
 import OverviewPlayerItemList from "@/components/overview-player-item/OverviewPlayerItemList";
@@ -29,15 +29,15 @@ export default function GameDetailPage(): React.JSX.Element {
   }
   const podiumData = podiumList.length === 2 ? podiumListWithPlaceholder : podiumList;
   return (
-    <div className="game-details">
+    <div className={styles.gameDetails}>
       <NavigationBar />
-      <div className="link-btn">
+      <div className={styles.linkBtn}>
         <Link to="/gamesoverview" className="back-btn">
           <img src={BackBtn} alt="Back button" />
         </Link>
       </div>
-      <div className="podium-card">
-        <div className="date-info">
+      <div className={styles.podiumCard}>
+        <div className={styles.dateInfo}>
           <h1>
             {new Date(game.date).toLocaleDateString("de-De", {
               day: "2-digit",

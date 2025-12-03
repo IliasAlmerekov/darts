@@ -1,5 +1,5 @@
 import NavigationBar from "../navigation-bar/NavigationBar";
-import SettingsGroupBtn from "../button/SettingsGroupBtn";
+import SettingsGroupBtn from "../Button/SettingsGroupBtn";
 import { useStore } from "@nanostores/react";
 import { $settings, newSettings } from "@/stores";
 import styles from "./Settings.module.css";

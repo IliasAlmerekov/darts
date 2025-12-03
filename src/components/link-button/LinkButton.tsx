@@ -6,11 +6,11 @@ type Props = {
   className?: string;
 };
 
-function LinkButton({ ...props }: Props) {
+function LinkButton({ href, icon, label, handleClick, className }: Props) {
   return (
-    <a href={props.href} onClick={props.handleClick} className={props.className}>
-      <img src={props.icon} alt="" />
-      {props.label}
+    <a href={href} onClick={handleClick} className={className}>
+      <img src={icon} alt="" />
+      {label}
     </a>
   );
 }

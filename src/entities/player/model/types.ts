@@ -8,9 +8,9 @@
  */
 export interface PlayerThrow {
   value: number;
-  isDouble: boolean;
-  isTriple: boolean;
-  isBust: boolean;
+  isDouble?: boolean;
+  isTriple?: boolean;
+  isBust?: boolean;
 }
 
 /**
@@ -43,7 +43,7 @@ export interface BackendPlayer {
   position: number;
   throwsInCurrentRound: number;
   currentRoundThrows: PlayerThrow[];
-  roundHistory: BackendRoundHistory[];
+  roundHistory: unknown[];
 }
 
 /**

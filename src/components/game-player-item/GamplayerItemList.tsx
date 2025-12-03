@@ -1,6 +1,6 @@
 import clsx from "clsx";
 import GamePlayerItem from "./GamePlayerItem";
-import "./GamePlayerItem.css";
+import styles from "./GamePlayerItem.module.css";
 
 interface GamePlayerItemListProps {
   isActive?: boolean;
@@ -21,8 +21,8 @@ function GamePlayerItemList({ userMap, round }: GamePlayerItemListProps): JSX.El
 
         return (
           <GamePlayerItem
-            className={clsx("game-player-item", {
-              activePlayer: item.isActive === true,
+            className={clsx(styles.gamePlayerItem, {
+              [styles.activePlayer]: item.isActive === true,
               winner: item.isPlaying === false,
             })}
             key={item.id}

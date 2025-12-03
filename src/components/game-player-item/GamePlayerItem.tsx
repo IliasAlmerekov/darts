@@ -1,4 +1,4 @@
-import "./GamePlayerItem.css";
+import styles from "./GamePlayerItem.module.css";
 import bustIconX from "@/icons/delete-grey.svg";
 import clsx from "clsx";
 import { useMemo } from "react";
@@ -88,49 +88,55 @@ function GamePlayerItem({
   return (
     <div className={className} id={id}>
       <div>
-        <div>{name}</div>
+        <div
+          className={clsx(styles.playeritemName, {
+            [styles.activePlayerItemName]: isActive === true,
+          })}
+        >
+          {name}
+        </div>
       </div>
 
-      <div className="throws">
+      <div className={styles.throws}>
         <div
-          className={clsx("throw-display", {
+          className={clsx(styles.throwDisplay, {
             hidden: isPlaying === false,
           })}
         >
           <div
-            className={clsx("div-display copylarge", {
-              handleBust: !isActive && throwCount === 0,
+            className={clsx(styles.divDisplay, "copylarge", {
+              [styles.handleBust]: !isActive && throwCount === 0,
             })}
           >
             {getDisplayValue(displayThrows.throw1, displayThrows.prevThrow1)}
           </div>
 
           <div
-            className={clsx("div-display copylarge", {
-              handleBust: !isActive && throwCount === 1,
+            className={clsx(styles.divDisplay, "copylarge", {
+              [styles.handleBust]: !isActive && throwCount === 1,
             })}
           >
             {getDisplayValue(displayThrows.throw2, displayThrows.prevThrow2)}
           </div>
 
           <div
-            className={clsx("div-display copylarge", {
-              handleBust: isBust && throwCount === 2,
+            className={clsx(styles.divDisplay, "copylarge", {
+              [styles.handleBust]: isBust && throwCount === 2,
             })}
           >
             {getDisplayValue(displayThrows.throw3, displayThrows.prevThrow3)}
           </div>
         </div>
 
-        <div className="pointer">
+        <div className={styles.pointer}>
           <div
-            className={clsx("score-display", {
+            className={clsx(styles.scoreDisplay, {
               hidden: isPlaying === false,
             })}
           >
             Score
           </div>
-          <div className="value-display">{value}</div>
+          <div className={styles.valueDisplay}>{value}</div>
         </div>
       </div>
     </div>

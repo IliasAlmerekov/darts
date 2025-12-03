@@ -16,7 +16,7 @@
 }
 
 /* Title Skeleton */
-.skeleton-title-large {
+.skeletonTitleLarge {
   height: 40px;
   width: 280px;
   margin: 0 auto 20px;
@@ -24,7 +24,7 @@
 }
 
 /* Success Box Skeleton */
-.skeleton-success-box {
+.skeletonSuccessBox {
   margin-top: 20px;
   padding: 15px;
   background: #e8f5e9;
@@ -32,26 +32,26 @@
   border: 1px solid #c8e6c9;
 }
 
-.skeleton-subtitle {
+.skeletonSubtitle {
   height: 28px;
   width: 200px;
   margin-bottom: 10px;
   border-radius: 6px;
 }
 
-.skeleton-text {
+.skeletonText {
   height: 16px;
   width: 100%;
   margin-bottom: 8px;
   border-radius: 4px;
 }
 
-.skeleton-text.short {
+.skeletonText.short {
   width: 70%;
 }
 
 /* Button Skeleton */
-.skeleton-button {
+.skeletonButton {
   height: 48px;
   width: 120px;
   border-radius: 5px;
@@ -59,7 +59,7 @@
 }
 
 /* LoadingAuth.css */
-.loading-auth-container {
+.loadingAuthContainer {
   display: flex;
   justify-content: center;
   align-items: center;
@@ -67,7 +67,7 @@
   background-color: #f5f5f5;
 }
 
-.loading-auth-content {
+.loadingAuthContent {
   text-align: center;
 }
 
@@ -91,14 +91,14 @@
   }
 }
 
-.loading-auth-content h2 {
+.loadingAuthContent h2 {
   font-size: 20px;
   font-weight: 600;
   color: #333;
   margin: 0 0 8px;
 }
 
-.loading-auth-content p {
+.loadingAuthContent p {
   font-size: 14px;
   color: #666;
   margin: 0;

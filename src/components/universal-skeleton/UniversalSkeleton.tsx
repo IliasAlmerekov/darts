@@ -1,6 +1,6 @@
-import "./index.css";
+import styles from "./UniversalSkeleton.module.css";
 import React from "react";
 
 export default function UniversalSkeleton(): React.JSX.Element {
-  return <div className="loading-skeleton-container"></div>;
+  return <div className={styles.loadingSkeletonContainer}></div>;
 }

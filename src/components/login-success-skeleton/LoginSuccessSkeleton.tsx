@@ -1,5 +1,7 @@
-import "./index.css";
+import styles from "./LoginSuccessSkeleton.module.css";
 import React from "react";
+import clsx from "clsx";
+
 export default function LoginSuccessSkeleton(): React.JSX.Element {
   return (
     <div className="login-container">
@@ -7,16 +9,16 @@ export default function LoginSuccessSkeleton(): React.JSX.Element {
         <div className="login-col">
           <div className="login-card">
             <div className="login-card-body">
-              <div className="skeleton skeleton-title-large"></div>
+              <div className={clsx(styles.skeleton, styles.skeletonTitleLarge)}></div>
 
-              <div className="skeleton-success-box">
-                <div className="skeleton skeleton-subtitle"></div>
-                <div className="skeleton skeleton-text"></div>
-                <div className="skeleton skeleton-text short"></div>
+              <div className={styles.skeletonSuccessBox}>
+                <div className={clsx(styles.skeleton, styles.skeletonSubtitle)}></div>
+                <div className={clsx(styles.skeleton, styles.skeletonText)}></div>
+                <div className={clsx(styles.skeleton, styles.skeletonText, "short")}></div>
               </div>
 
               <div className="form-footer" style={{ marginTop: "20px" }}>
-                <div className="skeleton skeleton-button"></div>
+                <div className={clsx(styles.skeleton, styles.skeletonButton)}></div>
               </div>
             </div>
           </div>

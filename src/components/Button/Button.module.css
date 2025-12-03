@@ -16,11 +16,11 @@
   margin-top: 24px;
 }
 
-.btn-primary {
+.btnPrimary {
   background-color: var(--blue);
 }
 
-.btn-secondary {
+.btnSecondary {
   background-color: var(--red);
 }
 
@@ -30,7 +30,7 @@
   color: var(--blue);
 }
 
-.inverted-secondary {
+.invertedSecondary {
   background-color: transparent;
   border: 3px solid var(--red);
   color: var(--red);
@@ -40,11 +40,11 @@
   opacity: 0.5;
 }
 
-.no-underline {
+.noUnderline {
   text-decoration: none;
 }
 
-.delete-overlay-button {
+.deleteOverlayButton {
   width: 65%;
   margin-top: 0;
 }

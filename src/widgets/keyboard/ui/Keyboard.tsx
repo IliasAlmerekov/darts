@@ -1,14 +1,13 @@
 import { useState } from "react";
 import styles from "./Keyboard.module.css";
-import NumberButton from "./NumberButton";
+import { NumberButton } from "./NumberButton";
 
-type Props = {
-  handleClick?: (value: string | number) => void;
+interface KeyboardProps {
+  onThrow: (value: string | number) => void;
   disabled?: boolean;
-  isOverlayOpen?: boolean;
-};
+}
 
-function Keyboard({ handleClick }: Props) {
+export function Keyboard({ onThrow, disabled }: KeyboardProps): JSX.Element {
   const [doubleNext, setDoubleNext] = useState(false);
   const [tripleNext, setTripleNext] = useState(false);
 
@@ -18,7 +17,9 @@ function Keyboard({ handleClick }: Props) {
     [17, 18, 19, 20, 25, 0],
   ];
 
-  const handleButtonClick = (btn: number | "Double" | "Triple") => {
+  const handleButtonClick = (btn: number | "Double" | "Triple"): void => {
+    if (disabled) return;
+
     switch (true) {
       case btn === "Double":
         setDoubleNext((prev) => !prev);
@@ -29,15 +30,15 @@ function Keyboard({ handleClick }: Props) {
         setDoubleNext(false);
         break;
       case doubleNext && typeof btn === "number":
-        handleClick?.(`D${btn}`);
+        onThrow(`D${btn}`);
         setDoubleNext(false);
         break;
       case tripleNext && typeof btn === "number":
-        handleClick?.(`T${btn}`);
+        onThrow(`T${btn}`);
         setTripleNext(false);
         break;
       default:
-        handleClick?.(btn);
+        onThrow(btn);
         break;
     }
   };
@@ -51,12 +52,13 @@ function Keyboard({ handleClick }: Props) {
           key={i}
           isActive={(doubleNext && btn === "Double") || (tripleNext && btn === "Triple")}
           disabled={
-            (tripleNext && btn === 25) || (tripleNext && btn === 0) || (doubleNext && btn === 0)
+            disabled ||
+            (tripleNext && btn === 25) ||
+            (tripleNext && btn === 0) ||
+            (doubleNext && btn === 0)
           }
         />
       ))}
     </div>
   );
 }
-
-export default Keyboard;

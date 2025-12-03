@@ -1,5 +1,5 @@
 import clsx from "clsx";
-import "./ViewToogleBtn.css";
+import styles from "./ViewToogleBtn.module.css";
 import { useLocation, useNavigate } from "react-router-dom";
 
 export default function ViewToogleButton() {
@@ -9,10 +9,10 @@ export default function ViewToogleButton() {
   const activeView = location.pathname === "/gamesoverview" ? "games" : "players";
   return (
     <div>
-      <div className="view-toggle">
+      <div className={styles.viewToggle}>
         <button
-          className={clsx("view-button", {
-            activeBtn: activeView === "players",
+          className={clsx(styles.viewButton, {
+            [styles.activeBtn]: activeView === "players",
           })}
           onClick={() => {
             navigate("/statistics");
@@ -21,8 +21,8 @@ export default function ViewToogleButton() {
           Players
         </button>
         <button
-          className={clsx("view-button", {
-            activeBtn: activeView === "games",
+          className={clsx(styles.viewButton, {
+            [styles.activeBtn]: activeView === "games",
           })}
           onClick={() => {
             navigate("/gamesoverview");

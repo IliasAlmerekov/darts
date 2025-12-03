@@ -1,16 +1,16 @@
 import { Link } from "react-router-dom";
 import styles from "./Game.module.css";
-import Keyboard from "@/components/Keyboard/Keyboard";
+import { Keyboard, NumberButton } from "@/widgets/keyboard";
 import GamePlayerItemList from "@/components/game-player-item/GamplayerItemList";
 import Overlay from "@/components/Overlay/Overlay";
 import Button from "@/components/Button/Button";
-import NumberButton from "@/components/keyboard/NumberButton";
 import FinishedGamePlayerItemList from "@/components/game-player-item/FinishedGamePlayerItemList";
 import LinkButton from "@/components/link-button/LinkButton";
 import SettingsGroupBtn from "@/components/Button/SettingsGroupBtn";
 import { useRoomInvitation } from "@/hooks/useRoomInvitation";
 import { useGameState } from "@/hooks/useGameState";
 import { useThrowHandler } from "@/features/game/hooks/useThrowHandler";
+import { mapPlayersToUI, getFinishedPlayers } from "@/entities/player";
 import Back from "@/icons/back.svg";
 import deleteIcon from "@/icons/delete.svg";
 import Undo from "@/icons/undo-copy.svg";
@@ -124,75 +124,36 @@ function Game() {
         <Link to="/start" className={styles.top}>
           <img src={Back} alt="Back to Home" />
         </Link>
-      </div>
-      <div className={styles.gamePlayerItemContainer}>
-        {gameData && (
-          <>
-            <GamePlayerItemList
-              userMap={gameData.players.map((player, index) => {
-                // Convert backend roundHistory format to UI Round format
-                const previousRounds: BASIC.Round[] =
-                  (
-                    player.roundHistory as Array<{
-                      round: number;
-                      throws: Array<{
-                        value: number;
-                        isDouble: boolean;
-                        isTriple: boolean;
-                        isBust: boolean;
-                      }>;
-                    }>
-                  )?.map((roundData) => {
-                    const throws = roundData.throws || [];
-                    return {
-                      throw1: throws[0]?.value,
-                      throw2: throws[1]?.value,
-                      throw3: throws[2]?.value,
-                    };
-                  }) || [];
-
-                // Convert currentRoundThrows to the round format expected by UI
-                const currentRoundData: BASIC.Round = {
-                  throw1: player.currentRoundThrows?.[0]?.value,
-                  throw2: player.currentRoundThrows?.[1]?.value,
-                  throw3: player.currentRoundThrows?.[2]?.value,
-                };
-
-                // Build rounds array: previous rounds from history + current round
-                const rounds = [...previousRounds, currentRoundData];
-
-                return {
-                  ...player,
-                  index,
-                  rounds,
-                };
-              })}
-              score={
-                gameData.players.find((player) => player.id === gameData.activePlayerId)?.score || 0
-              }
-              round={gameData.currentRound}
-              isBust={
-                gameData.players.find((player) => player.id === gameData.activePlayerId)?.isBust ||
-                false
-              }
-              throwCount={gameData.currentThrowCount}
-            />
-            <FinishedGamePlayerItemList
-              // Backend returns winnerId and position in players array
-              userMap={
-                gameData.status === "finished"
-                  ? gameData.players
-                      .filter((p) => p.position > 0)
-                      .sort((a, b) => a.position - b.position)
-                  : []
-              }
-            />
-          </>
-        )}
+        <div className={styles.gamePlayerItemContainer}>
+          {gameData && (
+            <>
+              <GamePlayerItemList
+                userMap={mapPlayersToUI(gameData.players)}
+                score={
+                  gameData.players.find((player) => player.id === gameData.activePlayerId)?.score ||
+                  0
+                }
+                round={gameData.currentRound}
+                isBust={
+                  gameData.players.find((player) => player.id === gameData.activePlayerId)
+                    ?.isBust || false
+                }
+                throwCount={gameData.currentThrowCount}
+              />
+              <FinishedGamePlayerItemList
+                userMap={
+                  gameData.status === "finished"
+                    ? getFinishedPlayers(mapPlayersToUI(gameData.players))
+                    : []
+                }
+              />
+            </>
+          )}
+        </div>
       </div>
       <div className={styles.keyboardAndUndo}>
         <NumberButton value="Undo" handleClick={handleUndo} />
-        <Keyboard handleClick={handleThrow} />
+        <Keyboard onThrow={handleThrow} />
       </div>
       <LinkButton
         className={styles.settingsBtn}

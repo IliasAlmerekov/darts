@@ -1,8 +1,8 @@
 import { useEffect, useState } from "react";
-import "./GamesOverview.css";
+import styles from "./GamesOverview.module.css";
 import { Link } from "react-router-dom";
 import NavigationBar from "@/components/navigation-bar/NavigationBar";
-import ViewToogleButton from "@/components/button/ViewToogleBtn";
+import ViewToogleButton from "@/components/Button/ViewToogleBtn";
 import { getGamesOverview } from "@/services/api";
 
 export default function GamesOverview(): JSX.Element {
@@ -25,19 +25,19 @@ export default function GamesOverview(): JSX.Element {
   }, [offset]);
 
   return (
-    <div className="game-overview">
+    <div className={styles.gameOverview}>
       <NavigationBar />
-      <div className="heading">
+      <div className={styles.heading}>
         <h1>Games Overview</h1>
         <ViewToogleButton />
       </div>
-      <div className="overview">
+      <div className={styles.overview}>
         {games
           .slice()
           .reverse()
           .map((game, index) => (
-            <div key={index} className="game-container">
-              <div className="game-card">
+            <div key={index} className={styles.gameContainer}>
+              <div className={styles.gameCard}>
                 <h4>
                   {" "}
                   {new Date(game.date).toLocaleDateString("de-De", {
@@ -64,7 +64,7 @@ export default function GamesOverview(): JSX.Element {
                   </span>
                 </p>
               </div>
-              <div className="details-link">
+              <div className={styles.detailsLink}>
                 <Link to={`/details/${game.id}`}>details</Link>
               </div>
             </div>
