@@ -7,7 +7,7 @@ import { restrictToVerticalAxis } from "@dnd-kit/modifiers";
 import NavigationBar from "../../components/navigation-bar/NavigationBar";
 import Plus from "../../icons/plus.svg";
 import LinkButton from "../../components/link-button/LinkButton";
-import Button from "../../components/Button/Button";
+import Button from "../../components/button/Button";
 import "../../components/button/Button.css";
 import QRCode from "../../components/qr-code/QRCode";
 import { useRoomInvitation } from "../../hooks/useRoomInvitation";
