@@ -1,17 +1,17 @@
 import React from "react";
 import { BrowserRouter, Route, Routes } from "react-router-dom";
 import "../css/index.css";
-import Start from "../pages/start/start";
-import Game from "../pages/Game/Game";
-import Gamesummary from "../pages/gamesummary/Gamesummary";
-import JoinedGame from "../pages/JoinedGame/JoinedGame";
+import Start from "../pages/start/Start";
+import Game from "../pages/game/Game";
+import Gamesummary from "../pages/gameSummary/GameSummary";
+import JoinedGame from "../pages/joinedGame/JoinedGame";
 import GameDetailPage from "../components/Statistics/GamesOverview/GameDetailPage/GameDetailPage";
 import GamesOverview from "../components/Statistics/GamesOverview/GamesOverview";
 import Settings from "../components/Settings/Settings";
 import Statistic from "../components/Statistics/Statistics";
-import Login from "../pages/Login/Login";
-import Playerprofile from "../pages/Playerprofile/Playerprofile";
-import Registration from "../pages/Registration/Registration";
+import Login from "../pages/login/Login";
+import Playerprofile from "../pages/playerProfile/Playerprofile";
+import Registration from "../pages/registration/Registration";
 import ProtectedRoutes from "../utils/ProtectedRoutes";
 
 function App(): React.JSX.Element {
