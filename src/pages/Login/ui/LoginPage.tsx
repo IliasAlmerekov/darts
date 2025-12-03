@@ -1,56 +1,13 @@
-import React, { useState, useEffect } from "react";
-import { Link, useNavigate } from "react-router-dom";
-import styles from "./Login.module.css";
+import React from "react";
+import { Link } from "react-router-dom";
+import styles from "./LoginPage.module.css";
 import emailIcon from "@/icons/email.svg";
 import passwordIcon from "@/icons/password.svg";
 import LoadingAuth from "@/components/login-success-skeleton/LoadingAuth";
-import { useAuthenticatedUser } from "@/hooks/useAuthenticatedUser";
+import { useLoginPage } from "../model";
 
-function Login() {
-  const [error, setError] = useState<string | null>(null);
-  const [loading, setLoading] = useState(false);
-  const navigate = useNavigate();
-  const { user, loading: checking } = useAuthenticatedUser();
-
-  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    setError(null);
-    setLoading(true);
-
-    try {
-      const formData = new FormData(e.currentTarget);
-
-      const response = await fetch(`/api/login`, {
-        method: "POST",
-        credentials: "include",
-        headers: {
-          Accept: "application/json",
-        },
-        body: formData,
-      });
-
-      if (!response.ok) {
-        throw new Error("Invalid credentials");
-      }
-
-      const data = await response.json();
-      console.log("Login successful:", data);
-
-      if (data.redirect) {
-        navigate(data.redirect);
-      }
-    } catch (error) {
-      setError((error as Error).message || "Login failed");
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    if (user) {
-      navigate(user.redirect);
-    }
-  }, [user, navigate]);
+function LoginPage(): React.JSX.Element {
+  const { error, loading, checking, handleSubmit } = useLoginPage();
 
   if (checking) {
     return <LoadingAuth />;
@@ -124,4 +81,4 @@ function Login() {
   );
 }
 
-export default Login;
+export default LoginPage;

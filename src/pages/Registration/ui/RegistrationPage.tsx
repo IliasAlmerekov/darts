@@ -1,61 +1,12 @@
-import React, { useState } from "react";
-import styles from "./Registration.module.css";
+import React from "react";
+import styles from "./RegistrationPage.module.css";
 import emailIcon from "@/icons/email.svg";
 import passwordIcon from "@/icons/password.svg";
 import userIcon from "@/icons/user.svg";
-import { useNavigate } from "react-router-dom";
+import { useRegistrationPage } from "../model";
 
-const Registration = () => {
-  const [error, setError] = useState<string | null>(null);
-  const [loading, setLoading] = useState(false);
-  const navigate = useNavigate();
-
-  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    setError(null);
-    setLoading(true);
-
-    try {
-      const formElement = e.currentTarget;
-      const username = (formElement.elements.namedItem("username") as HTMLInputElement).value;
-      const email = (formElement.elements.namedItem("email") as HTMLInputElement).value;
-      const password = (formElement.elements.namedItem("password") as HTMLInputElement).value;
-
-      const response = await fetch(`/api/register`, {
-        method: "POST",
-        credentials: "include",
-        headers: {
-          contentType: "application/json",
-        },
-        body: JSON.stringify({
-          username,
-          email,
-          plainPassword: password,
-        }),
-      });
-
-      if (!response.ok) {
-        const text = await response.text();
-        // try parsing json message if available
-        try {
-          const json = JSON.parse(text);
-          throw new Error(json.message || "Registration failed");
-        } catch (error) {
-          console.error("Error parsing registration error response:", error);
-        }
-      }
-
-      const data = await response.json();
-      console.log("Registration successful:", data);
-      if (data.redirect) {
-        navigate(data.redirect);
-      }
-    } catch (err) {
-      console.error("Auth check failed:", err);
-    } finally {
-      setLoading(false);
-    }
-  };
+function RegistrationPage(): React.JSX.Element {
+  const { error, loading, handleSubmit } = useRegistrationPage();
 
   return (
     <div className={styles.loginContainer}>
@@ -140,5 +91,6 @@ const Registration = () => {
       </div>
     </div>
   );
-};
-export default Registration;
+}
+
+export default RegistrationPage;

@@ -3,24 +3,24 @@ import { BrowserRouter, Route, Routes } from "react-router-dom";
 import "@/css/index.css";
 import Game from "@/pages/Game/ui/Game";
 import Gamesummary from "@/pages/game-summary/GameSummary";
-import JoinedGame from "@/pages/joined-game/JoinedGame";
 import GameDetailPage from "@/components/Statistics/GamesOverview/game-detail-page/GameDetailPage";
 import GamesOverview from "@/components/Statistics/GamesOverview/GamesOverview";
 import Settings from "@/components/Settings/Settings";
 import Statistic from "@/components/Statistics/Statistics";
-import Login from "@/pages/Login/Login";
 import Playerprofile from "@/pages/player-profile/PlayerProfile";
-import Registration from "@/pages/Registration/Registration";
 import ProtectedRoutes from "@/utils/ProtectedRoutes";
 import { StartPage } from "@/pages/start";
+import { LoginPage } from "@/pages/Login";
+import { JoinedGamePage } from "@/pages/joined-game";
+import { RegistrationPage } from "@/pages/Registration";
 
 function App(): React.JSX.Element {
   return (
     <div className="app">
       <BrowserRouter>
         <Routes>
-          <Route path="/" element={<Login />} />
-          <Route path="/register" element={<Registration />} />
+          <Route path="/" element={<LoginPage />} />
+          <Route path="/register" element={<RegistrationPage />} />
 
           <Route element={<ProtectedRoutes allowedRoles={["ROLE_ADMIN"]} />}>
             <Route path="/start" element={<StartPage />} />
@@ -33,7 +33,7 @@ function App(): React.JSX.Element {
           </Route>
 
           <Route element={<ProtectedRoutes allowedRoles={["ROLE_PLAYER"]} />}>
-            <Route path="/joined" element={<JoinedGame />} />
+            <Route path="/joined" element={<JoinedGamePage />} />
             <Route path="/playerprofile" element={<Playerprofile />} />
           </Route>
         </Routes>

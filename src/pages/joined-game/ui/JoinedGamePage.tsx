@@ -1,22 +1,9 @@
-import { useState } from "react";
-import styles from "./joined-game.module.css";
+import React from "react";
+import styles from "./JoinedGamePage.module.css";
+import { useJoinedGamePage } from "../model";
 
-const JoinedGame = () => {
-  const [loading, setLoading] = useState(false);
-
-  const handleLogout = async () => {
-    setLoading(true);
-    try {
-      await fetch(`api/logout`, {
-        method: "POST",
-        credentials: "include",
-      });
-    } catch (err) {
-      console.error("Logout error:", err);
-    } finally {
-      setLoading(false);
-    }
-  };
+function JoinedGamePage(): React.JSX.Element {
+  const { loading, handleLogout } = useJoinedGamePage();
 
   return (
     <div className={styles.loginContainer}>
@@ -29,17 +16,16 @@ const JoinedGame = () => {
                 style={{
                   marginTop: "20px",
                   padding: "15px",
-                  background: "#d4edda", // Helles Grün für Erfolgsmeldungen
+                  background: "#d4edda",
                   borderRadius: "5px",
-                  textAlign: "left", // Text innerhalb der Box linksbündig
-                  color: "#155724", // Dunkelgrüner Text für bessere Lesbarkeit
+                  textAlign: "left",
+                  color: "#155724",
                   border: "1px solid #c3e6cb",
                 }}
               >
                 <h3 style={{ marginBottom: "10px" }}>Willkommen im Spiel!</h3>
               </div>
 
-              {/* Button zum Weiterleiten zum Spiel/Warteraum */}
               <div className={styles.formFooter} style={{ marginTop: "20px" }}>
                 <button
                   className={`${styles.btn} ${styles.btnPrimary}`}
@@ -55,6 +41,6 @@ const JoinedGame = () => {
       </div>
     </div>
   );
-};
+}
 
-export default JoinedGame;
+export default JoinedGamePage;

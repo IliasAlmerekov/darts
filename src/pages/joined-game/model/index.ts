@@ -1,0 +1,1 @@
+export { useJoinedGamePage } from "./useJoinedGamePage";
