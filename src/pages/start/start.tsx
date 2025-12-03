@@ -1,4 +1,4 @@
-import "./start.css";
+import styles from "./start.module.css";
 import React, { useEffect } from "react";
 import { useStore } from "@nanostores/react";
 import NavigationBar from "../../components/NavigationBar/NavigationBar";
@@ -59,7 +59,7 @@ function Start(): React.JSX.Element {
   };
 
   return (
-    <div className="main">
+    <div className={styles.main}>
       <div className="start">
         <NavigationBar />
         <>

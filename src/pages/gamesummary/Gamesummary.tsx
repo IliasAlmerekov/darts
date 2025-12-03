@@ -8,6 +8,7 @@ import React, { useEffect, useMemo, useState } from "react";
 import { getFinishedGame, FinishedPlayerResponse, createRematch } from "../../services/api";
 import { setInvitation, setLastFinishedGameId, resetRoomStore } from "../../stores";
 import { playSound } from "../../shared/lib/soundPlayer";
+import "../../types/BASIC.d";
 
 function Gamesummary(): React.JSX.Element {
   const navigate = useNavigate();

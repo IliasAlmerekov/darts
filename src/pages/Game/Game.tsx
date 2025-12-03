@@ -1,5 +1,5 @@
 import Keyboard from "../../components/Keyboard/Keyboard";
-import "./game.css";
+import "./Game.module.css";
 import Back from "../../icons/back.svg";
 import { Link } from "react-router-dom";
 import GamePlayerItemList from "../../components/GamePlayerItem/GamplayerItemList";
@@ -132,7 +132,17 @@ function Game() {
               userMap={gameData.players.map((player, index) => {
                 // Convert backend roundHistory format to UI Round format
                 const previousRounds: BASIC.Round[] =
-                  (player.roundHistory as Array<{ round: number; throws: Array<{ value: number; isDouble: boolean; isTriple: boolean; isBust: boolean }> }>)?.map((roundData) => {
+                  (
+                    player.roundHistory as Array<{
+                      round: number;
+                      throws: Array<{
+                        value: number;
+                        isDouble: boolean;
+                        isTriple: boolean;
+                        isBust: boolean;
+                      }>;
+                    }>
+                  )?.map((roundData) => {
                     const throws = roundData.throws || [];
                     return {
                       throw1: throws[0]?.value,
