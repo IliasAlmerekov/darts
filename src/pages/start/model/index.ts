@@ -1,0 +1,1 @@
+export { useStartPage } from "./useStartPage";

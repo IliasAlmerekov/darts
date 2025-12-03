@@ -1,13 +1,13 @@
 import { Link } from "react-router-dom";
 import styles from "./Game.module.css";
-import Keyboard from "@/components/keyboard/Keyboard";
+import Keyboard from "@/components/Keyboard/Keyboard";
 import GamePlayerItemList from "@/components/game-player-item/GamplayerItemList";
-import Overlay from "@/components/overlay/Overlay";
-import Button from "@/components/button/Button";
+import Overlay from "@/components/Overlay/Overlay";
+import Button from "@/components/Button/Button";
 import NumberButton from "@/components/keyboard/NumberButton";
 import FinishedGamePlayerItemList from "@/components/game-player-item/FinishedGamePlayerItemList";
 import LinkButton from "@/components/link-button/LinkButton";
-import SettingsGroupBtn from "@/components/button/SettingsGroupBtn";
+import SettingsGroupBtn from "@/components/Button/SettingsGroupBtn";
 import { useRoomInvitation } from "@/hooks/useRoomInvitation";
 import { useGameState } from "@/hooks/useGameState";
 import { useThrowHandler } from "@/features/game/hooks/useThrowHandler";
