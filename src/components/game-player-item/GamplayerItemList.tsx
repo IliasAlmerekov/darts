@@ -22,7 +22,7 @@ function GamePlayerItemList({ userMap, round }: GamePlayerItemListProps): JSX.El
         return (
           <GamePlayerItem
             className={clsx("game-player-item", {
-              "active-player": item.isActive === true,
+              activePlayer: item.isActive === true,
               winner: item.isPlaying === false,
             })}
             key={item.id}

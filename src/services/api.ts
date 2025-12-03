@@ -14,7 +14,7 @@ export const handleCreateGame = async (payload?: CreateGamePayload) => {
       credentials: "include",
       headers: {
         Accept: "application/json",
-        "Content-Type": "application/json",
+        contentType: "application/json",
       },
       body: JSON.stringify(body),
     });
@@ -123,7 +123,7 @@ export async function startGame(
     credentials: "include",
     headers: {
       Accept: "application/json",
-      "Content-Type": "application/json",
+      contentType: "application/json",
     },
     body: JSON.stringify({
       status: config.status,
@@ -160,7 +160,7 @@ export async function recordThrow(gameId: number, payload: ThrowRequestPayload) 
     credentials: "include",
     headers: {
       Accept: "application/json",
-      "Content-Type": "application/json",
+      contentType: "application/json",
     },
     body: JSON.stringify(payload),
   });

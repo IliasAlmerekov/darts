@@ -14,7 +14,7 @@ function UnselectedPlayerItem({ ...props }: Props) {
   return (
     <div
       className={clsx("unselected-player-item", {
-        "fade-out": !!props.isClicked,
+        fadeOut: !!props.isClicked,
       })}
     >
       <div className="copylarge">{props?.name}</div>

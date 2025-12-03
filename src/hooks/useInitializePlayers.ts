@@ -1,7 +1,7 @@
 import { useEffect, useRef } from "react";
 import type { EventState, UserFunctions } from "../types/event";
 
-interface useInitializePlayersParams {
+interface UseInitializePlayersParams {
   event: EventState;
   updateEvent: (path: Partial<EventState>) => void;
   functions: UserFunctions;
@@ -11,7 +11,7 @@ export function UseInitializePlayers({
   event,
   updateEvent,
   functions,
-}: useInitializePlayersParams) {
+}: UseInitializePlayersParams) {
   const isFirstRender = useRef(true);
 
   useEffect(() => {

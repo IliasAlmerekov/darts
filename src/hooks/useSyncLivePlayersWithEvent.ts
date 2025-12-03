@@ -2,7 +2,7 @@ import { useGamePlayers } from "./useGamePlayers";
 import { useEffect, useRef } from "react";
 import type { Player, EventState } from "../types/event";
 
-interface useSyncLivePlayersWithEventParams {
+interface UseSyncLivePlayersWithEventParams {
   gameId: number | null;
   selectedPlayers: Player[];
   updateEvent: (path: Partial<EventState>) => void;
@@ -12,7 +12,7 @@ export function UseSyncLivePlayersWithEvent({
   gameId,
   selectedPlayers,
   updateEvent,
-}: useSyncLivePlayersWithEventParams) {
+}: UseSyncLivePlayersWithEventParams) {
   const previousLivePlayersRef = useRef<Set<number>>(new Set());
   const selectedPlayersRef = useRef<Player[]>(selectedPlayers);
 

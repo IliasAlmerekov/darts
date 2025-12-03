@@ -1,6 +1,7 @@
 {
   "extends": ["stylelint-config-standard"],
   "rules": {
-    "value-no-vendor-prefix": null
+    "value-no-vendor-prefix": null,
+    "selector-class-pattern": null
   }
 }

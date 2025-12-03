@@ -99,7 +99,7 @@ function GamePlayerItem({
         >
           <div
             className={clsx("div-display copylarge", {
-              "handle-bust": !isActive && throwCount === 0,
+              handleBust: !isActive && throwCount === 0,
             })}
           >
             {getDisplayValue(displayThrows.throw1, displayThrows.prevThrow1)}
@@ -107,7 +107,7 @@ function GamePlayerItem({
 
           <div
             className={clsx("div-display copylarge", {
-              "handle-bust": !isActive && throwCount === 1,
+              handleBust: !isActive && throwCount === 1,
             })}
           >
             {getDisplayValue(displayThrows.throw2, displayThrows.prevThrow2)}
@@ -115,7 +115,7 @@ function GamePlayerItem({
 
           <div
             className={clsx("div-display copylarge", {
-              "handle-bust": isBust && throwCount === 2,
+              handleBust: isBust && throwCount === 2,
             })}
           >
             {getDisplayValue(displayThrows.throw3, displayThrows.prevThrow3)}

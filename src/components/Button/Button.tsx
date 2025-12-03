@@ -22,10 +22,10 @@ function Button({ ...props }: ButtonProps) {
   const buttonType = props.type || "primary";
 
   const buttonClasses = clsx(props?.className, "btn h4", {
-    "btn-primary": buttonType === "primary" && !props.isInverted,
-    "btn-secondary": buttonType === "secondary" && !props.isInverted,
+    btnPrimary: buttonType === "primary" && !props.isInverted,
+    btnSecondary: buttonType === "secondary" && !props.isInverted,
     inverted: props.isInverted && buttonType !== "secondary",
-    "inverted-secondary": props.isInverted && buttonType === "secondary",
+    invertedSecondary: props.isInverted && buttonType === "secondary",
     disabled: props.disabled,
   });
 

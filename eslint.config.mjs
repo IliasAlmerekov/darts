@@ -32,6 +32,41 @@ export default [
       ...reactHooks.configs.recommended.rules,
       ...jsxA11y.configs.recommended.rules,
       "@typescript-eslint/no-explicit-any": "error",
+      "@typescript-eslint/naming-convention": [
+        "error",
+        {
+          selector: "default",
+          format: ["camelCase", "PascalCase", "UPPER_CASE", "snake_case"],
+          leadingUnderscore: "allow",
+          trailingUnderscore: "allow",
+          filter: {
+            regex: "^(Content-Type|[a-z]+(-[a-z]+)+)$",
+            match: false,
+          },
+        },
+        {
+          selector: "variable",
+          format: ["camelCase", "PascalCase", "UPPER_CASE", "snake_case"],
+        },
+        {
+          selector: "property",
+          format: null,
+          leadingUnderscore: "allow",
+          trailingUnderscore: "allow",
+        },
+        {
+          selector: "interface",
+          format: ["PascalCase"],
+          custom: {
+            regex: "^I[A-Z]",
+            match: false,
+          },
+        },
+        {
+          selector: "typeLike",
+          format: ["PascalCase"],
+        },
+      ],
       "react/react-in-jsx-scope": "off",
     },
     settings: {

@@ -12,7 +12,7 @@ export default function ViewToogleButton() {
       <div className="view-toggle">
         <button
           className={clsx("view-button", {
-            "active-btn": activeView === "players",
+            activeBtn: activeView === "players",
           })}
           onClick={() => {
             navigate("/statistics");
@@ -22,7 +22,7 @@ export default function ViewToogleButton() {
         </button>
         <button
           className={clsx("view-button", {
-            "active-btn": activeView === "games",
+            activeBtn: activeView === "games",
           })}
           onClick={() => {
             navigate("/gamesoverview");

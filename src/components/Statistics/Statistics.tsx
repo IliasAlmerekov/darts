@@ -50,7 +50,7 @@ export default function Playerstats(): JSX.Element {
           <div className="sort-options">
             <button
               className={clsx("sort-button", {
-                "active-btn": sortMethod === "alphabetically",
+                activeBtn: sortMethod === "alphabetically",
               })}
               onClick={() => handleSortChange("alphabetically")}
             >
@@ -62,7 +62,7 @@ export default function Playerstats(): JSX.Element {
             <span className="separator">|</span>
             <button
               className={clsx("sort-button", {
-                "active-btn": sortMethod === "score",
+                activeBtn: sortMethod === "score",
               })}
               onClick={() => handleSortChange("score")}
             >
