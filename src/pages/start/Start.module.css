@@ -8,13 +8,13 @@
   padding: 24px 32px;
 }
 
-.qr-code-section {
+.qrCodeSection {
   display: flex;
   align-items: center;
   justify-content: center;
 }
 
-.existing-player-list {
+.existingPlayerList {
   grid-column: 1 / 3;
   background-color: var(--lightgrey);
   position: relative;
@@ -25,7 +25,7 @@
   overflow: hidden;
 }
 
-.added-player-list {
+.addedPlayerList {
   height: 100%;
   position: relative;
   overflow: hidden;
@@ -33,32 +33,32 @@
   padding-top: 32px;
 }
 
-.header-unselected-players {
+.headerUnselectedPlayers {
   margin: 32px 0;
   color: var(--darkgrey);
 }
 
-.header-selected-players {
+.headerSelectedPlayers {
   margin: 0 0 16px;
   color: var(--darkgrey);
   justify-content: space-between;
   display: flex;
 }
 
-.deepblue-icon {
+.deepblueIcon {
   top: 32px;
   position: fixed;
   right: 32px;
 }
 
-.start-btn {
+.startBtn {
   bottom: 32px;
   position: absolute;
   right: 32px;
   width: 300px;
 }
 
-.user-plus {
+.userPlus {
   width: 24px;
   height: 24px;
 }
@@ -79,13 +79,13 @@
   top: calc(100vh - 30px);
 }
 
-.selected-player-list-scroll {
+.selectedPlayerListScroll {
   overflow-y: auto;
   height: calc(100% - 80px);
   padding-right: 16px;
 }
 
-.unselected-players {
+.unselectedPlayers {
   padding: 0 32px;
   flex-grow: 1;
   overflow-y: auto;
@@ -105,7 +105,7 @@
   background-attachment: local, local, scroll, scroll;
 }
 
-.create-new-player-button {
+.createNewPlayerButton {
   font-size: 24px;
   font-weight: 700;
   line-height: 28.8px;
@@ -118,12 +118,12 @@
   gap: 10px;
 }
 
-.settings-cog {
+.settingsCog {
   width: 24px;
   height: 24px;
 }
 
-.delete-overlay {
+.deleteOverlay {
   position: absolute;
   top: 50%;
   left: 50%;
@@ -137,25 +137,25 @@
   height: 80%;
 }
 
-.delete-overlay-content {
+.deleteOverlayContent {
   width: 100%;
   overflow: auto;
   margin-bottom: 32px;
 }
 
-.create-player-overlay {
+.createPlayerOverlay {
   padding: 96px 113px;
   width: 71.7%;
 }
 
-.delete-player-overlay {
+.deletePlayerOverlay {
   width: 71.7%;
   display: flex;
   flex-direction: column;
   padding-top: 64px;
 }
 
-.overlay-bottom {
+.overlayBottom {
   align-items: center;
   justify-content: center;
   display: flex;
@@ -167,11 +167,11 @@
   border-radius: 0 0 16px 16px;
 }
 
-.overlay-bottom-enabled {
+.overlayBottomEnabled {
   box-shadow: var(--box-shadow);
 }
 
-.delete-player-overlay-adjust {
+.deletePlayerOverlayAdjust {
   height: 80%;
 }
 
@@ -179,7 +179,7 @@
   opacity: 0.4;
 }
 
-.list-count {
+.listCount {
   font-size: 16px;
   font-weight: 400;
   line-height: 19.2px;
@@ -188,7 +188,7 @@
   color: var(--middlegrey);
 }
 
-.overlay-heading {
+.overlayHeading {
   font-size: 24px;
   font-weight: 700;
   line-height: 24px;

@@ -1,4 +1,5 @@
 import { useState } from "react";
+import styles from "./joined-game.module.css";
 
 const JoinedGame = () => {
   const [loading, setLoading] = useState(false);
@@ -18,11 +19,11 @@ const JoinedGame = () => {
   };
 
   return (
-    <div className="login-container">
-      <div className="login-row">
-        <div className="login-col">
-          <div className="login-card">
-            <div className="login-card-body">
+    <div className={styles.loginContainer}>
+      <div className={styles.loginRow}>
+        <div className={styles.loginCol}>
+          <div className={styles.loginCard}>
+            <div className={styles.loginCardBody}>
               <h1>✓ Spiel beigetreten!</h1>
               <div
                 style={{
@@ -39,8 +40,12 @@ const JoinedGame = () => {
               </div>
 
               {/* Button zum Weiterleiten zum Spiel/Warteraum */}
-              <div className="form-footer" style={{ marginTop: "20px" }}>
-                <button className="btn btn-primary" onClick={handleLogout} disabled={loading}>
+              <div className={styles.formFooter} style={{ marginTop: "20px" }}>
+                <button
+                  className={`${styles.btn} ${styles.btnPrimary}`}
+                  onClick={handleLogout}
+                  disabled={loading}
+                >
                   {loading ? "loging out..." : "logout"}
                 </button>
               </div>

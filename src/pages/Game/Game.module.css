@@ -1,4 +1,4 @@
-.game-player-item-container {
+.gamePlayerItemContainer {
   padding: 133px 32px 0;
 }
 
@@ -8,12 +8,12 @@
   position: absolute;
 }
 
-.finish-game-overlay {
+.finishGameOverlay {
   width: 71.7%;
   padding: 96px 0;
 }
 
-.undo-throw {
+.undoThrow {
   justify-content: center;
   display: flex;
   margin-top: 28px;
@@ -25,27 +25,33 @@
   gap: 8px;
 }
 
-.settings-btn {
+.settingsBtn {
   right: 32px;
   top: 32px;
   position: absolute;
 }
 
-.overlay-headline {
+.overlayHeadline {
   font-weight: 700;
   line-height: 24px;
   color: #000;
   margin: 0;
 }
 
-.setting-overlay {
+.settingsOverlay {
   width: 100%;
   padding: 48px;
 }
 
-.settings-body-container {
+.settingsBodyContainer {
   display: flex;
   flex-direction: column;
   gap: 12px;
   padding-top: 48px;
+}
+
+.keyboardAndUndo {
+  position: fixed;
+  width: 100%;
+  bottom: 0;
 }

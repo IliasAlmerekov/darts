@@ -1,7 +1,7 @@
 import OverviewPlayerItemList from "../../components/overview-player-item/OverviewPlayerItemList";
-import "./game-summary.module.css";
-import Button from "../../components/button/Button";
-import Podium from "../../components/podium/Podium";
+import styles from "./game-summary.module.css";
+import Button from "../../components/Button/Button";
+import Podium from "../../components/Podium/Podium";
 import Undo from "../../icons/undolinkbutton.svg";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import React, { useEffect, useMemo, useState } from "react";
@@ -104,38 +104,33 @@ function Gamesummary(): React.JSX.Element {
   };
 
   return (
-    <div className="summary">
+    <div className={styles.summary}>
       <div>
-        <Link onClick={handleUndo} to="/game" className="undo-button">
+        <Link onClick={handleUndo} to="/game" className={styles.undoButton}>
           <img src={Undo} alt="Undo last action" />
         </Link>
       </div>
-      <div className="podium-board">
+      <div className={styles.podiumBoard}>
         <Podium userMap={podiumData} list={newList} />
       </div>
-      <div className="leader-board">
+      <div className={styles.leaderBoard}>
         <OverviewPlayerItemList userMap={leaderBoardList} />
       </div>
 
-      <div className="play-again-button">
+      <div className={styles.playAgainButton}>
         <Button
           label="Play Again"
           type="primary"
           isInverted
-          className="play-again-button"
+          className={styles.playAgainButton}
           handleClick={handlePlayAgain}
         />
       </div>
 
-      {error && <p className="error">{error}</p>}
+      {error && <p className={styles.error}>{error}</p>}
 
-      <div className="back-to-start-button">
-        <Button
-          className="back-to-start-button"
-          label="Back To Start"
-          type="primary"
-          handleClick={handleBackToStart}
-        />
+      <div className={styles.backToStartButton}>
+        <Button label="Back To Start" type="primary" handleClick={handleBackToStart} />
       </div>
     </div>
   );

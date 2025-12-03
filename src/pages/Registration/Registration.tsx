@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import "./Registration.module.css";
+import styles from "./Registration.module.css";
 import emailIcon from "../../icons/email.svg";
 import passwordIcon from "../../icons/password.svg";
 import userIcon from "../../icons/user.svg";
@@ -58,69 +58,73 @@ const Registration = () => {
   };
 
   return (
-    <div className="login-container">
-      <div className="login-row">
-        <div className="login-col">
-          <div className="login-card">
-            <div className="login-card-body">
+    <div className={styles.loginContainer}>
+      <div className={styles.loginRow}>
+        <div className={styles.loginCol}>
+          <div className={styles.loginCard}>
+            <div className={styles.loginCardBody}>
               <form onSubmit={handleSubmit}>
-                {error && <div className="alert alert-danger">{error}</div>}
+                {error && <div className={`${styles.alert} ${styles.alertDanger}`}>{error}</div>}
 
                 <h1>Create an account</h1>
 
-                <label htmlFor="username" className="form-label">
+                <label htmlFor="username" className={styles.formLabel}>
                   Username
                 </label>
-                <div className="input-group">
-                  <span className="input-group-icon">
-                    <img src={userIcon} className="icon" alt="user" />
+                <div className={styles.inputGroup}>
+                  <span className={styles.inputGroupIcon}>
+                    <img src={userIcon} className={styles.icon} alt="user" />
                   </span>
                   <input
                     type="text"
                     name="username"
                     id="username"
-                    className="form-control"
+                    className={styles.formControl}
                     required
                     disabled={loading}
                   />
                 </div>
 
-                <label htmlFor="email" className="form-label">
+                <label htmlFor="email" className={styles.formLabel}>
                   Email
                 </label>
-                <div className="input-group">
-                  <span className="input-group-icon">
-                    <img src={emailIcon} className="icon" alt="email" />
+                <div className={styles.inputGroup}>
+                  <span className={styles.inputGroupIcon}>
+                    <img src={emailIcon} className={styles.icon} alt="email" />
                   </span>
                   <input
                     type="email"
                     name="email"
                     id="email"
-                    className="form-control"
+                    className={styles.formControl}
                     required
                     disabled={loading}
                   />
                 </div>
 
-                <label htmlFor="password" className="form-label">
+                <label htmlFor="password" className={styles.formLabel}>
                   Password
                 </label>
-                <div className="input-group">
-                  <span className="input-group-icon">
-                    <img src={passwordIcon} className="icon" alt="password" />
+                <div className={styles.inputGroup}>
+                  <span className={styles.inputGroupIcon}>
+                    <img src={passwordIcon} className={styles.icon} alt="password" />
                   </span>
                   <input
                     type="password"
                     name="password"
                     id="password"
-                    className="form-control"
+                    className={styles.formControl}
                     required
                     disabled={loading}
                   />
                 </div>
 
-                <div className="form-footer">
-                  <button className="btn btn-primary" type="submit" disabled={loading}>
+                <div className={styles.formFooter}>
+                  <button
+                    className={`${styles.btn} ${styles.btnPrimary}`}
+                    type="submit"
+                    disabled={loading}
+                  >
                     {loading ? "Creating..." : "Create account"}
                   </button>
                 </div>

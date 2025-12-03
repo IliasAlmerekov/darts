@@ -17,3 +17,10 @@
 .no-players-message p {
   margin: 0;
 }
+
+.header-selected-players {
+  margin: 0 0 16px;
+  color: var(--darkgrey);
+  justify-content: space-between;
+  display: flex;
+}

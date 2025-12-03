@@ -1,17 +1,17 @@
-import Keyboard from "../../components/keyboard/Keyboard";
-import "./game.module.css";
+import Keyboard from "../../components/Keyboard/Keyboard";
+import styles from "./Game.module.css";
 import Back from "../../icons/back.svg";
 import { Link } from "react-router-dom";
 import GamePlayerItemList from "../../components/game-player-item/GamplayerItemList";
-import Overlay from "../../components/overlay/Overlay";
-import Button from "../../components/button/Button";
-import NumberButton from "../../components/Keyboard/NumberButton";
+import Overlay from "../../components/Overlay/Overlay";
+import Button from "../../components/Button/Button";
+import NumberButton from "../../components/keyboard/NumberButton";
 import FinishedGamePlayerItemList from "../../components/game-player-item/FinishedGamePlayerItemList";
 import LinkButton from "../../components/link-button/LinkButton";
 import deleteIcon from "../../icons/delete.svg";
 import Undo from "../../icons/undo-copy.svg";
 import settingsIcon from "../../icons/settings-inactive.svg";
-import SettingsGroupBtn from "../../components/button/SettingsGroupBtn";
+import SettingsGroupBtn from "../../components/Button/SettingsGroupBtn";
 import { useRoomInvitation } from "../../hooks/useRoomInvitation";
 import { useGameState } from "../../hooks/useGameState";
 import { useThrowHandler } from "../../features/game/hooks/useThrowHandler";
@@ -29,12 +29,12 @@ function Game() {
   return (
     <>
       <Overlay
-        className="overlay-box"
+        className={styles.overlayBox}
         //isOpen={event.isFinishGameOverlayOpen}
         src={deleteIcon}
       >
-        <div className="finish-game-overlay">
-          <p className="overlay-heading">Continue Game?</p>
+        <div className={styles.finishGameOverlay}>
+          <p className={styles.overlayHeading}>Continue Game?</p>
           <div>
             <Button
               label="Finish"
@@ -60,23 +60,23 @@ function Game() {
                 //updateEvent({ isFinishGameOverlayOpen: false });
                 //functions.handleUndo();
               }}
-              className="undo-throw"
+              className={styles.undoThrow}
             />
           </div>
         </div>
       </Overlay>
 
       <Overlay
-        className="overlay-box"
+        className={styles.overlayBox}
         src={deleteIcon}
         //isOpen={event.isSettingsOverlayOpen}
         onClose={() => {
           //updateEvent({ isSettingsOverlayOpen: false });
         }}
       >
-        <div className="settings-overlay">
-          <h3 className="overlay-headline">Settings</h3>
-          <div className="settings-body-container">
+        <div className={styles.settingsOverlay}>
+          <h3 className={styles.overlayHeadline}>Settings</h3>
+          <div className={styles.settingsBodyContainer}>
             <SettingsGroupBtn
               title="Game Mode"
               options={[
@@ -109,7 +109,7 @@ function Game() {
             />
           </div>
           <Button
-            className="settingsOverlayBtn"
+            className={styles.settingsOverlayBtn}
             type="primary"
             label="Save"
             handleClick={() => {
@@ -120,12 +120,12 @@ function Game() {
         </div>
       </Overlay>
 
-      <div className="gamePageHeader">
-        <Link to="/start" className="top">
+      <div className={styles.gamePageHeader}>
+        <Link to="/start" className={styles.top}>
           <img src={Back} alt="Back to Home" />
         </Link>
       </div>
-      <div className="game-player-item-container">
+      <div className={styles.gamePlayerItemContainer}>
         {gameData && (
           <>
             <GamePlayerItemList
@@ -190,12 +190,12 @@ function Game() {
           </>
         )}
       </div>
-      <div className="keyboard-and-undo">
+      <div className={styles.keyboardAndUndo}>
         <NumberButton value="Undo" handleClick={handleUndo} />
         <Keyboard handleClick={handleThrow} />
       </div>
       <LinkButton
-        className="settings-btn"
+        className={styles.settingsBtn}
         label={<img src={settingsIcon} alt="Settings" />}
         //handleClick={() => updateEvent({ isSettingsOverlayOpen: true })}
       />

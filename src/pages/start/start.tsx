@@ -1,10 +1,13 @@
 import styles from "./start.module.css";
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import { useStore } from "@nanostores/react";
+import { DndContext, closestCenter, DragEndEvent } from "@dnd-kit/core";
+import { SortableContext, verticalListSortingStrategy, arrayMove } from "@dnd-kit/sortable";
+import { restrictToVerticalAxis } from "@dnd-kit/modifiers";
 import NavigationBar from "../../components/navigation-bar/NavigationBar";
 import Plus from "../../icons/plus.svg";
 import LinkButton from "../../components/link-button/LinkButton";
-import Button from "../../components/button/Button";
+import Button from "../../components/Button/Button";
 import "../../components/button/Button.css";
 import QRCode from "../../components/qr-code/QRCode";
 import { useRoomInvitation } from "../../hooks/useRoomInvitation";
@@ -23,7 +26,27 @@ function Start(): React.JSX.Element {
   const { invitation, createRoom } = useRoomInvitation();
 
   const gameId = invitation?.gameId ?? null;
-  const { count: playerCount } = useGamePlayers(gameId);
+  const { players, count: playerCount } = useGamePlayers(gameId);
+  const [playerOrder, setPlayerOrder] = useState<number[]>([]);
+
+  // Sync player order with fetched players
+  useEffect(() => {
+    if (players.length > 0) {
+      setPlayerOrder(players.map((p) => p.id));
+    }
+  }, [players]);
+
+  const handleDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event;
+
+    if (over && active.id !== over.id) {
+      setPlayerOrder((items) => {
+        const oldIndex = items.indexOf(active.id as number);
+        const newIndex = items.indexOf(over.id as number);
+        return arrayMove(items, oldIndex, newIndex);
+      });
+    }
+  };
 
   const isDoubleOut = settings.gameMode === "double-out";
   const isTripleOut = settings.gameMode === "triple-out";
@@ -60,14 +83,14 @@ function Start(): React.JSX.Element {
 
   return (
     <div className={styles.main}>
-      <div className="start">
+      <div className={styles.start}>
         <NavigationBar />
         <>
-          <div className="existing-player-list">
-            <div className="header">
-              <h4 className="header-unselected-players">Login</h4>
+          <div className={styles.existingPlayerList}>
+            <div className={styles.header}>
+              <h4 className={styles.headerUnselectedPlayers}>Login</h4>
             </div>
-            <div className="qr-code-section">
+            <div className={styles.qrCodeSection}>
               {invitation && (
                 <QRCode
                   invitationLink={frontendBaseUrl + invitation.invitationLink}
@@ -75,9 +98,9 @@ function Start(): React.JSX.Element {
                 />
               )}
             </div>
-            <div className="bottom">
+            <div className={styles.bottom}>
               <LinkButton
-                className="create-new-player-button h4"
+                className={styles.createNewPlayerButton}
                 label={invitation ? "Create New Game" : "Create Game"}
                 icon={Plus}
                 handleClick={() =>
@@ -89,10 +112,22 @@ function Start(): React.JSX.Element {
             </div>
           </div>
 
-          <div className="added-player-list">
-            <LivePlayersList gameId={gameId} onRemovePlayer={handleRemovePlayer} dragEnd={false} />
+          <div className={styles.addedPlayerList}>
+            <DndContext
+              collisionDetection={closestCenter}
+              onDragEnd={handleDragEnd}
+              modifiers={[restrictToVerticalAxis]}
+            >
+              <SortableContext items={playerOrder} strategy={verticalListSortingStrategy}>
+                <LivePlayersList
+                  gameId={gameId}
+                  onRemovePlayer={handleRemovePlayer}
+                  dragEnd={false}
+                />
+              </SortableContext>
+            </DndContext>
 
-            <div className="start-btn">
+            <div className={styles.startBtn}>
               <Button
                 isLink
                 label="Start"

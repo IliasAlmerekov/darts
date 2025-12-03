@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import "./login.module.css";
+import styles from "./Login.module.css";
 import emailIcon from "../../icons/email.svg";
 import passwordIcon from "../../icons/password.svg";
 import LoadingAuth from "../../components/login-success-skeleton/LoadingAuth";
@@ -57,52 +57,56 @@ function Login() {
   }
 
   return (
-    <div className="login-container">
-      <div className="login-row">
-        <div className="login-col">
-          <div className="login-card">
-            <div className="login-card-body">
+    <div className={styles.loginContainer}>
+      <div className={styles.loginRow}>
+        <div className={styles.loginCol}>
+          <div className={styles.loginCard}>
+            <div className={styles.loginCardBody}>
               <form onSubmit={handleSubmit}>
-                {error && <div className="alert alert-danger">{error}</div>}
+                {error && <div className={`${styles.alert} ${styles.alertDanger}`}>{error}</div>}
 
                 <h1>Please sign in</h1>
 
-                <label htmlFor="_username" className="form-label">
+                <label htmlFor="_username" className={styles.formLabel}>
                   Email
                 </label>
-                <div className="input-group">
-                  <span className="input-group-icon">
-                    <img src={emailIcon} className="icon" alt="email Icon" />
+                <div className={styles.inputGroup}>
+                  <span className={styles.inputGroupIcon}>
+                    <img src={emailIcon} className={styles.icon} alt="email Icon" />
                   </span>
                   <input
                     type="email"
                     name="_username"
                     id="_username"
-                    className="form-control"
+                    className={styles.formControl}
                     required
                     disabled={loading}
                   />
                 </div>
 
-                <label htmlFor="_password" className="form-label">
+                <label htmlFor="_password" className={styles.formLabel}>
                   Password
                 </label>
-                <div className="input-group">
-                  <span className="input-group-icon">
-                    <img src={passwordIcon} className="icon" alt="password icon" />
+                <div className={styles.inputGroup}>
+                  <span className={styles.inputGroupIcon}>
+                    <img src={passwordIcon} className={styles.icon} alt="password icon" />
                   </span>
                   <input
                     type="password"
                     name="_password"
                     id="_password"
-                    className="form-control"
+                    className={styles.formControl}
                     required
                     disabled={loading}
                   />
                 </div>
 
-                <div className="form-footer">
-                  <button className="btn btn-primary" type="submit" disabled={loading}>
+                <div className={styles.formFooter}>
+                  <button
+                    className={`${styles.btn} ${styles.btnPrimary}`}
+                    type="submit"
+                    disabled={loading}
+                  >
                     {loading ? "Signing in..." : "Sign in"}
                   </button>
                 </div>

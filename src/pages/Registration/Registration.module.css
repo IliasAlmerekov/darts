@@ -1,22 +1,22 @@
 /* Registration form uses the same styling as the login form */
-.login-container {
+.loginContainer {
   margin-top: 3rem;
   padding: 0 15px;
 }
 
-.login-row {
+.loginRow {
   display: flex;
   justify-content: center;
   align-items: center;
   min-height: 60vh;
 }
 
-.login-col {
+.loginCol {
   width: 100%;
   max-width: 500px;
 }
 
-.login-card {
+.loginCard {
   background: #fff; /* BEHOBEN: #ffffff zu #fff */
   border-radius: 8px;
   box-shadow:
@@ -24,7 +24,7 @@
     /* BEHOBEN: rgba(0, 0, 0, 0.1) zu rgb(0 0 0 / 10%) */ 0 1px 3px rgb(0 0 0 / 8%); /* BEHOBEN: rgba(0, 0, 0, 0.08) zu rgb(0 0 0 / 8%) */
 }
 
-.login-card-body {
+.loginCardBody {
   padding: 2rem;
 }
 
@@ -36,13 +36,13 @@
   font-size: 14px;
 }
 
-.alert-danger {
+.alertDanger {
   background-color: #f8d7da;
   border: 1px solid #f5c2c7;
   color: #842029;
 }
 
-.logged-in-message {
+.loggedInMessage {
   margin-bottom: 1.5rem;
   padding: 12px;
   background-color: #d1ecf1;
@@ -51,7 +51,7 @@
   color: #0c5460;
 }
 
-.logged-in-message a {
+.loggedInMessage a {
   color: #0c5460;
   text-decoration: underline;
   margin-left: 4px;
@@ -65,7 +65,7 @@ h1 {
   color: #212529;
 }
 
-.form-label {
+.formLabel {
   display: block;
   margin-bottom: 0.5rem;
   font-weight: 500;
@@ -73,7 +73,7 @@ h1 {
   font-size: 14px;
 }
 
-.input-group {
+.inputGroup {
   display: flex;
   align-items: stretch;
   margin-bottom: 1.5rem;
@@ -85,7 +85,7 @@ h1 {
     box-shadow 0.15s ease-in-out;
 }
 
-.input-group:focus-within {
+.inputGroup:focus-within {
   border-color: #86b7fe;
   box-shadow: 0 0 0 0.25rem rgb(13 110 253 / 25%); /* BEHOBEN: rgba(13, 110, 253, 0.25) zu rgb(13 110 253 / 25%) */
 }
@@ -95,7 +95,7 @@ h1 {
   height: 20px;
 }
 
-.input-group-icon {
+.inputGroupIcon {
   display: flex;
   align-items: center;
   padding: 0.5rem 0.75rem;
@@ -104,7 +104,7 @@ h1 {
   color: #6c757d;
 }
 
-.form-control {
+.formControl {
   flex: 1;
   padding: 0.5rem 0.75rem;
   font-size: 1rem;
@@ -115,12 +115,12 @@ h1 {
   background-color: #fff;
 }
 
-.form-control:focus {
+.formControl:focus {
   outline: none;
 }
 
 /* Button Styles */
-.form-footer {
+.formFooter {
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -140,18 +140,18 @@ h1 {
   margin-top: 0; /* BEHOBEN: 0px zu 0 */
 }
 
-.btn-primary {
+.btnPrimary {
   background-color: #0d6efd;
   color: #fff; /* BEHOBEN: #ffffff zu #fff */
 }
 
-.btn-primary:hover {
+.btnPrimary:hover {
   background-color: #0b5ed7;
   transform: translateY(-1px);
   box-shadow: 0 4px 8px rgb(13 110 253 / 30%); /* BEHOBEN: rgba(13, 110, 253, 0.3) zu rgb(13 110 253 / 30%) */
 }
 
-.btn-primary:active {
+.btnPrimary:active {
   background-color: #0a58ca;
   transform: translateY(0);
 }
