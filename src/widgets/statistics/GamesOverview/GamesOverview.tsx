@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import styles from "./GamesOverview.module.css";
 import { Link } from "react-router-dom";
-import NavigationBar from "@/components/navigation-bar/NavigationBar";
+import NavigationBar from "@/widgets/navigation-bar/NavigationBar";
 import ViewToogleButton from "@/shared/ui/button/ViewToogleBtn";
 import { getGamesOverview } from "@/services/api";
 
