@@ -1,0 +1,1 @@
+export { useGameSummaryPage } from "./useGameSummaryPage";

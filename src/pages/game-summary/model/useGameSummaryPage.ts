@@ -1,16 +1,11 @@
-import OverviewPlayerItemList from "@/components/overview-player-item/OverviewPlayerItemList";
-import styles from "./game-summary.module.css";
-import Button from "@/components/Button/Button";
-import Podium from "@/components/Podium/Podium";
-import Undo from "@/icons/undolinkbutton.svg";
-import { Link, useLocation, useNavigate } from "react-router-dom";
-import React, { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { useLocation, useNavigate } from "react-router-dom";
 import { getFinishedGame, FinishedPlayerResponse, createRematch } from "@/services/api";
 import { setInvitation, setLastFinishedGameId, resetRoomStore } from "@/stores";
 import { playSound } from "@/shared/lib/soundPlayer";
 import "@/types/BASIC.d";
 
-function Gamesummary(): React.JSX.Element {
+export function useGameSummaryPage() {
   const navigate = useNavigate();
   const location = useLocation();
   const [serverFinished, setServerFinished] = useState<FinishedPlayerResponse[]>([]);
@@ -69,11 +64,11 @@ function Gamesummary(): React.JSX.Element {
   });
   const podiumData = podiumList.length === 2 ? podiumListWithPlaceholder : podiumList;
 
-  const handleUndo = () => {
+  const handleUndo = (): void => {
     playSound("undo");
   };
 
-  const handlePlayAgain = async () => {
+  const handlePlayAgain = async (): Promise<void> => {
     sessionStorage.removeItem("OngoingGame");
 
     if (!finishedGameIdFromRoute) return;
@@ -92,7 +87,7 @@ function Gamesummary(): React.JSX.Element {
     }
   };
 
-  const handleBackToStart = async () => {
+  const handleBackToStart = async (): Promise<void> => {
     sessionStorage.removeItem("OngoingGame");
     resetRoomStore();
 
@@ -103,37 +98,13 @@ function Gamesummary(): React.JSX.Element {
     navigate("/start");
   };
 
-  return (
-    <div className={styles.summary}>
-      <div>
-        <Link onClick={handleUndo} to="/game" className={styles.undoButton}>
-          <img src={Undo} alt="Undo last action" />
-        </Link>
-      </div>
-      <div className={styles.podiumBoard}>
-        <Podium userMap={podiumData} list={newList} />
-      </div>
-      <div className={styles.leaderBoard}>
-        <OverviewPlayerItemList userMap={leaderBoardList} />
-      </div>
-
-      <div className={styles.playAgainButton}>
-        <Button
-          label="Play Again"
-          type="primary"
-          isInverted
-          className={styles.playAgainButton}
-          handleClick={handlePlayAgain}
-        />
-      </div>
-
-      {error && <p className={styles.error}>{error}</p>}
-
-      <div className={styles.backToStartButton}>
-        <Button label="Back To Start" type="primary" handleClick={handleBackToStart} />
-      </div>
-    </div>
-  );
+  return {
+    error,
+    podiumData,
+    newList,
+    leaderBoardList,
+    handleUndo,
+    handlePlayAgain,
+    handleBackToStart,
+  };
 }
-
-export default Gamesummary;
