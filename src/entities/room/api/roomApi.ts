@@ -4,7 +4,11 @@ import type { CreateRoomResponse } from "@/shared/types/api";
 
 export const roomApi = {
   createRoom: async (data?: { previousGameId?: number }): Promise<CreateRoomResponse> => {
-    return apiClient.post<CreateRoomResponse>(API_ENDPOINTS.CREATE_ROOM, data);
+    const room = await apiClient.post<{ gameId: number }>(API_ENDPOINTS.CREATE_ROOM, data);
+    const invite = await apiClient.get<CreateRoomResponse>(
+      API_ENDPOINTS.CREATE_INVITE(room.gameId),
+    );
+    return invite;
   },
 
   leaveRoom: async (gameId: number, playerId: number): Promise<void> => {
@@ -14,6 +18,10 @@ export const roomApi = {
   },
 
   createRematch: async (gameId: number): Promise<CreateRoomResponse> => {
-    return apiClient.post<CreateRoomResponse>(API_ENDPOINTS.REMATCH(gameId));
+    const rematch = await apiClient.post<{ gameId: number }>(API_ENDPOINTS.REMATCH(gameId));
+    const invite = await apiClient.get<CreateRoomResponse>(
+      API_ENDPOINTS.CREATE_INVITE(rematch.gameId),
+    );
+    return invite;
   },
 };
