@@ -1,5 +1,5 @@
 import clsx from "clsx";
-import PodiumPlayerCard from "../podium-player-card/PodiumPlayerCard";
+import PodiumPlayerCard from "./PodiumPlayerCard";
 import styles from "./Podium.module.css";
 import { useStore } from "@nanostores/react";
 import { $settings } from "@/stores";

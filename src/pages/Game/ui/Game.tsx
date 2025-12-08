@@ -1,8 +1,8 @@
 import { Link } from "react-router-dom";
-import { Keyboard, NumberButton } from "@/widgets/keyboard";
+import { Keyboard, NumberButton } from "@/features/game/record-throw";
 import GamePlayerItemList from "@/components/game-player-item/GamplayerItemList";
-import Overlay from "@/components/Overlay/Overlay";
-import Button from "@/components/Button/Button";
+import Overlay from "@/shared/ui/overlay/Overlay";
+import Button from "@/shared/ui/button/Button";
 import FinishedGamePlayerItemList from "@/components/game-player-item/FinishedGamePlayerItemList";
 import LinkButton from "@/components/link-button/LinkButton";
 import Back from "@/icons/back.svg";

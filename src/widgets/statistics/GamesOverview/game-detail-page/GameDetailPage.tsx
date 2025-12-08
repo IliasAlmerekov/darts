@@ -1,7 +1,7 @@
 import React from "react";
 import styles from "./GameDetailPage.module.css";
 import { Link, useParams } from "react-router-dom";
-import Podium from "@/components/Podium/Podium";
+import { Podium } from "@/widgets/podium";
 import BackBtn from "@/icons/back.svg";
 import NavigationBar from "@/components/navigation-bar/NavigationBar";
 import OverviewPlayerItemList from "@/components/overview-player-item/OverviewPlayerItemList";

@@ -1,7 +1,7 @@
 import OverviewPlayerItemList from "@/components/overview-player-item/OverviewPlayerItemList";
 import styles from "./GameSummaryPage.module.css";
-import Button from "@/components/Button/Button";
-import Podium from "@/components/Podium/Podium";
+import Button from "@/shared/ui/button/Button";
+import { Podium } from "@/widgets/podium";
 import Undo from "@/icons/undolinkbutton.svg";
 import { Link } from "react-router-dom";
 import React from "react";

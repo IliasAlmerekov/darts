@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
-import Overlay from "@/components/Overlay/Overlay";
-import SettingsGroupBtn from "@/components/Button/SettingsGroupBtn";
-import Button from "@/components/Button/Button";
+import Overlay from "@/shared/ui/overlay/Overlay";
+import SettingsGroupBtn from "@/shared/ui/button/SettingsGroupBtn";
+import Button from "@/shared/ui/button/Button";
 import styles from "./Game.module.css";
 
 type SettingsOverlayProps = {

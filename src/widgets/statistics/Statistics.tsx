@@ -3,8 +3,8 @@ import styles from "./Statistics.module.css";
 import sortAZIcon from "@/icons/sorting-az.svg";
 import sortScoreIcon from "@/icons/sorting-score.svg";
 import clsx from "clsx";
-import NavigationBar from "../navigation-bar/NavigationBar";
-import ViewToogleButton from "../Button/ViewToogleBtn";
+import NavigationBar from "@/components/navigation-bar/NavigationBar";
+import ViewToogleButton from "@/shared/ui/button/ViewToogleBtn";
 import { getPlayerStats } from "@/services/api";
 
 export default function Playerstats(): JSX.Element {
