@@ -12,7 +12,8 @@ export default function GamesOverview(): JSX.Element {
   const limit = 9;
 
   useEffect(() => {
-    getGamesOverview(limit, offset).then((data: BASIC.GameDataProps) => {
+    getGamesOverview(limit, offset).then((response) => {
+      const data = response as BASIC.GameDataProps;
       if (data.items) {
         setGames(data.items);
         setTotal(data.total);
@@ -32,43 +33,40 @@ export default function GamesOverview(): JSX.Element {
         <ViewToogleButton />
       </div>
       <div className={styles.overview}>
-        {games
-          .slice()
-          .reverse()
-          .map((game, index) => (
-            <div key={index} className={styles.gameContainer}>
-              <div className={styles.gameCard}>
-                <h4>
-                  {" "}
-                  {new Date(game.date).toLocaleDateString("de-De", {
-                    day: "2-digit",
-                    month: "2-digit",
-                    year: "numeric",
-                  })}{" "}
-                </h4>
-                <p>
-                  <span className="stat-label">
-                    Players <span className="stat-value">{game.playersCount}</span>
-                  </span>
-                </p>
-                <p>
-                  {" "}
-                  <span className="stat-label">
-                    Player Won: <span className="stat-value">{game.winnerName}</span>
-                  </span>
-                </p>
-                <p>
-                  {" "}
-                  <span className="stat-label">
-                    Rounds: <span className="stat-value">{game.winnerRounds}</span>
-                  </span>
-                </p>
-              </div>
-              <div className={styles.detailsLink}>
-                <Link to={`/details/${game.id}`}>details</Link>
-              </div>
+        {games.slice().map((game, index) => (
+          <div key={index} className={styles.gameContainer}>
+            <div className={styles.gameCard}>
+              <h4>
+                {" "}
+                {new Date(game.date).toLocaleDateString("de-De", {
+                  day: "2-digit",
+                  month: "2-digit",
+                  year: "numeric",
+                })}{" "}
+              </h4>
+              <p>
+                <span className="stat-label">
+                  Players <span className="stat-value">{game.playersCount}</span>
+                </span>
+              </p>
+              <p>
+                {" "}
+                <span className="stat-label">
+                  Player Won: <span className="stat-value">{game.winnerName}</span>
+                </span>
+              </p>
+              <p>
+                {" "}
+                <span className="stat-label">
+                  Rounds: <span className="stat-value">{game.winnerRounds}</span>
+                </span>
+              </p>
             </div>
-          ))}
+            <div className={styles.detailsLink}>
+              <Link to={`/details/${game.id}`}>details</Link>
+            </div>
+          </div>
+        ))}
       </div>
       <div
         className="pagination-controls"

@@ -1,7 +1,7 @@
 import React from "react";
 import { BrowserRouter, Route, Routes } from "react-router-dom";
 import "@/css/index.css";
-import Game from "@/pages/Game/ui/Game";
+import { Game } from "@/pages/Game";
 import GameDetailPage from "@/components/Statistics/GamesOverview/game-detail-page/GameDetailPage";
 import GamesOverview from "@/components/Statistics/GamesOverview/GamesOverview";
 import Settings from "@/components/Settings/Settings";

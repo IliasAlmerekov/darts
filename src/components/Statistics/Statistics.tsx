@@ -23,7 +23,8 @@ export default function Playerstats(): JSX.Element {
       sortParam = "average:desc";
     }
 
-    getPlayerStats(limit, offset, sortParam).then((data: BASIC.PlayerDataProps) => {
+    getPlayerStats(limit, offset, sortParam).then((response) => {
+      const data = response as BASIC.PlayerDataProps;
       if (data.items) {
         setStats(data.items);
         setTotal(data.total);

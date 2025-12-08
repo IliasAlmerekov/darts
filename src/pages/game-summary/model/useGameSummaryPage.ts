@@ -79,7 +79,7 @@ export function useGameSummaryPage() {
         invitationLink: rematch.invitationLink,
       });
 
-      navigate("/game");
+      navigate(`/game/${rematch.gameId}`);
     } catch (err) {
       console.error("Failed to start rematch:", err);
     }
@@ -87,12 +87,23 @@ export function useGameSummaryPage() {
 
   const handleBackToStart = async (): Promise<void> => {
     resetRoomStore();
-
+    if (!finishedGameIdFromRoute) return;
     if (finishedGameIdFromRoute) {
       setLastFinishedGameId(finishedGameIdFromRoute);
     }
 
-    navigate("/start");
+    try {
+      const rematch = await createRematch(finishedGameIdFromRoute);
+
+      setInvitation({
+        gameId: rematch.gameId,
+        invitationLink: rematch.invitationLink,
+      });
+
+      navigate(`/start`);
+    } catch (err) {
+      console.error("Failed to start rematch:", err);
+    }
   };
 
   return {
