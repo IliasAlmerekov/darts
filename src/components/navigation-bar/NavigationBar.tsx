@@ -47,7 +47,9 @@ export default function NavigationBar(): React.JSX.Element {
       <img className={styles.deepblueIcon} src={Madebydeepblue} alt="" />
       {navItems.map((item) => {
         const isActive =
-          location.pathname === item.path || (item.id === "game" && location.pathname === "/start");
+          location.pathname === item.path ||
+          (item.id === "game" && location.pathname === "/start") ||
+          (item.id === "statistics" && location.pathname === "/gamesoverview");
 
         return (
           <button
