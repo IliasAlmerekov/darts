@@ -1,79 +1,49 @@
-/**
- * Entity: Player
- * Types to work with player data
- */
+import type { PlayerOverviewItem, PlayerProfile, PlayerStats } from "@/shared/types/player";
 
-/**
- * Player throw (backend data)
- */
-export interface PlayerThrow {
+export interface BackendThrow {
   value: number;
   isDouble?: boolean;
   isTriple?: boolean;
   isBust?: boolean;
 }
 
-/**
- * Round history entry from backend
- */
 export interface BackendRoundHistory {
-  round: number;
-  throws: PlayerThrow[];
+  throws: BackendThrow[];
 }
 
-/**
- * Round for UI (simplified format)
- */
-export interface UIRound {
-  throw1?: number | string;
-  throw2?: number | string;
-  throw3?: number | string;
-  throw1IsBust?: boolean;
-  throw2IsBust?: boolean;
-  throw3IsBust?: boolean;
-  isRoundBust?: boolean;
-}
-
-/**
- * Player from API response (backend format)
- */
 export interface BackendPlayer {
   id: number;
   name: string;
   score: number;
   isActive: boolean;
   isBust: boolean;
-  position: number;
+  position: number | null;
   throwsInCurrentRound: number;
-  currentRoundThrows: PlayerThrow[];
-  roundHistory: unknown[];
+  currentRoundThrows: BackendThrow[];
+  roundHistory: BackendRoundHistory[];
 }
 
-/**
- * Player for UI components
- */
+export interface UIRound {
+  throw1?: number;
+  throw2?: number;
+  throw3?: number;
+  throw1IsBust?: boolean;
+  throw2IsBust?: boolean;
+  throw3IsBust?: boolean;
+  isRoundBust?: boolean;
+}
+
 export interface UIPlayer {
   id: number;
   name: string;
   score: number;
   isActive: boolean;
   isBust: boolean;
-  position: number;
+  position: number | null;
   index: number;
   rounds: UIRound[];
   isPlaying: boolean;
   throwCount: number;
-  currentRound?: number;
 }
 
-/**
- * Finished player (for podium)
- */
-export interface FinishedPlayer {
-  id: number;
-  name: string;
-  score: number;
-  position: number;
-  roundsPlayed?: number;
-  scoreAverage?: number;
-}
+export type { PlayerProfile, PlayerStats, PlayerOverviewItem };

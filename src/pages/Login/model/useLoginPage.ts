@@ -1,44 +1,25 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuthenticatedUser } from "@/hooks/useAuthenticatedUser";
+import { useLogin } from "@/features/auth/login";
 
 export function useLoginPage() {
   const [error, setError] = useState<string | null>(null);
-  const [loading, setLoading] = useState(false);
+  const { login, loading } = useLogin();
   const navigate = useNavigate();
   const { user, loading: checking } = useAuthenticatedUser();
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>): Promise<void> => {
     e.preventDefault();
     setError(null);
-    setLoading(true);
 
     try {
       const formData = new FormData(e.currentTarget);
-
-      const response = await fetch(`/api/login`, {
-        method: "POST",
-        credentials: "include",
-        headers: {
-          Accept: "application/json",
-        },
-        body: formData,
-      });
-
-      if (!response.ok) {
-        throw new Error("Invalid credentials");
-      }
-
-      const data = await response.json();
-      console.log("Login successful:", data);
-
-      if (data.redirect) {
-        navigate(data.redirect);
-      }
-    } catch (error) {
-      setError((error as Error).message || "Login failed");
-    } finally {
-      setLoading(false);
+      const username = String(formData.get("_username") ?? "");
+      const password = String(formData.get("_password") ?? "");
+      await login(username, password);
+    } catch (err) {
+      setError((err as Error).message || "Login failed");
     }
   };
 

@@ -69,8 +69,6 @@ export function useGameSummaryPage() {
   };
 
   const handlePlayAgain = async (): Promise<void> => {
-    sessionStorage.removeItem("OngoingGame");
-
     if (!finishedGameIdFromRoute) return;
 
     try {
@@ -88,7 +86,6 @@ export function useGameSummaryPage() {
   };
 
   const handleBackToStart = async (): Promise<void> => {
-    sessionStorage.removeItem("OngoingGame");
     resetRoomStore();
 
     if (finishedGameIdFromRoute) {

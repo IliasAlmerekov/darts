@@ -1,0 +1,29 @@
+.list {
+  display: grid;
+  gap: 8px;
+}
+
+.item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: #f9fafb;
+  border: 1px solid transparent;
+}
+
+.itemActive {
+  background: #eef2ff;
+  border-color: #e0e7ff;
+}
+
+.name {
+  font-weight: 600;
+  color: #111827;
+}
+
+.score {
+  font-variant-numeric: tabular-nums;
+  color: #1f2937;
+}

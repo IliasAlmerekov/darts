@@ -1,25 +1,34 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { useStore } from "@nanostores/react";
 import { DragEndEvent } from "@dnd-kit/core";
 import { arrayMove } from "@dnd-kit/sortable";
-import { useRoomInvitation } from "../../../hooks/useRoomInvitation";
 import { useGamePlayers } from "../../../hooks/useGamePlayers";
-import { startGame, deletePlayerFromGame } from "../../../services/api";
-import { $settings, $lastFinishedGameId, setCurrentGameId } from "../../../stores";
+import { roomApi } from "@/entities/room";
+import { gameApi } from "@/entities/game";
+import {
+  $settings,
+  $lastFinishedGameId,
+  $invitation,
+  setCurrentGameId,
+  setInvitation,
+} from "@/stores";
 
 export function useStartPage() {
   const START_SOUND_PATH = "/sounds/start-round-sound.mp3";
+  const navigate = useNavigate();
 
   const settings = useStore($settings);
   const lastFinishedGameId = useStore($lastFinishedGameId);
+  const invitation = useStore($invitation);
 
-  const { invitation, createRoom } = useRoomInvitation();
+  const [creating, setCreating] = useState(false);
+  const [starting, setStarting] = useState(false);
+  const gameId = useMemo(() => invitation?.gameId ?? null, [invitation?.gameId]);
 
-  const gameId = invitation?.gameId ?? null;
   const { players, count: playerCount } = useGamePlayers(gameId, lastFinishedGameId);
   const [playerOrder, setPlayerOrder] = useState<number[]>([]);
 
-  // Sync player order with fetched players
   useEffect(() => {
     if (players.length > 0) {
       setPlayerOrder(players.map((p) => p.id));
@@ -43,9 +52,8 @@ export function useStartPage() {
 
   const handleRemovePlayer = async (playerId: number, currentGameId: number): Promise<void> => {
     try {
-      await deletePlayerFromGame(currentGameId, playerId);
+      await roomApi.leaveRoom(currentGameId, playerId);
     } catch {
-      // Ignore errors when removing player
       void 0;
     }
   };
@@ -57,25 +65,45 @@ export function useStartPage() {
   }, [invitation?.gameId]);
 
   const handleStartGame = async (): Promise<void> => {
-    if (!gameId) return;
+    if (!gameId || starting) return;
 
-    const audio = new Audio(START_SOUND_PATH);
-    audio.volume = 0.4;
-    audio.play().catch(() => {});
+    setStarting(true);
 
-    await startGame(gameId, {
-      startScore: settings.points,
-      doubleOut: isDoubleOut,
-      tripleOut: isTripleOut,
-      round: 1,
-      status: "started",
-    });
+    try {
+      const audio = new Audio(START_SOUND_PATH);
+      audio.volume = 0.4;
+      audio.play().catch(() => {});
+
+      await gameApi.startGame(gameId, {
+        startScore: settings.points,
+        doubleOut: isDoubleOut,
+        tripleOut: isTripleOut,
+        round: 1,
+        status: "started",
+      });
+
+      navigate(`/game/${gameId}`);
+    } catch {
+      void 0;
+    } finally {
+      setStarting(false);
+    }
   };
 
-  const handleCreateRoom = (): void => {
-    createRoom({
-      previousGameId: lastFinishedGameId ?? undefined,
-    });
+  const handleCreateRoom = async (): Promise<void> => {
+    if (creating) return;
+    setCreating(true);
+    try {
+      const response = await roomApi.createRoom({
+        previousGameId: lastFinishedGameId ?? undefined,
+      });
+      setInvitation(response);
+      setCurrentGameId(response.gameId);
+    } catch {
+      void 0;
+    } finally {
+      setCreating(false);
+    }
   };
 
   return {
@@ -84,6 +112,8 @@ export function useStartPage() {
     lastFinishedGameId,
     playerCount,
     playerOrder,
+    creating,
+    starting,
     handleDragEnd,
     handleRemovePlayer,
     handleStartGame,
