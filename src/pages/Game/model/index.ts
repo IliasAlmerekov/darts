@@ -1,1 +1,1 @@
-export { useGameLogic } from "./useGameLogic";
+export * from "./useGamePage";

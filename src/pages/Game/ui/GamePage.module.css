@@ -1,0 +1,12 @@
+.page {
+  min-height: 100vh;
+  background: #f3f4f6;
+}
+
+.content {
+  max-width: 960px;
+  margin: 0 auto;
+  padding: 24px 16px 64px;
+  display: grid;
+  gap: 16px;
+}

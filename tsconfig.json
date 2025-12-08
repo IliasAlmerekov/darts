@@ -26,6 +26,7 @@
     "resolveJsonModule": true,
 
     /* Path aliases for FSD architecture */
+    "ignoreDeprecations": "6.0",
     "baseUrl": ".",
     "paths": {
       "@/*": ["./src/*"],

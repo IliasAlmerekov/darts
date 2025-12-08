@@ -1,0 +1,63 @@
+.gameBoard {
+  display: grid;
+  gap: 16px;
+}
+
+.gameBoardHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.gameStatus {
+  font-size: 12px;
+  text-transform: uppercase;
+  color: #6b7280;
+  letter-spacing: 0.05em;
+}
+
+.playersCard,
+.controlsCard {
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  padding: 16px;
+  background: #fff;
+  box-shadow: 0 1px 2px rgba(0 0 0 / 0.04%);
+}
+
+.playersList {
+  display: grid;
+  gap: 8px;
+}
+
+.playerRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 10px;
+  border-radius: 8px;
+  background: #f9fafb;
+}
+
+.playerRowActive {
+  background: #eef2ff;
+  border: 1px solid #e0e7ff;
+}
+
+.playerName {
+  font-weight: 600;
+  color: #111827;
+}
+
+.playerScore {
+  font-variant-numeric: tabular-nums;
+  color: #1f2937;
+}
+
+.keyboardPlaceholder {
+  padding: 24px;
+  text-align: center;
+  color: #6b7280;
+  border: 1px dashed #d1d5db;
+  border-radius: 10px;
+}
