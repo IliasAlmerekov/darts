@@ -3,7 +3,7 @@ import styles from "./GameDetailPage.module.css";
 import { Link, useParams } from "react-router-dom";
 import { Podium } from "@/widgets/podium";
 import BackBtn from "@/icons/back.svg";
-import NavigationBar from "@/components/navigation-bar/NavigationBar";
+import NavigationBar from "@/widgets/navigation-bar/NavigationBar";
 import OverviewPlayerItemList from "@/components/overview-player-item/OverviewPlayerItemList";
 
 export default function GameDetailPage(): React.JSX.Element {

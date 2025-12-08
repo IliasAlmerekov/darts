@@ -4,7 +4,7 @@ import "@/css/index.css";
 import { Game } from "@/pages/Game";
 import GameDetailPage from "@/widgets/statistics/GamesOverview/game-detail-page/GameDetailPage";
 import GamesOverview from "@/widgets/statistics/GamesOverview/GamesOverview";
-import Settings from "@/components/Settings/Settings";
+import Settings from "@/widgets/settings/Settings";
 import Statistic from "@/widgets/statistics/Statistics";
 import Playerprofile from "@/pages/player-profile/PlayerProfile";
 import ProtectedRoutes from "@/utils/ProtectedRoutes";

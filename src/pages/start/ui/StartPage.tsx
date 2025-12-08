@@ -3,7 +3,7 @@ import React from "react";
 import { DndContext, closestCenter } from "@dnd-kit/core";
 import { SortableContext, verticalListSortingStrategy } from "@dnd-kit/sortable";
 import { restrictToVerticalAxis } from "@dnd-kit/modifiers";
-import NavigationBar from "../../../components/navigation-bar/NavigationBar";
+import NavigationBar from "../../../widgets/navigation-bar/NavigationBar";
 import Plus from "../../../icons/plus.svg";
 import LinkButton from "../../../components/link-button/LinkButton";
 import Button from "@/shared/ui/button/Button";
