@@ -16,7 +16,7 @@ export function useStartPage() {
   const { invitation, createRoom } = useRoomInvitation();
 
   const gameId = invitation?.gameId ?? null;
-  const { players, count: playerCount } = useGamePlayers(gameId);
+  const { players, count: playerCount } = useGamePlayers(gameId, lastFinishedGameId);
   const [playerOrder, setPlayerOrder] = useState<number[]>([]);
 
   // Sync player order with fetched players
@@ -44,8 +44,9 @@ export function useStartPage() {
   const handleRemovePlayer = async (playerId: number, currentGameId: number): Promise<void> => {
     try {
       await deletePlayerFromGame(currentGameId, playerId);
-    } catch (error) {
-      console.error("Failed to remove player:", error);
+    } catch {
+      // Ignore errors when removing player
+      void 0;
     }
   };
 
@@ -60,7 +61,7 @@ export function useStartPage() {
 
     const audio = new Audio(START_SOUND_PATH);
     audio.volume = 0.4;
-    audio.play().catch(console.error);
+    audio.play().catch(() => {});
 
     await startGame(gameId, {
       startScore: settings.points,
@@ -80,6 +81,7 @@ export function useStartPage() {
   return {
     invitation,
     gameId,
+    lastFinishedGameId,
     playerCount,
     playerOrder,
     handleDragEnd,

@@ -19,6 +19,9 @@ export function mapRoundHistory(roundHistory: BackendRoundHistory[]): UIRound[] 
       throw1: throws[0]?.value,
       throw2: throws[1]?.value,
       throw3: throws[2]?.value,
+      throw1IsBust: throws[0]?.isBust,
+      throw2IsBust: throws[1]?.isBust,
+      throw3IsBust: throws[2]?.isBust,
       isRoundBust: throws.some((t) => t.isBust),
     };
   });
@@ -36,6 +39,9 @@ export function mapCurrentRound(currentRoundThrows: BackendPlayer["currentRoundT
     throw1: currentRoundThrows[0]?.value,
     throw2: currentRoundThrows[1]?.value,
     throw3: currentRoundThrows[2]?.value,
+    throw1IsBust: currentRoundThrows[0]?.isBust,
+    throw2IsBust: currentRoundThrows[1]?.isBust,
+    throw3IsBust: currentRoundThrows[2]?.isBust,
     isRoundBust: currentRoundThrows.some((t) => t.isBust),
   };
 }
@@ -65,7 +71,8 @@ export function mapPlayerToUI(player: BackendPlayer, index: number): UIPlayer {
     position: player.position,
     index,
     rounds,
-    isPlaying: player.position === 0, // 0 = still playing, > 0 = finished
+    // Spieler gilt als spielend, solange sein Score über 0 liegt.
+    isPlaying: player.score > 0,
     throwCount: player.throwsInCurrentRound,
   };
 }
@@ -85,8 +92,16 @@ export function getActivePlayer(players: UIPlayer[]): UIPlayer | null {
 }
 
 /**
- * Gets finished players, sorted by position
+ * Gets finished players, sorted by position if present.
+ * Ein Spieler gilt hier als завершён, wenn его score == 0.
  */
 export function getFinishedPlayers(players: UIPlayer[]): UIPlayer[] {
-  return players.filter((p) => p.position > 0).sort((a, b) => a.position - b.position);
+  return players
+    .filter((p) => p.score === 0)
+    .sort((a, b) => {
+      if (a.position == null && b.position == null) return 0;
+      if (a.position == null) return 1;
+      if (b.position == null) return -1;
+      return a.position - b.position;
+    });
 }

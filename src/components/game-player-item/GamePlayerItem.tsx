@@ -1,7 +1,7 @@
 import styles from "./GamePlayerItem.module.css";
 import bustIconX from "@/icons/delete-grey.svg";
 import clsx from "clsx";
-import { useMemo } from "react";
+import { usePlayerThrowsDisplay } from "@/features/game/hooks/usePlayerThrowsDisplay";
 
 interface GamePlayerItemProps {
   name?: string;
@@ -10,6 +10,9 @@ interface GamePlayerItemProps {
   gamePlayerItemThrow1?: number | string | JSX.Element;
   gamePlayerItemThrow2?: number | string | JSX.Element;
   gamePlayerItemThrow3?: number | string | JSX.Element;
+  throw1IsBust?: boolean;
+  throw2IsBust?: boolean;
+  throw3IsBust?: boolean;
   className: string;
   src?: string;
   isBust?: boolean;
@@ -19,6 +22,9 @@ interface GamePlayerItemProps {
   gamePlayerItemPrevThrow1?: number | string | JSX.Element;
   gamePlayerItemPrevThrow2?: number | string | JSX.Element;
   gamePlayerItemPrevThrow3?: number | string | JSX.Element;
+  prevThrow1IsBust?: boolean;
+  prevThrow2IsBust?: boolean;
+  prevThrow3IsBust?: boolean;
   id: string;
 }
 
@@ -26,64 +32,43 @@ const bustIcon = <img src={bustIconX} alt="Bust icon" />;
 
 function GamePlayerItem({
   name,
-  isActive,
+  isActive = false,
   value,
   gamePlayerItemThrow1,
   gamePlayerItemThrow2,
   gamePlayerItemThrow3,
+  throw1IsBust,
+  throw2IsBust,
+  throw3IsBust,
   className,
-  isBust,
-  throwCount,
   isPlaying,
   roundsCount,
   gamePlayerItemPrevThrow1,
   gamePlayerItemPrevThrow2,
   gamePlayerItemPrevThrow3,
+  prevThrow1IsBust,
+  prevThrow2IsBust,
+  prevThrow3IsBust,
   id,
 }: GamePlayerItemProps): JSX.Element {
-  // Calculate display values without mutating props
-  const displayThrows = useMemo(() => {
-    // Clear previous throws for active player in rounds > 1
-    const shouldClearPrev = isActive && roundsCount?.length > 1;
-
-    // Determine throw3 value based on bust state
-    let computedThrow3 = gamePlayerItemThrow3;
-    let computedThrow2 = gamePlayerItemThrow2;
-
-    if (isBust && throwCount === 1) {
-      computedThrow3 = bustIcon;
-    } else if (isBust && throwCount === 0) {
-      computedThrow2 = bustIcon;
-      computedThrow3 = bustIcon;
-    }
-
-    return {
-      throw1: gamePlayerItemThrow1,
-      throw2: computedThrow2,
-      throw3: computedThrow3,
-      prevThrow1: shouldClearPrev ? undefined : gamePlayerItemPrevThrow1,
-      prevThrow2: shouldClearPrev ? undefined : gamePlayerItemPrevThrow2,
-      prevThrow3: shouldClearPrev ? undefined : gamePlayerItemPrevThrow3,
-    };
-  }, [
-    gamePlayerItemThrow1,
-    gamePlayerItemThrow2,
-    gamePlayerItemThrow3,
-    gamePlayerItemPrevThrow1,
-    gamePlayerItemPrevThrow2,
-    gamePlayerItemPrevThrow3,
+  // Business logic: calculate throw display values
+  const displayThrows = usePlayerThrowsDisplay({
     isActive,
-    isBust,
-    throwCount,
-    roundsCount?.length,
-  ]);
-
-  function getDisplayValue(
-    currentThrow?: number | string | JSX.Element,
-    prevThrow?: number | string | JSX.Element,
-  ): number | string | JSX.Element | undefined {
-    return currentThrow !== undefined ? currentThrow : prevThrow;
-  }
+    roundsCount,
+    currentThrow1: gamePlayerItemThrow1,
+    currentThrow2: gamePlayerItemThrow2,
+    currentThrow3: gamePlayerItemThrow3,
+    prevThrow1: gamePlayerItemPrevThrow1,
+    prevThrow2: gamePlayerItemPrevThrow2,
+    prevThrow3: gamePlayerItemPrevThrow3,
+    throw1IsBust,
+    throw2IsBust,
+    throw3IsBust,
+    prevThrow1IsBust,
+    prevThrow2IsBust,
+    prevThrow3IsBust,
+    bustIcon,
+  });
 
   return (
     <div className={className} id={id}>
@@ -105,26 +90,26 @@ function GamePlayerItem({
         >
           <div
             className={clsx(styles.divDisplay, "copylarge", {
-              [styles.handleBust]: !isActive && throwCount === 0,
+              [styles.handleBust]: displayThrows.throw1IsBust && !isActive,
             })}
           >
-            {getDisplayValue(displayThrows.throw1, displayThrows.prevThrow1)}
+            {displayThrows.throw1}
           </div>
 
           <div
             className={clsx(styles.divDisplay, "copylarge", {
-              [styles.handleBust]: !isActive && throwCount === 1,
+              [styles.handleBust]: displayThrows.throw2IsBust && !isActive,
             })}
           >
-            {getDisplayValue(displayThrows.throw2, displayThrows.prevThrow2)}
+            {displayThrows.throw2}
           </div>
 
           <div
             className={clsx(styles.divDisplay, "copylarge", {
-              [styles.handleBust]: isBust && throwCount === 2,
+              [styles.handleBust]: displayThrows.throw3IsBust && !isActive,
             })}
           >
-            {getDisplayValue(displayThrows.throw3, displayThrows.prevThrow3)}
+            {displayThrows.throw3}
           </div>
         </div>
 

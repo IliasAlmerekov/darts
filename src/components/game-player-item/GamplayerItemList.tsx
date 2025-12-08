@@ -32,6 +32,9 @@ function GamePlayerItemList({ userMap, round }: GamePlayerItemListProps): JSX.El
             gamePlayerItemThrow1={currentRound?.throw1}
             gamePlayerItemThrow2={currentRound?.throw2}
             gamePlayerItemThrow3={currentRound?.throw3}
+            throw1IsBust={currentRound?.throw1IsBust}
+            throw2IsBust={currentRound?.throw2IsBust}
+            throw3IsBust={currentRound?.throw3IsBust}
             isBust={item.isBust}
             throwCount={item.throwCount}
             isPlaying={item.isPlaying}
@@ -39,6 +42,9 @@ function GamePlayerItemList({ userMap, round }: GamePlayerItemListProps): JSX.El
             gamePlayerItemPrevThrow1={previousRound?.throw1}
             gamePlayerItemPrevThrow2={previousRound?.throw2}
             gamePlayerItemPrevThrow3={previousRound?.throw3}
+            prevThrow1IsBust={previousRound?.throw1IsBust}
+            prevThrow2IsBust={previousRound?.throw2IsBust}
+            prevThrow3IsBust={previousRound?.throw3IsBust}
             id={item.isActive ? "playerid" : ""}
           />
         );

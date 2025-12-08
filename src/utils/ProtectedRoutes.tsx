@@ -23,7 +23,6 @@ const ProtectedRoutes: React.FC<ProtectedRoutesProps> = ({ allowedRoles = ["ROLE
   }
 
   if (!loggedInUser) {
-    console.log("User not authenticated - redirecting to login");
     return <Navigate to="/" />;
   }
 
@@ -31,12 +30,6 @@ const ProtectedRoutes: React.FC<ProtectedRoutesProps> = ({ allowedRoles = ["ROLE
   const isAuthorized = Array.isArray(roles) && roles.some((r: string) => allowedRoles.includes(r));
 
   if (!isAuthorized) {
-    console.log(
-      "User not authorized for protected route - roles:",
-      roles,
-      "allowed:",
-      allowedRoles,
-    );
     return <Navigate to="/" />;
   }
 

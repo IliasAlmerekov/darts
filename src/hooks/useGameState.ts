@@ -20,6 +20,12 @@ export function useGameState({ gameId }: UseGameStateOptions): UseGameStateRetur
   const isLoading = useStore($isLoading);
   const error = useStore($error);
 
+  useEffect(() => {
+    // Reset stored game data when switching to another gameId, чтобы не использовать старое состояние.
+    setGameData(null);
+    setError(null);
+  }, [gameId]);
+
   const fetchGameData = useCallback(async () => {
     if (!gameId) return;
 

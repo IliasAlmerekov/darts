@@ -17,6 +17,7 @@ function StartPage(): React.JSX.Element {
   const {
     invitation,
     gameId,
+    lastFinishedGameId,
     playerCount,
     playerOrder,
     handleDragEnd,
@@ -61,6 +62,7 @@ function StartPage(): React.JSX.Element {
               <SortableContext items={playerOrder} strategy={verticalListSortingStrategy}>
                 <LivePlayersList
                   gameId={gameId}
+                  previousGameId={lastFinishedGameId}
                   onRemovePlayer={handleRemovePlayer}
                   dragEnd={false}
                 />
@@ -71,7 +73,7 @@ function StartPage(): React.JSX.Element {
               <Button
                 isLink
                 label="Start"
-                link="/game"
+                link={gameId ? `/game/${gameId}` : "/start"}
                 disabled={playerCount < 2 || !gameId}
                 type="secondary"
                 handleClick={handleStartGame}

@@ -108,6 +108,31 @@ export async function createRematch(previousGameId: number): Promise<BASIC.Remat
   return await response.json();
 }
 
+export type GamePlayersWithUserInfoResponse = {
+  gameId: number;
+  players?: { id: number; username: string }[];
+  items?: { id: number; username: string }[];
+};
+
+export async function getGamePlayersWithUserInfo(
+  gameId: number,
+): Promise<GamePlayersWithUserInfoResponse> {
+  const response = await fetch(`/api/game/${gameId}/players`, {
+    method: "GET",
+    credentials: "include",
+    headers: {
+      Accept: "application/json",
+    },
+  });
+
+  if (!response.ok) {
+    const error = await response.json().catch(() => ({}));
+    throw new Error(error.error || "Failed to fetch game players");
+  }
+
+  return response.json();
+}
+
 export async function startGame(
   gameId: number,
   config: {
@@ -171,7 +196,6 @@ export async function recordThrow(gameId: number, payload: ThrowRequestPayload) 
   }
 
   const data = await response.json();
-  console.log("Throw recorded successfully", data);
   return data;
 }
 
@@ -309,4 +333,34 @@ export async function getGameThrows(gameId: number): Promise<GameThrowsResponse>
   }
 
   return response.json();
+}
+
+type UpdateGameSettingsPayload = Partial<{
+  startScore: number;
+  doubleOut: boolean;
+  tripleOut: boolean;
+}>;
+
+export async function updateGameSettings(
+  gameId: number,
+  payload: UpdateGameSettingsPayload,
+): Promise<GameThrowsResponse["settings"]> {
+  // Sendet die neuen Einstellungen an den Server.
+  const response = await fetch(`/api/game/${gameId}/settings`, {
+    method: "PATCH",
+    credentials: "include",
+    headers: {
+      "Content-Type": "application/json",
+      Accept: "application/json",
+    },
+    body: JSON.stringify(payload),
+  });
+
+  if (!response.ok) {
+    const error = await response.json().catch(() => ({}));
+    throw new Error(error.error || "Failed to update game settings");
+  }
+
+  const data = await response.json();
+  return data.settings;
 }
