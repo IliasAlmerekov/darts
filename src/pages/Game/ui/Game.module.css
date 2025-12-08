@@ -2,6 +2,12 @@
   padding: 133px 32px 0;
 }
 
+.gamePageHeader {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
 .top {
   left: 32px;
   top: 32px;
@@ -11,6 +17,32 @@
 .finishGameOverlay {
   width: 71.7%;
   padding: 96px 0;
+}
+
+.overlayBox {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  background-color: var(--lightgrey);
+  border-radius: 16px;
+  box-shadow: var(--box-shadow);
+  padding: 48px 64px;
+  width: auto;
+  max-width: 600px;
+}
+
+.overlayHeading {
+  font-size: 24px;
+  font-weight: 700;
+  line-height: 28.8px;
+  letter-spacing: 0.02em;
+  text-align: center;
+  color: var(--darkblue);
+  margin-bottom: 32px;
 }
 
 .undoThrow {
@@ -54,4 +86,11 @@
   position: fixed;
   width: 100%;
   bottom: 0;
+}
+
+.errorText {
+  margin-top: 10px;
+  color: #d00000;
+  font-size: 14px;
+  text-align: center;
 }

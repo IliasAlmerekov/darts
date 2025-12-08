@@ -16,6 +16,9 @@ declare namespace BASIC {
     throw1?: number | string;
     throw2?: number | string;
     throw3?: number | string;
+    throw1IsBust?: boolean;
+    throw2IsBust?: boolean;
+    throw3IsBust?: boolean;
     isRoundBust?: boolean;
   };
 

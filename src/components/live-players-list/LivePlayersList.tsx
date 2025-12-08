@@ -4,12 +4,18 @@ import styles from "./LivePlayersList.module.css";
 
 interface LivePlayersListProps {
   gameId: number | null;
+  previousGameId?: number | null;
   onRemovePlayer?: (playerId: number, gameId: number) => void;
   dragEnd?: boolean;
 }
 
-export const LivePlayersList = ({ gameId, onRemovePlayer, dragEnd }: LivePlayersListProps) => {
-  const { players, count } = useGamePlayers(gameId);
+export const LivePlayersList = ({
+  gameId,
+  previousGameId,
+  onRemovePlayer,
+  dragEnd,
+}: LivePlayersListProps) => {
+  const { players, count } = useGamePlayers(gameId, previousGameId);
 
   return (
     <div className={styles.livePlayersContainer}>

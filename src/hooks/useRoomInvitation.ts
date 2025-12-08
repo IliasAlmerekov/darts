@@ -12,8 +12,7 @@ export const readInvitationFromStorage = (): Invitation | null => {
   try {
     const storedInvitation = sessionStorage.getItem(ROOM_INVITATION_STORAGE_KEY);
     return storedInvitation ? JSON.parse(storedInvitation) : null;
-  } catch (error) {
-    console.error("Failed to restore invitation from storage:", error);
+  } catch {
     sessionStorage.removeItem(ROOM_INVITATION_STORAGE_KEY);
     return null;
   }
@@ -50,8 +49,9 @@ export function useRoomInvitation() {
       try {
         const data = await handleCreateGame(options);
         persistInvitation(data);
-      } catch (error) {
-        console.error("Error during room creation:", error);
+      } catch {
+        // Silently ignore errors when creating a room
+        void 0;
       }
     },
     [persistInvitation],

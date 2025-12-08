@@ -12,11 +12,13 @@ type OverlayProps = {
 };
 
 function Overlay({ isOpen, onClose, className, src, children }: OverlayProps) {
+  const containerClass = className || styles.overlayBox;
+
   return (
     <>
       {isOpen ? (
         <div className={styles.overlayBackground}>
-          <div className={className}>
+          <div className={containerClass}>
             <button className={styles.delete} onClick={onClose} aria-label="Close overlay">
               <img src={src} alt="Close overlay" />
             </button>

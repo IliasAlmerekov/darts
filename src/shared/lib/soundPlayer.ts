@@ -30,7 +30,6 @@ const SOUND_CONFIGS: Record<SoundType, SoundConfig> = {
 export function playSound(soundType: SoundType): void {
   const config = SOUND_CONFIGS[soundType];
   if (!config) {
-    console.warn(`Unknown sound type: ${soundType}`);
     return;
   }
 
@@ -41,7 +40,5 @@ export function playSound(soundType: SoundType): void {
     audio.currentTime = config.startTime;
   }
 
-  audio.play().catch((error) => {
-    console.error(`Failed to play sound: ${soundType}`, error);
-  });
+  audio.play().catch(() => {});
 }
