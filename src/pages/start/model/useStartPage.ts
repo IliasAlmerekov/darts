@@ -7,9 +7,9 @@ import { useGamePlayers } from "../../../hooks/useGamePlayers";
 import { roomApi } from "@/entities/room";
 import { gameApi } from "@/entities/game";
 import {
+  $lastFinishedGameId,
   $invitation,
   $gameSettings,
-  getLastFinishedGameId,
   setCurrentGameId,
   setInvitation,
 } from "@/stores";
@@ -19,8 +19,8 @@ export function useStartPage() {
   const navigate = useNavigate();
 
   const gameSettings = useStore($gameSettings);
+  const lastFinishedGameId = useStore($lastFinishedGameId);
   const invitation = useStore($invitation);
-  const lastFinishedGameId = getLastFinishedGameId();
 
   const [creating, setCreating] = useState(false);
   const [starting, setStarting] = useState(false);
