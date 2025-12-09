@@ -1,16 +1,16 @@
 import OverviewPlayerItem from "./OverviewPlayerItem";
 import "./OverviewPlayerItem";
-import { useStore } from "@nanostores/react";
-import { $settings } from "@/stores";
 
 interface OverviewPlayerItemListProps {
   name?: string;
   userMap: BASIC.WinnerPlayerProps[];
+  startScore?: number;
 }
 
-function OverviewPlayerItemList({ userMap }: OverviewPlayerItemListProps): JSX.Element {
-  const settings = useStore($settings);
-
+function OverviewPlayerItemList({
+  userMap,
+  startScore = 301,
+}: OverviewPlayerItemListProps): JSX.Element {
   return (
     <>
       {userMap.map((item: BASIC.WinnerPlayerProps, index: number) => {
@@ -21,8 +21,7 @@ function OverviewPlayerItemList({ userMap }: OverviewPlayerItemListProps): JSX.E
             : item.rounds.length);
 
         const averageScore =
-          item.scoreAverage ??
-          Math.round((settings.points - item.score) / Math.max(completedRounds, 1));
+          item.scoreAverage ?? Math.round((startScore - item.score) / Math.max(completedRounds, 1));
 
         return (
           <OverviewPlayerItem

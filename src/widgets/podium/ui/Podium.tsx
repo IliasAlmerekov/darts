@@ -1,18 +1,15 @@
 import clsx from "clsx";
 import PodiumPlayerCard from "./PodiumPlayerCard";
 import styles from "./Podium.module.css";
-import { useStore } from "@nanostores/react";
-import { $settings } from "@/stores";
 
 interface PodiumProps {
   name?: string;
   userMap?: BASIC.WinnerPlayerProps[];
   list?: BASIC.WinnerPlayerProps[];
+  startScore?: number;
 }
 
-function Podium({ userMap, list }: PodiumProps): JSX.Element {
-  const settings = useStore($settings);
-
+function Podium({ userMap, list, startScore = 301 }: PodiumProps): JSX.Element {
   if (!userMap || userMap.length === 0) {
     return <div className={styles.podium} />;
   }
@@ -28,7 +25,7 @@ function Podium({ userMap, list }: PodiumProps): JSX.Element {
 
         const averageScoreRaw =
           completedRound > 0
-            ? (item.scoreAverage ?? (settings.points - item.score) / completedRound)
+            ? (item.scoreAverage ?? (startScore - item.score) / completedRound)
             : 0;
         const averagePerRound = completedRound > 0 ? averageScoreRaw.toFixed(2) : (0).toFixed(2);
 

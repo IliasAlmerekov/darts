@@ -7,10 +7,9 @@ import { useGamePlayers } from "../../../hooks/useGamePlayers";
 import { roomApi } from "@/entities/room";
 import { gameApi } from "@/entities/game";
 import {
-  $settings,
-  $lastFinishedGameId,
   $invitation,
   $gameSettings,
+  getLastFinishedGameId,
   setCurrentGameId,
   setInvitation,
 } from "@/stores";
@@ -19,10 +18,9 @@ export function useStartPage() {
   const START_SOUND_PATH = "/sounds/start-round-sound.mp3";
   const navigate = useNavigate();
 
-  const settings = useStore($settings);
   const gameSettings = useStore($gameSettings);
-  const lastFinishedGameId = useStore($lastFinishedGameId);
   const invitation = useStore($invitation);
+  const lastFinishedGameId = getLastFinishedGameId();
 
   const [creating, setCreating] = useState(false);
   const [starting, setStarting] = useState(false);
@@ -49,10 +47,10 @@ export function useStartPage() {
     }
   };
 
-  // Verwende gameSettings vom Backend, falls vorhanden, sonst lokale settings
-  const startScore = gameSettings?.startScore ?? settings.points;
-  const isDoubleOut = gameSettings?.doubleOut ?? settings.gameMode === "double-out";
-  const isTripleOut = gameSettings?.tripleOut ?? settings.gameMode === "triple-out";
+  // Verwende gameSettings vom Backend, falls vorhanden, sonst Defaults
+  const startScore = gameSettings?.startScore ?? 301;
+  const isDoubleOut = gameSettings?.doubleOut ?? false;
+  const isTripleOut = gameSettings?.tripleOut ?? false;
 
   const handleRemovePlayer = async (playerId: number, currentGameId: number): Promise<void> => {
     try {

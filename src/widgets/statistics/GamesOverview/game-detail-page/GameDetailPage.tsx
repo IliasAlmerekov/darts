@@ -13,6 +13,7 @@ export default function GameDetailPage(): React.JSX.Element {
 
   if (!game) return <div>Game not found</div>;
 
+  const startScore = game.startScore ?? 301;
   const podiumList = game.players.slice(0, 3);
   const podiumListWithPlaceholder = [...podiumList];
   const leaderBoardList = game.players.slice(3, game.players.length + 1);
@@ -54,9 +55,9 @@ export default function GameDetailPage(): React.JSX.Element {
             Uhr
           </h3>
         </div>
-        <Podium userMap={podiumData} list={game.players} />
+        <Podium userMap={podiumData} list={game.players} startScore={startScore} />
         <div className="playerboard-list">
-          <OverviewPlayerItemList userMap={leaderBoardList} />
+          <OverviewPlayerItemList userMap={leaderBoardList} startScore={startScore} />
         </div>
       </div>
     </div>

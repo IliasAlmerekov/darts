@@ -6,6 +6,8 @@ import Undo from "@/icons/undolinkbutton.svg";
 import { Link } from "react-router-dom";
 import React from "react";
 import { useGameSummaryPage } from "../model";
+import { useStore } from "@nanostores/react";
+import { $gameSettings } from "@/stores";
 
 function GameSummaryPage(): React.JSX.Element {
   const {
@@ -18,6 +20,9 @@ function GameSummaryPage(): React.JSX.Element {
     handleBackToStart,
   } = useGameSummaryPage();
 
+  const gameSettings = useStore($gameSettings);
+  const startScore = gameSettings?.startScore ?? 301;
+
   return (
     <div className={styles.summary}>
       <div>
@@ -26,10 +31,10 @@ function GameSummaryPage(): React.JSX.Element {
         </Link>
       </div>
       <div className={styles.podiumBoard}>
-        <Podium userMap={podiumData} list={newList} />
+        <Podium userMap={podiumData} list={newList} startScore={startScore} />
       </div>
       <div className={styles.leaderBoard}>
-        <OverviewPlayerItemList userMap={leaderBoardList} />
+        <OverviewPlayerItemList userMap={leaderBoardList} startScore={startScore} />
       </div>
 
       <div className={styles.playAgainButton}>
