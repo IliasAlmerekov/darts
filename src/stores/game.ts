@@ -53,7 +53,7 @@ export const $playersForUI = computed($gameData, (gameData) => {
 });
 
 // Actions
-export function setGameData(data: GameThrowsResponse): void {
+export function setGameData(data: GameThrowsResponse | null): void {
   $gameData.set(data);
   $error.set(null);
 }

@@ -142,13 +142,31 @@ type UpdateGameSettingsPayload = Partial<{
   tripleOut: boolean;
 }>;
 
+export type CreateGameSettingsPayload = {
+  startScore: number;
+  doubleOut: boolean;
+  tripleOut: boolean;
+};
+
+export async function createGameSettings(
+  payload: CreateGameSettingsPayload,
+): Promise<GameThrowsResponse> {
+  return apiClient.post(API_ENDPOINTS.CREATE_GAME_SETTINGS, payload);
+}
+
 export async function updateGameSettings(
   gameId: number,
   payload: UpdateGameSettingsPayload,
-): Promise<GameThrowsResponse["settings"]> {
-  const data = await apiClient.patch<{ settings: GameThrowsResponse["settings"] }>(
-    API_ENDPOINTS.GAME_SETTINGS(gameId),
-    payload,
-  );
-  return data.settings;
+): Promise<GameThrowsResponse> {
+  return apiClient.patch(API_ENDPOINTS.GAME_SETTINGS(gameId), payload);
+}
+
+export async function saveGameSettings(
+  payload: CreateGameSettingsPayload,
+  gameId?: number | null,
+): Promise<GameThrowsResponse> {
+  if (gameId) {
+    return updateGameSettings(gameId, payload);
+  }
+  return createGameSettings(payload);
 }

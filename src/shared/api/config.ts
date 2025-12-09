@@ -13,6 +13,7 @@ export const API_ENDPOINTS = {
   REMATCH: (id: number) => `/room/${id}/rematch`,
 
   // Game
+  CREATE_GAME_SETTINGS: "/game/settings",
   START_GAME: (id: number) => `/game/${id}/start`,
   RECORD_THROW: (id: number) => `/game/${id}/throw`,
   UNDO_THROW: (id: number) => `/game/${id}/throw`,

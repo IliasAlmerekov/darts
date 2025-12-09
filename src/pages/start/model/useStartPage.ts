@@ -10,6 +10,7 @@ import {
   $settings,
   $lastFinishedGameId,
   $invitation,
+  $gameSettings,
   setCurrentGameId,
   setInvitation,
 } from "@/stores";
@@ -19,6 +20,7 @@ export function useStartPage() {
   const navigate = useNavigate();
 
   const settings = useStore($settings);
+  const gameSettings = useStore($gameSettings);
   const lastFinishedGameId = useStore($lastFinishedGameId);
   const invitation = useStore($invitation);
 
@@ -47,8 +49,10 @@ export function useStartPage() {
     }
   };
 
-  const isDoubleOut = settings.gameMode === "double-out";
-  const isTripleOut = settings.gameMode === "triple-out";
+  // Verwende gameSettings vom Backend, falls vorhanden, sonst lokale settings
+  const startScore = gameSettings?.startScore ?? settings.points;
+  const isDoubleOut = gameSettings?.doubleOut ?? settings.gameMode === "double-out";
+  const isTripleOut = gameSettings?.tripleOut ?? settings.gameMode === "triple-out";
 
   const handleRemovePlayer = async (playerId: number, currentGameId: number): Promise<void> => {
     try {
@@ -75,7 +79,7 @@ export function useStartPage() {
       audio.play().catch(() => {});
 
       await gameApi.startGame(gameId, {
-        startScore: settings.points,
+        startScore: startScore,
         doubleOut: isDoubleOut,
         tripleOut: isTripleOut,
         round: 1,
