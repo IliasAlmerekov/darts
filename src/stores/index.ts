@@ -28,8 +28,7 @@ export {
   resetRoomStore,
 } from "./room";
 
-// Settings
-export { $settings, newSettings, type SettingsType } from "./settings";
+// Settings wurden entfernt - verwende stattdessen $gameSettings aus game.ts
 
 // UI state
 export {
