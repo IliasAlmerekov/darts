@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuthenticatedUser } from "@/hooks/useAuthenticatedUser";
 import { useLogin } from "@/features/auth/login";
+import { getActiveGameId } from "@/stores/room";
 
 export function useLoginPage() {
   const [error, setError] = useState<string | null>(null);
@@ -27,6 +28,15 @@ export function useLoginPage() {
   // Redirect wenn bereits eingeloggt
   useEffect(() => {
     if (user) {
+      // Check if there's an active game session
+      const activeGameId = getActiveGameId();
+
+      if (activeGameId) {
+        // Redirect to active game session
+        navigate(`/start/${activeGameId}`);
+        return;
+      }
+
       const redirectPath = user.redirect?.startsWith("/start/")
         ? "/start" // Bei /start/{gameId} -> zu /start ohne gameId
         : user.redirect || "/start";
