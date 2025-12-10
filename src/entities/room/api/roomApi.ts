@@ -24,4 +24,8 @@ export const roomApi = {
     );
     return invite;
   },
+
+  getInvitation: async (gameId: number): Promise<CreateRoomResponse> => {
+    return apiClient.get<CreateRoomResponse>(API_ENDPOINTS.CREATE_INVITE(gameId));
+  },
 };

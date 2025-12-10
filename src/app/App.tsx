@@ -24,6 +24,7 @@ function App(): React.JSX.Element {
 
           <Route element={<ProtectedRoutes allowedRoles={["ROLE_ADMIN"]} />}>
             <Route path="/start" element={<StartPage />} />
+            <Route path="/start/:id" element={<StartPage />} />
             <Route path="/game/:id" element={<Game />} />
             <Route path="/summary/:id" element={<GameSummaryPage />} />
             <Route path="/details/:id" element={<GameDetailPage />} />

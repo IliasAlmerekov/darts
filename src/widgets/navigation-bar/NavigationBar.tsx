@@ -1,5 +1,6 @@
-import React from "react";
+import React, { useMemo } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
+import { useStore } from "@nanostores/react";
 import settingsCogInactive from "@/icons/settings-inactive.svg";
 import settingsCog from "@/icons/settings.svg";
 import dartIcon from "@/icons/dart.svg";
@@ -9,10 +10,17 @@ import statisticIconInactive from "@/icons/statistics-inactive.svg";
 import styles from "./NavigationBar.module.css";
 import Madebydeepblue from "@/icons/madeByDeepblue.svg";
 import clsx from "clsx";
+import { $currentGameId } from "@/stores";
 
 export default function NavigationBar(): React.JSX.Element {
   const navigate = useNavigate();
   const location = useLocation();
+  const currentGameId = useStore($currentGameId);
+
+  // Dynamischer path für Game basierend auf currentGameId
+  const gamePath = useMemo(() => {
+    return currentGameId ? `/start/${currentGameId}` : "/start";
+  }, [currentGameId]);
 
   const navItems = [
     {
@@ -27,7 +35,7 @@ export default function NavigationBar(): React.JSX.Element {
       activeIcon: dartIcon,
       inActiveIcon: dartIconInactive,
       id: "game",
-      path: "/start",
+      path: gamePath,
     },
     {
       label: "Settings",
@@ -48,7 +56,8 @@ export default function NavigationBar(): React.JSX.Element {
       {navItems.map((item) => {
         const isActive =
           location.pathname === item.path ||
-          (item.id === "game" && location.pathname === "/start") ||
+          (item.id === "game" &&
+            (location.pathname === "/start" || location.pathname.startsWith("/start/"))) ||
           (item.id === "statistics" && location.pathname === "/gamesoverview");
 
         return (

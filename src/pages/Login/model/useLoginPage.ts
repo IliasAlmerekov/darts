@@ -18,14 +18,19 @@ export function useLoginPage() {
       const username = String(formData.get("_username") ?? "");
       const password = String(formData.get("_password") ?? "");
       await login(username, password);
+      // Navigation wird von useLogin übernommen
     } catch (err) {
       setError((err as Error).message || "Login failed");
     }
   };
 
+  // Redirect wenn bereits eingeloggt
   useEffect(() => {
     if (user) {
-      navigate(user.redirect);
+      const redirectPath = user.redirect?.startsWith("/start/")
+        ? "/start" // Bei /start/{gameId} -> zu /start ohne gameId
+        : user.redirect || "/start";
+      navigate(redirectPath);
     }
   }, [user, navigate]);
 
