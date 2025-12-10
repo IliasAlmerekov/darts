@@ -8,7 +8,6 @@ import ViewToogleButton from "@/shared/ui/button/ViewToogleBtn";
 import { getPlayerStats } from "@/services/api";
 
 export default function Playerstats(): JSX.Element {
-  //const { functions } = useUser();
   const [sortMethod, setSortMethod] = useState("alphabetically");
   const [stats, setStats] = useState<BASIC.PlayerProps[]>([]);
   const [offset, setOffset] = useState(0);

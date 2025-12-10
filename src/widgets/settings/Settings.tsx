@@ -1,15 +1,56 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
+import { useParams } from "react-router-dom";
 import NavigationBar from "../navigation-bar/NavigationBar";
 import SettingsGroupBtn from "@/shared/ui/button/SettingsGroupBtn";
 import { useStore } from "@nanostores/react";
-import { $gameSettings, $currentGameId, setGameData } from "@/stores";
-import { saveGameSettings } from "@/services/api";
+import { $gameSettings, $currentGameId, setGameData, setCurrentGameId } from "@/stores";
+import { saveGameSettings, getGameThrows } from "@/services/api";
 import styles from "./Settings.module.css";
 
 function Settings(): JSX.Element {
+  const { id: gameIdParam } = useParams<{ id?: string }>();
   const gameSettings = useStore($gameSettings);
-  const currentGameId = useStore($currentGameId);
+  const currentGameIdFromStore = useStore($currentGameId);
+
+  // Use gameId from URL if available, otherwise fall back to store
+  const currentGameId = useMemo(() => {
+    if (gameIdParam) {
+      const parsed = Number(gameIdParam);
+      return Number.isFinite(parsed) ? parsed : currentGameIdFromStore;
+    }
+    return currentGameIdFromStore;
+  }, [gameIdParam, currentGameIdFromStore]);
   const [isSaving, setIsSaving] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+
+  // Update store with gameId from URL
+  useEffect(() => {
+    if (currentGameId && currentGameId !== currentGameIdFromStore) {
+      setCurrentGameId(currentGameId);
+    }
+  }, [currentGameId, currentGameIdFromStore]);
+
+  // Load game settings from backend on mount or when gameId changes
+  useEffect(() => {
+    if (!currentGameId) {
+      setIsLoading(false);
+      return;
+    }
+
+    const loadGameSettings = async () => {
+      setIsLoading(true);
+      try {
+        const gameData = await getGameThrows(currentGameId);
+        setGameData(gameData);
+      } catch (error) {
+        console.error("Failed to load game settings:", error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    loadGameSettings();
+  }, [currentGameId]);
 
   // Mapping zwischen Backend-Settings und UI-Darstellung
   const currentGameMode = useMemo(() => {
@@ -74,6 +115,16 @@ function Settings(): JSX.Element {
       setIsSaving(false);
     }
   };
+
+  if (isLoading) {
+    return (
+      <div className={styles.settings}>
+        <NavigationBar />
+        <h1>Settings</h1>
+        <p>Loading settings...</p>
+      </div>
+    );
+  }
 
   return (
     <div className={styles.settings}>

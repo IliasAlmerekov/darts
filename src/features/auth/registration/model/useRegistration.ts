@@ -23,8 +23,10 @@ export function useRegistration() {
         plainPassword: password,
       });
 
+      // Navigiere immer zu /start (ohne gameId) für sauberen Start
       if (response?.redirect) {
-        navigate(response.redirect);
+        const redirectPath = response.redirect === "/start" ? "/start" : response.redirect;
+        navigate(redirectPath);
       }
     } catch (err) {
       console.error("Logout error:", err);

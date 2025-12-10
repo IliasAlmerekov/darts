@@ -1,11 +1,12 @@
 import { useEffect, useMemo, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import { useStore } from "@nanostores/react";
 import { DragEndEvent } from "@dnd-kit/core";
 import { arrayMove } from "@dnd-kit/sortable";
 import { useGamePlayers } from "../../../hooks/useGamePlayers";
 import { roomApi } from "@/entities/room";
 import { gameApi } from "@/entities/game";
+import { getGameThrows } from "@/services/api";
 import {
   $lastFinishedGameId,
   $invitation,
@@ -13,10 +14,12 @@ import {
   setCurrentGameId,
   setInvitation,
 } from "@/stores";
+import { setGameData } from "@/stores/game";
 
 export function useStartPage() {
   const START_SOUND_PATH = "/sounds/start-round-sound.mp3";
   const navigate = useNavigate();
+  const { id: gameIdParam } = useParams<{ id?: string }>();
 
   const gameSettings = useStore($gameSettings);
   const lastFinishedGameId = useStore($lastFinishedGameId);
@@ -24,7 +27,16 @@ export function useStartPage() {
 
   const [creating, setCreating] = useState(false);
   const [starting, setStarting] = useState(false);
-  const gameId = useMemo(() => invitation?.gameId ?? null, [invitation?.gameId]);
+  const [isRestoring, setIsRestoring] = useState(false);
+
+  // gameId aus URL-Parameter oder Store
+  const gameId = useMemo(() => {
+    if (gameIdParam) {
+      const parsed = Number(gameIdParam);
+      return Number.isFinite(parsed) ? parsed : null;
+    }
+    return invitation?.gameId ?? null;
+  }, [gameIdParam, invitation?.gameId]);
 
   const { players, count: playerCount } = useGamePlayers(gameId, lastFinishedGameId);
   const [playerOrder, setPlayerOrder] = useState<number[]>([]);
@@ -59,6 +71,39 @@ export function useStartPage() {
       void 0;
     }
   };
+
+  // Daten vom Backend laden, wenn gameId in URL vorhanden ist
+  useEffect(() => {
+    if (!gameId || invitation?.gameId === gameId || isRestoring) return;
+
+    const restoreData = async () => {
+      setIsRestoring(true);
+      try {
+        // 1. Lade Game-Daten (enthält Settings und Spieler)
+        const gameData = await getGameThrows(gameId);
+        setGameData(gameData);
+
+        // 2. Lade Invitation-Link für QR-Code
+        try {
+          const inviteResponse = await roomApi.getInvitation(gameId);
+          setInvitation({
+            gameId: inviteResponse.gameId,
+            invitationLink: inviteResponse.invitationLink,
+          });
+          setCurrentGameId(inviteResponse.gameId);
+        } catch (error) {
+          console.warn("Could not load invitation link:", error);
+          setCurrentGameId(gameId);
+        }
+      } catch (error) {
+        console.error("Failed to restore game data:", error);
+      } finally {
+        setIsRestoring(false);
+      }
+    };
+
+    restoreData();
+  }, [gameId, invitation?.gameId, isRestoring]);
 
   useEffect(() => {
     if (invitation?.gameId) {
@@ -101,6 +146,8 @@ export function useStartPage() {
       });
       setInvitation(response);
       setCurrentGameId(response.gameId);
+      // Navigiere zu /start/{gameId} für URL-Persistenz
+      navigate(`/start/${response.gameId}`);
     } catch {
       void 0;
     } finally {
@@ -116,6 +163,7 @@ export function useStartPage() {
     playerOrder,
     creating,
     starting,
+    isRestoring,
     handleDragEnd,
     handleRemovePlayer,
     handleStartGame,

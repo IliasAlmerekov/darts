@@ -100,7 +100,7 @@ export function useGameSummaryPage() {
         invitationLink: rematch.invitationLink,
       });
 
-      navigate(`/start`);
+      navigate(`/start/${rematch.gameId}`);
     } catch (err) {
       console.error("Failed to start rematch:", err);
     }

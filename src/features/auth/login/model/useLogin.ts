@@ -27,8 +27,10 @@ export function useLogin() {
         { headers: { "Content-Type": "application/x-www-form-urlencoded" } },
       );
 
+      // Navigiere immer zu /start (ohne gameId) für sauberen Start
       if (response?.redirect) {
-        navigate(response.redirect);
+        const redirectPath = response.redirect === "/start" ? "/start" : response.redirect;
+        navigate(redirectPath);
       }
     } catch (error) {
       console.error("Login error:", error);
