@@ -22,6 +22,11 @@ export default function NavigationBar(): React.JSX.Element {
     return currentGameId ? `/start/${currentGameId}` : "/start";
   }, [currentGameId]);
 
+  // Dynamischer path für Settings basierend auf currentGameId
+  const settingsPath = useMemo(() => {
+    return currentGameId ? `/settings/${currentGameId}` : "/settings";
+  }, [currentGameId]);
+
   const navItems = [
     {
       label: "Statistics",
@@ -42,7 +47,7 @@ export default function NavigationBar(): React.JSX.Element {
       activeIcon: settingsCog,
       inActiveIcon: settingsCogInactive,
       id: "settings",
-      path: "/settings",
+      path: settingsPath,
     },
   ];
 
@@ -58,7 +63,8 @@ export default function NavigationBar(): React.JSX.Element {
           location.pathname === item.path ||
           (item.id === "game" &&
             (location.pathname === "/start" || location.pathname.startsWith("/start/"))) ||
-          (item.id === "statistics" && location.pathname === "/gamesoverview");
+          (item.id === "statistics" && location.pathname === "/gamesoverview") ||
+          (item.id === "settings" && location.pathname.startsWith("/settings"));
 
         return (
           <button

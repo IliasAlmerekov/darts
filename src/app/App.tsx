@@ -30,6 +30,7 @@ function App(): React.JSX.Element {
             <Route path="/details/:id" element={<GameDetailPage />} />
             <Route path="/gamesoverview" element={<GamesOverview />} />
             <Route path="/settings" element={<Settings />} />
+            <Route path="/settings/:id" element={<Settings />} />
             <Route path="/statistics" element={<Statistic />} />
           </Route>
 

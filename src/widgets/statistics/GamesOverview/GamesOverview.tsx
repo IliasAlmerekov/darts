@@ -6,6 +6,7 @@ import ViewToogleButton from "@/shared/ui/button/ViewToogleBtn";
 import { getGamesOverview } from "@/services/api";
 
 export default function GamesOverview(): JSX.Element {
+  // Read gameId from store but don't modify it - just keep it alive
   const [games, setGames] = useState<BASIC.FinishedGameProps[]>([]);
   const [offset, setOffset] = useState(0);
   const [total, setTotal] = useState(0);
