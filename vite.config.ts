@@ -20,4 +20,8 @@ export default defineConfig({
       "/api": "http://localhost:8001",
     },
   },
+  test: {
+    environment: "node",
+    globals: true,
+  },
 });
