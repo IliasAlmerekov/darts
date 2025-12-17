@@ -12,7 +12,11 @@ export function useRegistration() {
   const [error, setError] = useState<string | null>(null);
   const navigate = useNavigate();
 
-  const register = async (username: string, email: string, password: string): Promise<RegistrationResponse | null> => {
+  const register = async (
+    username: string,
+    email: string,
+    password: string,
+  ): Promise<RegistrationResponse | null> => {
     setLoading(true);
     setError(null);
 

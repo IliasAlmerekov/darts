@@ -61,7 +61,10 @@ export async function startGame(gameId: number, config: StartGameRequest) {
  * Records a throw and returns the complete updated game state.
  * No need for a separate GET request after this - the response contains full GameThrowsResponse.
  */
-export async function recordThrow(gameId: number, payload: ThrowRequest): Promise<GameThrowsResponse> {
+export async function recordThrow(
+  gameId: number,
+  payload: ThrowRequest,
+): Promise<GameThrowsResponse> {
   return apiClient.post<GameThrowsResponse>(API_ENDPOINTS.RECORD_THROW(gameId), payload);
 }
 

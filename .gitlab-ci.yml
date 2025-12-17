@@ -1,7 +1,6 @@
 stages:
   - build
-  - lint
-  - test
+  - check
 
 workflow:
   rules:
@@ -25,24 +24,24 @@ build:
 
 eslint:
   <<: *base_job
-  stage: lint
+  stage: check
   script:
     - npm run eslint
 
 stylelint:
   <<: *base_job
-  stage: lint
+  stage: check
   script:
     - npm run stylelint
 
 typecheck:
   <<: *base_job
-  stage: lint
+  stage: check
   script:
     - npm run typecheck
 
 unit_tests:
   <<: *base_job
-  stage: test
+  stage: check
   script:
     - npm test
