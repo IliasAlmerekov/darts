@@ -1,0 +1,47 @@
+stages:
+  - build
+  - check
+
+workflow:
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+    - if: $CI_PIPELINE_SOURCE == "push"
+
+.base_job: &base_job
+  image: node:20
+  before_script:
+    - npm ci
+
+build:
+  <<: *base_job
+  stage: build
+  script:
+    - npm run build
+  artifacts:
+    paths:
+      - dist/
+    expire_in: 1 week
+
+eslint:
+  <<: *base_job
+  stage: check
+  script:
+    - npm run eslint
+
+stylelint:
+  <<: *base_job
+  stage: check
+  script:
+    - npm run stylelint
+
+typecheck:
+  <<: *base_job
+  stage: check
+  script:
+    - npm run typecheck
+
+unit_tests:
+  <<: *base_job
+  stage: check
+  script:
+    - npm test

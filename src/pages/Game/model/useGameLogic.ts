@@ -95,8 +95,8 @@ export const useGameLogic = () => {
     setIsSavingSettings(true);
 
     try {
-      const newSettings = await updateGameSettings(gameId, settings);
-      updateGameData({ ...gameData, settings: newSettings });
+      const updatedGame = await updateGameSettings(gameId, settings);
+      updateGameData(updatedGame);
       setIsSettingsOpen(false);
     } catch (err) {
       setSettingsError(err instanceof Error ? err.message : "Failed to update settings");

@@ -23,6 +23,8 @@
     "eslint": "eslint ./src",
     "stylelint": "stylelint **/*.css",
     "stylelint:fix": "stylelint **/*.css --fix",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
     "prepare": "husky",
     "husky": "npm run stylelint npm run eslint",
     "commitlint": "commitlint --edit",
@@ -62,7 +64,8 @@
     "stylelint-config-standard": "^36.0.1",
     "typescript": "~5.8.0",
     "typescript-eslint": "^8.29.0",
-    "vite": "^7.2.2"
+    "vite": "^7.2.2",
+    "vitest": "^4.0.16"
   },
   "lint-staged": {
     "*.{js,ts,jsx,tsx}": [
