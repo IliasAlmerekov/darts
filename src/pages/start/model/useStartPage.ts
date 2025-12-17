@@ -11,6 +11,7 @@ import {
   $lastFinishedGameId,
   $invitation,
   $gameSettings,
+  $currentGameId,
   setCurrentGameId,
   setInvitation,
 } from "@/stores";
@@ -24,6 +25,7 @@ export function useStartPage() {
   const gameSettings = useStore($gameSettings);
   const lastFinishedGameId = useStore($lastFinishedGameId);
   const invitation = useStore($invitation);
+  const currentGameId = useStore($currentGameId);
 
   const [creating, setCreating] = useState(false);
   const [starting, setStarting] = useState(false);
@@ -37,6 +39,13 @@ export function useStartPage() {
     }
     return invitation?.gameId ?? null;
   }, [gameIdParam, invitation?.gameId]);
+
+  // Wenn keine gameId in der URL ist, lösche currentGameId aus dem Store
+  useEffect(() => {
+    if (!gameIdParam && !invitation?.gameId && currentGameId) {
+      setCurrentGameId(null);
+    }
+  }, [gameIdParam, invitation?.gameId, currentGameId]);
 
   const { players, count: playerCount } = useGamePlayers(gameId, lastFinishedGameId);
   const [playerOrder, setPlayerOrder] = useState<number[]>([]);
@@ -72,18 +81,39 @@ export function useStartPage() {
     }
   };
 
-  // Daten vom Backend laden, wenn gameId in URL vorhanden ist
   useEffect(() => {
     if (!gameId || invitation?.gameId === gameId || isRestoring) return;
 
     const restoreData = async () => {
       setIsRestoring(true);
       try {
-        // 1. Lade Game-Daten (enthält Settings und Spieler)
+        if (currentGameId && currentGameId !== gameId) {
+          console.warn(`Redirecting from game ${gameId} to active game ${currentGameId}`);
+          navigate(`/start/${currentGameId}`, { replace: true });
+          return;
+        }
+
+        if (currentGameId === null) {
+          console.warn(`No active game, redirecting from game ${gameId} to /start`);
+          setInvitation(null);
+          navigate("/start", { replace: true });
+          return;
+        }
+
         const gameData = await getGameThrows(gameId);
+
+        if (gameData.status !== "lobby") {
+          console.warn(`Access to game ${gameId} denied - status: ${gameData.status}`);
+          if (currentGameId) {
+            navigate(`/start/${currentGameId}`, { replace: true });
+          } else {
+            navigate("/start", { replace: true });
+          }
+          return;
+        }
+
         setGameData(gameData);
 
-        // 2. Lade Invitation-Link für QR-Code
         try {
           const inviteResponse = await roomApi.getInvitation(gameId);
           setInvitation({
@@ -97,13 +127,19 @@ export function useStartPage() {
         }
       } catch (error) {
         console.error("Failed to restore game data:", error);
+        // Bei Fehler zurück zum aktuellen Game aus dem Store
+        if (currentGameId) {
+          navigate(`/start/${currentGameId}`, { replace: true });
+        } else {
+          navigate("/start", { replace: true });
+        }
       } finally {
         setIsRestoring(false);
       }
     };
 
     restoreData();
-  }, [gameId, invitation?.gameId, isRestoring]);
+  }, [gameId, invitation?.gameId, isRestoring, navigate, currentGameId]);
 
   useEffect(() => {
     if (invitation?.gameId) {
