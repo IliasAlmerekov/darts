@@ -28,6 +28,7 @@ function Game() {
     isSettingsOpen,
     isSavingSettings,
     settingsError,
+    isExitOverlayOpen,
     handleThrow,
     handleUndo,
     handleContinueGame,
@@ -35,6 +36,9 @@ function Game() {
     handleOpenSettings,
     handleCloseSettings,
     handleSaveSettings,
+    handleOpenExitOverlay,
+    handleCloseExitOverlay,
+    handleExitGame,
     refetch,
   } = useGameLogic();
 
@@ -82,6 +86,27 @@ function Game() {
         </div>
       </Overlay>
 
+      <Overlay
+        className={styles.overlayBox}
+        isOpen={isExitOverlayOpen}
+        onClose={handleCloseExitOverlay}
+        src={deleteIcon}
+      >
+        <div className={styles.finishGameOverlay}>
+          <p className={styles.overlayHeading}>Spiel beenden?</p>
+          <p>Ein neues Spiel mit den gleichen Spielern wird erstellt.</p>
+          <div>
+            <Button label="Ja" handleClick={handleExitGame} type="primary" link="" />
+            <Button
+              label="Abbrechen"
+              handleClick={handleCloseExitOverlay}
+              type="secondary"
+              link=""
+            />
+          </div>
+        </div>
+      </Overlay>
+
       <SettingsOverlay
         isOpen={isSettingsOpen}
         onClose={handleCloseSettings}
@@ -94,9 +119,9 @@ function Game() {
       />
 
       <div className={styles.gamePageHeader}>
-        <Link to="/start" className={styles.top}>
+        <button onClick={handleOpenExitOverlay} className={styles.top}>
           <img src={Back} alt="Back to Home" />
-        </Link>
+        </button>
         <div className={styles.gamePlayerItemContainer}>
           {gameData && (
             <>

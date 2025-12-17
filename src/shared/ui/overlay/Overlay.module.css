@@ -20,6 +20,13 @@
   border: none;
   padding: 0;
   margin: 0;
+  background: none;
+  outline: none;
+  cursor: pointer;
+}
+
+.delete:focus {
+  outline: none;
 }
 
 .delete img {

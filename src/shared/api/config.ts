@@ -21,6 +21,7 @@ export const API_ENDPOINTS = {
   GET_GAME_PLAYERS: (id: number) => `/game/${id}/players`,
   GAME_SETTINGS: (id: number) => `/game/${id}/settings`,
   FINISH_GAME: (id: number) => `/game/${id}/finished`,
+  ABORT_GAME: (id: number) => `/game/${id}/abort`,
 
   // Invitation
   CREATE_INVITE: (id: number) => `/invite/create/${id}`,
