@@ -1,4 +1,5 @@
 export interface PaginatedRequest {
+  [key: string]: string | number | boolean | null | undefined;
   limit?: number;
   offset?: number;
   sort?: string;

@@ -61,16 +61,16 @@ export async function startGame(gameId: number, config: StartGameRequest) {
  * Records a throw and returns the complete updated game state.
  * No need for a separate GET request after this - the response contains full GameThrowsResponse.
  */
-export async function recordThrow(gameId: number, payload: ThrowRequest) {
-  return apiClient.post(API_ENDPOINTS.RECORD_THROW(gameId), payload);
+export async function recordThrow(gameId: number, payload: ThrowRequest): Promise<GameThrowsResponse> {
+  return apiClient.post<GameThrowsResponse>(API_ENDPOINTS.RECORD_THROW(gameId), payload);
 }
 
 /**
  * Undoes the last throw and returns the complete updated game state.
  * No need for a separate GET request after this - the response contains full GameThrowsResponse.
  */
-export async function undoLastThrow(gameId: number) {
-  return apiClient.delete(API_ENDPOINTS.UNDO_THROW(gameId));
+export async function undoLastThrow(gameId: number): Promise<GameThrowsResponse> {
+  return apiClient.delete<GameThrowsResponse>(API_ENDPOINTS.UNDO_THROW(gameId));
 }
 
 export type FinishedPlayerResponse = {
@@ -105,6 +105,11 @@ export type PlayerThrow = {
   value: number;
   isDouble?: boolean;
   isTriple?: boolean;
+  isBust?: boolean;
+};
+
+export type RoundHistory = {
+  throws: PlayerThrow[];
 };
 
 export type GameThrowsResponse = {
@@ -122,7 +127,7 @@ export type GameThrowsResponse = {
     position: number;
     throwsInCurrentRound: number;
     currentRoundThrows: PlayerThrow[];
-    roundHistory: unknown[];
+    roundHistory: RoundHistory[];
   }[];
   winnerId: number | null;
   settings: {

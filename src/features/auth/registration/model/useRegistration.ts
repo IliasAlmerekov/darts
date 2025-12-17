@@ -12,7 +12,7 @@ export function useRegistration() {
   const [error, setError] = useState<string | null>(null);
   const navigate = useNavigate();
 
-  const register = async (username: string, email: string, password: string) => {
+  const register = async (username: string, email: string, password: string): Promise<RegistrationResponse | null> => {
     setLoading(true);
     setError(null);
 
@@ -28,9 +28,11 @@ export function useRegistration() {
         const redirectPath = response.redirect === "/start" ? "/start" : response.redirect;
         navigate(redirectPath);
       }
+      return response;
     } catch (err) {
       console.error("Logout error:", err);
       setError("Registration failed");
+      return null;
     } finally {
       setLoading(false);
     }

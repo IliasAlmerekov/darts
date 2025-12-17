@@ -1,4 +1,5 @@
 stages:
+  - build
   - lint
   - test
 
@@ -11,6 +12,16 @@ workflow:
   image: node:20
   before_script:
     - npm ci
+
+build:
+  <<: *base_job
+  stage: build
+  script:
+    - npm run build
+  artifacts:
+    paths:
+      - dist/
+    expire_in: 1 week
 
 eslint:
   <<: *base_job
