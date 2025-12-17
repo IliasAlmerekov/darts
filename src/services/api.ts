@@ -88,6 +88,10 @@ export async function getFinishedGame(gameId: number): Promise<FinishedPlayerRes
   return apiClient.get(API_ENDPOINTS.FINISH_GAME(gameId));
 }
 
+export async function abortGame(gameId: number): Promise<{ message: string }> {
+  return apiClient.patch(API_ENDPOINTS.ABORT_GAME(gameId));
+}
+
 export async function getPlayerStats(
   limit: number = 10,
   offset: number = 0,
@@ -145,7 +149,6 @@ export async function getGameThrows(gameId: number): Promise<GameThrowsResponse>
 }
 
 type UpdateGameSettingsPayload = Partial<{
-  startScore: number;
   doubleOut: boolean;
   tripleOut: boolean;
 }>;

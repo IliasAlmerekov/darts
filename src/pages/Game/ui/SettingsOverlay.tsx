@@ -3,11 +3,12 @@ import Overlay from "@/shared/ui/overlay/Overlay";
 import SettingsGroupBtn from "@/shared/ui/button/SettingsGroupBtn";
 import Button from "@/shared/ui/button/Button";
 import styles from "./Game.module.css";
+import deleteIcon from "@/icons/delete.svg";
 
 type SettingsOverlayProps = {
   isOpen: boolean;
   onClose: () => void;
-  onSave: (payload: { startScore: number; doubleOut: boolean; tripleOut: boolean }) => void;
+  onSave: (payload: { doubleOut: boolean; tripleOut: boolean }) => void;
   initialStartScore: number;
   initialDoubleOut: boolean;
   initialTripleOut: boolean;
@@ -28,21 +29,19 @@ function SettingsOverlay({
   const [gameMode, setGameMode] = useState<"single-out" | "double-out" | "triple-out">(
     initialDoubleOut ? "double-out" : initialTripleOut ? "triple-out" : "single-out",
   );
-  const [startScore, setStartScore] = useState<number>(initialStartScore);
 
   useEffect(() => {
     setGameMode(initialDoubleOut ? "double-out" : initialTripleOut ? "triple-out" : "single-out");
-    setStartScore(initialStartScore);
   }, [initialDoubleOut, initialTripleOut, initialStartScore]);
 
   const handleSave = () => {
     const doubleOut = gameMode === "double-out";
     const tripleOut = gameMode === "triple-out";
-    onSave({ startScore, doubleOut, tripleOut });
+    onSave({ doubleOut, tripleOut });
   };
 
   return (
-    <Overlay className={styles.overlayBox} isOpen={isOpen} src={undefined} onClose={onClose}>
+    <Overlay className={styles.overlayBox} isOpen={isOpen} src={deleteIcon} onClose={onClose}>
       <div className={styles.settingsOverlay}>
         <h3 className={styles.overlayHeadline}>Settings</h3>
         <div className={styles.settingsBodyContainer}>
@@ -55,18 +54,6 @@ function SettingsOverlay({
             ]}
             selectedId={gameMode}
             onClick={(id) => setGameMode(id as typeof gameMode)}
-          />
-          <SettingsGroupBtn
-            title="Points"
-            options={[
-              { label: "101", id: 101 },
-              { label: "201", id: 201 },
-              { label: "301", id: 301 },
-              { label: "401", id: 401 },
-              { label: "501", id: 501 },
-            ]}
-            selectedId={startScore}
-            onClick={(id) => setStartScore(Number(id))}
           />
         </div>
         <Button

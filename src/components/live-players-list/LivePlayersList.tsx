@@ -1,12 +1,14 @@
 import { useGamePlayers } from "@/hooks/useGamePlayers";
 import SelectedPlayerItem from "@/components/player-items/SelectedPlayerItem";
 import styles from "./LivePlayersList.module.css";
+import { useMemo } from "react";
 
 interface LivePlayersListProps {
   gameId: number | null;
   previousGameId?: number | null;
   onRemovePlayer?: (playerId: number, gameId: number) => void;
   dragEnd?: boolean;
+  playerOrder?: number[];
 }
 
 export const LivePlayersList = ({
@@ -14,8 +16,25 @@ export const LivePlayersList = ({
   previousGameId,
   onRemovePlayer,
   dragEnd,
+  playerOrder,
 }: LivePlayersListProps) => {
   const { players, count } = useGamePlayers(gameId, previousGameId);
+
+  const sortedPlayers = useMemo(() => {
+    if (!playerOrder || playerOrder.length === 0) {
+      return players;
+    }
+
+    return [...players].sort((a, b) => {
+      const indexA = playerOrder.indexOf(a.id);
+      const indexB = playerOrder.indexOf(b.id);
+
+      if (indexA === -1) return 1;
+      if (indexB === -1) return -1;
+
+      return indexA - indexB;
+    });
+  }, [players, playerOrder]);
 
   return (
     <div className={styles.livePlayersContainer}>
@@ -23,12 +42,12 @@ export const LivePlayersList = ({
         Selected Players <div className={styles.listCount}>{count}/10</div>
       </h4>
       <div className={styles.selectedPlayerListScroll}>
-        {players.length === 0 ? (
+        {sortedPlayers.length === 0 ? (
           <div className={styles.noPlayersMessage}>
             <p>No players yet. Scan the QR code to join!</p>
           </div>
         ) : (
-          players.map((player) => (
+          sortedPlayers.map((player) => (
             <SelectedPlayerItem
               key={player.id}
               name={player.name}

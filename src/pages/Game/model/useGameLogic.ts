@@ -5,8 +5,9 @@ import { useRoomInvitation } from "@/hooks/useRoomInvitation";
 import { useGameState } from "@/hooks/useGameState";
 import { useThrowHandler } from "@/features/game/hooks/useThrowHandler";
 import { mapPlayersToUI, getFinishedPlayers } from "@/entities/player";
-import { updateGameSettings } from "@/services/api";
+import { updateGameSettings, createRematch, abortGame } from "@/services/api";
 import { closeFinishGameOverlay } from "@/stores/ui";
+import { setInvitation, resetRoomStore } from "@/stores";
 
 export const useGameLogic = () => {
   const navigate = useNavigate();
@@ -26,6 +27,7 @@ export const useGameLogic = () => {
   const [isSavingSettings, setIsSavingSettings] = useState(false);
   const [settingsError, setSettingsError] = useState<string | null>(null);
   const [dismissedZeroScorePlayerIds, setDismissedZeroScorePlayerIds] = useState<number[]>([]);
+  const [isExitOverlayOpen, setIsExitOverlayOpen] = useState(false);
 
   const playerUI = useMemo(() => mapPlayersToUI(gameData?.players ?? []), [gameData?.players]);
   const finishedPlayers = useMemo(() => getFinishedPlayers(playerUI), [playerUI]);
@@ -84,11 +86,7 @@ export const useGameLogic = () => {
   const handleOpenSettings = () => setIsSettingsOpen(true);
   const handleCloseSettings = () => setIsSettingsOpen(false);
 
-  const handleSaveSettings = async (settings: {
-    startScore: number;
-    doubleOut: boolean;
-    tripleOut: boolean;
-  }) => {
+  const handleSaveSettings = async (settings: { doubleOut: boolean; tripleOut: boolean }) => {
     if (!gameData || !gameId) return;
 
     setSettingsError(null);
@@ -105,6 +103,29 @@ export const useGameLogic = () => {
     }
   };
 
+  const handleOpenExitOverlay = () => setIsExitOverlayOpen(true);
+  const handleCloseExitOverlay = () => setIsExitOverlayOpen(false);
+
+  const handleExitGame = async () => {
+    if (!gameId) return;
+
+    try {
+      await abortGame(gameId);
+      resetRoomStore();
+      const rematch = await createRematch(gameId);
+
+      setInvitation({
+        gameId: rematch.gameId,
+        invitationLink: rematch.invitationLink,
+      });
+
+      navigate(`/start/${rematch.gameId}`);
+    } catch (err) {
+      console.error("Failed to exit game:", err);
+      navigate("/start");
+    }
+  };
+
   return {
     gameId,
     gameData,
@@ -118,6 +139,7 @@ export const useGameLogic = () => {
     isSettingsOpen,
     isSavingSettings,
     settingsError,
+    isExitOverlayOpen,
     handleThrow,
     handleUndo,
     handleContinueGame,
@@ -125,6 +147,9 @@ export const useGameLogic = () => {
     handleOpenSettings,
     handleCloseSettings,
     handleSaveSettings,
+    handleOpenExitOverlay,
+    handleCloseExitOverlay,
+    handleExitGame,
     refetch,
   };
 };

@@ -12,6 +12,10 @@
   left: 32px;
   top: 32px;
   position: absolute;
+  border: none;
+  background: none;
+  padding: 0;
+  cursor: pointer;
 }
 
 .finishGameOverlay {

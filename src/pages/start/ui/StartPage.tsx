@@ -49,6 +49,7 @@ function StartPage(): React.JSX.Element {
                 label={invitation ? "Create New Game" : "Create Game"}
                 icon={Plus}
                 handleClick={handleCreateRoom}
+                disabled={!!invitation}
               />
             </div>
           </div>
@@ -65,6 +66,7 @@ function StartPage(): React.JSX.Element {
                   previousGameId={lastFinishedGameId}
                   onRemovePlayer={handleRemovePlayer}
                   dragEnd={false}
+                  playerOrder={playerOrder}
                 />
               </SortableContext>
             </DndContext>
