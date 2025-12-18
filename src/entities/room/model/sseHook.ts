@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { API_ENDPOINTS } from "@/shared/api";
+import { API_BASE_URL, API_ENDPOINTS } from "@/shared/api";
 import type { RoomStreamEvent } from "./types";
 
 export function useRoomStream(gameId: number | null) {
@@ -9,7 +9,9 @@ export function useRoomStream(gameId: number | null) {
   useEffect(() => {
     if (!gameId) return;
 
-    const eventSource = new EventSource(API_ENDPOINTS.SSE_STREAM(gameId));
+    const eventSource = new EventSource(`${API_BASE_URL}${API_ENDPOINTS.SSE_STREAM(gameId)}`, {
+      withCredentials: true,
+    });
 
     eventSource.onopen = () => {
       setIsConnected(true);

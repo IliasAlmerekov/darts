@@ -4,10 +4,13 @@ import { useNavigate, useParams } from "react-router-dom";
 import { useRoomInvitation } from "@/hooks/useRoomInvitation";
 import { useGameState } from "@/hooks/useGameState";
 import { useThrowHandler } from "@/features/game/hooks/useThrowHandler";
+import { useGameSounds } from "@/features/game/hooks/useGameSounds";
 import { mapPlayersToUI, getFinishedPlayers } from "@/entities/player";
+import { useRoomStream } from "@/entities/room";
 import { updateGameSettings, createRematch, abortGame } from "@/services/api";
 import { closeFinishGameOverlay } from "@/stores/ui";
 import { setInvitation, resetRoomStore } from "@/stores";
+import { unlockSounds } from "@/shared/lib/soundPlayer";
 
 export const useGameLogic = () => {
   const navigate = useNavigate();
@@ -22,6 +25,23 @@ export const useGameLogic = () => {
 
   const { gameData, isLoading, error, refetch, updateGameData } = useGameState({ gameId });
   const { handleThrow, handleUndo } = useThrowHandler({ gameId });
+  const { event } = useRoomStream(gameId);
+
+  useGameSounds(gameData);
+
+  useEffect(() => {
+    const handler = () => {
+      unlockSounds();
+    };
+
+    window.addEventListener("pointerdown", handler, { once: true, passive: true });
+    window.addEventListener("keydown", handler, { once: true });
+
+    return () => {
+      window.removeEventListener("pointerdown", handler);
+      window.removeEventListener("keydown", handler);
+    };
+  }, []);
 
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isSavingSettings, setIsSavingSettings] = useState(false);
@@ -68,6 +88,17 @@ export const useGameLogic = () => {
       navigate(`/summary/${gameId}`, { state: { finishedGameId: gameId } });
     }
   }, [gameData, gameId, navigate]);
+
+  useEffect(() => {
+    if (!event) return;
+    if (
+      event.type === "throw-recorded" ||
+      event.type === "game-started" ||
+      event.type === "game-finished"
+    ) {
+      void refetch();
+    }
+  }, [event, refetch]);
 
   useEffect(() => {
     setDismissedZeroScorePlayerIds([]);

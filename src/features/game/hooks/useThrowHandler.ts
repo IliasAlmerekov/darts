@@ -68,7 +68,6 @@ export function useThrowHandler({ gameId }: UseThrowHandlerOptions): UseThrowHan
         }
 
         setGameData(updatedGameState);
-        playSound("throw");
       } catch (error) {
         console.error("Failed to record throw:", error);
         playSound("error");

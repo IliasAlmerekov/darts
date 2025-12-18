@@ -1,6 +1,7 @@
 import { useState } from "react";
 import styles from "./Keyboard.module.css";
 import { NumberButton } from "./NumberButton";
+import { unlockSounds } from "@/shared/lib/soundPlayer";
 
 interface KeyboardProps {
   onThrow: (value: string | number) => void;
@@ -19,6 +20,7 @@ export function Keyboard({ onThrow, disabled }: KeyboardProps): JSX.Element {
 
   const handleButtonClick = (btn: number | "Double" | "Triple"): void => {
     if (disabled) return;
+    unlockSounds();
 
     switch (true) {
       case btn === "Double":
