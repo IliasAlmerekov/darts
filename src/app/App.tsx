@@ -17,7 +17,7 @@ import { GameSummaryPage } from "@/pages/game-summary";
 function App(): React.JSX.Element {
   return (
     <div className="app">
-      <BrowserRouter>
+      <BrowserRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
         <Routes>
           <Route path="/" element={<LoginPage />} />
           <Route path="/register" element={<RegistrationPage />} />

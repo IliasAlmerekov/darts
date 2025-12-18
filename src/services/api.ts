@@ -35,18 +35,6 @@ export async function createRematch(previousGameId: number): Promise<BASIC.Remat
   return apiClient.post(API_ENDPOINTS.REMATCH(previousGameId));
 }
 
-export type GamePlayersWithUserInfoResponse = {
-  gameId: number;
-  players?: { id: number; username: string }[];
-  items?: { id: number; username: string }[];
-};
-
-export async function getGamePlayersWithUserInfo(
-  gameId: number,
-): Promise<GamePlayersWithUserInfoResponse> {
-  return apiClient.get<GamePlayersWithUserInfoResponse>(API_ENDPOINTS.GET_GAME_PLAYERS(gameId));
-}
-
 export async function startGame(gameId: number, config: StartGameRequest) {
   return apiClient.post(API_ENDPOINTS.START_GAME(gameId), {
     status: config.status,

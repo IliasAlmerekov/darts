@@ -22,7 +22,9 @@ export const LivePlayersList = ({
 
   const sortedPlayers = useMemo(() => {
     if (!playerOrder || playerOrder.length === 0) {
-      return players;
+      return [...players].sort(
+        (a, b) => (a.position ?? Number.MAX_SAFE_INTEGER) - (b.position ?? Number.MAX_SAFE_INTEGER),
+      );
     }
 
     return [...players].sort((a, b) => {

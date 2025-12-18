@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useStore } from "@nanostores/react";
 import { DragEndEvent } from "@dnd-kit/core";
@@ -52,21 +52,41 @@ export function useStartPage() {
 
   useEffect(() => {
     if (players.length > 0) {
-      setPlayerOrder(players.map((p) => p.id));
+      const sortedByPosition = [...players].sort(
+        (a, b) => (a.position ?? Number.MAX_SAFE_INTEGER) - (b.position ?? Number.MAX_SAFE_INTEGER),
+      );
+      setPlayerOrder(sortedByPosition.map((p) => p.id));
+    } else {
+      setPlayerOrder([]);
     }
   }, [players]);
 
-  const handleDragEnd = (event: DragEndEvent): void => {
-    const { active, over } = event;
+  const handleDragEnd = useCallback(
+    (event: DragEndEvent): void => {
+      const { active, over } = event;
 
-    if (over && active.id !== over.id) {
-      setPlayerOrder((items) => {
-        const oldIndex = items.indexOf(active.id as number);
-        const newIndex = items.indexOf(over.id as number);
-        return arrayMove(items, oldIndex, newIndex);
-      });
-    }
-  };
+      if (over && active.id !== over.id) {
+        setPlayerOrder((items) => {
+          const oldIndex = items.indexOf(active.id as number);
+          const newIndex = items.indexOf(over.id as number);
+          const nextOrder = arrayMove(items, oldIndex, newIndex);
+
+          if (gameId) {
+            const positionsPayload = nextOrder.map((playerId, position) => ({
+              playerId,
+              position,
+            }));
+            roomApi.updatePlayerOrder(gameId, positionsPayload).catch((err) => {
+              console.warn("Failed to persist player order", err);
+            });
+          }
+
+          return nextOrder;
+        });
+      }
+    },
+    [gameId],
+  );
 
   // Verwende gameSettings vom Backend, falls vorhanden, sonst Defaults
   const startScore = gameSettings?.startScore ?? 301;

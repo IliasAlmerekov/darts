@@ -1,16 +1,18 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useEventSource } from "./useEventSource";
-import { getGamePlayersWithUserInfo } from "@/services/api";
+import { getGameThrows } from "@/services/api";
 
 interface RawPlayer {
   id: number;
   username?: string;
   name?: string;
+  position?: number | null;
 }
 
 interface Player {
   id: number;
   name: string;
+  position: number | null;
 }
 
 type PlayersEventPayload = {
@@ -23,7 +25,7 @@ export function useGamePlayers(gameId: number | null, previousGameId?: number | 
 
   const url = useMemo(() => (gameId ? `/api/room/${gameId}/stream` : null), [gameId]);
 
-  // Fetch initial players (e.g., when creating a room from a finished game)
+  // Fetch initial players via game state (fallback when SSE hasn't fired yet)
   useEffect(() => {
     let isMounted = true;
 
@@ -35,15 +37,19 @@ export function useGamePlayers(gameId: number | null, previousGameId?: number | 
       return;
     }
 
-    getGamePlayersWithUserInfo(sourceGameId)
+    getGameThrows(sourceGameId)
       .then((response) => {
         if (!isMounted) return;
-        const sourcePlayers = response.items ?? response.players ?? [];
+        const sourcePlayers = response.players ?? [];
         const mappedPlayers = sourcePlayers.map((player) => ({
           id: player.id,
-          name: player.username ?? "",
+          name: player.name ?? "",
+          position: player.position ?? null,
         }));
-        setPlayers(mappedPlayers);
+        const sorted = [...mappedPlayers].sort(
+          (a, b) => (a.position ?? Number.MAX_SAFE_INTEGER) - (b.position ?? Number.MAX_SAFE_INTEGER),
+        );
+        setPlayers(sorted);
       })
       .catch(() => {});
 
@@ -62,11 +68,15 @@ export function useGamePlayers(gameId: number | null, previousGameId?: number | 
         // Skip empty SSE payloads to avoid overriding preloaded players
         if (list.length === 0) return;
 
-        const mappedPlayers = list.map((player) => ({
+        const mappedPlayers = list.map((player, index) => ({
           id: player.id,
           name: player.username ?? player.name ?? "",
+          position: player.position ?? index,
         }));
-        setPlayers(mappedPlayers);
+        const sorted = [...mappedPlayers].sort(
+          (a, b) => (a.position ?? Number.MAX_SAFE_INTEGER) - (b.position ?? Number.MAX_SAFE_INTEGER),
+        );
+        setPlayers(sorted);
       }
     } catch {
       // Ignore invalid SSE payloads

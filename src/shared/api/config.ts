@@ -18,9 +18,9 @@ export const API_ENDPOINTS = {
   RECORD_THROW: (id: number) => `/game/${id}/throw`,
   UNDO_THROW: (id: number) => `/game/${id}/throw`,
   GET_GAME: (id: number) => `/game/${id}`,
-  GET_GAME_PLAYERS: (id: number) => `/game/${id}/players`,
   GAME_SETTINGS: (id: number) => `/game/${id}/settings`,
   FINISH_GAME: (id: number) => `/game/${id}/finished`,
+  UPDATE_PLAYER_ORDER: (id: number) => `/room/${id}/positions`,
   ABORT_GAME: (id: number) => `/game/${id}/abort`,
 
   // Invitation

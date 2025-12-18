@@ -5,6 +5,21 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0),
 and this project does **not** yet follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html), but will adopt it in the future.
 
+## [0.2.0] - 17.12.2025
+
+### Changed
+
+- Shifted core game/auth logic from the client to backend endpoints; frontend now focuses on UI and orchestration
+- Adopted Feature-Sliced Design (FSD) for clearer feature boundaries and maintainable module ownership
+
+### Removed
+
+- Deprecated `UserProvider`; session handling now relies on backend-driven auth
+
+### Chore
+
+- Stylelint ignores build artifacts (`dist/`, `coverage/`, `node_modules/`) to keep CI focused on source styles
+
 ## [0.1.1] - 11.04.2025
 
 ### Fixed

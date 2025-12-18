@@ -11,6 +11,13 @@ export const roomApi = {
     return invite;
   },
 
+  updatePlayerOrder: async (
+    gameId: number,
+    positions: Array<{ playerId: number; position: number }>,
+  ): Promise<void> => {
+    return apiClient.post(API_ENDPOINTS.UPDATE_PLAYER_ORDER(gameId), { positions });
+  },
+
   leaveRoom: async (gameId: number, playerId: number): Promise<void> => {
     return apiClient.delete<void>(API_ENDPOINTS.LEAVE_ROOM(gameId), {
       query: { playerId },
