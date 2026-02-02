@@ -1,18 +1,14 @@
 import React from "react";
 import { BrowserRouter, Route, Routes } from "react-router-dom";
-import "@/css/index.css";
-import { Game } from "@/pages/Game";
-import GameDetailPage from "@/widgets/statistics/GamesOverview/game-detail-page/GameDetailPage";
-import GamesOverview from "@/widgets/statistics/GamesOverview/GamesOverview";
-import Settings from "@/widgets/settings/Settings";
-import Statistic from "@/widgets/statistics/Statistics";
-import Playerprofile from "@/pages/player-profile/PlayerProfile";
-import ProtectedRoutes from "@/utils/ProtectedRoutes";
-import { StartPage } from "@/pages/start";
-import { LoginPage } from "@/pages/Login";
-import { JoinedGamePage } from "@/pages/joined-game";
-import { RegistrationPage } from "@/pages/Registration";
-import { GameSummaryPage } from "@/pages/game-summary";
+import "@/app/styles/index.css";
+import { Game } from "@/features/game";
+import { GameDetailPage, GamesOverview, Statistics } from "@/features/statistics";
+import { Settings } from "@/features/settings";
+import { PlayerProfile } from "@/features/player";
+import { ProtectedRoutes, LoginPage, RegistrationPage } from "@/features/auth";
+import { StartPage } from "@/features/start";
+import { JoinedGamePage } from "@/features/joined-game";
+import { GameSummaryPage } from "@/features/game-summary";
 
 function App(): React.JSX.Element {
   return (
@@ -31,12 +27,12 @@ function App(): React.JSX.Element {
             <Route path="/gamesoverview" element={<GamesOverview />} />
             <Route path="/settings" element={<Settings />} />
             <Route path="/settings/:id" element={<Settings />} />
-            <Route path="/statistics" element={<Statistic />} />
+            <Route path="/statistics" element={<Statistics />} />
           </Route>
 
           <Route element={<ProtectedRoutes allowedRoles={["ROLE_PLAYER"]} />}>
             <Route path="/joined" element={<JoinedGamePage />} />
-            <Route path="/playerprofile" element={<Playerprofile />} />
+            <Route path="/playerprofile" element={<PlayerProfile />} />
           </Route>
         </Routes>
       </BrowserRouter>

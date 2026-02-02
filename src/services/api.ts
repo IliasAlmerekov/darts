@@ -1,5 +1,5 @@
-import { apiClient, API_ENDPOINTS } from "@/shared/api";
-import type { StartGameRequest, ThrowRequest } from "@/shared/types";
+import { apiClient, API_ENDPOINTS } from "@/lib/api";
+import type { CreateRoomResponse, StartGameRequest, ThrowRequest } from "@/types";
 
 export type CreateGamePayload = {
   previousGameId?: number;
@@ -13,14 +13,20 @@ export const handleCreateGame = async (payload?: CreateGamePayload) => {
       : {};
 
   const room = await apiClient.post<{ gameId: number }>(API_ENDPOINTS.CREATE_ROOM, body);
-  const invite = await apiClient.get<{ gameId: number; invitationLink: string }>(
-    API_ENDPOINTS.CREATE_INVITE(room.gameId),
-  );
+  const invite = await apiClient.get<CreateRoomResponse>(API_ENDPOINTS.CREATE_INVITE(room.gameId));
 
   return {
     gameId: invite.gameId,
     invitationLink: invite.invitationLink,
   };
+};
+
+export const createRoom = async (payload?: CreateGamePayload): Promise<CreateRoomResponse> => {
+  return handleCreateGame(payload);
+};
+
+export const getInvitation = async (gameId: number): Promise<CreateRoomResponse> => {
+  return apiClient.get<CreateRoomResponse>(API_ENDPOINTS.CREATE_INVITE(gameId));
 };
 
 export const getGamePlayers = async (gameId: number) => {
@@ -31,8 +37,36 @@ export const deletePlayerFromGame = async (gameId: number, playerId: number) => 
   return apiClient.delete(API_ENDPOINTS.LEAVE_ROOM(gameId), { query: { playerId } });
 };
 
+export const leaveRoom = async (gameId: number, playerId: number): Promise<void> => {
+  return apiClient.delete(API_ENDPOINTS.LEAVE_ROOM(gameId), { query: { playerId } });
+};
+
+export const updatePlayerOrder = async (
+  gameId: number,
+  positions: Array<{ playerId: number; position: number }>,
+): Promise<void> => {
+  return apiClient.post(API_ENDPOINTS.UPDATE_PLAYER_ORDER(gameId), { positions });
+};
+
 export async function createRematch(previousGameId: number): Promise<BASIC.RematchResponse> {
-  return apiClient.post(API_ENDPOINTS.REMATCH(previousGameId));
+  const rematch = await apiClient.post<
+    BASIC.RematchResponse | { gameId: number; invitationLink?: string; success?: boolean }
+  >(API_ENDPOINTS.REMATCH(previousGameId));
+
+  if ("invitationLink" in rematch && rematch.invitationLink) {
+    return {
+      success: "success" in rematch ? !!rematch.success : true,
+      gameId: rematch.gameId,
+      invitationLink: rematch.invitationLink,
+    };
+  }
+
+  const invite = await getInvitation(rematch.gameId);
+  return {
+    success: "success" in rematch ? !!rematch.success : true,
+    gameId: invite.gameId,
+    invitationLink: invite.invitationLink,
+  };
 }
 
 export async function startGame(gameId: number, config: StartGameRequest) {
