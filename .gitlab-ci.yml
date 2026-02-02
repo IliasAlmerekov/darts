@@ -45,3 +45,15 @@ unit_tests:
   stage: check
   script:
     - npm test
+
+e2e_tests:
+  <<: *base_job
+  stage: check
+  script:
+    - npx playwright install --with-deps chromium
+    - npm run test:e2e
+  artifacts:
+    when: always
+    paths:
+      - playwright-report/
+    expire_in: 1 week
