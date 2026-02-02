@@ -1,0 +1,31 @@
+.podium {
+  display: flex;
+  gap: 24px;
+  align-items: center;
+  justify-content: center;
+}
+
+.first {
+  order: 1;
+  transform: translateY(-40px);
+}
+
+.second {
+  order: 1;
+}
+
+.third {
+  order: 0;
+}
+
+.podiumPlayerCard {
+  height: 142px;
+  width: 197px;
+  padding: 23px;
+  background-color: var(--lightgrey);
+  border-radius: 8px;
+}
+
+.hide {
+  opacity: 0.5;
+}
