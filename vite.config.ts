@@ -34,6 +34,6 @@ export default defineConfig({
     environment: "node",
     globals: true,
     include: ["src/**/*.test.{ts,tsx}", "src/**/*.spec.{ts,tsx}"],
-    exclude: ["seed.spec.ts", "specs/**"],
+    exclude: ["specs/**"],
   },
 });
