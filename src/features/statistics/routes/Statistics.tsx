@@ -5,7 +5,7 @@ import sortScoreIcon from "@/assets/icons/sorting-score.svg";
 import clsx from "clsx";
 import NavigationBar from "@/components/navigation-bar/NavigationBar";
 import ViewToogleButton from "@/components/button/ViewToogleBtn";
-import { getPlayerStats } from "@/services/api";
+import { getPlayerStats } from "../api";
 
 export default function Playerstats(): JSX.Element {
   const [sortMethod, setSortMethod] = useState("alphabetically");

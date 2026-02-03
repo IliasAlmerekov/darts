@@ -4,14 +4,8 @@ import { useStore } from "@nanostores/react";
 import { DragEndEvent } from "@dnd-kit/core";
 import { arrayMove } from "@dnd-kit/sortable";
 import { useGamePlayers } from "@/features/room";
-import {
-  createRoom,
-  getGameThrows,
-  getInvitation,
-  leaveRoom,
-  startGame,
-  updatePlayerOrder,
-} from "@/services/api";
+import { createRoom, getInvitation, leaveRoom, updatePlayerOrder } from "@/features/room/api";
+import { getGameThrows, startGame } from "@/features/game/api";
 import {
   $lastFinishedGameId,
   $invitation,

@@ -24,6 +24,13 @@ export class UnauthorizedError extends ApiError {
   }
 }
 
+export class ForbiddenError extends ApiError {
+  constructor(message = "Access denied", data?: unknown, url?: string) {
+    super(message, { status: 403, data, url });
+    this.name = "ForbiddenError";
+  }
+}
+
 export class NetworkError extends ApiError {
   constructor(message = "Network request failed", originalError?: unknown) {
     super(message, { status: 0, originalError });

@@ -1,7 +1,6 @@
 import { useEffect, useState } from "react";
 import type { CreateRoomResponse } from "@/types/api";
-import { createRoom as createRoomRequest } from "@/services/api";
-import type { CreateGamePayload } from "@/services/api";
+import { createRoom as createRoomRequest, type CreateGamePayload } from "../api";
 
 export type Invitation = CreateRoomResponse;
 

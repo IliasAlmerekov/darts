@@ -1,31 +1,53 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { apiClient, API_ENDPOINTS } from "@/lib/api";
-
-interface LoginResponse {
-  redirect?: string;
-  [key: string]: unknown;
-}
+import { loginWithCredentials, getAuthenticatedUser } from "../api";
 
 export function useLogin() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const navigate = useNavigate();
 
-  const login = async (username: string, password: string) => {
+  const login = async (email: string, password: string) => {
     setLoading(true);
     setError(null);
 
     try {
-      const payload = new URLSearchParams();
-      payload.set("_username", username);
-      payload.set("_password", password);
+      const response = await loginWithCredentials({ email, password });
 
-      const response = await apiClient.post<LoginResponse>(
-        API_ENDPOINTS.LOGIN,
-        payload.toString(),
-        { headers: { "Content-Type": "application/x-www-form-urlencoded" } },
-      );
+      if (response?.success === false) {
+        const message = response.error?.trim() ? response.error : "Login fehlgeschlagen";
+        if (message.toLowerCase().includes("csrf")) {
+          try {
+            const retryResponse = await loginWithCredentials({ email, password }, true);
+            if (retryResponse?.success === false) {
+              setError(retryResponse.error?.trim() ? retryResponse.error : "Login fehlgeschlagen");
+              return;
+            }
+            if (retryResponse?.redirect) {
+              const redirectPath =
+                retryResponse.redirect === "/start" ? "/start" : retryResponse.redirect;
+              navigate(redirectPath);
+            }
+            return;
+          } catch (retryError) {
+            console.error("Login retry failed:", retryError);
+          }
+        }
+        if (!response.error) {
+          const authenticatedUser = await getAuthenticatedUser();
+          if (authenticatedUser?.redirect) {
+            const redirectPath =
+              authenticatedUser.redirect === "/start"
+                ? "/start"
+                : authenticatedUser.redirect;
+            navigate(redirectPath);
+            return;
+          }
+        }
+
+        setError(message);
+        return;
+      }
 
       // Navigiere immer zu /start (ohne gameId) für sauberen Start
       if (response?.redirect) {

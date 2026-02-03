@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { getFinishedGame } from "@/services/api";
+import { finishGame as finishGameRequest } from "../api";
 
 export function useFinishGame() {
   const [loading, setLoading] = useState(false);
@@ -9,7 +9,7 @@ export function useFinishGame() {
     setLoading(true);
     setError(null);
     try {
-      return await getFinishedGame(gameId);
+      return await finishGameRequest(gameId);
     } catch (err) {
       setError("Spiel konnte nicht beendet werden");
       throw err;

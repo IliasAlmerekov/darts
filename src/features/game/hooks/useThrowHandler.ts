@@ -1,5 +1,5 @@
 import { useCallback, useRef } from "react";
-import { GameThrowsResponse, recordThrow, undoLastThrow } from "@/services/api";
+import { recordThrow, undoLastThrow, type GameThrowsResponse } from "../api";
 import { parseThrowValue } from "@/lib/parseThrowValue";
 import { playSound } from "@/lib/soundPlayer";
 import { $gameData, setGameData } from "@/stores";

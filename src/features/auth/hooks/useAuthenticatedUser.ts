@@ -1,12 +1,5 @@
 import { useEffect, useState } from "react";
-
-interface AuthenticatedUser {
-  success: boolean;
-  roles: string[];
-  id: number;
-  username: string;
-  redirect: string;
-}
+import { getAuthenticatedUser, type AuthenticatedUser } from "../api";
 
 export const useAuthenticatedUser = () => {
   const [user, setUser] = useState<AuthenticatedUser | null>(null);
@@ -16,19 +9,9 @@ export const useAuthenticatedUser = () => {
   useEffect(() => {
     const fetchUser = async () => {
       try {
-        const response = await fetch("/api/login/success", {
-          method: "GET",
-          credentials: "include",
-          headers: {
-            Accept: "application/json",
-          },
-        });
-
-        if (response.ok) {
-          const data = await response.json();
-          if (data.success) {
-            setUser(data.user ?? data);
-          }
+        const userData = await getAuthenticatedUser();
+        if (userData) {
+          setUser(userData);
         }
       } catch (err) {
         setError((err as Error).message);

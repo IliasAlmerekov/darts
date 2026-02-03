@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { recordThrow as recordThrowRequest } from "@/services/api";
+import { recordThrow as recordThrowRequest } from "../api";
 import type { ThrowRequest } from "@/types/api";
 
 export function useRecordThrow(gameId: number) {

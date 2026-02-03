@@ -61,9 +61,10 @@ function Game() {
   }
 
   if (error && !gameData) {
+    const message = error instanceof Error ? error.message : "Failed to load game data.";
     return (
       <div className={styles.gamePageHeader}>
-        <p>Failed to load game data.</p>
+        <p>{message}</p>
         <Button label="Retry" handleClick={refetch} type="primary" link="" />
         <Link to="/start">Back to start</Link>
       </div>

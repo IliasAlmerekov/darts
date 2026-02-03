@@ -6,7 +6,7 @@ import { getActiveGameId } from "@/stores/room";
 
 export function useLoginPage() {
   const [error, setError] = useState<string | null>(null);
-  const { login, loading } = useLogin();
+  const { login, loading, error: loginError } = useLogin();
   const navigate = useNavigate();
   const { user, loading: checking } = useAuthenticatedUser();
 
@@ -16,9 +16,9 @@ export function useLoginPage() {
 
     try {
       const formData = new FormData(e.currentTarget);
-      const username = String(formData.get("_username") ?? "");
+      const email = String(formData.get("_username") ?? "");
       const password = String(formData.get("_password") ?? "");
-      await login(username, password);
+      await login(email, password);
       // Navigation wird von useLogin übernommen
     } catch (err) {
       setError((err as Error).message || "Login failed");
@@ -45,7 +45,7 @@ export function useLoginPage() {
   }, [user, navigate]);
 
   return {
-    error,
+    error: error ?? loginError,
     loading,
     checking,
     handleSubmit,

@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { startGame as startGameRequest } from "@/services/api";
+import { startGame as startGameRequest } from "../api";
 import type { StartGameRequest } from "@/types/api";
 
 export function useStartGame() {

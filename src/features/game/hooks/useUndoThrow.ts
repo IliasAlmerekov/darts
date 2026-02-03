@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { undoLastThrow } from "@/services/api";
+import { undoLastThrow } from "../api";
 
 export function useUndoThrow() {
   const [loading, setLoading] = useState(false);

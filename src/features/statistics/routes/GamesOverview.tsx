@@ -3,7 +3,7 @@ import styles from "./GamesOverview.module.css";
 import { Link } from "react-router-dom";
 import NavigationBar from "@/components/navigation-bar/NavigationBar";
 import ViewToogleButton from "@/components/button/ViewToogleBtn";
-import { getGamesOverview } from "@/services/api";
+import { getGamesOverview } from "../api";
 
 export default function GamesOverview(): JSX.Element {
   // Read gameId from store but don't modify it - just keep it alive

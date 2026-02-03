@@ -4,7 +4,7 @@ import NavigationBar from "@/components/navigation-bar/NavigationBar";
 import SettingsGroupBtn from "@/components/button/SettingsGroupBtn";
 import { useStore } from "@nanostores/react";
 import { $gameSettings, $currentGameId, setGameData, setCurrentGameId } from "@/stores";
-import { saveGameSettings, getGameThrows } from "@/services/api";
+import { saveGameSettings, getGameThrows } from "@/features/game/api";
 import styles from "./Settings.module.css";
 
 function Settings(): JSX.Element {

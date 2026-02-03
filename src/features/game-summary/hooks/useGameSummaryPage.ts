@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
-import { getFinishedGame, FinishedPlayerResponse, createRematch } from "@/services/api";
+import { getFinishedGame, createRematch, type FinishedPlayerResponse } from "@/features/game/api";
 import { setInvitation, setLastFinishedGameId, resetRoomStore } from "@/stores";
 import { playSound } from "@/lib/soundPlayer";
 

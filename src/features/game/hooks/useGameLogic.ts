@@ -6,7 +6,7 @@ import { mapPlayersToUI, getFinishedPlayers } from "@/features/player";
 import { useGameState } from "./useGameState";
 import { useThrowHandler } from "./useThrowHandler";
 import { useGameSounds } from "./useGameSounds";
-import { updateGameSettings, createRematch, abortGame } from "@/services/api";
+import { updateGameSettings, createRematch, abortGame } from "../api";
 import { closeFinishGameOverlay } from "@/stores/ui";
 import { setInvitation, resetRoomStore } from "@/stores";
 import { unlockSounds } from "@/lib/soundPlayer";

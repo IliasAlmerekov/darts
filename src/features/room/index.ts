@@ -1,3 +1,7 @@
+// API
+export * from "./api";
+
+// Hooks
 export { useRoomInvitation } from "./hooks/useRoomInvitation";
 export { useRoomStream } from "./hooks/useRoomStream";
 export { useGamePlayers } from "./hooks/useGamePlayers";

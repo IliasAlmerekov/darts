@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useEventSource } from "@/hooks/useEventSource";
-import { getGameThrows } from "@/services/api";
+import { getGameThrows } from "@/features/game/api";
 
 interface RawPlayer {
   id: number;
@@ -47,7 +47,8 @@ export function useGamePlayers(gameId: number | null, previousGameId?: number | 
           position: player.position ?? null,
         }));
         const sorted = [...mappedPlayers].sort(
-          (a, b) => (a.position ?? Number.MAX_SAFE_INTEGER) - (b.position ?? Number.MAX_SAFE_INTEGER),
+          (a, b) =>
+            (a.position ?? Number.MAX_SAFE_INTEGER) - (b.position ?? Number.MAX_SAFE_INTEGER),
         );
         setPlayers(sorted);
       })
@@ -74,7 +75,8 @@ export function useGamePlayers(gameId: number | null, previousGameId?: number | 
           position: player.position ?? index,
         }));
         const sorted = [...mappedPlayers].sort(
-          (a, b) => (a.position ?? Number.MAX_SAFE_INTEGER) - (b.position ?? Number.MAX_SAFE_INTEGER),
+          (a, b) =>
+            (a.position ?? Number.MAX_SAFE_INTEGER) - (b.position ?? Number.MAX_SAFE_INTEGER),
         );
         setPlayers(sorted);
       }

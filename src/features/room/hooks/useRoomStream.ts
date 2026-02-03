@@ -1,6 +1,8 @@
 import { useEffect, useState } from "react";
-import { API_BASE_URL, API_ENDPOINTS } from "@/lib/api";
+import { API_BASE_URL } from "@/lib/api";
 import type { RoomStreamEvent } from "../types";
+
+const SSE_STREAM_ENDPOINT = (id: number) => `/room/${id}/stream`;
 
 export function useRoomStream(gameId: number | null) {
   const [event, setEvent] = useState<RoomStreamEvent | null>(null);
@@ -9,7 +11,7 @@ export function useRoomStream(gameId: number | null) {
   useEffect(() => {
     if (!gameId) return;
 
-    const eventSource = new EventSource(`${API_BASE_URL}${API_ENDPOINTS.SSE_STREAM(gameId)}`, {
+    const eventSource = new EventSource(`${API_BASE_URL}${SSE_STREAM_ENDPOINT(gameId)}`, {
       withCredentials: true,
     });
 

@@ -1,55 +1,68 @@
-import { useState } from "react";
-import { useLogin } from "../hooks/useLogin";
+import React from "react";
+import { Link } from "react-router-dom";
+import styles from "./AuthForm.module.css";
+import emailIcon from "@/assets/icons/email.svg";
+import passwordIcon from "@/assets/icons/password.svg";
 
 interface LoginFormProps {
-  onSuccessRedirect?: string;
+  error: string | null;
+  loading: boolean;
+  onSubmit: (e: React.FormEvent<HTMLFormElement>) => void;
 }
 
-export function LoginForm({ onSuccessRedirect }: LoginFormProps) {
-  const { login, loading, error } = useLogin();
-  const [username, setUsername] = useState("");
-  const [password, setPassword] = useState("");
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    await login(username, password);
-    if (onSuccessRedirect) {
-      // navigation is handled in the hook when backend sends redirect; this is a fallback.
-    }
-  };
-
+export function LoginForm({ error, loading, onSubmit }: LoginFormProps) {
   return (
-    <form onSubmit={handleSubmit}>
-      {error && <div>{error}</div>}
-      <div>
-        <label>
-          Email
-          <input
-            type="email"
-            value={username}
-            onChange={(e) => setUsername(e.target.value)}
-            required
-            disabled={loading}
-            name="_username"
-          />
-        </label>
+    <form onSubmit={onSubmit}>
+      {error && <div className={`${styles.alert} ${styles.alertDanger}`}>{error}</div>}
+
+      <h1 className={styles.formTitle}>Please sign in</h1>
+
+      <label htmlFor="_username" className={styles.formLabel}>
+        Email
+      </label>
+      <div className={styles.inputGroup}>
+        <span className={styles.inputGroupIcon}>
+          <img src={emailIcon} className={styles.icon} alt="email Icon" />
+        </span>
+        <input
+          type="email"
+          name="_username"
+          id="_username"
+          className={styles.formControl}
+          required
+          disabled={loading}
+          autoComplete="username"
+        />
       </div>
-      <div>
-        <label>
-          Password
-          <input
-            type="password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            required
-            disabled={loading}
-            name="_password"
-          />
-        </label>
+
+      <label htmlFor="_password" className={styles.formLabel}>
+        Password
+      </label>
+      <div className={styles.inputGroup}>
+        <span className={styles.inputGroupIcon}>
+          <img src={passwordIcon} className={styles.icon} alt="password icon" />
+        </span>
+        <input
+          type="password"
+          name="_password"
+          id="_password"
+          className={styles.formControl}
+          required
+          disabled={loading}
+          autoComplete="current-password"
+        />
       </div>
-      <button type="submit" disabled={loading}>
-        {loading ? "Signing in..." : "Sign in"}
-      </button>
+
+      <div className={styles.formFooter}>
+        <button className={`${styles.btn} ${styles.btnPrimary}`} type="submit" disabled={loading}>
+          {loading ? "Signing in..." : "Sign in"}
+        </button>
+      </div>
+      <div className={styles.formLink}>
+        <small>
+          Don&apos;t have an account? <Link to="/register">Create one</Link>
+        </small>
+      </div>
     </form>
   );
 }

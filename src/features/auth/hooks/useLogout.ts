@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { apiClient, API_ENDPOINTS } from "@/lib/api";
+import { logout as logoutApi } from "../api";
 
 export function useLogout() {
   const [loading, setLoading] = useState(false);
@@ -12,7 +12,7 @@ export function useLogout() {
     setError(null);
 
     try {
-      await apiClient.post(API_ENDPOINTS.LOGOUT);
+      await logoutApi();
       navigate(redirectTo);
     } catch (err) {
       console.error("Logout error:", err);
