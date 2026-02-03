@@ -5,6 +5,38 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0),
 and this project does **not** yet follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html), but will adopt it in the future.
 
+## [0.3.0] - 2026-02-03
+
+### Changed
+
+- Authentication: Changed login to use email instead of username across all login-related components and hooks
+- API: Added CSRF token support for authentication and registration to enhance security
+- API: Added ForbiddenError class for better handling of 403 Forbidden responses
+- API: Separated FINISH_GAME and FINISHED_GAME endpoints for clearer distinction between finishing a game and retrieving finished game data
+- Game Logic: Fixed useFinishGame hook to properly call the finish game API endpoint
+- Error Handling: Improved error message display in Game component to show actual error messages instead of generic text
+
+### Added
+
+- API: Added getCsrfTokens and getCsrfToken functions for managing CSRF tokens
+- API: Added finishGame function to properly finish games via POST request
+
+### Fixed
+
+- AuthenticatedUser interface: Made email and username fields optional to handle different response formats
+
+## [0.2.0] - 17.12.2025
+
+### Changed
+
+- Shifted core game/auth logic from the client to backend endpoints; frontend now focuses on UI and orchestration
+- Adopted Feature-Sliced Design (FSD) for clearer feature boundaries and maintainable module ownership
+- Stylelint ignores build artifacts (`dist/`, `coverage/`, `node_modules/`) to keep CI focused on source styles
+
+### Removed
+
+- Deprecated `UserProvider`; session handling now relies on backend-driven auth
+
 ## [0.1.1] - 11.04.2025
 
 ### Fixed
@@ -25,6 +57,14 @@ and this project does **not** yet follow [Semantic Versioning](https://semver.or
 ### Chore
 
 - General `refactoring` and cleanup across multiple components
+
+## [0.3.1] - 2026-02-03
+
+### Changed
+
+- API: Refactored API structure to follow bulletproof-react patterns by moving endpoints from centralized config.ts to feature-specific API files (auth, game, room, statistics)
+- API: Simplified client.ts by consolidating helper functions, removing unnecessary abstractions, and embedding API_BASE_URL directly
+- API: Ensured all API calls import from their respective feature API files for better encapsulation and maintainability
 
 ## [0.1.0] - 10.04.2025
 

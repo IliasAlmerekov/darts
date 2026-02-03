@@ -13,7 +13,7 @@ import {
   setError,
   resetGameStore,
 } from "./game";
-import type { GameThrowsResponse } from "@/services/api";
+import type { GameThrowsResponse } from "@/features/game/api";
 
 const mockGameData: GameThrowsResponse = {
   id: 1,

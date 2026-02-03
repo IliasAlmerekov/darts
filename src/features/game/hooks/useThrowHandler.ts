@@ -1,7 +1,7 @@
 import { useCallback, useRef } from "react";
-import { GameThrowsResponse, recordThrow, undoLastThrow } from "@/services/api";
-import { parseThrowValue } from "@/shared/lib/parseThrowValue";
-import { playSound } from "@/shared/lib/soundPlayer";
+import { recordThrow, undoLastThrow, type GameThrowsResponse } from "../api";
+import { parseThrowValue } from "@/lib/parseThrowValue";
+import { playSound } from "@/lib/soundPlayer";
 import { $gameData, setGameData } from "@/stores";
 
 interface UseThrowHandlerOptions {
@@ -68,7 +68,6 @@ export function useThrowHandler({ gameId }: UseThrowHandlerOptions): UseThrowHan
         }
 
         setGameData(updatedGameState);
-        playSound("throw");
       } catch (error) {
         console.error("Failed to record throw:", error);
         playSound("error");

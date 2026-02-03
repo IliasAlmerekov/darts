@@ -1,0 +1,158 @@
+/* Registration form uses the same styling as the login form */
+.loginContainer {
+  margin-top: 3rem;
+  padding: 0 15px;
+}
+
+.loginRow {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 60vh;
+}
+
+.loginCol {
+  width: 100%;
+  max-width: 500px;
+}
+
+.loginCard {
+  background: #fff; /* BEHOBEN: #ffffff zu #fff */
+  border-radius: 8px;
+  box-shadow:
+    0 4px 6px rgb(0 0 0 / 10%),
+    /* BEHOBEN: rgba(0, 0, 0, 0.1) zu rgb(0 0 0 / 10%) */ 0 1px 3px rgb(0 0 0 / 8%); /* BEHOBEN: rgba(0, 0, 0, 0.08) zu rgb(0 0 0 / 8%) */
+}
+
+.loginCardBody {
+  padding: 2rem;
+}
+
+/* Alert Styles */
+.alert {
+  padding: 12px 16px;
+  margin-bottom: 1rem;
+  border-radius: 6px;
+  font-size: 14px;
+  white-space: pre-line;
+}
+
+.alertDanger {
+  background-color: #f8d7da;
+  border: 1px solid #f5c2c7;
+  color: #842029;
+}
+
+.loggedInMessage {
+  margin-bottom: 1.5rem;
+  padding: 12px;
+  background-color: #d1ecf1;
+  border: 1px solid #bee5eb;
+  border-radius: 6px;
+  color: #0c5460;
+}
+
+.loggedInMessage a {
+  color: #0c5460;
+  text-decoration: underline;
+  margin-left: 4px;
+}
+
+/* Form Styles */
+h1 {
+  font-size: 1.75rem;
+  font-weight: 600;
+  margin-bottom: 1.5rem;
+  color: #212529;
+}
+
+.formLabel {
+  display: block;
+  margin-bottom: 0.5rem;
+  font-weight: 500;
+  color: #212529;
+  font-size: 14px;
+}
+
+.inputGroup {
+  display: flex;
+  align-items: stretch;
+  margin-bottom: 1.5rem;
+  border: 1px solid #ced4da;
+  border-radius: 6px;
+  overflow: hidden;
+  transition:
+    border-color 0.15s ease-in-out,
+    box-shadow 0.15s ease-in-out;
+}
+
+.inputGroup:focus-within {
+  border-color: #86b7fe;
+  box-shadow: 0 0 0 0.25rem rgb(13 110 253 / 25%); /* BEHOBEN: rgba(13, 110, 253, 0.25) zu rgb(13 110 253 / 25%) */
+}
+
+.icon {
+  width: 20px;
+  height: 20px;
+}
+
+.inputGroupIcon {
+  display: flex;
+  align-items: center;
+  padding: 0.5rem 0.75rem;
+  background-color: #e9ecef;
+  border-right: 1px solid #ced4da;
+  color: #6c757d;
+}
+
+.formControl {
+  flex: 1;
+  padding: 0.5rem 0.75rem;
+  font-size: 1rem;
+  line-height: 1.5;
+  color: #212529;
+  border: none;
+  outline: none;
+  background-color: #fff;
+}
+
+.formControl:focus {
+  outline: none;
+}
+
+/* Button Styles */
+.formFooter {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 1.5rem;
+  gap: 1rem;
+}
+
+.btn {
+  align-items: center;
+  padding: 0.5rem 1.5rem;
+  font-size: 1.125rem;
+  border-radius: 6px;
+  border: none;
+  cursor: pointer;
+  font-weight: 500;
+  transition: all 0.15s ease-in-out;
+  margin-top: 0; /* BEHOBEN: 0px zu 0 */
+}
+
+.btnPrimary {
+  background-color: #0d6efd;
+  color: #fff; /* BEHOBEN: #ffffff zu #fff */
+}
+
+.btnPrimary:hover {
+  background-color: #0b5ed7;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgb(13 110 253 / 30%); /* BEHOBEN: rgba(13, 110, 253, 0.3) zu rgb(13 110 253 / 30%) */
+}
+
+.btnPrimary:active {
+  background-color: #0a58ca;
+  transform: translateY(0);
+}

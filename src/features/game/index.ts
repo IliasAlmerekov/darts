@@ -1,4 +1,5 @@
-export * from "./start-game";
-export * from "./record-throw";
-export * from "./undo-throw";
-export * from "./finish-game";
+// API
+export * from "./api";
+
+// Routes
+export { default as Game } from "./routes/Game";
