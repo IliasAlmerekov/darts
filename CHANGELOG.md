@@ -57,6 +57,7 @@ and this project does **not** yet follow [Semantic Versioning](https://semver.or
 ### Chore
 
 - General `refactoring` and cleanup across multiple components
+
 ## [0.3.1] - 2026-02-03
 
 ### Changed
@@ -64,6 +65,7 @@ and this project does **not** yet follow [Semantic Versioning](https://semver.or
 - API: Refactored API structure to follow bulletproof-react patterns by moving endpoints from centralized config.ts to feature-specific API files (auth, game, room, statistics)
 - API: Simplified client.ts by consolidating helper functions, removing unnecessary abstractions, and embedding API_BASE_URL directly
 - API: Ensured all API calls import from their respective feature API files for better encapsulation and maintainability
+
 ## [0.1.0] - 10.04.2025
 
 ### Added
