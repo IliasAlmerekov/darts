@@ -7,7 +7,7 @@ Dart score app is an app where you can effortlessly keep track of your dart game
 1. Clone the repository:
 
 ```bash
- git clone ""
+git clone <repository-url>
 ```
 
 2. Install dependencies:
@@ -26,6 +26,22 @@ npm run dev
 
 Create a `.env` file in the project root using `.env.example` as a template.
 
+## Architecture (FSD)
+
+This project follows Feature-Sliced Design (FSD). The key idea is to separate code by responsibility and prevent cross-feature coupling.
+
+Layers overview:
+
+- `app/` — application bootstrap, providers, global styles
+- `entities/` — domain entities and core models
+- `features/` — business features (main development unit)
+- `shared/` — shared UI, hooks, lib utilities, types, and stores
+
+Rules:
+
+- Do not import internals of another feature. Only import from `features/<feature>/index.ts`.
+- Shared logic should live in `shared/`, not duplicated across features.
+
 ## Directory structure
 
 ```bash
@@ -36,14 +52,9 @@ Create a `.env` file in the project root using `.env.example` as a template.
     │   ├───fonts
     │   │   └───circularXX
     │   └───icons
-    ├───components
+    ├───entities
     ├───features
-    ├───hooks
-    ├───lib
-    │   └───api
-    ├───stores
-    ├───types
-    └───utils
+    └───shared
 ```
 
 ## Common Commit Types (Conventional Commits)

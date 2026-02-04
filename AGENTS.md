@@ -144,11 +144,11 @@ features/<feature>/
 
 Before declaring "done", run and report results of:
 
-- `pnpm lint` / `npm run lint`
-- `pnpm test` / `npm run test` (Vitest)
-- `pnpm test:e2e` / `npm run test:e2e` (Playwright)
-- `pnpm format:check` / Prettier check
-- `pnpm stylelint`
+- `npm run eslint`
+- `npm run stylelint`
+- `npm run test` (Vitest)
+- `npm run test:e2e` (Playwright)
+- `npm run typecheck`
 
 If scripts differ, infer correct commands from `package.json`.
 
