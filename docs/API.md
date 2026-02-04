@@ -22,6 +22,7 @@ All API requests go through the API client with base URL:
 - `GET /api/invite/create/{gameId}` — fetch invitation link. See `src/features/room/api/create-room.ts`.
 - `GET /api/room/{gameId}` — fetch room players. See `src/features/room/api/leave-room.ts`.
 - `DELETE /api/room/{gameId}?playerId={playerId}` — remove a player or leave room. See `src/features/room/api/leave-room.ts`.
+- `POST /api/room/{gameId}/guest` — add a guest player (409 with `USERNAME_TAKEN` may include suggestions). See `src/features/room/api/add-guest.ts`.
 - `POST /api/room/{gameId}/positions` — update player order. See `src/features/room/api/update-player-order.ts`.
 
 ## Game

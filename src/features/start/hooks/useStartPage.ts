@@ -4,7 +4,14 @@ import { useStore } from "@nanostores/react";
 import { DragEndEvent } from "@dnd-kit/core";
 import { arrayMove } from "@dnd-kit/sortable";
 import { useGamePlayers } from "@/features/room";
-import { createRoom, getInvitation, leaveRoom, updatePlayerOrder } from "@/features/room/api";
+import {
+  addGuestPlayer,
+  createRoom,
+  getInvitation,
+  leaveRoom,
+  updatePlayerOrder,
+  type AddGuestErrorResponse,
+} from "@/features/room/api";
 import { getGameThrows, startGame } from "@/features/game/api";
 import {
   $lastFinishedGameId,
@@ -15,6 +22,8 @@ import {
   setInvitation,
 } from "@/stores";
 import { setGameData } from "@/stores/game";
+import { ApiError } from "@/lib/api/errors";
+import { validateGuestUsername } from "../lib/guestUsername";
 
 /**
  * Manages start page state, player order, and room lifecycle actions.
@@ -32,6 +41,11 @@ export function useStartPage() {
   const [creating, setCreating] = useState(false);
   const [starting, setStarting] = useState(false);
   const [isRestoring, setIsRestoring] = useState(false);
+  const [isGuestOverlayOpen, setIsGuestOverlayOpen] = useState(false);
+  const [guestUsername, setGuestUsername] = useState("");
+  const [guestError, setGuestError] = useState<string | null>(null);
+  const [guestSuggestions, setGuestSuggestions] = useState<string[]>([]);
+  const [isAddingGuest, setIsAddingGuest] = useState(false);
 
   // gameId aus URL-Parameter oder Store
   const gameId = useMemo(() => {
@@ -213,6 +227,92 @@ export function useStartPage() {
     }
   };
 
+  const openGuestOverlay = (): void => {
+    setGuestError(null);
+    setGuestSuggestions([]);
+    setIsGuestOverlayOpen(true);
+  };
+
+  const closeGuestOverlay = (): void => {
+    setIsGuestOverlayOpen(false);
+    setGuestUsername("");
+    setGuestError(null);
+    setGuestSuggestions([]);
+  };
+
+  const handleGuestUsernameChange = useCallback(
+    (value: string): void => {
+      setGuestUsername(value);
+      if (guestError) {
+        setGuestError(null);
+      }
+      if (guestSuggestions.length > 0) {
+        setGuestSuggestions([]);
+      }
+    },
+    [guestError, guestSuggestions.length],
+  );
+
+  const handleGuestSuggestion = useCallback(
+    (suggestion: string): void => {
+      setGuestUsername(suggestion);
+      setGuestError(null);
+      setGuestSuggestions([]);
+    },
+    [],
+  );
+
+  const getGuestErrorFromApi = (error: unknown): AddGuestErrorResponse | null => {
+    if (!(error instanceof ApiError) || error.status !== 409) {
+      return null;
+    }
+
+    const data = error.data;
+    if (typeof data !== "object" || data === null) {
+      return null;
+    }
+
+    const typed = data as AddGuestErrorResponse;
+    if (typed.error !== "USERNAME_TAKEN") {
+      return null;
+    }
+
+    return typed;
+  };
+
+  const handleAddGuest = async (): Promise<void> => {
+    if (!gameId || isAddingGuest) {
+      setGuestError("Please create a game first.");
+      return;
+    }
+
+    const trimmedUsername = guestUsername.trim();
+    const validationError = validateGuestUsername(trimmedUsername);
+    if (validationError) {
+      setGuestError(validationError);
+      return;
+    }
+
+    setIsAddingGuest(true);
+    setGuestError(null);
+    setGuestSuggestions([]);
+
+    try {
+      await addGuestPlayer(gameId, { username: trimmedUsername });
+      closeGuestOverlay();
+    } catch (error) {
+      const apiError = getGuestErrorFromApi(error);
+      if (apiError) {
+        setGuestError(apiError.message || "Username already taken.");
+        setGuestSuggestions(apiError.suggestions ?? []);
+        return;
+      }
+      setGuestError("Could not add guest. Please try again.");
+    } finally {
+      setIsAddingGuest(false);
+    }
+  };
+
   return {
     invitation,
     gameId,
@@ -222,9 +322,19 @@ export function useStartPage() {
     creating,
     starting,
     isRestoring,
+    isGuestOverlayOpen,
+    guestUsername,
+    guestError,
+    guestSuggestions,
+    isAddingGuest,
     handleDragEnd,
     handleRemovePlayer,
     handleStartGame,
     handleCreateRoom,
+    openGuestOverlay,
+    closeGuestOverlay,
+    setGuestUsername: handleGuestUsernameChange,
+    handleGuestSuggestion,
+    handleAddGuest,
   };
 }

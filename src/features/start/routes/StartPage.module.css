@@ -1,3 +1,10 @@
+.main {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  overflow: hidden;
+}
+
 .start {
   display: grid;
   overflow: hidden;
@@ -12,6 +19,27 @@
   display: flex;
   align-items: center;
   justify-content: center;
+}
+
+.qrCodeStack {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  align-items: center;
+}
+
+.guestButtonRow {
+  width: 100%;
+  display: flex;
+  justify-content: center;
+}
+
+.guestButton {
+  background-color: var(--darkblue) !important;
+}
+
+.guestButton:hover {
+  background-color: var(--blue) !important;
 }
 
 .existingPlayerList {

@@ -10,6 +10,7 @@ import Button from "@/components/button/Button";
 import QRCode from "../components/qr-code/QRCode";
 import { LivePlayersList } from "../components/live-players-list/LivePlayersList";
 import { useStartPage } from "../hooks/useStartPage";
+import GuestPlayerOverlay from "../components/guest-player-overlay/GuestPlayerOverlay";
 
 const FRONTEND_BASE_URL = "http://localhost:5173";
 
@@ -20,10 +21,20 @@ function StartPage(): React.JSX.Element {
     lastFinishedGameId,
     playerCount,
     playerOrder,
+    isGuestOverlayOpen,
+    guestUsername,
+    guestError,
+    guestSuggestions,
+    isAddingGuest,
     handleDragEnd,
     handleRemovePlayer,
     handleStartGame,
     handleCreateRoom,
+    openGuestOverlay,
+    closeGuestOverlay,
+    setGuestUsername,
+    handleGuestSuggestion,
+    handleAddGuest,
   } = useStartPage();
 
   return (
@@ -37,10 +48,21 @@ function StartPage(): React.JSX.Element {
             </div>
             <div className={styles.qrCodeSection}>
               {invitation && (
-                <QRCode
-                  invitationLink={FRONTEND_BASE_URL + invitation.invitationLink}
-                  gameId={invitation.gameId}
-                />
+                <div className={styles.qrCodeStack}>
+                  <QRCode
+                    invitationLink={FRONTEND_BASE_URL + invitation.invitationLink}
+                    gameId={invitation.gameId}
+                  />
+                  <div className={styles.guestButtonRow}>
+                    <Button
+                      type="secondary"
+                      label="Play as a guest"
+                      className={styles.guestButton}
+                      handleClick={openGuestOverlay}
+                      disabled={!gameId}
+                    />
+                  </div>
+                </div>
               )}
             </div>
             <div className={styles.bottom}>
@@ -84,6 +106,17 @@ function StartPage(): React.JSX.Element {
           </div>
         </>
       </div>
+      <GuestPlayerOverlay
+        isOpen={isGuestOverlayOpen}
+        username={guestUsername}
+        onUsernameChange={setGuestUsername}
+        onAdd={handleAddGuest}
+        onClose={closeGuestOverlay}
+        isAdding={isAddingGuest}
+        error={guestError}
+        suggestions={guestSuggestions}
+        onSuggestionClick={handleGuestSuggestion}
+      />
     </div>
   );
 }
