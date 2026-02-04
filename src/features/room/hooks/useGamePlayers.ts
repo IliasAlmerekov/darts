@@ -69,8 +69,10 @@ export function useGamePlayers(gameId: number | null, previousGameId?: number | 
       const list = payload.items ?? payload.players;
 
       if (Array.isArray(list)) {
-        // Skip empty SSE payloads to avoid overriding preloaded players
-        if (list.length === 0) return;
+        if (list.length === 0) {
+          setPlayers([]);
+          return;
+        }
 
         const mappedPlayers = list.map((player, index) => ({
           id: player.id,
