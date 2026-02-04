@@ -5,18 +5,23 @@ import { test, expect } from "@playwright/test";
 
 test("Verify logout button states", async ({ page }) => {
   // Mock the login success check to return authenticated user with roles
+  let loggedOut = false;
   await page.route("**/api/login/success", async (route) => {
-    await route.fulfill({
-      status: 200,
-      contentType: "application/json",
-      body: JSON.stringify({
-        success: true,
-        roles: ["ROLE_ADMIN", "ROLE_PLAYER"],
-        id: 1,
-        username: "testuser",
-        redirect: "/start",
-      }),
-    });
+    if (!loggedOut) {
+      await route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify({
+          success: true,
+          roles: ["ROLE_ADMIN", "ROLE_PLAYER"],
+          id: 1,
+          username: "testuser",
+          redirect: "/start",
+        }),
+      });
+      return;
+    }
+    await route.fulfill({ status: 401 });
   });
 
   // Create a promise that will be resolved when we're ready to let the logout complete
@@ -27,6 +32,7 @@ test("Verify logout button states", async ({ page }) => {
 
   // Mock the logout API with a gate to control when it completes
   await page.route("**/api/logout", async (route) => {
+    loggedOut = true;
     await logoutGate;
     await route.fulfill({
       status: 200,
@@ -67,13 +73,7 @@ test("Verify logout button states", async ({ page }) => {
   // Now let the logout complete
   resolveLogout!();
 
-  // Wait a bit for the response to be processed
-  await page.waitForTimeout(100);
-
-  // Verify button returns to enabled state
-  await expect(logoutButton).toBeEnabled({ timeout: 5000 });
-
-  // Verify loading state is cleared
-  await expect(logoutButton).toContainText(/logout/i);
-  await expect(logoutButton).not.toContainText(/loging out/i);
+  // Verify redirect to login page with success message
+  await page.waitForURL(/\/\?left=1$/);
+  await expect(page.getByText("Sie haben das Spiel erfolgreich verlassen")).toBeVisible();
 });

@@ -6,13 +6,15 @@ import passwordIcon from "@/assets/icons/password.svg";
 
 interface LoginFormProps {
   error: string | null;
+  success?: string | null;
   loading: boolean;
   onSubmit: (e: React.FormEvent<HTMLFormElement>) => void;
 }
 
-export function LoginForm({ error, loading, onSubmit }: LoginFormProps) {
+export function LoginForm({ error, success, loading, onSubmit }: LoginFormProps) {
   return (
     <form onSubmit={onSubmit}>
+      {success && <div className={`${styles.alert} ${styles.alertSuccess}`}>{success}</div>}
       {error && <div className={`${styles.alert} ${styles.alertDanger}`}>{error}</div>}
 
       <h1 className={styles.formTitle}>Please sign in</h1>

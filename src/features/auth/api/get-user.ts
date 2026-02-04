@@ -5,8 +5,12 @@ export interface AuthenticatedUser {
   email?: string | null;
   username?: string | null;
   redirect: string;
+  gameId?: number | null;
 }
 
+/**
+ * Fetches the currently authenticated user, if any.
+ */
 export async function getAuthenticatedUser(): Promise<AuthenticatedUser | null> {
   const response = await fetch("/api/login/success", {
     method: "GET",
