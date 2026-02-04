@@ -1,6 +1,6 @@
 # Dart score app
 
-Dart score app is an app where you can effortlesly keep track of your dart games.
+Dart score app is an app where you can effortlessly keep track of your dart games.
 
 ## Installation
 
@@ -19,31 +19,31 @@ Dart score app is an app where you can effortlesly keep track of your dart games
 ## Getting Started
 
 ```bash
-npm start
+npm run dev
 ```
+
+## Environment
+
+Create a `.env` file in the project root using `.env.example` as a template.
 
 ## Directory structure
 
 ```bash
 └───src
     ├───app
+    │   └───styles
+    ├───assets
+    │   ├───fonts
+    │   │   └───circularXX
+    │   └───icons
     ├───components
-    │   ├───Button
-    │   ├───GamePlayerItem
-    │   ├───InputField
-    │   ├───Keyboard
-    │   ├───LinkButton
-    │   ├───Overlay
-    │   └───PlayerItems
-    ├───css
-    ├───fonts
-    │   └───circularXX
-    ├───icons
-    ├───pages
-    │   ├───game
-    │   ├───start
-    │   └───Test
-    └───types
+    ├───features
+    ├───hooks
+    ├───lib
+    │   └───api
+    ├───stores
+    ├───types
+    └───utils
 ```
 
 ## Common Commit Types (Conventional Commits)

@@ -2,7 +2,6 @@
   "name": "darts",
   "version": "0.1.0",
   "private": true,
-  "proxy": "http://localhost:8001",
   "dependencies": {
     "@dnd-kit/core": "^6.1.0",
     "@dnd-kit/modifiers": "^7.0.0",
@@ -27,7 +26,7 @@
     "test": "vitest run",
     "test:e2e": "playwright test",
     "prepare": "husky",
-    "husky": "npm run stylelint npm run eslint",
+    "husky": "npm run stylelint && npm run eslint",
     "commitlint": "commitlint --edit",
     "knip": "knip"
   },
@@ -48,6 +47,7 @@
     "@commitlint/config-conventional": "^19.8.0",
     "@eslint/js": "^9.23.0",
     "@playwright/test": "^1.58.1",
+    "@testing-library/react": "^16.3.0",
     "@types/node": "^22.14.0",
     "@types/qrcode.react": "^1.0.5",
     "@types/react": "^18.0.0",
@@ -59,6 +59,7 @@
     "eslint-plugin-react": "^7.37.4",
     "eslint-plugin-react-hooks": "^5.2.0",
     "husky": "^9.1.7",
+    "jsdom": "^26.0.0",
     "knip": "^5.50.1",
     "lint-staged": "^15.5.0",
     "prettier": "^3.5.3",
