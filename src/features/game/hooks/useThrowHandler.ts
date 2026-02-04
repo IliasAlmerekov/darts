@@ -13,6 +13,9 @@ interface UseThrowHandlerReturn {
   handleUndo: () => Promise<void>;
 }
 
+/**
+ * Provides throw and undo handlers for the active game.
+ */
 export function useThrowHandler({ gameId }: UseThrowHandlerOptions): UseThrowHandlerReturn {
   const isProcessingRef = useRef(false);
 

@@ -3,6 +3,9 @@ import { useNavigate } from "react-router-dom";
 import { ApiError } from "@/lib/api";
 import { registerUser, type RegistrationResponse } from "../api";
 
+/**
+ * Provides registration flow state and action.
+ */
 export function useRegistration() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);

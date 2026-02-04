@@ -6,6 +6,9 @@ interface UseEventSourceOptions {
   withCredentials?: boolean;
 }
 
+/**
+ * Subscribes to a server-sent events stream and cleans up on unmount.
+ */
 export const useEventSource = (
   url: string | null,
   eventName: string,

@@ -8,6 +8,9 @@ async function getInvitation(gameId: number): Promise<CreateRoomResponse> {
   return apiClient.get<CreateRoomResponse>(CREATE_INVITE_ENDPOINT(gameId));
 }
 
+/**
+ * Creates a rematch and returns invitation details for the new game.
+ */
 export async function createRematch(previousGameId: number): Promise<BASIC.RematchResponse> {
   const rematch = await apiClient.post<
     BASIC.RematchResponse | { gameId: number; invitationLink?: string; success?: boolean }

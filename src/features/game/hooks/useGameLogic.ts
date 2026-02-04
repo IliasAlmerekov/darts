@@ -11,6 +11,9 @@ import { closeFinishGameOverlay } from "@/stores/ui";
 import { setInvitation, resetRoomStore } from "@/stores";
 import { unlockSounds } from "@/lib/soundPlayer";
 
+/**
+ * Aggregates game state, side effects, and UI handlers for the game page.
+ */
 export const useGameLogic = () => {
   const navigate = useNavigate();
   const { id: gameIdParam } = useParams<{ id?: string }>();

@@ -4,6 +4,9 @@ export interface ParsedThrow {
   isTriple: boolean;
 }
 
+/**
+ * Parses a throw value into numeric value and multiplier flags.
+ */
 export function parseThrowValue(input: string | number): ParsedThrow {
   if (typeof input === "number") {
     return {

@@ -38,11 +38,17 @@ export const $currentGameId = atom<number | null>(getStoredGameId());
 export const $invitation = atom<Invitation | null>(null);
 export const $lastFinishedGameId = atom<number | null>(null);
 
+/**
+ * Sets the current game id and persists it in session storage.
+ */
 export function setCurrentGameId(gameId: number | null): void {
   $currentGameId.set(gameId);
   setStoredGameId(gameId);
 }
 
+/**
+ * Stores the current invitation and updates the game id if provided.
+ */
 export function setInvitation(invitation: Invitation | null): void {
   $invitation.set(invitation);
   if (invitation?.gameId) {
@@ -50,14 +56,23 @@ export function setInvitation(invitation: Invitation | null): void {
   }
 }
 
+/**
+ * Stores the last finished game id for navigation/summary flows.
+ */
 export function setLastFinishedGameId(gameId: number | null): void {
   $lastFinishedGameId.set(gameId);
 }
 
+/**
+ * Reads the currently active game id from the store.
+ */
 export function getActiveGameId(): number | null {
   return $currentGameId.get() ?? null;
 }
 
+/**
+ * Clears room-related store state and persisted game id.
+ */
 export function resetRoomStore(): void {
   setCurrentGameId(null);
   $invitation.set(null);

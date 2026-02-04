@@ -4,6 +4,9 @@ import type { RoomStreamEvent } from "../types";
 
 const SSE_STREAM_ENDPOINT = (id: number) => `/room/${id}/stream`;
 
+/**
+ * Subscribes to room SSE stream and exposes the latest event.
+ */
 export function useRoomStream(gameId: number | null) {
   const [event, setEvent] = useState<RoomStreamEvent | null>(null);
   const [isConnected, setIsConnected] = useState(false);

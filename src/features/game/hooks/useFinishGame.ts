@@ -1,6 +1,9 @@
 import { useState } from "react";
 import { finishGame as finishGameRequest } from "../api";
 
+/**
+ * Provides finish-game action with loading/error state.
+ */
 export function useFinishGame() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);

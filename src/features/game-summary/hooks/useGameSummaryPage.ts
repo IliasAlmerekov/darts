@@ -4,6 +4,9 @@ import { getFinishedGame, createRematch, type FinishedPlayerResponse } from "@/f
 import { setInvitation, setLastFinishedGameId, resetRoomStore } from "@/stores";
 import { playSound } from "@/lib/soundPlayer";
 
+/**
+ * Loads summary data for a finished game and provides rematch actions.
+ */
 export function useGameSummaryPage() {
   const navigate = useNavigate();
   const location = useLocation();

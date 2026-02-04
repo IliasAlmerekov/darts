@@ -40,7 +40,7 @@ test("Verify page layout and styling", async ({ page }) => {
   // Verify the heading is visible
   await expect(page.locator("h1")).toContainText("Spiel beigetreten");
 
-  // Verify the logout button is visible
+  // Verify no logout button is shown on the joined confirmation page
   const logoutButton = page.locator("button").filter({ hasText: /logout/i });
-  await expect(logoutButton).toBeVisible();
+  await expect(logoutButton).toHaveCount(0);
 });

@@ -2,6 +2,9 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { logout as logoutApi } from "../api";
 
+/**
+ * Provides logout flow state and action.
+ */
 export function useLogout() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);

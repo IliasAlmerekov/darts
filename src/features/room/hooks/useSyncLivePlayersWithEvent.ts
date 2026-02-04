@@ -8,6 +8,9 @@ interface UseSyncLivePlayersWithEventParams {
   updateEvent: (path: Partial<EventState>) => void;
 }
 
+/**
+ * Syncs live room players into the event selection state.
+ */
 export function UseSyncLivePlayersWithEvent({
   gameId,
   selectedPlayers,

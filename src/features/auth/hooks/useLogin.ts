@@ -2,6 +2,9 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { loginWithCredentials, getAuthenticatedUser } from "../api";
 
+/**
+ * Provides login flow state and action.
+ */
 export function useLogin() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -37,9 +40,7 @@ export function useLogin() {
           const authenticatedUser = await getAuthenticatedUser();
           if (authenticatedUser?.redirect) {
             const redirectPath =
-              authenticatedUser.redirect === "/start"
-                ? "/start"
-                : authenticatedUser.redirect;
+              authenticatedUser.redirect === "/start" ? "/start" : authenticatedUser.redirect;
             navigate(redirectPath);
             return;
           }

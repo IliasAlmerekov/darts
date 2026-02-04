@@ -17,6 +17,9 @@ type CsrfTokensResponse = {
 let csrfTokensCache: CsrfTokenMap | null = null;
 let csrfTokensPromise: Promise<CsrfTokenMap> | null = null;
 
+/**
+ * Fetches CSRF tokens, with optional cache bypass.
+ */
 export async function getCsrfTokens(force = false): Promise<CsrfTokenMap> {
   if (!force && csrfTokensCache) {
     return csrfTokensCache;
@@ -43,6 +46,9 @@ export async function getCsrfTokens(force = false): Promise<CsrfTokenMap> {
   return csrfTokensPromise;
 }
 
+/**
+ * Returns a single CSRF token for the requested purpose.
+ */
 export async function getCsrfToken(purpose: CsrfTokenPurpose, force = false): Promise<string> {
   const tokens = await getCsrfTokens(force);
   const token = tokens[purpose];

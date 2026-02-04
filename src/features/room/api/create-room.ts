@@ -9,10 +9,16 @@ export type CreateGamePayload = {
   playerIds?: number[];
 };
 
+/**
+ * Fetches an invitation link for a game.
+ */
 export async function getInvitation(gameId: number): Promise<CreateRoomResponse> {
   return apiClient.get<CreateRoomResponse>(CREATE_INVITE_ENDPOINT(gameId));
 }
 
+/**
+ * Creates a new room and returns its invitation payload.
+ */
 export async function handleCreateGame(payload?: CreateGamePayload) {
   const body =
     payload && (payload.previousGameId || (payload.playerIds && payload.playerIds.length > 0))
@@ -28,6 +34,9 @@ export async function handleCreateGame(payload?: CreateGamePayload) {
   };
 }
 
+/**
+ * Creates a new room using optional payload.
+ */
 export async function createRoom(payload?: CreateGamePayload): Promise<CreateRoomResponse> {
   return handleCreateGame(payload);
 }

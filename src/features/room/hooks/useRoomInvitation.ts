@@ -4,6 +4,9 @@ import { createRoom as createRoomRequest, type CreateGamePayload } from "../api"
 
 export type Invitation = CreateRoomResponse;
 
+/**
+ * Creates a game room and exposes the invitation data.
+ */
 export function useRoomInvitation() {
   const [invitation, setInvitation] = useState<Invitation | null>(null);
 

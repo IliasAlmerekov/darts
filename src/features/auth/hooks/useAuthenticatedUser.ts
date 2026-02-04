@@ -1,7 +1,17 @@
 import { useEffect, useState } from "react";
 import { getAuthenticatedUser, type AuthenticatedUser } from "../api";
+import { setCurrentGameId } from "@/stores/room";
 
-export const useAuthenticatedUser = () => {
+type UseAuthenticatedUserResult = {
+  user: AuthenticatedUser | null;
+  loading: boolean;
+  error: string | null;
+};
+
+/**
+ * Fetches the currently authenticated user and exposes loading/error state.
+ */
+export const useAuthenticatedUser = (): UseAuthenticatedUserResult => {
   const [user, setUser] = useState<AuthenticatedUser | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -12,9 +22,16 @@ export const useAuthenticatedUser = () => {
         const userData = await getAuthenticatedUser();
         if (userData) {
           setUser(userData);
+          if (typeof userData.gameId === "number") {
+            setCurrentGameId(userData.gameId);
+          }
         }
       } catch (err) {
-        setError((err as Error).message);
+        if (err instanceof Error) {
+          setError(err.message);
+        } else {
+          setError("Unknown error");
+        }
       } finally {
         setLoading(false);
       }

@@ -15,6 +15,9 @@ interface UseGameStateReturn {
   updateGameData: (data: GameThrowsResponse) => void;
 }
 
+/**
+ * Loads and exposes the current game state from the API and store.
+ */
 export function useGameState({ gameId }: UseGameStateOptions): UseGameStateReturn {
   const gameData = useStore($gameData);
   const isLoading = useStore($isLoading);

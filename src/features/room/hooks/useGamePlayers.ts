@@ -20,6 +20,9 @@ type PlayersEventPayload = {
   items?: RawPlayer[];
 };
 
+/**
+ * Loads and keeps track of players in a room using SSE + fallback fetch.
+ */
 export function useGamePlayers(gameId: number | null, previousGameId?: number | null) {
   const [players, setPlayers] = useState<Player[]>([]);
 
@@ -66,8 +69,10 @@ export function useGamePlayers(gameId: number | null, previousGameId?: number | 
       const list = payload.items ?? payload.players;
 
       if (Array.isArray(list)) {
-        // Skip empty SSE payloads to avoid overriding preloaded players
-        if (list.length === 0) return;
+        if (list.length === 0) {
+          setPlayers([]);
+          return;
+        }
 
         const mappedPlayers = list.map((player, index) => ({
           id: player.id,

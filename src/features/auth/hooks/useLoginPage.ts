@@ -4,6 +4,9 @@ import { useAuthenticatedUser } from "./useAuthenticatedUser";
 import { useLogin } from "./useLogin";
 import { getActiveGameId } from "@/stores/room";
 
+/**
+ * Orchestrates login page state, submission, and redirect logic.
+ */
 export function useLoginPage() {
   const [error, setError] = useState<string | null>(null);
   const { login, loading, error: loginError } = useLogin();

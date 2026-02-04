@@ -16,6 +16,9 @@ export interface LoginCredentials {
   password: string;
 }
 
+/**
+ * Logs in a user using email/password credentials.
+ */
 export async function loginWithCredentials(
   credentials: LoginCredentials,
   forceTokenRefresh = false,

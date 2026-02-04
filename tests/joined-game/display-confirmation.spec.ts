@@ -34,8 +34,7 @@ test("Successfully display joined game confirmation page", async ({ page }) => {
   // Verify welcome message 'Willkommen im Spiel!' is visible
   await expect(page.locator("h3").filter({ hasText: "Willkommen im Spiel" })).toBeVisible();
 
-  // Verify the logout button is visible and enabled
+  // Verify no logout button is shown on the joined confirmation page
   const logoutButton = page.locator("button").filter({ hasText: /logout/i });
-  await expect(logoutButton).toBeVisible();
-  await expect(logoutButton).toBeEnabled();
+  await expect(logoutButton).toHaveCount(0);
 });

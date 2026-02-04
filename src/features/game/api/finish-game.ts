@@ -11,10 +11,16 @@ export type FinishedPlayerResponse = {
   roundAverage: number;
 };
 
+/**
+ * Fetches final standings for a finished game.
+ */
 export async function getFinishedGame(gameId: number): Promise<FinishedPlayerResponse[]> {
   return apiClient.get(FINISHED_GAME_ENDPOINT(gameId));
 }
 
+/**
+ * Marks a game as finished and returns final standings.
+ */
 export async function finishGame(gameId: number): Promise<FinishedPlayerResponse[]> {
   return apiClient.post(FINISH_GAME_ENDPOINT(gameId));
 }
