@@ -4,6 +4,7 @@ import styles from "./LoginPage.module.css";
 import LoadingAuth from "@/components/skeletons/LoadingAuth";
 import { useLoginPage } from "../hooks/useLoginPage";
 import { LoginForm } from "../components/LoginForm";
+import deepblueLogo from "@/assets/icons/madeByDeepblue.svg";
 
 function LoginPage(): React.JSX.Element {
   const { error, loading, checking, handleSubmit } = useLoginPage();
@@ -21,6 +22,9 @@ function LoginPage(): React.JSX.Element {
     <div className={styles.loginContainer}>
       <div className={styles.loginRow}>
         <div className={styles.loginCol}>
+          <div className={styles.logoWrapper}>
+            <img src={deepblueLogo} alt="DeepBlue" className={styles.logo} />
+          </div>
           <div className={styles.loginCard}>
             <div className={styles.loginCardBody}>
               <LoginForm

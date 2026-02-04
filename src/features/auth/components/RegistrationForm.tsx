@@ -1,9 +1,7 @@
-import React from "react";
+import React, { useState } from "react";
 import { Link } from "react-router-dom";
+import { Mail, Lock, Eye, EyeOff, User } from "lucide-react";
 import styles from "./AuthForm.module.css";
-import emailIcon from "@/assets/icons/email.svg";
-import passwordIcon from "@/assets/icons/password.svg";
-import userIcon from "@/assets/icons/user.svg";
 
 interface RegistrationFormProps {
   error: string | null;
@@ -11,76 +9,107 @@ interface RegistrationFormProps {
   onSubmit: (e: React.FormEvent<HTMLFormElement>) => void;
 }
 
-export function RegistrationForm({ error, loading, onSubmit }: RegistrationFormProps) {
+export function RegistrationForm({ error, loading, onSubmit }: RegistrationFormProps): React.JSX.Element {
+  const [showPassword, setShowPassword] = useState(false);
+
+  function handleTogglePassword(): void {
+    setShowPassword((prev) => !prev);
+  }
+
   return (
-    <form onSubmit={onSubmit}>
+    <>
+      {/* Header */}
+      <div className={styles.header}>
+        <h1 className={styles.formTitle}>Create an account</h1>
+        <p className={styles.formSubtitle}>Enter your details to get started</p>
+      </div>
+
       {error && <div className={`${styles.alert} ${styles.alertDanger}`}>{error}</div>}
 
-      <h1 className={styles.formTitle}>Create an account</h1>
+      {/* Form */}
+      <form onSubmit={onSubmit} className={styles.form}>
+        {/* Username */}
+        <div className={styles.fieldGroup}>
+          <label htmlFor="username" className={styles.formLabel}>
+            Username <span className={styles.required}>*</span>
+          </label>
+          <div className={styles.inputWrapper}>
+            <User className={styles.inputIcon} size={20} aria-hidden="true" />
+            <input
+              type="text"
+              name="username"
+              id="username"
+              placeholder="Enter your username..."
+              className={styles.formControl}
+              required
+              disabled={loading}
+              autoComplete="username"
+            />
+          </div>
+        </div>
 
-      <label htmlFor="username" className={styles.formLabel}>
-        Username
-      </label>
-      <div className={styles.inputGroup}>
-        <span className={styles.inputGroupIcon}>
-          <img src={userIcon} className={styles.icon} alt="user" />
-        </span>
-        <input
-          type="text"
-          name="username"
-          id="username"
-          className={styles.formControl}
-          required
-          disabled={loading}
-          autoComplete="username"
-        />
-      </div>
+        {/* Email */}
+        <div className={styles.fieldGroup}>
+          <label htmlFor="email" className={styles.formLabel}>
+            Email <span className={styles.required}>*</span>
+          </label>
+          <div className={styles.inputWrapper}>
+            <Mail className={styles.inputIcon} size={20} aria-hidden="true" />
+            <input
+              type="email"
+              name="email"
+              id="email"
+              placeholder="name@example.com..."
+              className={styles.formControl}
+              required
+              disabled={loading}
+            />
+          </div>
+        </div>
 
-      <label htmlFor="email" className={styles.formLabel}>
-        Email
-      </label>
-      <div className={styles.inputGroup}>
-        <span className={styles.inputGroupIcon}>
-          <img src={emailIcon} className={styles.icon} alt="email" />
-        </span>
-        <input
-          type="email"
-          name="email"
-          id="email"
-          className={styles.formControl}
-          required
-          disabled={loading}
-        />
-      </div>
+        {/* Password */}
+        <div className={styles.fieldGroup}>
+          <label htmlFor="password" className={styles.formLabel}>
+            Password <span className={styles.required}>*</span>
+          </label>
+          <div className={styles.inputWrapper}>
+            <Lock className={styles.inputIcon} size={20} aria-hidden="true" />
+            <input
+              type={showPassword ? "text" : "password"}
+              name="password"
+              id="password"
+              placeholder="Create a password..."
+              className={`${styles.formControl} ${styles.passwordInput}`}
+              required
+              disabled={loading}
+              autoComplete="new-password"
+            />
+            <button
+              type="button"
+              className={styles.passwordToggle}
+              onClick={handleTogglePassword}
+              aria-label={showPassword ? "Hide password" : "Show password"}
+            >
+              {showPassword ? (
+                <EyeOff size={20} aria-hidden="true" />
+              ) : (
+                <Eye size={20} aria-hidden="true" />
+              )}
+            </button>
+          </div>
+        </div>
 
-      <label htmlFor="password" className={styles.formLabel}>
-        Password
-      </label>
-      <div className={styles.inputGroup}>
-        <span className={styles.inputGroupIcon}>
-          <img src={passwordIcon} className={styles.icon} alt="password" />
-        </span>
-        <input
-          type="password"
-          name="password"
-          id="password"
-          className={styles.formControl}
-          required
-          disabled={loading}
-          autoComplete="new-password"
-        />
-      </div>
-
-      <div className={styles.formFooter}>
-        <button className={`${styles.btn} ${styles.btnPrimary}`} type="submit" disabled={loading}>
+        {/* Submit Button */}
+        <button type="submit" className={styles.submitBtn} disabled={loading}>
           {loading ? "Creating..." : "Create account"}
         </button>
-      </div>
-      <div className={styles.formLink}>
-        <small>
-          Already have an account? <Link to="/">Sign in</Link>
-        </small>
-      </div>
-    </form>
+      </form>
+
+      {/* Login Link */}
+      <p className={styles.formLink}>
+        Already have an account?{" "}
+        <Link to="/">Sign in</Link>
+      </p>
+    </>
   );
 }
