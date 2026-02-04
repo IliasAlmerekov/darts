@@ -22,36 +22,40 @@ export function Keyboard({ onThrow, disabled }: KeyboardProps): JSX.Element {
     if (disabled) return;
     unlockSounds();
 
-    switch (true) {
-      case btn === "Double":
-        setDoubleNext((prev) => !prev);
-        setTripleNext(false);
-        break;
-      case btn === "Triple":
-        setTripleNext((prev) => !prev);
-        setDoubleNext(false);
-        break;
-      case doubleNext && typeof btn === "number":
-        onThrow(`D${btn}`);
-        setDoubleNext(false);
-        break;
-      case tripleNext && typeof btn === "number":
-        onThrow(`T${btn}`);
-        setTripleNext(false);
-        break;
-      default:
-        onThrow(btn);
-        break;
+    if (btn === "Double") {
+      setDoubleNext((prev) => !prev);
+      setTripleNext(false);
+      return;
     }
+
+    if (btn === "Triple") {
+      setTripleNext((prev) => !prev);
+      setDoubleNext(false);
+      return;
+    }
+
+    if (doubleNext && typeof btn === "number") {
+      onThrow(`D${btn}`);
+      setDoubleNext(false);
+      return;
+    }
+
+    if (tripleNext && typeof btn === "number") {
+      onThrow(`T${btn}`);
+      setTripleNext(false);
+      return;
+    }
+
+    onThrow(btn);
   };
 
   return (
     <div className={styles.keyboard}>
-      {btnValues.flat().map((btn, i) => (
+      {btnValues.flat().map((btn) => (
         <NumberButton
           handleClick={() => handleButtonClick(btn)}
           value={btn}
-          key={i}
+          key={String(btn)}
           isActive={(doubleNext && btn === "Double") || (tripleNext && btn === "Triple")}
           disabled={
             disabled ||
