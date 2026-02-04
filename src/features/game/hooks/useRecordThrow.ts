@@ -2,6 +2,9 @@ import { useState } from "react";
 import { recordThrow as recordThrowRequest } from "../api";
 import type { ThrowRequest } from "@/types/api";
 
+/**
+ * Provides record-throw action scoped to a game.
+ */
 export function useRecordThrow(gameId: number) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);

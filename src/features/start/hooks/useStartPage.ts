@@ -16,6 +16,9 @@ import {
 } from "@/stores";
 import { setGameData } from "@/stores/game";
 
+/**
+ * Manages start page state, player order, and room lifecycle actions.
+ */
 export function useStartPage() {
   const START_SOUND_PATH = "/sounds/start-round-sound.mp3";
   const navigate = useNavigate();

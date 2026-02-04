@@ -1,9 +1,2 @@
-export interface RoomStreamEvent<T = unknown> {
-  type: string;
-  data: T;
-}
-
-export interface RoomState {
-  id: number;
-  players: Array<{ id: number; username: string }>;
-}
+// Re-export from entities for backward compatibility
+export type { RoomStreamEvent, RoomState } from "@/entities/room";

@@ -2,6 +2,9 @@ import { apiClient } from "@/lib/api";
 
 const UPDATE_PLAYER_ORDER_ENDPOINT = (id: number) => `/room/${id}/positions`;
 
+/**
+ * Persists player ordering for a game room.
+ */
 export async function updatePlayerOrder(
   gameId: number,
   positions: Array<{ playerId: number; position: number }>,

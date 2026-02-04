@@ -2,6 +2,9 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useRegistration } from "./useRegistration";
 
+/**
+ * Orchestrates registration page state and submission handling.
+ */
 export function useRegistrationPage() {
   const [error, setError] = useState<string | null>(null);
   const { register, loading } = useRegistration();

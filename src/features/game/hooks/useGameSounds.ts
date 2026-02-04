@@ -64,6 +64,9 @@ function createThrowKey(game: GameThrowsResponse, playerId: number): string | nu
   ].join(":");
 }
 
+/**
+ * Plays sound effects when game state changes indicate throws, busts, or wins.
+ */
 export function useGameSounds(gameData: GameThrowsResponse | null): void {
   const previousGameRef = useRef<GameThrowsResponse | null>(null);
   const lastKeyRef = useRef<string | null>(null);

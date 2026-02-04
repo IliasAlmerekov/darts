@@ -14,6 +14,9 @@ export interface RegistrationData {
   password: string;
 }
 
+/**
+ * Registers a new user account.
+ */
 export async function registerUser(
   data: RegistrationData,
   forceTokenRefresh = false,

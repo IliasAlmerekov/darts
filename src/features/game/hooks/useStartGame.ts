@@ -2,6 +2,9 @@ import { useState } from "react";
 import { startGame as startGameRequest } from "../api";
 import type { StartGameRequest } from "@/types/api";
 
+/**
+ * Provides start-game action with loading/error state.
+ */
 export function useStartGame() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);

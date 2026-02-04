@@ -15,12 +15,18 @@ type UpdateGameSettingsPayload = Partial<{
   tripleOut: boolean;
 }>;
 
+/**
+ * Creates game settings for a new game.
+ */
 export async function createGameSettings(
   payload: CreateGameSettingsPayload,
 ): Promise<GameThrowsResponse> {
   return apiClient.post(CREATE_GAME_SETTINGS_ENDPOINT, payload);
 }
 
+/**
+ * Updates settings for an existing game.
+ */
 export async function updateGameSettings(
   gameId: number,
   payload: UpdateGameSettingsPayload,
@@ -28,6 +34,9 @@ export async function updateGameSettings(
   return apiClient.patch(GAME_SETTINGS_ENDPOINT(gameId), payload);
 }
 
+/**
+ * Creates or updates game settings depending on whether a game id is provided.
+ */
 export async function saveGameSettings(
   payload: CreateGameSettingsPayload,
   gameId?: number | null,

@@ -20,6 +20,9 @@ type PlayersEventPayload = {
   items?: RawPlayer[];
 };
 
+/**
+ * Loads and keeps track of players in a room using SSE + fallback fetch.
+ */
 export function useGamePlayers(gameId: number | null, previousGameId?: number | null) {
   const [players, setPlayers] = useState<Player[]>([]);
 

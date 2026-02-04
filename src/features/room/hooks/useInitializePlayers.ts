@@ -7,6 +7,9 @@ interface UseInitializePlayersParams {
   functions: UserFunctions;
 }
 
+/**
+ * Initializes the player list on first render using server event data.
+ */
 export function UseInitializePlayers({
   event,
   updateEvent,

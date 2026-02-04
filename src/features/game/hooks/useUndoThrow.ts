@@ -1,6 +1,9 @@
 import { useState } from "react";
 import { undoLastThrow } from "../api";
 
+/**
+ * Provides undo-throw action with loading/error state.
+ */
 export function useUndoThrow() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
