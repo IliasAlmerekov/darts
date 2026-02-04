@@ -1,5 +1,4 @@
 // @vitest-environment jsdom
-import React from "react";
 import { render, screen, waitFor } from "@testing-library/react";
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { useGamePlayers } from "./useGamePlayers";
@@ -20,7 +19,25 @@ vi.mock("@/features/game/api", () => ({
   getGameThrows: vi.fn(),
 }));
 
-import { getGameThrows } from "@/features/game/api";
+import { getGameThrows, type GameThrowsResponse } from "@/features/game/api";
+
+const buildGameThrowsResponse = (
+  overrides: Partial<GameThrowsResponse> = {},
+): GameThrowsResponse => ({
+  id: 1,
+  status: "active",
+  currentRound: 1,
+  activePlayerId: 1,
+  currentThrowCount: 0,
+  players: [],
+  winnerId: null,
+  settings: {
+    startScore: 501,
+    doubleOut: false,
+    tripleOut: false,
+  },
+  ...overrides,
+});
 
 function HookConsumer({ gameId }: { gameId: number | null }) {
   const { count } = useGamePlayers(gameId);
@@ -34,14 +51,28 @@ describe("useGamePlayers", () => {
   });
 
   it("clears players when SSE sends an empty list", async () => {
-    vi.mocked(getGameThrows).mockResolvedValue({
-      players: [{ id: 1, name: "Player 1", position: 0 }],
-    });
+    vi.mocked(getGameThrows).mockResolvedValue(
+      buildGameThrowsResponse({
+        players: [
+          {
+            id: 1,
+            name: "Player 1",
+            score: 501,
+            isActive: true,
+            isBust: false,
+            position: 0,
+            throwsInCurrentRound: 0,
+            currentRoundThrows: [],
+            roundHistory: [],
+          },
+        ],
+      }),
+    );
 
     render(<HookConsumer gameId={1} />);
 
     await waitFor(() => {
-      expect(screen.getByTestId("count")).toHaveTextContent("1");
+      expect(screen.getByTestId("count").textContent).toBe("1");
     });
 
     sseHandler?.(
@@ -51,7 +82,7 @@ describe("useGamePlayers", () => {
     );
 
     await waitFor(() => {
-      expect(screen.getByTestId("count")).toHaveTextContent("0");
+      expect(screen.getByTestId("count").textContent).toBe("0");
     });
   });
 });
