@@ -2,7 +2,7 @@
 
 ## Current Status
 
-✅ **Test files generated**: 7 comprehensive test files covering all scenarios from sections 1 and 2 of the test plan  
+✅ **Test files generated**: 3 comprehensive test files covering key scenarios from the test plan  
 ✅ **Playwright installed**: `@playwright/test` is in package.json  
 ⚠️ **Version conflict**: If you see "Playwright Test did not expect test() to be called here" errors, follow the fix below
 
@@ -49,16 +49,9 @@ npx playwright test --ui
 
 ### 1. Page Display Tests
 
-- `display-confirmation.spec.ts` - Verifies page content, headings, and logout button
+- `display-confirmation.spec.ts` - Verifies page content and headings
 - `page-layout.spec.ts` - Tests CSS styling, layout structure, and responsive design
 - `unauthenticated-access.spec.ts` - Tests redirect behavior for unauthorized users
-
-### 2. Logout Functionality Tests
-
-- `logout-success.spec.ts` - Tests successful logout flow with API monitoring
-- `logout-error-handling.spec.ts` - Tests error scenarios with 500 API responses
-- `logout-button-states.spec.ts` - Verifies button styling and state transitions
-- `logout-multiple-clicks.spec.ts` - Prevents race conditions and duplicate requests
 
 ## Test Credentials
 

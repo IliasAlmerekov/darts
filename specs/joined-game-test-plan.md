@@ -2,7 +2,7 @@
 
 ## Application Overview
 
-The joined-game feature is a confirmation page displayed to users after successfully joining a darts game through an invitation link. This page provides visual confirmation of successful game entry and allows users to log out. The feature is a protected route that requires authentication and is part of the game room invitation flow.
+The joined-game feature is a confirmation page displayed to users after successfully joining a darts game through an invitation link. This page provides visual confirmation of successful game entry. The feature is a protected route that requires authentication and is part of the game room invitation flow.
 
 ## Test Scenarios
 
@@ -25,7 +25,6 @@ The joined-game feature is a confirmation page displayed to users after successf
    - expect: The page displays the heading '✓ Spiel beigetreten!'
    - expect: A welcome message 'Willkommen im Spiel!' is visible
    - expect: The welcome message has a green background (#d4edda) indicating success
-   - expect: The logout button is visible and enabled
 
 #### 1.2. Verify page layout and styling
 
@@ -57,91 +56,6 @@ The joined-game feature is a confirmation page displayed to users after successf
    - expect: User is redirected to the login page (/)
    - expect: The joined game confirmation page is not displayed
    - expect: A loading skeleton may briefly appear during authentication check
-
-### 2. Logout Functionality
-
-**Seed:** `seed.spec.ts`
-
-#### 2.1. Successfully logout from joined game page
-
-**File:** `tests/joined-game/logout-success.spec.ts`
-
-**Steps:**
-
-1. Authenticate and navigate to /joined
-   - expect: User is on the joined game page
-   - expect: Logout button displays text 'logout'
-
-2. Click the logout button
-   - expect: The button text changes to 'loging out...' during the logout process
-   - expect: The button becomes disabled during logout
-   - expect: A POST request is sent to /api/logout endpoint with credentials
-   - expect: The logout API call completes successfully
-
-3. Wait for logout to complete
-   - expect: User authentication is cleared
-   - expect: User session is terminated
-   - expect: Button returns to enabled state after completion
-
-#### 2.2. Handle logout API errors gracefully
-
-**File:** `tests/joined-game/logout-error-handling.spec.ts`
-
-**Steps:**
-
-1. Authenticate and navigate to /joined
-   - expect: User is on the joined game page
-
-2. Mock the /api/logout endpoint to return a 500 error
-   - expect: Logout endpoint is configured to fail
-
-3. Click the logout button
-   - expect: Button shows loading state 'loging out...'
-   - expect: The error is caught and logged to console
-   - expect: Button returns to enabled state after error
-   - expect: Page remains functional despite error
-
-#### 2.3. Verify logout button states
-
-**File:** `tests/joined-game/logout-button-states.spec.ts`
-
-**Steps:**
-
-1. Authenticate and navigate to /joined
-   - expect: Logout button is visible and enabled
-
-2. Verify button initial state
-   - expect: Button displays 'logout' text
-   - expect: Button has classes 'btn' and 'btnPrimary'
-   - expect: Button has blue background color (#0d6efd)
-   - expect: Button is not disabled
-
-3. Click the logout button
-   - expect: Button immediately becomes disabled
-   - expect: Button text changes to 'loging out...'
-   - expect: Button maintains blue styling during loading state
-
-4. Wait for logout API call to complete
-   - expect: Button returns to enabled state
-   - expect: Loading state is cleared
-
-#### 2.4. Prevent multiple simultaneous logout requests
-
-**File:** `tests/joined-game/logout-multiple-clicks.spec.ts`
-
-**Steps:**
-
-1. Authenticate and navigate to /joined
-   - expect: User is on the joined game page
-
-2. Click the logout button
-   - expect: Button becomes disabled
-   - expect: First logout request is initiated
-
-3. Attempt to click the logout button again while it's disabled
-   - expect: Button click is prevented by disabled attribute
-   - expect: No additional logout requests are sent
-   - expect: Only one /api/logout request is made
 
 ### 3. Loading States and Skeletons
 
@@ -214,7 +128,7 @@ The joined-game feature is a confirmation page displayed to users after successf
 2. User manually navigates to /joined route
    - expect: The joined game page loads
    - expect: Page displays standard confirmation message
-   - expect: Logout button works correctly
+   - expect: Confirmation message displays correctly
    - expect: No errors occur from accessing page directly
 
 #### 4.3. Verify role-based access control
@@ -252,13 +166,8 @@ The joined-game feature is a confirmation page displayed to users after successf
    - expect: User is on the joined game page
 
 2. Use Tab key to navigate through interactive elements
-   - expect: Focus moves to the logout button
-   - expect: Logout button has visible focus indicator
-   - expect: Only interactive elements are in tab order
-
-3. Press Enter key while logout button is focused
-   - expect: Logout action is triggered
-   - expect: Same behavior as clicking with mouse
+   - expect: No focusable controls are present on the page
+   - expect: Tab navigation does not focus any controls
 
 #### 5.2. Verify semantic HTML and ARIA labels
 
@@ -272,7 +181,6 @@ The joined-game feature is a confirmation page displayed to users after successf
 2. Inspect the page structure with accessibility tools
    - expect: The main heading uses h1 tag
    - expect: The welcome section uses h3 tag
-   - expect: Button element is properly marked up
    - expect: Color contrast meets WCAG AA standards (green background with dark green text)
    - expect: Success indicator (✓) is part of heading text
 
@@ -290,7 +198,6 @@ The joined-game feature is a confirmation page displayed to users after successf
    - expect: Card container has proper padding (0 15px)
    - expect: Card is responsive with max-width constraint
    - expect: Text is readable and not cut off
-   - expect: Logout button is easily tappable (minimum 44x44px)
    - expect: No horizontal scrolling required
 
 #### 5.4. Test responsive design on tablet devices
@@ -359,11 +266,6 @@ The joined-game feature is a confirmation page displayed to users after successf
    - expect: User remains on the page
    - expect: Page continues to display correctly
 
-3. Click the logout button after session has potentially expired
-   - expect: Logout request is sent
-   - expect: Application handles expired session gracefully
-   - expect: User is logged out or redirected appropriately
-
 #### 6.3. Handle malformed authentication state
 
 **File:** `tests/joined-game/malformed-auth.spec.ts`
@@ -391,7 +293,6 @@ The joined-game feature is a confirmation page displayed to users after successf
 
 1. Run all core tests in Chromium browser
    - expect: All visual elements render correctly
-   - expect: Logout functionality works
    - expect: Styling is applied correctly
    - expect: No browser-specific errors
 
@@ -403,7 +304,6 @@ The joined-game feature is a confirmation page displayed to users after successf
 
 1. Run all core tests in Firefox browser
    - expect: All visual elements render correctly
-   - expect: Logout functionality works
    - expect: Styling is applied correctly
    - expect: No browser-specific errors
    - expect: Color values render consistently
@@ -416,7 +316,6 @@ The joined-game feature is a confirmation page displayed to users after successf
 
 1. Run all core tests in WebKit browser
    - expect: All visual elements render correctly
-   - expect: Logout functionality works
    - expect: Styling is applied correctly
    - expect: No browser-specific errors
    - expect: Border-radius renders correctly
@@ -424,20 +323,6 @@ The joined-game feature is a confirmation page displayed to users after successf
 ### 8. Security Testing
 
 **Seed:** `seed.spec.ts`
-
-#### 8.1. Verify credentials are included in logout request
-
-**File:** `tests/joined-game/logout-credentials.spec.ts`
-
-**Steps:**
-
-1. Authenticate and navigate to /joined
-   - expect: User is on the joined game page
-
-2. Monitor network requests and click logout button
-   - expect: POST request to /api/logout includes credentials: 'include' flag
-   - expect: Session cookies are sent with the request
-   - expect: Request is made securely
 
 #### 8.2. Verify XSS protection in displayed content
 
@@ -454,16 +339,3 @@ The joined-game feature is a confirmation page displayed to users after successf
    - expect: Heading and message text cannot execute scripts
    - expect: Content is properly sanitized
 
-#### 8.3. Test CSRF protection on logout
-
-**File:** `tests/joined-game/csrf-protection.spec.ts`
-
-**Steps:**
-
-1. Authenticate and navigate to /joined
-   - expect: User has valid session
-
-2. Attempt to make logout request from different origin
-   - expect: Request is blocked by CORS policy
-   - expect: Logout requires same-origin request
-   - expect: Security mechanisms prevent CSRF attacks

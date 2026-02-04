@@ -1,10 +1,7 @@
 import React from "react";
 import styles from "./JoinedGamePage.module.css";
-import { useJoinedGamePage } from "../hooks/useJoinedGamePage";
 
 function JoinedGamePage(): React.JSX.Element {
-  const { loading, handleLogout } = useJoinedGamePage();
-
   return (
     <div className={styles.loginContainer}>
       <div className={styles.loginRow}>
@@ -24,16 +21,6 @@ function JoinedGamePage(): React.JSX.Element {
                 }}
               >
                 <h3 style={{ marginBottom: "10px" }}>Willkommen im Spiel!</h3>
-              </div>
-
-              <div className={styles.formFooter} style={{ marginTop: "20px" }}>
-                <button
-                  className={`${styles.btn} ${styles.btnPrimary}`}
-                  onClick={handleLogout}
-                  disabled={loading}
-                >
-                  {loading ? "loging out..." : "logout"}
-                </button>
               </div>
             </div>
           </div>
