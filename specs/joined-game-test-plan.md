@@ -338,4 +338,3 @@ The joined-game feature is a confirmation page displayed to users after successf
 2. Verify all text content is rendered as text
    - expect: Heading and message text cannot execute scripts
    - expect: Content is properly sanitized
-
