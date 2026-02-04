@@ -53,19 +53,31 @@ export const $playersForUI = computed($gameData, (gameData) => {
 });
 
 // Actions
+/**
+ * Replaces the game data and clears any previous error.
+ */
 export function setGameData(data: GameThrowsResponse | null): void {
   $gameData.set(data);
   $error.set(null);
 }
 
+/**
+ * Sets the loading state for game data requests.
+ */
 export function setLoading(loading: boolean): void {
   $isLoading.set(loading);
 }
 
+/**
+ * Stores an error produced while fetching game data.
+ */
 export function setError(error: Error | null): void {
   $error.set(error);
 }
 
+/**
+ * Clears game data and resets loading/error flags.
+ */
 export function resetGameStore(): void {
   $gameData.set(null);
   $isLoading.set(false);

@@ -29,6 +29,9 @@ const SOUND_CONFIGS: Record<SoundType, SoundConfig> = {
 
 let isSoundUnlocked = false;
 
+/**
+ * Primes audio playback after a user gesture to satisfy browser autoplay policies.
+ */
 export function unlockSounds(): void {
   if (isSoundUnlocked) return;
   isSoundUnlocked = true;
@@ -49,6 +52,9 @@ export function unlockSounds(): void {
   }
 }
 
+/**
+ * Plays a configured UI sound effect by type.
+ */
 export function playSound(soundType: SoundType): void {
   // Ensure we attempt to unlock in case the first sound is triggered from a user gesture.
   unlockSounds();
