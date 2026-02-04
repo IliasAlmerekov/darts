@@ -1,27 +1,39 @@
 /* Registration form uses the same styling as the login form */
 .loginContainer {
-  margin-top: 3rem;
-  padding: 0 15px;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  background-color: var(--lightgrey);
 }
 
 .loginRow {
+  flex: 1;
   display: flex;
-  justify-content: center;
   align-items: center;
-  min-height: 60vh;
+  justify-content: center;
+  padding: 1rem;
 }
 
 .loginCol {
   width: 100%;
-  max-width: 500px;
+  max-width: 28rem;
+}
+
+.logoWrapper {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 2rem;
+}
+
+.logo {
+  height: 2rem;
 }
 
 .loginCard {
-  background: #fff; /* BEHOBEN: #ffffff zu #fff */
-  border-radius: 8px;
-  box-shadow:
-    0 4px 6px rgb(0 0 0 / 10%),
-    /* BEHOBEN: rgba(0, 0, 0, 0.1) zu rgb(0 0 0 / 10%) */ 0 1px 3px rgb(0 0 0 / 8%); /* BEHOBEN: rgba(0, 0, 0, 0.08) zu rgb(0 0 0 / 8%) */
+  background: var(--white);
+  border: 1px solid rgb(226 232 240);
+  border-radius: var(--radius-md);
+  box-shadow: 0 10px 15px -3px rgb(0 0 0 / 10%);
 }
 
 .loginCardBody {
