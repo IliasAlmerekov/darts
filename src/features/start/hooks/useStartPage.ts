@@ -253,14 +253,11 @@ export function useStartPage() {
     [guestError, guestSuggestions.length],
   );
 
-  const handleGuestSuggestion = useCallback(
-    (suggestion: string): void => {
-      setGuestUsername(suggestion);
-      setGuestError(null);
-      setGuestSuggestions([]);
-    },
-    [],
-  );
+  const handleGuestSuggestion = useCallback((suggestion: string): void => {
+    setGuestUsername(suggestion);
+    setGuestError(null);
+    setGuestSuggestions([]);
+  }, []);
 
   const getGuestErrorFromApi = (error: unknown): AddGuestErrorResponse | null => {
     if (!(error instanceof ApiError) || error.status !== 409) {
