@@ -10,7 +10,12 @@ interface LoginFormProps {
   onSubmit: (e: React.FormEvent<HTMLFormElement>) => void;
 }
 
-export function LoginForm({ error, success, loading, onSubmit }: LoginFormProps): React.JSX.Element {
+export function LoginForm({
+  error,
+  success,
+  loading,
+  onSubmit,
+}: LoginFormProps): React.JSX.Element {
   const [showPassword, setShowPassword] = useState(false);
 
   function handleTogglePassword(): void {
@@ -104,8 +109,7 @@ export function LoginForm({ error, success, loading, onSubmit }: LoginFormProps)
 
       {/* Register Link */}
       <p className={styles.formLink}>
-        Don&apos;t have an account?{" "}
-        <Link to="/register">Sign up</Link>
+        Don&apos;t have an account? <Link to="/register">Sign up</Link>
       </p>
     </>
   );
