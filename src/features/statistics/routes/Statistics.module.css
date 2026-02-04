@@ -1,6 +1,6 @@
 .playerstatsContainer {
   background-color: var(--white);
-  padding: 24px 32px;
+  padding: var(--page-padding);
 }
 
 .navigationItem {
@@ -12,21 +12,23 @@
 .sortOptions {
   display: flex;
   align-items: center;
-  margin-bottom: 20px;
+  margin-bottom: var(--space-md);
   background-color: var(--lightgrey);
-  height: 40px;
-  padding: 8px 16px;
+  min-height: var(--nav-height);
+  padding: var(--space-xs) var(--space-sm);
   border-radius: 100px;
+  gap: var(--space-xs);
+  flex-wrap: wrap;
 }
 
 .sortButton {
   display: flex;
   align-items: center;
-  gap: 5px;
+  gap: var(--space-xs);
   background: none;
   border: none;
   cursor: pointer;
-  font-size: 16px;
+  font-size: var(--font-size-16);
   font-weight: 700;
   color: var(--darkblue);
 }
@@ -36,44 +38,47 @@
 }
 
 .sortIcon {
-  font-size: 18px;
+  font-size: var(--font-size-18);
 }
 
 .separator {
-  margin: 0 10px;
+  margin: 0 var(--space-xs);
   color: #ccc;
 }
 
 .playerList {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: var(--space-sm);
 }
 
 .playerRow {
   display: flex;
   align-items: center;
-  padding: 16px 24px;
+  padding: var(--space-sm) var(--space-md);
   background-color: var(--lightgrey);
   border-radius: 8px;
+  gap: var(--space-sm);
+  flex-wrap: wrap;
 }
 
 .playerNumber {
-  padding-right: 16px;
+  padding-right: var(--space-sm);
   font-weight: 400;
-  font-size: 20px;
+  font-size: var(--font-size-20);
   color: var(--darkgrey);
 }
 
 .playerName {
   flex: 1;
   font-weight: 700;
-  font-size: 20px;
+  font-size: var(--font-size-20);
 }
 
 .playerStats {
   display: flex;
-  gap: 30px;
+  gap: var(--space-lg);
+  flex-wrap: wrap;
 }
 
 .roundStat,
@@ -84,12 +89,29 @@
 }
 
 .statLabel {
-  font-size: 20px;
+  font-size: var(--font-size-20);
   color: var(--darkgrey);
 }
 
 .statValue {
   font-weight: 700;
-  font-size: 20px;
+  font-size: var(--font-size-20);
   color: var(--darkblue);
+}
+
+@media (width <= 600px) {
+  .playerRow {
+    align-items: flex-start;
+  }
+
+  .playerStats {
+    width: 100%;
+    justify-content: space-between;
+    gap: var(--space-md);
+  }
+
+  .roundStat,
+  .gamesStat {
+    align-items: flex-start;
+  }
 }

@@ -1,6 +1,6 @@
 .loginContainer {
-  margin-top: 3rem;
-  padding: 0 15px;
+  margin-top: var(--space-lg);
+  padding: 0 var(--page-padding);
 }
 
 .loginRow {
@@ -12,7 +12,7 @@
 
 .loginCol {
   width: 100%;
-  max-width: 500px;
+  max-width: 520px;
 }
 
 .loginCard {
@@ -24,5 +24,5 @@
 }
 
 .loginCardBody {
-  padding: 2rem;
+  padding: var(--card-padding);
 }

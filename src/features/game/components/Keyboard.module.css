@@ -4,6 +4,8 @@
   grid-template-columns: repeat(6, 1fr);
   box-shadow: var(--box-shadow);
   background-color: var(--white);
+  border-radius: 16px;
+  overflow: hidden;
 }
 
 .button {
@@ -14,7 +16,7 @@
   border-width: 0 1px 1px 0;
   border-style: solid;
   border-color: var(--white);
-  height: 80px;
+  height: clamp(48px, 8vw, 80px);
   font-weight: 700;
   color: var(--darkblue);
   cursor: pointer;
@@ -34,10 +36,8 @@
 .undo {
   grid-column-start: 6;
   border-radius: 100px;
-  width: 80px;
-  margin-left: auto;
-  margin-right: 16px;
-  margin-bottom: 16px;
+  width: 100%;
+  margin: 0 0 var(--space-sm);
 }
 
 .active {
@@ -56,5 +56,5 @@
 }
 
 .copylarge {
-  font-size: var(--font-size-lg);
+  font-size: var(--font-size-20);
 }

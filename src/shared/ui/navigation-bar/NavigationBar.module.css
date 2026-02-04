@@ -1,14 +1,14 @@
 .navigation {
   grid-column: 1 / -1;
   display: flex;
-  margin-top: 40px;
+  margin-top: var(--space-lg);
   justify-content: space-between;
   background-color: #fff;
   align-items: center;
   width: 100%;
   box-shadow: 0 4px 20px 0 #00000026;
   border-radius: 9999px;
-  height: 48px;
+  height: var(--nav-height);
 }
 
 .tabButton {
@@ -16,8 +16,8 @@
   align-items: center;
   justify-content: center;
   width: 100%;
-  gap: 16px;
-  padding: 8px 16px;
+  gap: var(--space-sm);
+  padding: 6px var(--space-sm);
   border: none;
   color: var(--darkblue);
   border-radius: 9999px;
@@ -29,8 +29,8 @@
   display: flex;
   align-items: center;
   font-family: CircularXX, sans-serif;
-  font-size: 16px;
-  gap: 16px;
+  font-size: var(--font-size-16);
+  gap: var(--space-sm);
 }
 
 .tabButton.active {
@@ -45,7 +45,18 @@
 }
 
 .deepblueIcon {
-  top: 32px;
+  top: var(--space-md);
   position: fixed;
-  right: 32px;
+  right: var(--space-md);
+}
+
+@media (width <= 600px) {
+  .navigation {
+    margin-top: var(--space-md);
+    padding: 0 var(--space-xs);
+  }
+
+  .tabButton span {
+    font-size: var(--font-size-14);
+  }
 }

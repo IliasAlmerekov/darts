@@ -7,16 +7,16 @@
   background-color: var(--lightgrey);
   border-radius: 16px;
   box-shadow: var(--box-shadow);
-  padding: 48px 113px;
-  width: 66%;
-  min-height: 30%;
-  max-height: 80%;
+  padding: var(--panel-padding);
+  width: min(90vw, 720px);
+  min-height: min(30%, 240px);
+  max-height: 80dvh;
 }
 
 .delete {
-  right: 32px;
+  right: var(--space-md);
   position: absolute;
-  top: 32px;
+  top: var(--space-md);
   border: none;
   padding: 0;
   margin: 0;

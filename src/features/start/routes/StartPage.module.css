@@ -1,18 +1,16 @@
 .main {
   display: flex;
   flex-direction: column;
-  height: 100vh;
-  overflow: hidden;
+  min-height: 100dvh;
 }
 
 .start {
   display: grid;
-  overflow: hidden;
-  gap: 24px;
-  grid-template-columns: repeat(6, 1fr);
-  grid-template-rows: auto 1fr;
-  height: calc(100vh - 48px);
-  padding: 24px 32px;
+  gap: var(--space-md);
+  grid-template-columns: minmax(0, 1fr) minmax(0, 2fr);
+  grid-template-rows: auto minmax(0, 1fr);
+  min-height: 100dvh;
+  padding: var(--page-padding);
 }
 
 .qrCodeSection {
@@ -43,22 +41,24 @@
 }
 
 .existingPlayerList {
-  grid-column: 1 / 3;
+  grid-column: 1 / 2;
   background-color: var(--lightgrey);
   position: relative;
   display: flex;
   flex-direction: column;
-  height: 100%;
+  min-height: 0;
   border-radius: 16px;
   overflow: hidden;
 }
 
 .addedPlayerList {
-  height: 100%;
+  min-height: 0;
   position: relative;
   overflow: hidden;
-  grid-column: 3/7;
-  padding-top: 32px;
+  grid-column: 2 / 3;
+  padding-top: var(--space-md);
+  display: flex;
+  flex-direction: column;
 }
 
 .headerUnselectedPlayers {
@@ -74,10 +74,10 @@
 }
 
 .startBtn {
-  bottom: 32px;
-  position: absolute;
-  right: 32px;
-  width: 300px;
+  margin-top: auto;
+  align-self: flex-end;
+  width: min(100%, 320px);
+  padding-top: var(--space-md);
 }
 
 .userPlus {
@@ -89,26 +89,27 @@
 .bottom {
   justify-content: space-between;
   display: flex;
-  padding: 0 32px;
+  padding: 0 var(--page-padding);
 }
 
 .bottom {
-  padding: 32px;
+  padding: var(--space-md) var(--page-padding);
   flex-shrink: 0;
-  display: inline-flex;
-  height: 3%;
+  display: flex;
   position: sticky;
-  top: calc(100vh - 30px);
+  bottom: 0;
+  background: var(--lightgrey);
 }
 
 .selectedPlayerListScroll {
   overflow-y: auto;
-  height: calc(100% - 80px);
-  padding-right: 16px;
+  flex: 1;
+  min-height: 0;
+  padding-right: var(--space-sm);
 }
 
 .unselectedPlayers {
-  padding: 0 32px;
+  padding: 0 var(--page-padding);
   flex-grow: 1;
   overflow-y: auto;
   scroll-behavior: smooth;
@@ -128,9 +129,9 @@
 }
 
 .createNewPlayerButton {
-  font-size: 24px;
+  font-size: var(--font-size-24);
   font-weight: 700;
-  line-height: 28.8px;
+  line-height: var(--line-height-28);
   letter-spacing: 0.02em;
   text-align: left;
   color: var(--blue);
@@ -155,8 +156,9 @@
   place-content: center center;
   display: grid;
   box-shadow: var(--box-shadow);
-  padding: 32px;
-  height: 80%;
+  padding: var(--panel-padding);
+  height: min(80%, 640px);
+  width: min(90vw, 720px);
 }
 
 .deleteOverlayContent {
@@ -166,15 +168,15 @@
 }
 
 .createPlayerOverlay {
-  padding: 96px 113px;
-  width: 71.7%;
+  padding: var(--padding-xl) var(--padding-2xl);
+  width: min(90vw, 720px);
 }
 
 .deletePlayerOverlay {
-  width: 71.7%;
+  width: min(90vw, 720px);
   display: flex;
   flex-direction: column;
-  padding-top: 64px;
+  padding-top: var(--padding-xl);
 }
 
 .overlayBottom {
@@ -184,7 +186,7 @@
   width: 100%;
   bottom: 0;
   position: absolute;
-  height: 11.2%;
+  height: clamp(56px, 10vh, 96px);
   background-color: var(--lightgrey);
   border-radius: 0 0 16px 16px;
 }
@@ -202,18 +204,18 @@
 }
 
 .listCount {
-  font-size: 16px;
+  font-size: var(--font-size-16);
   font-weight: 400;
-  line-height: 19.2px;
+  line-height: var(--line-height-19);
   text-align: right;
   align-self: flex-end;
   color: var(--middlegrey);
 }
 
 .overlayHeading {
-  font-size: 24px;
+  font-size: var(--font-size-24);
   font-weight: 700;
-  line-height: 24px;
+  line-height: var(--line-height-24);
 }
 
 .hide {
@@ -222,4 +224,36 @@
 
 #error-message {
   color: #ff2001;
+}
+
+@media (width <= 900px) {
+  .start {
+    grid-template-columns: 1fr;
+    grid-template-rows: auto auto minmax(0, 1fr);
+    min-height: auto;
+  }
+
+  .existingPlayerList,
+  .addedPlayerList {
+    grid-column: 1 / -1;
+  }
+
+  .addedPlayerList {
+    padding-top: 0;
+  }
+
+  .startBtn {
+    width: 100%;
+    align-self: stretch;
+  }
+}
+
+@media (width <= 600px) {
+  .headerUnselectedPlayers {
+    margin: var(--space-sm) 0;
+  }
+
+  .createNewPlayerButton {
+    font-size: var(--font-size-20);
+  }
 }
