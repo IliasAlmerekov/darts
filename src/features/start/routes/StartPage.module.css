@@ -1,7 +1,8 @@
 .main {
   display: flex;
   flex-direction: column;
-  min-height: 100dvh;
+  height: 100dvh;
+  overflow: hidden;
 }
 
 .start {
@@ -9,7 +10,7 @@
   gap: var(--space-md);
   grid-template-columns: minmax(0, 1fr) minmax(0, 2fr);
   grid-template-rows: auto minmax(0, 1fr);
-  min-height: 100dvh;
+  height: 100%;
   padding: var(--page-padding);
 }
 
@@ -17,6 +18,9 @@
   display: flex;
   align-items: center;
   justify-content: center;
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
 }
 
 .qrCodeStack {
@@ -24,6 +28,8 @@
   flex-direction: column;
   gap: 16px;
   align-items: center;
+  padding: var(--space-md);
+  max-height: 100%;
 }
 
 .guestButtonRow {
@@ -34,6 +40,12 @@
 
 .guestButton {
   background-color: var(--darkblue) !important;
+  height: auto;
+  padding: 10px 20px;
+  font-size: var(--font-size-16);
+  line-height: var(--line-height-20);
+  width: auto;
+  margin-top: 0;
 }
 
 .guestButton:hover {
@@ -42,13 +54,14 @@
 
 .existingPlayerList {
   grid-column: 1 / 2;
+  grid-row: 2 / 3;
   background-color: var(--lightgrey);
   position: relative;
   display: flex;
   flex-direction: column;
   min-height: 0;
   border-radius: 16px;
-  overflow: hidden;
+  overflow: visible;
 }
 
 .addedPlayerList {
@@ -56,6 +69,7 @@
   position: relative;
   overflow: hidden;
   grid-column: 2 / 3;
+  grid-row: 2 / 3;
   padding-top: var(--space-md);
   display: flex;
   flex-direction: column;
@@ -99,6 +113,7 @@
   position: sticky;
   bottom: 0;
   background: var(--lightgrey);
+  margin-top: auto;
 }
 
 .selectedPlayerListScroll {
@@ -226,19 +241,44 @@
   color: #ff2001;
 }
 
-@media (width <= 900px) {
+@media (width <= 1024px) {
+  .start {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1.5fr);
+  }
+
+  .headerUnselectedPlayers {
+    margin: var(--space-md) 0;
+  }
+
+  .startBtn {
+    width: min(100%, 280px);
+  }
+
+  .qrCodeStack {
+    gap: 12px;
+  }
+
+  .guestButton {
+    padding: 8px 16px;
+    font-size: var(--font-size-14);
+  }
+}
+
+@media (width <= 768px) {
   .start {
     grid-template-columns: 1fr;
     grid-template-rows: auto auto minmax(0, 1fr);
-    min-height: auto;
   }
 
-  .existingPlayerList,
+  .existingPlayerList {
+    grid-column: 1 / -1;
+    grid-row: 2 / 3;
+    max-height: 40vh;
+  }
+
   .addedPlayerList {
     grid-column: 1 / -1;
-  }
-
-  .addedPlayerList {
+    grid-row: 3 / 4;
     padding-top: 0;
   }
 
@@ -246,14 +286,43 @@
     width: 100%;
     align-self: stretch;
   }
+
+  .qrCodeSection {
+    flex: 0 0 auto;
+  }
 }
 
 @media (width <= 600px) {
   .headerUnselectedPlayers {
-    margin: var(--space-sm) 0;
+    margin: var(--space-xs) 0;
+    font-size: var(--font-size-16);
   }
 
   .createNewPlayerButton {
-    font-size: var(--font-size-20);
+    font-size: var(--font-size-16);
+    gap: 6px;
+  }
+
+  .startBtn {
+    width: min(100%, 200px);
+    padding-top: var(--space-sm);
+  }
+
+  .qrCodeStack {
+    padding: var(--space-sm);
+    gap: 10px;
+  }
+
+  .guestButton {
+    padding: 8px 16px;
+    font-size: var(--font-size-14);
+  }
+
+  .bottom {
+    padding: var(--space-sm) var(--page-padding);
+  }
+
+  .existingPlayerList {
+    max-height: 35vh;
   }
 }

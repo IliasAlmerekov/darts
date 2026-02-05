@@ -19,7 +19,7 @@ const QRCode: React.FC<QRCodeProps> = ({ invitationLink, gameId }) => {
         <div className={styles.qrCodeWrapper}>
           <QRCodeSVG
             value={invitationLink}
-            size={256}
+            size={160}
             level="H"
             bgColor="#ffffff"
             fgColor="#000000"

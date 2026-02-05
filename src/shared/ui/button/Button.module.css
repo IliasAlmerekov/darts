@@ -4,16 +4,16 @@
   width: 100%;
   height: var(--button-height);
   gap: 8px;
-  border-radius: 14px;
-  font-size: var(--font-size-24);
+  border-radius: clamp(10px, 1.5vw, 14px);
+  font-size: var(--font-size-18);
   font-weight: 700;
-  line-height: var(--line-height-28);
+  line-height: var(--line-height-24);
   letter-spacing: 0.02em;
   text-align: left;
   justify-content: center;
   align-items: center;
   display: flex;
-  margin-top: var(--space-md);
+  margin-top: var(--space-sm);
 }
 
 .btnPrimary {
