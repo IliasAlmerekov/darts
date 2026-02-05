@@ -11,13 +11,16 @@
   border-radius: 2rem;
   max-width: 380px;
   width: 100%;
+  align-self: center;
 }
 
 .qrCodeHeading {
-  font-size: 2rem;
+  font-size: var(--font-size-18);
   font-weight: bold;
-  color: var(--darkgrey);
+  color: var(--blue);
   margin: 0;
+  text-align: center;
+  align-self: stretch;
 }
 
 .qrCodeSubheading {
@@ -32,6 +35,30 @@
   border: 2px solid #e0e0e0;
   border-radius: 12px;
   box-shadow: 0 4px 12px color(srgb 0 0 0 / 10%);
+  align-self: center;
+  display: flex;
+  justify-content: center;
+}
+
+.gameIdSection {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.25rem;
+  align-self: center;
+}
+
+.gameIdLabel {
+  font-size: var(--font-size-12);
+  color: var(--middlegrey);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.gameIdValue {
+  font-size: var(--font-size-24);
+  font-weight: 700;
+  color: var(--blue);
 }
 
 .qrCodeInstructions {
@@ -48,6 +75,8 @@
   display: flex;
   gap: 0.5rem;
   width: 100%;
+  max-width: 260px;
+  align-self: center;
 }
 
 .invitationLinkInput {
@@ -82,4 +111,138 @@
 
 .qrCodeActions .btn {
   flex: 1;
+}
+
+@media (width >= 777px) and (width <= 1024px) {
+  .qrCodeWrapper svg {
+    width: 220px !important;
+    height: 220px !important;
+  }
+}
+
+/* Tablet styles */
+@media (width <= 770px) {
+  .qrCodeContainer {
+    gap: 0.75rem;
+    align-items: center;
+  }
+
+  .qrCodeHeading {
+    font-size: var(--font-size-16);
+    align-self: stretch;
+    text-align: center;
+  }
+
+  .qrCodeWrapper {
+    padding: 0.75rem;
+    align-self: center;
+  }
+
+  .qrCodeWrapper svg {
+    width: 200px !important;
+    height: 200px !important;
+  }
+
+  .gameIdSection {
+    align-self: center;
+    align-items: center;
+  }
+
+  .gameIdLabel {
+    font-size: var(--font-size-12);
+  }
+
+  .gameIdValue {
+    font-size: var(--font-size-20);
+  }
+
+  .invitationLinkBox {
+    width: 100%;
+    max-width: 260px;
+    align-self: center;
+  }
+
+  .invitationLinkInput {
+    padding: 0.5rem;
+    font-size: 0.7rem;
+    flex: 1;
+    width: 100%;
+  }
+}
+
+/* Small tablet / large phone */
+@media (width <= 600px) {
+  .qrCodeContainer {
+    gap: 0.5rem;
+    padding: var(--space-xs);
+    align-items: center;
+  }
+
+  .qrCodeHeading {
+    font-size: var(--font-size-14);
+    align-self: stretch;
+    text-align: center;
+  }
+
+  .qrCodeWrapper {
+    padding: 0.5rem;
+    align-self: center;
+  }
+
+  .qrCodeWrapper svg {
+    width: 190px !important;
+    height: 190px !important;
+  }
+
+  .gameIdSection {
+    gap: 0.125rem;
+    align-self: center;
+    align-items: center;
+  }
+
+  .gameIdLabel {
+    font-size: 10px;
+  }
+
+  .gameIdValue {
+    font-size: var(--font-size-16);
+  }
+
+  .invitationLinkBox {
+    gap: 0.25rem;
+    width: 100%;
+    max-width: 260px;
+    align-self: center;
+  }
+
+  .invitationLinkInput {
+    padding: 0.375rem;
+    font-size: 0.6rem;
+    width: 100%;
+  }
+
+  .invitationLinkBox {
+    display: none;
+  }
+}
+
+/* Phone */
+@media (width <= 480px) {
+  .qrCodeWrapper svg {
+    width: 170px !important;
+    height: 170px !important;
+  }
+
+  .qrCodeHeading {
+    font-size: var(--font-size-12);
+  }
+
+  .gameIdValue {
+    font-size: var(--font-size-14);
+  }
+
+  .invitationLinkInput {
+    font-size: 0.55rem;
+    padding: 0.3rem;
+  }
 }

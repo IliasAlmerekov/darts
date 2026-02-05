@@ -11,6 +11,10 @@
   height: var(--nav-height);
 }
 
+.navItems {
+  display: contents;
+}
+
 .tabButton {
   display: flex;
   align-items: center;
@@ -25,7 +29,7 @@
   transition: all 0.2s ease;
 }
 
-.tabButton span {
+.tabContent {
   display: flex;
   align-items: center;
   font-family: CircularXX, sans-serif;
@@ -56,7 +60,29 @@
     padding: 0 var(--space-xs);
   }
 
-  .tabButton span {
+  .navItems {
+    display: flex;
+    align-items: center;
+    gap: var(--space-xs);
+  }
+
+  .tabContent {
     font-size: var(--font-size-14);
+  }
+
+  .tabContent img {
+    width: 18px;
+    height: 18px;
+  }
+
+  .tabLabel {
+    display: none;
+  }
+
+  .deepblueIcon {
+    position: static;
+    width: 90px;
+    height: 90px;
+    margin-left: 8px;
   }
 }

@@ -40,9 +40,10 @@ export const LivePlayersList = ({
 
   return (
     <div className={styles.livePlayersContainer}>
-      <h4 className={styles.headerSelectedPlayers}>
-        Selected Players <div className={styles.listCount}>{count}/10</div>
-      </h4>
+      <div className={styles.headerSelectedPlayers}>
+        <h4 className={styles.headerTitle}>Selected Players</h4>
+        <div className={styles.listCount}>{count}/10</div>
+      </div>
       <div className={styles.selectedPlayerListScroll}>
         {sortedPlayers.length === 0 ? (
           <div className={styles.noPlayersMessage}>

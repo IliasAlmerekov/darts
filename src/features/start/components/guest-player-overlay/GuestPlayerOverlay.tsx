@@ -33,7 +33,7 @@ function GuestPlayerOverlay({
   const hasSuggestions = suggestions.length > 0;
 
   return (
-    <Overlay isOpen={isOpen} onClose={onClose} src={deleteIcon}>
+    <Overlay isOpen={isOpen} onClose={onClose} src={deleteIcon} className={styles.guestOverlayBox}>
       <div className={styles.overlayContent}>
         <h3 className={styles.heading}>Play as a guest</h3>
         <div className={styles.fieldGroup}>

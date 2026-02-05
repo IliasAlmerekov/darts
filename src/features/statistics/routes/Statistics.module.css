@@ -12,7 +12,6 @@
 .sortOptions {
   display: flex;
   align-items: center;
-  margin-bottom: var(--space-md);
   background-color: var(--lightgrey);
   min-height: var(--nav-height);
   padding: var(--space-xs) var(--space-sm);

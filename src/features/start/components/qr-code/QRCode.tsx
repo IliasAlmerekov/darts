@@ -5,25 +5,28 @@ import styles from "./QRCode.module.css";
 interface QRCodeProps {
   invitationLink: string;
   gameId: number | undefined;
+  children?: React.ReactNode;
 }
 
-const QRCode: React.FC<QRCodeProps> = ({ invitationLink, gameId }) => {
+const QRCode: React.FC<QRCodeProps> = ({ invitationLink, gameId, children }) => {
   return (
     <div className={styles.qrCodeOverlay}>
       <div className={styles.qrCodeContainer}>
-        <p className={styles.qrCodeSubheading}>Scan the QR code to join the game:</p>
-        <p className={styles.qrCodeSubheading}>
-          Game ID: <strong>#{gameId}</strong>
-        </p>
+        <h4 className={styles.qrCodeHeading}>Scan the QR code to join the game:</h4>
 
         <div className={styles.qrCodeWrapper}>
           <QRCodeSVG
             value={invitationLink}
-            size={160}
+            size={200}
             level="H"
             bgColor="#ffffff"
             fgColor="#000000"
           />
+        </div>
+
+        <div className={styles.gameIdSection}>
+          <span className={styles.gameIdLabel}>GAME ID</span>
+          <span className={styles.gameIdValue}>#{gameId}</span>
         </div>
 
         <div className={styles.invitationLinkBox}>
@@ -35,6 +38,7 @@ const QRCode: React.FC<QRCodeProps> = ({ invitationLink, gameId }) => {
             onClick={(e) => (e.target as HTMLInputElement).select()}
           />
         </div>
+        {children}
       </div>
     </div>
   );

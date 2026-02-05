@@ -1,3 +1,18 @@
+.guestOverlayBox {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  display: flex;
+  background-color: var(--lightgrey);
+  border-radius: 16px;
+  box-shadow: var(--box-shadow);
+  padding: var(--panel-padding);
+  width: min(90vw, 720px);
+  min-height: min(30%, 240px);
+  max-height: 80dvh;
+}
+
 .overlayContent {
   display: flex;
   flex-direction: column;
@@ -80,4 +95,10 @@
 .suggestionButton:focus-visible {
   outline: 2px solid var(--blue);
   outline-offset: 2px;
+}
+
+@media (width <= 600px) {
+  .guestOverlayBox {
+    width: min(82vw, 720px);
+  }
 }

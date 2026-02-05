@@ -16,26 +16,28 @@
 
 .qrCodeSection {
   display: flex;
-  align-items: center;
+  align-items: stretch;
   justify-content: center;
   flex: 1;
   min-height: 0;
-  overflow: auto;
+  overflow: visible;
 }
 
 .qrCodeStack {
   display: flex;
   flex-direction: column;
   gap: 16px;
-  align-items: center;
+  align-items: stretch;
   padding: var(--space-md);
-  max-height: 100%;
+  width: 100%;
 }
 
-.guestButtonRow {
+.guestButtonRowDesktop {
   width: 100%;
   display: flex;
   justify-content: center;
+  max-width: 260px;
+  align-self: center;
 }
 
 .guestButton {
@@ -44,7 +46,7 @@
   padding: 10px 20px;
   font-size: var(--font-size-16);
   line-height: var(--line-height-20);
-  width: auto;
+  width: 100%;
   margin-top: 0;
 }
 
@@ -75,6 +77,13 @@
   flex-direction: column;
 }
 
+.playersListArea {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
 .headerUnselectedPlayers {
   margin: 32px 0;
   color: var(--darkgrey);
@@ -92,6 +101,22 @@
   align-self: flex-end;
   width: min(100%, 320px);
   padding-top: var(--space-md);
+}
+
+.startBtnScrolled {
+  margin-bottom: 0;
+}
+
+.mobileActionRow {
+  display: block;
+}
+
+.mobileActionGuest {
+  display: none;
+}
+
+.mobileActionStart {
+  width: 100%;
 }
 
 .userPlus {
@@ -114,6 +139,10 @@
   bottom: 0;
   background: var(--lightgrey);
   margin-top: auto;
+}
+
+.mobileCreateButtonWrapper {
+  display: none;
 }
 
 .selectedPlayerListScroll {
@@ -241,88 +270,221 @@
   color: #ff2001;
 }
 
-@media (width <= 1024px) {
+@media (width >= 777px) and (width <= 1024px) {
   .start {
-    grid-template-columns: minmax(0, 1fr) minmax(0, 1.5fr);
-  }
-
-  .headerUnselectedPlayers {
-    margin: var(--space-md) 0;
-  }
-
-  .startBtn {
-    width: min(100%, 280px);
-  }
-
-  .qrCodeStack {
-    gap: 12px;
-  }
-
-  .guestButton {
-    padding: 8px 16px;
-    font-size: var(--font-size-14);
+    grid-template-columns: minmax(220px, 260px) minmax(0, 1fr);
   }
 }
 
-@media (width <= 768px) {
+@media (width <= 770px) {
   .start {
-    grid-template-columns: 1fr;
-    grid-template-rows: auto auto minmax(0, 1fr);
+    grid-template-columns: minmax(180px, 1fr) minmax(0, 1.5fr);
+    grid-template-rows: auto minmax(0, 1fr);
+    gap: var(--space-sm);
   }
 
   .existingPlayerList {
-    grid-column: 1 / -1;
+    grid-column: 1 / 2;
     grid-row: 2 / 3;
-    max-height: 40vh;
+    max-height: none;
+    padding: var(--space-sm);
+  }
+
+  .createNewPlayerButton {
+    font-size: var(--font-size-18);
   }
 
   .addedPlayerList {
-    grid-column: 1 / -1;
-    grid-row: 3 / 4;
-    padding-top: 0;
+    grid-column: 2 / 3;
+    grid-row: 2 / 3;
+    padding-top: var(--space-sm);
   }
 
   .startBtn {
-    width: 100%;
-    align-self: stretch;
+    width: min(80%, 230px);
   }
 
   .qrCodeSection {
-    flex: 0 0 auto;
+    flex: 1;
+    min-height: 0;
+    align-items: stretch;
+  }
+
+  .qrCodeStack {
+    gap: 10px;
+    padding: var(--space-sm);
+    align-items: stretch;
+  }
+
+  .header {
+    padding: 0 var(--space-sm);
+  }
+
+  .headerUnselectedPlayers {
+    margin: var(--space-sm) 0;
+    font-size: var(--font-size-14);
+    text-align: center;
+    color: var(--blue);
+    font-weight: 700;
+  }
+
+  .bottom {
+    padding: var(--space-sm);
+  }
+
+  .guestButton {
+    width: 100%;
+    padding: 10px 16px;
+    font-size: var(--font-size-14);
+  }
+
+  .guestButtonRowDesktop {
+    width: 100%;
   }
 }
 
 @media (width <= 600px) {
-  .headerUnselectedPlayers {
-    margin: var(--space-xs) 0;
-    font-size: var(--font-size-16);
-  }
-
-  .createNewPlayerButton {
-    font-size: var(--font-size-16);
-    gap: 6px;
-  }
-
-  .startBtn {
-    width: min(100%, 200px);
-    padding-top: var(--space-sm);
-  }
-
-  .qrCodeStack {
-    padding: var(--space-sm);
-    gap: 10px;
-  }
-
-  .guestButton {
-    padding: 8px 16px;
-    font-size: var(--font-size-14);
-  }
-
-  .bottom {
-    padding: var(--space-sm) var(--page-padding);
+  .start {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: auto auto minmax(0, 1fr);
   }
 
   .existingPlayerList {
-    max-height: 35vh;
+    grid-column: 1 / 2;
+    grid-row: 2 / 3;
+  }
+
+  .addedPlayerList {
+    grid-column: 1 / 2;
+    grid-row: 3 / 4;
+    padding-top: var(--space-xs);
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+    overflow: hidden;
+  }
+
+  .playersListArea {
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .startBtn {
+    flex-shrink: 0;
+    padding-top: var(--space-sm);
+    width: 100%;
+    margin-top: 0;
+  }
+
+  .startBtnScrolled {
+    margin-bottom: 20px;
+  }
+
+  .headerUnselectedPlayers {
+    margin: var(--space-xs) 0;
+    font-size: var(--font-size-12);
+    display: none;
+  }
+
+  .header {
+    display: none;
+  }
+
+  .createNewPlayerButton {
+    font-size: var(--font-size-14);
+    gap: 4px;
+  }
+
+  .guestButtonRowDesktop {
+    display: none;
+  }
+
+  .mobileActionRow {
+    display: flex;
+    gap: 5px;
+    align-items: stretch;
+  }
+
+  .mobileActionGuest {
+    flex: 1 1 0;
+    display: block;
+  }
+
+  .mobileActionStart {
+    flex: 9 1 0;
+  }
+
+  .startButton {
+    margin-top: 0;
+    border-radius: clamp(10px, 1.5vw, 14px) 0 0 clamp(10px, 1.5vw, 14px);
+    height: var(--button-height);
+  }
+
+  .guestButtonMobile {
+    border: none;
+    border-radius: 0 clamp(10px, 1.5vw, 14px) clamp(10px, 1.5vw, 14px) 0;
+    height: var(--button-height);
+    background-color: var(--blue);
+    color: var(--white);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    margin-top: 0;
+  }
+
+  .guestButtonMobile:hover {
+    background-color: var(--blue);
+  }
+
+  .guestButtonMobile:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+
+  .guestButtonIcon {
+    width: 24px;
+    height: 24px;
+  }
+
+  .qrCodeStack {
+    padding: var(--space-xs);
+    gap: 8px;
+    align-items: stretch;
+  }
+
+  .guestButton {
+    padding: 8px 12px;
+    font-size: var(--font-size-12);
+    width: 100%;
+  }
+
+  .guestButtonRowDesktop {
+    width: 100%;
+  }
+
+  .bottom {
+    display: none;
+  }
+
+  .existingPlayerList {
+    padding: var(--space-xs);
+  }
+
+  .mobileCreateButtonWrapper {
+    display: flex;
+    flex: 1;
+    align-items: center;
+    justify-content: center;
+  }
+}
+
+@media (width <= 400px) {
+  .createNewPlayerButton {
+    font-size: var(--font-size-13);
+    gap: 4px;
   }
 }

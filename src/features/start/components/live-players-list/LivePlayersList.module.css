@@ -24,19 +24,72 @@
   color: var(--darkgrey);
   justify-content: space-between;
   display: flex;
+  align-items: center;
+}
+
+.headerTitle {
+  margin: 0;
+  font-size: var(--font-size-24);
+  font-weight: 700;
+  color: var(--darkblue);
 }
 
 .listCount {
-  font-size: var(--font-size-16);
-  font-weight: 400;
-  line-height: var(--line-height-19);
-  text-align: right;
-  align-self: flex-end;
-  color: var(--middlegrey);
+  font-size: var(--font-size-14);
+  font-weight: 600;
+  line-height: 1;
+  text-align: center;
+  color: var(--darkgrey);
+  background-color: var(--lightgrey);
+  border-radius: var(--radius-pill);
+  padding: 6px 12px;
 }
 
 .selectedPlayerListScroll {
   overflow-y: auto;
   flex: 1;
   min-height: 0;
+}
+
+/* Tablet styles */
+@media (width <= 770px) {
+  .headerSelectedPlayers {
+    margin: 0 0 var(--space-sm);
+  }
+
+  .headerTitle {
+    font-size: var(--font-size-20);
+  }
+
+  .listCount {
+    font-size: var(--font-size-12);
+    padding: 4px 10px;
+  }
+}
+
+/* Small tablet / large phone */
+@media (width <= 600px) {
+  .headerSelectedPlayers {
+    margin: 0 0 var(--space-xs);
+  }
+
+  .headerTitle {
+    font-size: var(--font-size-18);
+  }
+
+  .listCount {
+    font-size: 10px;
+    padding: 3px 8px;
+  }
+
+  .noPlayersMessage {
+    padding: 1rem;
+    font-size: 0.8rem;
+  }
+
+  .selectedPlayerListScroll {
+    overflow-y: auto;
+    flex: 1;
+    min-height: 0;
+  }
 }

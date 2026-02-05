@@ -58,30 +58,32 @@ export default function NavigationBar(): React.JSX.Element {
   return (
     <div className={styles.navigation}>
       <img className={styles.deepblueIcon} src={Madebydeepblue} alt="" />
-      {navItems.map((item) => {
-        const isActive =
-          location.pathname === item.path ||
-          (item.id === "game" &&
-            (location.pathname === "/start" || location.pathname.startsWith("/start/"))) ||
-          (item.id === "statistics" && location.pathname === "/gamesoverview") ||
-          (item.id === "settings" && location.pathname.startsWith("/settings"));
+      <div className={styles.navItems}>
+        {navItems.map((item) => {
+          const isActive =
+            location.pathname === item.path ||
+            (item.id === "game" &&
+              (location.pathname === "/start" || location.pathname.startsWith("/start/"))) ||
+            (item.id === "statistics" && location.pathname === "/gamesoverview") ||
+            (item.id === "settings" && location.pathname.startsWith("/settings"));
 
-        return (
-          <button
-            key={item.id}
-            onClick={() => handleTabClick(item.path)}
-            className={clsx(styles.tabButton, {
-              [styles.active]: isActive,
-              [styles.inactive]: !isActive,
-            })}
-          >
-            <span>
-              <img src={isActive ? item.activeIcon : item.inActiveIcon} alt={item.label} />
-              {item.label}
-            </span>
-          </button>
-        );
-      })}
+          return (
+            <button
+              key={item.id}
+              onClick={() => handleTabClick(item.path)}
+              className={clsx(styles.tabButton, {
+                [styles.active]: isActive,
+                [styles.inactive]: !isActive,
+              })}
+            >
+              <span className={styles.tabContent}>
+                <img src={isActive ? item.activeIcon : item.inActiveIcon} alt={item.label} />
+                <span className={styles.tabLabel}>{item.label}</span>
+              </span>
+            </button>
+          );
+        })}
+      </div>
     </div>
   );
 }
