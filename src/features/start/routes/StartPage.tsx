@@ -51,23 +51,13 @@ function StartPage(): React.JSX.Element {
                   <QRCode
                     invitationLink={FRONTEND_BASE_URL + invitation.invitationLink}
                     gameId={invitation.gameId}
-                  >
-                    <div className={styles.guestButtonRowDesktop}>
-                      <Button
-                        type="secondary"
-                        label="Play as a guest"
-                        className={styles.guestButton}
-                        handleClick={openGuestOverlay}
-                        disabled={!gameId}
-                      />
-                    </div>
-                  </QRCode>
+                  ></QRCode>
                 </div>
               ) : (
                 <div className={styles.mobileCreateButtonWrapper}>
                   <LinkButton
                     className={styles.createNewPlayerButton}
-                    label="Create New Game"
+                    label="Create Game"
                     icon={Plus}
                     handleClick={handleCreateRoom}
                     disabled={creating}

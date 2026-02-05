@@ -98,8 +98,8 @@ test.describe("Responsive admin layouts", () => {
       await page.goto("/start");
       await page.waitForLoadState("domcontentloaded");
 
-      await expect(page.getByRole("heading", { name: "Login" })).toBeVisible();
-      await expect(page.getByText(/create game/i).first()).toBeVisible();
+      const visibleCreateButton = page.locator("a:visible", { hasText: /create game/i });
+      await expect(visibleCreateButton).toHaveCount(1);
 
       const hasHorizontalScroll = await page.evaluate(
         () => document.documentElement.scrollWidth > window.innerWidth + 1,
@@ -153,7 +153,11 @@ test.describe("Responsive admin layouts", () => {
     await page.goto("/start/1");
     await page.waitForLoadState("domcontentloaded");
 
-    await expect(page.getByText(/create game/i)).toBeHidden();
+    const qrSvg = page.locator('[class*="qrCodeWrapper"] svg').first();
+    await expect(qrSvg).toBeVisible();
+
+    const mobileCreateButton = page.locator('[class*="mobileCreateButtonWrapper"] a');
+    await expect(mobileCreateButton).toHaveCount(0);
   });
 
   test("Start page centers QR heading text", async ({ page }) => {
@@ -285,7 +289,7 @@ test.describe("Responsive admin layouts", () => {
     await page.goto("/start/1");
     await page.waitForLoadState("domcontentloaded");
 
-    const listScroll = page.locator('[class*="playersListArea"]').first();
+    const listScroll = page.locator('[class*="selectedPlayerListScroll"]').first();
     const startButton = page.getByRole("link", { name: "Start" });
     const startContainer = page.locator('[class*="startBtn"]').first();
 

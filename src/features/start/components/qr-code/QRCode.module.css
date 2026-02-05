@@ -9,9 +9,11 @@
   gap: 1rem;
   background: var(--lightgrey);
   border-radius: 2rem;
+  padding: var(--space-md);
   max-width: 380px;
   width: 100%;
   align-self: center;
+  box-sizing: border-box;
 }
 
 .qrCodeHeading {
@@ -113,7 +115,25 @@
   flex: 1;
 }
 
-@media (width >= 777px) and (width <= 1024px) {
+@media (width >= 1025px) and (width <= 1200px) {
+  .qrCodeContainer {
+    padding: var(--space-md);
+  }
+
+  .qrCodeWrapper {
+    padding: 1rem;
+  }
+}
+
+@media (width >= 771px) and (width <= 1024px) {
+  .qrCodeContainer {
+    padding: var(--space-md);
+  }
+
+  .qrCodeWrapper {
+    padding: 1rem;
+  }
+
   .qrCodeWrapper svg {
     width: 220px !important;
     height: 220px !important;
@@ -125,6 +145,7 @@
   .qrCodeContainer {
     gap: 0.75rem;
     align-items: center;
+    padding: var(--space-sm);
   }
 
   .qrCodeHeading {
@@ -208,13 +229,6 @@
     font-size: var(--font-size-16);
   }
 
-  .invitationLinkBox {
-    gap: 0.25rem;
-    width: 100%;
-    max-width: 260px;
-    align-self: center;
-  }
-
   .invitationLinkInput {
     padding: 0.375rem;
     font-size: 0.6rem;
@@ -228,11 +242,6 @@
 
 /* Phone */
 @media (width <= 480px) {
-  .qrCodeWrapper svg {
-    width: 170px !important;
-    height: 170px !important;
-  }
-
   .qrCodeHeading {
     font-size: var(--font-size-12);
   }
