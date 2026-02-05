@@ -1,17 +1,12 @@
-.gamePlayerItemContainer {
-  padding: 133px 32px 0;
-}
-
 .gamePageHeader {
   display: flex;
   flex-direction: column;
   height: 100%;
+  padding: var(--page-padding);
+  gap: var(--space-sm);
 }
 
 .top {
-  left: 32px;
-  top: 32px;
-  position: absolute;
   border: none;
   background: none;
   padding: 0;
@@ -19,52 +14,47 @@
 }
 
 .finishGameOverlay {
-  width: 71.7%;
-  padding: 96px 0;
+  width: 100%;
+  padding: var(--padding-lg) 0;
 }
 
 .overlayBox {
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
+  position: relative;
   display: flex;
   flex-direction: column;
   align-items: center;
   background-color: var(--lightgrey);
   border-radius: 16px;
   box-shadow: var(--box-shadow);
-  padding: 48px 64px;
-  width: auto;
-  max-width: 600px;
+  padding: var(--panel-padding);
+  width: min(90vw, 640px);
+  margin: 0 auto;
 }
 
 .overlayHeading {
-  font-size: 24px;
+  font-size: var(--font-size-24);
   font-weight: 700;
-  line-height: 28.8px;
+  line-height: var(--line-height-28);
   letter-spacing: 0.02em;
   text-align: center;
   color: var(--darkblue);
-  margin-bottom: 32px;
+  margin-bottom: var(--space-md);
 }
 
 .undoThrow {
   justify-content: center;
   display: flex;
-  margin-top: 28px;
-  font-size: 24px;
+  margin-top: var(--space-md);
+  font-size: var(--font-size-24);
   font-weight: 700;
-  line-height: 28.8px;
+  line-height: var(--line-height-28);
   letter-spacing: 0.02em;
   text-align: left;
-  gap: 8px;
+  gap: var(--space-xs);
 }
 
 .settingsBtn {
-  right: 32px;
-  top: 32px;
-  position: absolute;
+  margin-left: auto;
 }
 
 .overlayHeadline {
@@ -76,29 +66,65 @@
 
 .settingsOverlay {
   width: 100%;
-  padding: 48px;
+  padding: var(--panel-padding);
 }
 
 .settingsBodyContainer {
   display: flex;
   flex-direction: column;
-  gap: 12px;
-  padding-top: 48px;
+  gap: var(--space-sm);
+  padding-top: var(--space-lg);
 }
 
 .keyboardAndUndo {
-  position: fixed;
   width: 100%;
+  position: sticky;
   bottom: 0;
+  padding: var(--space-sm) var(--page-padding);
+  background: var(--color-bg);
+  box-sizing: border-box;
 }
 
 .errorText {
-  margin-top: 10px;
+  margin-top: var(--space-xs);
   color: #d00000;
-  font-size: 14px;
+  font-size: var(--font-size-14);
   text-align: center;
 }
 
 .settingsOverlayBtn {
-  margin-top: 24px;
+  margin-top: var(--space-md);
+}
+
+.gamePage {
+  display: flex;
+  flex-direction: column;
+  min-height: 100dvh;
+  padding: var(--page-padding);
+  gap: var(--space-md);
+}
+
+.gameHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-sm);
+}
+
+.gameContent {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md);
+  flex: 1;
+  min-height: 0;
+}
+
+@media (width <= 900px) {
+  .gamePlayerItemContainer {
+    padding: var(--space-md) 0 0;
+  }
+
+  .keyboardAndUndo {
+    padding: var(--space-sm) 0;
+  }
 }

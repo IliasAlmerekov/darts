@@ -1,33 +1,52 @@
 .summary {
   display: grid;
-  padding: 32px;
-  grid-template-columns: repeat(10, 1fr);
-  gap: 16px;
-  grid-template-rows: 1fr auto 2fr;
-  inset: 0;
-  position: absolute;
+  padding: var(--page-padding);
+  grid-template-columns: repeat(12, minmax(0, 1fr));
+  gap: var(--space-md);
+  grid-template-rows: auto auto 1fr;
+  min-height: 100dvh;
+  position: relative;
 }
 
 .leaderBoard {
   grid-row: 2;
-  grid-column: 1 / span 10;
+  grid-column: 1 / -1;
 }
 
 .backToStartButton {
   grid-row: 3;
   align-self: end;
-  grid-column: 8 / span 3;
-  padding-bottom: 32px;
+  grid-column: 8 / span 5;
+  padding-bottom: var(--space-md);
 }
 
 .playAgainButton {
   grid-row: 3;
-  grid-column: 5 / span 3;
+  grid-column: 4 / span 4;
   align-self: end;
-  padding-bottom: 32px;
+  padding-bottom: var(--space-md);
 }
 
 .podiumBoard {
-  padding: 133px 0 96px;
-  grid-column: 2 / span 8;
+  padding: var(--padding-lg) 0 var(--padding-md);
+  grid-column: 2 / span 10;
+}
+
+@media (width <= 900px) {
+  .summary {
+    grid-template-columns: 1fr;
+    grid-template-rows: auto auto auto auto;
+  }
+
+  .leaderBoard,
+  .podiumBoard,
+  .playAgainButton,
+  .backToStartButton {
+    grid-column: 1 / -1;
+  }
+
+  .playAgainButton,
+  .backToStartButton {
+    padding-bottom: 0;
+  }
 }

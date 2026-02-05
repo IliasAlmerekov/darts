@@ -1,30 +1,31 @@
 .gameOverview {
   display: flex;
   flex-direction: column;
-  padding: 24px 32px;
+  padding: var(--page-padding);
 }
 
 .overview {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(472px, 1fr));
-  gap: 16px;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: var(--space-md);
 }
 
 .gameContainer {
   background-color: var(--lightgrey);
   border-radius: 24px;
-  padding: 24px;
+  padding: var(--card-padding);
   display: flex;
   justify-content: space-between;
   box-sizing: border-box;
   flex-wrap: wrap;
+  gap: var(--space-sm);
 }
 
 .gameCard {
   display: flex;
   flex-direction: column;
   align-items: flex-start;
-  gap: 16px;
+  gap: var(--space-sm);
 }
 
 .gameCard p {
@@ -32,11 +33,11 @@
 }
 
 .gameContainer h4 {
-  margin: 0 0 32px;
+  margin: 0 0 var(--space-md);
 }
 
 .detailsLink {
-  padding: 0 14px 14px 0;
+  padding: 0 var(--space-sm) var(--space-sm) 0;
   display: flex;
   align-items: end;
 }

@@ -1,14 +1,18 @@
 .navigation {
   grid-column: 1 / -1;
   display: flex;
-  margin-top: 40px;
+  margin-top: var(--space-lg);
   justify-content: space-between;
   background-color: #fff;
   align-items: center;
   width: 100%;
   box-shadow: 0 4px 20px 0 #00000026;
   border-radius: 9999px;
-  height: 48px;
+  height: var(--nav-height);
+}
+
+.navItems {
+  display: contents;
 }
 
 .tabButton {
@@ -16,8 +20,8 @@
   align-items: center;
   justify-content: center;
   width: 100%;
-  gap: 16px;
-  padding: 8px 16px;
+  gap: var(--space-sm);
+  padding: 6px var(--space-sm);
   border: none;
   color: var(--darkblue);
   border-radius: 9999px;
@@ -25,12 +29,12 @@
   transition: all 0.2s ease;
 }
 
-.tabButton span {
+.tabContent {
   display: flex;
   align-items: center;
   font-family: CircularXX, sans-serif;
-  font-size: 16px;
-  gap: 16px;
+  font-size: var(--font-size-16);
+  gap: var(--space-sm);
 }
 
 .tabButton.active {
@@ -45,7 +49,40 @@
 }
 
 .deepblueIcon {
-  top: 32px;
+  top: var(--space-md);
   position: fixed;
-  right: 32px;
+  right: var(--space-md);
+}
+
+@media (width <= 600px) {
+  .navigation {
+    margin-top: var(--space-md);
+    padding: 0 var(--space-xs);
+  }
+
+  .navItems {
+    display: flex;
+    align-items: center;
+    gap: var(--space-xs);
+  }
+
+  .tabContent {
+    font-size: var(--font-size-14);
+  }
+
+  .tabContent img {
+    width: 18px;
+    height: 18px;
+  }
+
+  .tabLabel {
+    display: none;
+  }
+
+  .deepblueIcon {
+    position: static;
+    width: 90px;
+    height: 90px;
+    margin-left: 8px;
+  }
 }

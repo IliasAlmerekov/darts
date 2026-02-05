@@ -1,9 +1,9 @@
 .gameDetails {
-  padding: 24px 32px;
+  padding: var(--page-padding);
 }
 
 .linkBtn {
-  margin: 64px 0 0;
+  margin: var(--space-xl) 0 0;
 }
 
 .dateInfo h1 {
@@ -15,5 +15,5 @@
 }
 
 .podiumCard {
-  padding-top: 36px;
+  padding-top: var(--space-lg);
 }

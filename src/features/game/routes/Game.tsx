@@ -120,11 +120,19 @@ function Game() {
         error={settingsError}
       />
 
-      <div className={styles.gamePageHeader}>
-        <button onClick={handleOpenExitOverlay} className={styles.top}>
-          <img src={Back} alt="Back to Home" />
-        </button>
-        <div className={styles.gamePlayerItemContainer}>
+      <div className={styles.gamePage}>
+        <header className={styles.gameHeader}>
+          <button onClick={handleOpenExitOverlay} className={styles.top}>
+            <img src={Back} alt="Back to Home" />
+          </button>
+          <LinkButton
+            className={styles.settingsBtn}
+            label={<img src={settingsIcon} alt="Settings" />}
+            handleClick={handleOpenSettings}
+          />
+        </header>
+
+        <div className={styles.gameContent}>
           {gameData && (
             <>
               <GamePlayerItemList
@@ -138,18 +146,12 @@ function Game() {
             </>
           )}
         </div>
-      </div>
 
-      <div className={styles.keyboardAndUndo}>
-        <NumberButton value="Undo" handleClick={handleUndo} disabled={isInteractionDisabled} />
-        <Keyboard onThrow={handleThrow} disabled={isInteractionDisabled} />
+        <div className={styles.keyboardAndUndo}>
+          <NumberButton value="Undo" handleClick={handleUndo} disabled={isInteractionDisabled} />
+          <Keyboard onThrow={handleThrow} disabled={isInteractionDisabled} />
+        </div>
       </div>
-
-      <LinkButton
-        className={styles.settingsBtn}
-        label={<img src={settingsIcon} alt="Settings" />}
-        handleClick={handleOpenSettings}
-      />
     </>
   );
 }

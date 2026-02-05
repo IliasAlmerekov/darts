@@ -3,21 +3,27 @@
   display: flex;
   justify-content: space-between;
   border-bottom: 1px solid var(--middlegrey);
-  padding: 24px 8px;
+  padding: var(--space-sm) var(--space-xs);
   align-items: center;
+  gap: var(--space-sm);
+  flex-wrap: wrap;
 }
 
 .throwDisplay {
-  gap: 16px;
+  gap: var(--space-sm);
   display: flex;
-  width: 200px;
+  width: min(200px, 45vw);
+  min-width: 120px;
+  flex: 1 1 140px;
 }
 
 .divDisplay {
   color: var(--darkblue);
-  width: 41px;
-  height: 31px;
-  padding: 7px 13px;
+  min-width: 36px;
+  min-height: 28px;
+  padding: var(--space-xs) var(--space-sm);
+  width: auto;
+  flex: 1 1 0;
   border-radius: 4px;
   background-color: var(--lightgrey);
   align-items: center;
@@ -26,48 +32,50 @@
 }
 
 .pointer {
-  gap: 8px;
+  gap: var(--space-xs);
   display: flex;
-  width: 110px;
+  width: auto;
+  flex: 1 1 80px;
 }
 
 .throws {
   justify-content: space-between;
   display: flex;
-  gap: 48px;
+  gap: var(--space-lg);
   align-items: center;
+  flex-wrap: wrap;
 }
 
 .activePlayer {
   border-left: 16px solid var(--blue);
-  padding-left: 16px;
-  font-size: 24px;
+  padding-left: var(--space-sm);
+  font-size: var(--font-size-24);
   font-weight: 700;
-  line-height: 28.8px;
+  line-height: var(--line-height-28);
   letter-spacing: 0.02em;
   text-align: left;
   color: var(--blue);
 }
 
 .activePlayerName {
-  font-size: 24px;
+  font-size: var(--font-size-24);
   font-weight: 700;
-  line-height: 28.8px;
+  line-height: var(--line-height-28);
   letter-spacing: 0.02em;
   text-align: left;
   color: var(--blue);
 }
 
 .valueDisplay {
-  font-size: 20px;
-  line-height: 24px;
+  font-size: var(--font-size-20);
+  line-height: var(--line-height-24);
   text-align: left;
   color: var(--darkblue);
 }
 
 .scoreDisplay {
-  font-size: 20px;
-  line-height: 24px;
+  font-size: var(--font-size-20);
+  line-height: var(--line-height-24);
   text-align: left;
   color: var(--darkgrey);
 }
@@ -91,13 +99,27 @@
 }
 
 .finishedPlayerList {
-  margin-top: 160px;
+  margin-top: clamp(48px, 10vh, 160px);
 }
 
 .playeritemName {
-  font-size: 20px;
+  font-size: var(--font-size-20);
 }
 
 .activePlayerItemName {
-  font-size: 24px;
+  font-size: var(--font-size-24);
+}
+
+@media (width <= 600px) {
+  .throwDisplay {
+    width: 100%;
+  }
+
+  .throws {
+    gap: var(--space-sm);
+  }
+
+  .activePlayer {
+    border-left-width: 8px;
+  }
 }
