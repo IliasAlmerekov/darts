@@ -42,6 +42,7 @@ function Podium({ userMap, list, startScore = 301 }: PodiumProps): JSX.Element {
             name={item.name}
             placement={index + 1 + "."}
             averagePerRound={averagePerRound}
+            isWinner={index === 0}
           />
         );
       })}
