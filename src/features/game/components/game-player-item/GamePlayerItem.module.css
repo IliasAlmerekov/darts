@@ -1,20 +1,23 @@
 .gamePlayerItem {
   width: auto;
-  display: flex;
-  justify-content: space-between;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) max-content;
   border-bottom: 1px solid var(--middlegrey);
   padding: var(--space-sm) var(--space-xs);
   align-items: center;
   gap: var(--space-sm);
-  flex-wrap: wrap;
+}
+
+.gamePlayerItem > div:first-child {
+  min-width: 0;
 }
 
 .throwDisplay {
   gap: var(--space-sm);
   display: flex;
-  width: min(200px, 45vw);
-  min-width: 120px;
-  flex: 1 1 140px;
+  width: 216px;
+  min-width: 216px;
+  flex: 0 0 216px;
 }
 
 .divDisplay {
@@ -34,21 +37,25 @@
 .pointer {
   gap: var(--space-xs);
   display: flex;
-  width: auto;
-  flex: 1 1 80px;
+  width: 128px;
+  flex: 0 0 128px;
+  padding-left: 8px;
 }
 
 .throws {
-  justify-content: space-between;
+  justify-content: flex-start;
   display: flex;
   gap: var(--space-lg);
   align-items: center;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
+  min-width: 0;
+  justify-self: end;
 }
 
 .activePlayer {
-  border-left: 16px solid var(--blue);
-  padding-left: var(--space-sm);
+  box-shadow: inset 16px 0 0 var(--blue);
+  scroll-margin-top: clamp(56px, 9vh, 96px);
+  scroll-margin-bottom: clamp(72px, 12vh, 132px);
   font-size: var(--font-size-24);
   font-weight: 700;
   line-height: var(--line-height-28);
@@ -69,7 +76,9 @@
 .valueDisplay {
   font-size: var(--font-size-20);
   line-height: var(--line-height-24);
-  text-align: left;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  margin-left: auto;
   color: var(--darkblue);
 }
 
@@ -100,6 +109,18 @@
 
 .finishedPlayerList {
   margin-top: clamp(48px, 10vh, 160px);
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.finishedPlayerItems {
+  margin-top: var(--space-xs);
+  max-height: min(34dvh, 360px);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-gutter: stable;
+  padding-right: var(--space-xs);
 }
 
 .playeritemName {
@@ -110,16 +131,72 @@
   font-size: var(--font-size-24);
 }
 
+.activePlayer .playeritemName,
+.activePlayer .activePlayerItemName {
+  transform: translateX(var(--space-sm));
+}
+
 @media (width <= 600px) {
+  .gamePlayerItem {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) max-content;
+    padding: clamp(6px, 1.8vw, 10px) clamp(4px, 1.6vw, 8px);
+    gap: clamp(6px, 1.8vw, 10px);
+  }
+
+  .gamePlayerItem > div:first-child {
+    min-width: 0;
+  }
+
   .throwDisplay {
-    width: 100%;
+    width: clamp(128px, 36vw, 176px);
+    min-width: clamp(128px, 36vw, 176px);
+    flex: 0 0 clamp(128px, 36vw, 176px);
+    gap: clamp(4px, 1.4vw, 8px);
+  }
+
+  .divDisplay {
+    min-width: clamp(28px, 7.4vw, 36px);
+    min-height: clamp(22px, 5.6vw, 28px);
+    padding: clamp(4px, 1.2vw, 8px) clamp(6px, 1.6vw, 12px);
+    font-size: clamp(12px, 3vw, 16px);
   }
 
   .throws {
-    gap: var(--space-sm);
+    gap: clamp(8px, 2vw, 12px);
+    flex-wrap: nowrap;
+  }
+
+  .pointer {
+    width: clamp(78px, 24vw, 112px);
+    flex: 0 0 clamp(78px, 24vw, 112px);
+    padding-left: clamp(2px, 0.8vw, 6px);
+  }
+
+  .scoreDisplay {
+    font-size: clamp(12px, 3vw, 16px);
+    line-height: 1.2;
+  }
+
+  .valueDisplay {
+    font-size: clamp(14px, 3.6vw, 18px);
+    line-height: 1.2;
   }
 
   .activePlayer {
-    border-left-width: 8px;
+    box-shadow: inset 8px 0 0 var(--blue);
+  }
+
+  .activePlayer .playeritemName,
+  .activePlayer .activePlayerItemName {
+    transform: translateX(var(--space-xs));
+  }
+
+  .finishedPlayerList {
+    margin-top: clamp(20px, 5vh, 48px);
+  }
+
+  .finishedPlayerItems {
+    max-height: min(30dvh, 280px);
   }
 }

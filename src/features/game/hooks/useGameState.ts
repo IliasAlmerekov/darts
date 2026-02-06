@@ -1,6 +1,6 @@
 import { useCallback, useEffect } from "react";
 import { useStore } from "@nanostores/react";
-import { getGameThrows, type GameThrowsResponse } from "../api";
+import { getGameThrowsIfChanged, resetGameStateVersion, type GameThrowsResponse } from "../api";
 import { $gameData, $isLoading, $error, setGameData, setLoading, setError } from "@/stores";
 
 interface UseGameStateOptions {
@@ -24,6 +24,9 @@ export function useGameState({ gameId }: UseGameStateOptions): UseGameStateRetur
   const error = useStore($error);
 
   useEffect(() => {
+    if (gameId) {
+      resetGameStateVersion(gameId);
+    }
     setGameData(null);
     setError(null);
   }, [gameId]);
@@ -35,8 +38,10 @@ export function useGameState({ gameId }: UseGameStateOptions): UseGameStateRetur
     setError(null);
 
     try {
-      const data = await getGameThrows(gameId);
-      setGameData(data);
+      const data = await getGameThrowsIfChanged(gameId);
+      if (data) {
+        setGameData(data);
+      }
     } catch (err) {
       const fetchError = err instanceof Error ? err : new Error("Failed to fetch game data");
       setError(fetchError);

@@ -1,3 +1,4 @@
+import { useLayoutEffect } from "react";
 import clsx from "clsx";
 import GamePlayerItem from "./GamePlayerItem";
 import styles from "./GamePlayerItem.module.css";
@@ -13,6 +14,33 @@ interface GamePlayerItemListProps {
 }
 
 function GamePlayerItemList({ userMap, round }: GamePlayerItemListProps): JSX.Element {
+  const activePlayerId = userMap.find((item) => item.isActive)?.id ?? null;
+
+  useLayoutEffect(() => {
+    if (!activePlayerId || typeof window === "undefined") {
+      return;
+    }
+
+    let firstAnimationFrameId = 0;
+    let secondAnimationFrameId = 0;
+
+    firstAnimationFrameId = window.requestAnimationFrame(() => {
+      secondAnimationFrameId = window.requestAnimationFrame(() => {
+        const activePlayerElement = document.querySelector<HTMLElement>('[data-active-player="true"]');
+        activePlayerElement?.scrollIntoView({
+          behavior: "smooth",
+          block: "center",
+          inline: "nearest",
+        });
+      });
+    });
+
+    return () => {
+      window.cancelAnimationFrame(firstAnimationFrameId);
+      window.cancelAnimationFrame(secondAnimationFrameId);
+    };
+  }, [activePlayerId, userMap]);
+
   return (
     <>
       {userMap.map((item: BASIC.WinnerPlayerProps) => {

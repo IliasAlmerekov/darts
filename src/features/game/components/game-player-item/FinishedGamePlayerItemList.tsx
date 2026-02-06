@@ -6,7 +6,7 @@ type Props = {
 
 function FinishedGamePlayerItemList({ userMap }: Props) {
   const FinishedGamePlayerItem = ({ name, place }: { name?: string; place?: string }) => (
-    <div className={`${styles.gamePlayerItem} ${styles.finished}`}>
+    <div className={`${styles.gamePlayerItem} ${styles.finished}`} role="listitem">
       <div>
         <div className={styles.copylarge}>{name}</div>
       </div>
@@ -21,9 +21,11 @@ function FinishedGamePlayerItemList({ userMap }: Props) {
   return (
     <div className={styles.finishedPlayerList}>
       <div className={`${styles.copylarge} ${styles.finishedPlayers}`}>Finished Players</div>
-      {userMap.map((item, index) => (
-        <FinishedGamePlayerItem key={index} name={item.name} place={`${index + 1}.`} />
-      ))}
+      <div className={styles.finishedPlayerItems} role="list" aria-label="Finished players list">
+        {userMap.map((item, index) => (
+          <FinishedGamePlayerItem key={index} name={item.name} place={`${index + 1}.`} />
+        ))}
+      </div>
     </div>
   );
 }

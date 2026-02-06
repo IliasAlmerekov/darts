@@ -26,6 +26,7 @@ function Game() {
     activePlayer,
     shouldShowFinishOverlay,
     isInteractionDisabled,
+    isUndoDisabled,
     isSettingsOpen,
     isSavingSettings,
     settingsError,
@@ -73,7 +74,12 @@ function Game() {
 
   return (
     <>
-      <Overlay className={styles.overlayBox} isOpen={shouldShowFinishOverlay} src={deleteIcon}>
+      <Overlay
+        className={`${styles.overlayBox} ${styles.centeredOverlayBox}`}
+        backdropClassName={styles.centeredOverlayBackground}
+        isOpen={shouldShowFinishOverlay}
+        src={deleteIcon}
+      >
         <div className={styles.finishGameOverlay}>
           <p className={styles.overlayHeading}>Player Finished! Continue Game?</p>
           <div>
@@ -148,7 +154,7 @@ function Game() {
         </div>
 
         <div className={styles.keyboardAndUndo}>
-          <NumberButton value="Undo" handleClick={handleUndo} disabled={isInteractionDisabled} />
+          <NumberButton value="Undo" handleClick={handleUndo} disabled={isUndoDisabled} />
           <Keyboard onThrow={handleThrow} disabled={isInteractionDisabled} />
         </div>
       </div>

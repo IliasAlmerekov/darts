@@ -5,7 +5,7 @@ const REMATCH_ENDPOINT = (id: number) => `/room/${id}/rematch`;
 const CREATE_INVITE_ENDPOINT = (id: number) => `/invite/create/${id}`;
 
 async function getInvitation(gameId: number): Promise<CreateRoomResponse> {
-  return apiClient.get<CreateRoomResponse>(CREATE_INVITE_ENDPOINT(gameId));
+  return apiClient.post<CreateRoomResponse>(CREATE_INVITE_ENDPOINT(gameId));
 }
 
 /**

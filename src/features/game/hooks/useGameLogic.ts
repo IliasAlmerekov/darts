@@ -7,6 +7,7 @@ import { useGameState } from "./useGameState";
 import { useThrowHandler } from "./useThrowHandler";
 import { useGameSounds } from "./useGameSounds";
 import { updateGameSettings, createRematch, abortGame } from "../api";
+import type { GameThrowsResponse } from "../api";
 import { closeFinishGameOverlay } from "@/stores/ui";
 import { setInvitation, resetRoomStore } from "@/stores";
 import { unlockSounds } from "@/lib/soundPlayer";
@@ -14,6 +15,11 @@ import { unlockSounds } from "@/lib/soundPlayer";
 /**
  * Aggregates game state, side effects, and UI handlers for the game page.
  */
+export function areAllPlayersAtStartScore(gameData: GameThrowsResponse | null): boolean {
+  if (!gameData) return true;
+  return gameData.players.every((player) => player.score === gameData.settings.startScore);
+}
+
 export const useGameLogic = () => {
   const navigate = useNavigate();
   const { id: gameIdParam } = useParams<{ id?: string }>();
@@ -74,6 +80,7 @@ export const useGameLogic = () => {
   }, [zeroScorePlayerIds, dismissedZeroScorePlayerIds, gameData?.status]);
 
   const isInteractionDisabled = isLoading || !!error || !gameData || shouldShowFinishOverlay;
+  const isUndoDisabled = isInteractionDisabled || areAllPlayersAtStartScore(gameData);
 
   useEffect(() => {
     setDismissedZeroScorePlayerIds((prev) => prev.filter((id) => zeroScorePlayerIds.includes(id)));
@@ -169,6 +176,7 @@ export const useGameLogic = () => {
     activePlayer,
     shouldShowFinishOverlay,
     isInteractionDisabled,
+    isUndoDisabled,
     isSettingsOpen,
     isSavingSettings,
     settingsError,

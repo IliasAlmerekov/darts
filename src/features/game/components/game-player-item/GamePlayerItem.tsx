@@ -71,7 +71,7 @@ function GamePlayerItem({
   });
 
   return (
-    <div className={className} id={id}>
+    <div className={className} id={id} data-active-player={isActive ? "true" : undefined}>
       <div>
         <div
           className={clsx(styles.playeritemName, {

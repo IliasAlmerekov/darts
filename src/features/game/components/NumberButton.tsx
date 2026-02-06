@@ -9,12 +9,7 @@ interface NumberButtonProps {
   disabled?: boolean;
 }
 
-export function NumberButton({
-  value,
-  handleClick,
-  isActive,
-  disabled,
-}: NumberButtonProps): JSX.Element {
+export function NumberButton({ value, handleClick, isActive, disabled }: NumberButtonProps): JSX.Element {
   return (
     <button
       disabled={disabled}
