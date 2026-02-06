@@ -1,10 +1,36 @@
 .settings {
   grid-column: 1 / -1;
-  padding: 24px 32px;
+  padding: var(--page-padding);
+}
+
+.settings h1 {
+  margin: var(--space-md) 0;
+}
+
+.settingsSection {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
 }
 
 .settingsBody {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: var(--space-md);
+}
+
+@media (width <= 1024px) {
+  .settings h1 {
+    margin: var(--space-sm) 0;
+  }
+}
+
+@media (width <= 600px) {
+  .settings {
+    padding: var(--space-sm);
+  }
+
+  .settingsBody {
+    gap: var(--space-sm);
+  }
 }

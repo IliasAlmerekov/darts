@@ -1,11 +1,11 @@
 import { useState, useMemo, useEffect } from "react";
 import { useParams } from "react-router-dom";
 import NavigationBar from "@/components/navigation-bar/NavigationBar";
-import SettingsGroupBtn from "@/components/button/SettingsGroupBtn";
 import { useStore } from "@nanostores/react";
 import { $gameSettings, $currentGameId, setGameData, setCurrentGameId } from "@/stores";
 import { saveGameSettings, getGameThrows } from "@/features/game/api";
 import styles from "./Settings.module.css";
+import { SettingsTabs } from "../components/SettingsTabs";
 
 function Settings(): JSX.Element {
   const { id: gameIdParam } = useParams<{ id?: string }>();
@@ -131,9 +131,8 @@ function Settings(): JSX.Element {
       <NavigationBar />
       <h1>Settings</h1>
       <section className={styles.settingsSection}>
-        <h2>Game</h2>
         <div className={styles.settingsBody}>
-          <SettingsGroupBtn
+          <SettingsTabs
             title="Game Mode"
             options={[
               { label: "Single-out", id: "single-out" },
@@ -141,10 +140,11 @@ function Settings(): JSX.Element {
               { label: "Triple-out", id: "triple-out" },
             ]}
             selectedId={currentGameMode}
-            onClick={handleGameModeClick}
+            onChange={handleGameModeClick}
+            disabled={isSaving}
           />
-          <SettingsGroupBtn
-            title="Punkte"
+          <SettingsTabs
+            title="Points"
             options={[
               { label: "101", id: 101 },
               { label: "201", id: 201 },
@@ -153,7 +153,9 @@ function Settings(): JSX.Element {
               { label: "501", id: 501 },
             ]}
             selectedId={currentPoints}
-            onClick={handlePointsClick}
+            onChange={handlePointsClick}
+            disabled={isSaving}
+            mobileLayout="grid"
           />
         </div>
       </section>

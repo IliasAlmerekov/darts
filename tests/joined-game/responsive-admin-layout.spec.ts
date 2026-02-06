@@ -326,6 +326,34 @@ test.describe("Responsive admin layouts", () => {
     expect(startContainerMargin).toBe("20px");
   });
 
+  test("Start button stays visible at the bottom on short screens", async ({ page }) => {
+    await mockAuth(page);
+    await mockGame(page, 1, "lobby", createMockPlayers(10));
+    await mockInvitation(page, 1);
+    await page.addInitScript(() => {
+      sessionStorage.setItem("darts_current_game_id", "1");
+    });
+
+    await page.setViewportSize({ width: 1024, height: 768 });
+    await page.goto("/start/1");
+    await page.waitForLoadState("domcontentloaded");
+
+    const startButton = page.getByRole("link", { name: "Start" });
+    await expect(startButton).toBeVisible();
+
+    const startBox = await startButton.boundingBox();
+    expect(startBox).not.toBeNull();
+
+    if (startBox) {
+      const startBottom = startBox.y + startBox.height;
+      const distanceToViewportBottom = 768 - startBottom;
+
+      expect(startBottom).toBeLessThanOrEqual(768);
+      expect(distanceToViewportBottom).toBeGreaterThanOrEqual(0);
+      expect(distanceToViewportBottom).toBeLessThanOrEqual(24);
+    }
+  });
+
   test("Mobile navigation keeps deepblue icon left and shrinks icons", async ({ page }) => {
     await mockAuth(page);
     await page.setViewportSize({ width: 360, height: 800 });
@@ -373,6 +401,47 @@ test.describe("Responsive admin layouts", () => {
         () => document.documentElement.scrollWidth > window.innerWidth + 1,
       );
       await expect(hasHorizontalScroll, `${viewport.name} should not overflow`).toBe(false);
+    }
+  });
+
+  test("Game page desktop aligns throws, shifts score, and keeps undo compact on the right", async ({
+    page,
+  }) => {
+    await mockAuth(page);
+    await mockGame(page, 1);
+
+    await page.setViewportSize({ width: 1280, height: 800 });
+    await page.goto("/game/1");
+    await page.waitForLoadState("domcontentloaded");
+
+    const keyboardAndUndo = page.locator('[class*="keyboardAndUndo"]').first();
+    const undoButton = page.locator('img[alt="Undo"]').locator("xpath=ancestor::button[1]");
+    const throwDisplay = page.locator('[class*="throwDisplay"]').first();
+    const scorePointer = page.locator('[class*="pointer"]').first();
+
+    await expect(keyboardAndUndo).toBeVisible();
+    await expect(undoButton).toBeVisible();
+    await expect(throwDisplay).toBeVisible();
+    await expect(scorePointer).toBeVisible();
+
+    await expect
+      .poll(() => throwDisplay.evaluate((el) => getComputedStyle(el).flexWrap))
+      .toBe("nowrap");
+    await expect
+      .poll(() => scorePointer.evaluate((el) => parseFloat(getComputedStyle(el).paddingLeft)))
+      .toBeGreaterThan(0);
+
+    const [containerBox, undoBox] = await Promise.all([
+      keyboardAndUndo.boundingBox(),
+      undoButton.boundingBox(),
+    ]);
+
+    expect(containerBox).not.toBeNull();
+    expect(undoBox).not.toBeNull();
+
+    if (containerBox && undoBox) {
+      expect(undoBox.width).toBeLessThan(containerBox.width * 0.25);
+      expect(undoBox.x + undoBox.width / 2).toBeGreaterThan(containerBox.x + containerBox.width / 2);
     }
   });
 });

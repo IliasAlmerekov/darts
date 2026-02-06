@@ -2,8 +2,15 @@ import { useEffect, useState } from "react";
 import styles from "./GamesOverview.module.css";
 import { Link } from "react-router-dom";
 import NavigationBar from "@/components/navigation-bar/NavigationBar";
-import ViewToogleButton from "@/components/button/ViewToogleBtn";
+import {
+  Pagination,
+  PaginationContent,
+  PaginationItem,
+  PaginationNext,
+  PaginationPrevious,
+} from "@/components/pagination";
 import { getGamesOverview } from "../api";
+import { StatisticsHeaderControls } from "../components/header-controls";
 
 export default function GamesOverview(): JSX.Element {
   // Read gameId from store but don't modify it - just keep it alive
@@ -22,20 +29,16 @@ export default function GamesOverview(): JSX.Element {
         setGames(data);
         setTotal(data.length);
       }
-      console.log("Fetched game overview:", data);
     });
   }, [offset]);
 
   return (
     <div className={styles.gameOverview}>
       <NavigationBar />
-      <div className={styles.heading}>
-        <h1>Games Overview</h1>
-        <ViewToogleButton />
-      </div>
+      <StatisticsHeaderControls title="Games Overview" sortValue="alphabetically" sortDisabled />
       <div className={styles.overview}>
-        {games.slice().map((game, index) => (
-          <div key={index} className={styles.gameContainer}>
+        {games.map((game) => (
+          <div key={game.id} className={styles.gameContainer}>
             <div className={styles.gameCard}>
               <h4>
                 {" "}
@@ -69,36 +72,27 @@ export default function GamesOverview(): JSX.Element {
           </div>
         ))}
       </div>
-      <div
-        className="pagination-controls"
-        style={{
-          display: "flex",
-          justifyContent: "center",
-          gap: "20px",
-          marginTop: "20px",
-          paddingBottom: "20px",
-        }}
-      >
-        <button
-          onClick={() => setOffset(Math.max(0, offset - limit))}
-          disabled={offset === 0}
-          className="sort-button"
-          style={{ opacity: offset === 0 ? 0.5 : 1 }}
-        >
-          Previous
-        </button>
-        <span style={{ alignSelf: "center" }}>
-          Page {Math.floor(offset / limit) + 1} of {Math.ceil(total / limit) || 1}
-        </span>
-        <button
-          onClick={() => setOffset(offset + limit)}
-          disabled={offset + limit >= total}
-          className="sort-button"
-          style={{ opacity: offset + limit >= total ? 0.5 : 1 }}
-        >
-          Next
-        </button>
-      </div>
+      <Pagination className={styles.paginationControls}>
+        <PaginationContent>
+            <PaginationItem>
+              <PaginationPrevious
+                onClick={() => setOffset(Math.max(0, offset - limit))}
+                disabled={offset === 0}
+              />
+            </PaginationItem>
+          <PaginationItem>
+            <span className={styles.paginationStatus}>
+              Page {Math.floor(offset / limit) + 1} of {Math.ceil(total / limit) || 1}
+            </span>
+          </PaginationItem>
+            <PaginationItem>
+              <PaginationNext
+                onClick={() => setOffset(offset + limit)}
+                disabled={offset + limit >= total}
+              />
+            </PaginationItem>
+        </PaginationContent>
+      </Pagination>
     </div>
   );
 }
