@@ -57,6 +57,12 @@ typecheck:
   script:
     - npm run typecheck
 
+secret_check:
+  <<: *base_job
+  stage: check
+  script:
+    - npm run secrets:check
+
 unit_tests:
   <<: *base_job
   stage: check
