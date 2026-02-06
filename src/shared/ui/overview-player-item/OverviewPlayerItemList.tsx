@@ -1,5 +1,4 @@
 import OverviewPlayerItem from "./OverviewPlayerItem";
-import "./OverviewPlayerItem";
 
 interface OverviewPlayerItemListProps {
   name?: string;
@@ -28,7 +27,6 @@ function OverviewPlayerItemList({
             key={item.id}
             name={item.name}
             placement={index + 4}
-            className="overview-player-item"
             rounds={completedRounds}
             averagePerRound={averageScore}
           />
