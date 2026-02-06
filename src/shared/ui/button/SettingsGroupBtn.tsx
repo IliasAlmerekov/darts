@@ -14,16 +14,30 @@ type SettingsGroupProps = {
 };
 
 const SettingsGroupBtn = ({ title, options, selectedId, onClick }: SettingsGroupProps) => {
+  const activeIndex = Math.max(
+    0,
+    options.findIndex((option) => option.id === selectedId),
+  );
+
   return (
     <div className={styles.settingsContainer}>
       <div className={styles.gameSettings}>{title}</div>
       <div className={styles.buttonContainer}>
+        <span
+          className={styles.slider}
+          style={{
+            width: `calc((100% - 8px) / ${options.length})`,
+            transform: `translateX(calc(${activeIndex} * 100%))`,
+          }}
+          aria-hidden="true"
+        />
         {options.map((btn) => (
           <button
             key={btn.id}
             className={clsx(styles.settingsButton, {
               [styles.active]: selectedId === btn.id,
             })}
+            type="button"
             onClick={() => onClick?.(btn.id)}
           >
             {btn.label}

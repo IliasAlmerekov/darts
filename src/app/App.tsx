@@ -1,5 +1,5 @@
 import React from "react";
-import { BrowserRouter, Route, Routes } from "react-router-dom";
+import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
 import "@/app/styles/index.css";
 import ErrorBoundary from "@/app/ErrorBoundary";
 import { Game } from "@/features/game";
@@ -36,6 +36,8 @@ function App(): React.JSX.Element {
               <Route path="/joined" element={<JoinedGamePage />} />
               <Route path="/playerprofile" element={<PlayerProfile />} />
             </Route>
+
+            <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
         </BrowserRouter>
       </ErrorBoundary>
