@@ -1,4 +1,9 @@
 .podiumPlayerCard {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
   height: 142px;
   width: 197px;
   padding: 23px;
@@ -6,25 +11,45 @@
   border-radius: 8px;
 }
 
-.centerAlign {
-  margin-top: 16px;
-  justify-content: center;
+.winnerCard {
+  border: 2px solid var(--blue);
+  box-shadow:
+    0 0 0 2px rgb(53 120 255 / 22%),
+    0 0 16px rgb(53 120 255 / 36%);
+}
+
+.winnerBadge {
+  margin-bottom: 2px;
+  color: var(--blue);
+  font-size: var(--font-size-12);
+  font-weight: 700;
+  line-height: 1.2;
+}
+
+.statRow {
   display: flex;
   align-items: center;
+  justify-content: center;
   gap: 8px;
+  width: 100%;
 }
 
 .color {
-  height: 24px;
   color: var(--darkgrey);
 }
 
 .number {
+  margin: 0;
   color: var(--darkblue);
 }
 
 .playerName {
-  margin: 16px;
+  margin: 0 0 4px;
+  text-align: center;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  width: 100%;
 }
 
 .placementRound {
@@ -36,7 +61,67 @@
   align-items: center;
   justify-content: center;
   border-radius: 100px;
-  position: relative;
-  left: 40%;
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
   bottom: -20px;
+}
+
+@media (width > 600px) and (width <= 1024px) {
+  .podiumPlayerCard {
+    gap: 6px;
+  }
+
+  .playerName {
+    font-size: var(--font-size-14);
+    line-height: var(--line-height-14);
+  }
+
+  .statRow {
+    gap: 6px;
+    font-size: var(--font-size-12);
+  }
+
+  .number {
+    font-size: var(--font-size-14);
+  }
+
+  .placementRound {
+    height: 34px;
+    width: 34px;
+    left: 50%;
+    transform: translateX(-50%);
+    bottom: -14px;
+  }
+}
+
+@media (width <= 600px) {
+  .podiumPlayerCard {
+    gap: clamp(2px, 1.2vw, 6px);
+  }
+
+  .winnerBadge {
+    font-size: clamp(9px, 2.7vw, 11px);
+  }
+
+  .playerName {
+    font-size: clamp(11px, 3.2vw, 14px);
+    line-height: 1.15;
+    margin-bottom: 2px;
+  }
+
+  .statRow {
+    font-size: clamp(9px, 2.6vw, 11px);
+    gap: clamp(4px, 1.5vw, 6px);
+  }
+
+  .number {
+    font-size: clamp(10px, 3vw, 13px);
+  }
+
+  .placementRound {
+    width: clamp(24px, 8vw, 32px);
+    height: clamp(24px, 8vw, 32px);
+    bottom: -12px;
+  }
 }

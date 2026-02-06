@@ -12,21 +12,63 @@
 }
 
 .navItems {
-  display: contents;
+  position: relative;
+  display: flex;
+  align-items: center;
+  flex: 1;
+  min-height: calc(var(--nav-height) - 8px);
+  padding: 4px;
+  border-radius: 9999px;
+}
+
+.navItems::before {
+  content: "";
+  position: absolute;
+  top: 4px;
+  bottom: 4px;
+  left: 4px;
+  width: calc((100% - 8px) / 3);
+  border-radius: 9999px;
+  background-color: var(--blue);
+  transform: translateX(0);
+  transition: transform 0.55s cubic-bezier(0.22, 1, 0.36, 1);
+  z-index: 0;
+}
+
+.navItems.activeGame::before {
+  transform: translateX(100%);
+}
+
+.navItems.activeSettings::before {
+  transform: translateX(200%);
+}
+
+.activeStatistics {
+  --nav-active-state: statistics;
+}
+
+.activeGame {
+  --nav-active-state: game;
+}
+
+.activeSettings {
+  --nav-active-state: settings;
 }
 
 .tabButton {
+  position: relative;
+  z-index: 1;
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 100%;
+  flex: 1;
   gap: var(--space-sm);
   padding: 6px var(--space-sm);
   border: none;
   color: var(--darkblue);
   border-radius: 9999px;
   background: transparent;
-  transition: all 0.2s ease;
+  transition: color 0.55s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 .tabContent {
@@ -38,7 +80,6 @@
 }
 
 .tabButton.active {
-  background-color: var(--blue);
   color: var(--white);
   font-weight: 700;
 }
@@ -61,9 +102,8 @@
   }
 
   .navItems {
-    display: flex;
-    align-items: center;
-    gap: var(--space-xs);
+    min-height: 40px;
+    margin-left: var(--space-md);
   }
 
   .tabContent {

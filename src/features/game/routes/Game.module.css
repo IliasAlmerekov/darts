@@ -15,7 +15,18 @@
 
 .finishGameOverlay {
   width: 100%;
-  padding: var(--padding-lg) 0;
+  padding: clamp(10px, 2.2vw, 24px) 0;
+}
+
+.finishGameOverlay p {
+  margin: 0;
+  text-align: center;
+  font-size: clamp(14px, 2.4vw, 18px);
+  line-height: clamp(18px, 3vw, 24px);
+}
+
+.finishGameOverlay p + p {
+  margin-top: clamp(8px, 1.6vw, 12px);
 }
 
 .overlayBox {
@@ -27,14 +38,31 @@
   border-radius: 16px;
   box-shadow: var(--box-shadow);
   padding: var(--panel-padding);
-  width: min(90vw, 640px);
+  width: min(100%, 640px);
   margin: 0 auto;
 }
 
+.centeredOverlayBox {
+  position: relative;
+}
+
+.centeredOverlayBackground {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+  padding-inline: clamp(14px, 4vw, 28px);
+  padding-block: clamp(16px, 5vw, 32px);
+  background: rgb(0 0 0 / 40%);
+  z-index: 2000;
+}
+
 .overlayHeading {
-  font-size: var(--font-size-24);
+  font-size: clamp(20px, 4.4vw, 24px);
   font-weight: 700;
-  line-height: var(--line-height-28);
+  line-height: clamp(24px, 5.2vw, 28px);
   letter-spacing: 0.02em;
   text-align: center;
   color: var(--darkblue);
@@ -45,9 +73,9 @@
   justify-content: center;
   display: flex;
   margin-top: var(--space-md);
-  font-size: var(--font-size-24);
+  font-size: clamp(16px, 3.8vw, 24px);
   font-weight: 700;
-  line-height: var(--line-height-28);
+  line-height: clamp(20px, 4.6vw, 28px);
   letter-spacing: 0.02em;
   text-align: left;
   gap: var(--space-xs);
@@ -57,27 +85,11 @@
   margin-left: auto;
 }
 
-.overlayHeadline {
-  font-weight: 700;
-  line-height: 24px;
-  color: #000;
-  margin: 0;
-}
-
-.settingsOverlay {
+.keyboardAndUndo {
   width: 100%;
-  padding: var(--panel-padding);
-}
-
-.settingsBodyContainer {
   display: flex;
   flex-direction: column;
   gap: var(--space-sm);
-  padding-top: var(--space-lg);
-}
-
-.keyboardAndUndo {
-  width: 100%;
   position: sticky;
   bottom: 0;
   padding: var(--space-sm) var(--page-padding);
@@ -85,15 +97,8 @@
   box-sizing: border-box;
 }
 
-.errorText {
-  margin-top: var(--space-xs);
-  color: #d00000;
-  font-size: var(--font-size-14);
-  text-align: center;
-}
-
-.settingsOverlayBtn {
-  margin-top: var(--space-md);
+.keyboardAndUndo > button:first-child {
+  align-self: flex-end;
 }
 
 .gamePage {
@@ -117,6 +122,9 @@
   gap: var(--space-md);
   flex: 1;
   min-height: 0;
+  overflow-y: auto;
+  scroll-behavior: smooth;
+  scroll-padding-bottom: clamp(90px, 16vh, 180px);
 }
 
 @media (width <= 900px) {
@@ -126,5 +134,24 @@
 
   .keyboardAndUndo {
     padding: var(--space-sm) 0;
+  }
+
+  .keyboardAndUndo > button:first-child {
+    align-self: stretch;
+  }
+}
+
+@media (width <= 600px) {
+  .overlayBox {
+    padding: clamp(12px, 3vw, 18px);
+  }
+
+  .finishGameOverlay {
+    padding: clamp(8px, 2.6vw, 12px) 0;
+  }
+
+  .finishGameOverlay p {
+    font-size: clamp(13px, 3.6vw, 16px);
+    line-height: clamp(17px, 4.6vw, 22px);
   }
 }

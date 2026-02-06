@@ -1,0 +1,109 @@
+.group {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xs);
+}
+
+.title {
+  margin: 0;
+  font-size: var(--font-size-16);
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--darkblue);
+}
+
+.tabs {
+  position: relative;
+  display: flex;
+  align-items: stretch;
+  border-radius: 999px;
+  background: var(--lightgrey);
+  padding: 4px;
+  overflow: hidden;
+}
+
+.slider {
+  position: absolute;
+  top: 4px;
+  bottom: 4px;
+  left: 4px;
+  border-radius: 999px;
+  background: var(--blue);
+  transition: transform 0.55s cubic-bezier(0.22, 1, 0.36, 1);
+  z-index: 0;
+}
+
+.button {
+  position: relative;
+  z-index: 1;
+  flex: 1;
+  min-height: 40px;
+  border: none;
+  background: transparent;
+  border-radius: 999px;
+  color: #000;
+  font-size: var(--font-size-14);
+  font-weight: 700;
+  cursor: pointer;
+  transition: color 0.55s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.buttonActive {
+  color: var(--white);
+}
+
+@media (width <= 1024px) {
+  .title {
+    font-size: var(--font-size-14);
+  }
+}
+
+@media (width <= 600px) {
+  .tabs {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-xs);
+    padding: 0;
+    background: transparent;
+    border-radius: 0;
+    overflow: visible;
+  }
+
+  .slider {
+    display: none;
+  }
+
+  .button {
+    min-height: 44px;
+    border: 1px solid var(--middlegrey);
+    border-radius: var(--radius-sm);
+    background: var(--white);
+    color: #000;
+    padding: 0 var(--space-sm);
+    text-align: center;
+  }
+
+  .buttonActive {
+    background: var(--blue);
+    color: var(--white);
+    border-color: var(--blue);
+  }
+
+  .tabsGrid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: var(--space-xs);
+  }
+
+  .tabsGrid .button {
+    min-height: 40px;
+    padding: 0;
+  }
+}
+
+@media (width <= 420px) {
+  .tabsGrid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}

@@ -25,7 +25,7 @@ function GameSummaryPage(): React.JSX.Element {
 
   return (
     <div className={styles.summary}>
-      <div>
+      <div className={styles.undoArea}>
         <Link onClick={handleUndo} to="/game" className={styles.undoButton}>
           <img src={Undo} alt="Undo last action" />
         </Link>
@@ -37,20 +37,25 @@ function GameSummaryPage(): React.JSX.Element {
         <OverviewPlayerItemList userMap={leaderBoardList} startScore={startScore} />
       </div>
 
-      <div className={styles.playAgainButton}>
+      <div className={styles.playAgainWrap}>
         <Button
           label="Play Again"
           type="primary"
           isInverted
-          className={styles.playAgainButton}
+          className={styles.summaryActionButton}
           handleClick={handlePlayAgain}
         />
       </div>
 
       {error && <p className={styles.error}>{error}</p>}
 
-      <div className={styles.backToStartButton}>
-        <Button label="Back To Start" type="primary" handleClick={handleBackToStart} />
+      <div className={styles.backToStartWrap}>
+        <Button
+          label="Back To Start"
+          type="primary"
+          className={styles.summaryActionButton}
+          handleClick={handleBackToStart}
+        />
       </div>
     </div>
   );

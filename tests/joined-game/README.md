@@ -55,8 +55,18 @@ npx playwright test --ui
 
 ## Test Credentials
 
-- Email: `ilias.almerekov@db-n.com`
-- Password: `pass123`
+Use environment variables for credentials in local/CI runs:
+
+- `PLAYWRIGHT_TEST_EMAIL`
+- `PLAYWRIGHT_TEST_PASSWORD`
+
+Example (PowerShell):
+
+```bash
+$env:PLAYWRIGHT_TEST_EMAIL="tester@example.com"
+$env:PLAYWRIGHT_TEST_PASSWORD="change-me"
+npm run test:e2e
+```
 
 ## Debugging Commands
 

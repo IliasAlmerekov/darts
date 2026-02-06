@@ -8,6 +8,9 @@
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
   gap: var(--space-md);
+  margin-top: var(--space-sm);
+  position: relative;
+  z-index: 1;
 }
 
 .gameContainer {
@@ -46,8 +49,32 @@
   color: #000;
 }
 
-.heading {
+.paginationControls {
   display: flex;
-  justify-content: space-between;
-  align-items: center;
+  justify-content: center;
+  gap: var(--space-md);
+  margin-top: var(--space-md);
+  padding-bottom: var(--space-md);
+}
+
+.paginationButton {
+  border: none;
+  border-radius: 100px;
+  background-color: var(--lightgrey);
+  color: var(--darkblue);
+  cursor: pointer;
+  font-size: var(--font-size-16);
+  font-weight: 700;
+  min-height: 40px;
+  padding: 0 var(--space-md);
+}
+
+.disabledButton {
+  opacity: 0.5;
+}
+
+.paginationStatus {
+  align-self: center;
+  font-weight: 700;
+  color: var(--darkgrey);
 }

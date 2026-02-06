@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import Overlay from "@/components/overlay/Overlay";
 import SettingsGroupBtn from "@/components/button/SettingsGroupBtn";
 import Button from "@/components/button/Button";
-import styles from "../routes/Game.module.css";
+import styles from "./SettingsOverlay.module.css";
 import deleteIcon from "@/assets/icons/delete.svg";
 
 type SettingsOverlayProps = {
@@ -41,7 +41,13 @@ function SettingsOverlay({
   };
 
   return (
-    <Overlay className={styles.overlayBox} isOpen={isOpen} src={deleteIcon} onClose={onClose}>
+    <Overlay
+      className={`${styles.overlayBox} ${styles.centeredOverlayBox}`}
+      backdropClassName={styles.settingsOverlayBackground}
+      isOpen={isOpen}
+      src={deleteIcon}
+      onClose={onClose}
+    >
       <div className={styles.settingsOverlay}>
         <h3 className={styles.overlayHeadline}>Settings</h3>
         <div className={styles.settingsBodyContainer}>

@@ -13,7 +13,7 @@ export type CreateGamePayload = {
  * Fetches an invitation link for a game.
  */
 export async function getInvitation(gameId: number): Promise<CreateRoomResponse> {
-  return apiClient.get<CreateRoomResponse>(CREATE_INVITE_ENDPOINT(gameId));
+  return apiClient.post<CreateRoomResponse>(CREATE_INVITE_ENDPOINT(gameId));
 }
 
 /**
@@ -26,7 +26,7 @@ export async function handleCreateGame(payload?: CreateGamePayload) {
       : {};
 
   const room = await apiClient.post<{ gameId: number }>(CREATE_ROOM_ENDPOINT, body);
-  const invite = await apiClient.get<CreateRoomResponse>(CREATE_INVITE_ENDPOINT(room.gameId));
+  const invite = await apiClient.post<CreateRoomResponse>(CREATE_INVITE_ENDPOINT(room.gameId));
 
   return {
     gameId: invite.gameId,
