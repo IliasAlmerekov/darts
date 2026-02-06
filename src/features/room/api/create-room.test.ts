@@ -32,12 +32,10 @@ describe("room/create-room api", () => {
   });
 
   it("creates room and then requests invitation via POST", async () => {
-    vi.mocked(apiClient.post)
-      .mockResolvedValueOnce({ gameId: 520 })
-      .mockResolvedValueOnce({
-        gameId: 520,
-        invitationLink: "/invite/520",
-      });
+    vi.mocked(apiClient.post).mockResolvedValueOnce({ gameId: 520 }).mockResolvedValueOnce({
+      gameId: 520,
+      invitationLink: "/invite/520",
+    });
 
     const response = await createRoom();
 

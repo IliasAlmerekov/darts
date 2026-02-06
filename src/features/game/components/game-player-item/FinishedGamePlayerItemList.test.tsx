@@ -7,11 +7,7 @@ describe("FinishedGamePlayerItemList", () => {
   it("renders finished players inside a scrollable list container", () => {
     render(
       <FinishedGamePlayerItemList
-        userMap={[
-          { name: "Alice" },
-          { name: "Bob" },
-          { name: "Charlie" },
-        ]}
+        userMap={[{ name: "Alice" }, { name: "Bob" }, { name: "Charlie" }]}
       />,
     );
 

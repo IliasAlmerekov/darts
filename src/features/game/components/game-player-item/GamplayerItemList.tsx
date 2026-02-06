@@ -26,7 +26,9 @@ function GamePlayerItemList({ userMap, round }: GamePlayerItemListProps): JSX.El
 
     firstAnimationFrameId = window.requestAnimationFrame(() => {
       secondAnimationFrameId = window.requestAnimationFrame(() => {
-        const activePlayerElement = document.querySelector<HTMLElement>('[data-active-player="true"]');
+        const activePlayerElement = document.querySelector<HTMLElement>(
+          '[data-active-player="true"]',
+        );
         activePlayerElement?.scrollIntoView({
           behavior: "smooth",
           block: "center",

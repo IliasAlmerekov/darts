@@ -441,7 +441,9 @@ test.describe("Responsive admin layouts", () => {
 
     if (containerBox && undoBox) {
       expect(undoBox.width).toBeLessThan(containerBox.width * 0.25);
-      expect(undoBox.x + undoBox.width / 2).toBeGreaterThan(containerBox.x + containerBox.width / 2);
+      expect(undoBox.x + undoBox.width / 2).toBeGreaterThan(
+        containerBox.x + containerBox.width / 2,
+      );
     }
   });
 });

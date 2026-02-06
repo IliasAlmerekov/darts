@@ -4,7 +4,10 @@ function getSafeAverage(player: BASIC.PlayerProps): number {
   return typeof player.scoreAverage === "number" ? player.scoreAverage : 0;
 }
 
-export function sortPlayerStats(items: BASIC.PlayerProps[], sortMethod: SortMethod): BASIC.PlayerProps[] {
+export function sortPlayerStats(
+  items: BASIC.PlayerProps[],
+  sortMethod: SortMethod,
+): BASIC.PlayerProps[] {
   const indexedItems = items.map((item, index) => ({ item, index }));
 
   indexedItems.sort((left, right) => {

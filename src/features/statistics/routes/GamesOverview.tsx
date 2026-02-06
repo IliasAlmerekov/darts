@@ -74,23 +74,23 @@ export default function GamesOverview(): JSX.Element {
       </div>
       <Pagination className={styles.paginationControls}>
         <PaginationContent>
-            <PaginationItem>
-              <PaginationPrevious
-                onClick={() => setOffset(Math.max(0, offset - limit))}
-                disabled={offset === 0}
-              />
-            </PaginationItem>
+          <PaginationItem>
+            <PaginationPrevious
+              onClick={() => setOffset(Math.max(0, offset - limit))}
+              disabled={offset === 0}
+            />
+          </PaginationItem>
           <PaginationItem>
             <span className={styles.paginationStatus}>
               Page {Math.floor(offset / limit) + 1} of {Math.ceil(total / limit) || 1}
             </span>
           </PaginationItem>
-            <PaginationItem>
-              <PaginationNext
-                onClick={() => setOffset(offset + limit)}
-                disabled={offset + limit >= total}
-              />
-            </PaginationItem>
+          <PaginationItem>
+            <PaginationNext
+              onClick={() => setOffset(offset + limit)}
+              disabled={offset + limit >= total}
+            />
+          </PaginationItem>
         </PaginationContent>
       </Pagination>
     </div>

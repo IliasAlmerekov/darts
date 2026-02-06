@@ -10,7 +10,12 @@ interface SortTabsProps {
   className?: string;
 }
 
-export function SortTabs({ value, onChange, disabled = false, className }: SortTabsProps): JSX.Element {
+export function SortTabs({
+  value,
+  onChange,
+  disabled = false,
+  className,
+}: SortTabsProps): JSX.Element {
   const handleChange = (method: SortMethod): void => {
     if (disabled || !onChange || method === value) {
       return;

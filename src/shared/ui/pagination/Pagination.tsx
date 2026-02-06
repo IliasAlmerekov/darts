@@ -43,14 +43,13 @@ export const PaginationContent = React.forwardRef<
 });
 PaginationContent.displayName = "PaginationContent";
 
-export const PaginationItem = React.forwardRef<
-  HTMLLIElement,
-  React.ComponentPropsWithoutRef<"li">
->(({ className, ...props }, ref) => {
-  return (
-    <li ref={ref} data-slot="pagination-item" className={cx(styles.item, className)} {...props} />
-  );
-});
+export const PaginationItem = React.forwardRef<HTMLLIElement, React.ComponentPropsWithoutRef<"li">>(
+  ({ className, ...props }, ref) => {
+    return (
+      <li ref={ref} data-slot="pagination-item" className={cx(styles.item, className)} {...props} />
+    );
+  },
+);
 PaginationItem.displayName = "PaginationItem";
 
 export type PaginationLinkProps = {
