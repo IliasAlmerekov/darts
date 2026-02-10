@@ -10,7 +10,6 @@ interface GamePlayerItemListProps {
   round: number;
   isBust?: boolean;
   throwCount?: number;
-  roundscount?: BASIC.Round;
 }
 
 function GamePlayerItemList({ userMap, round }: GamePlayerItemListProps): JSX.Element {

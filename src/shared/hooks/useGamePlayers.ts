@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useEventSource } from "@/hooks/useEventSource";
-import { getGameThrows } from "@/lib/api/game";
+import { useGameFlowPort } from "@/shared/providers/GameFlowPortProvider";
 
 interface RawPlayer {
   id: number;
@@ -20,15 +20,12 @@ type PlayersEventPayload = {
   items?: RawPlayer[];
 };
 
-/**
- * Loads and keeps track of players in a room using SSE + fallback fetch.
- */
 export function useGamePlayers(gameId: number | null) {
+  const gameFlow = useGameFlowPort();
   const [players, setPlayers] = useState<Player[]>([]);
 
   const url = useMemo(() => (gameId ? `/api/room/${gameId}/stream` : null), [gameId]);
 
-  // Fetch initial players via game state (fallback when SSE hasn't fired yet)
   useEffect(() => {
     let isMounted = true;
 
@@ -37,7 +34,8 @@ export function useGamePlayers(gameId: number | null) {
       return;
     }
 
-    getGameThrows(gameId)
+    gameFlow
+      .getGameThrows(gameId)
       .then((response) => {
         if (!isMounted) return;
         const sourcePlayers = response.players ?? [];
@@ -52,17 +50,18 @@ export function useGamePlayers(gameId: number | null) {
         );
         setPlayers(sorted);
       })
-      .catch(() => {});
+      .catch(() => {
+        // Ignore transient room fetch errors; SSE can still populate players.
+      });
 
     return () => {
       isMounted = false;
     };
-  }, [gameId]);
+  }, [gameFlow, gameId]);
 
   const handlePlayers = useCallback((event: MessageEvent<string>) => {
     try {
       const payload = JSON.parse(event.data) as PlayersEventPayload;
-
       const list = payload.items ?? payload.players;
 
       if (Array.isArray(list)) {
@@ -83,8 +82,7 @@ export function useGamePlayers(gameId: number | null) {
         setPlayers(sorted);
       }
     } catch {
-      // Ignore invalid SSE payloads
-      void 0;
+      // Ignore invalid SSE payloads.
     }
   }, []);
 

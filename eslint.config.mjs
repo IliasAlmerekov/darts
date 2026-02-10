@@ -76,4 +76,38 @@ export default [
       },
     },
   },
+  {
+    files: ["src/shared/**/*.{ts,tsx}"],
+    ignores: ["src/shared/types/game.ts", "src/shared/types/player.ts"],
+    rules: {
+      "no-restricted-imports": [
+        "error",
+        {
+          patterns: ["@/entities/*", "@/features/*", "@/app/*"],
+        },
+      ],
+    },
+  },
+  {
+    files: ["src/entities/**/*.{ts,tsx}"],
+    rules: {
+      "no-restricted-imports": [
+        "error",
+        {
+          patterns: ["@/features/*", "@/app/*"],
+        },
+      ],
+    },
+  },
+  {
+    files: ["src/features/**/*.{ts,tsx}"],
+    rules: {
+      "no-restricted-imports": [
+        "error",
+        {
+          patterns: ["@/features/*/*"],
+        },
+      ],
+    },
+  },
 ];

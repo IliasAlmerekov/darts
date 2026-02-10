@@ -1,11 +1,10 @@
-import { useGamePlayers } from "@/features/room";
+import { useGamePlayers } from "@/hooks/useGamePlayers";
 import SelectedPlayerItem from "../player-items/SelectedPlayerItem";
 import styles from "./LivePlayersList.module.css";
 import { useMemo } from "react";
 
 interface LivePlayersListProps {
   gameId: number | null;
-  previousGameId?: number | null;
   onRemovePlayer?: (playerId: number, gameId: number) => void;
   dragEnd?: boolean;
   playerOrder?: number[];
@@ -13,12 +12,11 @@ interface LivePlayersListProps {
 
 export const LivePlayersList = ({
   gameId,
-  previousGameId,
   onRemovePlayer,
   dragEnd,
   playerOrder,
 }: LivePlayersListProps) => {
-  const { players, count } = useGamePlayers(gameId, previousGameId);
+  const { players, count } = useGamePlayers(gameId);
 
   const sortedPlayers = useMemo(() => {
     if (!playerOrder || playerOrder.length === 0) {

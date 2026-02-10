@@ -1,15 +1,16 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
+import { useStore } from "@nanostores/react";
 
-import { useRoomInvitation, useRoomStream } from "@/features/room";
-import { mapPlayersToUI, getFinishedPlayers } from "@/features/player";
+import { useRoomStream } from "@/hooks/useRoomStream";
 import { useGameState } from "./useGameState";
 import { useThrowHandler } from "./useThrowHandler";
 import { useGameSounds } from "./useGameSounds";
+import { getFinishedPlayers, mapPlayersToUI } from "@/lib/player-mappers";
 import { updateGameSettings, createRematch, abortGame } from "../api";
 import type { GameThrowsResponse } from "../api";
 import { closeFinishGameOverlay } from "@/stores/ui";
-import { setInvitation, resetRoomStore } from "@/stores";
+import { $invitation, setInvitation, resetRoomStore } from "@/stores";
 import { unlockSounds } from "@/lib/soundPlayer";
 
 /**
@@ -23,7 +24,7 @@ export function areAllPlayersAtStartScore(gameData: GameThrowsResponse | null): 
 export const useGameLogic = () => {
   const navigate = useNavigate();
   const { id: gameIdParam } = useParams<{ id?: string }>();
-  const { invitation } = useRoomInvitation();
+  const invitation = useStore($invitation);
 
   const gameId = useMemo(() => {
     if (!gameIdParam) return invitation?.gameId ?? null;

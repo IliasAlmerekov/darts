@@ -1,5 +1,5 @@
 import { apiClient } from "@/lib/api";
-import type { GameThrowsResponse } from "./record-throw";
+import type { GameThrowsResponse } from "@/types";
 
 const UNDO_THROW_ENDPOINT = (id: number) => `/game/${id}/throw`;
 

@@ -1,7 +1,7 @@
 import styles from "./GamePlayerItem.module.css";
 import bustIconX from "@/assets/icons/delete-grey.svg";
 import clsx from "clsx";
-import { usePlayerThrowsDisplay } from "@/features/game/hooks/usePlayerThrowsDisplay";
+import { usePlayerThrowsDisplay } from "../../hooks/usePlayerThrowsDisplay";
 
 interface GamePlayerItemProps {
   name?: string;

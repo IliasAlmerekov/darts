@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import { render } from "@testing-library/react";
 import { describe, expect, it, vi, beforeEach, afterEach } from "vitest";
-import GamePlayerItemList from "./GamplayerItemList";
+import GamePlayerItemList from "./GamePlayerItemList";
 
 const createPlayer = (id: number, name: string, isActive: boolean): BASIC.WinnerPlayerProps =>
   ({

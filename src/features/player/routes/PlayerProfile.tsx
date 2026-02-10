@@ -1,4 +1,4 @@
-import { useAuthenticatedUser } from "@/features/auth";
+import { useAuthenticatedUser } from "@/hooks/useAuthenticatedUser";
 import React from "react";
 
 const PlayerProfile = (): React.JSX.Element => {

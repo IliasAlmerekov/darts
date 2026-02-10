@@ -3,11 +3,12 @@ import { useParams } from "react-router-dom";
 import NavigationBar from "@/components/navigation-bar/NavigationBar";
 import { useStore } from "@nanostores/react";
 import { $gameSettings, $currentGameId, setGameData, setCurrentGameId } from "@/stores";
-import { saveGameSettings, getGameThrows } from "@/features/game/api";
+import { useGameFlowPort } from "@/shared/providers/GameFlowPortProvider";
 import styles from "./Settings.module.css";
 import { SettingsTabs } from "../components/SettingsTabs";
 
 function Settings(): JSX.Element {
+  const gameFlow = useGameFlowPort();
   const { id: gameIdParam } = useParams<{ id?: string }>();
   const gameSettings = useStore($gameSettings);
   const currentGameIdFromStore = useStore($currentGameId);
@@ -40,7 +41,7 @@ function Settings(): JSX.Element {
     const loadGameSettings = async () => {
       setIsLoading(true);
       try {
-        const gameData = await getGameThrows(currentGameId);
+        const gameData = await gameFlow.getGameThrows(currentGameId);
         setGameData(gameData);
       } catch (error) {
         console.error("Failed to load game settings:", error);
@@ -50,7 +51,7 @@ function Settings(): JSX.Element {
     };
 
     loadGameSettings();
-  }, [currentGameId]);
+  }, [gameFlow, currentGameId]);
 
   // Mapping zwischen Backend-Settings und UI-Darstellung
   const currentGameMode = useMemo(() => {
@@ -72,7 +73,7 @@ function Settings(): JSX.Element {
     setIsSaving(true);
 
     try {
-      const response = await saveGameSettings(
+      const response = await gameFlow.saveGameSettings(
         {
           startScore: currentPoints,
           doubleOut: isDoubleOut,
@@ -99,7 +100,7 @@ function Settings(): JSX.Element {
     setIsSaving(true);
 
     try {
-      const response = await saveGameSettings(
+      const response = await gameFlow.saveGameSettings(
         {
           startScore: points,
           doubleOut: isDoubleOut,

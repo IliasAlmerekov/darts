@@ -1,25 +1,64 @@
 import { useEffect, useMemo, useState } from "react";
-import { useLocation, useNavigate } from "react-router-dom";
-import { getFinishedGame, createRematch, type FinishedPlayerResponse } from "@/features/game/api";
+import { useLocation, useNavigate, useParams } from "react-router-dom";
+import type { FinishedPlayerResponse } from "@/lib/api/game";
+import { useGameFlowPort } from "@/shared/providers/GameFlowPortProvider";
 import { setInvitation, setLastFinishedGameId, resetRoomStore } from "@/stores";
 import { playSound } from "@/lib/soundPlayer";
+import { ApiError } from "@/lib/api/errors";
+
+type ApiErrorPayload = {
+  error?: string;
+  message?: string;
+};
+
+function isStartedReopenConflict(error: unknown): boolean {
+  if (!(error instanceof ApiError) || error.status !== 409) {
+    return false;
+  }
+
+  const payload = error.data;
+  if (null === payload || "object" !== typeof payload) {
+    return false;
+  }
+
+  const typedPayload = payload as ApiErrorPayload;
+  if ("GAME_REOPEN_NOT_ALLOWED" !== typedPayload.error) {
+    return false;
+  }
+
+  return true;
+}
 
 /**
  * Loads summary data for a finished game and provides rematch actions.
  */
 export function useGameSummaryPage() {
+  const gameFlow = useGameFlowPort();
   const navigate = useNavigate();
   const location = useLocation();
+  const { id: summaryGameIdParam } = useParams<{ id?: string }>();
   const [serverFinished, setServerFinished] = useState<FinishedPlayerResponse[]>([]);
   const [error, setError] = useState<string | null>(null);
 
-  const finishedGameIdFromRoute = (location.state as { finishedGameId?: number } | null)
-    ?.finishedGameId;
+  const finishedGameIdFromRoute = useMemo(() => {
+    const stateGameId = (location.state as { finishedGameId?: number } | null)?.finishedGameId;
+    if ("number" === typeof stateGameId) {
+      return stateGameId;
+    }
+
+    if (!summaryGameIdParam) {
+      return null;
+    }
+
+    const parsedParam = Number(summaryGameIdParam);
+    return Number.isFinite(parsedParam) ? parsedParam : null;
+  }, [location.state, summaryGameIdParam]);
 
   useEffect(() => {
     if (!finishedGameIdFromRoute) return;
 
-    getFinishedGame(finishedGameIdFromRoute)
+    gameFlow
+      .getFinishedGame(finishedGameIdFromRoute)
       .then((data) => {
         setServerFinished(data);
         setLastFinishedGameId(finishedGameIdFromRoute);
@@ -28,7 +67,7 @@ export function useGameSummaryPage() {
         console.error("Failed to fetch finished game:", err);
         setError("Could not load finished game data");
       });
-  }, [finishedGameIdFromRoute]);
+  }, [finishedGameIdFromRoute, gameFlow]);
 
   const newList: BASIC.WinnerPlayerProps[] = useMemo(() => {
     if (serverFinished.length > 0) {
@@ -66,15 +105,33 @@ export function useGameSummaryPage() {
   });
   const podiumData = podiumList.length === 2 ? podiumListWithPlaceholder : podiumList;
 
-  const handleUndo = (): void => {
-    playSound("undo");
+  const handleUndo = async (): Promise<void> => {
+    if (!finishedGameIdFromRoute) return;
+
+    try {
+      playSound("undo");
+      const gameState = await gameFlow.undoLastThrow(finishedGameIdFromRoute);
+      if ("finished" === gameState.status) {
+        await gameFlow.reopenGame(finishedGameIdFromRoute);
+      }
+
+      navigate(`/game/${finishedGameIdFromRoute}`);
+    } catch (err) {
+      if (isStartedReopenConflict(err)) {
+        navigate(`/game/${finishedGameIdFromRoute}`);
+        return;
+      }
+
+      console.error("Failed to reopen game:", err);
+      setError("Could not reopen game");
+    }
   };
 
   const handlePlayAgain = async (): Promise<void> => {
     if (!finishedGameIdFromRoute) return;
 
     try {
-      const rematch = await createRematch(finishedGameIdFromRoute);
+      const rematch = await gameFlow.createRematch(finishedGameIdFromRoute);
 
       setInvitation({
         gameId: rematch.gameId,
@@ -95,7 +152,7 @@ export function useGameSummaryPage() {
     }
 
     try {
-      const rematch = await createRematch(finishedGameIdFromRoute);
+      const rematch = await gameFlow.createRematch(finishedGameIdFromRoute);
 
       setInvitation({
         gameId: rematch.gameId,

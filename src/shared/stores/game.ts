@@ -1,5 +1,5 @@
 import { atom, computed } from "nanostores";
-import type { GameThrowsResponse } from "@/features/game/api";
+import type { GameThrowsResponse } from "@/types";
 
 // Core game state from server
 export const $gameData = atom<GameThrowsResponse | null>(null);

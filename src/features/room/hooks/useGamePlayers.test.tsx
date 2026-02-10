@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { render, screen, waitFor } from "@testing-library/react";
+import { act, render, screen, waitFor } from "@testing-library/react";
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { useGamePlayers } from "./useGamePlayers";
 
@@ -15,11 +15,11 @@ vi.mock("@/hooks/useEventSource", () => ({
   },
 }));
 
-vi.mock("@/features/game/api", () => ({
+vi.mock("@/lib/api/game", () => ({
   getGameThrows: vi.fn(),
 }));
 
-import { getGameThrows, type GameThrowsResponse } from "@/features/game/api";
+import { getGameThrows, type GameThrowsResponse } from "@/lib/api/game";
 
 const buildGameThrowsResponse = (
   overrides: Partial<GameThrowsResponse> = {},
@@ -75,14 +75,26 @@ describe("useGamePlayers", () => {
       expect(screen.getByTestId("count").textContent).toBe("1");
     });
 
-    sseHandler?.(
-      new MessageEvent("players", {
-        data: JSON.stringify({ players: [] }),
-      }),
-    );
+    act(() => {
+      sseHandler?.(
+        new MessageEvent("players", {
+          data: JSON.stringify({ players: [] }),
+        }),
+      );
+    });
 
     await waitFor(() => {
       expect(screen.getByTestId("count").textContent).toBe("0");
     });
+  });
+
+  it("does not fetch players when game id is missing", async () => {
+    render(<HookConsumer gameId={null} />);
+
+    await waitFor(() => {
+      expect(screen.getByTestId("count").textContent).toBe("0");
+    });
+
+    expect(getGameThrows).not.toHaveBeenCalled();
   });
 });

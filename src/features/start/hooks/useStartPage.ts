@@ -3,16 +3,9 @@ import { useNavigate, useParams } from "react-router-dom";
 import { useStore } from "@nanostores/react";
 import { DragEndEvent } from "@dnd-kit/core";
 import { arrayMove } from "@dnd-kit/sortable";
-import { useGamePlayers } from "@/features/room";
-import {
-  addGuestPlayer,
-  createRoom,
-  getInvitation,
-  leaveRoom,
-  updatePlayerOrder,
-  type AddGuestErrorResponse,
-} from "@/features/room/api";
-import { getGameThrows, startGame } from "@/features/game/api";
+import { useGamePlayers } from "@/hooks/useGamePlayers";
+import { useGameFlowPort } from "@/shared/providers/GameFlowPortProvider";
+import type { AddGuestErrorResponse } from "@/shared/ports/game-flow";
 import {
   $lastFinishedGameId,
   $invitation,
@@ -29,6 +22,7 @@ import { validateGuestUsername } from "../lib/guestUsername";
  * Manages start page state, player order, and room lifecycle actions.
  */
 export function useStartPage() {
+  const gameFlow = useGameFlowPort();
   const START_SOUND_PATH = "/sounds/start-round-sound.mp3";
   const navigate = useNavigate();
   const { id: gameIdParam } = useParams<{ id?: string }>();
@@ -63,7 +57,7 @@ export function useStartPage() {
     }
   }, [gameIdParam, invitation?.gameId, currentGameId]);
 
-  const { players, count: playerCount } = useGamePlayers(gameId, lastFinishedGameId);
+  const { players, count: playerCount } = useGamePlayers(gameId);
   const [playerOrder, setPlayerOrder] = useState<number[]>([]);
 
   useEffect(() => {
@@ -92,7 +86,7 @@ export function useStartPage() {
               playerId,
               position,
             }));
-            updatePlayerOrder(gameId, positionsPayload).catch((err) => {
+            gameFlow.updatePlayerOrder(gameId, positionsPayload).catch((err) => {
               console.warn("Failed to persist player order", err);
             });
           }
@@ -101,7 +95,7 @@ export function useStartPage() {
         });
       }
     },
-    [gameId],
+    [gameFlow, gameId],
   );
 
   // Verwende gameSettings vom Backend, falls vorhanden, sonst Defaults
@@ -111,7 +105,7 @@ export function useStartPage() {
 
   const handleRemovePlayer = async (playerId: number, currentGameId: number): Promise<void> => {
     try {
-      await leaveRoom(currentGameId, playerId);
+      await gameFlow.leaveRoom(currentGameId, playerId);
     } catch {
       void 0;
     }
@@ -136,7 +130,7 @@ export function useStartPage() {
           return;
         }
 
-        const gameData = await getGameThrows(gameId);
+        const gameData = await gameFlow.getGameThrows(gameId);
 
         if (gameData.status !== "lobby") {
           console.warn(`Access to game ${gameId} denied - status: ${gameData.status}`);
@@ -151,7 +145,7 @@ export function useStartPage() {
         setGameData(gameData);
 
         try {
-          const inviteResponse = await getInvitation(gameId);
+          const inviteResponse = await gameFlow.getInvitation(gameId);
           setInvitation({
             gameId: inviteResponse.gameId,
             invitationLink: inviteResponse.invitationLink,
@@ -175,7 +169,7 @@ export function useStartPage() {
     };
 
     restoreData();
-  }, [gameId, invitation?.gameId, isRestoring, navigate, currentGameId]);
+  }, [gameFlow, gameId, invitation?.gameId, isRestoring, navigate, currentGameId]);
 
   useEffect(() => {
     if (invitation?.gameId) {
@@ -193,7 +187,7 @@ export function useStartPage() {
       audio.volume = 0.4;
       audio.play().catch(() => {});
 
-      await startGame(gameId, {
+      await gameFlow.startGame(gameId, {
         startScore: startScore,
         doubleOut: isDoubleOut,
         tripleOut: isTripleOut,
@@ -213,7 +207,7 @@ export function useStartPage() {
     if (creating) return;
     setCreating(true);
     try {
-      const response = await createRoom({
+      const response = await gameFlow.createRoom({
         previousGameId: lastFinishedGameId ?? undefined,
       });
       setInvitation(response);
@@ -295,7 +289,7 @@ export function useStartPage() {
     setGuestSuggestions([]);
 
     try {
-      await addGuestPlayer(gameId, { username: trimmedUsername });
+      await gameFlow.addGuestPlayer(gameId, { username: trimmedUsername });
       closeGuestOverlay();
     } catch (error) {
       const apiError = getGuestErrorFromApi(error);

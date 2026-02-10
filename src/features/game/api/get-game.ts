@@ -1,6 +1,6 @@
 import { apiClient, API_BASE_URL } from "@/lib/api";
 import { ApiError, ForbiddenError, NetworkError, UnauthorizedError } from "@/lib/api/errors";
-import type { GameThrowsResponse } from "./record-throw";
+import type { GameThrowsResponse } from "@/types";
 
 const GET_GAME_ENDPOINT = (id: number) => `/game/${id}`;
 const gameStateVersionById = new Map<number, string>();

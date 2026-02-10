@@ -7,10 +7,18 @@ export interface Invitation {
 
 const STORAGE_KEY = "darts_current_game_id";
 
+function canUseSessionStorage(): boolean {
+  return typeof window !== "undefined" && typeof window.sessionStorage !== "undefined";
+}
+
 // Helper functions for sessionStorage (cleared when browser closes)
 function getStoredGameId(): number | null {
+  if (!canUseSessionStorage()) {
+    return null;
+  }
+
   try {
-    const stored = sessionStorage.getItem(STORAGE_KEY);
+    const stored = window.sessionStorage.getItem(STORAGE_KEY);
     if (stored) {
       const parsed = Number(stored);
       return Number.isFinite(parsed) ? parsed : null;
@@ -22,11 +30,15 @@ function getStoredGameId(): number | null {
 }
 
 function setStoredGameId(gameId: number | null): void {
+  if (!canUseSessionStorage()) {
+    return;
+  }
+
   try {
     if (gameId !== null) {
-      sessionStorage.setItem(STORAGE_KEY, String(gameId));
+      window.sessionStorage.setItem(STORAGE_KEY, String(gameId));
     } else {
-      sessionStorage.removeItem(STORAGE_KEY);
+      window.sessionStorage.removeItem(STORAGE_KEY);
     }
   } catch (error) {
     console.error("Failed to save game ID to sessionStorage:", error);
