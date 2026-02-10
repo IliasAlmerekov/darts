@@ -19,7 +19,6 @@ function StartPage(): React.JSX.Element {
   const {
     invitation,
     gameId,
-    lastFinishedGameId,
     playerCount,
     playerOrder,
     creating,
@@ -86,7 +85,6 @@ function StartPage(): React.JSX.Element {
                 <SortableContext items={playerOrder} strategy={verticalListSortingStrategy}>
                   <LivePlayersList
                     gameId={gameId}
-                    previousGameId={lastFinishedGameId}
                     onRemovePlayer={handleRemovePlayer}
                     dragEnd={false}
                     playerOrder={playerOrder}

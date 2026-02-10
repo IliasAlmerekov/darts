@@ -52,7 +52,7 @@
 }
 
 /* Tablet styles */
-@media (width <= 770px) {
+@media (width <= 768px) {
   .headerSelectedPlayers {
     margin: 0 0 var(--space-sm);
   }

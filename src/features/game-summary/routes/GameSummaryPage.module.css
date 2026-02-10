@@ -15,22 +15,43 @@
   place-self: start;
 }
 
+.undoButton {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  margin: 0;
+  border: none;
+  background: none;
+  cursor: pointer;
+}
+
+.undoButton:focus-visible {
+  outline: 2px solid var(--darkblue);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
 .leaderBoard {
   grid-row: 2;
   grid-column: 1 / -1;
 }
 
-.playAgainWrap {
+.summaryActions {
   grid-row: 4;
-  grid-column: 7 / span 3;
+  grid-column: 7 / -1;
   place-self: end stretch;
+  width: 100%;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-sm);
+}
+
+.playAgainWrap {
   width: 100%;
 }
 
 .backToStartWrap {
-  grid-row: 4;
-  grid-column: 10 / span 3;
-  place-self: end stretch;
   width: 100%;
 }
 
@@ -72,12 +93,8 @@
     grid-row: 3;
   }
 
-  .playAgainWrap {
-    grid-column: 7 / span 3;
-  }
-
-  .backToStartWrap {
-    grid-column: 10 / span 3;
+  .summaryActions {
+    grid-column: 7 / -1;
   }
 
   .summaryActionButton {
@@ -87,19 +104,22 @@
 
 @media (width <= 600px) {
   .summary {
-    --button-height: clamp(38px, 10vw, 44px);
+    --button-height: clamp(34px, 9vw, 40px);
 
     padding: clamp(10px, 3.2vw, 16px);
+    padding-bottom: calc(
+      var(--button-height) + var(--button-height) + clamp(16px, 5vw, 24px) +
+        env(safe-area-inset-bottom)
+    );
     gap: clamp(8px, 2.4vw, 12px);
     grid-template-columns: 1fr;
-    grid-template-rows: auto auto auto auto auto;
+    grid-template-rows: auto auto auto;
   }
 
   .undoArea,
   .leaderBoard,
   .podiumBoard,
-  .playAgainWrap,
-  .backToStartWrap {
+  .summaryActions {
     grid-column: 1 / -1;
   }
 
@@ -116,19 +136,18 @@
     grid-row: 3;
   }
 
-  .playAgainWrap {
-    grid-row: 4;
-    place-self: end stretch;
-    width: 100%;
-  }
-
-  .backToStartWrap {
-    grid-row: 5;
-    place-self: end stretch;
-    width: 100%;
+  .summaryActions {
+    position: fixed;
+    left: clamp(10px, 3.2vw, 16px);
+    right: clamp(10px, 3.2vw, 16px);
+    bottom: calc(clamp(8px, 2.4vw, 12px) + env(safe-area-inset-bottom));
+    grid-row: auto;
+    grid-template-columns: 1fr;
+    gap: clamp(4px, 1.6vw, 8px);
+    z-index: 15;
   }
 
   .summaryActionButton {
-    font-size: clamp(12px, 3.2vw, 14px);
+    font-size: clamp(11px, 3vw, 13px);
   }
 }

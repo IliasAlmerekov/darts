@@ -1,5 +1,5 @@
 .loginContainer {
-  min-height: 100vh;
+  min-height: 100dvh;
   display: flex;
   flex-direction: column;
   background-color: var(--lightgrey);
@@ -10,22 +10,22 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 1rem;
+  padding: var(--padding-sm);
 }
 
 .loginCol {
   width: 100%;
-  max-width: 28rem;
+  max-width: 448px;
 }
 
 .logoWrapper {
   display: flex;
   justify-content: center;
-  margin-bottom: 2rem;
+  margin-bottom: var(--space-lg);
 }
 
 .logo {
-  height: 2rem;
+  height: 32px;
 }
 
 .loginCard {
@@ -36,14 +36,14 @@
 }
 
 .loginCardBody {
-  padding: 2rem;
+  padding: var(--padding-md);
 }
 
 .alert {
-  padding: 12px 16px;
-  margin-bottom: 1rem;
-  border-radius: 6px;
-  font-size: 14px;
+  padding: var(--padding-xs) var(--padding-sm);
+  margin-bottom: var(--space-sm);
+  border-radius: var(--radius-sm);
+  font-size: var(--font-size-14);
 }
 
 .alertDanger {
@@ -53,11 +53,11 @@
 }
 
 .loggedInMessage {
-  margin-bottom: 1.5rem;
-  padding: 12px;
+  margin-bottom: var(--space-md);
+  padding: var(--padding-xs);
   background-color: #d1ecf1;
   border: 1px solid #bee5eb;
-  border-radius: 6px;
+  border-radius: var(--radius-sm);
   color: #0c5460;
 }
 
@@ -68,26 +68,26 @@
 }
 
 h1 {
-  font-size: 1.75rem;
-  font-weight: 600;
-  margin-bottom: 1.5rem;
-  color: #212529;
+  font-size: var(--font-size-28);
+  font-weight: var(--font-weight-bold);
+  margin-bottom: var(--space-md);
+  color: var(--darkblue);
 }
 
 .formLabel {
   display: block;
-  margin-bottom: 0.5rem;
+  margin-bottom: var(--space-xs);
   font-weight: 500;
-  color: #212529;
-  font-size: 14px;
+  color: var(--darkblue);
+  font-size: var(--font-size-14);
 }
 
 .inputGroup {
   display: flex;
   align-items: stretch;
-  margin-bottom: 1.5rem;
+  margin-bottom: var(--space-md);
   border: 1px solid #ced4da;
-  border-radius: 6px;
+  border-radius: var(--radius-sm);
   overflow: hidden;
   transition:
     border-color 0.15s ease-in-out,
@@ -107,7 +107,7 @@ h1 {
 .inputGroupIcon {
   display: flex;
   align-items: center;
-  padding: 0.5rem 0.75rem;
+  padding: var(--padding-xs) 12px;
   background-color: #e9ecef;
   border-right: 1px solid #ced4da;
   color: #6c757d;
@@ -115,8 +115,8 @@ h1 {
 
 .formControl {
   flex: 1;
-  padding: 0.5rem 0.75rem;
-  font-size: 1rem;
+  padding: var(--padding-xs) 12px;
+  font-size: var(--font-size-16);
   line-height: 1.5;
   color: #212529;
   border: none;
@@ -132,15 +132,15 @@ h1 {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-top: 1.5rem;
-  gap: 1rem;
+  margin-top: var(--space-md);
+  gap: var(--space-sm);
 }
 
 .btn {
   align-items: center;
-  padding: 0.5rem 1.5rem;
-  font-size: 1.125rem;
-  border-radius: 6px;
+  padding: var(--padding-xs) var(--padding-md);
+  font-size: var(--font-size-18);
+  border-radius: var(--radius-sm);
   border: none;
   cursor: pointer;
   font-weight: 500;
@@ -162,4 +162,23 @@ h1 {
 .btnPrimary:active {
   background-color: #0a58ca;
   transform: translateY(0);
+}
+
+@media (width <= 600px) {
+  .loginRow {
+    padding: var(--padding-xs);
+  }
+
+  .loginCardBody {
+    padding: var(--padding-sm);
+  }
+
+  .logoWrapper {
+    margin-bottom: var(--space-sm);
+  }
+
+  .formFooter {
+    flex-direction: column;
+    align-items: stretch;
+  }
 }

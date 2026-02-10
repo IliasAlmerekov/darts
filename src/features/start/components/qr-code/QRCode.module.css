@@ -125,7 +125,7 @@
   }
 }
 
-@media (width >= 771px) and (width <= 1024px) {
+@media (width >= 769px) and (width <= 1024px) {
   .qrCodeContainer {
     padding: var(--space-md);
   }
@@ -135,13 +135,13 @@
   }
 
   .qrCodeWrapper svg {
-    width: 220px !important;
-    height: 220px !important;
+    width: 220px;
+    height: 220px;
   }
 }
 
 /* Tablet styles */
-@media (width <= 770px) {
+@media (width <= 768px) {
   .qrCodeContainer {
     gap: 0.75rem;
     align-items: center;
@@ -160,8 +160,8 @@
   }
 
   .qrCodeWrapper svg {
-    width: 200px !important;
-    height: 200px !important;
+    width: 200px;
+    height: 200px;
   }
 
   .gameIdSection {
@@ -211,8 +211,8 @@
   }
 
   .qrCodeWrapper svg {
-    width: 190px !important;
-    height: 190px !important;
+    width: 190px;
+    height: 190px;
   }
 
   .gameIdSection {

@@ -293,7 +293,7 @@
   }
 }
 
-@media (width >= 771px) and (width <= 1024px) {
+@media (width >= 769px) and (width <= 1024px) {
   .start {
     grid-template-columns: minmax(220px, 300px) minmax(0, 1fr);
   }
@@ -307,7 +307,7 @@
   }
 }
 
-@media (width <= 770px) {
+@media (width <= 768px) {
   .start {
     grid-template-columns: minmax(180px, 1fr) minmax(0, 1.5fr);
     grid-template-rows: auto minmax(0, 1fr);

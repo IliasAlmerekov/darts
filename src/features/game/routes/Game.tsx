@@ -1,7 +1,7 @@
 import { Link } from "react-router-dom";
 import { Keyboard } from "../components/Keyboard";
 import { NumberButton } from "../components/NumberButton";
-import GamePlayerItemList from "../components/game-player-item/GamplayerItemList";
+import GamePlayerItemList from "../components/game-player-item/GamePlayerItemList";
 import Overlay from "@/components/overlay/Overlay";
 import Button from "@/components/button/Button";
 import FinishedGamePlayerItemList from "../components/game-player-item/FinishedGamePlayerItemList";
@@ -101,16 +101,11 @@ function Game() {
         src={deleteIcon}
       >
         <div className={styles.finishGameOverlay}>
-          <p className={styles.overlayHeading}>Spiel beenden?</p>
-          <p>Ein neues Spiel mit den gleichen Spielern wird erstellt.</p>
+          <p className={styles.overlayHeading}>End Game?</p>
+          <p>A new game with the same players will be created.</p>
           <div>
-            <Button label="Ja" handleClick={handleExitGame} type="primary" link="" />
-            <Button
-              label="Abbrechen"
-              handleClick={handleCloseExitOverlay}
-              type="secondary"
-              link=""
-            />
+            <Button label="Yes" handleClick={handleExitGame} type="primary" link="" />
+            <Button label="Cancel" handleClick={handleCloseExitOverlay} type="secondary" link="" />
           </div>
         </div>
       </Overlay>
