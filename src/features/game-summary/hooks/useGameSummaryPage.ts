@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
 import type { FinishedPlayerResponse } from "@/lib/api/game";
 import { useGameFlowPort } from "@/shared/providers/GameFlowPortProvider";
-import { setInvitation, setLastFinishedGameId, resetRoomStore } from "@/stores";
+import { setGameData, setInvitation, setLastFinishedGameId, resetRoomStore } from "@/stores";
 import { playSound } from "@/lib/soundPlayer";
 import { ApiError } from "@/lib/api/errors";
 
@@ -109,21 +109,38 @@ export function useGameSummaryPage() {
     if (!finishedGameIdFromRoute) return;
 
     try {
-      playSound("undo");
-      const gameState = await gameFlow.undoLastThrow(finishedGameIdFromRoute);
-      if ("finished" === gameState.status) {
-        await gameFlow.reopenGame(finishedGameIdFromRoute);
+      let reopenedGameState: Awaited<ReturnType<typeof gameFlow.reopenGame>> | null = null;
+
+      try {
+        reopenedGameState = await gameFlow.reopenGame(finishedGameIdFromRoute);
+      } catch (err) {
+        if (!isStartedReopenConflict(err)) {
+          throw err;
+        }
       }
 
+      const activePlayersAfterReopen = reopenedGameState
+        ? reopenedGameState.players.filter((player) => player.score > 0).length
+        : 0;
+
+      const shouldUndoThrow =
+        null === reopenedGameState ||
+        "finished" === reopenedGameState.status ||
+        null !== reopenedGameState.winnerId ||
+        activePlayersAfterReopen <= 1;
+
+      if (shouldUndoThrow) {
+        const updatedGameState = await gameFlow.undoLastThrow(finishedGameIdFromRoute);
+        setGameData(updatedGameState);
+      } else {
+        setGameData(reopenedGameState);
+      }
+
+      playSound("undo");
       navigate(`/game/${finishedGameIdFromRoute}`);
     } catch (err) {
-      if (isStartedReopenConflict(err)) {
-        navigate(`/game/${finishedGameIdFromRoute}`);
-        return;
-      }
-
-      console.error("Failed to reopen game:", err);
-      setError("Could not reopen game");
+      console.error("Failed to reopen game and undo throw:", err);
+      setError("Could not reopen game and undo throw");
     }
   };
 

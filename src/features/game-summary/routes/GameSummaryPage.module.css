@@ -95,6 +95,7 @@
 
   .summaryActions {
     grid-column: 7 / -1;
+    margin-bottom: 20px;
   }
 
   .summaryActionButton {
@@ -104,16 +105,12 @@
 
 @media (width <= 600px) {
   .summary {
-    --button-height: clamp(34px, 9vw, 40px);
+    --button-height: clamp(30px, 8.2vw, 36px);
 
-    padding: clamp(10px, 3.2vw, 16px);
-    padding-bottom: calc(
-      var(--button-height) + var(--button-height) + clamp(16px, 5vw, 24px) +
-        env(safe-area-inset-bottom)
-    );
+    padding-bottom: calc(clamp(8px, 2.4vw, 12px) + env(safe-area-inset-bottom));
     gap: clamp(8px, 2.4vw, 12px);
-    grid-template-columns: 1fr;
-    grid-template-rows: auto auto auto;
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: auto auto 1fr auto;
   }
 
   .undoArea,
@@ -130,6 +127,7 @@
 
   .podiumBoard {
     grid-row: 2;
+    padding-inline: clamp(6px, 2vw, 12px);
   }
 
   .leaderBoard {
@@ -137,17 +135,30 @@
   }
 
   .summaryActions {
-    position: fixed;
-    left: clamp(10px, 3.2vw, 16px);
-    right: clamp(10px, 3.2vw, 16px);
-    bottom: calc(clamp(8px, 2.4vw, 12px) + env(safe-area-inset-bottom));
-    grid-row: auto;
-    grid-template-columns: 1fr;
-    gap: clamp(4px, 1.6vw, 8px);
+    position: static;
+    display: flex;
+    flex-direction: column;
+    grid-row: 4;
+    place-self: end stretch;
+    gap: clamp(4px, 1.6vw, 10px);
     z-index: 15;
   }
 
   .summaryActionButton {
-    font-size: clamp(11px, 3vw, 13px);
+    font-size: clamp(9px, 2.7vw, 11px);
+  }
+}
+
+@media (width <= 360px) {
+  .summary {
+    --button-height: clamp(26px, 7.6vw, 30px);
+  }
+
+  .podiumBoard {
+    padding-inline: 12px;
+  }
+
+  .summaryActionButton {
+    font-size: 9px;
   }
 }

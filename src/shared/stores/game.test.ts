@@ -8,6 +8,8 @@ import {
   $currentThrowCount,
   $isGameFinished,
   $winnerId,
+  deriveWinnerId,
+  normalizeGameData,
   setGameData,
   setLoading,
   setError,
@@ -72,6 +74,30 @@ describe("game store", () => {
       setGameData(null);
 
       expect($gameData.get()).toBeNull();
+    });
+
+    it("should derive winnerId for finished game with one remaining active player", () => {
+      setGameData({
+        ...mockGameData,
+        status: "finished",
+        winnerId: null,
+        players: [
+          {
+            ...mockGameData.players[0],
+            score: 26,
+            isActive: true,
+            position: 0,
+          },
+          {
+            ...mockGameData.players[1],
+            score: 0,
+            isActive: false,
+            position: 1,
+          },
+        ],
+      });
+
+      expect($winnerId.get()).toBe(1);
     });
   });
 
@@ -195,6 +221,74 @@ describe("game store", () => {
 
     it("should return null when no game data", () => {
       expect($winnerId.get()).toBeNull();
+    });
+  });
+
+  describe("deriveWinnerId", () => {
+    it("returns existing winnerId when provided", () => {
+      const gameData = {
+        ...mockGameData,
+        status: "finished",
+        winnerId: 2,
+      };
+
+      expect(deriveWinnerId(gameData)).toBe(2);
+    });
+
+    it("returns winner by score when exactly one player has score > 0", () => {
+      const gameData = {
+        ...mockGameData,
+        status: "finished",
+        winnerId: null,
+        players: [
+          {
+            ...mockGameData.players[0],
+            score: 26,
+            isActive: false,
+            position: 0,
+          },
+          {
+            ...mockGameData.players[1],
+            score: 0,
+            isActive: false,
+            position: 1,
+          },
+        ],
+      };
+
+      expect(deriveWinnerId(gameData)).toBe(1);
+    });
+  });
+
+  describe("normalizeGameData", () => {
+    it("keeps null as null", () => {
+      expect(normalizeGameData(null)).toBeNull();
+    });
+
+    it("fills winnerId for finished game when derivable", () => {
+      const gameData = {
+        ...mockGameData,
+        status: "finished",
+        winnerId: null,
+        players: [
+          {
+            ...mockGameData.players[0],
+            score: 20,
+            isActive: true,
+            position: 0,
+          },
+          {
+            ...mockGameData.players[1],
+            score: 0,
+            isActive: false,
+            position: 1,
+          },
+        ],
+      };
+
+      const normalized = normalizeGameData(gameData);
+
+      expect(normalized?.winnerId).toBe(1);
     });
   });
 });

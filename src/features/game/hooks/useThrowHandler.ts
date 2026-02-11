@@ -1,8 +1,15 @@
 import { useCallback, useRef } from "react";
-import { recordThrow, undoLastThrow, type GameThrowsResponse } from "../api";
+import {
+  getGameThrows,
+  recordThrow,
+  resetGameStateVersion,
+  undoLastThrow,
+  type GameThrowsResponse,
+} from "../api";
 import { parseThrowValue } from "@/lib/parseThrowValue";
 import { playSound } from "@/lib/soundPlayer";
 import { $gameData, setGameData } from "@/stores";
+import { ApiError } from "@/lib/api/errors";
 
 interface UseThrowHandlerOptions {
   gameId: number | null;
@@ -11,6 +18,25 @@ interface UseThrowHandlerOptions {
 interface UseThrowHandlerReturn {
   handleThrow: (value: string | number) => Promise<void>;
   handleUndo: () => Promise<void>;
+}
+
+type ApiErrorPayload = {
+  error?: string;
+  message?: string;
+};
+
+export function isThrowNotAllowedConflict(error: unknown): boolean {
+  if (!(error instanceof ApiError) || 409 !== error.status) {
+    return false;
+  }
+
+  const payload = error.data;
+  if (null === payload || "object" !== typeof payload) {
+    return false;
+  }
+
+  const typedPayload = payload as ApiErrorPayload;
+  return "GAME_THROW_NOT_ALLOWED" === typedPayload.error;
 }
 
 /**
@@ -73,6 +99,15 @@ export function useThrowHandler({ gameId }: UseThrowHandlerOptions): UseThrowHan
         setGameData(updatedGameState);
       } catch (error) {
         console.error("Failed to record throw:", error);
+        if (gameId && isThrowNotAllowedConflict(error)) {
+          try {
+            resetGameStateVersion(gameId);
+            const refreshedGameState = await getGameThrows(gameId);
+            setGameData(refreshedGameState);
+          } catch (refreshError) {
+            console.error("Failed to refresh game after throw conflict:", refreshError);
+          }
+        }
         playSound("error");
       } finally {
         isProcessingRef.current = false;

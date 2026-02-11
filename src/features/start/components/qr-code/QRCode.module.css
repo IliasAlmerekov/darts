@@ -160,8 +160,8 @@
   }
 
   .qrCodeWrapper svg {
-    width: 200px;
-    height: 200px;
+    width: 180px;
+    height: 180px;
   }
 
   .gameIdSection {
@@ -211,8 +211,8 @@
   }
 
   .qrCodeWrapper svg {
-    width: 190px;
-    height: 190px;
+    width: 160px;
+    height: 160px;
   }
 
   .gameIdSection {
@@ -244,6 +244,11 @@
 @media (width <= 480px) {
   .qrCodeHeading {
     font-size: var(--font-size-12);
+  }
+
+  .qrCodeWrapper svg {
+    width: 140px;
+    height: 140px;
   }
 
   .gameIdValue {

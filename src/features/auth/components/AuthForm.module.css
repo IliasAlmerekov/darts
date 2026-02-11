@@ -260,6 +260,10 @@
   }
 
   .form {
-    gap: var(--space-sm);
+    gap: var(--space-xl);
+  }
+
+  .formControl {
+    font-size: 16px;
   }
 }

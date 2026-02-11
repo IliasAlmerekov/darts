@@ -58,7 +58,8 @@ export default function NavigationBar(): React.JSX.Element {
       location.pathname === itemPath ||
       (itemId === "game" &&
         (location.pathname === "/start" || location.pathname.startsWith("/start/"))) ||
-      (itemId === "statistics" && location.pathname === "/gamesoverview") ||
+      (itemId === "statistics" &&
+        (location.pathname === "/gamesoverview" || location.pathname.startsWith("/details/"))) ||
       (itemId === "settings" && location.pathname.startsWith("/settings"))
     );
   };

@@ -45,6 +45,7 @@ describe("GamePlayerItemList", () => {
 
     vi.runAllTimers();
 
+    expect(document.activeElement?.getAttribute("data-active-player")).toBe("true");
     expect(scrollIntoViewMock).toHaveBeenCalledTimes(1);
     expect(scrollIntoViewMock).toHaveBeenCalledWith({
       behavior: "smooth",

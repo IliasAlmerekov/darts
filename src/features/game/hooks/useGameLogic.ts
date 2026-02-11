@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useStore } from "@nanostores/react";
 
@@ -7,7 +7,13 @@ import { useGameState } from "./useGameState";
 import { useThrowHandler } from "./useThrowHandler";
 import { useGameSounds } from "./useGameSounds";
 import { getFinishedPlayers, mapPlayersToUI } from "@/lib/player-mappers";
-import { updateGameSettings, createRematch, abortGame } from "../api";
+import {
+  updateGameSettings,
+  createRematch,
+  abortGame,
+  finishGame,
+  resetGameStateVersion,
+} from "../api";
 import type { GameThrowsResponse } from "../api";
 import { closeFinishGameOverlay } from "@/stores/ui";
 import { $invitation, setInvitation, resetRoomStore } from "@/stores";
@@ -19,6 +25,31 @@ import { unlockSounds } from "@/lib/soundPlayer";
 export function areAllPlayersAtStartScore(gameData: GameThrowsResponse | null): boolean {
   if (!gameData) return true;
   return gameData.players.every((player) => player.score === gameData.settings.startScore);
+}
+
+export function shouldAutoFinishGame(
+  gameData: GameThrowsResponse | null,
+  shouldShowFinishOverlay: boolean,
+): boolean {
+  if (!gameData || "finished" === gameData.status || shouldShowFinishOverlay) {
+    return false;
+  }
+
+  const activePlayersCount = gameData.players.filter((player) => player.score > 0).length;
+  const finishedPlayersCount = gameData.players.filter((player) => player.score === 0).length;
+
+  return activePlayersCount === 1 && finishedPlayersCount >= 1;
+}
+
+export function shouldNavigateToSummary(
+  gameData: GameThrowsResponse | null,
+  gameId: number | null,
+): boolean {
+  if (!gameData || null === gameId) {
+    return false;
+  }
+
+  return gameData.id === gameId && gameData.status === "finished";
 }
 
 export const useGameLogic = () => {
@@ -57,6 +88,7 @@ export const useGameLogic = () => {
   const [settingsError, setSettingsError] = useState<string | null>(null);
   const [dismissedZeroScorePlayerIds, setDismissedZeroScorePlayerIds] = useState<number[]>([]);
   const [isExitOverlayOpen, setIsExitOverlayOpen] = useState(false);
+  const isAutoFinishingRef = useRef(false);
 
   const playerUI = useMemo(() => mapPlayersToUI(gameData?.players ?? []), [gameData?.players]);
   const finishedPlayers = useMemo(() => getFinishedPlayers(playerUI), [playerUI]);
@@ -88,13 +120,7 @@ export const useGameLogic = () => {
   }, [zeroScorePlayerIds]);
 
   useEffect(() => {
-    if (
-      gameData &&
-      gameData.id === gameId &&
-      gameData.status === "finished" &&
-      gameData.winnerId &&
-      gameData.currentRound > 1
-    ) {
+    if (shouldNavigateToSummary(gameData, gameId)) {
       navigate(`/summary/${gameId}`, { state: { finishedGameId: gameId } });
     }
   }, [gameData, gameId, navigate]);
@@ -109,6 +135,30 @@ export const useGameLogic = () => {
       void refetch();
     }
   }, [event, refetch]);
+
+  useEffect(() => {
+    if (!gameId || !shouldAutoFinishGame(gameData, shouldShowFinishOverlay)) {
+      return;
+    }
+
+    if (isAutoFinishingRef.current) {
+      return;
+    }
+
+    isAutoFinishingRef.current = true;
+
+    finishGame(gameId)
+      .then(async () => {
+        resetGameStateVersion(gameId);
+        await refetch();
+      })
+      .catch((err) => {
+        console.error("Failed to auto-finish game:", err);
+      })
+      .finally(() => {
+        isAutoFinishingRef.current = false;
+      });
+  }, [gameData, gameId, refetch, shouldShowFinishOverlay]);
 
   useEffect(() => {
     setDismissedZeroScorePlayerIds([]);
