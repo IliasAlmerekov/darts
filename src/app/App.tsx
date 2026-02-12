@@ -1,5 +1,5 @@
 import React from "react";
-import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
+import { BrowserRouter, Route, Routes } from "react-router-dom";
 import "@/app/styles/index.css";
 import ErrorBoundary from "@/app/ErrorBoundary";
 import { Game } from "@/features/game";
@@ -10,12 +10,15 @@ import { ProtectedRoutes, LoginPage, RegistrationPage } from "@/features/auth";
 import { StartPage } from "@/features/start";
 import { JoinedGamePage } from "@/features/joined-game";
 import { GameSummaryPage } from "@/features/game-summary";
+import ScrollToTop from "@/app/ScrollToTop";
+import NotFoundPage from "@/app/routes/NotFoundPage";
 
 function App(): React.JSX.Element {
   return (
     <div className="app">
       <ErrorBoundary>
         <BrowserRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
+          <ScrollToTop />
           <Routes>
             <Route path="/" element={<LoginPage />} />
             <Route path="/register" element={<RegistrationPage />} />
@@ -37,7 +40,7 @@ function App(): React.JSX.Element {
               <Route path="/playerprofile" element={<PlayerProfile />} />
             </Route>
 
-            <Route path="*" element={<Navigate to="/" replace />} />
+            <Route path="*" element={<NotFoundPage />} />
           </Routes>
         </BrowserRouter>
       </ErrorBoundary>
