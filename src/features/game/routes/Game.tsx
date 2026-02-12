@@ -1,15 +1,16 @@
-import { Link } from "react-router-dom";
 import { Keyboard } from "../components/Keyboard";
 import { NumberButton } from "../components/NumberButton";
 import GamePlayerItemList from "../components/game-player-item/GamePlayerItemList";
 import Overlay from "@/components/overlay/Overlay";
 import Button from "@/components/button/Button";
+import { ErrorState } from "@/components/error-state";
 import FinishedGamePlayerItemList from "../components/game-player-item/FinishedGamePlayerItemList";
 import LinkButton from "@/components/link-button/LinkButton";
 import Back from "@/assets/icons/back.svg";
 import deleteIcon from "@/assets/icons/delete.svg";
 import Undo from "@/assets/icons/undo-copy.svg";
 import settingsIcon from "@/assets/icons/settings-inactive.svg";
+import { toUserErrorMessage } from "@/lib/error-to-user-message";
 
 import styles from "./Game.module.css";
 import SettingsOverlay from "../components/SettingsOverlay";
@@ -30,6 +31,7 @@ function Game() {
     isSettingsOpen,
     isSavingSettings,
     settingsError,
+    pageError,
     isExitOverlayOpen,
     handleThrow,
     handleUndo,
@@ -40,6 +42,7 @@ function Game() {
     handleSaveSettings,
     handleOpenExitOverlay,
     handleCloseExitOverlay,
+    clearPageError,
     handleExitGame,
     refetch,
   } = useGameLogic();
@@ -47,8 +50,12 @@ function Game() {
   if (!gameId) {
     return (
       <div className={styles.gamePageHeader}>
-        <p>Game identifier is missing. Reopen the room or return to start.</p>
-        <Link to="/start">Back to start</Link>
+        <ErrorState
+          variant="page"
+          title="Game not available"
+          message="Game identifier is missing. Reopen the room or return to start."
+          primaryAction={{ label: "Back to start", to: "/start" }}
+        />
       </div>
     );
   }
@@ -62,12 +69,16 @@ function Game() {
   }
 
   if (error && !gameData) {
-    const message = error instanceof Error ? error.message : "Failed to load game data.";
+    const message = toUserErrorMessage(error, "Could not load game data.");
     return (
       <div className={styles.gamePageHeader}>
-        <p>{message}</p>
-        <Button label="Retry" handleClick={refetch} type="primary" link="" />
-        <Link to="/start">Back to start</Link>
+        <ErrorState
+          variant="page"
+          title="Could not load game"
+          message={message}
+          primaryAction={{ label: "Retry", onClick: () => void refetch() }}
+          secondaryAction={{ label: "Back to start", to: "/start" }}
+        />
       </div>
     );
   }
@@ -122,6 +133,15 @@ function Game() {
       />
 
       <div className={styles.gamePage}>
+        {pageError ? (
+          <div className={styles.pageError}>
+            <ErrorState
+              title="Game action failed"
+              message={pageError}
+              primaryAction={{ label: "Dismiss", onClick: clearPageError }}
+            />
+          </div>
+        ) : null}
         <header className={styles.gameHeader}>
           <button onClick={handleOpenExitOverlay} className={styles.top}>
             <img src={Back} alt="Back to Home" />

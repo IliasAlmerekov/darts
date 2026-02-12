@@ -18,6 +18,7 @@ import type { GameThrowsResponse } from "../api";
 import { closeFinishGameOverlay } from "@/stores/ui";
 import { $invitation, setInvitation, resetRoomStore } from "@/stores";
 import { unlockSounds } from "@/lib/soundPlayer";
+import { toUserErrorMessage } from "@/lib/error-to-user-message";
 
 /**
  * Aggregates game state, side effects, and UI handlers for the game page.
@@ -86,6 +87,7 @@ export const useGameLogic = () => {
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isSavingSettings, setIsSavingSettings] = useState(false);
   const [settingsError, setSettingsError] = useState<string | null>(null);
+  const [pageError, setPageError] = useState<string | null>(null);
   const [dismissedZeroScorePlayerIds, setDismissedZeroScorePlayerIds] = useState<number[]>([]);
   const [isExitOverlayOpen, setIsExitOverlayOpen] = useState(false);
   const isAutoFinishingRef = useRef(false);
@@ -154,6 +156,7 @@ export const useGameLogic = () => {
       })
       .catch((err) => {
         console.error("Failed to auto-finish game:", err);
+        setPageError(toUserErrorMessage(err, "Could not finish the game automatically."));
       })
       .finally(() => {
         isAutoFinishingRef.current = false;
@@ -196,11 +199,13 @@ export const useGameLogic = () => {
 
   const handleOpenExitOverlay = () => setIsExitOverlayOpen(true);
   const handleCloseExitOverlay = () => setIsExitOverlayOpen(false);
+  const clearPageError = () => setPageError(null);
 
   const handleExitGame = async () => {
     if (!gameId) return;
 
     try {
+      setPageError(null);
       await abortGame(gameId);
       resetRoomStore();
       const rematch = await createRematch(gameId);
@@ -213,7 +218,7 @@ export const useGameLogic = () => {
       navigate(`/start/${rematch.gameId}`);
     } catch (err) {
       console.error("Failed to exit game:", err);
-      navigate("/start");
+      setPageError(toUserErrorMessage(err, "Could not leave the game. Please try again."));
     }
   };
 
@@ -231,6 +236,7 @@ export const useGameLogic = () => {
     isSettingsOpen,
     isSavingSettings,
     settingsError,
+    pageError,
     isExitOverlayOpen,
     handleThrow,
     handleUndo,
@@ -241,6 +247,7 @@ export const useGameLogic = () => {
     handleSaveSettings,
     handleOpenExitOverlay,
     handleCloseExitOverlay,
+    clearPageError,
     handleExitGame,
     refetch,
   };

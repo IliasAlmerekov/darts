@@ -1,5 +1,9 @@
 import { describe, expect, it } from "vitest";
-import { areAllPlayersAtStartScore, shouldAutoFinishGame, shouldNavigateToSummary } from "./useGameLogic";
+import {
+  areAllPlayersAtStartScore,
+  shouldAutoFinishGame,
+  shouldNavigateToSummary,
+} from "./useGameLogic";
 import type { GameThrowsResponse } from "../api";
 
 function buildGameData(overrides?: Partial<GameThrowsResponse>): GameThrowsResponse {

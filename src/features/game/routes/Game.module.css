@@ -109,6 +109,10 @@
   gap: var(--space-md);
 }
 
+.pageError {
+  width: min(100%, 760px);
+}
+
 .gameHeader {
   display: flex;
   align-items: center;

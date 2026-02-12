@@ -1,6 +1,7 @@
 import OverviewPlayerItemList from "@/components/overview-player-item/OverviewPlayerItemList";
 import styles from "./GameSummaryPage.module.css";
 import Button from "@/components/button/Button";
+import { ErrorState } from "@/components/error-state";
 import { Podium } from "@/components/podium";
 import Undo from "@/assets/icons/undolinkbutton.svg";
 import React from "react";
@@ -15,6 +16,7 @@ function GameSummaryPage(): React.JSX.Element {
     podiumData,
     newList,
     leaderBoardList,
+    loadSummary,
     handleUndo,
     handlePlayAgain,
     handleBackToStart,
@@ -46,7 +48,15 @@ function GameSummaryPage(): React.JSX.Element {
         <OverviewPlayerItemList userMap={leaderBoardList} startScore={startScore} />
       </div>
 
-      {error && <p className={styles.error}>{error}</p>}
+      {error ? (
+        <div className={styles.errorPanel}>
+          <ErrorState
+            title="Summary action failed"
+            message={error}
+            primaryAction={{ label: "Retry", onClick: () => void loadSummary() }}
+          />
+        </div>
+      ) : null}
 
       <div className={styles.summaryActions}>
         <div className={styles.playAgainWrap}>

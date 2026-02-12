@@ -1,10 +1,11 @@
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
 import type { FinishedPlayerResponse } from "@/lib/api/game";
 import { useGameFlowPort } from "@/shared/providers/GameFlowPortProvider";
 import { setGameData, setInvitation, setLastFinishedGameId, resetRoomStore } from "@/stores";
 import { playSound } from "@/lib/soundPlayer";
 import { ApiError } from "@/lib/api/errors";
+import { toUserErrorMessage } from "@/lib/error-to-user-message";
 
 type ApiErrorPayload = {
   error?: string;
@@ -54,20 +55,23 @@ export function useGameSummaryPage() {
     return Number.isFinite(parsedParam) ? parsedParam : null;
   }, [location.state, summaryGameIdParam]);
 
-  useEffect(() => {
+  const loadSummary = useCallback(async (): Promise<void> => {
     if (!finishedGameIdFromRoute) return;
 
-    gameFlow
-      .getFinishedGame(finishedGameIdFromRoute)
-      .then((data) => {
-        setServerFinished(data);
-        setLastFinishedGameId(finishedGameIdFromRoute);
-      })
-      .catch((err: unknown) => {
-        console.error("Failed to fetch finished game:", err);
-        setError("Could not load finished game data");
-      });
+    try {
+      setError(null);
+      const data = await gameFlow.getFinishedGame(finishedGameIdFromRoute);
+      setServerFinished(data);
+      setLastFinishedGameId(finishedGameIdFromRoute);
+    } catch (err: unknown) {
+      console.error("Failed to fetch finished game:", err);
+      setError(toUserErrorMessage(err, "Could not load finished game data."));
+    }
   }, [finishedGameIdFromRoute, gameFlow]);
+
+  useEffect(() => {
+    void loadSummary();
+  }, [loadSummary]);
 
   const newList: BASIC.WinnerPlayerProps[] = useMemo(() => {
     if (serverFinished.length > 0) {
@@ -109,6 +113,7 @@ export function useGameSummaryPage() {
     if (!finishedGameIdFromRoute) return;
 
     try {
+      setError(null);
       let reopenedGameState: Awaited<ReturnType<typeof gameFlow.reopenGame>> | null = null;
 
       try {
@@ -140,7 +145,7 @@ export function useGameSummaryPage() {
       navigate(`/game/${finishedGameIdFromRoute}`);
     } catch (err) {
       console.error("Failed to reopen game and undo throw:", err);
-      setError("Could not reopen game and undo throw");
+      setError(toUserErrorMessage(err, "Could not reopen game and undo throw."));
     }
   };
 
@@ -148,6 +153,7 @@ export function useGameSummaryPage() {
     if (!finishedGameIdFromRoute) return;
 
     try {
+      setError(null);
       const rematch = await gameFlow.createRematch(finishedGameIdFromRoute);
 
       setInvitation({
@@ -158,6 +164,7 @@ export function useGameSummaryPage() {
       navigate(`/game/${rematch.gameId}`);
     } catch (err) {
       console.error("Failed to start rematch:", err);
+      setError(toUserErrorMessage(err, "Could not start a rematch."));
     }
   };
 
@@ -169,6 +176,7 @@ export function useGameSummaryPage() {
     }
 
     try {
+      setError(null);
       const rematch = await gameFlow.createRematch(finishedGameIdFromRoute);
 
       setInvitation({
@@ -179,6 +187,7 @@ export function useGameSummaryPage() {
       navigate(`/start/${rematch.gameId}`);
     } catch (err) {
       console.error("Failed to start rematch:", err);
+      setError(toUserErrorMessage(err, "Could not return to start."));
     }
   };
 
@@ -187,6 +196,7 @@ export function useGameSummaryPage() {
     podiumData,
     newList,
     leaderBoardList,
+    loadSummary,
     handleUndo,
     handlePlayAgain,
     handleBackToStart,

@@ -3,7 +3,7 @@
   padding: var(--page-padding);
   grid-template-columns: repeat(12, minmax(0, 1fr));
   gap: var(--space-md);
-  grid-template-rows: auto auto 1fr auto;
+  grid-template-rows: auto auto 1fr auto auto;
   min-height: 100dvh;
   box-sizing: border-box;
   position: relative;
@@ -38,13 +38,18 @@
 }
 
 .summaryActions {
-  grid-row: 4;
+  grid-row: 5;
   grid-column: 7 / -1;
   place-self: end stretch;
   width: 100%;
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: var(--space-sm);
+}
+
+.errorPanel {
+  grid-row: 4;
+  grid-column: 1 / -1;
 }
 
 .playAgainWrap {
@@ -75,7 +80,7 @@
     height: 100dvh;
     min-height: 0;
     overflow-y: auto;
-    grid-template-rows: auto auto minmax(0, 1fr) auto;
+    grid-template-rows: auto auto minmax(0, 1fr) auto auto;
   }
 
   .undoArea {
@@ -110,13 +115,14 @@
     padding-bottom: calc(clamp(8px, 2.4vw, 12px) + env(safe-area-inset-bottom));
     gap: clamp(8px, 2.4vw, 12px);
     grid-template-columns: minmax(0, 1fr);
-    grid-template-rows: auto auto 1fr auto;
+    grid-template-rows: auto auto 1fr auto auto;
   }
 
   .undoArea,
   .leaderBoard,
   .podiumBoard,
-  .summaryActions {
+  .summaryActions,
+  .errorPanel {
     grid-column: 1 / -1;
   }
 
@@ -138,10 +144,14 @@
     position: static;
     display: flex;
     flex-direction: column;
-    grid-row: 4;
+    grid-row: 5;
     place-self: end stretch;
     gap: clamp(4px, 1.6vw, 10px);
     z-index: 15;
+  }
+
+  .errorPanel {
+    grid-row: 4;
   }
 
   .summaryActionButton {
