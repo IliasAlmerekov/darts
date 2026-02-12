@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { ApiError } from "@/lib/api";
 import { registerUser, type RegistrationResponse } from "../api";
+import { isCsrfRelatedAuthError, mapAuthErrorMessage } from "../lib/error-handling";
 
 /**
  * Provides registration flow state and action.
@@ -39,36 +39,33 @@ export function useRegistration() {
       return response;
     } catch (err) {
       console.error("Registration error:", err);
-      if (err instanceof ApiError) {
-        const payload = err.data as { errors?: Record<string, string[]> } | undefined;
-        const validationErrors = payload?.errors
-          ? Object.values(payload.errors).flat().filter(Boolean)
-          : [];
-
-        if (payload?.errors?._csrf_token) {
-          try {
-            const retryResponse = await submitRegistration(username, email, password, true);
-            if (retryResponse?.redirect) {
-              const redirectPath =
-                retryResponse.redirect === "/start" ? "/start" : retryResponse.redirect;
-              navigate(redirectPath);
-            }
-            return retryResponse;
-          } catch (retryError) {
-            console.error("Registration retry failed:", retryError);
+      if (isCsrfRelatedAuthError(err)) {
+        try {
+          const retryResponse = await submitRegistration(username, email, password, true);
+          if (retryResponse?.redirect) {
+            const redirectPath =
+              retryResponse.redirect === "/start" ? "/start" : retryResponse.redirect;
+            navigate(redirectPath);
           }
-        }
-
-        if (validationErrors.length > 0) {
-          setError(validationErrors.join("\n"));
+          return retryResponse;
+        } catch (retryError) {
+          console.error("Registration retry failed:", retryError);
+          setError(
+            mapAuthErrorMessage({
+              flow: "registration",
+              error: retryError,
+            }),
+          );
           return null;
         }
-
-        setError(err.message);
-        return null;
       }
 
-      setError("Registration failed");
+      setError(
+        mapAuthErrorMessage({
+          flow: "registration",
+          error: err,
+        }),
+      );
       return null;
     } finally {
       setLoading(false);

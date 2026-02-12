@@ -3,19 +3,20 @@ import { useNavigate } from "react-router-dom";
 import { useAuthenticatedUser } from "./useAuthenticatedUser";
 import { useLogin } from "./useLogin";
 import { getActiveGameId } from "@/stores/room";
+import { mapAuthErrorMessage } from "../lib/error-handling";
 
 /**
  * Orchestrates login page state, submission, and redirect logic.
  */
 export function useLoginPage() {
-  const [error, setError] = useState<string | null>(null);
+  const [submitError, setSubmitError] = useState<string | null>(null);
   const { login, loading, error: loginError } = useLogin();
   const navigate = useNavigate();
   const { user, loading: checking } = useAuthenticatedUser();
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>): Promise<void> => {
     e.preventDefault();
-    setError(null);
+    setSubmitError(null);
 
     try {
       const formData = new FormData(e.currentTarget);
@@ -24,7 +25,12 @@ export function useLoginPage() {
       await login(email, password);
       // Navigation wird von useLogin übernommen
     } catch (err) {
-      setError((err as Error).message || "Login failed");
+      setSubmitError(
+        mapAuthErrorMessage({
+          flow: "login",
+          error: err,
+        }),
+      );
     }
   };
 
@@ -48,7 +54,7 @@ export function useLoginPage() {
   }, [user, navigate]);
 
   return {
-    error: error ?? loginError,
+    error: submitError ?? loginError,
     loading,
     checking,
     handleSubmit,

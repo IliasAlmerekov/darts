@@ -1,18 +1,17 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
 import { useRegistration } from "./useRegistration";
+import { mapAuthErrorMessage } from "../lib/error-handling";
 
 /**
  * Orchestrates registration page state and submission handling.
  */
 export function useRegistrationPage() {
-  const [error, setError] = useState<string | null>(null);
-  const { register, loading } = useRegistration();
-  const navigate = useNavigate();
+  const [submitError, setSubmitError] = useState<string | null>(null);
+  const { register, loading, error: registrationError } = useRegistration();
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>): Promise<void> => {
     e.preventDefault();
-    setError(null);
+    setSubmitError(null);
 
     try {
       const formElement = e.currentTarget;
@@ -20,17 +19,19 @@ export function useRegistrationPage() {
       const email = (formElement.elements.namedItem("email") as HTMLInputElement).value;
       const password = (formElement.elements.namedItem("password") as HTMLInputElement).value;
 
-      const data = await register(username, email, password);
-      if (data?.redirect) {
-        navigate(data.redirect);
-      }
+      await register(username, email, password);
     } catch (err) {
-      setError((err as Error).message || "Registration failed");
+      setSubmitError(
+        mapAuthErrorMessage({
+          flow: "registration",
+          error: err,
+        }),
+      );
     }
   };
 
   return {
-    error,
+    error: submitError ?? registrationError,
     loading,
     handleSubmit,
   };

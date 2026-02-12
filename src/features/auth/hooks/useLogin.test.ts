@@ -53,6 +53,6 @@ describe("useLogin", () => {
 
     expect(getAuthenticatedUserMock).toHaveBeenCalledTimes(1);
     expect(navigateMock).not.toHaveBeenCalled();
-    expect(result.current.error).toBe("Login fehlgeschlagen");
+    expect(result.current.error).toBe("Network error. Please check your connection and try again.");
   });
 });

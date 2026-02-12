@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { loginWithCredentials, getAuthenticatedUser } from "../api";
+import { isCsrfRelatedAuthError, mapAuthErrorMessage } from "../lib/error-handling";
 
 /**
  * Provides login flow state and action.
@@ -10,7 +11,12 @@ export function useLogin() {
   const [error, setError] = useState<string | null>(null);
   const navigate = useNavigate();
 
-  const login = async (email: string, password: string) => {
+  const navigateToRedirect = (redirect: string): void => {
+    const redirectPath = redirect === "/start" ? "/start" : redirect;
+    navigate(redirectPath);
+  };
+
+  const login = async (email: string, password: string): Promise<void> => {
     setLoading(true);
     setError(null);
 
@@ -18,18 +24,20 @@ export function useLogin() {
       const response = await loginWithCredentials({ email, password });
 
       if (response?.success === false) {
-        const message = response.error?.trim() ? response.error : "Login fehlgeschlagen";
-        if (message.toLowerCase().includes("csrf")) {
+        if (isCsrfRelatedAuthError(undefined, response.error)) {
           try {
             const retryResponse = await loginWithCredentials({ email, password }, true);
             if (retryResponse?.success === false) {
-              setError(retryResponse.error?.trim() ? retryResponse.error : "Login fehlgeschlagen");
+              setError(
+                mapAuthErrorMessage({
+                  flow: "login",
+                  rawMessage: retryResponse.error,
+                }),
+              );
               return;
             }
             if (retryResponse?.redirect) {
-              const redirectPath =
-                retryResponse.redirect === "/start" ? "/start" : retryResponse.redirect;
-              navigate(redirectPath);
+              navigateToRedirect(retryResponse.redirect);
             }
             return;
           } catch (retryError) {
@@ -39,25 +47,42 @@ export function useLogin() {
         if (!response.error) {
           const authenticatedUser = await getAuthenticatedUser();
           if (authenticatedUser?.redirect) {
-            const redirectPath =
-              authenticatedUser.redirect === "/start" ? "/start" : authenticatedUser.redirect;
-            navigate(redirectPath);
+            navigateToRedirect(authenticatedUser.redirect);
             return;
           }
         }
 
-        setError(message);
+        setError(
+          mapAuthErrorMessage({
+            flow: "login",
+            rawMessage: response.error,
+          }),
+        );
         return;
       }
 
       // Navigiere immer zu /start (ohne gameId) für sauberen Start
       if (response?.redirect) {
-        const redirectPath = response.redirect === "/start" ? "/start" : response.redirect;
-        navigate(redirectPath);
+        navigateToRedirect(response.redirect);
       }
     } catch (error) {
       console.error("Login error:", error);
-      setError("Login fehlgeschlagen");
+      try {
+        const authenticatedUser = await getAuthenticatedUser();
+        if (authenticatedUser?.redirect) {
+          navigateToRedirect(authenticatedUser.redirect);
+          return;
+        }
+      } catch (sessionCheckError) {
+        console.error("Failed to check authenticated user after login error:", sessionCheckError);
+      }
+
+      setError(
+        mapAuthErrorMessage({
+          flow: "login",
+          error,
+        }),
+      );
     } finally {
       setLoading(false);
     }
