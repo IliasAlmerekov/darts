@@ -8,6 +8,7 @@ interface LivePlayersListProps {
   onRemovePlayer?: (playerId: number, gameId: number) => void;
   dragEnd?: boolean;
   playerOrder?: number[];
+  maxPlayers?: number;
 }
 
 export const LivePlayersList = ({
@@ -15,8 +16,10 @@ export const LivePlayersList = ({
   onRemovePlayer,
   dragEnd,
   playerOrder,
+  maxPlayers = 10,
 }: LivePlayersListProps) => {
   const { players, count } = useGamePlayers(gameId);
+  const isFull = count >= maxPlayers;
 
   const sortedPlayers = useMemo(() => {
     if (!playerOrder || playerOrder.length === 0) {
@@ -40,7 +43,12 @@ export const LivePlayersList = ({
     <div className={styles.livePlayersContainer}>
       <div className={styles.headerSelectedPlayers}>
         <h4 className={styles.headerTitle}>Selected Players</h4>
-        <div className={styles.listCount}>{count}/10</div>
+        <div
+          className={`${styles.listCount} ${isFull ? styles.listCountFull : styles.listCountOpen}`}
+          aria-live="polite"
+        >
+          {isFull ? `${count}/${maxPlayers} Full` : `${count}/${maxPlayers}`}
+        </div>
       </div>
       <div className={styles.selectedPlayerListScroll}>
         {sortedPlayers.length === 0 ? (

@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import styles from "./Statistics.module.css";
-import NavigationBar from "@/components/navigation-bar/NavigationBar";
+import { AdminLayout } from "@/components/admin-layout";
 import {
   Pagination,
   PaginationContent,
@@ -48,54 +48,55 @@ export default function Playerstats(): JSX.Element {
   };
 
   return (
-    <div className={styles.playerstatsContainer}>
-      <NavigationBar />
-      <div className={styles.content}>
-        <StatisticsHeaderControls
-          title="Playerstats"
-          sortValue={sortMethod}
-          onSortChange={handleSortChange}
-        />
-        <div className={styles.playerList}>
-          {stats.map((player, index) => (
-            <div key={player.playerId} className={styles.playerRow}>
-              <div className={styles.playerNumber}>{offset + index + 1}.</div>
-              <div className={styles.playerName}>{player.name}</div>
-              <div className={styles.playerStats}>
-                <div className={styles.roundStat}>
-                  <span className={styles.statLabel}>Ø Round</span>
-                  <span className={styles.statValue}>{player.scoreAverage?.toFixed(1) || 0}</span>
-                </div>
-                <div className={styles.gamesStat}>
-                  <span className={styles.statLabel}>Played games</span>
-                  <span className={styles.statValue}>{Math.round(player.gamesPlayed || 0)}</span>
+    <AdminLayout>
+      <div className={styles.playerstatsContainer}>
+        <div className={styles.content}>
+          <StatisticsHeaderControls
+            title="Playerstats"
+            sortValue={sortMethod}
+            onSortChange={handleSortChange}
+          />
+          <div className={styles.playerList}>
+            {stats.map((player, index) => (
+              <div key={player.playerId} className={styles.playerRow}>
+                <div className={styles.playerNumber}>{offset + index + 1}.</div>
+                <div className={styles.playerName}>{player.name}</div>
+                <div className={styles.playerStats}>
+                  <div className={styles.roundStat}>
+                    <span className={styles.statLabel}>Ø Round</span>
+                    <span className={styles.statValue}>{player.scoreAverage?.toFixed(1) || 0}</span>
+                  </div>
+                  <div className={styles.gamesStat}>
+                    <span className={styles.statLabel}>Played games</span>
+                    <span className={styles.statValue}>{Math.round(player.gamesPlayed || 0)}</span>
+                  </div>
                 </div>
               </div>
-            </div>
-          ))}
+            ))}
+          </div>
+          <Pagination className={styles.paginationControls}>
+            <PaginationContent>
+              <PaginationItem>
+                <PaginationPrevious
+                  onClick={() => setOffset(Math.max(0, offset - limit))}
+                  disabled={offset === 0}
+                />
+              </PaginationItem>
+              <PaginationItem>
+                <span className={styles.paginationStatus}>
+                  Page {Math.floor(offset / limit) + 1} of {Math.ceil(total / limit) || 1}
+                </span>
+              </PaginationItem>
+              <PaginationItem>
+                <PaginationNext
+                  onClick={() => setOffset(offset + limit)}
+                  disabled={offset + limit >= total}
+                />
+              </PaginationItem>
+            </PaginationContent>
+          </Pagination>
         </div>
-        <Pagination className={styles.paginationControls}>
-          <PaginationContent>
-            <PaginationItem>
-              <PaginationPrevious
-                onClick={() => setOffset(Math.max(0, offset - limit))}
-                disabled={offset === 0}
-              />
-            </PaginationItem>
-            <PaginationItem>
-              <span className={styles.paginationStatus}>
-                Page {Math.floor(offset / limit) + 1} of {Math.ceil(total / limit) || 1}
-              </span>
-            </PaginationItem>
-            <PaginationItem>
-              <PaginationNext
-                onClick={() => setOffset(offset + limit)}
-                disabled={offset + limit >= total}
-              />
-            </PaginationItem>
-          </PaginationContent>
-        </Pagination>
       </div>
-    </div>
+    </AdminLayout>
   );
 }

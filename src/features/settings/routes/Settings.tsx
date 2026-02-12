@@ -1,6 +1,6 @@
 import { useState, useMemo, useEffect } from "react";
 import { useParams } from "react-router-dom";
-import NavigationBar from "@/components/navigation-bar/NavigationBar";
+import { AdminLayout } from "@/components/admin-layout";
 import { useStore } from "@nanostores/react";
 import { $gameSettings, $currentGameId, setGameData, setCurrentGameId } from "@/stores";
 import { useGameFlowPort } from "@/shared/providers/GameFlowPortProvider";
@@ -119,48 +119,50 @@ function Settings(): JSX.Element {
 
   if (isLoading) {
     return (
-      <div className={styles.settings}>
-        <NavigationBar />
-        <h1>Settings</h1>
-        <p>Loading settings...</p>
-      </div>
+      <AdminLayout>
+        <div className={styles.settings}>
+          <h1>Settings</h1>
+          <p>Loading settings...</p>
+        </div>
+      </AdminLayout>
     );
   }
 
   return (
-    <div className={styles.settings}>
-      <NavigationBar />
-      <h1>Settings</h1>
-      <section className={styles.settingsSection}>
-        <div className={styles.settingsBody}>
-          <SettingsTabs
-            title="Game Mode"
-            options={[
-              { label: "Single-out", id: "single-out" },
-              { label: "Double-out", id: "double-out" },
-              { label: "Triple-out", id: "triple-out" },
-            ]}
-            selectedId={currentGameMode}
-            onChange={handleGameModeClick}
-            disabled={isSaving}
-          />
-          <SettingsTabs
-            title="Points"
-            options={[
-              { label: "101", id: 101 },
-              { label: "201", id: 201 },
-              { label: "301", id: 301 },
-              { label: "401", id: 401 },
-              { label: "501", id: 501 },
-            ]}
-            selectedId={currentPoints}
-            onChange={handlePointsClick}
-            disabled={isSaving}
-            mobileLayout="grid"
-          />
-        </div>
-      </section>
-    </div>
+    <AdminLayout>
+      <div className={styles.settings}>
+        <h1>Settings</h1>
+        <section className={styles.settingsSection}>
+          <div className={styles.settingsBody}>
+            <SettingsTabs
+              title="Game Mode"
+              options={[
+                { label: "Single-out", id: "single-out" },
+                { label: "Double-out", id: "double-out" },
+                { label: "Triple-out", id: "triple-out" },
+              ]}
+              selectedId={currentGameMode}
+              onChange={handleGameModeClick}
+              disabled={isSaving}
+            />
+            <SettingsTabs
+              title="Points"
+              options={[
+                { label: "101", id: 101 },
+                { label: "201", id: 201 },
+                { label: "301", id: 301 },
+                { label: "401", id: 401 },
+                { label: "501", id: 501 },
+              ]}
+              selectedId={currentPoints}
+              onChange={handlePointsClick}
+              disabled={isSaving}
+              mobileLayout="grid"
+            />
+          </div>
+        </section>
+      </div>
+    </AdminLayout>
   );
 }
 

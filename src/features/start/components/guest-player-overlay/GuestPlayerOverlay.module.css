@@ -100,5 +100,6 @@
 @media (width <= 600px) {
   .guestOverlayBox {
     width: min(82vw, 720px);
+    max-width: calc(100vw - 32px);
   }
 }

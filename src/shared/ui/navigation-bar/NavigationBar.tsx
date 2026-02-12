@@ -12,7 +12,11 @@ import Madebydeepblue from "@/assets/icons/madeByDeepblue.svg";
 import clsx from "clsx";
 import { $currentGameId } from "@/stores";
 
-export default function NavigationBar(): React.JSX.Element {
+type NavigationBarProps = {
+  className?: string;
+};
+
+export default function NavigationBar({ className }: NavigationBarProps): React.JSX.Element {
   const navigate = useNavigate();
   const location = useLocation();
   const currentGameId = useStore($currentGameId);
@@ -96,7 +100,7 @@ export default function NavigationBar(): React.JSX.Element {
   };
 
   return (
-    <div className={styles.navigation}>
+    <div className={clsx(styles.navigation, className)}>
       <img className={styles.deepblueIcon} src={Madebydeepblue} alt="" />
       <div
         className={clsx(styles.navItems, {
@@ -106,7 +110,7 @@ export default function NavigationBar(): React.JSX.Element {
         })}
       >
         {navItems.map((item) => {
-          const isActive = getIsActive(item.id, item.path);
+          const isDisplayedActive = displayedTabId === item.id;
 
           return (
             <button
@@ -118,7 +122,10 @@ export default function NavigationBar(): React.JSX.Element {
               })}
             >
               <span className={styles.tabContent}>
-                <img src={isActive ? item.activeIcon : item.inActiveIcon} alt={item.label} />
+                <img
+                  src={isDisplayedActive ? item.activeIcon : item.inActiveIcon}
+                  alt={item.label}
+                />
                 <span className={styles.tabLabel}>{item.label}</span>
               </span>
             </button>

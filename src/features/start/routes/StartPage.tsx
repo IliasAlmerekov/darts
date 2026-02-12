@@ -4,10 +4,11 @@ import clsx from "clsx";
 import { DndContext, closestCenter } from "@dnd-kit/core";
 import { SortableContext, verticalListSortingStrategy } from "@dnd-kit/sortable";
 import { restrictToVerticalAxis } from "@dnd-kit/modifiers";
-import NavigationBar from "@/components/navigation-bar/NavigationBar";
+import { AdminLayout } from "@/components/admin-layout";
 import Plus from "@/assets/icons/plus.svg";
 import LinkButton from "@/components/link-button/LinkButton";
 import Button from "@/components/button/Button";
+import { ErrorState } from "@/components/error-state";
 import QRCode from "../components/qr-code/QRCode";
 import { LivePlayersList } from "../components/live-players-list/LivePlayersList";
 import { useStartPage } from "../hooks/useStartPage";
@@ -20,8 +21,10 @@ function StartPage(): React.JSX.Element {
     invitation,
     gameId,
     playerCount,
+    isLobbyFull,
     playerOrder,
     creating,
+    pageError,
     isGuestOverlayOpen,
     guestUsername,
     guestError,
@@ -31,6 +34,7 @@ function StartPage(): React.JSX.Element {
     handleRemovePlayer,
     handleStartGame,
     handleCreateRoom,
+    clearPageError,
     openGuestOverlay,
     closeGuestOverlay,
     setGuestUsername,
@@ -39,10 +43,18 @@ function StartPage(): React.JSX.Element {
   } = useStartPage();
 
   return (
-    <div className={styles.main}>
-      <div className={styles.start}>
-        <NavigationBar />
-        <>
+    <AdminLayout>
+      <div className={styles.main}>
+        {pageError ? (
+          <div className={styles.pageError}>
+            <ErrorState
+              title="Start page action failed"
+              message={pageError}
+              primaryAction={{ label: "Dismiss", onClick: clearPageError }}
+            />
+          </div>
+        ) : null}
+        <div className={styles.start}>
           <div className={styles.existingPlayerList}>
             <div className={styles.qrCodeSection}>
               {invitation ? (
@@ -50,6 +62,7 @@ function StartPage(): React.JSX.Element {
                   <QRCode
                     invitationLink={FRONTEND_BASE_URL + invitation.invitationLink}
                     gameId={invitation.gameId}
+                    isLobbyFull={isLobbyFull}
                   ></QRCode>
                 </div>
               ) : (
@@ -88,6 +101,7 @@ function StartPage(): React.JSX.Element {
                     onRemovePlayer={handleRemovePlayer}
                     dragEnd={false}
                     playerOrder={playerOrder}
+                    maxPlayers={10}
                   />
                 </SortableContext>
               </DndContext>
@@ -116,8 +130,13 @@ function StartPage(): React.JSX.Element {
                       type="button"
                       className={styles.guestButtonMobile}
                       onClick={openGuestOverlay}
-                      disabled={!gameId}
+                      disabled={!gameId || isLobbyFull}
                       aria-label="Play as a guest"
+                      title={
+                        isLobbyFull
+                          ? "The lobby is full. Remove a player to add another."
+                          : undefined
+                      }
                     >
                       <svg
                         xmlns="http://www.w3.org/2000/svg"
@@ -143,7 +162,7 @@ function StartPage(): React.JSX.Element {
               </div>
             </div>
           </div>
-        </>
+        </div>
       </div>
       <GuestPlayerOverlay
         isOpen={isGuestOverlayOpen}
@@ -156,7 +175,7 @@ function StartPage(): React.JSX.Element {
         suggestions={guestSuggestions}
         onSuggestionClick={handleGuestSuggestion}
       />
-    </div>
+    </AdminLayout>
   );
 }
 

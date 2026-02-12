@@ -16,6 +16,7 @@ import {
 } from "@/stores";
 import { setGameData } from "@/stores/game";
 import { ApiError } from "@/lib/api/errors";
+import { toUserErrorMessage } from "@/lib/error-to-user-message";
 import { validateGuestUsername } from "../lib/guestUsername";
 
 /**
@@ -24,6 +25,7 @@ import { validateGuestUsername } from "../lib/guestUsername";
 export function useStartPage() {
   const gameFlow = useGameFlowPort();
   const START_SOUND_PATH = "/sounds/start-round-sound.mp3";
+  const MAX_LOBBY_PLAYERS = 10;
   const navigate = useNavigate();
   const { id: gameIdParam } = useParams<{ id?: string }>();
 
@@ -40,6 +42,7 @@ export function useStartPage() {
   const [guestError, setGuestError] = useState<string | null>(null);
   const [guestSuggestions, setGuestSuggestions] = useState<string[]>([]);
   const [isAddingGuest, setIsAddingGuest] = useState(false);
+  const [pageError, setPageError] = useState<string | null>(null);
 
   // gameId aus URL-Parameter oder Store
   const gameId = useMemo(() => {
@@ -58,6 +61,7 @@ export function useStartPage() {
   }, [gameIdParam, invitation?.gameId, currentGameId]);
 
   const { players, count: playerCount } = useGamePlayers(gameId);
+  const isLobbyFull = playerCount >= MAX_LOBBY_PLAYERS;
   const [playerOrder, setPlayerOrder] = useState<number[]>([]);
 
   useEffect(() => {
@@ -88,6 +92,9 @@ export function useStartPage() {
             }));
             gameFlow.updatePlayerOrder(gameId, positionsPayload).catch((err) => {
               console.warn("Failed to persist player order", err);
+              setPageError(
+                toUserErrorMessage(err, "Could not update player order. Please try again."),
+              );
             });
           }
 
@@ -106,8 +113,8 @@ export function useStartPage() {
   const handleRemovePlayer = async (playerId: number, currentGameId: number): Promise<void> => {
     try {
       await gameFlow.leaveRoom(currentGameId, playerId);
-    } catch {
-      void 0;
+    } catch (error) {
+      setPageError(toUserErrorMessage(error, "Could not remove player. Please try again."));
     }
   };
 
@@ -181,6 +188,7 @@ export function useStartPage() {
     if (!gameId || starting) return;
 
     setStarting(true);
+    setPageError(null);
 
     try {
       const audio = new Audio(START_SOUND_PATH);
@@ -196,8 +204,8 @@ export function useStartPage() {
       });
 
       navigate(`/game/${gameId}`);
-    } catch {
-      void 0;
+    } catch (error) {
+      setPageError(toUserErrorMessage(error, "Could not start game. Please try again."));
     } finally {
       setStarting(false);
     }
@@ -206,6 +214,7 @@ export function useStartPage() {
   const handleCreateRoom = async (): Promise<void> => {
     if (creating) return;
     setCreating(true);
+    setPageError(null);
     try {
       const response = await gameFlow.createRoom({
         previousGameId: lastFinishedGameId ?? undefined,
@@ -214,14 +223,22 @@ export function useStartPage() {
       setCurrentGameId(response.gameId);
       // Navigiere zu /start/{gameId} für URL-Persistenz
       navigate(`/start/${response.gameId}`);
-    } catch {
-      void 0;
+    } catch (error) {
+      setPageError(toUserErrorMessage(error, "Could not create a new game. Please try again."));
     } finally {
       setCreating(false);
     }
   };
 
+  const clearPageError = (): void => {
+    setPageError(null);
+  };
+
   const openGuestOverlay = (): void => {
+    if (isLobbyFull) {
+      setGuestError("The lobby is full. Remove a player to add another.");
+      return;
+    }
     setGuestError(null);
     setGuestSuggestions([]);
     setIsGuestOverlayOpen(true);
@@ -277,6 +294,11 @@ export function useStartPage() {
       return;
     }
 
+    if (isLobbyFull) {
+      setGuestError("The lobby is full. Remove a player to add another.");
+      return;
+    }
+
     const trimmedUsername = guestUsername.trim();
     const validationError = validateGuestUsername(trimmedUsername);
     if (validationError) {
@@ -309,10 +331,12 @@ export function useStartPage() {
     gameId,
     lastFinishedGameId,
     playerCount,
+    isLobbyFull,
     playerOrder,
     creating,
     starting,
     isRestoring,
+    pageError,
     isGuestOverlayOpen,
     guestUsername,
     guestError,
@@ -322,6 +346,7 @@ export function useStartPage() {
     handleRemovePlayer,
     handleStartGame,
     handleCreateRoom,
+    clearPageError,
     openGuestOverlay,
     closeGuestOverlay,
     setGuestUsername: handleGuestUsernameChange,

@@ -38,11 +38,16 @@ function SelectedPlayerItem({ ...props }: Props): React.JSX.Element {
 
   return (
     <div ref={setNodeRef} style={style} className={styles.selectedPlayerItem} key={props?.key}>
-      <div>
-        <button {...attributes} {...listeners}>
-          <img src={moveIcon} alt="Move icon" />
+      <div className={styles.playerMain}>
+        <button
+          {...attributes}
+          {...listeners}
+          className={styles.moveButton}
+          aria-label="Move player"
+        >
+          <img src={moveIcon} alt="Move icon" className={styles.moveIcon} />
         </button>
-        <div className="copylarge">{props?.name}</div>
+        <div className={styles.playerName}>{props?.name}</div>
       </div>
       <button
         onClick={props.handleClick}
