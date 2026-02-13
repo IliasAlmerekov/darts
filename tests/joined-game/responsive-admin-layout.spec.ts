@@ -98,7 +98,7 @@ test.describe("Responsive admin layouts", () => {
       await page.goto("/start");
       await page.waitForLoadState("domcontentloaded");
 
-      const visibleCreateButton = page.locator("a:visible", { hasText: /create game/i });
+      const visibleCreateButton = page.locator("button:visible", { hasText: /create game/i });
       await expect(visibleCreateButton).toHaveCount(1);
 
       const hasHorizontalScroll = await page.evaluate(
@@ -149,8 +149,8 @@ test.describe("Responsive admin layouts", () => {
     await page.goto("/start");
     await page.waitForLoadState("domcontentloaded");
 
-    const createGameButton = page.locator("a:visible", { hasText: /^create game$/i });
-    const startButton = page.getByRole("link", { name: "Start" });
+    const createGameButton = page.locator("button:visible", { hasText: /^create game$/i });
+    const startButton = page.getByRole("button", { name: "Start" });
     const createBottomContainer = page
       .locator('[class*="existingPlayerList"] [class*="bottom"]')
       .first();
@@ -195,7 +195,7 @@ test.describe("Responsive admin layouts", () => {
     const qrSvg = page.locator('[class*="qrCodeWrapper"] svg').first();
     await expect(qrSvg).toBeVisible();
 
-    const mobileCreateButton = page.locator('[class*="mobileCreateButtonWrapper"] a');
+    const mobileCreateButton = page.locator('[class*="mobileCreateButtonWrapper"] button');
     await expect(mobileCreateButton).toHaveCount(0);
   });
 
@@ -270,7 +270,7 @@ test.describe("Responsive admin layouts", () => {
     await page.goto("/start/1");
     await page.waitForLoadState("domcontentloaded");
 
-    const startButton = page.getByRole("link", { name: "Start" });
+    const startButton = page.getByRole("button", { name: "Start" });
     const guestButton = page.getByRole("button", { name: "Play as a guest" });
 
     await expect(startButton).toBeVisible();
@@ -335,7 +335,7 @@ test.describe("Responsive admin layouts", () => {
     await page.waitForLoadState("domcontentloaded");
 
     const listScroll = page.locator('[class*="selectedPlayerListScroll"]').first();
-    const startButton = page.getByRole("link", { name: "Start" });
+    const startButton = page.getByRole("button", { name: "Start" });
     const startContainer = page.locator('[class*="startBtn"]').first();
 
     await expect(startButton).toBeVisible();
@@ -381,7 +381,7 @@ test.describe("Responsive admin layouts", () => {
     await page.goto("/start/1");
     await page.waitForLoadState("domcontentloaded");
 
-    const startButton = page.getByRole("link", { name: "Start" });
+    const startButton = page.getByRole("button", { name: "Start" });
     await expect(startButton).toBeVisible();
 
     const startBox = await startButton.boundingBox();

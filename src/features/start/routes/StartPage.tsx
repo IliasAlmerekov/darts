@@ -14,7 +14,13 @@ import { LivePlayersList } from "../components/live-players-list/LivePlayersList
 import { useStartPage } from "../hooks/useStartPage";
 import GuestPlayerOverlay from "../components/guest-player-overlay/GuestPlayerOverlay";
 
-const FRONTEND_BASE_URL = "http://localhost:5173";
+function toAbsoluteInvitationLink(invitationLink: string): string {
+  try {
+    return new URL(invitationLink, window.location.origin).toString();
+  } catch {
+    return invitationLink;
+  }
+}
 
 function StartPage(): React.JSX.Element {
   const {
@@ -24,6 +30,7 @@ function StartPage(): React.JSX.Element {
     isLobbyFull,
     playerOrder,
     creating,
+    starting,
     pageError,
     isGuestOverlayOpen,
     guestUsername,
@@ -60,7 +67,7 @@ function StartPage(): React.JSX.Element {
               {invitation ? (
                 <div className={styles.qrCodeStack}>
                   <QRCode
-                    invitationLink={FRONTEND_BASE_URL + invitation.invitationLink}
+                    invitationLink={toAbsoluteInvitationLink(invitation.invitationLink)}
                     gameId={invitation.gameId}
                     isLobbyFull={isLobbyFull}
                   ></QRCode>
@@ -80,10 +87,10 @@ function StartPage(): React.JSX.Element {
             <div className={styles.bottom}>
               <LinkButton
                 className={styles.createNewPlayerButton}
-                label={invitation ? "Create New Game" : "Create Game"}
+                label={invitation ? "Created" : "Create Game"}
                 icon={Plus}
                 handleClick={handleCreateRoom}
-                disabled={!!invitation}
+                disabled={!!invitation || creating}
               />
             </div>
           </div>
@@ -115,10 +122,8 @@ function StartPage(): React.JSX.Element {
               <div className={styles.mobileActionRow}>
                 <div className={styles.mobileActionStart}>
                   <Button
-                    isLink
-                    label="Start"
-                    link={gameId ? `/game/${gameId}` : "/start"}
-                    disabled={playerCount < 2 || !gameId}
+                    label={starting ? "Starting..." : "Start"}
+                    disabled={starting || playerCount < 2 || !gameId}
                     type="secondary"
                     className={styles.startButton}
                     handleClick={handleStartGame}

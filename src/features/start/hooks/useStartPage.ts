@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useStore } from "@nanostores/react";
 import { DragEndEvent } from "@dnd-kit/core";
@@ -18,6 +18,53 @@ import { setGameData } from "@/stores/game";
 import { ApiError } from "@/lib/api/errors";
 import { toUserErrorMessage } from "@/lib/error-to-user-message";
 import { validateGuestUsername } from "../lib/guestUsername";
+
+export function shouldRedirectToCurrentGame(
+  gameIdParam?: string,
+  invitationGameId?: number | null,
+  currentGameId?: number | null,
+): boolean {
+  return !gameIdParam && !invitationGameId && typeof currentGameId === "number";
+}
+
+type UpdatePlayerOrderFn = (
+  gameId: number,
+  positions: Array<{ playerId: number; position: number }>,
+) => Promise<void>;
+
+type PersistPlayerOrderParams = {
+  gameId: number;
+  nextOrder: number[];
+  previousOrder: number[];
+  updatePlayerOrder: UpdatePlayerOrderFn;
+  onError: (error: unknown) => void;
+  onRollback: (order: number[]) => void;
+  shouldRollback: () => boolean;
+};
+
+export async function persistPlayerOrder({
+  gameId,
+  nextOrder,
+  previousOrder,
+  updatePlayerOrder,
+  onError,
+  onRollback,
+  shouldRollback,
+}: PersistPlayerOrderParams): Promise<void> {
+  const positionsPayload = nextOrder.map((playerId, position) => ({
+    playerId,
+    position,
+  }));
+
+  try {
+    await updatePlayerOrder(gameId, positionsPayload);
+  } catch (error) {
+    onError(error);
+    if (shouldRollback()) {
+      onRollback(previousOrder);
+    }
+  }
+}
 
 /**
  * Manages start page state, player order, and room lifecycle actions.
@@ -53,16 +100,19 @@ export function useStartPage() {
     return invitation?.gameId ?? null;
   }, [gameIdParam, invitation?.gameId]);
 
-  // Wenn keine gameId in der URL ist, lösche currentGameId aus dem Store
+  // Restore active lobby route when we only have the persisted current game id.
   useEffect(() => {
-    if (!gameIdParam && !invitation?.gameId && currentGameId) {
-      setCurrentGameId(null);
+    if (shouldRedirectToCurrentGame(gameIdParam, invitation?.gameId, currentGameId)) {
+      navigate(`/start/${currentGameId}`, { replace: true });
     }
-  }, [gameIdParam, invitation?.gameId, currentGameId]);
+  }, [gameIdParam, invitation?.gameId, currentGameId, navigate]);
 
   const { players, count: playerCount } = useGamePlayers(gameId);
   const isLobbyFull = playerCount >= MAX_LOBBY_PLAYERS;
   const [playerOrder, setPlayerOrder] = useState<number[]>([]);
+  const playerOrderRequestIdRef = useRef(0);
+  const createRoomInFlightRef = useRef(false);
+  const startGameInFlightRef = useRef(false);
 
   useEffect(() => {
     if (players.length > 0) {
@@ -83,18 +133,29 @@ export function useStartPage() {
         setPlayerOrder((items) => {
           const oldIndex = items.indexOf(active.id as number);
           const newIndex = items.indexOf(over.id as number);
+          if (oldIndex === -1 || newIndex === -1) {
+            return items;
+          }
           const nextOrder = arrayMove(items, oldIndex, newIndex);
 
           if (gameId) {
-            const positionsPayload = nextOrder.map((playerId, position) => ({
-              playerId,
-              position,
-            }));
-            gameFlow.updatePlayerOrder(gameId, positionsPayload).catch((err) => {
-              console.warn("Failed to persist player order", err);
-              setPageError(
-                toUserErrorMessage(err, "Could not update player order. Please try again."),
-              );
+            const requestId = ++playerOrderRequestIdRef.current;
+
+            void persistPlayerOrder({
+              gameId,
+              nextOrder,
+              previousOrder: items,
+              updatePlayerOrder: gameFlow.updatePlayerOrder,
+              onError: (err) => {
+                console.warn("Failed to persist player order", err);
+                setPageError(
+                  toUserErrorMessage(err, "Could not update player order. Please try again."),
+                );
+              },
+              onRollback: (order) => {
+                setPlayerOrder(order);
+              },
+              shouldRollback: () => playerOrderRequestIdRef.current === requestId,
             });
           }
 
@@ -185,8 +246,9 @@ export function useStartPage() {
   }, [invitation?.gameId]);
 
   const handleStartGame = async (): Promise<void> => {
-    if (!gameId || starting) return;
+    if (!gameId || starting || startGameInFlightRef.current) return;
 
+    startGameInFlightRef.current = true;
     setStarting(true);
     setPageError(null);
 
@@ -207,12 +269,14 @@ export function useStartPage() {
     } catch (error) {
       setPageError(toUserErrorMessage(error, "Could not start game. Please try again."));
     } finally {
+      startGameInFlightRef.current = false;
       setStarting(false);
     }
   };
 
   const handleCreateRoom = async (): Promise<void> => {
-    if (creating) return;
+    if (creating || createRoomInFlightRef.current || invitation?.gameId) return;
+    createRoomInFlightRef.current = true;
     setCreating(true);
     setPageError(null);
     try {
@@ -226,6 +290,7 @@ export function useStartPage() {
     } catch (error) {
       setPageError(toUserErrorMessage(error, "Could not create a new game. Please try again."));
     } finally {
+      createRoomInFlightRef.current = false;
       setCreating(false);
     }
   };

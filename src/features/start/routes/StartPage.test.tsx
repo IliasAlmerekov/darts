@@ -76,7 +76,13 @@ vi.mock("@/components/navigation-bar/NavigationBar", () => ({
 }));
 
 vi.mock("../components/qr-code/QRCode", () => ({
-  default: ({ children }: { children?: ReactNode }) => <div>{children}</div>,
+  default: ({
+    children,
+    invitationLink,
+  }: {
+    children?: ReactNode;
+    invitationLink?: string;
+  }) => <div data-testid="qr-code" data-invitation-link={invitationLink}>{children}</div>,
 }));
 
 describe("StartPage", () => {
@@ -133,5 +139,52 @@ describe("StartPage", () => {
     expect(screen.getByRole("alert")).toBeTruthy();
     screen.getByRole("button", { name: "Dismiss" }).click();
     expect(clearPageError).toHaveBeenCalledTimes(1);
+  });
+
+  it("shows Created state for disabled create button", () => {
+    render(
+      <MemoryRouter>
+        <StartPage />
+      </MemoryRouter>,
+    );
+
+    const createdText = screen.getByText("Created");
+    const createdButton = createdText.closest("button");
+    expect(createdButton).toBeTruthy();
+    expect(createdButton?.getAttribute("disabled")).toBe("");
+  });
+
+  it("passes absolute invitation link to QRCode", () => {
+    useStartPageMock.mockReturnValueOnce(
+      buildHookResult({
+        invitation: { invitationLink: "/invite/abc", gameId: 42 },
+      }),
+    );
+
+    render(
+      <MemoryRouter>
+        <StartPage />
+      </MemoryRouter>,
+    );
+
+    const qrCode = screen.getByTestId("qr-code");
+    expect(qrCode.getAttribute("data-invitation-link")).toBe("http://localhost:3000/invite/abc");
+  });
+
+  it("shows loading state on Start button while game is starting", () => {
+    useStartPageMock.mockReturnValueOnce(
+      buildHookResult({
+        starting: true,
+      }),
+    );
+
+    render(
+      <MemoryRouter>
+        <StartPage />
+      </MemoryRouter>,
+    );
+
+    const startButton = screen.getByRole("button", { name: "Starting..." });
+    expect(startButton).toHaveProperty("disabled", true);
   });
 });
