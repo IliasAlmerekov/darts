@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import styles from "./GamesOverview.module.css";
 import { Link } from "react-router-dom";
 import { AdminLayout } from "@/components/admin-layout";
@@ -11,6 +11,40 @@ import {
 } from "@/components/pagination";
 import { getGamesOverview } from "../api";
 import { StatisticsHeaderControls } from "../components/header-controls";
+
+type GamesPaginationProps = {
+  offset: number;
+  total: number;
+  limit: number;
+  onPrevious: () => void;
+  onNext: () => void;
+};
+
+const GamesPagination = React.memo(function GamesPagination({
+  offset,
+  total,
+  limit,
+  onPrevious,
+  onNext,
+}: GamesPaginationProps): JSX.Element {
+  return (
+    <Pagination className={styles.paginationControls}>
+      <PaginationContent>
+        <PaginationItem>
+          <PaginationPrevious onClick={onPrevious} disabled={offset === 0} />
+        </PaginationItem>
+        <PaginationItem>
+          <span className={styles.paginationStatus}>
+            Page {Math.floor(offset / limit) + 1} of {Math.ceil(total / limit) || 1}
+          </span>
+        </PaginationItem>
+        <PaginationItem>
+          <PaginationNext onClick={onNext} disabled={offset + limit >= total} />
+        </PaginationItem>
+      </PaginationContent>
+    </Pagination>
+  );
+});
 
 export default function GamesOverview(): JSX.Element {
   // Read gameId from store but don't modify it - just keep it alive
@@ -31,6 +65,14 @@ export default function GamesOverview(): JSX.Element {
       }
     });
   }, [offset]);
+
+  const handlePreviousPage = useCallback(() => {
+    setOffset((previousOffset) => Math.max(0, previousOffset - limit));
+  }, [limit]);
+
+  const handleNextPage = useCallback(() => {
+    setOffset((previousOffset) => previousOffset + limit);
+  }, [limit]);
 
   return (
     <AdminLayout>
@@ -72,27 +114,13 @@ export default function GamesOverview(): JSX.Element {
             </div>
           ))}
         </div>
-        <Pagination className={styles.paginationControls}>
-          <PaginationContent>
-            <PaginationItem>
-              <PaginationPrevious
-                onClick={() => setOffset(Math.max(0, offset - limit))}
-                disabled={offset === 0}
-              />
-            </PaginationItem>
-            <PaginationItem>
-              <span className={styles.paginationStatus}>
-                Page {Math.floor(offset / limit) + 1} of {Math.ceil(total / limit) || 1}
-              </span>
-            </PaginationItem>
-            <PaginationItem>
-              <PaginationNext
-                onClick={() => setOffset(offset + limit)}
-                disabled={offset + limit >= total}
-              />
-            </PaginationItem>
-          </PaginationContent>
-        </Pagination>
+        <GamesPagination
+          offset={offset}
+          total={total}
+          limit={limit}
+          onPrevious={handlePreviousPage}
+          onNext={handleNextPage}
+        />
       </div>
     </AdminLayout>
   );

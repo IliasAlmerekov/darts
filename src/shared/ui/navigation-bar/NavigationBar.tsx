@@ -16,12 +16,12 @@ type NavigationBarProps = {
   className?: string;
 };
 
-export default function NavigationBar({ className }: NavigationBarProps): React.JSX.Element {
+function NavigationBar({ className }: NavigationBarProps): React.JSX.Element {
   const navigate = useNavigate();
   const location = useLocation();
   const currentGameId = useStore($currentGameId);
   const [previewTabId, setPreviewTabId] = useState<string | null>(null);
-  const timerRef = useRef<number | null>(null);
+  const navigationTimerRef = useRef<number | null>(null);
 
   // Dynamischer path für Game basierend auf currentGameId
   const gamePath = useMemo(() => {
@@ -33,29 +33,32 @@ export default function NavigationBar({ className }: NavigationBarProps): React.
     return currentGameId ? `/settings/${currentGameId}` : "/settings";
   }, [currentGameId]);
 
-  const navItems = [
-    {
-      label: "Statistics",
-      activeIcon: statisticIcon,
-      inActiveIcon: statisticIconInactive,
-      id: "statistics",
-      path: "/statistics",
-    },
-    {
-      label: "Game",
-      activeIcon: dartIcon,
-      inActiveIcon: dartIconInactive,
-      id: "game",
-      path: gamePath,
-    },
-    {
-      label: "Settings",
-      activeIcon: settingsCog,
-      inActiveIcon: settingsCogInactive,
-      id: "settings",
-      path: settingsPath,
-    },
-  ];
+  const navItems = useMemo(
+    () => [
+      {
+        label: "Statistics",
+        activeIcon: statisticIcon,
+        inActiveIcon: statisticIconInactive,
+        id: "statistics",
+        path: "/statistics",
+      },
+      {
+        label: "Game",
+        activeIcon: dartIcon,
+        inActiveIcon: dartIconInactive,
+        id: "game",
+        path: gamePath,
+      },
+      {
+        label: "Settings",
+        activeIcon: settingsCog,
+        inActiveIcon: settingsCogInactive,
+        id: "settings",
+        path: settingsPath,
+      },
+    ],
+    [gamePath, settingsPath],
+  );
 
   const getIsActive = (itemId: string, itemPath: string): boolean => {
     return (
@@ -77,8 +80,8 @@ export default function NavigationBar({ className }: NavigationBarProps): React.
 
   useEffect(() => {
     return () => {
-      if (timerRef.current !== null) {
-        window.clearTimeout(timerRef.current);
+      if (navigationTimerRef.current !== null) {
+        window.clearTimeout(navigationTimerRef.current);
       }
     };
   }, []);
@@ -89,14 +92,14 @@ export default function NavigationBar({ className }: NavigationBarProps): React.
     }
 
     setPreviewTabId(itemId);
-
-    if (timerRef.current !== null) {
-      window.clearTimeout(timerRef.current);
+    if (navigationTimerRef.current !== null) {
+      window.clearTimeout(navigationTimerRef.current);
     }
 
-    timerRef.current = window.setTimeout(() => {
+    // Keep a short window for the sliding indicator to be perceptible.
+    navigationTimerRef.current = window.setTimeout(() => {
       navigate(path);
-    }, 180);
+    }, 110);
   };
 
   return (
@@ -135,3 +138,5 @@ export default function NavigationBar({ className }: NavigationBarProps): React.
     </div>
   );
 }
+
+export default React.memo(NavigationBar);

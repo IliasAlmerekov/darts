@@ -4,6 +4,32 @@ import Button from "@/components/button/Button";
 import deleteIcon from "@/assets/icons/delete.svg";
 import styles from "./GuestPlayerOverlay.module.css";
 
+type AddGuestButtonProps = {
+  isAddDisabled: boolean;
+  isAdding: boolean;
+  onAdd: () => void;
+};
+
+const AddGuestButton = React.memo(function AddGuestButton({
+  isAddDisabled,
+  isAdding,
+  onAdd,
+}: AddGuestButtonProps): React.JSX.Element {
+  const handleAddClick = React.useCallback(() => {
+    if (isAddDisabled) return;
+    onAdd();
+  }, [isAddDisabled, onAdd]);
+
+  return (
+    <Button
+      type="primary"
+      label={isAdding ? "Adding..." : "Add"}
+      handleClick={handleAddClick}
+      disabled={isAddDisabled}
+    />
+  );
+});
+
 type GuestPlayerOverlayProps = {
   isOpen: boolean;
   username: string;
@@ -72,15 +98,7 @@ function GuestPlayerOverlay({
           ) : null}
         </div>
         <div className={styles.actions}>
-          <Button
-            type="primary"
-            label={isAdding ? "Adding..." : "Add"}
-            handleClick={() => {
-              if (isAddDisabled) return;
-              onAdd();
-            }}
-            disabled={isAddDisabled}
-          />
+          <AddGuestButton isAddDisabled={isAddDisabled} isAdding={isAdding} onAdd={onAdd} />
         </div>
       </div>
     </Overlay>

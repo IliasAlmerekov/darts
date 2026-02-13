@@ -1,7 +1,13 @@
+import React, { useMemo } from "react";
 import { useGamePlayers } from "@/hooks/useGamePlayers";
 import SelectedPlayerItem from "../player-items/SelectedPlayerItem";
 import styles from "./LivePlayersList.module.css";
-import { useMemo } from "react";
+
+type LivePlayer = {
+  id: number;
+  name: string;
+  position: number | null;
+};
 
 interface LivePlayersListProps {
   gameId: number | null;
@@ -9,16 +15,22 @@ interface LivePlayersListProps {
   dragEnd?: boolean;
   playerOrder?: number[];
   maxPlayers?: number;
+  players?: LivePlayer[];
+  playerCount?: number;
 }
 
-export const LivePlayersList = ({
+function LivePlayersListComponent({
   gameId,
   onRemovePlayer,
   dragEnd,
   playerOrder,
   maxPlayers = 10,
-}: LivePlayersListProps) => {
-  const { players, count } = useGamePlayers(gameId);
+  players: playersFromProps,
+  playerCount: playerCountFromProps,
+}: LivePlayersListProps): React.JSX.Element {
+  const { players: playersFromHook, count: countFromHook } = useGamePlayers(gameId);
+  const players = playersFromProps ?? playersFromHook;
+  const count = playerCountFromProps ?? countFromHook;
   const isFull = count >= maxPlayers;
 
   const sortedPlayers = useMemo(() => {
@@ -74,4 +86,15 @@ export const LivePlayersList = ({
       </div>
     </div>
   );
-};
+}
+
+export const LivePlayersList = React.memo(LivePlayersListComponent, (previousProps, nextProps) => {
+  return (
+    previousProps.gameId === nextProps.gameId &&
+    previousProps.dragEnd === nextProps.dragEnd &&
+    previousProps.maxPlayers === nextProps.maxPlayers &&
+    previousProps.playerCount === nextProps.playerCount &&
+    previousProps.players === nextProps.players &&
+    previousProps.playerOrder === nextProps.playerOrder
+  );
+});

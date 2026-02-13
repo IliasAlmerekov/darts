@@ -90,6 +90,10 @@ export function useStartPage() {
   const [guestSuggestions, setGuestSuggestions] = useState<string[]>([]);
   const [isAddingGuest, setIsAddingGuest] = useState(false);
   const [pageError, setPageError] = useState<string | null>(null);
+  const guestUsernameRef = useRef(guestUsername);
+  const isAddingGuestRef = useRef(isAddingGuest);
+  const isLobbyFullRef = useRef(false);
+  const gameIdRef = useRef<number | null>(null);
 
   // gameId aus URL-Parameter oder Store
   const gameId = useMemo(() => {
@@ -107,22 +111,80 @@ export function useStartPage() {
     }
   }, [gameIdParam, invitation?.gameId, currentGameId, navigate]);
 
-  const { players, count: playerCount } = useGamePlayers(gameId);
+  const {
+    players,
+    count: playerCount,
+    appendOptimisticPlayer,
+    removeOptimisticPlayer,
+  } = useGamePlayers(gameId);
   const isLobbyFull = playerCount >= MAX_LOBBY_PLAYERS;
   const [playerOrder, setPlayerOrder] = useState<number[]>([]);
   const playerOrderRequestIdRef = useRef(0);
   const createRoomInFlightRef = useRef(false);
   const startGameInFlightRef = useRef(false);
+  const playersRef = useRef(players);
+  const appendOptimisticPlayerRef = useRef(appendOptimisticPlayer);
+  const removeOptimisticPlayerRef = useRef(removeOptimisticPlayer);
 
   useEffect(() => {
-    if (players.length > 0) {
-      const sortedByPosition = [...players].sort(
-        (a, b) => (a.position ?? Number.MAX_SAFE_INTEGER) - (b.position ?? Number.MAX_SAFE_INTEGER),
-      );
-      setPlayerOrder(sortedByPosition.map((p) => p.id));
-    } else {
+    playersRef.current = players;
+  }, [players]);
+
+  useEffect(() => {
+    appendOptimisticPlayerRef.current = appendOptimisticPlayer;
+  }, [appendOptimisticPlayer]);
+
+  useEffect(() => {
+    removeOptimisticPlayerRef.current = removeOptimisticPlayer;
+  }, [removeOptimisticPlayer]);
+
+  useEffect(() => {
+    guestUsernameRef.current = guestUsername;
+  }, [guestUsername]);
+
+  useEffect(() => {
+    isAddingGuestRef.current = isAddingGuest;
+  }, [isAddingGuest]);
+
+  useEffect(() => {
+    isLobbyFullRef.current = isLobbyFull;
+  }, [isLobbyFull]);
+
+  useEffect(() => {
+    gameIdRef.current = gameId;
+  }, [gameId]);
+
+  useEffect(() => {
+    if (players.length <= 0) {
       setPlayerOrder([]);
+      return;
     }
+
+    const idsByPosition = [...players]
+      .sort(
+        (a, b) => (a.position ?? Number.MAX_SAFE_INTEGER) - (b.position ?? Number.MAX_SAFE_INTEGER),
+      )
+      .map((player) => player.id);
+
+    setPlayerOrder((previousOrder) => {
+      if (previousOrder.length <= 0) {
+        return idsByPosition;
+      }
+
+      const knownIds = new Set(idsByPosition);
+      const preservedOrder = previousOrder.filter((playerId) => knownIds.has(playerId));
+      const newIds = idsByPosition.filter((playerId) => !preservedOrder.includes(playerId));
+
+      const nextOrder = [...preservedOrder, ...newIds];
+      if (
+        nextOrder.length === previousOrder.length &&
+        nextOrder.every((playerId, index) => playerId === previousOrder[index])
+      ) {
+        return previousOrder;
+      }
+
+      return nextOrder;
+    });
   }, [players]);
 
   const handleDragEnd = useCallback(
@@ -171,13 +233,22 @@ export function useStartPage() {
   const isDoubleOut = gameSettings?.doubleOut ?? false;
   const isTripleOut = gameSettings?.tripleOut ?? false;
 
-  const handleRemovePlayer = async (playerId: number, currentGameId: number): Promise<void> => {
-    try {
-      await gameFlow.leaveRoom(currentGameId, playerId);
-    } catch (error) {
-      setPageError(toUserErrorMessage(error, "Could not remove player. Please try again."));
-    }
-  };
+  const handleRemovePlayer = useCallback(
+    async (playerId: number, currentGameId: number): Promise<void> => {
+      const removedPlayer = playersRef.current.find((player) => player.id === playerId);
+      removeOptimisticPlayerRef.current?.(playerId);
+
+      try {
+        await gameFlow.leaveRoom(currentGameId, playerId);
+      } catch (error) {
+        if (removedPlayer) {
+          appendOptimisticPlayerRef.current?.(removedPlayer);
+        }
+        setPageError(toUserErrorMessage(error, "Could not remove player. Please try again."));
+      }
+    },
+    [gameFlow],
+  );
 
   useEffect(() => {
     if (!gameId || invitation?.gameId === gameId || isRestoring) return;
@@ -245,7 +316,7 @@ export function useStartPage() {
     }
   }, [invitation?.gameId]);
 
-  const handleStartGame = async (): Promise<void> => {
+  const handleStartGame = useCallback(async (): Promise<void> => {
     if (!gameId || starting || startGameInFlightRef.current) return;
 
     startGameInFlightRef.current = true;
@@ -272,9 +343,9 @@ export function useStartPage() {
       startGameInFlightRef.current = false;
       setStarting(false);
     }
-  };
+  }, [gameFlow, gameId, isDoubleOut, isTripleOut, navigate, startScore, starting]);
 
-  const handleCreateRoom = async (): Promise<void> => {
+  const handleCreateRoom = useCallback(async (): Promise<void> => {
     if (creating || createRoomInFlightRef.current || invitation?.gameId) return;
     createRoomInFlightRef.current = true;
     setCreating(true);
@@ -293,13 +364,13 @@ export function useStartPage() {
       createRoomInFlightRef.current = false;
       setCreating(false);
     }
-  };
+  }, [creating, gameFlow, invitation?.gameId, lastFinishedGameId, navigate]);
 
-  const clearPageError = (): void => {
+  const clearPageError = useCallback((): void => {
     setPageError(null);
-  };
+  }, []);
 
-  const openGuestOverlay = (): void => {
+  const openGuestOverlay = useCallback((): void => {
     if (isLobbyFull) {
       setGuestError("The lobby is full. Remove a player to add another.");
       return;
@@ -307,14 +378,14 @@ export function useStartPage() {
     setGuestError(null);
     setGuestSuggestions([]);
     setIsGuestOverlayOpen(true);
-  };
+  }, [isLobbyFull]);
 
-  const closeGuestOverlay = (): void => {
+  const closeGuestOverlay = useCallback((): void => {
     setIsGuestOverlayOpen(false);
     setGuestUsername("");
     setGuestError(null);
     setGuestSuggestions([]);
-  };
+  }, []);
 
   const handleGuestUsernameChange = useCallback(
     (value: string): void => {
@@ -335,7 +406,7 @@ export function useStartPage() {
     setGuestSuggestions([]);
   }, []);
 
-  const getGuestErrorFromApi = (error: unknown): AddGuestErrorResponse | null => {
+  const getGuestErrorFromApi = useCallback((error: unknown): AddGuestErrorResponse | null => {
     if (!(error instanceof ApiError) || error.status !== 409) {
       return null;
     }
@@ -351,20 +422,21 @@ export function useStartPage() {
     }
 
     return typed;
-  };
+  }, []);
 
-  const handleAddGuest = async (): Promise<void> => {
-    if (!gameId || isAddingGuest) {
+  const handleAddGuest = useCallback(async (): Promise<void> => {
+    const currentGameId = gameIdRef.current;
+    if (!currentGameId || isAddingGuestRef.current) {
       setGuestError("Please create a game first.");
       return;
     }
 
-    if (isLobbyFull) {
+    if (isLobbyFullRef.current) {
       setGuestError("The lobby is full. Remove a player to add another.");
       return;
     }
 
-    const trimmedUsername = guestUsername.trim();
+    const trimmedUsername = guestUsernameRef.current.trim();
     const validationError = validateGuestUsername(trimmedUsername);
     if (validationError) {
       setGuestError(validationError);
@@ -376,7 +448,10 @@ export function useStartPage() {
     setGuestSuggestions([]);
 
     try {
-      await gameFlow.addGuestPlayer(gameId, { username: trimmedUsername });
+      const guestPlayer = await gameFlow.addGuestPlayer(currentGameId, {
+        username: trimmedUsername,
+      });
+      appendOptimisticPlayer?.(guestPlayer);
       closeGuestOverlay();
     } catch (error) {
       const apiError = getGuestErrorFromApi(error);
@@ -389,12 +464,13 @@ export function useStartPage() {
     } finally {
       setIsAddingGuest(false);
     }
-  };
+  }, [appendOptimisticPlayer, closeGuestOverlay, gameFlow, getGuestErrorFromApi]);
 
   return {
     invitation,
     gameId,
     lastFinishedGameId,
+    players,
     playerCount,
     isLobbyFull,
     playerOrder,

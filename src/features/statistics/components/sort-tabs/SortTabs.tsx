@@ -1,3 +1,4 @@
+import React, { useCallback } from "react";
 import clsx from "clsx";
 import styles from "./SortTabs.module.css";
 
@@ -10,19 +11,22 @@ interface SortTabsProps {
   className?: string;
 }
 
-export function SortTabs({
+function SortTabsComponent({
   value,
   onChange,
   disabled = false,
   className,
 }: SortTabsProps): JSX.Element {
-  const handleChange = (method: SortMethod): void => {
-    if (disabled || !onChange || method === value) {
-      return;
-    }
+  const handleChange = useCallback(
+    (method: SortMethod): void => {
+      if (disabled || !onChange || method === value) {
+        return;
+      }
 
-    onChange(method);
-  };
+      onChange(method);
+    },
+    [disabled, onChange, value],
+  );
 
   return (
     <div
@@ -97,3 +101,5 @@ export function SortTabs({
     </div>
   );
 }
+
+export const SortTabs = React.memo(SortTabsComponent);

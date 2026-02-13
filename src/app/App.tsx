@@ -1,4 +1,4 @@
-import React, { Suspense, lazy } from "react";
+import React, { Suspense, lazy, useEffect } from "react";
 import { BrowserRouter, Route, Routes } from "react-router-dom";
 import "@/app/styles/index.css";
 import ErrorBoundary from "@/app/ErrorBoundary";
@@ -6,7 +6,9 @@ import ScrollToTop from "@/app/ScrollToTop";
 import NotFoundPage from "@/app/routes/NotFoundPage";
 import { LoginPage, ProtectedRoutes, RegistrationPage } from "@/features/auth";
 
-const StartPage = lazy(() => import("@/features/start").then((module) => ({ default: module.StartPage })));
+const StartPage = lazy(() =>
+  import("@/features/start").then((module) => ({ default: module.StartPage })),
+);
 const Game = lazy(() => import("@/features/game").then((module) => ({ default: module.Game })));
 const GameSummaryPage = lazy(() =>
   import("@/features/game-summary").then((module) => ({ default: module.GameSummaryPage })),
@@ -30,13 +32,47 @@ const PlayerProfile = lazy(() =>
   import("@/features/player").then((module) => ({ default: module.PlayerProfile })),
 );
 
+type WindowWithIdleCallback = Window & {
+  requestIdleCallback?: (callback: IdleRequestCallback) => number;
+  cancelIdleCallback?: (handle: number) => void;
+};
+
 function App(): React.JSX.Element {
+  useEffect(() => {
+    const windowWithIdleCallback = window as WindowWithIdleCallback;
+    const warmUpRoutes = () => {
+      void import("@/features/start");
+      void import("@/features/game");
+      void import("@/features/game-summary");
+      void import("@/features/settings");
+      void import("@/features/statistics");
+      void import("@/features/joined-game");
+      void import("@/features/player");
+    };
+
+    if (windowWithIdleCallback.requestIdleCallback && windowWithIdleCallback.cancelIdleCallback) {
+      const idleCallbackId = windowWithIdleCallback.requestIdleCallback(() => {
+        warmUpRoutes();
+      });
+      return () => {
+        windowWithIdleCallback.cancelIdleCallback?.(idleCallbackId);
+      };
+    }
+
+    const timeoutId = window.setTimeout(() => {
+      warmUpRoutes();
+    }, 300);
+    return () => {
+      window.clearTimeout(timeoutId);
+    };
+  }, []);
+
   return (
     <div className="app">
       <ErrorBoundary>
         <BrowserRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
           <ScrollToTop />
-          <Suspense fallback={<div className="page-loader">Loading page…</div>}>
+          <Suspense fallback={<div className="page-loader" aria-hidden="true" />}>
             <Routes>
               <Route path="/" element={<LoginPage />} />
               <Route path="/register" element={<RegistrationPage />} />

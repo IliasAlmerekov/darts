@@ -89,4 +89,4 @@ const QRCode: React.FC<QRCodeProps> = ({ invitationLink, gameId, isLobbyFull, ch
   );
 };
 
-export default QRCode;
+export default React.memo(QRCode);

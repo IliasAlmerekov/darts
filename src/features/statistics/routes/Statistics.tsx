@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import styles from "./Statistics.module.css";
 import { AdminLayout } from "@/components/admin-layout";
 import {
@@ -12,6 +12,40 @@ import { getPlayerStats } from "../api";
 import type { SortMethod } from "../components/sort-tabs";
 import { StatisticsHeaderControls } from "../components/header-controls";
 import { sortPlayerStats } from "../lib/sort-player-stats";
+
+type StatisticsPaginationProps = {
+  offset: number;
+  total: number;
+  limit: number;
+  onPrevious: () => void;
+  onNext: () => void;
+};
+
+const StatisticsPagination = React.memo(function StatisticsPagination({
+  offset,
+  total,
+  limit,
+  onPrevious,
+  onNext,
+}: StatisticsPaginationProps): JSX.Element {
+  return (
+    <Pagination className={styles.paginationControls}>
+      <PaginationContent>
+        <PaginationItem>
+          <PaginationPrevious onClick={onPrevious} disabled={offset === 0} />
+        </PaginationItem>
+        <PaginationItem>
+          <span className={styles.paginationStatus}>
+            Page {Math.floor(offset / limit) + 1} of {Math.ceil(total / limit) || 1}
+          </span>
+        </PaginationItem>
+        <PaginationItem>
+          <PaginationNext onClick={onNext} disabled={offset + limit >= total} />
+        </PaginationItem>
+      </PaginationContent>
+    </Pagination>
+  );
+});
 
 export default function Playerstats(): JSX.Element {
   const [sortMethod, setSortMethod] = useState<SortMethod>("alphabetically");
@@ -38,14 +72,21 @@ export default function Playerstats(): JSX.Element {
         setStats(sortPlayerStats(data, sortMethod));
         setTotal(data.length);
       }
-      console.log("Fetched player stats:", data);
     });
   }, [offset, sortMethod]);
 
-  const handleSortChange = (method: SortMethod): void => {
+  const handleSortChange = useCallback((method: SortMethod): void => {
     setSortMethod(method);
     setOffset(0);
-  };
+  }, []);
+
+  const handlePreviousPage = useCallback(() => {
+    setOffset((previousOffset) => Math.max(0, previousOffset - limit));
+  }, [limit]);
+
+  const handleNextPage = useCallback(() => {
+    setOffset((previousOffset) => previousOffset + limit);
+  }, [limit]);
 
   return (
     <AdminLayout>
@@ -74,27 +115,13 @@ export default function Playerstats(): JSX.Element {
               </div>
             ))}
           </div>
-          <Pagination className={styles.paginationControls}>
-            <PaginationContent>
-              <PaginationItem>
-                <PaginationPrevious
-                  onClick={() => setOffset(Math.max(0, offset - limit))}
-                  disabled={offset === 0}
-                />
-              </PaginationItem>
-              <PaginationItem>
-                <span className={styles.paginationStatus}>
-                  Page {Math.floor(offset / limit) + 1} of {Math.ceil(total / limit) || 1}
-                </span>
-              </PaginationItem>
-              <PaginationItem>
-                <PaginationNext
-                  onClick={() => setOffset(offset + limit)}
-                  disabled={offset + limit >= total}
-                />
-              </PaginationItem>
-            </PaginationContent>
-          </Pagination>
+          <StatisticsPagination
+            offset={offset}
+            total={total}
+            limit={limit}
+            onPrevious={handlePreviousPage}
+            onNext={handleNextPage}
+          />
         </div>
       </div>
     </AdminLayout>

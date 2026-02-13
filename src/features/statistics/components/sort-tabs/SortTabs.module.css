@@ -51,6 +51,8 @@
     opacity 0.55s cubic-bezier(0.22, 1, 0.36, 1);
   min-width: 0;
   white-space: nowrap;
+  -webkit-tap-highlight-color: transparent;
+  outline: none;
 }
 
 .active {
@@ -69,6 +71,10 @@
 .disabled .button {
   opacity: 0.45;
   cursor: not-allowed;
+}
+
+.button:focus-visible {
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--blue) 40%, white);
 }
 
 @media (width <= 768px) {

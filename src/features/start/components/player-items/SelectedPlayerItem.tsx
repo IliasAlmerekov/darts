@@ -7,7 +7,6 @@ import React from "react";
 
 type Props = {
   name: string;
-  key: number;
   isAdded?: boolean;
   user: BASIC.UserProps;
   handleClick: () => void;
@@ -37,7 +36,7 @@ function SelectedPlayerItem({ ...props }: Props): React.JSX.Element {
   };
 
   return (
-    <div ref={setNodeRef} style={style} className={styles.selectedPlayerItem} key={props?.key}>
+    <div ref={setNodeRef} style={style} className={styles.selectedPlayerItem}>
       <div className={styles.playerMain}>
         <button
           {...attributes}
@@ -59,4 +58,4 @@ function SelectedPlayerItem({ ...props }: Props): React.JSX.Element {
     </div>
   );
 }
-export default SelectedPlayerItem;
+export default React.memo(SelectedPlayerItem);

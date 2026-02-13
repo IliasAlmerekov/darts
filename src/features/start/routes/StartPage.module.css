@@ -16,7 +16,9 @@
   grid-template-columns: minmax(0, 1fr) minmax(0, 2fr);
   grid-template-rows: auto minmax(0, 1fr);
   flex: 1;
+  height: 100%;
   min-height: 0;
+  overflow: hidden;
   padding: var(--page-padding);
   box-sizing: border-box;
 }
@@ -55,6 +57,7 @@
 
 .addedPlayerList {
   min-height: 0;
+  height: 100%;
   position: relative;
   overflow: hidden;
   grid-column: 2 / 3;
@@ -65,10 +68,12 @@
 }
 
 .playersListArea {
-  flex: 1;
+  flex: 1 1 0;
   min-height: 0;
+  height: 0;
   display: flex;
   flex-direction: column;
+  overflow: hidden;
 }
 
 .headerUnselectedPlayers {
@@ -88,31 +93,46 @@
   align-self: flex-end;
   width: min(100%, 320px);
   padding-top: var(--space-md);
+  flex-shrink: 0;
 }
 
 .startBtnScrolled {
   margin-bottom: 0;
 }
 
+.mobileActionCreate {
+  display: none;
+}
+
 .mobileActionRow {
   display: flex;
+  flex-wrap: nowrap;
   gap: 5px;
   align-items: stretch;
+  width: 100%;
 }
 
 .mobileActionGuest {
   flex: 1 1 0;
-  display: block;
+  min-width: 0;
+  display: flex;
 }
 
 .mobileActionStart {
   flex: 6 1 0;
+  min-width: 0;
+  display: flex;
 }
 
 .startButton {
   margin-top: 0;
   border-radius: 8px;
   height: var(--button-height);
+}
+
+.mobileActionStart .startButton {
+  margin-top: 0;
+  align-self: stretch;
 }
 
 .guestButtonMobile {
@@ -126,6 +146,7 @@
   justify-content: center;
   width: 100%;
   margin-top: 0;
+  align-self: stretch;
 }
 
 .guestButtonMobile:hover {
@@ -200,17 +221,22 @@
   margin-top: 0;
   height: var(--button-height);
   border-radius: 8px;
-  background-color: var(--blue);
+  background: transparent !important;
+  border: none !important;
+  color: var(--blue) !important;
+  justify-content: flex-start;
+  padding-inline: 0;
 }
 
 .createNewPlayerButton:hover {
-  background-color: var(--blue);
+  background: transparent !important;
+  color: var(--blue) !important;
 }
 
 .createGameIcon {
   width: 24px;
   height: 24px;
-  filter: brightness(0) invert(1);
+  filter: none;
 }
 
 .settingsCog {
@@ -412,6 +438,12 @@
     margin-top: auto;
   }
 
+  .mobileActionCreate {
+    display: block;
+    width: 100%;
+    margin-bottom: var(--space-xs);
+  }
+
   .startBtnScrolled {
     margin-bottom: 20px;
   }
@@ -437,10 +469,7 @@
   }
 
   .mobileCreateButtonWrapper {
-    display: flex;
-    flex: 1;
-    align-items: center;
-    justify-content: center;
+    display: none;
   }
 }
 
