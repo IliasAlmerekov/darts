@@ -4,6 +4,14 @@ import type { RoomStreamEvent } from "../types";
 
 const SSE_STREAM_ENDPOINT = (id: number) => `/room/${id}/stream`;
 
+export function parseRoomStreamEventData(rawData: string): unknown | null {
+  try {
+    return JSON.parse(rawData);
+  } catch {
+    return null;
+  }
+}
+
 /**
  * Subscribes to room SSE stream and exposes the latest event.
  */
@@ -23,7 +31,13 @@ export function useRoomStream(gameId: number | null) {
     };
 
     const setEventFrom = (type: string) => (e: MessageEvent<string>) => {
-      setEvent({ type, data: JSON.parse(e.data) });
+      const parsedData = parseRoomStreamEventData(e.data);
+      if (parsedData === null) {
+        console.warn("[useRoomStream] Received invalid SSE payload", { type });
+        return;
+      }
+
+      setEvent({ type, data: parsedData });
     };
 
     eventSource.addEventListener("player-joined", setEventFrom("player-joined"));
