@@ -8,6 +8,7 @@ import { AdminLayout } from "@/components/admin-layout";
 import Plus from "@/assets/icons/plus.svg";
 import Button from "@/components/button/Button";
 import { ErrorState } from "@/components/error-state";
+import { API_BASE_URL } from "@/lib/api";
 import QRCode from "../components/qr-code/QRCode";
 import { LivePlayersList } from "../components/live-players-list/LivePlayersList";
 import { useStartPage } from "../hooks/useStartPage";
@@ -15,7 +16,8 @@ import GuestPlayerOverlay from "../components/guest-player-overlay/GuestPlayerOv
 
 function toAbsoluteInvitationLink(invitationLink: string): string {
   try {
-    return new URL(invitationLink, window.location.origin).toString();
+    const apiOrigin = new URL(API_BASE_URL, window.location.origin).origin;
+    return new URL(invitationLink, apiOrigin).toString();
   } catch {
     return invitationLink;
   }

@@ -49,6 +49,12 @@ export function useLoginPage() {
       const redirectPath = user.redirect?.startsWith("/start/")
         ? "/start" // Bei /start/{gameId} -> zu /start ohne gameId
         : user.redirect || "/start";
+
+      if (/^https?:\/\//i.test(redirectPath)) {
+        window.location.assign(redirectPath);
+        return;
+      }
+
       navigate(redirectPath);
     }
   }, [user, navigate]);

@@ -12,6 +12,10 @@ export function useLogin() {
   const navigate = useNavigate();
 
   const navigateToRedirect = (redirect: string): void => {
+    if (/^https?:\/\//i.test(redirect)) {
+      window.location.assign(redirect);
+      return;
+    }
     const redirectPath = redirect === "/start" ? "/start" : redirect;
     navigate(redirectPath);
   };
@@ -41,8 +45,15 @@ export function useLogin() {
         return;
       }
 
-      // Navigiere immer zu /start (ohne gameId) für sauberen Start
       if (response?.redirect) {
+        if (response.redirect.startsWith("/api/")) {
+          const authenticatedUser = await getAuthenticatedUser();
+          if (authenticatedUser?.redirect) {
+            navigateToRedirect(authenticatedUser.redirect);
+            return;
+          }
+        }
+
         navigateToRedirect(response.redirect);
       }
     } catch (error) {
