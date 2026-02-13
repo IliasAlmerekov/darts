@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { loginWithCredentials, getAuthenticatedUser } from "../api";
-import { isCsrfRelatedAuthError, mapAuthErrorMessage } from "../lib/error-handling";
+import { mapAuthErrorMessage } from "../lib/error-handling";
 
 /**
  * Provides login flow state and action.
@@ -24,26 +24,6 @@ export function useLogin() {
       const response = await loginWithCredentials({ email, password });
 
       if (response?.success === false) {
-        if (isCsrfRelatedAuthError(undefined, response.error)) {
-          try {
-            const retryResponse = await loginWithCredentials({ email, password }, true);
-            if (retryResponse?.success === false) {
-              setError(
-                mapAuthErrorMessage({
-                  flow: "login",
-                  rawMessage: retryResponse.error,
-                }),
-              );
-              return;
-            }
-            if (retryResponse?.redirect) {
-              navigateToRedirect(retryResponse.redirect);
-            }
-            return;
-          } catch (retryError) {
-            console.error("Login retry failed:", retryError);
-          }
-        }
         if (!response.error) {
           const authenticatedUser = await getAuthenticatedUser();
           if (authenticatedUser?.redirect) {

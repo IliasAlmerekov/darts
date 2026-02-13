@@ -1,5 +1,4 @@
 import { apiClient } from "@/lib/api";
-import { getCsrfToken } from "./csrf";
 
 const LOGIN_ENDPOINT = "/login";
 
@@ -21,14 +20,10 @@ export interface LoginCredentials {
  */
 export async function loginWithCredentials(
   credentials: LoginCredentials,
-  forceTokenRefresh = false,
 ): Promise<LoginResponse> {
-  const csrfToken = await getCsrfToken("authenticate", forceTokenRefresh);
-
   const payload = new URLSearchParams();
   payload.set("_username", credentials.email);
   payload.set("_password", credentials.password);
-  payload.set("_csrf_token", csrfToken);
 
   return apiClient.post<LoginResponse>(LOGIN_ENDPOINT, payload.toString(), {
     headers: { "Content-Type": "application/x-www-form-urlencoded" },
