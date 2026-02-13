@@ -1,18 +1,14 @@
-import { useLayoutEffect, useRef } from "react";
+import React, { useLayoutEffect, useRef } from "react";
 import clsx from "clsx";
 import GamePlayerItem from "./GamePlayerItem";
 import styles from "./GamePlayerItem.module.css";
 
 interface GamePlayerItemListProps {
-  isActive?: boolean;
-  score: number;
   userMap: BASIC.WinnerPlayerProps[];
   round: number;
-  isBust?: boolean;
-  throwCount?: number;
 }
 
-function GamePlayerItemList({ userMap, round }: GamePlayerItemListProps): JSX.Element {
+function GamePlayerItemListComponent({ userMap, round }: GamePlayerItemListProps): JSX.Element {
   const activePlayerId = userMap.find((item) => item.isActive)?.id ?? null;
   const previousActivePlayerIdRef = useRef<number | null>(null);
 
@@ -77,7 +73,7 @@ function GamePlayerItemList({ userMap, round }: GamePlayerItemListProps): JSX.El
             isBust={item.isBust}
             throwCount={item.throwCount}
             isPlaying={item.isPlaying}
-            roundsCount={item.rounds}
+            roundsCountLength={item.rounds.length}
             gamePlayerItemPrevThrow1={previousRound?.throw1}
             gamePlayerItemPrevThrow2={previousRound?.throw2}
             gamePlayerItemPrevThrow3={previousRound?.throw3}
@@ -92,4 +88,8 @@ function GamePlayerItemList({ userMap, round }: GamePlayerItemListProps): JSX.El
   );
 }
 
-export default GamePlayerItemList;
+export default React.memo(
+  GamePlayerItemListComponent,
+  (previousProps, nextProps) =>
+    previousProps.round === nextProps.round && previousProps.userMap === nextProps.userMap,
+);

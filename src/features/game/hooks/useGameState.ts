@@ -24,17 +24,26 @@ export function useGameState({ gameId }: UseGameStateOptions): UseGameStateRetur
   const error = useStore($error);
 
   useEffect(() => {
-    if (gameId) {
-      resetGameStateVersion(gameId);
+    if (!gameId) {
+      setGameData(null);
+      setError(null);
+      return;
     }
-    setGameData(null);
+
+    resetGameStateVersion(gameId);
+    const currentGameData = $gameData.get();
+    if (!currentGameData || currentGameData.id !== gameId) {
+      setGameData(null);
+    }
     setError(null);
   }, [gameId]);
 
   const fetchGameData = useCallback(async () => {
     if (!gameId) return;
-
-    setLoading(true);
+    const hasCachedSnapshot = $gameData.get()?.id === gameId;
+    if (!hasCachedSnapshot) {
+      setLoading(true);
+    }
     setError(null);
 
     try {
@@ -47,7 +56,9 @@ export function useGameState({ gameId }: UseGameStateOptions): UseGameStateRetur
       setError(fetchError);
       console.error("Failed to fetch game data:", fetchError);
     } finally {
-      setLoading(false);
+      if (!hasCachedSnapshot) {
+        setLoading(false);
+      }
     }
   }, [gameId]);
 

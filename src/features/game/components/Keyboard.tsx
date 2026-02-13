@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { memo, useState } from "react";
 import styles from "./Keyboard.module.css";
 import { NumberButton } from "./NumberButton";
 import { unlockSounds } from "@/lib/soundPlayer";
@@ -8,7 +8,7 @@ interface KeyboardProps {
   disabled?: boolean;
 }
 
-export function Keyboard({ onThrow, disabled }: KeyboardProps): JSX.Element {
+function KeyboardComponent({ onThrow, disabled }: KeyboardProps): JSX.Element {
   const [doubleNext, setDoubleNext] = useState(false);
   const [tripleNext, setTripleNext] = useState(false);
 
@@ -68,3 +68,5 @@ export function Keyboard({ onThrow, disabled }: KeyboardProps): JSX.Element {
     </div>
   );
 }
+
+export const Keyboard = memo(KeyboardComponent);

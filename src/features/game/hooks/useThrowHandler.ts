@@ -90,6 +90,38 @@ function clonePlayers(players: GameThrowsResponse["players"]): GameThrowsRespons
   }));
 }
 
+function applyOptimisticUndo(currentGameData: GameThrowsResponse): GameThrowsResponse | null {
+  const players = clonePlayers(currentGameData.players);
+  const activePlayer = players.find((player) => player.id === currentGameData.activePlayerId);
+  if (!activePlayer) {
+    return null;
+  }
+
+  if (activePlayer.currentRoundThrows.length <= 0) {
+    return null;
+  }
+
+  const previousThrows = [...activePlayer.currentRoundThrows];
+  const removedThrow = previousThrows.pop();
+  if (!removedThrow) {
+    return null;
+  }
+
+  const multiplier = removedThrow.isTriple ? 3 : removedThrow.isDouble ? 2 : 1;
+  const points = removedThrow.value * multiplier;
+
+  activePlayer.currentRoundThrows = previousThrows;
+  activePlayer.throwsInCurrentRound = previousThrows.length;
+  activePlayer.score += points;
+  activePlayer.isBust = false;
+
+  return {
+    ...currentGameData,
+    players,
+    currentThrowCount: previousThrows.length,
+  };
+}
+
 function getNextActivePlayer(
   players: GameThrowsResponse["players"],
   currentIndex: number,
@@ -174,9 +206,11 @@ function applyOptimisticThrow(
     isBust,
   };
 
-  const currentRoundThrows = [...(activePlayer.currentRoundThrows ?? [])];
+  const baseCurrentRoundThrows =
+    activePlayer.throwsInCurrentRound > 0 ? [...(activePlayer.currentRoundThrows ?? [])] : [];
+  const currentRoundThrows = baseCurrentRoundThrows;
   const updatedRoundThrows = [...currentRoundThrows, throwRecord];
-  const finalizedRound = { throws: updatedRoundThrows };
+  const finalizedRound = { round: currentGameData.currentRound, throws: updatedRoundThrows };
 
   activePlayer.currentRoundThrows = updatedRoundThrows;
   activePlayer.throwsInCurrentRound = updatedRoundThrows.length;
@@ -261,7 +295,24 @@ function applyScoreboardDeltaToGameState(
     scoreboardDelta.changedPlayers.map((playerDelta) => [playerDelta.playerId, playerDelta]),
   );
 
-  let activePlayerId = currentGameData.activePlayerId;
+  const previousActivePlayerId = currentGameData.activePlayerId;
+  let activePlayerId = previousActivePlayerId;
+
+  const finalizePlayerTurn = (playerId: number): void => {
+    const player = players.find((candidate) => candidate.id === playerId);
+    if (!player) {
+      return;
+    }
+
+    if (player.currentRoundThrows.length > 0) {
+      player.roundHistory = [
+        ...(player.roundHistory ?? []),
+        { round: currentGameData.currentRound, throws: [...player.currentRoundThrows] },
+      ];
+    }
+    player.currentRoundThrows = [];
+    player.throwsInCurrentRound = 0;
+  };
 
   players.forEach((player) => {
     const playerDelta = changedPlayerById.get(player.id);
@@ -280,6 +331,15 @@ function applyScoreboardDeltaToGameState(
       activePlayerId = player.id;
     }
   });
+
+  if (activePlayerId !== previousActivePlayerId) {
+    finalizePlayerTurn(previousActivePlayerId);
+    const nextActivePlayer = players.find((player) => player.id === activePlayerId);
+    if (nextActivePlayer) {
+      nextActivePlayer.currentRoundThrows = [];
+      nextActivePlayer.throwsInCurrentRound = 0;
+    }
+  }
 
   const activePlayer = players.find((player) => player.id === activePlayerId);
   const currentThrowCount = activePlayer
@@ -317,9 +377,11 @@ export function isThrowNotAllowedConflict(error: unknown): boolean {
 export function useThrowHandler({ gameId }: UseThrowHandlerOptions): UseThrowHandlerReturn {
   const pendingQueueRef = useRef<ThrowQueueItem[]>([]);
   const isDrainingRef = useRef(false);
+  const isQueueSyncFailedRef = useRef(false);
+  const pendingUndoRequestRef = useRef(false);
   const [pendingThrowCount, setPendingThrowCount] = useState(0);
   const [syncMessage, setSyncMessage] = useState<string | null>(null);
-  const [isUndoInFlight, setIsUndoInFlight] = useState(false);
+  const isUndoInFlightRef = useRef(false);
 
   const syncPendingCount = useCallback(() => {
     setPendingThrowCount(pendingQueueRef.current.length);
@@ -327,6 +389,7 @@ export function useThrowHandler({ gameId }: UseThrowHandlerOptions): UseThrowHan
 
   const clearQueue = useCallback(() => {
     pendingQueueRef.current = [];
+    pendingUndoRequestRef.current = false;
     syncPendingCount();
   }, [syncPendingCount]);
 
@@ -350,12 +413,43 @@ export function useThrowHandler({ gameId }: UseThrowHandlerOptions): UseThrowHan
     [gameId],
   );
 
+  const executeUndo = useCallback(async (): Promise<void> => {
+    if (isUndoInFlightRef.current) {
+      return;
+    }
+
+    isUndoInFlightRef.current = true;
+
+    if (!gameId) {
+      isUndoInFlightRef.current = false;
+      return;
+    }
+
+    try {
+      const currentGameData = $gameData.get();
+      const optimisticUndoState = currentGameData ? applyOptimisticUndo(currentGameData) : null;
+      if (optimisticUndoState) {
+        setGameData(optimisticUndoState);
+      }
+
+      const updatedGameState: GameThrowsResponse = await undoLastThrow(gameId);
+      setGameData(updatedGameState);
+      playSound("undo");
+    } catch (error) {
+      console.error("Failed to undo throw:", error);
+      playSound("error");
+    } finally {
+      isUndoInFlightRef.current = false;
+    }
+  }, [gameId]);
+
   const drainQueue = useCallback(async (): Promise<void> => {
     if (!gameId || isDrainingRef.current) {
       return;
     }
 
     isDrainingRef.current = true;
+    isQueueSyncFailedRef.current = false;
 
     try {
       while (pendingQueueRef.current.length > 0) {
@@ -384,6 +478,7 @@ export function useThrowHandler({ gameId }: UseThrowHandlerOptions): UseThrowHan
           }
         } catch (error) {
           console.error("Failed to sync queued throw:", error);
+          isQueueSyncFailedRef.current = true;
           clearQueue();
 
           if (isThrowNotAllowedConflict(error)) {
@@ -400,14 +495,25 @@ export function useThrowHandler({ gameId }: UseThrowHandlerOptions): UseThrowHan
       }
     } finally {
       isDrainingRef.current = false;
+
+      if (
+        pendingUndoRequestRef.current &&
+        !isQueueSyncFailedRef.current &&
+        0 === pendingQueueRef.current.length
+      ) {
+        pendingUndoRequestRef.current = false;
+        void executeUndo();
+      }
     }
-  }, [clearQueue, gameId, reconcileGameState, syncPendingCount]);
+  }, [clearQueue, executeUndo, gameId, reconcileGameState, syncPendingCount]);
 
   useEffect(() => {
     clearQueue();
     isDrainingRef.current = false;
+    isQueueSyncFailedRef.current = false;
+    pendingUndoRequestRef.current = false;
     setSyncMessage(null);
-    setIsUndoInFlight(false);
+    isUndoInFlightRef.current = false;
   }, [clearQueue, gameId]);
 
   const clearSyncMessage = useCallback(() => {
@@ -416,7 +522,7 @@ export function useThrowHandler({ gameId }: UseThrowHandlerOptions): UseThrowHan
 
   const handleThrow = useCallback(
     async (value: string | number): Promise<void> => {
-      if (isUndoInFlight) {
+      if (isUndoInFlightRef.current) {
         console.warn("Cannot throw: undo is still processing");
         return;
       }
@@ -478,48 +584,37 @@ export function useThrowHandler({ gameId }: UseThrowHandlerOptions): UseThrowHan
         playSound("error");
       }
     },
-    [drainQueue, gameId, isUndoInFlight, reconcileGameState, syncPendingCount],
+    [drainQueue, gameId, reconcileGameState, syncPendingCount],
   );
 
   const handleUndo = useCallback(async (): Promise<void> => {
-    if (isUndoInFlight) {
+    if (isUndoInFlightRef.current) {
       console.warn("Cannot undo: previous undo action is still processing");
       return;
     }
 
     if (pendingQueueRef.current.length > 0) {
-      console.warn("Cannot undo: pending throws are still synchronizing");
+      pendingUndoRequestRef.current = true;
+      setSyncMessage("Applying undo after current throw sync.");
       return;
     }
-
-    setIsUndoInFlight(true);
 
     if (!gameId) {
       console.warn("Cannot undo: missing gameId");
-      setIsUndoInFlight(false);
       return;
     }
 
-    try {
-      const updatedGameState: GameThrowsResponse = await undoLastThrow(gameId);
-      setGameData(updatedGameState);
-      playSound("undo");
-    } catch (error) {
-      console.error("Failed to undo throw:", error);
-      playSound("error");
-    } finally {
-      setIsUndoInFlight(false);
-    }
-  }, [gameId, isUndoInFlight]);
+    await executeUndo();
+  }, [executeUndo, gameId]);
 
   return {
     handleThrow,
     handleUndo,
-    isActionInFlight: isUndoInFlight,
+    isActionInFlight: false,
     pendingThrowCount,
     isQueueFull: pendingThrowCount >= 3,
     syncMessage,
     clearSyncMessage,
-    isUndoInFlight,
+    isUndoInFlight: false,
   };
 }

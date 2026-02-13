@@ -2,7 +2,7 @@ import { useMemo } from "react";
 
 interface UsePlayerThrowsDisplayParams {
   isActive: boolean;
-  roundsCount: BASIC.Round[];
+  roundsCountLength: number;
   currentThrow1?: number | string | JSX.Element;
   currentThrow2?: number | string | JSX.Element;
   currentThrow3?: number | string | JSX.Element;
@@ -33,7 +33,7 @@ interface PlayerThrowsDisplay {
  */
 export function usePlayerThrowsDisplay({
   isActive,
-  roundsCount,
+  roundsCountLength,
   currentThrow1,
   currentThrow2,
   currentThrow3,
@@ -50,19 +50,28 @@ export function usePlayerThrowsDisplay({
 }: UsePlayerThrowsDisplayParams): PlayerThrowsDisplay {
   return useMemo(() => {
     // Clear previous throws for active player in rounds > 1
-    const shouldClearPrev = isActive && roundsCount?.length > 1;
+    const shouldClearPrev = isActive && roundsCountLength > 1;
 
     // Determine if we're showing current or previous round
     const hasCurrentThrows =
       currentThrow1 !== undefined || currentThrow2 !== undefined || currentThrow3 !== undefined;
 
     // Select which throws to show
-    const selectedThrow1 =
-      currentThrow1 !== undefined ? currentThrow1 : shouldClearPrev ? undefined : prevThrow1;
-    const selectedThrow2 =
-      currentThrow2 !== undefined ? currentThrow2 : shouldClearPrev ? undefined : prevThrow2;
-    const selectedThrow3 =
-      currentThrow3 !== undefined ? currentThrow3 : shouldClearPrev ? undefined : prevThrow3;
+    const selectedThrow1 = hasCurrentThrows
+      ? currentThrow1
+      : shouldClearPrev
+        ? undefined
+        : prevThrow1;
+    const selectedThrow2 = hasCurrentThrows
+      ? currentThrow2
+      : shouldClearPrev
+        ? undefined
+        : prevThrow2;
+    const selectedThrow3 = hasCurrentThrows
+      ? currentThrow3
+      : shouldClearPrev
+        ? undefined
+        : prevThrow3;
 
     // Select which bust flags to use
     const selectedThrow1IsBust =
@@ -108,7 +117,7 @@ export function usePlayerThrowsDisplay({
     };
   }, [
     isActive,
-    roundsCount?.length,
+    roundsCountLength,
     currentThrow1,
     currentThrow2,
     currentThrow3,

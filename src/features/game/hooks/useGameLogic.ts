@@ -1,5 +1,5 @@
-import { useEffect, useMemo, useRef, useState } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useLocation, useNavigate, useParams } from "react-router-dom";
 import { useStore } from "@nanostores/react";
 
 import { useRoomStream } from "@/hooks/useRoomStream";
@@ -55,6 +55,7 @@ export function shouldNavigateToSummary(
 
 export const useGameLogic = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const { id: gameIdParam } = useParams<{ id?: string }>();
   const invitation = useStore($invitation);
 
@@ -65,7 +66,7 @@ export const useGameLogic = () => {
   }, [gameIdParam, invitation?.gameId]);
 
   const { gameData, isLoading, error, refetch, updateGameData } = useGameState({ gameId });
-  const { handleThrow, handleUndo, isActionInFlight } = useThrowHandler({ gameId });
+  const { handleThrow, handleUndo } = useThrowHandler({ gameId });
   const { event } = useRoomStream(gameId);
 
   useGameSounds(gameData);
@@ -84,6 +85,11 @@ export const useGameLogic = () => {
     };
   }, []);
 
+  useEffect(() => {
+    // Warm up summary route chunk to keep Game -> Summary navigation instant.
+    void import("@/features/game-summary");
+  }, []);
+
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isSavingSettings, setIsSavingSettings] = useState(false);
   const [settingsError, setSettingsError] = useState<string | null>(null);
@@ -92,7 +98,10 @@ export const useGameLogic = () => {
   const [isExitOverlayOpen, setIsExitOverlayOpen] = useState(false);
   const isAutoFinishingRef = useRef(false);
 
-  const playerUI = useMemo(() => mapPlayersToUI(gameData?.players ?? []), [gameData?.players]);
+  const playerUI = useMemo(
+    () => mapPlayersToUI(gameData?.players ?? [], gameData?.currentRound),
+    [gameData?.currentRound, gameData?.players],
+  );
   const finishedPlayers = useMemo(() => getFinishedPlayers(playerUI), [playerUI]);
   const activePlayers = useMemo(() => playerUI.filter((p) => p.score > 0), [playerUI]);
 
@@ -107,16 +116,36 @@ export const useGameLogic = () => {
   );
 
   const shouldShowFinishOverlay = useMemo(() => {
+    const shouldSkipFinishOverlay =
+      true === (location.state as { skipFinishOverlay?: boolean } | null)?.skipFinishOverlay;
+    if (shouldSkipFinishOverlay) {
+      return false;
+    }
+
     const hasZeroScore = zeroScorePlayerIds.length > 0;
     const hasUndismissed = zeroScorePlayerIds.some(
       (id) => !dismissedZeroScorePlayerIds.includes(id),
     );
-    return hasZeroScore && hasUndismissed && gameData?.status !== "finished";
-  }, [zeroScorePlayerIds, dismissedZeroScorePlayerIds, gameData?.status]);
 
-  const isInteractionDisabled =
-    isLoading || !!error || !gameData || shouldShowFinishOverlay || isActionInFlight;
-  const isUndoDisabled = isInteractionDisabled || areAllPlayersAtStartScore(gameData);
+    if (!hasZeroScore || !hasUndismissed || gameData?.status === "finished") {
+      return false;
+    }
+
+    // If only one player remains active, we auto-finish and navigate to summary.
+    if (shouldAutoFinishGame(gameData, false)) {
+      return false;
+    }
+
+    return true;
+  }, [dismissedZeroScorePlayerIds, gameData, location.state, zeroScorePlayerIds]);
+
+  const isInteractionDisabled = isLoading || !!error || !gameData || shouldShowFinishOverlay;
+  const isUndoDisabled =
+    isLoading ||
+    !!error ||
+    !gameData ||
+    shouldShowFinishOverlay ||
+    areAllPlayersAtStartScore(gameData);
 
   useEffect(() => {
     setDismissedZeroScorePlayerIds((prev) => prev.filter((id) => zeroScorePlayerIds.includes(id)));
@@ -146,10 +175,17 @@ export const useGameLogic = () => {
 
     isAutoFinishingRef.current = true;
 
+    if (gameData && "finished" !== gameData.status) {
+      updateGameData({
+        ...gameData,
+        status: "finished",
+      });
+    }
+
     finishGame(gameId)
-      .then(async () => {
+      .then(() => {
         resetGameStateVersion(gameId);
-        await refetch();
+        void refetch();
       })
       .catch((err) => {
         console.error("Failed to auto-finish game:", err);
@@ -158,47 +194,50 @@ export const useGameLogic = () => {
       .finally(() => {
         isAutoFinishingRef.current = false;
       });
-  }, [gameData, gameId, refetch, shouldShowFinishOverlay]);
+  }, [gameData, gameId, refetch, shouldShowFinishOverlay, updateGameData]);
 
   useEffect(() => {
     setDismissedZeroScorePlayerIds([]);
   }, [gameId]);
 
-  const handleContinueGame = () => {
+  const handleContinueGame = useCallback(() => {
     closeFinishGameOverlay();
     setDismissedZeroScorePlayerIds((prev) => Array.from(new Set([...prev, ...zeroScorePlayerIds])));
-  };
+  }, [zeroScorePlayerIds]);
 
-  const handleUndoFromOverlay = async () => {
+  const handleUndoFromOverlay = useCallback(async () => {
     await handleUndo();
     closeFinishGameOverlay();
-  };
+  }, [handleUndo]);
 
-  const handleOpenSettings = () => setIsSettingsOpen(true);
-  const handleCloseSettings = () => setIsSettingsOpen(false);
+  const handleOpenSettings = useCallback(() => setIsSettingsOpen(true), []);
+  const handleCloseSettings = useCallback(() => setIsSettingsOpen(false), []);
 
-  const handleSaveSettings = async (settings: { doubleOut: boolean; tripleOut: boolean }) => {
-    if (!gameData || !gameId) return;
+  const handleSaveSettings = useCallback(
+    async (settings: { doubleOut: boolean; tripleOut: boolean }) => {
+      if (!gameData || !gameId) return;
 
-    setSettingsError(null);
-    setIsSavingSettings(true);
+      setSettingsError(null);
+      setIsSavingSettings(true);
 
-    try {
-      const updatedGame = await updateGameSettings(gameId, settings);
-      updateGameData(updatedGame);
-      setIsSettingsOpen(false);
-    } catch (err) {
-      setSettingsError(err instanceof Error ? err.message : "Failed to update settings");
-    } finally {
-      setIsSavingSettings(false);
-    }
-  };
+      try {
+        const updatedGame = await updateGameSettings(gameId, settings);
+        updateGameData(updatedGame);
+        setIsSettingsOpen(false);
+      } catch (err) {
+        setSettingsError(err instanceof Error ? err.message : "Failed to update settings");
+      } finally {
+        setIsSavingSettings(false);
+      }
+    },
+    [gameData, gameId, updateGameData],
+  );
 
-  const handleOpenExitOverlay = () => setIsExitOverlayOpen(true);
-  const handleCloseExitOverlay = () => setIsExitOverlayOpen(false);
-  const clearPageError = () => setPageError(null);
+  const handleOpenExitOverlay = useCallback(() => setIsExitOverlayOpen(true), []);
+  const handleCloseExitOverlay = useCallback(() => setIsExitOverlayOpen(false), []);
+  const clearPageError = useCallback(() => setPageError(null), []);
 
-  const handleExitGame = async () => {
+  const handleExitGame = useCallback(async () => {
     if (!gameId) return;
 
     try {
@@ -217,7 +256,7 @@ export const useGameLogic = () => {
       console.error("Failed to exit game:", err);
       setPageError(toUserErrorMessage(err, "Could not leave the game. Please try again."));
     }
-  };
+  }, [gameId, navigate]);
 
   return {
     gameId,

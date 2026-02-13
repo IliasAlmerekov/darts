@@ -47,10 +47,6 @@ vi.mock("@/components/podium", () => ({
   Podium: () => <div data-testid="podium" />,
 }));
 
-vi.mock("@/shared/ui/confetti", () => ({
-  Confetti: () => null,
-}));
-
 describe("GameSummaryPage", () => {
   beforeEach(() => {
     useGameSummaryPageMock.mockReset();
@@ -68,6 +64,12 @@ describe("GameSummaryPage", () => {
     expect(backToStartButton.closest(`.${styles.summaryActions}`)).toBe(actionsContainer);
     expect(playAgainButton.closest(`.${styles.playAgainWrap}`)).not.toBeNull();
     expect(backToStartButton.closest(`.${styles.backToStartWrap}`)).not.toBeNull();
+  });
+
+  it("does not render confetti canvas", () => {
+    const { container } = render(<GameSummaryPage />);
+
+    expect(container.querySelector("canvas")).toBeNull();
   });
 
   it("renders error panel when summary hook reports error", () => {

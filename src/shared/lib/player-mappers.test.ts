@@ -69,4 +69,26 @@ describe("player-mappers", () => {
 
     expect(finished.map((p) => p.id)).toEqual([3, 1, 2]);
   });
+
+  it("uses backend round numbers to align throw display for current round", () => {
+    const players = [
+      buildPlayer({
+        id: 22,
+        name: "Alex2",
+        score: 26,
+        isActive: false,
+        roundHistory: [
+          { round: 1, throws: [{ value: 20 }] },
+          { round: 4, throws: [{ value: 25, isBust: true }] },
+        ],
+        currentRoundThrows: [],
+      }),
+    ];
+
+    const mapped = mapPlayersToUI(players, 4);
+    expect(mapped[0]?.rounds[3]).toMatchObject({
+      throw1: 25,
+      throw1IsBust: true,
+    });
+  });
 });

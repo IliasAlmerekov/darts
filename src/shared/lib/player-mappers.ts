@@ -5,9 +5,11 @@ export function mapRoundHistory(roundHistory: BackendRoundHistory[]): UIRound[] 
     return [];
   }
 
-  return roundHistory.map((roundData) => {
+  const rounds: UIRound[] = [];
+
+  roundHistory.forEach((roundData, index) => {
     const throws = roundData.throws || [];
-    return {
+    const mappedRound: UIRound = {
       throw1: throws[0]?.value,
       throw2: throws[1]?.value,
       throw3: throws[2]?.value,
@@ -16,7 +18,13 @@ export function mapRoundHistory(roundHistory: BackendRoundHistory[]): UIRound[] 
       throw3IsBust: throws[2]?.isBust,
       isRoundBust: throws.some((t) => t.isBust),
     };
+
+    const roundNumber =
+      "number" === typeof roundData.round && roundData.round > 0 ? roundData.round : index + 1;
+    rounds[roundNumber - 1] = mappedRound;
   });
+
+  return rounds;
 }
 
 export function mapCurrentRound(currentRoundThrows: BackendPlayer["currentRoundThrows"]): UIRound {
@@ -35,9 +43,34 @@ export function mapCurrentRound(currentRoundThrows: BackendPlayer["currentRoundT
   };
 }
 
-export function mapPlayerToUI(player: BackendPlayer, index: number): UIPlayer {
-  const previousRounds = mapRoundHistory(player.roundHistory as unknown as BackendRoundHistory[]);
+function hasAnyThrow(round: UIRound): boolean {
+  return (
+    round.throw1 !== undefined ||
+    round.throw2 !== undefined ||
+    round.throw3 !== undefined ||
+    round.throw1IsBust !== undefined ||
+    round.throw2IsBust !== undefined ||
+    round.throw3IsBust !== undefined
+  );
+}
+
+export function mapPlayerToUI(
+  player: BackendPlayer,
+  index: number,
+  currentRoundNumber?: number,
+): UIPlayer {
+  const rounds = mapRoundHistory(player.roundHistory as unknown as BackendRoundHistory[]);
   const currentRoundData = mapCurrentRound(player.currentRoundThrows);
+  const shouldPlaceCurrentRound =
+    "number" === typeof currentRoundNumber &&
+    currentRoundNumber > 0 &&
+    hasAnyThrow(currentRoundData);
+
+  if (shouldPlaceCurrentRound) {
+    rounds[currentRoundNumber - 1] = currentRoundData;
+  } else {
+    rounds.push(currentRoundData);
+  }
 
   return {
     id: player.id,
@@ -47,14 +80,14 @@ export function mapPlayerToUI(player: BackendPlayer, index: number): UIPlayer {
     isBust: player.isBust,
     position: player.position,
     index,
-    rounds: [...previousRounds, currentRoundData],
+    rounds,
     isPlaying: player.score > 0,
     throwCount: player.throwsInCurrentRound,
   };
 }
 
-export function mapPlayersToUI(players: BackendPlayer[]): UIPlayer[] {
-  return players.map((player, index) => mapPlayerToUI(player, index));
+export function mapPlayersToUI(players: BackendPlayer[], currentRoundNumber?: number): UIPlayer[] {
+  return players.map((player, index) => mapPlayerToUI(player, index, currentRoundNumber));
 }
 
 export function getActivePlayer(players: UIPlayer[]): UIPlayer | null {

@@ -104,6 +104,10 @@ export const $lastFinishedGameId = atom<number | null>(null);
  * Sets the current game id and persists it in session storage.
  */
 export function setCurrentGameId(gameId: number | null): void {
+  if ($currentGameId.get() === gameId) {
+    return;
+  }
+
   $currentGameId.set(gameId);
   setStoredGameId(gameId);
 }
@@ -112,8 +116,16 @@ export function setCurrentGameId(gameId: number | null): void {
  * Stores the current invitation and updates the game id if provided.
  */
 export function setInvitation(invitation: Invitation | null): void {
-  $invitation.set(invitation);
-  setStoredInvitation(invitation);
+  const current = $invitation.get();
+  const invitationUnchanged =
+    current?.gameId === invitation?.gameId &&
+    current?.invitationLink === invitation?.invitationLink;
+
+  if (!invitationUnchanged) {
+    $invitation.set(invitation);
+    setStoredInvitation(invitation);
+  }
+
   if (invitation?.gameId) {
     setCurrentGameId(invitation.gameId);
   }

@@ -331,6 +331,97 @@ describe("useThrowHandler", () => {
     expect(playerTwo?.throwsInCurrentRound).toBe(0);
   });
 
+  it("does not duplicate stale throws on bust after returning from summary undo", async () => {
+    currentGameState = buildGameData({
+      activePlayerId: 1,
+      currentRound: 7,
+      currentThrowCount: 0,
+      players: [
+        {
+          id: 1,
+          name: "P1",
+          score: 1,
+          isActive: true,
+          isBust: false,
+          position: null,
+          throwsInCurrentRound: 0,
+          currentRoundThrows: [
+            { value: 25, isBust: false },
+            { value: 25, isBust: false },
+          ],
+          roundHistory: [],
+        },
+        {
+          id: 2,
+          name: "P2",
+          score: 50,
+          isActive: false,
+          isBust: false,
+          position: null,
+          throwsInCurrentRound: 0,
+          currentRoundThrows: [],
+          roundHistory: [],
+        },
+      ],
+    });
+
+    vi.mocked(recordThrow).mockResolvedValueOnce(
+      buildThrowAck({
+        stateVersion: "v-bust",
+        scoreboardDelta: {
+          changedPlayers: [
+            {
+              playerId: 1,
+              name: "P1",
+              score: 26,
+              position: null,
+              isActive: false,
+              isGuest: false,
+              isBust: true,
+            },
+            {
+              playerId: 2,
+              name: "P2",
+              score: 50,
+              position: null,
+              isActive: true,
+              isGuest: false,
+              isBust: false,
+            },
+          ],
+          winnerId: null,
+          status: "started",
+          currentRound: 7,
+        },
+      }),
+    );
+
+    const { result } = renderHook(() => useThrowHandler({ gameId: 1 }));
+
+    await act(async () => {
+      await result.current.handleThrow(25);
+    });
+
+    await waitFor(() => expect(result.current.pendingThrowCount).toBe(0));
+
+    const playerOne = currentGameState.players.find((player) => player.id === 1);
+    const playerTwo = currentGameState.players.find((player) => player.id === 2);
+    const lastRound = playerOne?.roundHistory[playerOne.roundHistory.length - 1];
+
+    expect(playerOne?.score).toBe(26);
+    expect(playerOne?.currentRoundThrows).toEqual([]);
+    expect(playerOne?.throwsInCurrentRound).toBe(0);
+    expect(lastRound?.throws).toHaveLength(1);
+    expect(lastRound?.round).toBe(7);
+    expect(lastRound?.throws[0]).toEqual(
+      expect.objectContaining({
+        value: 25,
+        isBust: true,
+      }),
+    );
+    expect(playerTwo?.isActive).toBe(true);
+  });
+
   it("caps throw queue to three pending throws", async () => {
     const deferred = createDeferred<ThrowAckResponse>();
     vi.mocked(recordThrow).mockReturnValue(deferred.promise);
@@ -352,10 +443,10 @@ describe("useThrowHandler", () => {
     expect(vi.mocked(recordThrow)).toHaveBeenCalledTimes(1);
   });
 
-  it("blocks undo while pending throws are synchronizing", async () => {
-    const warnSpy = vi.spyOn(console, "warn").mockImplementation(() => undefined);
+  it("queues undo while pending throws are synchronizing", async () => {
     const deferred = createDeferred<ThrowAckResponse>();
     vi.mocked(recordThrow).mockReturnValueOnce(deferred.promise);
+    vi.mocked(undoLastThrow).mockResolvedValueOnce(buildGameData());
 
     const { result } = renderHook(() => useThrowHandler({ gameId: 1 }));
 
@@ -365,9 +456,14 @@ describe("useThrowHandler", () => {
     });
 
     expect(vi.mocked(undoLastThrow)).not.toHaveBeenCalled();
-    expect(warnSpy).toHaveBeenCalledWith("Cannot undo: pending throws are still synchronizing");
+    expect(result.current.syncMessage).toBe("Applying undo after current throw sync.");
 
-    warnSpy.mockRestore();
+    await act(async () => {
+      deferred.resolve(buildThrowAck());
+      await deferred.promise;
+    });
+
+    await waitFor(() => expect(vi.mocked(undoLastThrow)).toHaveBeenCalledWith(1));
   });
 
   it("reconciles state after throw conflict and clears pending queue", async () => {
@@ -395,5 +491,67 @@ describe("useThrowHandler", () => {
       "Game state changed in another session. Synced latest game state.",
     );
     expect(vi.mocked(setGameData)).toHaveBeenCalled();
+  });
+
+  it("applies optimistic undo immediately while waiting for server response", async () => {
+    currentGameState = buildGameData({
+      activePlayerId: 1,
+      currentRound: 3,
+      currentThrowCount: 2,
+      players: [
+        {
+          id: 1,
+          name: "P1",
+          score: 250,
+          isActive: true,
+          isBust: false,
+          position: null,
+          throwsInCurrentRound: 2,
+          currentRoundThrows: [
+            { value: 20, isDouble: false, isTriple: false, isBust: false },
+            { value: 31, isDouble: false, isTriple: false, isBust: false },
+          ],
+          roundHistory: [],
+        },
+        {
+          id: 2,
+          name: "P2",
+          score: 301,
+          isActive: false,
+          isBust: false,
+          position: null,
+          throwsInCurrentRound: 0,
+          currentRoundThrows: [],
+          roundHistory: [],
+        },
+      ],
+    });
+
+    const pendingUndo = createDeferred<GameThrowsResponse>();
+    vi.mocked(undoLastThrow).mockReturnValueOnce(pendingUndo.promise);
+
+    const { result } = renderHook(() => useThrowHandler({ gameId: 1 }));
+
+    await act(async () => {
+      void result.current.handleUndo();
+    });
+
+    const activeAfterOptimisticUndo = currentGameState.players.find((player) => player.id === 1);
+    expect(activeAfterOptimisticUndo?.score).toBe(281);
+    expect(activeAfterOptimisticUndo?.throwsInCurrentRound).toBe(1);
+    expect(activeAfterOptimisticUndo?.currentRoundThrows).toHaveLength(1);
+    expect(activeAfterOptimisticUndo?.currentRoundThrows[0]).toEqual(
+      expect.objectContaining({ value: 20, isBust: false }),
+    );
+    expect(currentGameState.currentThrowCount).toBe(1);
+
+    await act(async () => {
+      pendingUndo.resolve({
+        ...currentGameState,
+      });
+      await pendingUndo.promise;
+    });
+
+    expect(vi.mocked(undoLastThrow)).toHaveBeenCalledWith(1);
   });
 });

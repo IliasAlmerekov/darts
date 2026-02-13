@@ -6,6 +6,7 @@ export type PlayerThrow = {
 };
 
 export type RoundHistory = {
+  round?: number;
   throws: PlayerThrow[];
 };
 

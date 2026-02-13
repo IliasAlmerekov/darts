@@ -8,7 +8,6 @@ import React from "react";
 import { useGameSummaryPage } from "../hooks/useGameSummaryPage";
 import { useStore } from "@nanostores/react";
 import { $gameSettings } from "@/stores";
-import { Confetti } from "@/shared/ui/confetti";
 
 function GameSummaryPage(): React.JSX.Element {
   const {
@@ -27,7 +26,6 @@ function GameSummaryPage(): React.JSX.Element {
 
   return (
     <div className={styles.summary}>
-      <Confetti />
       <div className={styles.undoArea}>
         <button
           type="button"

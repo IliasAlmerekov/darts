@@ -38,7 +38,6 @@ describe("GamePlayerItemList", () => {
     render(
       <GamePlayerItemList
         userMap={[createPlayer(1, "Player 1", false), createPlayer(2, "Player 2", true)]}
-        score={301}
         round={1}
       />,
     );
@@ -59,7 +58,6 @@ describe("GamePlayerItemList", () => {
     render(
       <GamePlayerItemList
         userMap={[createPlayer(1, "Player 1", false), createPlayer(2, "Player 2", false)]}
-        score={301}
         round={1}
       />,
     );
@@ -73,7 +71,6 @@ describe("GamePlayerItemList", () => {
     const { rerender } = render(
       <GamePlayerItemList
         userMap={[createPlayer(1, "Player 1", true), createPlayer(2, "Player 2", false)]}
-        score={301}
         round={1}
       />,
     );
@@ -87,7 +84,6 @@ describe("GamePlayerItemList", () => {
           { ...createPlayer(1, "Player 1", true), score: 281 },
           createPlayer(2, "Player 2", false),
         ]}
-        score={281}
         round={1}
       />,
     );

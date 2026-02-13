@@ -1,3 +1,4 @@
+import React from "react";
 import styles from "./GamePlayerItem.module.css";
 import bustIconX from "@/assets/icons/delete-grey.svg";
 import clsx from "clsx";
@@ -18,7 +19,7 @@ interface GamePlayerItemProps {
   isBust?: boolean;
   throwCount?: number;
   isPlaying?: boolean;
-  roundsCount: BASIC.Round[];
+  roundsCountLength: number;
   gamePlayerItemPrevThrow1?: number | string | JSX.Element;
   gamePlayerItemPrevThrow2?: number | string | JSX.Element;
   gamePlayerItemPrevThrow3?: number | string | JSX.Element;
@@ -42,7 +43,7 @@ function GamePlayerItem({
   throw3IsBust,
   className,
   isPlaying,
-  roundsCount,
+  roundsCountLength,
   gamePlayerItemPrevThrow1,
   gamePlayerItemPrevThrow2,
   gamePlayerItemPrevThrow3,
@@ -54,7 +55,7 @@ function GamePlayerItem({
   // Business logic: calculate throw display values
   const displayThrows = usePlayerThrowsDisplay({
     isActive,
-    roundsCount,
+    roundsCountLength,
     currentThrow1: gamePlayerItemThrow1,
     currentThrow2: gamePlayerItemThrow2,
     currentThrow3: gamePlayerItemThrow3,
@@ -133,4 +134,31 @@ function GamePlayerItem({
   );
 }
 
-export default GamePlayerItem;
+function areEqual(
+  previousProps: Readonly<GamePlayerItemProps>,
+  nextProps: Readonly<GamePlayerItemProps>,
+): boolean {
+  return (
+    previousProps.name === nextProps.name &&
+    previousProps.isActive === nextProps.isActive &&
+    previousProps.value === nextProps.value &&
+    previousProps.gamePlayerItemThrow1 === nextProps.gamePlayerItemThrow1 &&
+    previousProps.gamePlayerItemThrow2 === nextProps.gamePlayerItemThrow2 &&
+    previousProps.gamePlayerItemThrow3 === nextProps.gamePlayerItemThrow3 &&
+    previousProps.throw1IsBust === nextProps.throw1IsBust &&
+    previousProps.throw2IsBust === nextProps.throw2IsBust &&
+    previousProps.throw3IsBust === nextProps.throw3IsBust &&
+    previousProps.isPlaying === nextProps.isPlaying &&
+    previousProps.roundsCountLength === nextProps.roundsCountLength &&
+    previousProps.gamePlayerItemPrevThrow1 === nextProps.gamePlayerItemPrevThrow1 &&
+    previousProps.gamePlayerItemPrevThrow2 === nextProps.gamePlayerItemPrevThrow2 &&
+    previousProps.gamePlayerItemPrevThrow3 === nextProps.gamePlayerItemPrevThrow3 &&
+    previousProps.prevThrow1IsBust === nextProps.prevThrow1IsBust &&
+    previousProps.prevThrow2IsBust === nextProps.prevThrow2IsBust &&
+    previousProps.prevThrow3IsBust === nextProps.prevThrow3IsBust &&
+    previousProps.id === nextProps.id &&
+    previousProps.className === nextProps.className
+  );
+}
+
+export default React.memo(GamePlayerItem, areEqual);
