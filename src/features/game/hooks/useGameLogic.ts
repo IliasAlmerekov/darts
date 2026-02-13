@@ -65,7 +65,7 @@ export const useGameLogic = () => {
   }, [gameIdParam, invitation?.gameId]);
 
   const { gameData, isLoading, error, refetch, updateGameData } = useGameState({ gameId });
-  const { handleThrow, handleUndo } = useThrowHandler({ gameId });
+  const { handleThrow, handleUndo, isActionInFlight } = useThrowHandler({ gameId });
   const { event } = useRoomStream(gameId);
 
   useGameSounds(gameData);
@@ -114,7 +114,8 @@ export const useGameLogic = () => {
     return hasZeroScore && hasUndismissed && gameData?.status !== "finished";
   }, [zeroScorePlayerIds, dismissedZeroScorePlayerIds, gameData?.status]);
 
-  const isInteractionDisabled = isLoading || !!error || !gameData || shouldShowFinishOverlay;
+  const isInteractionDisabled =
+    isLoading || !!error || !gameData || shouldShowFinishOverlay || isActionInFlight;
   const isUndoDisabled = isInteractionDisabled || areAllPlayersAtStartScore(gameData);
 
   useEffect(() => {

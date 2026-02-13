@@ -8,6 +8,7 @@ import { playSound } from "@/lib/soundPlayer";
 const navigateMock = vi.fn();
 const getFinishedGameMock = vi.fn();
 const createRematchMock = vi.fn();
+const getGameThrowsMock = vi.fn();
 const reopenGameMock = vi.fn();
 const undoLastThrowMock = vi.fn();
 const setGameDataMock = vi.fn();
@@ -22,6 +23,7 @@ vi.mock("@/shared/providers/GameFlowPortProvider", () => ({
   useGameFlowPort: () => ({
     getFinishedGame: (...args: unknown[]) => getFinishedGameMock(...args),
     createRematch: (...args: unknown[]) => createRematchMock(...args),
+    getGameThrows: (...args: unknown[]) => getGameThrowsMock(...args),
     reopenGame: (...args: unknown[]) => reopenGameMock(...args),
     undoLastThrow: (...args: unknown[]) => undoLastThrowMock(...args),
   }),
@@ -43,6 +45,21 @@ describe("useGameSummaryPage", () => {
     vi.clearAllMocks();
     setGameDataMock.mockReset();
     getFinishedGameMock.mockResolvedValue([]);
+    createRematchMock.mockResolvedValue({
+      success: true,
+      gameId: 77,
+      invitationLink: "/invite/77",
+    });
+    getGameThrowsMock.mockResolvedValue({
+      id: 77,
+      status: "started",
+      currentRound: 1,
+      activePlayerId: 1,
+      currentThrowCount: 0,
+      winnerId: null,
+      settings: { startScore: 301, doubleOut: false, tripleOut: false },
+      players: [],
+    });
     undoLastThrowMock.mockResolvedValue({
       id: 42,
       status: "started",
@@ -184,5 +201,38 @@ describe("useGameSummaryPage", () => {
       }),
     );
     expect(navigateMock).toHaveBeenCalledWith("/game/42");
+  });
+
+  it("navigates to game route when rematch is already started", async () => {
+    const { result } = renderHook(() => useGameSummaryPage());
+
+    await act(async () => {
+      await result.current.handlePlayAgain();
+    });
+
+    expect(createRematchMock).toHaveBeenCalledWith(42);
+    expect(getGameThrowsMock).toHaveBeenCalledWith(77);
+    expect(navigateMock).toHaveBeenCalledWith("/game/77");
+  });
+
+  it("navigates to start route when rematch is still in lobby", async () => {
+    getGameThrowsMock.mockResolvedValueOnce({
+      id: 77,
+      status: "lobby",
+      currentRound: 1,
+      activePlayerId: 1,
+      currentThrowCount: 0,
+      winnerId: null,
+      settings: { startScore: 301, doubleOut: false, tripleOut: false },
+      players: [],
+    });
+
+    const { result } = renderHook(() => useGameSummaryPage());
+
+    await act(async () => {
+      await result.current.handlePlayAgain();
+    });
+
+    expect(navigateMock).toHaveBeenCalledWith("/start/77");
   });
 });

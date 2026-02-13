@@ -1,4 +1,4 @@
-import { useCallback, useRef } from "react";
+import { useCallback, useRef, useState } from "react";
 import {
   getGameThrows,
   recordThrow,
@@ -18,6 +18,7 @@ interface UseThrowHandlerOptions {
 interface UseThrowHandlerReturn {
   handleThrow: (value: string | number) => Promise<void>;
   handleUndo: () => Promise<void>;
+  isActionInFlight: boolean;
 }
 
 type ApiErrorPayload = {
@@ -44,15 +45,17 @@ export function isThrowNotAllowedConflict(error: unknown): boolean {
  */
 export function useThrowHandler({ gameId }: UseThrowHandlerOptions): UseThrowHandlerReturn {
   const isProcessingRef = useRef(false);
+  const [isActionInFlight, setIsActionInFlight] = useState(false);
 
   const handleThrow = useCallback(
     async (value: string | number): Promise<void> => {
       if (isProcessingRef.current) {
-        console.warn("Cannot throw: previous throw is still processing");
+        console.warn("Cannot throw: previous action is still processing");
         return;
       }
 
       isProcessingRef.current = true;
+      setIsActionInFlight(true);
 
       try {
         const currentGameData = $gameData.get();
@@ -111,14 +114,25 @@ export function useThrowHandler({ gameId }: UseThrowHandlerOptions): UseThrowHan
         playSound("error");
       } finally {
         isProcessingRef.current = false;
+        setIsActionInFlight(false);
       }
     },
     [gameId],
   );
 
   const handleUndo = useCallback(async (): Promise<void> => {
+    if (isProcessingRef.current) {
+      console.warn("Cannot undo: previous action is still processing");
+      return;
+    }
+
+    isProcessingRef.current = true;
+    setIsActionInFlight(true);
+
     if (!gameId) {
       console.warn("Cannot undo: missing gameId");
+      isProcessingRef.current = false;
+      setIsActionInFlight(false);
       return;
     }
 
@@ -129,11 +143,15 @@ export function useThrowHandler({ gameId }: UseThrowHandlerOptions): UseThrowHan
     } catch (error) {
       console.error("Failed to undo throw:", error);
       playSound("error");
+    } finally {
+      isProcessingRef.current = false;
+      setIsActionInFlight(false);
     }
   }, [gameId]);
 
   return {
     handleThrow,
     handleUndo,
+    isActionInFlight,
   };
 }

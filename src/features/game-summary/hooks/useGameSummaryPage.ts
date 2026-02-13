@@ -161,7 +161,17 @@ export function useGameSummaryPage() {
         invitationLink: rematch.invitationLink,
       });
 
-      navigate(`/game/${rematch.gameId}`);
+      let rematchStatus: string | null = null;
+      try {
+        const rematchGame = await gameFlow.getGameThrows(rematch.gameId);
+        rematchStatus = rematchGame.status;
+      } catch (error) {
+        console.warn("Could not fetch rematch state. Falling back to lobby route.", error);
+      }
+
+      const targetRoute =
+        rematchStatus === "started" ? `/game/${rematch.gameId}` : `/start/${rematch.gameId}`;
+      navigate(targetRoute);
     } catch (err) {
       console.error("Failed to start rematch:", err);
       setError(toUserErrorMessage(err, "Could not start a rematch."));
