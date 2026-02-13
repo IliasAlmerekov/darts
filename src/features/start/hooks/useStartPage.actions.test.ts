@@ -87,13 +87,10 @@ describe("useStartPage action guards", () => {
     gameFlowMock.startGame.mockReturnValueOnce(pending.promise);
 
     const audioPlayMock = vi.fn().mockResolvedValue(undefined);
-    vi.stubGlobal(
-      "Audio",
-      function MockAudio(this: { volume: number; play: () => Promise<void> }) {
-        this.volume = 1;
-        this.play = audioPlayMock;
-      } as unknown as typeof Audio,
-    );
+    vi.stubGlobal("Audio", function MockAudio(this: { volume: number; play: () => Promise<void> }) {
+      this.volume = 1;
+      this.play = audioPlayMock;
+    } as unknown as typeof Audio);
 
     const { result } = renderHook(() => useStartPage());
 

@@ -76,13 +76,11 @@ vi.mock("@/components/navigation-bar/NavigationBar", () => ({
 }));
 
 vi.mock("../components/qr-code/QRCode", () => ({
-  default: ({
-    children,
-    invitationLink,
-  }: {
-    children?: ReactNode;
-    invitationLink?: string;
-  }) => <div data-testid="qr-code" data-invitation-link={invitationLink}>{children}</div>,
+  default: ({ children, invitationLink }: { children?: ReactNode; invitationLink?: string }) => (
+    <div data-testid="qr-code" data-invitation-link={invitationLink}>
+      {children}
+    </div>
+  ),
 }));
 
 describe("StartPage", () => {

@@ -16,9 +16,7 @@ describe("LinkButton", () => {
 
   it("does not call click handler and applies disabled link semantics", () => {
     const handleClick = vi.fn();
-    render(
-      <LinkButton href="/start" label="Create" handleClick={handleClick} disabled />,
-    );
+    render(<LinkButton href="/start" label="Create" handleClick={handleClick} disabled />);
 
     const link = screen.getByText("Create").closest("a");
     if (!link) {
