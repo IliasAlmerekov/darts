@@ -1,7 +1,11 @@
+import clsx from "clsx";
+import type { ReactNode } from "react";
+import styles from "./LinkButton.module.css";
+
 type Props = {
   href?: string;
   icon?: string;
-  label?: string | JSX.Element;
+  label?: ReactNode;
   handleClick?: () => void;
   className?: string;
   disabled?: boolean;
@@ -18,16 +22,38 @@ function LinkButton({ href, icon, label, handleClick, className, disabled }: Pro
     }
   };
 
+  const content = (
+    <>
+      {icon ? <img src={icon} alt="" aria-hidden="true" /> : null}
+      {label}
+    </>
+  );
+
+  const commonClassName = clsx(styles.linkButton, className, disabled && styles.disabled);
+
+  if (!href) {
+    return (
+      <button
+        type="button"
+        className={commonClassName}
+        onClick={handleClick}
+        disabled={disabled}
+        aria-disabled={disabled || undefined}
+      >
+        {content}
+      </button>
+    );
+  }
+
   return (
     <a
       href={href}
       onClick={handleLinkClick}
-      className={className}
-      style={{ opacity: disabled ? 0.5 : 1, cursor: disabled ? "not-allowed" : "pointer" }}
-      aria-disabled={disabled}
+      className={commonClassName}
+      aria-disabled={disabled || undefined}
+      tabIndex={disabled ? -1 : undefined}
     >
-      <img src={icon} alt="" />
-      {label}
+      {content}
     </a>
   );
 }

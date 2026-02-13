@@ -41,4 +41,15 @@ describe("Button", () => {
 
     expect(handleClick).toHaveBeenCalledTimes(1);
   });
+
+  it("respects disabled state for regular buttons", () => {
+    const handleClick = vi.fn();
+    render(<Button label="Disabled action" disabled handleClick={handleClick} />);
+
+    const button = screen.getByRole("button", { name: "Disabled action" });
+    fireEvent.click(button);
+
+    expect(button).toHaveProperty("disabled", true);
+    expect(handleClick).not.toHaveBeenCalled();
+  });
 });
