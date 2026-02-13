@@ -66,4 +66,34 @@ describe("GamePlayerItemList", () => {
 
     expect(scrollIntoViewMock).not.toHaveBeenCalled();
   });
+
+  it("does not scroll again when active player id stays the same", () => {
+    vi.useFakeTimers();
+
+    const { rerender } = render(
+      <GamePlayerItemList
+        userMap={[createPlayer(1, "Player 1", true), createPlayer(2, "Player 2", false)]}
+        score={301}
+        round={1}
+      />,
+    );
+
+    vi.runAllTimers();
+    expect(scrollIntoViewMock).toHaveBeenCalledTimes(1);
+
+    rerender(
+      <GamePlayerItemList
+        userMap={[
+          { ...createPlayer(1, "Player 1", true), score: 281 },
+          createPlayer(2, "Player 2", false),
+        ]}
+        score={281}
+        round={1}
+      />,
+    );
+
+    vi.runAllTimers();
+    expect(scrollIntoViewMock).toHaveBeenCalledTimes(1);
+    vi.useRealTimers();
+  });
 });

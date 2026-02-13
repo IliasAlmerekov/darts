@@ -99,3 +99,14 @@ export function resetGameStateVersion(gameId?: number): void {
 
   gameStateVersionById.clear();
 }
+
+/**
+ * Saves known server state version for subsequent conditional game requests.
+ */
+export function setGameStateVersion(gameId: number, stateVersion: string): void {
+  if (!stateVersion) {
+    return;
+  }
+
+  gameStateVersionById.set(gameId, stateVersion);
+}

@@ -381,7 +381,7 @@ export function useStartPage() {
     } catch (error) {
       const apiError = getGuestErrorFromApi(error);
       if (apiError) {
-        setGuestError(apiError.message || "Username already taken.");
+        setGuestError(apiError.message || "Username already taken in this game.");
         setGuestSuggestions(apiError.suggestions ?? []);
         return;
       }

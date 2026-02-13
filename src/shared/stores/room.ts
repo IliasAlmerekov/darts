@@ -6,9 +6,24 @@ export interface Invitation {
 }
 
 const STORAGE_KEY = "darts_current_game_id";
+const INVITATION_STORAGE_KEY = "darts_current_invitation";
 
 function canUseSessionStorage(): boolean {
   return typeof window !== "undefined" && typeof window.sessionStorage !== "undefined";
+}
+
+function isValidInvitation(value: unknown): value is Invitation {
+  if (null === value || "object" !== typeof value) {
+    return false;
+  }
+
+  const typed = value as Partial<Invitation>;
+  return (
+    "number" === typeof typed.gameId &&
+    Number.isFinite(typed.gameId) &&
+    "string" === typeof typed.invitationLink &&
+    typed.invitationLink.length > 0
+  );
 }
 
 // Helper functions for sessionStorage (cleared when browser closes)
@@ -45,9 +60,44 @@ function setStoredGameId(gameId: number | null): void {
   }
 }
 
+function getStoredInvitation(): Invitation | null {
+  if (!canUseSessionStorage()) {
+    return null;
+  }
+
+  try {
+    const stored = window.sessionStorage.getItem(INVITATION_STORAGE_KEY);
+    if (!stored) {
+      return null;
+    }
+
+    const parsed: unknown = JSON.parse(stored);
+    return isValidInvitation(parsed) ? parsed : null;
+  } catch (error) {
+    console.error("Failed to read invitation from sessionStorage:", error);
+    return null;
+  }
+}
+
+function setStoredInvitation(invitation: Invitation | null): void {
+  if (!canUseSessionStorage()) {
+    return;
+  }
+
+  try {
+    if (invitation) {
+      window.sessionStorage.setItem(INVITATION_STORAGE_KEY, JSON.stringify(invitation));
+    } else {
+      window.sessionStorage.removeItem(INVITATION_STORAGE_KEY);
+    }
+  } catch (error) {
+    console.error("Failed to save invitation to sessionStorage:", error);
+  }
+}
+
 // Initialize stores with persisted value
 export const $currentGameId = atom<number | null>(getStoredGameId());
-export const $invitation = atom<Invitation | null>(null);
+export const $invitation = atom<Invitation | null>(getStoredInvitation());
 export const $lastFinishedGameId = atom<number | null>(null);
 
 /**
@@ -63,6 +113,7 @@ export function setCurrentGameId(gameId: number | null): void {
  */
 export function setInvitation(invitation: Invitation | null): void {
   $invitation.set(invitation);
+  setStoredInvitation(invitation);
   if (invitation?.gameId) {
     setCurrentGameId(invitation.gameId);
   }
@@ -87,5 +138,5 @@ export function getActiveGameId(): number | null {
  */
 export function resetRoomStore(): void {
   setCurrentGameId(null);
-  $invitation.set(null);
+  setInvitation(null);
 }

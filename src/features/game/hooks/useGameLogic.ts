@@ -130,11 +130,7 @@ export const useGameLogic = () => {
 
   useEffect(() => {
     if (!event) return;
-    if (
-      event.type === "throw-recorded" ||
-      event.type === "game-started" ||
-      event.type === "game-finished"
-    ) {
+    if ("game-started" === event.type || "game-finished" === event.type) {
       void refetch();
     }
   }, [event, refetch]);

@@ -2,7 +2,7 @@ import { useState, useMemo, useEffect } from "react";
 import { useParams } from "react-router-dom";
 import { AdminLayout } from "@/components/admin-layout";
 import { useStore } from "@nanostores/react";
-import { $gameSettings, $currentGameId, setGameData, setCurrentGameId } from "@/stores";
+import { $currentGameId, $gameData, $gameSettings, setCurrentGameId, setGameData } from "@/stores";
 import { useGameFlowPort } from "@/shared/providers/GameFlowPortProvider";
 import styles from "./Settings.module.css";
 import { SettingsTabs } from "../components/SettingsTabs";
@@ -10,6 +10,7 @@ import { SettingsTabs } from "../components/SettingsTabs";
 function Settings(): JSX.Element {
   const gameFlow = useGameFlowPort();
   const { id: gameIdParam } = useParams<{ id?: string }>();
+  const gameData = useStore($gameData);
   const gameSettings = useStore($gameSettings);
   const currentGameIdFromStore = useStore($currentGameId);
 
@@ -22,7 +23,11 @@ function Settings(): JSX.Element {
     return currentGameIdFromStore;
   }, [gameIdParam, currentGameIdFromStore]);
   const [isSaving, setIsSaving] = useState(false);
-  const [isLoading, setIsLoading] = useState(true);
+  const [isSyncing, setIsSyncing] = useState(false);
+  const [selectedGameMode, setSelectedGameMode] = useState<"single-out" | "double-out" | "triple-out">(
+    "single-out",
+  );
+  const [selectedPoints, setSelectedPoints] = useState<number>(301);
 
   // Update store with gameId from URL
   useEffect(() => {
@@ -34,24 +39,36 @@ function Settings(): JSX.Element {
   // Load game settings from backend on mount or when gameId changes
   useEffect(() => {
     if (!currentGameId) {
-      setIsLoading(false);
+      setIsSyncing(false);
       return;
     }
 
-    const loadGameSettings = async () => {
-      setIsLoading(true);
+    const loadGameSettings = async (showSyncHint: boolean) => {
+      if (showSyncHint) {
+        setIsSyncing(true);
+      }
+
       try {
         const gameData = await gameFlow.getGameThrows(currentGameId);
         setGameData(gameData);
       } catch (error) {
         console.error("Failed to load game settings:", error);
       } finally {
-        setIsLoading(false);
+        if (showSyncHint) {
+          setIsSyncing(false);
+        }
       }
     };
 
-    loadGameSettings();
-  }, [gameFlow, currentGameId]);
+    const hasCurrentGameInStore = gameData?.id === currentGameId;
+    if (!hasCurrentGameInStore) {
+      void loadGameSettings(true);
+      return;
+    }
+
+    // We already have local data for this game, so do a silent background refresh.
+    void loadGameSettings(false);
+  }, [currentGameId, gameData?.id, gameFlow]);
 
   // Mapping zwischen Backend-Settings und UI-Darstellung
   const currentGameMode = useMemo(() => {
@@ -63,12 +80,24 @@ function Settings(): JSX.Element {
 
   const currentPoints = gameSettings?.startScore ?? 301;
 
-  const handleGameModeClick = async (id: string | number) => {
-    if (isSaving) return;
+  useEffect(() => {
+    setSelectedGameMode(currentGameMode);
+  }, [currentGameMode]);
 
-    const mode = id.toString();
+  useEffect(() => {
+    setSelectedPoints(currentPoints);
+  }, [currentPoints]);
+
+  const controlsDisabled = isSaving || !currentGameId;
+
+  const handleGameModeClick = async (id: string | number) => {
+    if (isSaving || !currentGameId) return;
+
+    const mode = id.toString() as "single-out" | "double-out" | "triple-out";
     const isDoubleOut = mode === "double-out";
     const isTripleOut = mode === "triple-out";
+    const previousMode = selectedGameMode;
+    setSelectedGameMode(mode);
 
     setIsSaving(true);
 
@@ -84,6 +113,7 @@ function Settings(): JSX.Element {
       // Aktualisiere gameData mit der Response für sofortiges visuelles Feedback
       setGameData(response);
     } catch (error) {
+      setSelectedGameMode(previousMode);
       console.error("Failed to save game mode:", error);
     } finally {
       setIsSaving(false);
@@ -91,11 +121,13 @@ function Settings(): JSX.Element {
   };
 
   const handlePointsClick = async (id: string | number) => {
-    if (isSaving) return;
+    if (isSaving || !currentGameId) return;
 
     const points = Number(id);
-    const isDoubleOut = currentGameMode === "double-out";
-    const isTripleOut = currentGameMode === "triple-out";
+    const isDoubleOut = selectedGameMode === "double-out";
+    const isTripleOut = selectedGameMode === "triple-out";
+    const previousPoints = selectedPoints;
+    setSelectedPoints(points);
 
     setIsSaving(true);
 
@@ -111,27 +143,18 @@ function Settings(): JSX.Element {
       // Aktualisiere gameData mit der Response für sofortiges visuelles Feedback
       setGameData(response);
     } catch (error) {
+      setSelectedPoints(previousPoints);
       console.error("Failed to save points:", error);
     } finally {
       setIsSaving(false);
     }
   };
 
-  if (isLoading) {
-    return (
-      <AdminLayout>
-        <div className={styles.settings}>
-          <h1>Settings</h1>
-          <p>Loading settings...</p>
-        </div>
-      </AdminLayout>
-    );
-  }
-
   return (
     <AdminLayout>
       <div className={styles.settings}>
         <h1>Settings</h1>
+        {isSyncing ? <p className={styles.syncHint}>Syncing settings…</p> : null}
         <section className={styles.settingsSection}>
           <div className={styles.settingsBody}>
             <SettingsTabs
@@ -141,9 +164,9 @@ function Settings(): JSX.Element {
                 { label: "Double-out", id: "double-out" },
                 { label: "Triple-out", id: "triple-out" },
               ]}
-              selectedId={currentGameMode}
+              selectedId={selectedGameMode}
               onChange={handleGameModeClick}
-              disabled={isSaving}
+              disabled={controlsDisabled}
             />
             <SettingsTabs
               title="Points"
@@ -154,9 +177,9 @@ function Settings(): JSX.Element {
                 { label: "401", id: 401 },
                 { label: "501", id: 501 },
               ]}
-              selectedId={currentPoints}
+              selectedId={selectedPoints}
               onChange={handlePointsClick}
-              disabled={isSaving}
+              disabled={controlsDisabled}
               mobileLayout="grid"
             />
           </div>

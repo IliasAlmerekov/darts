@@ -196,16 +196,21 @@
 }
 
 .createNewPlayerButton {
-  font-size: var(--font-size-24);
-  font-weight: 700;
-  line-height: var(--line-height-28);
-  letter-spacing: 0.02em;
-  text-align: left;
-  color: var(--blue);
-  align-items: center;
-  display: flex;
-  padding: 0 8px 0 0;
-  gap: 10px;
+  width: 100%;
+  margin-top: 0;
+  height: var(--button-height);
+  border-radius: 8px;
+  background-color: var(--blue);
+}
+
+.createNewPlayerButton:hover {
+  background-color: var(--blue);
+}
+
+.createGameIcon {
+  width: 24px;
+  height: 24px;
+  filter: brightness(0) invert(1);
 }
 
 .settingsCog {
@@ -421,11 +426,6 @@
     display: none;
   }
 
-  .createNewPlayerButton {
-    font-size: var(--font-size-14);
-    gap: 4px;
-  }
-
   .qrCodeStack {
     padding: var(--space-xs);
     gap: 8px;
@@ -470,12 +470,5 @@
 
   .startBtnScrolled {
     margin-bottom: 0;
-  }
-}
-
-@media (width <= 400px) {
-  .createNewPlayerButton {
-    font-size: var(--font-size-13);
-    gap: 4px;
   }
 }

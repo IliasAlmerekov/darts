@@ -152,6 +152,30 @@ describe("StartPage", () => {
     expect(createdButton?.getAttribute("disabled")).toBe("");
   });
 
+  it("renders Create Game actions as icon buttons", () => {
+    useStartPageMock.mockReturnValueOnce(
+      buildHookResult({
+        invitation: null,
+        gameId: null,
+        playerCount: 0,
+      }),
+    );
+
+    render(
+      <MemoryRouter>
+        <StartPage />
+      </MemoryRouter>,
+    );
+
+    const createButtons = screen.getAllByRole("button", { name: "Create Game" });
+    expect(createButtons.length).toBe(2);
+
+    for (const createButton of createButtons) {
+      expect(createButton.classList.contains(styles.createNewPlayerButton)).toBe(true);
+      expect(createButton.querySelector("img")).toBeTruthy();
+    }
+  });
+
   it("passes absolute invitation link to QRCode", () => {
     useStartPageMock.mockReturnValueOnce(
       buildHookResult({

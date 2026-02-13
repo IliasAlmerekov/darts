@@ -1,16 +1,23 @@
 // @vitest-environment jsdom
 import { act, renderHook, waitFor } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import type { GameThrowsResponse } from "@/types";
+import type { GameThrowsResponse, ThrowAckResponse } from "@/types";
 import { ApiError } from "@/lib/api/errors";
 import { $gameData, setGameData } from "@/stores";
-import { recordThrow, undoLastThrow } from "../api";
+import {
+  getGameThrows,
+  recordThrow,
+  resetGameStateVersion,
+  setGameStateVersion,
+  undoLastThrow,
+} from "../api";
 import { isThrowNotAllowedConflict, useThrowHandler } from "./useThrowHandler";
 
 vi.mock("../api", () => ({
   getGameThrows: vi.fn(),
   recordThrow: vi.fn(),
   resetGameStateVersion: vi.fn(),
+  setGameStateVersion: vi.fn(),
   undoLastThrow: vi.fn(),
 }));
 
@@ -83,6 +90,23 @@ function buildGameData(overrides: Partial<GameThrowsResponse> = {}): GameThrowsR
   };
 }
 
+function buildThrowAck(overrides: Partial<ThrowAckResponse> = {}): ThrowAckResponse {
+  return {
+    success: true,
+    gameId: 1,
+    stateVersion: "v1",
+    throw: null,
+    scoreboardDelta: {
+      changedPlayers: [],
+      winnerId: null,
+      status: "started",
+      currentRound: 1,
+    },
+    serverTs: new Date().toISOString(),
+    ...overrides,
+  };
+}
+
 describe("isThrowNotAllowedConflict", () => {
   it("returns true for 409 GAME_THROW_NOT_ALLOWED", () => {
     const error = new ApiError("Request failed", {
@@ -113,83 +137,263 @@ describe("isThrowNotAllowedConflict", () => {
 });
 
 describe("useThrowHandler", () => {
+  let currentGameState: GameThrowsResponse;
+
   beforeEach(() => {
     vi.clearAllMocks();
-    vi.mocked($gameData.get).mockReturnValue(buildGameData());
+    currentGameState = buildGameData();
+    vi.mocked($gameData.get).mockImplementation(() => currentGameState);
+    vi.mocked(setGameData).mockImplementation((nextState) => {
+      currentGameState = nextState as GameThrowsResponse;
+    });
   });
 
-  it("prevents duplicate throws while request is in flight", async () => {
-    const warnSpy = vi.spyOn(console, "warn").mockImplementation(() => undefined);
-    const deferred = createDeferred<GameThrowsResponse>();
-    vi.mocked(recordThrow).mockReturnValueOnce(deferred.promise);
+  it("keeps pending optimistic throws visible while previous server ack is applied", async () => {
+    const firstDeferred = createDeferred<ThrowAckResponse>();
+    const secondDeferred = createDeferred<ThrowAckResponse>();
+    vi.mocked(recordThrow).mockReturnValueOnce(firstDeferred.promise);
+    vi.mocked(recordThrow).mockReturnValueOnce(secondDeferred.promise);
 
-    const { result } = renderHook(() => useThrowHandler({ gameId: 1 }));
-
-    let firstPromise = Promise.resolve();
-    let secondPromise = Promise.resolve();
-
-    await act(async () => {
-      firstPromise = result.current.handleThrow(20);
-      secondPromise = result.current.handleThrow(20);
-    });
-
-    expect(vi.mocked(recordThrow)).toHaveBeenCalledTimes(1);
-    expect(result.current.isActionInFlight).toBe(true);
-    expect(warnSpy).toHaveBeenCalledWith("Cannot throw: previous action is still processing");
-
-    await act(async () => {
-      deferred.resolve(buildGameData({ currentThrowCount: 1 }));
-      await firstPromise;
-      await secondPromise;
-    });
-
-    await waitFor(() => {
-      expect(result.current.isActionInFlight).toBe(false);
-    });
-
-    warnSpy.mockRestore();
-  });
-
-  it("prevents duplicate undo while request is in flight", async () => {
-    const warnSpy = vi.spyOn(console, "warn").mockImplementation(() => undefined);
-    const deferred = createDeferred<GameThrowsResponse>();
-    vi.mocked(undoLastThrow).mockReturnValueOnce(deferred.promise);
-
-    const { result } = renderHook(() => useThrowHandler({ gameId: 1 }));
-
-    let firstPromise = Promise.resolve();
-    let secondPromise = Promise.resolve();
-
-    await act(async () => {
-      firstPromise = result.current.handleUndo();
-      secondPromise = result.current.handleUndo();
-    });
-
-    expect(vi.mocked(undoLastThrow)).toHaveBeenCalledTimes(1);
-    expect(result.current.isActionInFlight).toBe(true);
-    expect(warnSpy).toHaveBeenCalledWith("Cannot undo: previous action is still processing");
-
-    await act(async () => {
-      deferred.resolve(buildGameData({ currentThrowCount: 0 }));
-      await firstPromise;
-      await secondPromise;
-    });
-
-    await waitFor(() => {
-      expect(result.current.isActionInFlight).toBe(false);
-    });
-
-    warnSpy.mockRestore();
-  });
-
-  it("stores updated state after successful throw", async () => {
-    vi.mocked(recordThrow).mockResolvedValueOnce(buildGameData({ currentThrowCount: 1 }));
     const { result } = renderHook(() => useThrowHandler({ gameId: 1 }));
 
     await act(async () => {
       await result.current.handleThrow(20);
     });
 
-    expect(vi.mocked(setGameData)).toHaveBeenCalledTimes(1);
+    expect(vi.mocked(recordThrow)).toHaveBeenCalledTimes(1);
+    expect(result.current.pendingThrowCount).toBe(1);
+    expect(result.current.isActionInFlight).toBe(false);
+    expect(currentGameState.players[0]?.score).toBe(281);
+
+    await act(async () => {
+      await result.current.handleThrow(19);
+    });
+
+    expect(result.current.pendingThrowCount).toBe(2);
+    expect(vi.mocked(recordThrow)).toHaveBeenCalledTimes(1);
+    expect(currentGameState.players[0]?.score).toBe(262);
+    expect(currentGameState.currentThrowCount).toBe(2);
+
+    await act(async () => {
+      firstDeferred.resolve(
+        buildThrowAck({
+          stateVersion: "v1",
+          scoreboardDelta: {
+            changedPlayers: [
+              {
+                playerId: 1,
+                name: "P1",
+                score: 281,
+                position: null,
+                isActive: true,
+                isGuest: false,
+                isBust: false,
+              },
+            ],
+            winnerId: null,
+            status: "started",
+            currentRound: 1,
+          },
+        }),
+      );
+      await firstDeferred.promise;
+    });
+
+    await waitFor(() => expect(vi.mocked(recordThrow)).toHaveBeenCalledTimes(2));
+    await waitFor(() => expect(currentGameState.currentThrowCount).toBe(2));
+    expect(currentGameState.players[0]?.score).toBe(262);
+
+    await act(async () => {
+      secondDeferred.resolve(
+        buildThrowAck({
+          stateVersion: "v2",
+          scoreboardDelta: {
+            changedPlayers: [
+              {
+                playerId: 1,
+                name: "P1",
+                score: 262,
+                position: null,
+                isActive: true,
+                isGuest: false,
+                isBust: false,
+              },
+            ],
+            winnerId: null,
+            status: "started",
+            currentRound: 1,
+          },
+        }),
+      );
+      await secondDeferred.promise;
+    });
+
+    await waitFor(() => expect(result.current.pendingThrowCount).toBe(0));
+    expect(currentGameState.players[0]?.score).toBe(262);
+    expect(vi.mocked(setGameStateVersion)).toHaveBeenCalledWith(1, "v1");
+    expect(vi.mocked(setGameStateVersion)).toHaveBeenCalledWith(1, "v2");
+  });
+
+  it("clears current throw display after 3rd throw when turn switches", async () => {
+    vi.mocked(recordThrow)
+      .mockResolvedValueOnce(
+        buildThrowAck({
+          stateVersion: "v1",
+          scoreboardDelta: {
+            changedPlayers: [
+              {
+                playerId: 1,
+                name: "P1",
+                score: 281,
+                position: null,
+                isActive: true,
+                isGuest: false,
+                isBust: false,
+              },
+            ],
+            winnerId: null,
+            status: "started",
+            currentRound: 1,
+          },
+        }),
+      )
+      .mockResolvedValueOnce(
+        buildThrowAck({
+          stateVersion: "v2",
+          scoreboardDelta: {
+            changedPlayers: [
+              {
+                playerId: 1,
+                name: "P1",
+                score: 261,
+                position: null,
+                isActive: true,
+                isGuest: false,
+                isBust: false,
+              },
+            ],
+            winnerId: null,
+            status: "started",
+            currentRound: 1,
+          },
+        }),
+      )
+      .mockResolvedValueOnce(
+        buildThrowAck({
+          stateVersion: "v3",
+          scoreboardDelta: {
+            changedPlayers: [
+              {
+                playerId: 1,
+                name: "P1",
+                score: 241,
+                position: null,
+                isActive: false,
+                isGuest: false,
+                isBust: false,
+              },
+              {
+                playerId: 2,
+                name: "P2",
+                score: 301,
+                position: null,
+                isActive: true,
+                isGuest: false,
+                isBust: false,
+              },
+            ],
+            winnerId: null,
+            status: "started",
+            currentRound: 1,
+          },
+        }),
+      );
+
+    const { result } = renderHook(() => useThrowHandler({ gameId: 1 }));
+
+    await act(async () => {
+      await result.current.handleThrow(20);
+      await result.current.handleThrow(20);
+      await result.current.handleThrow(20);
+    });
+
+    await waitFor(() => expect(result.current.pendingThrowCount).toBe(0));
+
+    const playerOne = currentGameState.players.find((player) => player.id === 1);
+    const playerTwo = currentGameState.players.find((player) => player.id === 2);
+
+    expect(currentGameState.activePlayerId).toBe(2);
+    expect(currentGameState.currentThrowCount).toBe(0);
+    expect(playerOne?.currentRoundThrows).toEqual([]);
+    expect(playerOne?.throwsInCurrentRound).toBe(0);
+    expect(playerOne?.roundHistory).toHaveLength(1);
+    expect(playerTwo?.currentRoundThrows).toEqual([]);
+    expect(playerTwo?.throwsInCurrentRound).toBe(0);
+  });
+
+  it("caps throw queue to three pending throws", async () => {
+    const deferred = createDeferred<ThrowAckResponse>();
+    vi.mocked(recordThrow).mockReturnValue(deferred.promise);
+
+    const { result } = renderHook(() => useThrowHandler({ gameId: 1 }));
+
+    await act(async () => {
+      await result.current.handleThrow(20);
+      await result.current.handleThrow(19);
+      await result.current.handleThrow(18);
+      await result.current.handleThrow(17);
+    });
+
+    expect(result.current.pendingThrowCount).toBe(3);
+    expect(result.current.isQueueFull).toBe(true);
+    expect(result.current.syncMessage).toBe(
+      "Throw queue is full. Wait until current throws are synchronized.",
+    );
+    expect(vi.mocked(recordThrow)).toHaveBeenCalledTimes(1);
+  });
+
+  it("blocks undo while pending throws are synchronizing", async () => {
+    const warnSpy = vi.spyOn(console, "warn").mockImplementation(() => undefined);
+    const deferred = createDeferred<ThrowAckResponse>();
+    vi.mocked(recordThrow).mockReturnValueOnce(deferred.promise);
+
+    const { result } = renderHook(() => useThrowHandler({ gameId: 1 }));
+
+    await act(async () => {
+      await result.current.handleThrow(20);
+      await result.current.handleUndo();
+    });
+
+    expect(vi.mocked(undoLastThrow)).not.toHaveBeenCalled();
+    expect(warnSpy).toHaveBeenCalledWith("Cannot undo: pending throws are still synchronizing");
+
+    warnSpy.mockRestore();
+  });
+
+  it("reconciles state after throw conflict and clears pending queue", async () => {
+    vi.mocked(recordThrow).mockRejectedValueOnce(
+      new ApiError("Request failed", {
+        status: 409,
+        data: {
+          error: "GAME_THROW_NOT_ALLOWED",
+        },
+      }),
+    );
+    vi.mocked(getGameThrows).mockResolvedValueOnce(buildGameData({ currentRound: 2 }));
+
+    const { result } = renderHook(() => useThrowHandler({ gameId: 1 }));
+
+    await act(async () => {
+      await result.current.handleThrow(20);
+    });
+
+    await waitFor(() => expect(vi.mocked(resetGameStateVersion)).toHaveBeenCalledWith(1));
+    await waitFor(() => expect(vi.mocked(getGameThrows)).toHaveBeenCalledWith(1));
+
+    expect(result.current.pendingThrowCount).toBe(0);
+    expect(result.current.syncMessage).toBe(
+      "Game state changed in another session. Synced latest game state.",
+    );
+    expect(vi.mocked(setGameData)).toHaveBeenCalled();
   });
 });

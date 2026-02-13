@@ -33,3 +33,42 @@ export type GameThrowsResponse = {
     tripleOut: boolean;
   };
 };
+
+export type ThrowDelta = {
+  id: number;
+  playerId: number;
+  playerName: string;
+  value: number;
+  isDouble: boolean;
+  isTriple: boolean;
+  isBust: boolean;
+  score: number;
+  roundNumber: number;
+  timestamp: string;
+};
+
+export type ScoreboardPlayerDelta = {
+  playerId: number;
+  name: string;
+  score: number;
+  position: number | null;
+  isActive: boolean;
+  isGuest: boolean;
+  isBust: boolean | null;
+};
+
+export type ScoreboardDelta = {
+  changedPlayers: ScoreboardPlayerDelta[];
+  winnerId: number | null;
+  status: string;
+  currentRound: number;
+};
+
+export type ThrowAckResponse = {
+  success: boolean;
+  gameId: number;
+  stateVersion: string;
+  throw: ThrowDelta | null;
+  scoreboardDelta: ScoreboardDelta;
+  serverTs: string;
+};

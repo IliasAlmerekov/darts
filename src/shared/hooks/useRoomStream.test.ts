@@ -3,8 +3,8 @@ import { parseRoomStreamEventData } from "./useRoomStream";
 
 describe("parseRoomStreamEventData (shared)", () => {
   it("parses valid json payload", () => {
-    const parsed = parseRoomStreamEventData('{"playerId":1,"action":"joined"}');
-    expect(parsed).toEqual({ playerId: 1, action: "joined" });
+    const parsed = parseRoomStreamEventData('{"gameId":1,"stateVersion":"v1"}');
+    expect(parsed).toEqual({ gameId: 1, stateVersion: "v1" });
   });
 
   it("returns null for invalid json payload", () => {

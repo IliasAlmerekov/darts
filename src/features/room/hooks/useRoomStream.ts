@@ -43,6 +43,7 @@ export function useRoomStream(gameId: number | null) {
     eventSource.addEventListener("player-joined", setEventFrom("player-joined"));
     eventSource.addEventListener("player-left", setEventFrom("player-left"));
     eventSource.addEventListener("game-started", setEventFrom("game-started"));
+    eventSource.addEventListener("throw", setEventFrom("throw"));
     eventSource.addEventListener("throw-recorded", setEventFrom("throw-recorded"));
     eventSource.addEventListener("game-finished", setEventFrom("game-finished"));
 

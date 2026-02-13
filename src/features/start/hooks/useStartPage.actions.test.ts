@@ -1,6 +1,7 @@
 // @vitest-environment jsdom
 import { act, renderHook } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { ApiError } from "@/lib/api/errors";
 import { useStartPage } from "./useStartPage";
 
 const navigateMock = vi.fn();
@@ -74,6 +75,7 @@ describe("useStartPage action guards", () => {
     storeValues.set("lastFinishedGameId", null);
     storeValues.set("currentGameId", null);
     storeValues.set("invitation", null);
+    gamePlayersResult.count = 0;
   });
 
   afterEach(() => {
@@ -140,5 +142,91 @@ describe("useStartPage action guards", () => {
       invitationLink: "/invite/55",
     });
     expect(navigateMock).toHaveBeenCalledWith("/start/55");
+  });
+
+  it("shows username taken suggestions when guest nickname already exists in current game", async () => {
+    storeValues.set("invitation", { gameId: 10, invitationLink: "/invite/10" });
+    gameFlowMock.addGuestPlayer.mockRejectedValueOnce(
+      new ApiError("Request failed", {
+        status: 409,
+        data: {
+          success: false,
+          error: "USERNAME_TAKEN",
+          message: "Username already taken in this game.",
+          suggestions: ["Alex2", "Alex3"],
+        },
+      }),
+    );
+
+    const { result } = renderHook(() => useStartPage());
+
+    await act(async () => {
+      result.current.openGuestOverlay();
+      result.current.setGuestUsername("Alex");
+    });
+
+    await act(async () => {
+      await result.current.handleAddGuest();
+    });
+
+    expect(gameFlowMock.addGuestPlayer).toHaveBeenCalledWith(10, { username: "Alex" });
+    expect(result.current.guestError).toBe("Username already taken in this game.");
+    expect(result.current.guestSuggestions).toEqual(["Alex2", "Alex3"]);
+    expect(result.current.isGuestOverlayOpen).toBe(true);
+  });
+
+  it("closes guest overlay after successful guest creation", async () => {
+    storeValues.set("invitation", { gameId: 10, invitationLink: "/invite/10" });
+    gameFlowMock.addGuestPlayer.mockResolvedValueOnce({ id: 1, name: "Alex" });
+
+    const { result } = renderHook(() => useStartPage());
+
+    await act(async () => {
+      result.current.openGuestOverlay();
+      result.current.setGuestUsername("Alex");
+    });
+
+    await act(async () => {
+      await result.current.handleAddGuest();
+    });
+
+    expect(gameFlowMock.addGuestPlayer).toHaveBeenCalledWith(10, { username: "Alex" });
+    expect(result.current.isGuestOverlayOpen).toBe(false);
+    expect(result.current.guestUsername).toBe("");
+    expect(result.current.guestError).toBeNull();
+  });
+
+  it("blocks guest creation when lobby is full", async () => {
+    storeValues.set("invitation", { gameId: 10, invitationLink: "/invite/10" });
+    gamePlayersResult.count = 10;
+
+    const { result } = renderHook(() => useStartPage());
+
+    await act(async () => {
+      result.current.openGuestOverlay();
+      result.current.setGuestUsername("Alex");
+      await result.current.handleAddGuest();
+    });
+
+    expect(gameFlowMock.addGuestPlayer).not.toHaveBeenCalled();
+    expect(result.current.guestError).toBe("The lobby is full. Remove a player to add another.");
+  });
+
+  it("validates guest username requires at least 3 letters before api call", async () => {
+    storeValues.set("invitation", { gameId: 10, invitationLink: "/invite/10" });
+
+    const { result } = renderHook(() => useStartPage());
+
+    await act(async () => {
+      result.current.openGuestOverlay();
+      result.current.setGuestUsername("A1-");
+    });
+
+    await act(async () => {
+      await result.current.handleAddGuest();
+    });
+
+    expect(gameFlowMock.addGuestPlayer).not.toHaveBeenCalled();
+    expect(result.current.guestError).toBe("Username must contain at least 3 letters.");
   });
 });

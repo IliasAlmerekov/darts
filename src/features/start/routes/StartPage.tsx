@@ -6,7 +6,6 @@ import { SortableContext, verticalListSortingStrategy } from "@dnd-kit/sortable"
 import { restrictToVerticalAxis } from "@dnd-kit/modifiers";
 import { AdminLayout } from "@/components/admin-layout";
 import Plus from "@/assets/icons/plus.svg";
-import LinkButton from "@/components/link-button/LinkButton";
 import Button from "@/components/button/Button";
 import { ErrorState } from "@/components/error-state";
 import QRCode from "../components/qr-code/QRCode";
@@ -74,10 +73,12 @@ function StartPage(): React.JSX.Element {
                 </div>
               ) : (
                 <div className={styles.mobileCreateButtonWrapper}>
-                  <LinkButton
+                  <Button
                     className={styles.createNewPlayerButton}
                     label="Create Game"
-                    icon={Plus}
+                    iconSrc={Plus}
+                    iconStyling={styles.createGameIcon}
+                    type="primary"
                     handleClick={handleCreateRoom}
                     disabled={creating}
                   />
@@ -85,10 +86,12 @@ function StartPage(): React.JSX.Element {
               )}
             </div>
             <div className={styles.bottom}>
-              <LinkButton
+              <Button
                 className={styles.createNewPlayerButton}
                 label={invitation ? "Created" : "Create Game"}
-                icon={Plus}
+                iconSrc={Plus}
+                iconStyling={styles.createGameIcon}
+                type="primary"
                 handleClick={handleCreateRoom}
                 disabled={!!invitation || creating}
               />

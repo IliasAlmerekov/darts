@@ -1,4 +1,4 @@
-import { useLayoutEffect } from "react";
+import { useLayoutEffect, useRef } from "react";
 import clsx from "clsx";
 import GamePlayerItem from "./GamePlayerItem";
 import styles from "./GamePlayerItem.module.css";
@@ -14,9 +14,18 @@ interface GamePlayerItemListProps {
 
 function GamePlayerItemList({ userMap, round }: GamePlayerItemListProps): JSX.Element {
   const activePlayerId = userMap.find((item) => item.isActive)?.id ?? null;
+  const previousActivePlayerIdRef = useRef<number | null>(null);
 
   useLayoutEffect(() => {
     if (!activePlayerId || typeof window === "undefined") {
+      previousActivePlayerIdRef.current = activePlayerId;
+      return;
+    }
+
+    const didActivePlayerChange = previousActivePlayerIdRef.current !== activePlayerId;
+    previousActivePlayerIdRef.current = activePlayerId;
+
+    if (!didActivePlayerChange) {
       return;
     }
 
@@ -41,7 +50,7 @@ function GamePlayerItemList({ userMap, round }: GamePlayerItemListProps): JSX.El
       window.cancelAnimationFrame(firstAnimationFrameId);
       window.cancelAnimationFrame(secondAnimationFrameId);
     };
-  }, [activePlayerId, userMap]);
+  }, [activePlayerId]);
 
   return (
     <>
