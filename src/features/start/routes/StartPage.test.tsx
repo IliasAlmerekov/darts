@@ -10,6 +10,7 @@ type StartPageHookResult = {
   invitation: { invitationLink: string; gameId: number } | null;
   gameId: number | null;
   lastFinishedGameId: number | null;
+  players: Array<{ id: number; name: string; position: number | null }>;
   playerCount: number;
   isLobbyFull: boolean;
   playerOrder: number[];
@@ -37,6 +38,7 @@ const buildHookResult = (overrides: Partial<StartPageHookResult> = {}): StartPag
   invitation: { invitationLink: "/invite/abc", gameId: 1 },
   gameId: 1,
   lastFinishedGameId: null,
+  players: [],
   playerCount: 2,
   isLobbyFull: false,
   playerOrder: [],
@@ -193,7 +195,7 @@ describe("StartPage", () => {
     expect(qrCode.getAttribute("data-invitation-link")).toBe("http://localhost:3000/invite/abc");
   });
 
-  it("shows loading state on Start button while game is starting", () => {
+  it("keeps Start label while button is disabled during game start", () => {
     useStartPageMock.mockReturnValueOnce(
       buildHookResult({
         starting: true,
@@ -206,7 +208,7 @@ describe("StartPage", () => {
       </MemoryRouter>,
     );
 
-    const startButton = screen.getByRole("button", { name: "Starting..." });
+    const startButton = screen.getByRole("button", { name: "Start" });
     expect(startButton).toHaveProperty("disabled", true);
   });
 });

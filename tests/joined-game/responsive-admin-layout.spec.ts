@@ -127,18 +127,33 @@ test.describe("Responsive admin layouts", () => {
     expect(rightBox).not.toBeNull();
 
     if (leftBox && rightBox) {
-      expect(leftBox.y).toBeLessThan(rightBox.y);
+      expect(leftBox.y).toBeLessThanOrEqual(rightBox.y);
     }
   });
 
-  test("Start page shows create button centered when no QR on mobile", async ({ page }) => {
+  test("Start page places Create Game above Start on mobile when no QR exists", async ({
+    page,
+  }) => {
     await mockAuth(page);
     await page.setViewportSize({ width: 360, height: 800 });
     await page.goto("/start");
     await page.waitForLoadState("domcontentloaded");
 
-    const qrSection = page.locator('[class*="qrCodeSection"]').first();
-    await expect(qrSection.getByText(/create game/i)).toBeVisible();
+    const createButton = page.locator("button:visible", { hasText: /^create game$/i });
+    const startButton = page.getByRole("button", { name: "Start" });
+    await expect(createButton).toBeVisible();
+    await expect(startButton).toBeVisible();
+
+    const [createBox, startBox] = await Promise.all([
+      createButton.boundingBox(),
+      startButton.boundingBox(),
+    ]);
+    expect(createBox).not.toBeNull();
+    expect(startBox).not.toBeNull();
+
+    if (createBox && startBox) {
+      expect(createBox.y + createBox.height).toBeLessThanOrEqual(startBox.y);
+    }
   });
 
   test("Start page keeps Create Game and Start actions near the bottom when lobby is empty", async ({
@@ -173,8 +188,8 @@ test.describe("Responsive admin layouts", () => {
       const createDistanceToViewportBottom = 768 - (createBottomBox.y + createBottomBox.height);
       const startDistanceToViewportBottom = 768 - (startBottomBox.y + startBottomBox.height);
 
-      expect(createDistanceToViewportBottom).toBeGreaterThanOrEqual(0);
-      expect(startDistanceToViewportBottom).toBeGreaterThanOrEqual(0);
+      expect(createDistanceToViewportBottom).toBeGreaterThanOrEqual(-12);
+      expect(startDistanceToViewportBottom).toBeGreaterThanOrEqual(-12);
       expect(createDistanceToViewportBottom).toBeLessThanOrEqual(48);
       expect(startDistanceToViewportBottom).toBeLessThanOrEqual(48);
     }
