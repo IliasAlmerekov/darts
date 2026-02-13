@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { setCurrentGameId } from "@/stores/room";
+import { API_BASE_URL } from "@/lib/api";
 
 export interface AuthenticatedUser {
   success: boolean;
@@ -18,7 +19,7 @@ type UseAuthenticatedUserResult = {
 };
 
 async function getAuthenticatedUser(): Promise<AuthenticatedUser | null> {
-  const response = await fetch("/api/login/success", {
+  const response = await fetch(`${API_BASE_URL}/login/success`, {
     method: "GET",
     credentials: "include",
     headers: {

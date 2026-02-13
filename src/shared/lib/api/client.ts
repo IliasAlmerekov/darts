@@ -1,7 +1,21 @@
 import { ApiError, ForbiddenError, NetworkError, UnauthorizedError } from "./errors";
 import type { ApiRequestConfig, QueryParams } from "./types";
 
-export const API_BASE_URL = "/api";
+const importMetaWithEnv = import.meta as ImportMeta & {
+  env?: Record<string, string | undefined>;
+};
+const ENV_API_BASE_URL = importMetaWithEnv.env?.VITE_API_BASE_URL;
+
+function resolveApiBaseUrl(): string {
+  if (!ENV_API_BASE_URL) {
+    return "/api";
+  }
+
+  const normalizedBaseUrl = ENV_API_BASE_URL.trim().replace(/\/+$/, "");
+  return normalizedBaseUrl.endsWith("/api") ? normalizedBaseUrl : `${normalizedBaseUrl}/api`;
+}
+
+export const API_BASE_URL = resolveApiBaseUrl();
 
 function buildUrl(endpoint: string, query?: QueryParams): string {
   const path = endpoint.startsWith("/") ? endpoint : `/${endpoint}`;

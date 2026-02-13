@@ -1,3 +1,5 @@
+import { API_BASE_URL } from "@/lib/api";
+
 export interface AuthenticatedUser {
   success: boolean;
   roles: string[];
@@ -12,7 +14,7 @@ export interface AuthenticatedUser {
  * Fetches the currently authenticated user, if any.
  */
 export async function getAuthenticatedUser(): Promise<AuthenticatedUser | null> {
-  const response = await fetch("/api/login/success", {
+  const response = await fetch(`${API_BASE_URL}/login/success`, {
     method: "GET",
     credentials: "include",
     headers: {
