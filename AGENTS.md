@@ -158,6 +158,14 @@ If scripts differ, infer correct commands from `package.json`.
   - `feat:`, `fix:`, `refactor:`, `test:`, `chore:`
 - Husky hooks must not be bypassed.
 - If commitlint fails, fix the commit message.
+- Before every `git commit`, run the full validation suite and ensure all checks pass:
+  - `npm run eslint`
+  - `npm run stylelint`
+  - `npm run test` (Vitest)
+  - `npm run test:e2e` (Playwright)
+  - `npm run typecheck`
+  - `npx prettier --check .`
+- Before every `git push`, rerun the same validation suite and push only if all checks pass.
 
 ## 12) Response format (how you report work)
 
