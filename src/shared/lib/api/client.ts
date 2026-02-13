@@ -1,10 +1,7 @@
 import { ApiError, ForbiddenError, NetworkError, UnauthorizedError } from "./errors";
 import type { ApiRequestConfig, QueryParams } from "./types";
 
-const importMetaWithEnv = import.meta as ImportMeta & {
-  env?: Record<string, string | undefined>;
-};
-const ENV_API_BASE_URL = importMetaWithEnv.env?.VITE_API_BASE_URL;
+const ENV_API_BASE_URL = import.meta.env.VITE_API_BASE_URL as string | undefined;
 
 function resolveApiBaseUrl(): string {
   if (!ENV_API_BASE_URL) {
