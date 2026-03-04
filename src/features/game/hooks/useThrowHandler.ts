@@ -10,7 +10,7 @@ import {
 } from "../api";
 import { parseThrowValue } from "@/lib/parseThrowValue";
 import { playSound } from "@/lib/soundPlayer";
-import { $gameData, setGameData } from "@/stores";
+import { $gameData, setGameData } from "../store";
 import { ApiError } from "@/lib/api/errors";
 
 interface UseThrowHandlerOptions {
