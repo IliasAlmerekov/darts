@@ -18,9 +18,7 @@ export interface LoginCredentials {
 /**
  * Logs in a user using email/password credentials.
  */
-export async function loginWithCredentials(
-  credentials: LoginCredentials,
-): Promise<LoginResponse> {
+export async function loginWithCredentials(credentials: LoginCredentials): Promise<LoginResponse> {
   const payload = new URLSearchParams();
   payload.set("_username", credentials.email);
   payload.set("_password", credentials.password);

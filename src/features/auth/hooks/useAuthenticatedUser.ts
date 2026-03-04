@@ -51,4 +51,3 @@ export const useAuthenticatedUser = (): UseAuthenticatedUserResult => {
 
   return { user, loading, error };
 };
-  
