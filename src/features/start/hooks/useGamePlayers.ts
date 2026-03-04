@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { useEventSource } from "@/hooks/useEventSource";
-import { useGameFlowPort } from "@/shared/providers/GameFlowPortProvider";
+import { useEventSource } from "@/lib/useEventSource";
+import { useGameFlowPort } from "@/features/game";
 import { $gameData } from "@/features/game";
 
 interface RawPlayer {

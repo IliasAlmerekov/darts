@@ -5,7 +5,7 @@ import { useGamePlayers } from "./useGamePlayers";
 
 let sseHandler: ((event: MessageEvent<string>) => void) | null = null;
 
-vi.mock("@/hooks/useEventSource", () => ({
+vi.mock("@/lib/useEventSource", () => ({
   useEventSource: (
     _url: string | null,
     _eventName: string,
@@ -15,11 +15,11 @@ vi.mock("@/hooks/useEventSource", () => ({
   },
 }));
 
-vi.mock("@/lib/api/game", () => ({
+vi.mock("@/features/game", () => ({
   getGameThrows: vi.fn(),
 }));
 
-import { getGameThrows, type GameThrowsResponse } from "@/lib/api/game";
+import { getGameThrows, type GameThrowsResponse } from "@/features/game";
 
 const buildGameThrowsResponse = (
   overrides: Partial<GameThrowsResponse> = {},

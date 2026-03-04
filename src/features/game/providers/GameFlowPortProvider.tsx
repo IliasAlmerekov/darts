@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useMemo } from "react";
-import { defaultGameFlowPort, type GameFlowPort } from "@/shared/ports/game-flow";
+import { defaultGameFlowPort, type GameFlowPort } from "../ports/game-flow";
 
 const GameFlowPortContext = createContext<GameFlowPort | null>(null);
 

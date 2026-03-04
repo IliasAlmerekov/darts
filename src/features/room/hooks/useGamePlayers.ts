@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { useEventSource } from "@/hooks/useEventSource";
-import { getGameThrows } from "@/lib/api/game";
+import { useEventSource } from "@/lib/useEventSource";
+import { getGameThrows } from "@/features/game";
 
 interface RawPlayer {
   id: number;
