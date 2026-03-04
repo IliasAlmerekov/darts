@@ -26,12 +26,15 @@ vi.mock("@/shared/providers/GameFlowPortProvider", () => ({
   }),
 }));
 
-vi.mock("@/stores", () => ({
+vi.mock("@/features/game", () => ({
   $gameSettings: { key: "gameSettings" },
+  setGameData: (...args: unknown[]) => setGameDataMock(...args),
+}));
+
+vi.mock("@/features/room", () => ({
   setInvitation: vi.fn(),
   setLastFinishedGameId: vi.fn(),
   resetRoomStore: vi.fn(),
-  setGameData: (...args: unknown[]) => setGameDataMock(...args),
 }));
 
 vi.mock("@nanostores/react", () => ({
