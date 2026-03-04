@@ -17,18 +17,15 @@ vi.mock("react-router-dom", () => ({
   useParams: () => ({ id: "42" }),
 }));
 
-vi.mock("@/shared/providers/GameFlowPortProvider", () => ({
+vi.mock("@/features/game", () => ({
+  $gameSettings: { key: "gameSettings" },
+  setGameData: (...args: unknown[]) => setGameDataMock(...args),
   useGameFlowPort: () => ({
     getFinishedGame: (...args: unknown[]) => getFinishedGameMock(...args),
     createRematch: (...args: unknown[]) => createRematchMock(...args),
     startGame: (...args: unknown[]) => startGameMock(...args),
     undoLastThrow: (...args: unknown[]) => undoLastThrowMock(...args),
   }),
-}));
-
-vi.mock("@/features/game", () => ({
-  $gameSettings: { key: "gameSettings" },
-  setGameData: (...args: unknown[]) => setGameDataMock(...args),
 }));
 
 vi.mock("@/features/room", () => ({

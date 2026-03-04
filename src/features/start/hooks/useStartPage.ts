@@ -4,8 +4,7 @@ import { useStore } from "@nanostores/react";
 import { DragEndEvent } from "@dnd-kit/core";
 import { arrayMove } from "@dnd-kit/sortable";
 import { useGamePlayers } from "./useGamePlayers";
-import { useGameFlowPort } from "@/shared/providers/GameFlowPortProvider";
-import type { AddGuestErrorResponse } from "@/shared/ports/game-flow";
+import { useGameFlowPort, type AddGuestErrorResponse } from "@/features/game";
 import { $gameSettings, setGameData } from "@/features/game";
 import {
   $lastFinishedGameId,

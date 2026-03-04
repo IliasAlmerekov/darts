@@ -1,8 +1,8 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
 import { useStore } from "@nanostores/react";
-import type { FinishedPlayerResponse } from "@/lib/api/game";
-import { useGameFlowPort } from "@/shared/providers/GameFlowPortProvider";
+import { useGameFlowPort } from "@/features/game";
+import type { FinishedPlayerResponse } from "@/features/game";
 import { $gameSettings, setGameData } from "@/features/game";
 import { setInvitation, setLastFinishedGameId, resetRoomStore } from "@/features/room";
 import { playSound } from "@/lib/soundPlayer";
