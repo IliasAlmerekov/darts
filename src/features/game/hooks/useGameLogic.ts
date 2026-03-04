@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
 import { useStore } from "@nanostores/react";
 
-import { useRoomStream } from "@/hooks/useRoomStream";
+import { useRoomStream } from "@/features/room";
 import { useGameState } from "./useGameState";
 import { useThrowHandler } from "./useThrowHandler";
 import { useGameSounds } from "./useGameSounds";

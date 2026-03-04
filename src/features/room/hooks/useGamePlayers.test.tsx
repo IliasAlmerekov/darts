@@ -5,7 +5,7 @@ import { useGamePlayers } from "./useGamePlayers";
 
 let sseHandler: ((event: MessageEvent<string>) => void) | null = null;
 
-vi.mock("@/hooks/useEventSource", () => ({
+vi.mock("@/lib/useEventSource", () => ({
   useEventSource: (
     _url: string | null,
     _eventName: string,
