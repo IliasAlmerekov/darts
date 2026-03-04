@@ -1,5 +1,5 @@
 import React from "react";
-import ViewToogleButton from "@/components/button/ViewToogleBtn";
+import ViewToogleButton from "@/shared/ui/button/ViewToogleBtn";
 import { SortTabs, type SortMethod } from "../sort-tabs";
 import styles from "./StatisticsHeaderControls.module.css";
 

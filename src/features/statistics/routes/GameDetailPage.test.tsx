@@ -10,15 +10,15 @@ vi.mock("../hooks/useGameDetailPage", () => ({
   useGameDetailPage: () => useGameDetailPageMock(),
 }));
 
-vi.mock("@/components/navigation-bar/NavigationBar", () => ({
+vi.mock("@/shared/ui/navigation-bar/NavigationBar", () => ({
   default: () => <div data-testid="navigation-bar" />,
 }));
 
-vi.mock("@/components/podium", () => ({
+vi.mock("@/shared/ui/podium", () => ({
   Podium: () => <div data-testid="podium" />,
 }));
 
-vi.mock("@/components/overview-player-item/OverviewPlayerItemList", () => ({
+vi.mock("@/shared/ui/overview-player-item/OverviewPlayerItemList", () => ({
   default: () => <div data-testid="leaderboard" />,
 }));
 

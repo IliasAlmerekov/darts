@@ -73,7 +73,7 @@ vi.mock("../components/live-players-list/LivePlayersList", () => ({
   LivePlayersList: () => <div data-testid="live-players-list" />,
 }));
 
-vi.mock("@/components/navigation-bar/NavigationBar", () => ({
+vi.mock("@/shared/ui/navigation-bar/NavigationBar", () => ({
   default: () => <div data-testid="navigation-bar" />,
 }));
 

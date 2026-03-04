@@ -1,5 +1,5 @@
 import type { ReactNode } from "react";
-import NavigationBar from "@/components/navigation-bar/NavigationBar";
+import NavigationBar from "@/shared/ui/navigation-bar/NavigationBar";
 import styles from "./AdminLayout.module.css";
 
 type AdminLayoutProps = {

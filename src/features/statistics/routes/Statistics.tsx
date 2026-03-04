@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useState } from "react";
 import { useStore } from "@nanostores/react";
 import styles from "./Statistics.module.css";
-import { AdminLayout } from "@/components/admin-layout";
+import { AdminLayout } from "@/shared/ui/admin-layout";
 import { $currentGameId } from "@/features/room";
 import {
   Pagination,
@@ -9,7 +9,7 @@ import {
   PaginationItem,
   PaginationNext,
   PaginationPrevious,
-} from "@/components/pagination";
+} from "@/shared/ui/pagination";
 import { getPlayerStats } from "../api";
 import type { SortMethod } from "../components/sort-tabs";
 import { StatisticsHeaderControls } from "../components/header-controls";

@@ -2,10 +2,10 @@ import React from "react";
 import { useStore } from "@nanostores/react";
 import styles from "./GameDetailPage.module.css";
 import { Link } from "react-router-dom";
-import { Podium } from "@/components/podium";
+import { Podium } from "@/shared/ui/podium";
 import BackBtn from "@/assets/icons/back.svg";
-import { AdminLayout } from "@/components/admin-layout";
-import OverviewPlayerItemList from "@/components/overview-player-item/OverviewPlayerItemList";
+import { AdminLayout } from "@/shared/ui/admin-layout";
+import OverviewPlayerItemList from "@/shared/ui/overview-player-item/OverviewPlayerItemList";
 import { useGameDetailPage } from "../hooks/useGameDetailPage";
 import { $currentGameId } from "@/features/room";
 

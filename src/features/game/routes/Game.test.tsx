@@ -31,11 +31,11 @@ vi.mock("../components/SettingsOverlay", () => ({
   default: () => null,
 }));
 
-vi.mock("@/components/link-button/LinkButton", () => ({
+vi.mock("@/shared/ui/link-button/LinkButton", () => ({
   default: () => null,
 }));
 
-vi.mock("@/components/overlay/Overlay", () => ({
+vi.mock("@/shared/ui/overlay/Overlay", () => ({
   default: ({ children }: { children?: ReactNode }) => <>{children}</>,
 }));
 
