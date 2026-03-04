@@ -1,6 +1,8 @@
 import React, { useCallback, useEffect, useState } from "react";
+import { useStore } from "@nanostores/react";
 import styles from "./Statistics.module.css";
 import { AdminLayout } from "@/components/admin-layout";
+import { $currentGameId } from "@/features/room";
 import {
   Pagination,
   PaginationContent,
@@ -48,6 +50,7 @@ const StatisticsPagination = React.memo(function StatisticsPagination({
 });
 
 export default function Playerstats(): JSX.Element {
+  const currentGameId = useStore($currentGameId);
   const [sortMethod, setSortMethod] = useState<SortMethod>("alphabetically");
   const [stats, setStats] = useState<BASIC.PlayerProps[]>([]);
   const [offset, setOffset] = useState(0);
@@ -89,7 +92,7 @@ export default function Playerstats(): JSX.Element {
   }, [limit]);
 
   return (
-    <AdminLayout>
+    <AdminLayout currentGameId={currentGameId}>
       <div className={styles.playerstatsContainer}>
         <div className={styles.content}>
           <StatisticsHeaderControls

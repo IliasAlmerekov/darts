@@ -2,7 +2,8 @@ import { useState, useMemo, useEffect, useCallback, useRef } from "react";
 import { useParams } from "react-router-dom";
 import { AdminLayout } from "@/components/admin-layout";
 import { useStore } from "@nanostores/react";
-import { $currentGameId, $gameData, $gameSettings, setCurrentGameId, setGameData } from "@/stores";
+import { $gameData, $gameSettings, setGameData } from "@/features/game";
+import { $currentGameId, setCurrentGameId } from "@/features/room";
 import { useGameFlowPort } from "@/shared/providers/GameFlowPortProvider";
 import styles from "./Settings.module.css";
 import { SettingsTabs } from "../components/SettingsTabs";
@@ -220,7 +221,7 @@ function Settings(): JSX.Element {
   );
 
   return (
-    <AdminLayout>
+    <AdminLayout currentGameId={currentGameIdFromStore}>
       <div className={styles.settings}>
         <h1>Settings</h1>
         <section className={styles.settingsSection}>
