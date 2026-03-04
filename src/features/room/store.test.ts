@@ -17,7 +17,7 @@ describe("room store", () => {
     );
     window.sessionStorage.setItem(GAME_ID_STORAGE_KEY, "77");
 
-    const roomStore = await import("./room");
+    const roomStore = await import("./store");
 
     expect(roomStore.$invitation.get()).toEqual({
       gameId: 77,
@@ -27,7 +27,7 @@ describe("room store", () => {
   });
 
   it("persists invitation and clears it on reset", async () => {
-    const roomStore = await import("./room");
+    const roomStore = await import("./store");
 
     roomStore.setInvitation({ gameId: 12, invitationLink: "/invite/12" });
 

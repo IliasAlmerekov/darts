@@ -92,6 +92,7 @@ function setStoredInvitation(invitation: Invitation | null): void {
     }
   } catch (error) {
     console.error("Failed to save invitation to sessionStorage:", error);
+    return;
   }
 }
 
