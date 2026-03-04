@@ -2,7 +2,7 @@ import React from "react";
 import ReactDOM from "react-dom/client";
 import App from "./app/App";
 import "@/app/styles/index.css";
-import { GameFlowPortProvider } from "@/shared/providers/GameFlowPortProvider";
+import { GameFlowPortProvider } from "@/features/game";
 
 const root = ReactDOM.createRoot(document.getElementById("root") as HTMLElement);
 root.render(

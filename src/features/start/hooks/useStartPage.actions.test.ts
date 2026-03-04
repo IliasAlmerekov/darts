@@ -33,10 +33,6 @@ vi.mock("./useGamePlayers", () => ({
   useGamePlayers: () => gamePlayersResult,
 }));
 
-vi.mock("@/shared/providers/GameFlowPortProvider", () => ({
-  useGameFlowPort: () => gameFlowMock,
-}));
-
 vi.mock("@nanostores/react", () => ({
   useStore: (store: { key?: string }) => storeValues.get(store.key ?? ""),
 }));
@@ -44,6 +40,7 @@ vi.mock("@nanostores/react", () => ({
 vi.mock("@/features/game", () => ({
   $gameSettings: { key: "gameSettings" },
   setGameData: (...args: unknown[]) => setGameDataMock(...args),
+  useGameFlowPort: () => gameFlowMock,
 }));
 
 vi.mock("@/features/room", () => ({

@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useParams } from "react-router-dom";
-import type { FinishedPlayerResponse } from "@/lib/api/game";
-import { useGameFlowPort } from "@/shared/providers/GameFlowPortProvider";
+import { useGameFlowPort } from "@/features/game";
+import type { FinishedPlayerResponse } from "@/features/game";
 
 type UseGameDetailPageResult = {
   error: string | null;

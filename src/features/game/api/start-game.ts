@@ -6,8 +6,8 @@ const START_GAME_ENDPOINT = (id: number) => `/game/${id}/start`;
 /**
  * Starts a game with the provided settings.
  */
-export async function startGame(gameId: number, config: StartGameRequest) {
-  return apiClient.post(START_GAME_ENDPOINT(gameId), {
+export async function startGame(gameId: number, config: StartGameRequest): Promise<void> {
+  await apiClient.post(START_GAME_ENDPOINT(gameId), {
     status: config.status,
     round: config.round,
     startscore: config.startScore,

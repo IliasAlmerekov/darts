@@ -10,7 +10,7 @@ vi.mock("react-router-dom", () => ({
   useParams: () => ({ id: routeId }),
 }));
 
-vi.mock("@/shared/providers/GameFlowPortProvider", () => ({
+vi.mock("@/features/game", () => ({
   useGameFlowPort: () => ({
     getFinishedGame: (...args: unknown[]) => getFinishedGameMock(...args),
   }),

@@ -1,8 +1,4 @@
-import type {
-  CreateGameSettingsPayload,
-  FinishedPlayerResponse,
-  GameThrowsResponse,
-} from "@/lib/api/game";
+import type { CreateGameSettingsPayload, FinishedPlayerResponse, GameThrowsResponse } from "../api";
 import {
   createRematch,
   getFinishedGame,
@@ -11,20 +7,20 @@ import {
   saveGameSettings,
   startGame,
   undoLastThrow,
-} from "@/lib/api/game";
+} from "../api";
 import type {
   AddGuestErrorResponse,
   AddGuestPayload,
   CreateGamePayload,
   GuestPlayer,
-} from "@/lib/api/room";
+} from "@/features/room";
 import {
   addGuestPlayer,
   createRoom,
   getInvitation,
   leaveRoom,
   updatePlayerOrder,
-} from "@/lib/api/room";
+} from "@/features/room";
 import type { CreateRoomResponse, StartGameRequest } from "@/types";
 
 export type { AddGuestErrorResponse };

@@ -4,7 +4,7 @@ import { AdminLayout } from "@/components/admin-layout";
 import { useStore } from "@nanostores/react";
 import { $gameData, $gameSettings, setGameData } from "@/features/game";
 import { $currentGameId, setCurrentGameId } from "@/features/room";
-import { useGameFlowPort } from "@/shared/providers/GameFlowPortProvider";
+import { useGameFlowPort } from "@/features/game";
 import styles from "./Settings.module.css";
 import { SettingsTabs } from "../components/SettingsTabs";
 
