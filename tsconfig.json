@@ -25,20 +25,15 @@
     "forceConsistentCasingInFileNames": true,
     "resolveJsonModule": true,
 
-    /* Path aliases for FSD architecture */
+    /* Path aliases — feature-based architecture */
     "baseUrl": ".",
     "paths": {
       "@/*": ["./src/*"],
       "@/app/*": ["./src/app/*"],
       "@/assets/*": ["./src/assets/*"],
-      "@/entities/*": ["./src/entities/*"],
       "@/features/*": ["./src/features/*"],
       "@/shared/*": ["./src/shared/*"],
-      "@/components/*": ["./src/shared/ui/*"],
-      "@/hooks/*": ["./src/shared/hooks/*"],
       "@/lib/*": ["./src/shared/lib/*"],
-      "@/stores": ["./src/shared/stores/index.ts"],
-      "@/stores/*": ["./src/shared/stores/*"],
       "@/types": ["./src/shared/types/index.ts"],
       "@/types/*": ["./src/shared/types/*"]
     }

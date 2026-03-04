@@ -1,6 +1,6 @@
 import { useState, useMemo, useEffect, useCallback, useRef } from "react";
 import { useParams } from "react-router-dom";
-import { AdminLayout } from "@/components/admin-layout";
+import { AdminLayout } from "@/shared/ui/admin-layout";
 import { useStore } from "@nanostores/react";
 import { $gameData, $gameSettings, setGameData } from "@/features/game";
 import { $currentGameId, setCurrentGameId } from "@/features/room";

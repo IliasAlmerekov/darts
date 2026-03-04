@@ -1,5 +1,5 @@
 import React from "react";
-import { ErrorState } from "@/components/error-state";
+import { ErrorState } from "@/shared/ui/error-state";
 import styles from "./NotFoundPage.module.css";
 
 function NotFoundPage(): React.JSX.Element {
