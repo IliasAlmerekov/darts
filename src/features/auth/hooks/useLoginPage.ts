@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuthenticatedUser } from "./useAuthenticatedUser";
 import { useLogin } from "./useLogin";
-import { getActiveGameId } from "@/stores/room";
+import { getActiveGameId } from "@/features/room";
 import { mapAuthErrorMessage } from "../lib/error-handling";
 
 /**

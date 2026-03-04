@@ -7,7 +7,7 @@ import Undo from "@/assets/icons/undolinkbutton.svg";
 import React from "react";
 import { useGameSummaryPage } from "../hooks/useGameSummaryPage";
 import { useStore } from "@nanostores/react";
-import { $gameSettings } from "@/stores";
+import { $gameSettings } from "@/features/game";
 
 function GameSummaryPage(): React.JSX.Element {
   const {
