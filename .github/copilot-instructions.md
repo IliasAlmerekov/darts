@@ -25,6 +25,12 @@ This is a React + TypeScript darts game application using Vite as the build tool
 - **Focus Management:** Ensure visible focus indicators for keyboard navigation
 - **Alt Text:** Provide descriptive alt text for all images
 - **Form Labels:** Associate all form inputs with proper labels
+- **Error Handling:** Display user-friendly error messages for API failures and form validation errors
+- **Loading States:** Show loading indicators during API calls
+- **Responsive Design:** Ensure the application is fully responsive and works well on mobile devices
+- **Performance:** Optimize for fast load times and smooth interactions
+- **Testing:** Write unit tests for critical components and functions using Jest and React Testing Library
+- **Context7:** Use MCP React Context for global state management when necessary, but prefer local state and props drilling for simpler cases
 
 ---
 

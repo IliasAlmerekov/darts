@@ -1,8 +1,8 @@
-import OverviewPlayerItemList from "@/components/overview-player-item/OverviewPlayerItemList";
+import OverviewPlayerItemList from "@/shared/ui/overview-player-item/OverviewPlayerItemList";
 import styles from "./GameSummaryPage.module.css";
-import Button from "@/components/button/Button";
-import { ErrorState } from "@/components/error-state";
-import { Podium } from "@/components/podium";
+import Button from "@/shared/ui/button/Button";
+import { ErrorState } from "@/shared/ui/error-state";
+import { Podium } from "@/shared/ui/podium";
 import Undo from "@/assets/icons/undolinkbutton.svg";
 import React from "react";
 import { useGameSummaryPage } from "../hooks/useGameSummaryPage";
