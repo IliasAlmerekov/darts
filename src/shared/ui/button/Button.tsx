@@ -66,7 +66,7 @@ function Button({
     );
   }
   return (
-    <button className={buttonClasses} onClick={handleClick}>
+    <button className={buttonClasses} onClick={handleClick} disabled={disabled}>
       {buttonContent}
     </button>
   );

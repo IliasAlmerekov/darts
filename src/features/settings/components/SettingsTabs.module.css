@@ -47,10 +47,16 @@
   font-weight: 700;
   cursor: pointer;
   transition: color 0.55s cubic-bezier(0.22, 1, 0.36, 1);
+  -webkit-tap-highlight-color: transparent;
+  outline: none;
 }
 
 .buttonActive {
   color: var(--white);
+}
+
+.button:focus-visible {
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--blue) 40%, white);
 }
 
 @media (width <= 1024px) {

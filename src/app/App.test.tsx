@@ -45,11 +45,11 @@ describe("App routing", () => {
     window.history.pushState({}, "", "/");
   });
 
-  it("redirects unknown routes to login page", async () => {
+  it("renders 404 page for unknown routes", async () => {
     window.history.pushState({}, "", "/unknown-route");
 
     render(<App />);
 
-    expect(await screen.findByText("Login Page")).toBeDefined();
+    expect(await screen.findByText("Page not found")).toBeDefined();
   });
 });

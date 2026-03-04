@@ -1,5 +1,5 @@
 import { apiClient } from "@/lib/api";
-import type { GameThrowsResponse } from "./record-throw";
+import type { GameThrowsResponse } from "@/types";
 
 const CREATE_GAME_SETTINGS_ENDPOINT = "/game/settings";
 const GAME_SETTINGS_ENDPOINT = (id: number) => `/game/${id}/settings`;

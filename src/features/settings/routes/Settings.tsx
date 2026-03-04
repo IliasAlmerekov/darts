@@ -1,14 +1,31 @@
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo, useEffect, useCallback, useRef } from "react";
 import { useParams } from "react-router-dom";
-import NavigationBar from "@/components/navigation-bar/NavigationBar";
+import { AdminLayout } from "@/components/admin-layout";
 import { useStore } from "@nanostores/react";
-import { $gameSettings, $currentGameId, setGameData, setCurrentGameId } from "@/stores";
-import { saveGameSettings, getGameThrows } from "@/features/game/api";
+import { $gameData, $gameSettings, setGameData } from "@/features/game";
+import { $currentGameId, setCurrentGameId } from "@/features/room";
+import { useGameFlowPort } from "@/shared/providers/GameFlowPortProvider";
 import styles from "./Settings.module.css";
 import { SettingsTabs } from "../components/SettingsTabs";
 
+const GAME_MODE_OPTIONS = [
+  { label: "Single-out", id: "single-out" },
+  { label: "Double-out", id: "double-out" },
+  { label: "Triple-out", id: "triple-out" },
+] as const;
+
+const POINTS_OPTIONS = [
+  { label: "101", id: 101 },
+  { label: "201", id: 201 },
+  { label: "301", id: 301 },
+  { label: "401", id: 401 },
+  { label: "501", id: 501 },
+] as const;
+
 function Settings(): JSX.Element {
+  const gameFlow = useGameFlowPort();
   const { id: gameIdParam } = useParams<{ id?: string }>();
+  const gameData = useStore($gameData);
   const gameSettings = useStore($gameSettings);
   const currentGameIdFromStore = useStore($currentGameId);
 
@@ -21,36 +38,58 @@ function Settings(): JSX.Element {
     return currentGameIdFromStore;
   }, [gameIdParam, currentGameIdFromStore]);
   const [isSaving, setIsSaving] = useState(false);
-  const [isLoading, setIsLoading] = useState(true);
+  const [savingScope, setSavingScope] = useState<"game-mode" | "points" | null>(null);
+  const initialGameMode: "single-out" | "double-out" | "triple-out" = gameSettings
+    ? gameSettings.doubleOut
+      ? "double-out"
+      : gameSettings.tripleOut
+        ? "triple-out"
+        : "single-out"
+    : "single-out";
+  const initialPoints = gameSettings?.startScore ?? 301;
+  const [selectedGameMode, setSelectedGameMode] = useState<
+    "single-out" | "double-out" | "triple-out"
+  >(initialGameMode);
+  const [selectedPoints, setSelectedPoints] = useState<number>(initialPoints);
+  const [hasHydratedSelection, setHasHydratedSelection] = useState(() => Boolean(gameSettings));
+  const selectedGameModeRef = useRef(selectedGameMode);
+  const selectedPointsRef = useRef(selectedPoints);
+  const effectiveGameIdRef = useRef<number | null>(null);
+  const isSavingRef = useRef(false);
 
-  // Update store with gameId from URL
+  // Update store with gameId from URL or already loaded game data.
   useEffect(() => {
-    if (currentGameId && currentGameId !== currentGameIdFromStore) {
-      setCurrentGameId(currentGameId);
+    const resolvedGameId = currentGameId ?? gameData?.id ?? null;
+    if (resolvedGameId && resolvedGameId !== currentGameIdFromStore) {
+      setCurrentGameId(resolvedGameId);
     }
-  }, [currentGameId, currentGameIdFromStore]);
+  }, [currentGameId, currentGameIdFromStore, gameData?.id]);
+
+  useEffect(() => {
+    setHasHydratedSelection(false);
+  }, [currentGameId]);
 
   // Load game settings from backend on mount or when gameId changes
   useEffect(() => {
     if (!currentGameId) {
-      setIsLoading(false);
       return;
     }
 
     const loadGameSettings = async () => {
-      setIsLoading(true);
       try {
-        const gameData = await getGameThrows(currentGameId);
+        const gameData = await gameFlow.getGameThrows(currentGameId);
         setGameData(gameData);
       } catch (error) {
         console.error("Failed to load game settings:", error);
-      } finally {
-        setIsLoading(false);
       }
     };
 
-    loadGameSettings();
-  }, [currentGameId]);
+    const hasCurrentGameInStore = gameData?.id === currentGameId;
+    if (!hasCurrentGameInStore) {
+      void loadGameSettings();
+      return;
+    }
+  }, [currentGameId, gameData?.id, gameFlow]);
 
   // Mapping zwischen Backend-Settings und UI-Darstellung
   const currentGameMode = useMemo(() => {
@@ -61,105 +100,151 @@ function Settings(): JSX.Element {
   }, [gameSettings]);
 
   const currentPoints = gameSettings?.startScore ?? 301;
+  const effectiveGameId = currentGameId ?? gameData?.id ?? null;
 
-  const handleGameModeClick = async (id: string | number) => {
-    if (isSaving) return;
+  useEffect(() => {
+    selectedGameModeRef.current = selectedGameMode;
+  }, [selectedGameMode]);
 
-    const mode = id.toString();
-    const isDoubleOut = mode === "double-out";
-    const isTripleOut = mode === "triple-out";
+  useEffect(() => {
+    selectedPointsRef.current = selectedPoints;
+  }, [selectedPoints]);
 
-    setIsSaving(true);
+  useEffect(() => {
+    effectiveGameIdRef.current = effectiveGameId;
+  }, [effectiveGameId]);
 
-    try {
-      const response = await saveGameSettings(
-        {
-          startScore: currentPoints,
-          doubleOut: isDoubleOut,
-          tripleOut: isTripleOut,
-        },
-        currentGameId,
-      );
-      // Aktualisiere gameData mit der Response für sofortiges visuelles Feedback
-      setGameData(response);
-    } catch (error) {
-      console.error("Failed to save game mode:", error);
-    } finally {
-      setIsSaving(false);
+  useEffect(() => {
+    isSavingRef.current = isSaving;
+  }, [isSaving]);
+
+  useEffect(() => {
+    if (hasHydratedSelection) {
+      return;
     }
-  };
-
-  const handlePointsClick = async (id: string | number) => {
-    if (isSaving) return;
-
-    const points = Number(id);
-    const isDoubleOut = currentGameMode === "double-out";
-    const isTripleOut = currentGameMode === "triple-out";
-
-    setIsSaving(true);
-
-    try {
-      const response = await saveGameSettings(
-        {
-          startScore: points,
-          doubleOut: isDoubleOut,
-          tripleOut: isTripleOut,
-        },
-        currentGameId,
-      );
-      // Aktualisiere gameData mit der Response für sofortiges visuelles Feedback
-      setGameData(response);
-    } catch (error) {
-      console.error("Failed to save points:", error);
-    } finally {
-      setIsSaving(false);
+    if (!gameSettings) {
+      return;
     }
-  };
+    if (effectiveGameId && gameData?.id !== effectiveGameId) {
+      return;
+    }
 
-  if (isLoading) {
-    return (
-      <div className={styles.settings}>
-        <NavigationBar />
-        <h1>Settings</h1>
-        <p>Loading settings...</p>
-      </div>
-    );
-  }
+    setSelectedGameMode(currentGameMode);
+    setSelectedPoints(currentPoints);
+    setHasHydratedSelection(true);
+  }, [
+    currentGameMode,
+    currentPoints,
+    effectiveGameId,
+    gameData?.id,
+    gameSettings,
+    hasHydratedSelection,
+  ]);
+
+  const handleGameModeClick = useCallback(
+    async (id: string | number) => {
+      if (isSavingRef.current) return;
+
+      const mode = id.toString() as "single-out" | "double-out" | "triple-out";
+      const isDoubleOut = mode === "double-out";
+      const isTripleOut = mode === "triple-out";
+      const previousMode = selectedGameModeRef.current;
+      setSelectedGameMode(mode);
+      selectedGameModeRef.current = mode;
+
+      setIsSaving(true);
+      setSavingScope("game-mode");
+      isSavingRef.current = true;
+
+      try {
+        const response = await gameFlow.saveGameSettings(
+          {
+            startScore: selectedPointsRef.current,
+            doubleOut: isDoubleOut,
+            tripleOut: isTripleOut,
+          },
+          effectiveGameIdRef.current,
+        );
+        // Aktualisiere gameData mit der Response für sofortiges visuelles Feedback
+        setGameData(response);
+      } catch (error) {
+        setSelectedGameMode(previousMode);
+        selectedGameModeRef.current = previousMode;
+        console.error("Failed to save game mode:", error);
+      } finally {
+        setIsSaving(false);
+        setSavingScope(null);
+        isSavingRef.current = false;
+      }
+    },
+    [gameFlow],
+  );
+
+  const handlePointsClick = useCallback(
+    async (id: string | number) => {
+      if (isSavingRef.current) return;
+
+      const points = Number(id);
+      const currentMode = selectedGameModeRef.current;
+      const isDoubleOut = currentMode === "double-out";
+      const isTripleOut = currentMode === "triple-out";
+      const previousPoints = selectedPointsRef.current;
+      setSelectedPoints(points);
+      selectedPointsRef.current = points;
+
+      setIsSaving(true);
+      setSavingScope("points");
+      isSavingRef.current = true;
+
+      try {
+        const response = await gameFlow.saveGameSettings(
+          {
+            startScore: points,
+            doubleOut: isDoubleOut,
+            tripleOut: isTripleOut,
+          },
+          effectiveGameIdRef.current,
+        );
+        // Aktualisiere gameData mit der Response für sofortiges visuelles Feedback
+        setGameData(response);
+      } catch (error) {
+        setSelectedPoints(previousPoints);
+        selectedPointsRef.current = previousPoints;
+        console.error("Failed to save points:", error);
+      } finally {
+        setIsSaving(false);
+        setSavingScope(null);
+        isSavingRef.current = false;
+      }
+    },
+    [gameFlow],
+  );
 
   return (
-    <div className={styles.settings}>
-      <NavigationBar />
-      <h1>Settings</h1>
-      <section className={styles.settingsSection}>
-        <div className={styles.settingsBody}>
-          <SettingsTabs
-            title="Game Mode"
-            options={[
-              { label: "Single-out", id: "single-out" },
-              { label: "Double-out", id: "double-out" },
-              { label: "Triple-out", id: "triple-out" },
-            ]}
-            selectedId={currentGameMode}
-            onChange={handleGameModeClick}
-            disabled={isSaving}
-          />
-          <SettingsTabs
-            title="Points"
-            options={[
-              { label: "101", id: 101 },
-              { label: "201", id: 201 },
-              { label: "301", id: 301 },
-              { label: "401", id: 401 },
-              { label: "501", id: 501 },
-            ]}
-            selectedId={currentPoints}
-            onChange={handlePointsClick}
-            disabled={isSaving}
-            mobileLayout="grid"
-          />
-        </div>
-      </section>
-    </div>
+    <AdminLayout currentGameId={currentGameIdFromStore}>
+      <div className={styles.settings}>
+        <h1>Settings</h1>
+        <section className={styles.settingsSection}>
+          <div className={styles.settingsBody}>
+            <SettingsTabs
+              title="Game Mode"
+              options={GAME_MODE_OPTIONS}
+              selectedId={selectedGameMode}
+              onChange={handleGameModeClick}
+              disabled={isSaving && savingScope === "game-mode"}
+            />
+            <SettingsTabs
+              title="Points"
+              options={POINTS_OPTIONS}
+              selectedId={selectedPoints}
+              onChange={handlePointsClick}
+              disabled={isSaving && savingScope === "points"}
+              mobileLayout="grid"
+            />
+          </div>
+        </section>
+      </div>
+    </AdminLayout>
   );
 }
 

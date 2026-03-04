@@ -1,3 +1,4 @@
+import React from "react";
 import ViewToogleButton from "@/components/button/ViewToogleBtn";
 import { SortTabs, type SortMethod } from "../sort-tabs";
 import styles from "./StatisticsHeaderControls.module.css";
@@ -9,7 +10,7 @@ interface StatisticsHeaderControlsProps {
   sortDisabled?: boolean;
 }
 
-export function StatisticsHeaderControls({
+function StatisticsHeaderControlsComponent({
   title,
   sortValue,
   onSortChange,
@@ -27,3 +28,5 @@ export function StatisticsHeaderControls({
     </div>
   );
 }
+
+export const StatisticsHeaderControls = React.memo(StatisticsHeaderControlsComponent);

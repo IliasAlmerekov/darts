@@ -1,0 +1,132 @@
+.root {
+  --error-bg: linear-gradient(140deg, rgb(255 255 255 / 98%), rgb(241 241 241 / 95%));
+  --error-border: rgb(255 32 1 / 35%);
+  --error-shadow: 0 16px 32px rgb(45 57 68 / 14%);
+  --error-text: var(--darkblue);
+  --error-muted: var(--darkgrey);
+
+  border: 1px solid var(--error-border);
+  border-radius: var(--radius-lg);
+  background: var(--error-bg);
+  box-shadow: var(--error-shadow);
+  color: var(--error-text);
+}
+
+.inline {
+  padding: clamp(14px, 2.5vw, 22px);
+}
+
+.page {
+  width: min(100%, 640px);
+  margin: clamp(20px, 6vh, 56px) auto;
+  padding: clamp(20px, 4.2vw, 34px);
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  gap: var(--space-xs);
+}
+
+.badge {
+  width: 28px;
+  height: 28px;
+  min-width: 28px;
+  border-radius: 999px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--red);
+  color: var(--white);
+  font-weight: var(--font-weight-bold);
+  line-height: 1;
+}
+
+.title {
+  margin: 0;
+  font-size: var(--font-size-20);
+  line-height: var(--line-height-24);
+  color: var(--error-text);
+}
+
+.message {
+  margin: var(--space-xs) 0 0;
+  white-space: pre-line;
+  font-size: var(--font-size-16);
+  line-height: var(--line-height-19);
+  color: var(--error-muted);
+}
+
+.actions {
+  margin-top: var(--space-md);
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-xs);
+}
+
+.action {
+  appearance: none;
+  border: 1px solid transparent;
+  border-radius: var(--radius-pill);
+  min-height: 40px;
+  padding: 0 var(--space-md);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-family: inherit;
+  font-size: var(--font-size-14);
+  font-weight: var(--font-weight-bold);
+  text-decoration: none;
+  cursor: pointer;
+  transition:
+    transform var(--transition-fast),
+    box-shadow var(--transition-base),
+    border-color var(--transition-base),
+    background-color var(--transition-base),
+    color var(--transition-base);
+}
+
+.action:focus-visible {
+  outline: 2px solid var(--blue);
+  outline-offset: 2px;
+}
+
+.action:hover {
+  transform: translateY(-1px);
+}
+
+.primaryAction {
+  background: var(--blue);
+  color: var(--white);
+  box-shadow: 0 8px 18px rgb(0 0 219 / 25%);
+}
+
+.primaryAction:hover {
+  background: #1111f2;
+}
+
+.secondaryAction {
+  background: transparent;
+  color: var(--darkblue);
+  border-color: rgb(95 95 95 / 32%);
+}
+
+.secondaryAction:hover {
+  border-color: var(--darkgrey);
+  background: rgb(255 255 255 / 68%);
+}
+
+@media (width <= 600px) {
+  .page {
+    margin: var(--page-padding) auto;
+  }
+
+  .actions {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .action {
+    width: 100%;
+  }
+}

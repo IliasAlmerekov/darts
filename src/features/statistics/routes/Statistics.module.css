@@ -99,12 +99,6 @@
   color: var(--darkgrey);
 }
 
-@media (width <= 768px) {
-  .playerstatsContainer {
-    padding: var(--space-md);
-  }
-}
-
 @media (width <= 600px) {
   .playerRow {
     width: 100%;

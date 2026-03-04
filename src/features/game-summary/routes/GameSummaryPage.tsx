@@ -1,13 +1,13 @@
 import OverviewPlayerItemList from "@/components/overview-player-item/OverviewPlayerItemList";
 import styles from "./GameSummaryPage.module.css";
 import Button from "@/components/button/Button";
+import { ErrorState } from "@/components/error-state";
 import { Podium } from "@/components/podium";
 import Undo from "@/assets/icons/undolinkbutton.svg";
-import { Link } from "react-router-dom";
 import React from "react";
 import { useGameSummaryPage } from "../hooks/useGameSummaryPage";
 import { useStore } from "@nanostores/react";
-import { $gameSettings } from "@/stores";
+import { $gameSettings } from "@/features/game";
 
 function GameSummaryPage(): React.JSX.Element {
   const {
@@ -15,6 +15,7 @@ function GameSummaryPage(): React.JSX.Element {
     podiumData,
     newList,
     leaderBoardList,
+    loadSummary,
     handleUndo,
     handlePlayAgain,
     handleBackToStart,
@@ -26,9 +27,17 @@ function GameSummaryPage(): React.JSX.Element {
   return (
     <div className={styles.summary}>
       <div className={styles.undoArea}>
-        <Link onClick={handleUndo} to="/game" className={styles.undoButton}>
-          <img src={Undo} alt="Undo last action" />
-        </Link>
+        <button
+          type="button"
+          onClick={(event) => {
+            event.preventDefault();
+            void handleUndo();
+          }}
+          className={styles.undoButton}
+          aria-label="Return to game"
+        >
+          <img src={Undo} alt="" />
+        </button>
       </div>
       <div className={styles.podiumBoard}>
         <Podium userMap={podiumData} list={newList} startScore={startScore} />
@@ -37,25 +46,34 @@ function GameSummaryPage(): React.JSX.Element {
         <OverviewPlayerItemList userMap={leaderBoardList} startScore={startScore} />
       </div>
 
-      <div className={styles.playAgainWrap}>
-        <Button
-          label="Play Again"
-          type="primary"
-          isInverted
-          className={styles.summaryActionButton}
-          handleClick={handlePlayAgain}
-        />
-      </div>
+      {error ? (
+        <div className={styles.errorPanel}>
+          <ErrorState
+            title="Summary action failed"
+            message={error}
+            primaryAction={{ label: "Retry", onClick: () => void loadSummary() }}
+          />
+        </div>
+      ) : null}
 
-      {error && <p className={styles.error}>{error}</p>}
-
-      <div className={styles.backToStartWrap}>
-        <Button
-          label="Back To Start"
-          type="primary"
-          className={styles.summaryActionButton}
-          handleClick={handleBackToStart}
-        />
+      <div className={styles.summaryActions}>
+        <div className={styles.playAgainWrap}>
+          <Button
+            label="Play Again"
+            type="primary"
+            isInverted
+            className={styles.summaryActionButton}
+            handleClick={handlePlayAgain}
+          />
+        </div>
+        <div className={styles.backToStartWrap}>
+          <Button
+            label="Back To Start"
+            type="primary"
+            className={styles.summaryActionButton}
+            handleClick={handleBackToStart}
+          />
+        </div>
       </div>
     </div>
   );

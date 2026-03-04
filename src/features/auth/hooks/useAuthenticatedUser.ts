@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { getAuthenticatedUser, type AuthenticatedUser } from "../api";
-import { setCurrentGameId } from "@/stores/room";
+import { setCurrentGameId } from "@/features/room";
 
 type UseAuthenticatedUserResult = {
   user: AuthenticatedUser | null;
@@ -17,6 +17,10 @@ export const useAuthenticatedUser = (): UseAuthenticatedUserResult => {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
+    const safetyTimeoutId = window.setTimeout(() => {
+      setLoading(false);
+    }, 10000);
+
     const fetchUser = async () => {
       try {
         const userData = await getAuthenticatedUser();
@@ -33,11 +37,16 @@ export const useAuthenticatedUser = (): UseAuthenticatedUserResult => {
           setError("Unknown error");
         }
       } finally {
+        window.clearTimeout(safetyTimeoutId);
         setLoading(false);
       }
     };
 
-    fetchUser();
+    void fetchUser();
+
+    return () => {
+      window.clearTimeout(safetyTimeoutId);
+    };
   }, []);
 
   return { user, loading, error };

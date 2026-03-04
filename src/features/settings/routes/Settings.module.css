@@ -7,6 +7,11 @@
   margin: var(--space-md) 0;
 }
 
+.syncHint {
+  margin: 0 0 var(--space-sm);
+  color: var(--color-grey-600);
+}
+
 .settingsSection {
   display: flex;
   flex-direction: column;

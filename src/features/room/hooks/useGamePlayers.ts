@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useEventSource } from "@/hooks/useEventSource";
-import { getGameThrows } from "@/features/game/api";
+import { getGameThrows } from "@/lib/api/game";
 
 interface RawPlayer {
   id: number;
@@ -23,7 +23,7 @@ type PlayersEventPayload = {
 /**
  * Loads and keeps track of players in a room using SSE + fallback fetch.
  */
-export function useGamePlayers(gameId: number | null, previousGameId?: number | null) {
+export function useGamePlayers(gameId: number | null) {
   const [players, setPlayers] = useState<Player[]>([]);
 
   const url = useMemo(() => (gameId ? `/api/room/${gameId}/stream` : null), [gameId]);
@@ -32,15 +32,12 @@ export function useGamePlayers(gameId: number | null, previousGameId?: number | 
   useEffect(() => {
     let isMounted = true;
 
-    // Load players from previousGameId if no active game, otherwise from current game
-    const sourceGameId = previousGameId && !gameId ? previousGameId : gameId;
-
-    if (!sourceGameId) {
+    if (!gameId) {
       setPlayers([]);
       return;
     }
 
-    getGameThrows(sourceGameId)
+    getGameThrows(gameId)
       .then((response) => {
         if (!isMounted) return;
         const sourcePlayers = response.players ?? [];
@@ -60,7 +57,7 @@ export function useGamePlayers(gameId: number | null, previousGameId?: number | 
     return () => {
       isMounted = false;
     };
-  }, [gameId, previousGameId]);
+  }, [gameId]);
 
   const handlePlayers = useCallback((event: MessageEvent<string>) => {
     try {

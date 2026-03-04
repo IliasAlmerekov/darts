@@ -3,7 +3,7 @@
   padding: var(--page-padding);
   grid-template-columns: repeat(12, minmax(0, 1fr));
   gap: var(--space-md);
-  grid-template-rows: auto auto 1fr auto;
+  grid-template-rows: auto auto 1fr auto auto;
   min-height: 100dvh;
   box-sizing: border-box;
   position: relative;
@@ -15,22 +15,48 @@
   place-self: start;
 }
 
+.undoButton {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  margin: 0;
+  border: none;
+  background: none;
+  cursor: pointer;
+}
+
+.undoButton:focus-visible {
+  outline: 2px solid var(--darkblue);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
 .leaderBoard {
   grid-row: 2;
   grid-column: 1 / -1;
 }
 
-.playAgainWrap {
-  grid-row: 4;
-  grid-column: 7 / span 3;
+.summaryActions {
+  grid-row: 5;
+  grid-column: 7 / -1;
   place-self: end stretch;
+  width: 100%;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-sm);
+}
+
+.errorPanel {
+  grid-row: 4;
+  grid-column: 1 / -1;
+}
+
+.playAgainWrap {
   width: 100%;
 }
 
 .backToStartWrap {
-  grid-row: 4;
-  grid-column: 10 / span 3;
-  place-self: end stretch;
   width: 100%;
 }
 
@@ -54,7 +80,7 @@
     height: 100dvh;
     min-height: 0;
     overflow-y: auto;
-    grid-template-rows: auto auto minmax(0, 1fr) auto;
+    grid-template-rows: auto auto minmax(0, 1fr) auto auto;
   }
 
   .undoArea {
@@ -72,12 +98,9 @@
     grid-row: 3;
   }
 
-  .playAgainWrap {
-    grid-column: 7 / span 3;
-  }
-
-  .backToStartWrap {
-    grid-column: 10 / span 3;
+  .summaryActions {
+    grid-column: 7 / -1;
+    margin-bottom: 20px;
   }
 
   .summaryActionButton {
@@ -87,19 +110,19 @@
 
 @media (width <= 600px) {
   .summary {
-    --button-height: clamp(38px, 10vw, 44px);
+    --button-height: clamp(30px, 8.2vw, 36px);
 
-    padding: clamp(10px, 3.2vw, 16px);
+    padding-bottom: calc(clamp(8px, 2.4vw, 12px) + env(safe-area-inset-bottom));
     gap: clamp(8px, 2.4vw, 12px);
-    grid-template-columns: 1fr;
-    grid-template-rows: auto auto auto auto auto;
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: auto auto 1fr auto auto;
   }
 
   .undoArea,
   .leaderBoard,
   .podiumBoard,
-  .playAgainWrap,
-  .backToStartWrap {
+  .summaryActions,
+  .errorPanel {
     grid-column: 1 / -1;
   }
 
@@ -110,25 +133,42 @@
 
   .podiumBoard {
     grid-row: 2;
+    padding-inline: clamp(6px, 2vw, 12px);
   }
 
   .leaderBoard {
     grid-row: 3;
   }
 
-  .playAgainWrap {
-    grid-row: 4;
-    place-self: end stretch;
-    width: 100%;
-  }
-
-  .backToStartWrap {
+  .summaryActions {
+    position: static;
+    display: flex;
+    flex-direction: column;
     grid-row: 5;
     place-self: end stretch;
-    width: 100%;
+    gap: clamp(4px, 1.6vw, 10px);
+    z-index: 15;
+  }
+
+  .errorPanel {
+    grid-row: 4;
   }
 
   .summaryActionButton {
-    font-size: clamp(12px, 3.2vw, 14px);
+    font-size: clamp(9px, 2.7vw, 11px);
+  }
+}
+
+@media (width <= 360px) {
+  .summary {
+    --button-height: clamp(26px, 7.6vw, 30px);
+  }
+
+  .podiumBoard {
+    padding-inline: 12px;
+  }
+
+  .summaryActionButton {
+    font-size: 9px;
   }
 }

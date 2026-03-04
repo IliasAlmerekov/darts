@@ -79,6 +79,12 @@
   gap: var(--space-sm);
 }
 
+.tabContent img {
+  width: 24px;
+  height: 24px;
+  flex: 0 0 24px;
+}
+
 .tabButton.active {
   color: var(--white);
   font-weight: 700;
@@ -90,20 +96,46 @@
 }
 
 .deepblueIcon {
-  top: var(--space-md);
   position: fixed;
+  top: var(--space-md);
   right: var(--space-md);
 }
 
-@media (width <= 600px) {
+@media (width <= 1024px) {
   .navigation {
-    margin-top: var(--space-md);
+    margin-top: var(--space-lg);
+    height: 48px;
     padding: 0 var(--space-xs);
   }
 
   .navItems {
     min-height: 40px;
-    margin-left: var(--space-md);
+  }
+
+  .tabButton {
+    padding: 6px 10px;
+  }
+
+  .tabContent {
+    font-size: 14px;
+    gap: 8px;
+  }
+
+  .deepblueIcon {
+    position: fixed;
+    top: var(--space-md);
+    right: var(--space-md);
+  }
+}
+
+@media (width <= 600px) {
+  .navigation {
+    margin-top: var(--space-md);
+  }
+
+  .navItems {
+    min-height: 40px;
+    margin-left: 6px;
   }
 
   .tabContent {
@@ -113,6 +145,7 @@
   .tabContent img {
     width: 18px;
     height: 18px;
+    flex: 0 0 18px;
   }
 
   .tabLabel {
@@ -121,8 +154,21 @@
 
   .deepblueIcon {
     position: static;
-    width: 90px;
-    height: 90px;
-    margin-left: 8px;
+    width: 72px;
+    height: 72px;
+    margin-left: 6px;
+  }
+}
+
+@media (width <= 390px) {
+  .tabContent img {
+    width: 16px;
+    height: 16px;
+    flex: 0 0 16px;
+  }
+
+  .deepblueIcon {
+    width: 68px;
+    height: 68px;
   }
 }

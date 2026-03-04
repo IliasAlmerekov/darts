@@ -1,6 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
-import { useStore } from "@nanostores/react";
 import settingsCogInactive from "@/assets/icons/settings-inactive.svg";
 import settingsCog from "@/assets/icons/settings.svg";
 import dartIcon from "@/assets/icons/dart.svg";
@@ -10,14 +9,17 @@ import statisticIconInactive from "@/assets/icons/statistics-inactive.svg";
 import styles from "./NavigationBar.module.css";
 import Madebydeepblue from "@/assets/icons/madeByDeepblue.svg";
 import clsx from "clsx";
-import { $currentGameId } from "@/stores";
 
-export default function NavigationBar(): React.JSX.Element {
+type NavigationBarProps = {
+  className?: string;
+  currentGameId?: number | null;
+};
+
+function NavigationBar({ className, currentGameId = null }: NavigationBarProps): React.JSX.Element {
   const navigate = useNavigate();
   const location = useLocation();
-  const currentGameId = useStore($currentGameId);
   const [previewTabId, setPreviewTabId] = useState<string | null>(null);
-  const timerRef = useRef<number | null>(null);
+  const navigationTimerRef = useRef<number | null>(null);
 
   // Dynamischer path für Game basierend auf currentGameId
   const gamePath = useMemo(() => {
@@ -29,36 +31,40 @@ export default function NavigationBar(): React.JSX.Element {
     return currentGameId ? `/settings/${currentGameId}` : "/settings";
   }, [currentGameId]);
 
-  const navItems = [
-    {
-      label: "Statistics",
-      activeIcon: statisticIcon,
-      inActiveIcon: statisticIconInactive,
-      id: "statistics",
-      path: "/statistics",
-    },
-    {
-      label: "Game",
-      activeIcon: dartIcon,
-      inActiveIcon: dartIconInactive,
-      id: "game",
-      path: gamePath,
-    },
-    {
-      label: "Settings",
-      activeIcon: settingsCog,
-      inActiveIcon: settingsCogInactive,
-      id: "settings",
-      path: settingsPath,
-    },
-  ];
+  const navItems = useMemo(
+    () => [
+      {
+        label: "Statistics",
+        activeIcon: statisticIcon,
+        inActiveIcon: statisticIconInactive,
+        id: "statistics",
+        path: "/statistics",
+      },
+      {
+        label: "Game",
+        activeIcon: dartIcon,
+        inActiveIcon: dartIconInactive,
+        id: "game",
+        path: gamePath,
+      },
+      {
+        label: "Settings",
+        activeIcon: settingsCog,
+        inActiveIcon: settingsCogInactive,
+        id: "settings",
+        path: settingsPath,
+      },
+    ],
+    [gamePath, settingsPath],
+  );
 
   const getIsActive = (itemId: string, itemPath: string): boolean => {
     return (
       location.pathname === itemPath ||
       (itemId === "game" &&
         (location.pathname === "/start" || location.pathname.startsWith("/start/"))) ||
-      (itemId === "statistics" && location.pathname === "/gamesoverview") ||
+      (itemId === "statistics" &&
+        (location.pathname === "/gamesoverview" || location.pathname.startsWith("/details/"))) ||
       (itemId === "settings" && location.pathname.startsWith("/settings"))
     );
   };
@@ -72,8 +78,8 @@ export default function NavigationBar(): React.JSX.Element {
 
   useEffect(() => {
     return () => {
-      if (timerRef.current !== null) {
-        window.clearTimeout(timerRef.current);
+      if (navigationTimerRef.current !== null) {
+        window.clearTimeout(navigationTimerRef.current);
       }
     };
   }, []);
@@ -84,18 +90,18 @@ export default function NavigationBar(): React.JSX.Element {
     }
 
     setPreviewTabId(itemId);
-
-    if (timerRef.current !== null) {
-      window.clearTimeout(timerRef.current);
+    if (navigationTimerRef.current !== null) {
+      window.clearTimeout(navigationTimerRef.current);
     }
 
-    timerRef.current = window.setTimeout(() => {
+    // Keep a short window for the sliding indicator to be perceptible.
+    navigationTimerRef.current = window.setTimeout(() => {
       navigate(path);
-    }, 180);
+    }, 110);
   };
 
   return (
-    <div className={styles.navigation}>
+    <div className={clsx(styles.navigation, className)}>
       <img className={styles.deepblueIcon} src={Madebydeepblue} alt="" />
       <div
         className={clsx(styles.navItems, {
@@ -105,7 +111,7 @@ export default function NavigationBar(): React.JSX.Element {
         })}
       >
         {navItems.map((item) => {
-          const isActive = getIsActive(item.id, item.path);
+          const isDisplayedActive = displayedTabId === item.id;
 
           return (
             <button
@@ -117,7 +123,10 @@ export default function NavigationBar(): React.JSX.Element {
               })}
             >
               <span className={styles.tabContent}>
-                <img src={isActive ? item.activeIcon : item.inActiveIcon} alt={item.label} />
+                <img
+                  src={isDisplayedActive ? item.activeIcon : item.inActiveIcon}
+                  alt={item.label}
+                />
                 <span className={styles.tabLabel}>{item.label}</span>
               </span>
             </button>
@@ -127,3 +136,5 @@ export default function NavigationBar(): React.JSX.Element {
     </div>
   );
 }
+
+export default React.memo(NavigationBar);

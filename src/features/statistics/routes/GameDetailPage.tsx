@@ -1,65 +1,40 @@
 import React from "react";
+import { useStore } from "@nanostores/react";
 import styles from "./GameDetailPage.module.css";
-import { Link, useParams } from "react-router-dom";
+import { Link } from "react-router-dom";
 import { Podium } from "@/components/podium";
 import BackBtn from "@/assets/icons/back.svg";
-import NavigationBar from "@/components/navigation-bar/NavigationBar";
+import { AdminLayout } from "@/components/admin-layout";
 import OverviewPlayerItemList from "@/components/overview-player-item/OverviewPlayerItemList";
+import { useGameDetailPage } from "../hooks/useGameDetailPage";
+import { $currentGameId } from "@/features/room";
 
 export default function GameDetailPage(): React.JSX.Element {
-  const { id } = useParams();
-  const savedGames = JSON.parse(localStorage.getItem("FinishedGames") || "[]");
-  const game = savedGames.find((g: { id: string | undefined }) => g.id === id);
+  const currentGameId = useStore($currentGameId);
+  const { error, podiumData, newList, leaderBoardList } = useGameDetailPage();
 
-  if (!game) return <div>Game not found</div>;
-
-  const startScore = game.startScore ?? 301;
-  const podiumList = game.players.slice(0, 3);
-  const podiumListWithPlaceholder = [...podiumList];
-  const leaderBoardList = game.players.slice(3, game.players.length + 1);
-
-  if (podiumList.length === 2) {
-    podiumListWithPlaceholder.push({
-      id: 0,
-      name: "-",
-      totalScore: 0,
-      roundCount: 0,
-      scoreAverage: 0,
-      rounds: [],
-    });
-  }
-  const podiumData = podiumList.length === 2 ? podiumListWithPlaceholder : podiumList;
   return (
-    <div className={styles.gameDetails}>
-      <NavigationBar />
-      <div className={styles.linkBtn}>
-        <Link to="/gamesoverview" className="back-btn">
-          <img src={BackBtn} alt="Back button" />
-        </Link>
-      </div>
-      <div className={styles.podiumCard}>
-        <div className={styles.dateInfo}>
-          <h1>
-            {new Date(game.date).toLocaleDateString("de-De", {
-              day: "2-digit",
-              month: "2-digit",
-              year: "numeric",
-            })}{" "}
-          </h1>
-          <h3>
-            {new Date(game.date).toLocaleTimeString("de-DE", {
-              hour: "2-digit",
-              minute: "2-digit",
-              hour12: false,
-            })}{" "}
-            Uhr
-          </h3>
+    <AdminLayout currentGameId={currentGameId}>
+      <div className={styles.gameDetails}>
+        <div className={styles.linkBtn}>
+          <Link to="/gamesoverview" className="back-btn">
+            <img src={BackBtn} alt="Back button" />
+          </Link>
         </div>
-        <Podium userMap={podiumData} list={game.players} startScore={startScore} />
-        <div className="playerboard-list">
-          <OverviewPlayerItemList userMap={leaderBoardList} startScore={startScore} />
+        <div className={styles.podiumCard}>
+          <h1>Game details</h1>
+          {error ? (
+            <div>{error}</div>
+          ) : (
+            <>
+              <Podium userMap={podiumData} list={newList} startScore={301} />
+              <div className="playerboard-list">
+                <OverviewPlayerItemList userMap={leaderBoardList} startScore={301} />
+              </div>
+            </>
+          )}
         </div>
       </div>
-    </div>
+    </AdminLayout>
   );
 }

@@ -1,6 +1,6 @@
 import { apiClient, API_BASE_URL } from "@/lib/api";
 import { ApiError, ForbiddenError, NetworkError, UnauthorizedError } from "@/lib/api/errors";
-import type { GameThrowsResponse } from "./record-throw";
+import type { GameThrowsResponse } from "@/types";
 
 const GET_GAME_ENDPOINT = (id: number) => `/game/${id}`;
 const gameStateVersionById = new Map<number, string>();
@@ -98,4 +98,15 @@ export function resetGameStateVersion(gameId?: number): void {
   }
 
   gameStateVersionById.clear();
+}
+
+/**
+ * Saves known server state version for subsequent conditional game requests.
+ */
+export function setGameStateVersion(gameId: number, stateVersion: string): void {
+  if (!stateVersion) {
+    return;
+  }
+
+  gameStateVersionById.set(gameId, stateVersion);
 }

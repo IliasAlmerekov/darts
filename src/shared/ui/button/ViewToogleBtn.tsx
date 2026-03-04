@@ -1,9 +1,9 @@
+import React, { useEffect, useRef, useState, useCallback } from "react";
 import clsx from "clsx";
 import styles from "./ViewToogleBtn.module.css";
-import { useEffect, useRef, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 
-export default function ViewToogleButton() {
+function ViewToogleButton() {
   const location = useLocation();
   const navigate = useNavigate();
 
@@ -24,21 +24,24 @@ export default function ViewToogleButton() {
     };
   }, []);
 
-  const handleSwitch = (targetView: "players" | "games"): void => {
-    if (targetView === activeView) {
-      return;
-    }
+  const handleSwitch = useCallback(
+    (targetView: "players" | "games"): void => {
+      if (targetView === activeView) {
+        return;
+      }
 
-    setPreviewView(targetView);
+      setPreviewView(targetView);
 
-    if (timerRef.current !== null) {
-      window.clearTimeout(timerRef.current);
-    }
+      if (timerRef.current !== null) {
+        window.clearTimeout(timerRef.current);
+      }
 
-    timerRef.current = window.setTimeout(() => {
-      navigate(targetView === "players" ? "/statistics" : "/gamesoverview");
-    }, 180);
-  };
+      timerRef.current = window.setTimeout(() => {
+        navigate(targetView === "players" ? "/statistics" : "/gamesoverview");
+      }, 180);
+    },
+    [activeView, navigate],
+  );
 
   return (
     <div
@@ -66,3 +69,5 @@ export default function ViewToogleButton() {
     </div>
   );
 }
+
+export default React.memo(ViewToogleButton);

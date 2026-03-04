@@ -1,3 +1,4 @@
+import React from "react";
 import clsx from "clsx";
 import styles from "./SettingsTabs.module.css";
 
@@ -8,14 +9,14 @@ type SettingsTabOption = {
 
 type SettingsTabsProps = {
   title: string;
-  options: SettingsTabOption[];
+  options: readonly SettingsTabOption[];
   selectedId: string | number;
   onChange: (id: string | number) => void;
   disabled?: boolean;
   mobileLayout?: "stack" | "grid";
 };
 
-export function SettingsTabs({
+function SettingsTabsComponent({
   title,
   options,
   selectedId,
@@ -60,3 +61,5 @@ export function SettingsTabs({
     </section>
   );
 }
+
+export const SettingsTabs = React.memo(SettingsTabsComponent);

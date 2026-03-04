@@ -16,6 +16,7 @@
   border: none;
   padding: 0;
   margin: 0;
+  background: transparent;
 }
 
 .deleteButton img {
@@ -23,11 +24,42 @@
   padding: 1px;
 }
 
-.selectedPlayerItem :first-child {
+.playerMain {
   display: flex;
   gap: 16px;
   background: white;
-  border: none;
+  align-items: center;
+}
+
+.moveIcon {
+  width: 24px;
+  height: 24px;
+  flex: 0 0 24px;
+  display: block;
+}
+
+.playerName {
+  font-size: 20px;
+  line-height: 24px;
+  font-weight: 400;
+  text-align: left;
+  width: 7em;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+@media (width <= 600px) {
+  .playerName {
+    font-size: 18px;
+    line-height: 22px;
+  }
+
+  .moveIcon {
+    width: 22px;
+    height: 22px;
+    flex-basis: 22px;
+  }
 }
 
 .fadeOut {

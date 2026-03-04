@@ -1,3 +1,4 @@
+import React from "react";
 import styles from "./GamePlayerItem.module.css";
 
 type Props = {
@@ -30,4 +31,7 @@ function FinishedGamePlayerItemList({ userMap }: Props) {
   );
 }
 
-export default FinishedGamePlayerItemList;
+export default React.memo(
+  FinishedGamePlayerItemList,
+  (previousProps, nextProps) => previousProps.userMap === nextProps.userMap,
+);

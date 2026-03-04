@@ -91,7 +91,7 @@
 .main {
   display: flex;
   flex-direction: column;
-  height: 100vh;
+  height: 100dvh;
   overflow: hidden;
 }
 
@@ -101,7 +101,7 @@
   gap: 24px;
   grid-template-columns: repeat(6, 1fr);
   grid-template-rows: auto 1fr;
-  height: calc(100vh - 48px);
+  height: calc(100dvh - 48px);
   padding: 24px 32px;
 }
 
@@ -164,7 +164,7 @@
   display: inline-flex;
   height: 3%;
   position: sticky;
-  top: calc(100vh - 30px);
+  top: calc(100dvh - 30px);
 }
 
 .selectedPlayerListScroll {

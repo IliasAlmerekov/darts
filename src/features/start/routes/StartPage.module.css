@@ -1,8 +1,13 @@
 .main {
   display: flex;
   flex-direction: column;
-  height: 100dvh;
+  flex: 1;
+  min-height: 0;
   overflow: hidden;
+}
+
+.pageError {
+  padding: var(--page-padding) var(--page-padding) 0;
 }
 
 .start {
@@ -10,7 +15,10 @@
   gap: var(--space-md);
   grid-template-columns: minmax(0, 1fr) minmax(0, 2fr);
   grid-template-rows: auto minmax(0, 1fr);
+  flex: 1;
   height: 100%;
+  min-height: 0;
+  overflow: hidden;
   padding: var(--page-padding);
   box-sizing: border-box;
 }
@@ -49,6 +57,7 @@
 
 .addedPlayerList {
   min-height: 0;
+  height: 100%;
   position: relative;
   overflow: hidden;
   grid-column: 2 / 3;
@@ -59,10 +68,12 @@
 }
 
 .playersListArea {
-  flex: 1;
+  flex: 1 1 0;
   min-height: 0;
+  height: 0;
   display: flex;
   flex-direction: column;
+  overflow: hidden;
 }
 
 .headerUnselectedPlayers {
@@ -82,31 +93,47 @@
   align-self: flex-end;
   width: min(100%, 320px);
   padding-top: var(--space-md);
+  padding-bottom: var(--space-md);
+  flex-shrink: 0;
 }
 
 .startBtnScrolled {
   margin-bottom: 0;
 }
 
+.mobileActionCreate {
+  display: none;
+}
+
 .mobileActionRow {
   display: flex;
+  flex-wrap: nowrap;
   gap: 5px;
   align-items: stretch;
+  width: 100%;
 }
 
 .mobileActionGuest {
   flex: 1 1 0;
-  display: block;
+  min-width: 0;
+  display: flex;
 }
 
 .mobileActionStart {
   flex: 6 1 0;
+  min-width: 0;
+  display: flex;
 }
 
 .startButton {
   margin-top: 0;
   border-radius: 8px;
   height: var(--button-height);
+}
+
+.mobileActionStart .startButton {
+  margin-top: 0;
+  align-self: stretch;
 }
 
 .guestButtonMobile {
@@ -120,6 +147,7 @@
   justify-content: center;
   width: 100%;
   margin-top: 0;
+  align-self: stretch;
 }
 
 .guestButtonMobile:hover {
@@ -190,16 +218,26 @@
 }
 
 .createNewPlayerButton {
-  font-size: var(--font-size-24);
-  font-weight: 700;
-  line-height: var(--line-height-28);
-  letter-spacing: 0.02em;
-  text-align: left;
-  color: var(--blue);
-  align-items: center;
-  display: flex;
-  padding: 0 8px 0 0;
-  gap: 10px;
+  width: 100%;
+  margin-top: 0;
+  height: var(--button-height);
+  border-radius: 8px;
+  background: transparent !important;
+  border: none !important;
+  color: var(--blue) !important;
+  justify-content: flex-start;
+  padding-inline: 0;
+}
+
+.createNewPlayerButton:hover {
+  background: transparent !important;
+  color: var(--blue) !important;
+}
+
+.createGameIcon {
+  width: 24px;
+  height: 24px;
+  filter: none;
 }
 
 .settingsCog {
@@ -293,7 +331,7 @@
   }
 }
 
-@media (width >= 771px) and (width <= 1024px) {
+@media (width >= 769px) and (width <= 1024px) {
   .start {
     grid-template-columns: minmax(220px, 300px) minmax(0, 1fr);
   }
@@ -307,7 +345,7 @@
   }
 }
 
-@media (width <= 770px) {
+@media (width <= 768px) {
   .start {
     grid-template-columns: minmax(180px, 1fr) minmax(0, 1.5fr);
     grid-template-rows: auto minmax(0, 1fr);
@@ -398,7 +436,13 @@
     flex-shrink: 0;
     padding-top: var(--space-sm);
     width: 100%;
-    margin-top: 0;
+    margin-top: auto;
+  }
+
+  .mobileActionCreate {
+    display: block;
+    width: 100%;
+    margin-bottom: var(--space-xs);
   }
 
   .startBtnScrolled {
@@ -415,11 +459,6 @@
     display: none;
   }
 
-  .createNewPlayerButton {
-    font-size: var(--font-size-14);
-    gap: 4px;
-  }
-
   .qrCodeStack {
     padding: var(--space-xs);
     gap: 8px;
@@ -431,10 +470,7 @@
   }
 
   .mobileCreateButtonWrapper {
-    display: flex;
-    flex: 1;
-    align-items: center;
-    justify-content: center;
+    display: none;
   }
 }
 
@@ -464,12 +500,5 @@
 
   .startBtnScrolled {
     margin-bottom: 0;
-  }
-}
-
-@media (width <= 400px) {
-  .createNewPlayerButton {
-    font-size: var(--font-size-13);
-    gap: 4px;
   }
 }
