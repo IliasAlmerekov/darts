@@ -1,0 +1,165 @@
+.playerstatsContainer {
+  background-color: var(--white);
+  padding: var(--page-padding);
+}
+
+.content {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md);
+}
+
+.playerList {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+}
+
+.playerRow {
+  display: grid;
+  box-sizing: border-box;
+  grid-template-columns: minmax(48px, 64px) minmax(160px, 1fr) minmax(120px, 180px) minmax(
+      120px,
+      180px
+    );
+  align-items: center;
+  padding: var(--space-sm) var(--space-sm);
+  background-color: var(--lightgrey);
+  border-radius: 8px;
+  gap: var(--space-sm);
+}
+
+.playerNumber {
+  padding-right: var(--space-sm);
+  font-weight: 400;
+  font-size: var(--font-size-20);
+  color: var(--darkgrey);
+}
+
+.playerName {
+  font-weight: 700;
+  font-size: var(--font-size-20);
+  min-width: 0;
+  word-break: break-word;
+}
+
+.playerStats {
+  grid-column: 3 / 5;
+  display: flex;
+  gap: var(--space-lg);
+  justify-content: flex-end;
+  flex-wrap: wrap;
+}
+
+.roundStat,
+.gamesStat {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+}
+
+.statLabel {
+  font-size: var(--font-size-16);
+  color: var(--darkgrey);
+}
+
+.statValue {
+  font-weight: 700;
+  font-size: var(--font-size-20);
+  color: var(--darkblue);
+}
+
+.paginationControls {
+  display: flex;
+  justify-content: center;
+  gap: var(--space-md);
+  margin-top: var(--space-md);
+  padding-bottom: var(--space-md);
+}
+
+.paginationButton {
+  border: none;
+  border-radius: 100px;
+  background-color: var(--lightgrey);
+  color: var(--darkblue);
+  cursor: pointer;
+  font-size: var(--font-size-16);
+  font-weight: 700;
+  min-height: 40px;
+  padding: 0 var(--space-md);
+}
+
+.disabledButton {
+  opacity: 0.5;
+}
+
+.paginationStatus {
+  align-self: center;
+  font-weight: 700;
+  color: var(--darkgrey);
+}
+
+@media (width <= 600px) {
+  .playerRow {
+    width: 100%;
+    grid-template-columns: minmax(32px, 44px) minmax(120px, 1fr) minmax(64px, auto);
+    grid-template-areas:
+      "number name score"
+      "number games score";
+    align-items: center;
+    gap: 2px var(--space-xs);
+  }
+
+  .playerNumber {
+    grid-area: number;
+    align-self: start;
+    padding-right: 0;
+  }
+
+  .playerName {
+    grid-area: name;
+  }
+
+  .playerStats {
+    display: contents;
+  }
+
+  .gamesStat {
+    grid-area: games;
+    flex-direction: row;
+    align-items: center;
+    gap: 4px;
+    justify-self: start;
+  }
+
+  .gamesStat .statValue {
+    font-size: var(--font-size-16);
+  }
+
+  .roundStat {
+    grid-area: score;
+    flex-direction: row;
+    align-items: center;
+    gap: 4px;
+    justify-self: end;
+  }
+
+  .roundStat .statValue {
+    font-size: var(--font-size-24);
+    line-height: 1;
+  }
+
+  .paginationStatus {
+    font-size: var(--font-size-14);
+  }
+}
+
+@media (width <= 420px) {
+  .playerstatsContainer {
+    padding: var(--space-sm);
+  }
+
+  .playerRow {
+    padding: var(--space-sm);
+  }
+}

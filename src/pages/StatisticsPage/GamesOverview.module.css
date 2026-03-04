@@ -1,0 +1,80 @@
+.gameOverview {
+  display: flex;
+  flex-direction: column;
+  padding: var(--page-padding);
+}
+
+.overview {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: var(--space-md);
+  margin-top: var(--space-sm);
+  position: relative;
+  z-index: 1;
+}
+
+.gameContainer {
+  background-color: var(--lightgrey);
+  border-radius: 24px;
+  padding: var(--card-padding);
+  display: flex;
+  justify-content: space-between;
+  box-sizing: border-box;
+  flex-wrap: wrap;
+  gap: var(--space-sm);
+}
+
+.gameCard {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--space-sm);
+}
+
+.gameCard p {
+  margin: 0;
+}
+
+.gameContainer h4 {
+  margin: 0 0 var(--space-md);
+}
+
+.detailsLink {
+  padding: 0 var(--space-sm) var(--space-sm) 0;
+  display: flex;
+  align-items: end;
+}
+
+.detailsLink a {
+  color: #000;
+}
+
+.paginationControls {
+  display: flex;
+  justify-content: center;
+  gap: var(--space-md);
+  margin-top: var(--space-md);
+  padding-bottom: var(--space-md);
+}
+
+.paginationButton {
+  border: none;
+  border-radius: 100px;
+  background-color: var(--lightgrey);
+  color: var(--darkblue);
+  cursor: pointer;
+  font-size: var(--font-size-16);
+  font-weight: 700;
+  min-height: 40px;
+  padding: 0 var(--space-md);
+}
+
+.disabledButton {
+  opacity: 0.5;
+}
+
+.paginationStatus {
+  align-self: center;
+  font-weight: 700;
+  color: var(--darkgrey);
+}
