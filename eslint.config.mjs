@@ -83,29 +83,7 @@ export default [
       "no-restricted-imports": [
         "error",
         {
-          patterns: ["@/entities/*", "@/features/*", "@/app/*"],
-        },
-      ],
-    },
-  },
-  {
-    files: ["src/entities/**/*.{ts,tsx}"],
-    rules: {
-      "no-restricted-imports": [
-        "error",
-        {
-          patterns: ["@/features/*", "@/app/*"],
-        },
-      ],
-    },
-  },
-  {
-    files: ["src/features/**/*.{ts,tsx}"],
-    rules: {
-      "no-restricted-imports": [
-        "error",
-        {
-          patterns: ["@/features/*/*"],
+          patterns: ["@/pages/*", "@/app/*"],
         },
       ],
     },

@@ -1,8 +1,9 @@
+import type { WinnerPlayerProps } from "@/types";
 import OverviewPlayerItem from "./OverviewPlayerItem";
 
 interface OverviewPlayerItemListProps {
   name?: string;
-  userMap: BASIC.WinnerPlayerProps[];
+  userMap: WinnerPlayerProps[];
   startScore?: number;
 }
 
@@ -12,7 +13,7 @@ function OverviewPlayerItemList({
 }: OverviewPlayerItemListProps): JSX.Element {
   return (
     <>
-      {userMap.map((item: BASIC.WinnerPlayerProps, index: number) => {
+      {userMap.map((item: WinnerPlayerProps, index: number) => {
         const completedRounds =
           item.roundCount ??
           (item.rounds[item.rounds.length - 1]?.throw1 === undefined
