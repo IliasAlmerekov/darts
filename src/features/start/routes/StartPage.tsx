@@ -1,5 +1,6 @@
 import styles from "./StartPage.module.css";
 import React from "react";
+import { useStore } from "@nanostores/react";
 import clsx from "clsx";
 import { DndContext, closestCenter } from "@dnd-kit/core";
 import { SortableContext, verticalListSortingStrategy } from "@dnd-kit/sortable";
@@ -12,6 +13,7 @@ import { API_BASE_URL } from "@/lib/api";
 import QRCode from "../components/qr-code/QRCode";
 import { LivePlayersList } from "../components/live-players-list/LivePlayersList";
 import { useStartPage } from "../hooks/useStartPage";
+import { $currentGameId } from "@/features/room";
 import GuestPlayerOverlay from "../components/guest-player-overlay/GuestPlayerOverlay";
 
 function toAbsoluteInvitationLink(invitationLink: string): string {
@@ -24,6 +26,7 @@ function toAbsoluteInvitationLink(invitationLink: string): string {
 }
 
 function StartPage(): React.JSX.Element {
+  const currentGameId = useStore($currentGameId);
   const {
     invitation,
     gameId,
@@ -213,7 +216,7 @@ function StartPage(): React.JSX.Element {
   );
 
   return (
-    <AdminLayout>
+    <AdminLayout currentGameId={currentGameId}>
       {lobbyContent}
       <GuestPlayerOverlay
         isOpen={isGuestOverlayOpen}

@@ -3,18 +3,17 @@ import { useNavigate, useParams } from "react-router-dom";
 import { useStore } from "@nanostores/react";
 import { DragEndEvent } from "@dnd-kit/core";
 import { arrayMove } from "@dnd-kit/sortable";
-import { useGamePlayers } from "@/hooks/useGamePlayers";
+import { useGamePlayers } from "./useGamePlayers";
 import { useGameFlowPort } from "@/shared/providers/GameFlowPortProvider";
 import type { AddGuestErrorResponse } from "@/shared/ports/game-flow";
+import { $gameSettings, setGameData } from "@/features/game";
 import {
   $lastFinishedGameId,
   $invitation,
-  $gameSettings,
   $currentGameId,
   setCurrentGameId,
   setInvitation,
-} from "@/stores";
-import { setGameData } from "@/stores/game";
+} from "@/features/room";
 import { ApiError } from "@/lib/api/errors";
 import { toUserErrorMessage } from "@/lib/error-to-user-message";
 import { validateGuestUsername } from "../lib/guestUsername";
