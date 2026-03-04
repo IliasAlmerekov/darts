@@ -7,7 +7,10 @@ type AdminLayoutProps = {
   currentGameId?: number | null;
 };
 
-export default function AdminLayout({ children, currentGameId }: AdminLayoutProps): React.JSX.Element {
+export default function AdminLayout({
+  children,
+  currentGameId,
+}: AdminLayoutProps): React.JSX.Element {
   return (
     <div className={styles.page}>
       <div className={styles.navRow}>
