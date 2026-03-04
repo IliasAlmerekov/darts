@@ -93,6 +93,7 @@
   align-self: flex-end;
   width: min(100%, 320px);
   padding-top: var(--space-md);
+  padding-bottom: var(--space-md);
   flex-shrink: 0;
 }
 

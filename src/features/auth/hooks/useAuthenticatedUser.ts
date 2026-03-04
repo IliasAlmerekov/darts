@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { getAuthenticatedUser, type AuthenticatedUser } from "../api";
-import { setCurrentGameId } from "@/stores/room";
+import { setCurrentGameId } from "@/features/room";
 
 type UseAuthenticatedUserResult = {
   user: AuthenticatedUser | null;
@@ -51,3 +51,4 @@ export const useAuthenticatedUser = (): UseAuthenticatedUserResult => {
 
   return { user, loading, error };
 };
+  

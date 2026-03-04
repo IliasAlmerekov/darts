@@ -29,7 +29,7 @@ vi.mock("react-router-dom", () => ({
 const emptyPlayers: never[] = [];
 const gamePlayersResult = { players: emptyPlayers, count: 0 };
 
-vi.mock("@/hooks/useGamePlayers", () => ({
+vi.mock("./useGamePlayers", () => ({
   useGamePlayers: () => gamePlayersResult,
 }));
 
@@ -41,17 +41,17 @@ vi.mock("@nanostores/react", () => ({
   useStore: (store: { key?: string }) => storeValues.get(store.key ?? ""),
 }));
 
-vi.mock("@/stores", () => ({
+vi.mock("@/features/game", () => ({
+  $gameSettings: { key: "gameSettings" },
+  setGameData: (...args: unknown[]) => setGameDataMock(...args),
+}));
+
+vi.mock("@/features/room", () => ({
   $lastFinishedGameId: { key: "lastFinishedGameId" },
   $invitation: { key: "invitation" },
-  $gameSettings: { key: "gameSettings" },
   $currentGameId: { key: "currentGameId" },
   setCurrentGameId: (...args: unknown[]) => setCurrentGameIdMock(...args),
   setInvitation: (...args: unknown[]) => setInvitationMock(...args),
-}));
-
-vi.mock("@/stores/game", () => ({
-  setGameData: (...args: unknown[]) => setGameDataMock(...args),
 }));
 
 type Deferred<T> = {

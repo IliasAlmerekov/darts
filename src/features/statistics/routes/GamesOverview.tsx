@@ -1,7 +1,9 @@
 import React, { useCallback, useEffect, useState } from "react";
+import { useStore } from "@nanostores/react";
 import styles from "./GamesOverview.module.css";
 import { Link } from "react-router-dom";
 import { AdminLayout } from "@/components/admin-layout";
+import { $currentGameId } from "@/features/room";
 import {
   Pagination,
   PaginationContent,
@@ -48,6 +50,7 @@ const GamesPagination = React.memo(function GamesPagination({
 
 export default function GamesOverview(): JSX.Element {
   // Read gameId from store but don't modify it - just keep it alive
+  const currentGameId = useStore($currentGameId);
   const [games, setGames] = useState<BASIC.FinishedGameProps[]>([]);
   const [offset, setOffset] = useState(0);
   const [total, setTotal] = useState(0);
@@ -75,7 +78,7 @@ export default function GamesOverview(): JSX.Element {
   }, [limit]);
 
   return (
-    <AdminLayout>
+    <AdminLayout currentGameId={currentGameId}>
       <div className={styles.gameOverview}>
         <StatisticsHeaderControls title="Games Overview" sortValue="alphabetically" sortDisabled />
         <div className={styles.overview}>

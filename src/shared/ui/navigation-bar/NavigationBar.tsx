@@ -1,6 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
-import { useStore } from "@nanostores/react";
 import settingsCogInactive from "@/assets/icons/settings-inactive.svg";
 import settingsCog from "@/assets/icons/settings.svg";
 import dartIcon from "@/assets/icons/dart.svg";
@@ -10,16 +9,15 @@ import statisticIconInactive from "@/assets/icons/statistics-inactive.svg";
 import styles from "./NavigationBar.module.css";
 import Madebydeepblue from "@/assets/icons/madeByDeepblue.svg";
 import clsx from "clsx";
-import { $currentGameId } from "@/stores";
 
 type NavigationBarProps = {
   className?: string;
+  currentGameId?: number | null;
 };
 
-function NavigationBar({ className }: NavigationBarProps): React.JSX.Element {
+function NavigationBar({ className, currentGameId = null }: NavigationBarProps): React.JSX.Element {
   const navigate = useNavigate();
   const location = useLocation();
-  const currentGameId = useStore($currentGameId);
   const [previewTabId, setPreviewTabId] = useState<string | null>(null);
   const navigationTimerRef = useRef<number | null>(null);
 

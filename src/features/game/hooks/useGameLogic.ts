@@ -15,8 +15,8 @@ import {
   resetGameStateVersion,
 } from "../api";
 import type { GameThrowsResponse } from "../api";
-import { closeFinishGameOverlay } from "@/stores/ui";
-import { $invitation, setInvitation, resetRoomStore } from "@/stores";
+import { closeFinishGameOverlay } from "../ui-store";
+import { $invitation, setInvitation, resetRoomStore } from "@/features/room";
 import { unlockSounds } from "@/lib/soundPlayer";
 import { toUserErrorMessage } from "@/lib/error-to-user-message";
 

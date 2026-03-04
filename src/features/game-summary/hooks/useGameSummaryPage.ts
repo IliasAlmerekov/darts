@@ -3,13 +3,8 @@ import { useLocation, useNavigate, useParams } from "react-router-dom";
 import { useStore } from "@nanostores/react";
 import type { FinishedPlayerResponse } from "@/lib/api/game";
 import { useGameFlowPort } from "@/shared/providers/GameFlowPortProvider";
-import {
-  $gameSettings,
-  setGameData,
-  setInvitation,
-  setLastFinishedGameId,
-  resetRoomStore,
-} from "@/stores";
+import { $gameSettings, setGameData } from "@/features/game";
+import { setInvitation, setLastFinishedGameId, resetRoomStore } from "@/features/room";
 import { playSound } from "@/lib/soundPlayer";
 import { toUserErrorMessage } from "@/lib/error-to-user-message";
 

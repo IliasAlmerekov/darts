@@ -14,7 +14,7 @@ import {
   setLoading,
   setError,
   resetGameStore,
-} from "./game";
+} from "./store";
 import type { GameThrowsResponse } from "@/types";
 
 const mockGameData: GameThrowsResponse = {

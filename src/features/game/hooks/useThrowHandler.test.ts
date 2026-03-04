@@ -3,7 +3,7 @@ import { act, renderHook, waitFor } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { GameThrowsResponse, ThrowAckResponse } from "@/types";
 import { ApiError } from "@/lib/api/errors";
-import { $gameData, setGameData } from "@/stores";
+import { $gameData, setGameData } from "../store";
 import {
   getGameThrows,
   recordThrow,
@@ -21,7 +21,7 @@ vi.mock("../api", () => ({
   undoLastThrow: vi.fn(),
 }));
 
-vi.mock("@/stores", () => ({
+vi.mock("../store", () => ({
   $gameData: {
     get: vi.fn(),
   },

@@ -1,4 +1,5 @@
 import React from "react";
+import { useStore } from "@nanostores/react";
 import styles from "./GameDetailPage.module.css";
 import { Link } from "react-router-dom";
 import { Podium } from "@/components/podium";
@@ -6,12 +7,14 @@ import BackBtn from "@/assets/icons/back.svg";
 import { AdminLayout } from "@/components/admin-layout";
 import OverviewPlayerItemList from "@/components/overview-player-item/OverviewPlayerItemList";
 import { useGameDetailPage } from "../hooks/useGameDetailPage";
+import { $currentGameId } from "@/features/room";
 
 export default function GameDetailPage(): React.JSX.Element {
+  const currentGameId = useStore($currentGameId);
   const { error, podiumData, newList, leaderBoardList } = useGameDetailPage();
 
   return (
-    <AdminLayout>
+    <AdminLayout currentGameId={currentGameId}>
       <div className={styles.gameDetails}>
         <div className={styles.linkBtn}>
           <Link to="/gamesoverview" className="back-btn">

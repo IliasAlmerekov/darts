@@ -1,7 +1,7 @@
 import { useCallback, useEffect } from "react";
 import { useStore } from "@nanostores/react";
 import { getGameThrowsIfChanged, resetGameStateVersion, type GameThrowsResponse } from "../api";
-import { $gameData, $isLoading, $error, setGameData, setLoading, setError } from "@/stores";
+import { $gameData, $isLoading, $error, setGameData, setLoading, setError } from "../store";
 
 interface UseGameStateOptions {
   gameId: number | null;
