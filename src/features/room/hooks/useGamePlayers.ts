@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { useEventSource } from "@/hooks/useEventSource";
+import { useEventSource } from "@/lib/useEventSource";
 import { getGameThrows } from "@/lib/api/game";
 
 interface RawPlayer {
