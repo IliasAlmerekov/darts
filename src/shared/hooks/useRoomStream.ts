@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { API_BASE_URL } from "@/lib/api";
+import { API_BASE_URL } from "@/shared/api";
 import type { RoomStreamEvent } from "@/types";
 
 const SSE_STREAM_ENDPOINT = (id: number) => `/room/${id}/stream`;

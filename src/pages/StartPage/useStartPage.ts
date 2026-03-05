@@ -20,7 +20,7 @@ import {
   leaveRoom,
   addGuestPlayer,
 } from "@/shared/api/room";
-import { ApiError } from "@/lib/api";
+import { ApiError } from "@/shared/api";
 import { toUserErrorMessage } from "@/lib/error-to-user-message";
 import { validateGuestUsername } from "./lib/guestUsername";
 import type { AddGuestErrorResponse } from "@/types";

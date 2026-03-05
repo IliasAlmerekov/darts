@@ -9,7 +9,7 @@ import { AdminLayout } from "@/shared/ui/admin-layout";
 import Plus from "@/assets/icons/plus.svg";
 import Button from "@/shared/ui/button/Button";
 import { ErrorState } from "@/shared/ui/error-state";
-import { API_BASE_URL } from "@/lib/api";
+import { API_BASE_URL } from "@/shared/api";
 import QRCode from "./components/qr-code/QRCode";
 import { LivePlayersList } from "./components/live-players-list/LivePlayersList";
 import { useStartPage } from "./useStartPage";
