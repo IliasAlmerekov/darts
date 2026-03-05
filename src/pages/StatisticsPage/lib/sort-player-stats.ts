@@ -1,4 +1,4 @@
-import type { SortMethod } from "../components/sort-tabs";
+import type { SortMethod } from "@/shared/ui/sort-tabs";
 import type { PlayerProps } from "@/types";
 
 function getSafeAverage(player: PlayerProps): number {

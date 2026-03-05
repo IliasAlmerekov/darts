@@ -40,8 +40,8 @@ vi.mock("@nanostores/react", () => ({
   useStore: () => ({ startScore: 301 }),
 }));
 
-vi.mock("@/shared/ui/overview-player-item/OverviewPlayerItemList", () => ({
-  default: () => <div data-testid="leaderboard-list" />,
+vi.mock("@/shared/ui/overview-player-item", () => ({
+  OverviewPlayerItemList: () => <div data-testid="leaderboard-list" />,
 }));
 
 vi.mock("@/shared/ui/podium", () => ({

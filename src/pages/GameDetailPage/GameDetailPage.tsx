@@ -5,7 +5,7 @@ import { Link } from "react-router-dom";
 import { Podium } from "@/shared/ui/podium";
 import BackBtn from "@/assets/icons/back.svg";
 import { AdminLayout } from "@/shared/ui/admin-layout";
-import OverviewPlayerItemList from "@/shared/ui/overview-player-item/OverviewPlayerItemList";
+import { OverviewPlayerItemList } from "@/shared/ui/overview-player-item";
 import { useGameDetailPage } from "./useGameDetailPage";
 import { $currentGameId } from "@/store";
 

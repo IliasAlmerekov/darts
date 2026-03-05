@@ -13,7 +13,7 @@ import {
 } from "@/shared/ui/pagination";
 import { getGamesOverview } from "@/shared/api/statistics";
 import type { FinishedGameProps, GameDataProps } from "@/types";
-import { StatisticsHeaderControls } from "./components/header-controls";
+import { StatisticsHeaderControls } from "@/shared/ui/statistics-header-controls";
 
 type GamesPaginationProps = {
   offset: number;

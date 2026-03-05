@@ -1,6 +1,6 @@
-import OverviewPlayerItemList from "@/shared/ui/overview-player-item/OverviewPlayerItemList";
+import { OverviewPlayerItemList } from "@/shared/ui/overview-player-item";
 import styles from "./GameSummaryPage.module.css";
-import Button from "@/shared/ui/button/Button";
+import { Button } from "@/shared/ui/button";
 import { ErrorState } from "@/shared/ui/error-state";
 import { Podium } from "@/shared/ui/podium";
 import Undo from "@/assets/icons/undolinkbutton.svg";
