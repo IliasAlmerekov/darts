@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { createRoom, getInvitation } from "./room";
 
-vi.mock("@/lib/api", () => ({
+vi.mock("@/shared/api/client", () => ({
   apiClient: {
     get: vi.fn(),
     post: vi.fn(),
@@ -12,7 +12,7 @@ vi.mock("@/lib/api", () => ({
   },
 }));
 
-import { apiClient } from "@/lib/api";
+import { apiClient } from "./client";
 
 describe("room/create-room api", () => {
   beforeEach(() => {

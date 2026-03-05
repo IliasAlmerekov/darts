@@ -1,4 +1,4 @@
-import { apiClient } from "@/lib/api";
+import { apiClient } from "./client";
 
 /**
  * Fetches aggregated player statistics with pagination and sorting.

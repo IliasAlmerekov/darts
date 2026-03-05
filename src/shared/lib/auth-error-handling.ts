@@ -1,4 +1,4 @@
-import { ApiError, NetworkError, UnauthorizedError } from "@/lib/api";
+import { ApiError, NetworkError, UnauthorizedError } from "@/shared/api";
 
 export type AuthFlow = "login" | "registration";
 

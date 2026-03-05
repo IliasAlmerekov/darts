@@ -1,5 +1,5 @@
-import { apiClient, API_BASE_URL } from "@/lib/api";
-import { ApiError, ForbiddenError, NetworkError, UnauthorizedError } from "@/lib/api/errors";
+import { apiClient, API_BASE_URL } from "./client";
+import { ApiError, ForbiddenError, NetworkError, UnauthorizedError } from "./errors";
 import type { GameThrowsResponse, ThrowAckResponse, ThrowRequest, StartGameRequest } from "@/types";
 import type { FinishedPlayerResponse, RematchResponse, CreateGameSettingsPayload } from "@/types";
 
@@ -181,9 +181,9 @@ export async function abortGame(gameId: number): Promise<{ message: string }> {
  * Creates a rematch and returns invitation details for the new game.
  */
 export async function createRematch(previousGameId: number): Promise<RematchResponse> {
-  const rematch = await apiClient.post<RematchResponse | { gameId: number; invitationLink?: string; success?: boolean }>(
-    REMATCH_ENDPOINT(previousGameId),
-  );
+  const rematch = await apiClient.post<
+    RematchResponse | { gameId: number; invitationLink?: string; success?: boolean }
+  >(REMATCH_ENDPOINT(previousGameId));
 
   if ("invitationLink" in rematch && rematch.invitationLink) {
     return {

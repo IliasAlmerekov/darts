@@ -1,4 +1,4 @@
-import { apiClient, API_BASE_URL } from "@/lib/api";
+import { apiClient, API_BASE_URL } from "./client";
 
 // ---------------------------------------------------------------------------
 // Types

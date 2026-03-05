@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { ApiError, NetworkError } from "@/lib/api";
+import { ApiError, NetworkError } from "@/shared/api";
 import { toUserErrorMessage } from "./error-to-user-message";
 
 describe("toUserErrorMessage", () => {

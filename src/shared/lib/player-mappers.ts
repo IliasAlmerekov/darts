@@ -1,4 +1,4 @@
-import type { BackendPlayer, BackendRoundHistory, UIPlayer, UIRound } from "@/types/player-ui";
+import type { BackendPlayer, BackendRoundHistory, UIPlayer, UIRound } from "@/types/player";
 
 export function mapRoundHistory(roundHistory: BackendRoundHistory[]): UIRound[] {
   if (!Array.isArray(roundHistory)) {
