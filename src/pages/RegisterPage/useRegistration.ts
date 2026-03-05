@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { registerUser, type RegistrationResponse } from "@/shared/api/auth";
 import { mapAuthErrorMessage } from "@/lib/auth-error-handling";
-import { ApiError } from "@/lib/api";
+import { ApiError } from "@/shared/api";
 
 /**
  * Provides registration flow state and action.

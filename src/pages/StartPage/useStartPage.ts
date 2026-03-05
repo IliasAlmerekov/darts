@@ -13,8 +13,14 @@ import {
   setInvitation,
 } from "@/store";
 import { getGameThrows, startGame } from "@/shared/api/game";
-import { createRoom, getInvitation, updatePlayerOrder, leaveRoom, addGuestPlayer } from "@/shared/api/room";
-import { ApiError } from "@/lib/api";
+import {
+  createRoom,
+  getInvitation,
+  updatePlayerOrder,
+  leaveRoom,
+  addGuestPlayer,
+} from "@/shared/api/room";
+import { ApiError } from "@/shared/api";
 import { toUserErrorMessage } from "@/lib/error-to-user-message";
 import { validateGuestUsername } from "./lib/guestUsername";
 import type { AddGuestErrorResponse } from "@/types";
@@ -123,13 +129,27 @@ export function useStartPage() {
   const appendOptimisticPlayerRef = useRef(appendOptimisticPlayer);
   const removeOptimisticPlayerRef = useRef(removeOptimisticPlayer);
 
-  useEffect(() => { playersRef.current = players; }, [players]);
-  useEffect(() => { appendOptimisticPlayerRef.current = appendOptimisticPlayer; }, [appendOptimisticPlayer]);
-  useEffect(() => { removeOptimisticPlayerRef.current = removeOptimisticPlayer; }, [removeOptimisticPlayer]);
-  useEffect(() => { guestUsernameRef.current = guestUsername; }, [guestUsername]);
-  useEffect(() => { isAddingGuestRef.current = isAddingGuest; }, [isAddingGuest]);
-  useEffect(() => { isLobbyFullRef.current = isLobbyFull; }, [isLobbyFull]);
-  useEffect(() => { gameIdRef.current = gameId; }, [gameId]);
+  useEffect(() => {
+    playersRef.current = players;
+  }, [players]);
+  useEffect(() => {
+    appendOptimisticPlayerRef.current = appendOptimisticPlayer;
+  }, [appendOptimisticPlayer]);
+  useEffect(() => {
+    removeOptimisticPlayerRef.current = removeOptimisticPlayer;
+  }, [removeOptimisticPlayer]);
+  useEffect(() => {
+    guestUsernameRef.current = guestUsername;
+  }, [guestUsername]);
+  useEffect(() => {
+    isAddingGuestRef.current = isAddingGuest;
+  }, [isAddingGuest]);
+  useEffect(() => {
+    isLobbyFullRef.current = isLobbyFull;
+  }, [isLobbyFull]);
+  useEffect(() => {
+    gameIdRef.current = gameId;
+  }, [gameId]);
 
   useEffect(() => {
     if (players.length <= 0) {

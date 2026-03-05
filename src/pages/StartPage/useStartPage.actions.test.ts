@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import { act, renderHook } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { ApiError } from "@/lib/api/errors";
+import { ApiError } from "@/shared/api";
 import { useStartPage } from "./useStartPage";
 
 const navigateMock = vi.fn();

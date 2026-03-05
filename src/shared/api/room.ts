@@ -1,4 +1,4 @@
-import { apiClient } from "@/lib/api";
+import { apiClient } from "./client";
 import type { CreateRoomResponse, AddGuestPayload, GuestPlayer } from "@/types";
 
 // ---------------------------------------------------------------------------
@@ -79,6 +79,9 @@ export async function addGuestPlayer(
   gameId: number,
   payload: AddGuestPayload,
 ): Promise<GuestPlayer> {
-  const response = await apiClient.post<AddGuestSuccessResponse>(ADD_GUEST_ENDPOINT(gameId), payload);
+  const response = await apiClient.post<AddGuestSuccessResponse>(
+    ADD_GUEST_ENDPOINT(gameId),
+    payload,
+  );
   return response.player;
 }

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { ApiError, NetworkError, UnauthorizedError } from "@/lib/api";
+import { ApiError, NetworkError, UnauthorizedError } from "@/shared/api";
 import { isCsrfRelatedAuthError, mapAuthErrorMessage } from "./auth-error-handling";
 
 describe("mapAuthErrorMessage", () => {
