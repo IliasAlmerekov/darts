@@ -35,7 +35,7 @@ const SettingsGroupBtn = ({ title, options, selectedId, onClick }: SettingsGroup
           <button
             key={btn.id}
             className={clsx(styles.settingsButton, {
-              [styles.active]: selectedId === btn.id,
+              [styles.active ?? ""]: selectedId === btn.id,
             })}
             type="button"
             onClick={() => onClick?.(btn.id)}

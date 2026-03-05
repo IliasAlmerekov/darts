@@ -34,10 +34,10 @@ function Podium({ userMap, list, startScore = 301 }: PodiumProps): JSX.Element {
           <PodiumPlayerCard
             key={index}
             className={clsx(styles.podiumPlayerCard, {
-              [styles.first]: index === 0,
-              [styles.second]: index === 1,
-              [styles.third]: index === 2,
-              [styles.hide]: list?.length === 2 && index === 2,
+              [styles.first ?? ""]: index === 0,
+              [styles.second ?? ""]: index === 1,
+              [styles.third ?? ""]: index === 2,
+              [styles.hide ?? ""]: list?.length === 2 && index === 2,
             })}
             rounds={completedRound}
             name={item.name}

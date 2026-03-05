@@ -58,7 +58,7 @@ function GamePlayerItemListComponent({ userMap, round }: GamePlayerItemListProps
         return (
           <GamePlayerItem
             className={clsx(styles.gamePlayerItem, {
-              [styles.activePlayer]: item.isActive === true,
+              [styles.activePlayer ?? ""]: item.isActive === true,
               winner: item.isPlaying === false,
             })}
             key={item.id}

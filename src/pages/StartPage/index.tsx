@@ -176,7 +176,7 @@ function StartPage(): React.JSX.Element {
 
             <div
               className={clsx(styles.startBtn, {
-                [styles.startBtnScrolled]: playerCount > 5,
+                [styles.startBtnScrolled ?? ""]: playerCount > 5,
               })}
             >
               {mobileCreateGameButton}

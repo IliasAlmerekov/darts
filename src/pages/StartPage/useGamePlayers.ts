@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { useEventSource } from "@/lib/useEventSource";
+import { useEventSource } from "@/shared/hooks/useEventSource";
 import { getGameThrows } from "@/shared/api/game";
 import { $gameData } from "@/store";
 

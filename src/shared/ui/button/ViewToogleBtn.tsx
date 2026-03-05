@@ -46,13 +46,13 @@ function ViewToogleButton() {
   return (
     <div
       className={clsx(styles.viewToggle, {
-        [styles.viewPlayers]: displayedView === "players",
-        [styles.viewGames]: displayedView === "games",
+        [styles.viewPlayers ?? ""]: displayedView === "players",
+        [styles.viewGames ?? ""]: displayedView === "games",
       })}
     >
       <button
         className={clsx(styles.viewButton, {
-          [styles.activeBtn]: displayedView === "players",
+          [styles.activeBtn ?? ""]: displayedView === "players",
         })}
         onClick={() => handleSwitch("players")}
       >
@@ -60,7 +60,7 @@ function ViewToogleButton() {
       </button>
       <button
         className={clsx(styles.viewButton, {
-          [styles.activeBtn]: displayedView === "games",
+          [styles.activeBtn ?? ""]: displayedView === "games",
         })}
         onClick={() => handleSwitch("games")}
       >

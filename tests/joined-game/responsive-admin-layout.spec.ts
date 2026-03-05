@@ -117,17 +117,33 @@ test.describe("Responsive admin layouts", () => {
     const navLabels = page.locator('[class*="tabLabel"]');
     await expect(navLabels.first()).toBeHidden();
 
-    const leftPanel = page.locator('[class*="existingPlayerList"]');
-    const rightPanel = page.locator('[class*="addedPlayerList"]');
+    const leftPanel = page.locator('[class*="existingPlayerList"]:visible').first();
+    const rightPanel = page.locator('[class*="addedPlayerList"]:visible').first();
+    await expect(leftPanel).toBeVisible();
+    await expect(rightPanel).toBeVisible();
 
-    const leftBox = await leftPanel.boundingBox();
-    const rightBox = await rightPanel.boundingBox();
+    const panelPositions = await page.evaluate(() => {
+      const left = document.querySelector('[class*="existingPlayerList"]');
+      const right = document.querySelector('[class*="addedPlayerList"]');
+      if (!left || !right) return null;
 
-    expect(leftBox).not.toBeNull();
-    expect(rightBox).not.toBeNull();
+      const leftBox = left.getBoundingClientRect();
+      const rightBox = right.getBoundingClientRect();
+      if (
+        leftBox.width === 0 ||
+        leftBox.height === 0 ||
+        rightBox.width === 0 ||
+        rightBox.height === 0
+      ) {
+        return null;
+      }
 
-    if (leftBox && rightBox) {
-      expect(leftBox.y).toBeLessThanOrEqual(rightBox.y);
+      return { leftY: leftBox.y, rightY: rightBox.y };
+    });
+
+    expect(panelPositions).not.toBeNull();
+    if (panelPositions) {
+      expect(panelPositions.leftY).toBeLessThanOrEqual(panelPositions.rightY);
     }
   });
 
@@ -176,22 +192,27 @@ test.describe("Responsive admin layouts", () => {
     await expect(createBottomContainer).toBeVisible();
     await expect(startBottomContainer).toBeVisible();
 
-    const [createBottomBox, startBottomBox] = await Promise.all([
+    const [createButtonBox, createBottomBox, startBottomBox] = await Promise.all([
+      createGameButton.boundingBox(),
       createBottomContainer.boundingBox(),
       startBottomContainer.boundingBox(),
     ]);
 
+    expect(createButtonBox).not.toBeNull();
     expect(createBottomBox).not.toBeNull();
     expect(startBottomBox).not.toBeNull();
 
-    if (createBottomBox && startBottomBox) {
+    if (createButtonBox && createBottomBox && startBottomBox) {
       const createDistanceToViewportBottom = 768 - (createBottomBox.y + createBottomBox.height);
       const startDistanceToViewportBottom = 768 - (startBottomBox.y + startBottomBox.height);
+      const createButtonCenterX = createButtonBox.x + createButtonBox.width / 2;
+      const createBottomCenterX = createBottomBox.x + createBottomBox.width / 2;
 
       expect(createDistanceToViewportBottom).toBeGreaterThanOrEqual(-12);
       expect(startDistanceToViewportBottom).toBeGreaterThanOrEqual(-12);
       expect(createDistanceToViewportBottom).toBeLessThanOrEqual(48);
       expect(startDistanceToViewportBottom).toBeLessThanOrEqual(48);
+      expect(Math.abs(createButtonCenterX - createBottomCenterX)).toBeLessThanOrEqual(2);
     }
   });
 
@@ -212,6 +233,35 @@ test.describe("Responsive admin layouts", () => {
 
     const mobileCreateButton = page.locator('[class*="mobileCreateButtonWrapper"] button');
     await expect(mobileCreateButton).toHaveCount(0);
+  });
+
+  test("Start page keeps Selected Players header and count visible across viewports", async ({
+    page,
+  }) => {
+    await mockAuth(page);
+    await mockGame(page, 1, "lobby");
+    await mockInvitation(page, 1);
+    await page.addInitScript(() => {
+      sessionStorage.setItem("darts_current_game_id", "1");
+    });
+
+    for (const viewport of [
+      { width: 1280, height: 800 },
+      { width: 360, height: 800 },
+    ]) {
+      await page.setViewportSize(viewport);
+      await page.goto("/start/1");
+      await page.waitForLoadState("domcontentloaded");
+
+      const selectedPlayersHeading = page.getByRole("heading", { name: "Selected Players" });
+      const selectedPlayersCount = page
+        .locator('[class*="addedPlayerList"] [class*="listCount"]')
+        .first();
+
+      await expect(selectedPlayersHeading).toBeVisible();
+      await expect(selectedPlayersCount).toBeVisible();
+      await expect(selectedPlayersCount).toContainText("2/10");
+    }
   });
 
   test("Start page centers QR heading text", async ({ page }) => {

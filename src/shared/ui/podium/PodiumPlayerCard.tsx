@@ -15,7 +15,7 @@ function PodiumPlayerCard({ ...props }: Props): React.JSX.Element {
   return (
     <div
       className={clsx(styles.podiumPlayerCard, props.className, {
-        [styles.winnerCard]: props.isWinner,
+        [styles.winnerCard ?? ""]: props.isWinner,
       })}
     >
       {props.isWinner ? <div className={styles.winnerBadge}>WINNER</div> : null}
