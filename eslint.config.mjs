@@ -6,11 +6,13 @@ import reactHooks from "eslint-plugin-react-hooks";
 import jsxA11y from "eslint-plugin-jsx-a11y";
 
 export default [
+  {
+    ignores: ["**/*.config.ts", "**/*.config.js", "**/*.config.mjs", "dist/**"],
+  },
   js.configs.recommended,
   ...tseslint.configs.recommended,
   {
     files: ["**/*.ts", "**/*.tsx"],
-    ignores: ["**/*.config.ts", "**/*.config.js", "**/*.config.mjs"],
     languageOptions: {
       parser: tseslint.parser,
       parserOptions: {
@@ -83,7 +85,23 @@ export default [
       "no-restricted-imports": [
         "error",
         {
-          patterns: ["@/pages/*", "@/app/*"],
+          patterns: ["@/pages/*", "@/app/*", "../pages/*", "../app/*"],
+        },
+      ],
+    },
+  },
+  {
+    files: ["src/pages/**/*.{ts,tsx}"],
+    rules: {
+      "no-restricted-imports": [
+        "error",
+        {
+          patterns: [
+            {
+              group: ["@/pages/*"],
+              message: "Pages must not import from other pages. Use shared/ for cross-page code.",
+            },
+          ],
         },
       ],
     },
