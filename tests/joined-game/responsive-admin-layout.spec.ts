@@ -192,22 +192,27 @@ test.describe("Responsive admin layouts", () => {
     await expect(createBottomContainer).toBeVisible();
     await expect(startBottomContainer).toBeVisible();
 
-    const [createBottomBox, startBottomBox] = await Promise.all([
+    const [createButtonBox, createBottomBox, startBottomBox] = await Promise.all([
+      createGameButton.boundingBox(),
       createBottomContainer.boundingBox(),
       startBottomContainer.boundingBox(),
     ]);
 
+    expect(createButtonBox).not.toBeNull();
     expect(createBottomBox).not.toBeNull();
     expect(startBottomBox).not.toBeNull();
 
-    if (createBottomBox && startBottomBox) {
+    if (createButtonBox && createBottomBox && startBottomBox) {
       const createDistanceToViewportBottom = 768 - (createBottomBox.y + createBottomBox.height);
       const startDistanceToViewportBottom = 768 - (startBottomBox.y + startBottomBox.height);
+      const createButtonCenterX = createButtonBox.x + createButtonBox.width / 2;
+      const createBottomCenterX = createBottomBox.x + createBottomBox.width / 2;
 
       expect(createDistanceToViewportBottom).toBeGreaterThanOrEqual(-12);
       expect(startDistanceToViewportBottom).toBeGreaterThanOrEqual(-12);
       expect(createDistanceToViewportBottom).toBeLessThanOrEqual(48);
       expect(startDistanceToViewportBottom).toBeLessThanOrEqual(48);
+      expect(Math.abs(createButtonCenterX - createBottomCenterX)).toBeLessThanOrEqual(2);
     }
   });
 

@@ -222,7 +222,7 @@
   background: transparent !important;
   border: none !important;
   color: var(--blue) !important;
-  justify-content: flex-start;
+  justify-content: center;
   padding-inline: 0;
 }
 
