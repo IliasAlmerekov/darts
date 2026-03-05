@@ -1,6 +1,6 @@
 import React from "react";
-import ViewToogleButton from "@/shared/ui/button/ViewToogleBtn";
-import { SortTabs, type SortMethod } from "../sort-tabs";
+import { ViewToogleButton } from "@/shared/ui/button";
+import { SortTabs, type SortMethod } from "@/shared/ui/sort-tabs";
 import styles from "./StatisticsHeaderControls.module.css";
 
 interface StatisticsHeaderControlsProps {
