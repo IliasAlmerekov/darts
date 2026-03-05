@@ -8,14 +8,14 @@
 
 ## Текущие оценки
 
-| Критерий | Сейчас | Цель |
-|----------|--------|------|
-| Архитектура / читаемость | 5/10 | 10/10 |
-| Типобезопасность | 6/10 | 10/10 |
-| Тестируемость | 4/10 | 10/10 |
-| DX / инструменты | 5/10 | 10/10 |
-| Безопасность | 7/10 | 10/10 |
-| Performance | 6/10 | 10/10 |
+| Критерий                 | Сейчас | Цель  |
+| ------------------------ | ------ | ----- |
+| Архитектура / читаемость | 5/10   | 10/10 |
+| Типобезопасность         | 6/10   | 10/10 |
+| Тестируемость            | 4/10   | 10/10 |
+| DX / инструменты         | 5/10   | 10/10 |
+| Безопасность             | 7/10   | 10/10 |
+| Performance              | 6/10   | 10/10 |
 
 ---
 
@@ -34,6 +34,7 @@
 **Проблема**: dep-cruiser имеет одно правило, которое уже продублировано в ESLint (`no-restricted-imports`). Для 3-слойной архитектуры (app → pages → shared) инструмент избыточен.
 
 **Задача**:
+
 - Удалить `.dependency-cruiser.cjs`
 - Удалить из `package.json` скрипты `architecture:check`, `architecture:report`
 - Удалить `"dependency-cruiser"` из `devDependencies`
@@ -76,6 +77,7 @@
 **Проблема**: `shared/lib/api/` (HTTP-инфраструктура) и `shared/api/` (доменные вызовы) существуют параллельно. Плюс `shared/api/index.ts` реэкспортирует из `@/lib/api` — три точки входа для одной темы.
 
 **Текущая структура**:
+
 ```
 src/shared/
   api/           ← game.ts, room.ts, auth.ts, statistics.ts (домен)
@@ -84,6 +86,7 @@ src/shared/
 ```
 
 **Целевая структура**:
+
 ```
 src/shared/
   api/
@@ -98,6 +101,7 @@ src/shared/
 ```
 
 **Задача**:
+
 - Переместить `shared/lib/api/client.ts`, `errors.ts`, `types.ts` в `shared/api/`
 - Обновить все импорты: `@/lib/api` → `@/shared/api` или `@/api`
 - Удалить папку `shared/lib/api/`
@@ -110,6 +114,7 @@ src/shared/
 **Проблема**: `shared/lib/` — свалка несвязанных файлов. Нет очевидного принципа организации.
 
 **Текущее содержимое**:
+
 ```
 shared/lib/
   parseThrowValue.ts     ← доменный парсер
@@ -121,6 +126,7 @@ shared/lib/
 ```
 
 **Задача** — распределить по смыслу:
+
 ```
 src/shared/
   api/               ← HTTP (см. 1.3)
@@ -147,11 +153,12 @@ src/shared/
 ```tsx
 // App.tsx — текущее состояние
 const GameDetailPage = lazy(() => import("@/pages/StatisticsPage/GameDetailPage")); // нарушение
-const GamesOverview  = lazy(() => import("@/pages/StatisticsPage/GamesOverview"));  // нарушение
-const Statistics     = lazy(() => import("@/pages/StatisticsPage"));
+const GamesOverview = lazy(() => import("@/pages/StatisticsPage/GamesOverview")); // нарушение
+const Statistics = lazy(() => import("@/pages/StatisticsPage"));
 ```
 
 **Задача**:
+
 - Определиться: `GameDetailPage` и `GamesOverview` — это отдельные страницы или части `Statistics`
 - Если отдельные страницы — вынести в `src/pages/GameDetailPage/` и `src/pages/GamesOverviewPage/`
 - Если части одной — оставить вложенными и регистрировать через вложенные `<Route>` с одним lazy-import родителя
@@ -170,6 +177,7 @@ shared/types/
 ```
 
 **Задача**:
+
 - Объединить связанные типы: `game.ts` + `game-throws.ts` → `game.ts`
 - Объединить `player.ts` + `player-ui.ts` → `player.ts`
 - Объединить `api.ts` + `ui-props.ts` → в соответствующие доменные файлы
@@ -182,6 +190,7 @@ shared/types/
 **Проблема**: `SettingsGroupBtn.tsx` и `ViewToogleBtn.tsx` (опечатка в имени) — компоненты конкретных страниц, а не переиспользуемые UI-примитивы.
 
 **Задача**:
+
 - Переместить `SettingsGroupBtn.tsx` в `src/pages/SettingsPage/components/`
 - Переместить `ViewToogleBtn.tsx` в `src/pages/StatisticsPage/components/` и исправить опечатку → `ViewToggleBtn`
 - `shared/ui/button/` должна содержать только `Button.tsx`
@@ -193,6 +202,7 @@ shared/types/
 **Проблема**: `.gitkeep` файлы в уже заполненных папках — артефакты рефакторинга, которые создают шум при навигации.
 
 **Задача**: Удалить:
+
 - `src/pages/.gitkeep`
 - `src/shared/hooks/.gitkeep`
 - `src/shared/store/.gitkeep`
@@ -204,6 +214,7 @@ shared/types/
 **Проблема**: `src/shared/ui/podium/ui/Podium.tsx` — двойная вложенность `podium/ui/` без причины. Все остальные компоненты живут прямо в своей папке.
 
 **Задача**:
+
 - Переместить содержимое `podium/ui/` на уровень `podium/`
 - Удалить пустую папку `ui/`
 - Итог: `shared/ui/podium/Podium.tsx`, `shared/ui/podium/PodiumPlayerCard.tsx`
@@ -231,6 +242,7 @@ shared/types/
 **Проблема**: `players[0]` возвращает `Player`, а не `Player | undefined`. Код в `useThrowHandler.ts` обращается к элементам массива без проверки.
 
 **Задача** — добавить в `tsconfig.json`:
+
 ```json
 "noUncheckedIndexedAccess": true
 ```
@@ -275,6 +287,7 @@ export async function getGameThrows(gameId: number): Promise<GameThrowsResponse>
 **Проблема**: `src/app/ProtectedRoutes.tsx:16` — `location.pathname` обращается к `window.location` (browser global), а не к React Router location. В тестовой среде pathname всегда `/`.
 
 **Задача**:
+
 ```tsx
 // было
 import { Navigate, Outlet } from "react-router-dom";
@@ -294,6 +307,7 @@ if (pathname.includes("/start")) { ... }
 **Проблема**: `useThrowHandler.ts:611-612` — `isActionInFlight: false` и `isUndoInFlight: false` hardcoded. Потребители получают поля, которые никогда не меняются.
 
 **Задача**:
+
 - Удалить `isActionInFlight` и `isUndoInFlight` из возвращаемого объекта `useThrowHandler`
 - Обновить все места использования (найти через `grep isActionInFlight`)
 - Если флаги нужны — реализовать корректно через `useRef` + state
@@ -305,16 +319,17 @@ if (pathname.includes("/start")) { ... }
 **Проблема**: строки `/start`, `/game/${id}`, `/summary/${id}`, `/details/${id}` дублируются в `useGameLogic.ts`, `useStartPage.ts`, `useGameSummaryPage.ts`, `App.tsx` без единого источника правды.
 
 **Задача** — создать `src/shared/lib/routes.ts`:
+
 ```ts
 export const ROUTES = {
   login: "/",
   register: "/register",
-  start: (id?: number) => id ? `/start/${id}` : "/start",
+  start: (id?: number) => (id ? `/start/${id}` : "/start"),
   game: (id: number) => `/game/${id}`,
   summary: (id: number) => `/summary/${id}`,
   details: (id: number) => `/details/${id}`,
   gamesOverview: "/gamesoverview",
-  settings: (id?: number) => id ? `/settings/${id}` : "/settings",
+  settings: (id?: number) => (id ? `/settings/${id}` : "/settings"),
   statistics: "/statistics",
   joined: "/joined",
   playerProfile: "/playerprofile",
@@ -332,6 +347,7 @@ export const ROUTES = {
 **Проблема**: `vite.config.ts:38` — `environment: "node"`. Компонентные тесты с RTL требуют `jsdom`. Тесты либо падают, либо работают некорректно.
 
 **Задача**:
+
 ```ts
 // vite.config.ts
 test: {
@@ -343,6 +359,7 @@ test: {
 ```
 
 Для файлов, тестирующих только чистые функции (например `useGameLogic.test.ts`, `parseThrowValue.test.ts`), добавить docblock чтобы не тянуть jsdom зря:
+
 ```ts
 // @vitest-environment node
 ```
@@ -358,18 +375,22 @@ test: {
 **Затронутые файлы**: `useGameState.ts:42`, `useAuthenticatedUser.ts:24`
 
 **Задача**:
+
 ```ts
 // useGameState.ts
-const fetchGameData = useCallback(async (signal?: AbortSignal) => {
-  if (!gameId) return;
-  try {
-    const data = await getGameThrowsIfChanged(gameId, signal);
-    if (data && !signal?.aborted) setGameData(data);
-  } catch (err) {
-    if (err instanceof Error && err.name === "AbortError") return;
-    setError(err instanceof Error ? err : new Error("Failed to fetch"));
-  }
-}, [gameId]);
+const fetchGameData = useCallback(
+  async (signal?: AbortSignal) => {
+    if (!gameId) return;
+    try {
+      const data = await getGameThrowsIfChanged(gameId, signal);
+      if (data && !signal?.aborted) setGameData(data);
+    } catch (err) {
+      if (err instanceof Error && err.name === "AbortError") return;
+      setError(err instanceof Error ? err : new Error("Failed to fetch"));
+    }
+  },
+  [gameId],
+);
 
 useEffect(() => {
   const controller = new AbortController();
@@ -397,16 +418,19 @@ useEffect(() => {
 **Задача** — создать:
 
 **`tests/auth/login.spec.ts`**:
+
 - Успешный логин → редирект на `/start`
 - Неверный пароль → сообщение об ошибке
 - Незалогиненный пользователь на `/start` → редирект на `/`
 
 **`tests/start/create-game.spec.ts`**:
+
 - Создание комнаты → появляется QR-код
 - Добавление гостевого игрока → игрок виден в списке
 - Старт игры → редирект на `/game/:id`
 
 **`tests/game/basic-throw.spec.ts`**:
+
 - Запись броска → счёт обновляется
 - Undo броска → счёт возвращается
 
@@ -419,6 +443,7 @@ useEffect(() => {
 **Проблема**: `useRoomStream.ts:50` — `eventSource.onerror = () => { setIsConnected(false) }`. SSE соединение обрывается молча, без попытки восстановления.
 
 **Задача**:
+
 ```ts
 let retryTimeout: ReturnType<typeof setTimeout> | null = null;
 let retryDelay = 1000;
@@ -448,12 +473,14 @@ return () => {
 **Проблема**: `lint-staged` настроен в `package.json:78`, но `.husky/pre-commit` не существует — `lint-staged` никогда не запускается автоматически.
 
 **Задача**:
+
 ```sh
 # создать файл .husky/pre-commit
 #!/usr/bin/env sh
 . "$(dirname -- "$0")/_/husky.sh"
 npx lint-staged
 ```
+
 ```sh
 chmod +x .husky/pre-commit
 ```
@@ -467,13 +494,14 @@ chmod +x .husky/pre-commit
 **Проблема**: `App.tsx:8-9` — `LoginPage` и `RegisterPage` импортируются eagerly и попадают в main bundle, хотя все остальные страницы — через `lazy()`.
 
 **Задача**:
+
 ```tsx
 // App.tsx — было
 import LoginPage from "@/pages/LoginPage";
 import RegisterPage from "@/pages/RegisterPage";
 
 // стало
-const LoginPage   = lazy(() => import("@/pages/LoginPage"));
+const LoginPage = lazy(() => import("@/pages/LoginPage"));
 const RegisterPage = lazy(() => import("@/pages/RegisterPage"));
 ```
 
@@ -484,6 +512,7 @@ const RegisterPage = lazy(() => import("@/pages/RegisterPage"));
 **Проблема**: `useGameLogic.ts:89` — `void import("@/pages/GameSummaryPage")` внутри хука страницы. Логика прогрева чанков несогласована: часть в `App.tsx`, часть в page-хуке.
 
 **Задача**:
+
 - Удалить `void import("@/pages/GameSummaryPage")` из `useGameLogic.ts`
 - Добавить `GameSummaryPage` в массив `warmUpRoutes` в `App.tsx` (там уже есть аналогичная логика)
 
@@ -494,6 +523,7 @@ const RegisterPage = lazy(() => import("@/pages/RegisterPage"));
 **Проблема**: `commitlint.config.mjs:3` — отсутствуют `perf`, `ci`, `build`, `revert`.
 
 **Задача**:
+
 ```js
 // commitlint.config.mjs
 rules: {
@@ -511,6 +541,7 @@ rules: {
 **Проблема**: `eslint.config.mjs:13` — `ignores` объявлен внутри блока с `files` и `languageOptions`. В flat config это работает как per-rule override, а не global ignore.
 
 **Задача**:
+
 ```js
 // eslint.config.mjs — добавить в начало массива отдельным объектом
 {
@@ -526,6 +557,7 @@ rules: {
 **Проблема**: единственный GitHub workflow — `copilot-setup-steps.yml` без реальных проверок. GitLab CI полноценный, GitHub — нет.
 
 **Задача** — создать `.github/workflows/ci.yml` по аналогии с `.gitlab-ci.yml`:
+
 ```yaml
 name: CI
 on: [push, pull_request]
@@ -552,6 +584,7 @@ jobs:
 **Проблема**: `useAuthenticatedUser.ts:20` — safety timeout 10 секунд держит пользователя на скелетоне в 4 раза дольше допустимого.
 
 **Задача**: Сократить с `10000` до `5000`. Или заменить на `AbortController` с таймаутом (выполняется вместе с задачей 3.2):
+
 ```ts
 const controller = new AbortController();
 const timeoutId = window.setTimeout(() => controller.abort(), 5000);
@@ -566,6 +599,7 @@ const timeoutId = window.setTimeout(() => controller.abort(), 5000);
 **Проблема**: `shared/lib/api/client.ts:72` и `shared/api/game.ts:88` — hard redirect при 401 сбрасывает всё React-состояние и историю навигации.
 
 **Задача** — заменить на событийную модель:
+
 ```ts
 // shared/api/client.ts
 type AuthRedirectHandler = () => void;
@@ -597,6 +631,7 @@ useEffect(() => {
 **Проблема**: `src/pages/StartPage/index.tsx:104-121` — SVG-иконка хардкожена прямо в JSX. Все остальные иконки используют импорт SVG-файлов.
 
 **Задача**:
+
 - Создать `src/assets/icons/user-add.svg` с содержимым инлайн-SVG
 - Заменить JSX-разметку на `<img src={UserAddIcon} alt="Play as a guest" />`
 
@@ -609,11 +644,15 @@ useEffect(() => {
 **Проблема**: `$gameData`, `$isLoading`, `$error` — синглтоны (`shared/store/game-state.ts`). При навигации `GamePage → GameSummaryPage` обе страницы пишут в один атом. In-flight запрос с предыдущей страницы (без AbortController) может перезаписать данные следующей.
 
 **Задача**:
+
 - Выполнить задачу 3.2 (AbortController) — это решает немедленный race condition
 - Добавить явный сброс стора при смене gameId в `useGameState.ts`:
   ```ts
   useEffect(() => {
-    if (!gameId) { resetGameStore(); return; }
+    if (!gameId) {
+      resetGameStore();
+      return;
+    }
     if ($gameData.get()?.id !== gameId) resetGameStore();
   }, [gameId]);
   ```
@@ -626,6 +665,7 @@ useEffect(() => {
 **Проблема**: `useAuthenticatedUser` выполняет HTTP-запрос при каждом монтировании `ProtectedRoutes` — то есть при каждой навигации на защищённую страницу.
 
 **Задача** — кешировать результат в nanostores:
+
 ```ts
 // shared/store/auth.ts
 export const $user = atom<AuthenticatedUser | null>(null);
@@ -638,7 +678,7 @@ export function useAuthenticatedUser() {
 
   useEffect(() => {
     if (checked) return; // не повторять запрос
-    fetchUser().then(u => {
+    fetchUser().then((u) => {
       $user.set(u);
       $authChecked.set(true);
     });
@@ -657,6 +697,7 @@ export function useAuthenticatedUser() {
 **Проблема**: `LoginPage/AuthForm.module.css` и `RegisterPage/AuthForm.module.css` — два файла с одинаковым именем в разных папках. Высокая вероятность дублирования стилей.
 
 **Задача**:
+
 - Сравнить содержимое двух файлов
 - Вынести общие стили в `src/shared/ui/auth-form/AuthForm.module.css`
 - Удалить дубли из обеих страниц
@@ -667,6 +708,7 @@ export function useAuthenticatedUser() {
 ## Чеклист для следующего аудита
 
 ### Архитектура / читаемость
+
 - [ ] dep-cruiser удалён, ESLint-правила покрывают все границы
 - [ ] Один источник HTTP-инфраструктуры: `shared/api/`
 - [ ] `shared/lib/` содержит только чистые функции, без хуков
@@ -679,6 +721,7 @@ export function useAuthenticatedUser() {
 - [ ] `ROUTES` константы используются везде вместо строк
 
 ### Типобезопасность
+
 - [ ] `noUncheckedIndexedAccess: true` в tsconfig, ошибки исправлены
 - [ ] API-ответы проверяются через type guards, нет `data as T`
 - [ ] `useLocation()` везде вместо `window.location`
@@ -686,6 +729,7 @@ export function useAuthenticatedUser() {
 - [ ] TypeScript не находит ошибок: `npm run typecheck` чистый
 
 ### Тестируемость
+
 - [ ] `environment: "jsdom"` в vite.config.ts
 - [ ] `simple.spec.ts` удалён
 - [ ] E2E тесты покрывают: login, create game, throw, undo
@@ -694,6 +738,7 @@ export function useAuthenticatedUser() {
 - [ ] `npm test` проходит полностью
 
 ### DX / инструменты
+
 - [ ] `.husky/pre-commit` существует и запускает `lint-staged`
 - [ ] `LoginPage` и `RegisterPage` — lazy-loaded
 - [ ] Warmup-логика только в `App.tsx`
@@ -703,11 +748,13 @@ export function useAuthenticatedUser() {
 - [ ] Safety timeout ≤ 5s
 
 ### Безопасность
+
 - [ ] Нет `window.location.href = "/"` в API-клиенте
 - [ ] 401 обрабатывается через callback/navigate, без hard redirect
 - [ ] Inline SVG вынесен в файл иконки
 
 ### Performance
+
 - [ ] `$gameData` не перезаписывается при навигации между страницами
 - [ ] Auth-результат кешируется, нет повторных запросов при навигации
 - [ ] AbortController отменяет запросы при размонтировании

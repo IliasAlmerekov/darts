@@ -140,82 +140,76 @@ function SettingsPage(): JSX.Element {
     hasHydratedSelection,
   ]);
 
-  const handleGameModeClick = useCallback(
-    async (id: string | number) => {
-      if (isSavingRef.current) return;
+  const handleGameModeClick = useCallback(async (id: string | number) => {
+    if (isSavingRef.current) return;
 
-      const mode = id.toString() as "single-out" | "double-out" | "triple-out";
-      const isDoubleOut = mode === "double-out";
-      const isTripleOut = mode === "triple-out";
-      const previousMode = selectedGameModeRef.current;
-      setSelectedGameMode(mode);
-      selectedGameModeRef.current = mode;
+    const mode = id.toString() as "single-out" | "double-out" | "triple-out";
+    const isDoubleOut = mode === "double-out";
+    const isTripleOut = mode === "triple-out";
+    const previousMode = selectedGameModeRef.current;
+    setSelectedGameMode(mode);
+    selectedGameModeRef.current = mode;
 
-      setIsSaving(true);
-      setSavingScope("game-mode");
-      isSavingRef.current = true;
+    setIsSaving(true);
+    setSavingScope("game-mode");
+    isSavingRef.current = true;
 
-      try {
-        const response = await saveGameSettings(
-          {
-            startScore: selectedPointsRef.current,
-            doubleOut: isDoubleOut,
-            tripleOut: isTripleOut,
-          },
-          effectiveGameIdRef.current,
-        );
-        setGameData(response);
-      } catch (error) {
-        setSelectedGameMode(previousMode);
-        selectedGameModeRef.current = previousMode;
-        console.error("Failed to save game mode:", error);
-      } finally {
-        setIsSaving(false);
-        setSavingScope(null);
-        isSavingRef.current = false;
-      }
-    },
-    [],
-  );
+    try {
+      const response = await saveGameSettings(
+        {
+          startScore: selectedPointsRef.current,
+          doubleOut: isDoubleOut,
+          tripleOut: isTripleOut,
+        },
+        effectiveGameIdRef.current,
+      );
+      setGameData(response);
+    } catch (error) {
+      setSelectedGameMode(previousMode);
+      selectedGameModeRef.current = previousMode;
+      console.error("Failed to save game mode:", error);
+    } finally {
+      setIsSaving(false);
+      setSavingScope(null);
+      isSavingRef.current = false;
+    }
+  }, []);
 
-  const handlePointsClick = useCallback(
-    async (id: string | number) => {
-      if (isSavingRef.current) return;
+  const handlePointsClick = useCallback(async (id: string | number) => {
+    if (isSavingRef.current) return;
 
-      const points = Number(id);
-      const currentMode = selectedGameModeRef.current;
-      const isDoubleOut = currentMode === "double-out";
-      const isTripleOut = currentMode === "triple-out";
-      const previousPoints = selectedPointsRef.current;
-      setSelectedPoints(points);
-      selectedPointsRef.current = points;
+    const points = Number(id);
+    const currentMode = selectedGameModeRef.current;
+    const isDoubleOut = currentMode === "double-out";
+    const isTripleOut = currentMode === "triple-out";
+    const previousPoints = selectedPointsRef.current;
+    setSelectedPoints(points);
+    selectedPointsRef.current = points;
 
-      setIsSaving(true);
-      setSavingScope("points");
-      isSavingRef.current = true;
+    setIsSaving(true);
+    setSavingScope("points");
+    isSavingRef.current = true;
 
-      try {
-        const response = await saveGameSettings(
-          {
-            startScore: points,
-            doubleOut: isDoubleOut,
-            tripleOut: isTripleOut,
-          },
-          effectiveGameIdRef.current,
-        );
-        setGameData(response);
-      } catch (error) {
-        setSelectedPoints(previousPoints);
-        selectedPointsRef.current = previousPoints;
-        console.error("Failed to save points:", error);
-      } finally {
-        setIsSaving(false);
-        setSavingScope(null);
-        isSavingRef.current = false;
-      }
-    },
-    [],
-  );
+    try {
+      const response = await saveGameSettings(
+        {
+          startScore: points,
+          doubleOut: isDoubleOut,
+          tripleOut: isTripleOut,
+        },
+        effectiveGameIdRef.current,
+      );
+      setGameData(response);
+    } catch (error) {
+      setSelectedPoints(previousPoints);
+      selectedPointsRef.current = previousPoints;
+      console.error("Failed to save points:", error);
+    } finally {
+      setIsSaving(false);
+      setSavingScope(null);
+      isSavingRef.current = false;
+    }
+  }, []);
 
   return (
     <AdminLayout currentGameId={currentGameIdFromStore}>
