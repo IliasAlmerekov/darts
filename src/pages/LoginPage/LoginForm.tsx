@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { Link } from "react-router-dom";
 import { Mail, Lock, Eye, EyeOff } from "lucide-react";
 import styles from "./AuthForm.module.css";
+import { ROUTES } from "@/lib/routes";
 
 interface LoginFormProps {
   error: string | null;
@@ -102,7 +103,7 @@ export function LoginForm({
       </form>
 
       <p className={styles.formLink}>
-        Don&apos;t have an account? <Link to="/register">Sign up</Link>
+        Don&apos;t have an account? <Link to={ROUTES.register}>Sign up</Link>
       </p>
     </>
   );

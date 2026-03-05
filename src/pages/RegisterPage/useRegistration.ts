@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { registerUser, type RegistrationResponse } from "@/shared/api/auth";
 import { mapAuthErrorMessage } from "@/lib/auth-error-handling";
 import { ApiError } from "@/shared/api";
+import { ROUTES } from "@/lib/routes";
 
 /**
  * Provides registration flow state and action.
@@ -41,7 +42,8 @@ export function useRegistration() {
       }
 
       if (response?.redirect) {
-        const redirectPath = response.redirect === "/start" ? "/start" : response.redirect;
+        const redirectPath =
+          response.redirect === ROUTES.start() ? ROUTES.start() : response.redirect;
         navigate(redirectPath);
       }
       return response;

@@ -18,6 +18,7 @@ import type { GameThrowsResponse } from "@/types";
 import { $invitation, setInvitation, resetRoomStore } from "@/store";
 import { unlockSounds } from "@/lib/soundPlayer";
 import { toUserErrorMessage } from "@/lib/error-to-user-message";
+import { ROUTES } from "@/lib/routes";
 
 /**
  * Aggregates game state, side effects, and UI handlers for the game page.
@@ -151,8 +152,8 @@ export const useGameLogic = () => {
   }, [zeroScorePlayerIds]);
 
   useEffect(() => {
-    if (shouldNavigateToSummary(gameData, gameId)) {
-      navigate(`/summary/${gameId}`, { state: { finishedGameId: gameId } });
+    if (gameId !== null && shouldNavigateToSummary(gameData, gameId)) {
+      navigate(ROUTES.summary(gameId), { state: { finishedGameId: gameId } });
     }
   }, [gameData, gameId, navigate]);
 
@@ -249,7 +250,7 @@ export const useGameLogic = () => {
         invitationLink: rematch.invitationLink,
       });
 
-      navigate(`/start/${rematch.gameId}`);
+      navigate(ROUTES.start(rematch.gameId));
     } catch (err) {
       console.error("Failed to exit game:", err);
       setPageError(toUserErrorMessage(err, "Could not leave the game. Please try again."));

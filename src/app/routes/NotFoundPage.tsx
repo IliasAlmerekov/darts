@@ -1,6 +1,7 @@
 import React from "react";
 import { ErrorState } from "@/shared/ui/error-state";
 import styles from "./NotFoundPage.module.css";
+import { ROUTES } from "@/lib/routes";
 
 function NotFoundPage(): React.JSX.Element {
   return (
@@ -9,8 +10,8 @@ function NotFoundPage(): React.JSX.Element {
         variant="page"
         title="Page not found"
         message="The page you requested does not exist or has been moved."
-        primaryAction={{ label: "Go to login", to: "/" }}
-        secondaryAction={{ label: "Go to start", to: "/start" }}
+        primaryAction={{ label: "Go to login", to: ROUTES.login }}
+        secondaryAction={{ label: "Go to start", to: ROUTES.start() }}
       />
     </main>
   );

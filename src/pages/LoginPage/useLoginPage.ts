@@ -4,6 +4,7 @@ import { useAuthenticatedUser } from "@/shared/hooks/useAuthenticatedUser";
 import { useLogin } from "./useLogin";
 import { getActiveGameId } from "@/store";
 import { mapAuthErrorMessage } from "@/lib/auth-error-handling";
+import { ROUTES } from "@/lib/routes";
 
 /**
  * Orchestrates login page state, submission, and redirect logic.
@@ -38,13 +39,13 @@ export function useLoginPage() {
       const activeGameId = getActiveGameId();
 
       if (activeGameId) {
-        navigate(`/start/${activeGameId}`);
+        navigate(ROUTES.start(activeGameId));
         return;
       }
 
-      const redirectPath = user.redirect?.startsWith("/start/")
-        ? "/start"
-        : user.redirect || "/start";
+      const redirectPath = user.redirect?.startsWith(`${ROUTES.start()}/`)
+        ? ROUTES.start()
+        : user.redirect || ROUTES.start();
 
       if (/^https?:\/\//i.test(redirectPath)) {
         window.location.assign(redirectPath);
