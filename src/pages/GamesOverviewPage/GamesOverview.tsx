@@ -2,6 +2,7 @@ import React, { useCallback, useEffect, useState } from "react";
 import { useStore } from "@nanostores/react";
 import styles from "./GamesOverview.module.css";
 import { Link } from "react-router-dom";
+import { ROUTES } from "@/lib/routes";
 import { AdminLayout } from "@/shared/ui/admin-layout";
 import { $currentGameId } from "@/store";
 import {
@@ -112,7 +113,7 @@ export default function GamesOverviewPage(): JSX.Element {
                 </p>
               </div>
               <div className={styles.detailsLink}>
-                <Link to={`/details/${game.id}`}>details</Link>
+                <Link to={ROUTES.details(game.id)}>details</Link>
               </div>
             </div>
           ))}

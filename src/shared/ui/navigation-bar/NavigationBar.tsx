@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
+import { ROUTES } from "@/lib/routes";
 import settingsCogInactive from "@/assets/icons/settings-inactive.svg";
 import settingsCog from "@/assets/icons/settings.svg";
 import dartIcon from "@/assets/icons/dart.svg";
@@ -21,14 +22,12 @@ function NavigationBar({ className, currentGameId = null }: NavigationBarProps):
   const [previewTabId, setPreviewTabId] = useState<string | null>(null);
   const navigationTimerRef = useRef<number | null>(null);
 
-  // Dynamischer path für Game basierend auf currentGameId
   const gamePath = useMemo(() => {
-    return currentGameId ? `/start/${currentGameId}` : "/start";
+    return ROUTES.start(currentGameId ?? undefined);
   }, [currentGameId]);
 
-  // Dynamischer path für Settings basierend auf currentGameId
   const settingsPath = useMemo(() => {
-    return currentGameId ? `/settings/${currentGameId}` : "/settings";
+    return ROUTES.settings(currentGameId ?? undefined);
   }, [currentGameId]);
 
   const navItems = useMemo(
@@ -38,7 +37,7 @@ function NavigationBar({ className, currentGameId = null }: NavigationBarProps):
         activeIcon: statisticIcon,
         inActiveIcon: statisticIconInactive,
         id: "statistics",
-        path: "/statistics",
+        path: ROUTES.statistics,
       },
       {
         label: "Game",
@@ -62,10 +61,12 @@ function NavigationBar({ className, currentGameId = null }: NavigationBarProps):
     return (
       location.pathname === itemPath ||
       (itemId === "game" &&
-        (location.pathname === "/start" || location.pathname.startsWith("/start/"))) ||
+        (location.pathname === ROUTES.start() ||
+          location.pathname.startsWith(ROUTES.start() + "/"))) ||
       (itemId === "statistics" &&
-        (location.pathname === "/gamesoverview" || location.pathname.startsWith("/details/"))) ||
-      (itemId === "settings" && location.pathname.startsWith("/settings"))
+        (location.pathname === ROUTES.gamesOverview ||
+          location.pathname.startsWith("/details/"))) ||
+      (itemId === "settings" && location.pathname.startsWith(ROUTES.settings()))
     );
   };
 

@@ -24,6 +24,7 @@ import { ApiError } from "@/shared/api";
 import { toUserErrorMessage } from "@/lib/error-to-user-message";
 import { validateGuestUsername } from "./lib/guestUsername";
 import type { AddGuestErrorResponse } from "@/types";
+import { ROUTES } from "@/lib/routes";
 
 export function shouldRedirectToCurrentGame(
   gameIdParam?: string,
@@ -110,7 +111,7 @@ export function useStartPage() {
 
   useEffect(() => {
     if (shouldRedirectToCurrentGame(gameIdParam, invitation?.gameId, currentGameId)) {
-      navigate(`/start/${currentGameId}`, { replace: true });
+      navigate(ROUTES.start(currentGameId ?? undefined), { replace: true });
     }
   }, [gameIdParam, invitation?.gameId, currentGameId, navigate]);
 
@@ -254,14 +255,14 @@ export function useStartPage() {
       try {
         if (currentGameId && currentGameId !== gameId) {
           console.warn(`Redirecting from game ${gameId} to active game ${currentGameId}`);
-          navigate(`/start/${currentGameId}`, { replace: true });
+          navigate(ROUTES.start(currentGameId), { replace: true });
           return;
         }
 
         if (currentGameId === null) {
           console.warn(`No active game, redirecting from game ${gameId} to /start`);
           setInvitation(null);
-          navigate("/start", { replace: true });
+          navigate(ROUTES.start(), { replace: true });
           return;
         }
 
@@ -270,9 +271,9 @@ export function useStartPage() {
         if (gameData.status !== "lobby") {
           console.warn(`Access to game ${gameId} denied - status: ${gameData.status}`);
           if (currentGameId) {
-            navigate(`/start/${currentGameId}`, { replace: true });
+            navigate(ROUTES.start(currentGameId), { replace: true });
           } else {
-            navigate("/start", { replace: true });
+            navigate(ROUTES.start(), { replace: true });
           }
           return;
         }
@@ -293,9 +294,9 @@ export function useStartPage() {
       } catch (error) {
         console.error("Failed to restore game data:", error);
         if (currentGameId) {
-          navigate(`/start/${currentGameId}`, { replace: true });
+          navigate(ROUTES.start(currentGameId), { replace: true });
         } else {
-          navigate("/start", { replace: true });
+          navigate(ROUTES.start(), { replace: true });
         }
       } finally {
         setIsRestoring(false);
@@ -331,7 +332,7 @@ export function useStartPage() {
         status: "started",
       });
 
-      navigate(`/game/${gameId}`);
+      navigate(ROUTES.game(gameId));
     } catch (error) {
       setPageError(toUserErrorMessage(error, "Could not start game. Please try again."));
     } finally {
@@ -351,7 +352,7 @@ export function useStartPage() {
       });
       setInvitation(response);
       setCurrentGameId(response.gameId);
-      navigate(`/start/${response.gameId}`);
+      navigate(ROUTES.start(response.gameId));
     } catch (error) {
       setPageError(toUserErrorMessage(error, "Could not create a new game. Please try again."));
     } finally {

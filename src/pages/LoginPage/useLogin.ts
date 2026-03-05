@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { loginWithCredentials, getAuthenticatedUser } from "@/shared/api/auth";
 import { mapAuthErrorMessage } from "@/lib/auth-error-handling";
+import { ROUTES } from "@/lib/routes";
 
 /**
  * Provides login flow state and action.
@@ -16,7 +17,7 @@ export function useLogin() {
       window.location.assign(redirect);
       return;
     }
-    const redirectPath = redirect === "/start" ? "/start" : redirect;
+    const redirectPath = redirect === ROUTES.start() ? ROUTES.start() : redirect;
     navigate(redirectPath);
   };
 
