@@ -105,9 +105,9 @@ function NavigationBar({ className, currentGameId = null }: NavigationBarProps):
       <img className={styles.deepblueIcon} src={Madebydeepblue} alt="" />
       <div
         className={clsx(styles.navItems, {
-          [styles.activeStatistics]: displayedTabId === "statistics",
-          [styles.activeGame]: displayedTabId === "game",
-          [styles.activeSettings]: displayedTabId === "settings",
+          [styles.activeStatistics ?? ""]: displayedTabId === "statistics",
+          [styles.activeGame ?? ""]: displayedTabId === "game",
+          [styles.activeSettings ?? ""]: displayedTabId === "settings",
         })}
       >
         {navItems.map((item) => {
@@ -118,8 +118,8 @@ function NavigationBar({ className, currentGameId = null }: NavigationBarProps):
               key={item.id}
               onClick={() => handleTabClick(item.path, item.id)}
               className={clsx(styles.tabButton, {
-                [styles.active]: displayedTabId === item.id,
-                [styles.inactive]: displayedTabId !== item.id,
+                [styles.active ?? ""]: displayedTabId === item.id,
+                [styles.inactive ?? ""]: displayedTabId !== item.id,
               })}
             >
               <span className={styles.tabContent}>

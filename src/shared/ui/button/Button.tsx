@@ -32,11 +32,11 @@ function Button({
   const buttonType = type || "primary";
 
   const buttonClasses = clsx(className, styles.btn, styles.h4, {
-    [styles.btnPrimary]: buttonType === "primary" && !isInverted,
-    [styles.btnSecondary]: buttonType === "secondary" && !isInverted,
-    [styles.inverted]: isInverted && buttonType !== "secondary",
-    [styles.invertedSecondary]: isInverted && buttonType === "secondary",
-    [styles.disabled]: disabled,
+    [styles.btnPrimary ?? ""]: buttonType === "primary" && !isInverted,
+    [styles.btnSecondary ?? ""]: buttonType === "secondary" && !isInverted,
+    [styles.inverted ?? ""]: isInverted && buttonType !== "secondary",
+    [styles.invertedSecondary ?? ""]: isInverted && buttonType === "secondary",
+    [styles.disabled ?? ""]: disabled,
   });
 
   const buttonContent = (

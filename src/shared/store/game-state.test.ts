@@ -78,13 +78,13 @@ describe("game-state store", () => {
         winnerId: null,
         players: [
           {
-            ...mockGameData.players[0],
+            ...mockGameData.players[0]!,
             score: 26,
             isActive: true,
             position: 0,
           },
           {
-            ...mockGameData.players[1],
+            ...mockGameData.players[1]!,
             score: 0,
             isActive: false,
             position: 1,
@@ -155,13 +155,13 @@ describe("game-state store", () => {
         winnerId: null,
         players: [
           {
-            ...mockGameData.players[0],
+            ...mockGameData.players[0]!,
             score: 26,
             isActive: false,
             position: 0,
           },
           {
-            ...mockGameData.players[1],
+            ...mockGameData.players[1]!,
             score: 0,
             isActive: false,
             position: 1,
@@ -185,13 +185,13 @@ describe("game-state store", () => {
         winnerId: null,
         players: [
           {
-            ...mockGameData.players[0],
+            ...mockGameData.players[0]!,
             score: 20,
             isActive: true,
             position: 0,
           },
           {
-            ...mockGameData.players[1],
+            ...mockGameData.players[1]!,
             score: 0,
             isActive: false,
             position: 1,

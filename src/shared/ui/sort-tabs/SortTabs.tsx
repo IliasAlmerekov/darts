@@ -33,14 +33,14 @@ function SortTabsComponent({
       className={clsx(
         styles.root,
         className,
-        { [styles.score]: value === "score" },
-        { [styles.disabled]: disabled },
+        { [styles.score ?? ""]: value === "score" },
+        { [styles.disabled ?? ""]: disabled },
       )}
       aria-label={disabled ? "Sorting is unavailable in games overview" : "Sort players"}
     >
       <button
         type="button"
-        className={clsx(styles.button, { [styles.active]: value === "alphabetically" })}
+        className={clsx(styles.button, { [styles.active ?? ""]: value === "alphabetically" })}
         onClick={() => handleChange("alphabetically")}
         aria-pressed={value === "alphabetically"}
         aria-disabled={disabled}
@@ -70,7 +70,7 @@ function SortTabsComponent({
       </button>
       <button
         type="button"
-        className={clsx(styles.button, { [styles.active]: value === "score" })}
+        className={clsx(styles.button, { [styles.active ?? ""]: value === "score" })}
         onClick={() => handleChange("score")}
         aria-pressed={value === "score"}
         aria-disabled={disabled}

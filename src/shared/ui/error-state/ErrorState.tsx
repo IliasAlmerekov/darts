@@ -20,8 +20,8 @@ interface ErrorStateProps {
 
 function renderAction(action: ErrorAction, variant: "primary" | "secondary"): React.JSX.Element {
   const actionClassName = clsx(styles.action, {
-    [styles.primaryAction]: variant === "primary",
-    [styles.secondaryAction]: variant === "secondary",
+    [styles.primaryAction ?? ""]: variant === "primary",
+    [styles.secondaryAction ?? ""]: variant === "secondary",
   });
 
   if (action.to) {
@@ -50,8 +50,8 @@ export function ErrorState({
   return (
     <section
       className={clsx(styles.root, className, {
-        [styles.page]: variant === "page",
-        [styles.inline]: variant === "inline",
+        [styles.page ?? ""]: variant === "page",
+        [styles.inline ?? ""]: variant === "inline",
       })}
       role="alert"
       aria-live="assertive"

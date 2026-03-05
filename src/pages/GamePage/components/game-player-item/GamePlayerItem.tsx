@@ -81,7 +81,7 @@ function GamePlayerItem({
       <div>
         <div
           className={clsx(styles.playeritemName, {
-            [styles.activePlayerItemName]: isActive === true,
+            [styles.activePlayerItemName ?? ""]: isActive === true,
           })}
         >
           {name}
@@ -96,7 +96,7 @@ function GamePlayerItem({
         >
           <div
             className={clsx(styles.divDisplay, "copylarge", {
-              [styles.handleBust]: displayThrows.throw1IsBust && !isActive,
+              [styles.handleBust ?? ""]: displayThrows.throw1IsBust && !isActive,
             })}
           >
             {displayThrows.throw1}
@@ -104,7 +104,7 @@ function GamePlayerItem({
 
           <div
             className={clsx(styles.divDisplay, "copylarge", {
-              [styles.handleBust]: displayThrows.throw2IsBust && !isActive,
+              [styles.handleBust ?? ""]: displayThrows.throw2IsBust && !isActive,
             })}
           >
             {displayThrows.throw2}
@@ -112,7 +112,7 @@ function GamePlayerItem({
 
           <div
             className={clsx(styles.divDisplay, "copylarge", {
-              [styles.handleBust]: displayThrows.throw3IsBust && !isActive,
+              [styles.handleBust ?? ""]: displayThrows.throw3IsBust && !isActive,
             })}
           >
             {displayThrows.throw3}

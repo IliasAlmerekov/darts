@@ -17,8 +17,8 @@ describe("NavigationBar", () => {
     const gameButton = screen.getByRole("button", { name: /Game/i });
     const statisticsIcon = screen.getByAltText("Statistics") as HTMLImageElement;
 
-    expect(statisticsButton.classList.contains(styles.active)).toBe(true);
-    expect(gameButton.classList.contains(styles.inactive)).toBe(true);
+    expect(statisticsButton.classList.contains(styles.active ?? "")).toBe(true);
+    expect(gameButton.classList.contains(styles.inactive ?? "")).toBe(true);
     expect(statisticsIcon.src.includes("inactive")).toBe(false);
   });
 });
