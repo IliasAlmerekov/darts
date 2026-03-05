@@ -1,9 +1,11 @@
 # Darts App — Project Context
 
 ## Project
+
 PWA darts game: room creation, SSE real-time throw streaming, player statistics.
 
 ## Tech Stack
+
 - **Runtime/UI**: React 18 (functional components only — no class components)
 - **Language**: TypeScript 5.8 (strict mode — `any` is STRICTLY FORBIDDEN)
 - **Build**: Vite 7
@@ -13,6 +15,7 @@ PWA darts game: room creation, SSE real-time throw streaming, player statistics.
 - **Testing**: Vitest + Testing Library (unit/integration), Playwright (E2E)
 
 ## Project Structure
+
 ```
 src/
   app/      # bootstrap, providers, router, global guards, error boundaries
@@ -21,6 +24,7 @@ src/
 ```
 
 ### Dependency Rule (strict)
+
 `app → pages → shared`
 
 - Reverse imports: **FORBIDDEN**
@@ -30,11 +34,13 @@ src/
 ## Critical Conventions
 
 ### TypeScript
+
 - `any` — FORBIDDEN without explicit approval and documentation
 - Exported functions/components — explicit return types required
 - Null/undefined — handle explicitly; no implicit fallbacks
 
 ### Naming
+
 - Components: `PascalCase` (`GameBoard.tsx`)
 - Hooks: `camelCase` with `use` prefix (`useGameState.ts`)
 - Stores: `$` prefix (`$gameStore`)
@@ -43,30 +49,36 @@ src/
 - Constants: `UPPER_SNAKE_CASE`
 
 ### Data Mapping
+
 - Raw DTOs passed directly to UI: **FORBIDDEN**
 - Mapping happens at the API boundary (`shared/api/`)
 - Mapper functions must be pure and unit-tested
 
 ### Error Handling
+
 - Silent catch blocks: **FORBIDDEN**
 - Every `catch` must: remap to a typed error OR return a typed failure result OR convert to user-safe message + structured log
 - User-facing errors: safe, actionable, no internal details leaked
 
 ### State
+
 - Nanostores — only for cross-page or truly shared state
 - Transient UI state — local to component/page
 - Direct store mutations: **FORBIDDEN** — use explicit actions only
 
 ### React
+
 - Functional components only
 - Effects MUST clean up subscriptions/listeners/timers
 - Network requests MUST support cancellation (AbortController)
 
 ## Git Conventions
+
 - Commit messages: Conventional Commits (`feat:`, `fix:`, `refactor:`, `test:`, `chore:`)
 - **NEVER add `Co-Authored-By:` or any co-authorship trailer to commit messages**
 
 ## Verification Commands
+
 ```bash
 npm run eslint
 npm run stylelint
@@ -77,19 +89,22 @@ npx prettier --check .
 ```
 
 ## Development Workflow — 4 Phases
+
 **REQUIRED** for any non-trivial change (new feature, refactor, complex bug fix):
 
-| Phase | Command | Agent | Artifact |
-|-------|---------|-------|----------|
-| 1. Research | `/research_codebase <ticket>` | `research-lead` + `research-sub` | `docs/<feature>/research.md` |
-| 2. Design | `/design_feature` | `architect` | `docs/<feature>/design-summary.md` |
-| 3. Plan | `/plan_feature` | `planner` | `docs/<feature>/implementation-plan.md` |
-| 4. Implement | `/implement_feature <N>` | `coder` → `reviewer` → `security` → `tester` | production code + `docs/<feature>/phase-0N-report.md` |
+| Phase        | Command                       | Agent                                        | Artifact                                              |
+| ------------ | ----------------------------- | -------------------------------------------- | ----------------------------------------------------- |
+| 1. Research  | `/research_codebase <ticket>` | `research-lead` + `research-sub`             | `docs/<feature>/research.md`                          |
+| 2. Design    | `/design_feature`             | `architect`                                  | `docs/<feature>/design-summary.md`                    |
+| 3. Plan      | `/plan_feature`               | `planner`                                    | `docs/<feature>/implementation-plan.md`               |
+| 4. Implement | `/implement_feature <N>`      | `coder` → `reviewer` → `security` → `tester` | production code + `docs/<feature>/phase-0N-report.md` |
 
 **NEVER** skip or merge phases without explicit user approval.
 
 ### Feature Folder Convention
+
 Each feature gets its own folder created automatically at Phase 1:
+
 ```
 docs/
   .current-feature          # slug of the active feature (read by phases 2-4)
@@ -106,6 +121,7 @@ docs/
 ```
 
 ## Testing Policy
+
 - Every behavioral change requires a test
 - Unit: pure functions, mappers, hooks
 - Integration: React components, route-level with mocked boundaries
