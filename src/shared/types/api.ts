@@ -30,3 +30,45 @@ export interface ThrowRequest {
   isTriple?: boolean;
   isBust?: boolean;
 }
+
+export interface FinishedPlayerResponse {
+  playerId: number;
+  username: string;
+  position: number;
+  roundsPlayed: number;
+  roundAverage: number;
+}
+
+export interface RematchResponse {
+  success: boolean;
+  gameId: number;
+  invitationLink: string;
+}
+
+export type AddGuestPayload = {
+  username: string;
+};
+
+export type GuestPlayer = {
+  id: number;
+  name: string;
+  position?: number | null;
+};
+
+export type AddGuestErrorResponse = {
+  success: false;
+  error: "USERNAME_TAKEN";
+  message: string;
+  suggestions?: string[];
+};
+
+export type CreateGameSettingsPayload = {
+  startScore: number;
+  doubleOut: boolean;
+  tripleOut: boolean;
+};
+
+export interface RoomStreamEvent<T = unknown> {
+  type: string;
+  data: T;
+}
