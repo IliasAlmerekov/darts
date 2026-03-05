@@ -1,7 +1,6 @@
 import { useEffect, useState } from "react";
-import Overlay from "@/shared/ui/overlay/Overlay";
-import SettingsGroupBtn from "@/shared/ui/button/SettingsGroupBtn";
-import Button from "@/shared/ui/button/Button";
+import { Overlay } from "@/shared/ui/overlay";
+import { SettingsGroupBtn, Button } from "@/shared/ui/button";
 import styles from "./SettingsOverlay.module.css";
 import deleteIcon from "@/assets/icons/delete.svg";
 

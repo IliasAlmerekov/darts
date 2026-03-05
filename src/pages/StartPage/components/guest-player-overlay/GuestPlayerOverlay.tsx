@@ -1,6 +1,6 @@
 import React from "react";
-import Overlay from "@/shared/ui/overlay/Overlay";
-import Button from "@/shared/ui/button/Button";
+import { Overlay } from "@/shared/ui/overlay";
+import { Button } from "@/shared/ui/button";
 import deleteIcon from "@/assets/icons/delete.svg";
 import styles from "./GuestPlayerOverlay.module.css";
 

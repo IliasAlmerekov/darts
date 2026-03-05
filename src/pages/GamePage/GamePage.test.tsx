@@ -31,12 +31,12 @@ vi.mock("./components/SettingsOverlay", () => ({
   default: () => null,
 }));
 
-vi.mock("@/shared/ui/link-button/LinkButton", () => ({
-  default: () => null,
+vi.mock("@/shared/ui/link-button", () => ({
+  LinkButton: () => null,
 }));
 
-vi.mock("@/shared/ui/overlay/Overlay", () => ({
-  default: ({ children }: { children?: ReactNode }) => <>{children}</>,
+vi.mock("@/shared/ui/overlay", () => ({
+  Overlay: ({ children }: { children?: ReactNode }) => <>{children}</>,
 }));
 
 function buildGameLogicResult(overrides: Record<string, unknown> = {}): Record<string, unknown> {

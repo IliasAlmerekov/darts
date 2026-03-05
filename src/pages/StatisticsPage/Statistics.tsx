@@ -12,8 +12,8 @@ import {
 } from "@/shared/ui/pagination";
 import { getPlayerStats } from "@/shared/api/statistics";
 import type { PlayerProps, PlayerDataProps } from "@/types";
-import type { SortMethod } from "./components/sort-tabs";
-import { StatisticsHeaderControls } from "./components/header-controls";
+import type { SortMethod } from "@/shared/ui/sort-tabs";
+import { StatisticsHeaderControls } from "@/shared/ui/statistics-header-controls";
 import { sortPlayerStats } from "./lib/sort-player-stats";
 
 type StatisticsPaginationProps = {

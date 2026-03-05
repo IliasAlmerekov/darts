@@ -10,16 +10,16 @@ vi.mock("./useGameDetailPage", () => ({
   useGameDetailPage: () => useGameDetailPageMock(),
 }));
 
-vi.mock("@/shared/ui/navigation-bar/NavigationBar", () => ({
-  default: () => <div data-testid="navigation-bar" />,
+vi.mock("@/shared/ui/navigation-bar", () => ({
+  NavigationBar: () => <div data-testid="navigation-bar" />,
 }));
 
 vi.mock("@/shared/ui/podium", () => ({
   Podium: () => <div data-testid="podium" />,
 }));
 
-vi.mock("@/shared/ui/overview-player-item/OverviewPlayerItemList", () => ({
-  default: () => <div data-testid="leaderboard" />,
+vi.mock("@/shared/ui/overview-player-item", () => ({
+  OverviewPlayerItemList: () => <div data-testid="leaderboard" />,
 }));
 
 describe("GameDetailPage", () => {
