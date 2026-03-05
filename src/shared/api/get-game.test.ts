@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { getGameThrowsIfChanged, resetGameStateVersion } from "./game";
+import { getGameThrows, getGameThrowsIfChanged, resetGameStateVersion } from "./game";
+import { apiClient } from "./client";
 
 type MockResponseOptions = {
   status: number;
@@ -29,18 +30,38 @@ describe("getGameThrowsIfChanged", () => {
     vi.restoreAllMocks();
   });
 
+  it("returns data for valid getGameThrows response", async () => {
+    const response = { id: 520, players: [], status: "started" };
+    vi.spyOn(apiClient, "get").mockResolvedValueOnce(response);
+
+    const data = await getGameThrows(520);
+
+    expect(data).toEqual(response);
+    expect(apiClient.get).toHaveBeenCalledWith("/game/520");
+  });
+
+  it("throws ApiError when getGameThrows receives invalid response shape", async () => {
+    vi.spyOn(apiClient, "get").mockResolvedValueOnce({ id: 520, players: [] });
+
+    await expect(getGameThrows(520)).rejects.toMatchObject({
+      name: "ApiError",
+      message: "Unexpected response shape",
+      status: 200,
+    });
+  });
+
   it("returns data on 200 and stores game state version", async () => {
     const fetchMock = vi.spyOn(globalThis, "fetch").mockResolvedValueOnce(
       createMockResponse({
         status: 200,
-        body: { id: 520, players: [] },
+        body: { id: 520, players: [], status: "started" },
         headers: { "content-type": "application/json", "X-Game-State-Version": "v1" },
       }),
     );
 
     const data = await getGameThrowsIfChanged(520);
 
-    expect(data).toEqual({ id: 520, players: [] });
+    expect(data).toEqual({ id: 520, players: [], status: "started" });
     expect(fetchMock).toHaveBeenCalledWith("/api/game/520", expect.any(Object));
   });
 
@@ -50,7 +71,7 @@ describe("getGameThrowsIfChanged", () => {
       .mockResolvedValueOnce(
         createMockResponse({
           status: 200,
-          body: { id: 520, players: [] },
+          body: { id: 520, players: [], status: "started" },
           headers: { "content-type": "application/json", ETag: "etag-v1" },
         }),
       )
@@ -75,5 +96,21 @@ describe("getGameThrowsIfChanged", () => {
         }),
       }),
     );
+  });
+
+  it("throws ApiError when conditional fetch returns invalid response shape", async () => {
+    vi.spyOn(globalThis, "fetch").mockResolvedValueOnce(
+      createMockResponse({
+        status: 200,
+        body: { id: 520, players: [] },
+        headers: { "content-type": "application/json", ETag: "etag-v1" },
+      }),
+    );
+
+    await expect(getGameThrowsIfChanged(520)).rejects.toMatchObject({
+      name: "ApiError",
+      message: "Unexpected response shape",
+      status: 200,
+    });
   });
 });

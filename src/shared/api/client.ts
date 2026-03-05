@@ -87,7 +87,7 @@ async function request<T>(endpoint: string, config: ApiRequestConfig = {}): Prom
     });
   }
 
-  return data as T;
+  return data;
 }
 
 export const apiClient = {

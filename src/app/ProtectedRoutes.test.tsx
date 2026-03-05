@@ -1,0 +1,110 @@
+// @vitest-environment jsdom
+import { render, screen } from "@testing-library/react";
+import { MemoryRouter, Route, Routes } from "react-router-dom";
+import { beforeEach, describe, expect, it, vi } from "vitest";
+import ProtectedRoutes from "./ProtectedRoutes";
+
+vi.mock("@/shared/hooks/useAuthenticatedUser");
+vi.mock("@/shared/ui/skeletons", () => ({
+  StartPageSkeleton: () => <div data-testid="start-page-skeleton" />,
+  LoginSuccessSkeleton: () => <div data-testid="login-success-skeleton" />,
+  UniversalSkeleton: () => <div data-testid="universal-skeleton" />,
+}));
+
+import { useAuthenticatedUser } from "@/shared/hooks/useAuthenticatedUser";
+
+const mockUseAuthenticatedUser = vi.mocked(useAuthenticatedUser);
+
+function renderProtectedRoutes(initialPath: string): ReturnType<typeof render> {
+  return render(
+    <MemoryRouter initialEntries={[initialPath]}>
+      <Routes>
+        <Route element={<ProtectedRoutes allowedRoles={["ROLE_ADMIN"]} />}>
+          <Route path="*" element={<div data-testid="outlet-content">Protected Content</div>} />
+        </Route>
+        <Route path="/" element={<div data-testid="home-page">Home</div>} />
+      </Routes>
+    </MemoryRouter>,
+  );
+}
+
+describe("ProtectedRoutes", () => {
+  beforeEach(() => {
+    vi.resetAllMocks();
+  });
+
+  it("should render StartPageSkeleton when loading on a /start route", () => {
+    mockUseAuthenticatedUser.mockReturnValue({ user: null, loading: true, error: null });
+
+    renderProtectedRoutes("/start");
+
+    expect(screen.getByTestId("start-page-skeleton")).toBeDefined();
+    expect(screen.queryByTestId("login-success-skeleton")).toBeNull();
+    expect(screen.queryByTestId("universal-skeleton")).toBeNull();
+  });
+
+  it("should render LoginSuccessSkeleton when loading on a /joined route", () => {
+    mockUseAuthenticatedUser.mockReturnValue({ user: null, loading: true, error: null });
+
+    renderProtectedRoutes("/joined");
+
+    expect(screen.getByTestId("login-success-skeleton")).toBeDefined();
+    expect(screen.queryByTestId("start-page-skeleton")).toBeNull();
+    expect(screen.queryByTestId("universal-skeleton")).toBeNull();
+  });
+
+  it("should render UniversalSkeleton when loading on an unrelated route", () => {
+    mockUseAuthenticatedUser.mockReturnValue({ user: null, loading: true, error: null });
+
+    renderProtectedRoutes("/game/42");
+
+    expect(screen.getByTestId("universal-skeleton")).toBeDefined();
+    expect(screen.queryByTestId("start-page-skeleton")).toBeNull();
+    expect(screen.queryByTestId("login-success-skeleton")).toBeNull();
+  });
+
+  it("should redirect to / when not loading and user is not authenticated", () => {
+    mockUseAuthenticatedUser.mockReturnValue({ user: null, loading: false, error: null });
+
+    renderProtectedRoutes("/game/42");
+
+    expect(screen.getByTestId("home-page")).toBeDefined();
+    expect(screen.queryByTestId("outlet-content")).toBeNull();
+  });
+
+  it("should redirect to / when user lacks the required role", () => {
+    mockUseAuthenticatedUser.mockReturnValue({
+      user: {
+        success: true,
+        roles: ["ROLE_USER"],
+        id: 1,
+        redirect: "/start",
+      },
+      loading: false,
+      error: null,
+    });
+
+    renderProtectedRoutes("/game/42");
+
+    expect(screen.getByTestId("home-page")).toBeDefined();
+    expect(screen.queryByTestId("outlet-content")).toBeNull();
+  });
+
+  it("should render Outlet when user has the required role", () => {
+    mockUseAuthenticatedUser.mockReturnValue({
+      user: {
+        success: true,
+        roles: ["ROLE_ADMIN"],
+        id: 1,
+        redirect: "/start",
+      },
+      loading: false,
+      error: null,
+    });
+
+    renderProtectedRoutes("/game/42");
+
+    expect(screen.getByTestId("outlet-content")).toBeDefined();
+    expect(screen.queryByTestId("home-page")).toBeNull();
+  });
+});
