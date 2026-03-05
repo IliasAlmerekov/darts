@@ -1,11 +1,12 @@
 import clsx from "clsx";
+import type { WinnerPlayerProps } from "@/types";
 import PodiumPlayerCard from "./PodiumPlayerCard";
 import styles from "./Podium.module.css";
 
 interface PodiumProps {
   name?: string;
-  userMap?: BASIC.WinnerPlayerProps[];
-  list?: BASIC.WinnerPlayerProps[];
+  userMap?: WinnerPlayerProps[];
+  list?: WinnerPlayerProps[];
   startScore?: number;
 }
 
@@ -16,7 +17,7 @@ function Podium({ userMap, list, startScore = 301 }: PodiumProps): JSX.Element {
 
   return (
     <div className={styles.podium}>
-      {userMap.map((item: BASIC.WinnerPlayerProps, index: number) => {
+      {userMap.map((item: WinnerPlayerProps, index: number) => {
         const completedRound =
           item.roundCount ??
           (item.rounds[item.rounds.length - 1]?.throw1 === undefined

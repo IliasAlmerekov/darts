@@ -9,7 +9,7 @@ variables:
 workflow:
   rules:
     - if: $CI_PIPELINE_SOURCE == "merge_request_event"
-    - if: $CI_PIPELINE_SOURCE == "push"
+    - when: never
 
 .base_job: &base_job
   image: node:20

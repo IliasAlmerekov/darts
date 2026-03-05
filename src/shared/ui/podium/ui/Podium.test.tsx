@@ -1,6 +1,7 @@
 // @vitest-environment jsdom
 import { render, screen } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
+import type { WinnerPlayerProps } from "@/types";
 import styles from "./PodiumPlayerCard.module.css";
 import Podium from "./Podium";
 
@@ -10,7 +11,7 @@ const buildPlayer = (
   score: number,
   roundCount: number,
   scoreAverage: number,
-): BASIC.WinnerPlayerProps => ({
+): WinnerPlayerProps => ({
   id,
   name,
   score,

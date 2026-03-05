@@ -53,6 +53,21 @@ If any scripts change, update this list and `AGENTS.md`.
 - Handle errors explicitly; no silent failures.
 - Keep changes small and reviewable.
 
+### Barrel files (`index.ts`)
+
+Every folder under `src/shared/ui/` **must** have an `index.ts` that re-exports the public API as named exports. Consumers always import from the folder path, never from a specific file:
+
+```ts
+// ✅ correct
+import { Button } from "@/shared/ui/button";
+import { Overlay } from "@/shared/ui/overlay";
+
+// ❌ wrong — deep import bypasses the barrel
+import Button from "@/shared/ui/button/Button";
+```
+
+Other directories (`shared/hooks/`, `shared/lib/`, `app/`) use **direct file imports** without barrels.
+
 ## Testing
 
 - Add/extend tests for every behavior change (unit/integration with Vitest, E2E with Playwright).

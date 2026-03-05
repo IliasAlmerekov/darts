@@ -1,4 +1,4 @@
-import { ApiError, NetworkError } from "@/lib/api";
+import { ApiError, NetworkError } from "@/shared/api";
 
 const DEFAULT_ERROR_MESSAGE = "Something went wrong. Please try again.";
 

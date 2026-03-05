@@ -30,7 +30,7 @@ This is a React + TypeScript darts game application using Vite as the build tool
 - **Responsive Design:** Ensure the application is fully responsive and works well on mobile devices
 - **Performance:** Optimize for fast load times and smooth interactions
 - **Testing:** Write unit tests for critical components and functions using Jest and React Testing Library
-- **Context7:** Use MCP React Context for global state management when necessary, but prefer local state and props drilling for simpler cases
+- **Context7:** Use MCP Context7 for React Context for global state management when necessary, but prefer local state and props drilling for simpler cases
 
 ---
 

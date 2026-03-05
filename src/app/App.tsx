@@ -4,33 +4,19 @@ import "@/app/styles/index.css";
 import ErrorBoundary from "@/app/ErrorBoundary";
 import ScrollToTop from "@/app/ScrollToTop";
 import NotFoundPage from "@/app/routes/NotFoundPage";
-import { LoginPage, ProtectedRoutes, RegistrationPage } from "@/features/auth";
+import ProtectedRoutes from "@/app/ProtectedRoutes";
+import LoginPage from "@/pages/LoginPage";
+import RegisterPage from "@/pages/RegisterPage";
 
-const StartPage = lazy(() =>
-  import("@/features/start").then((module) => ({ default: module.StartPage })),
-);
-const Game = lazy(() => import("@/features/game").then((module) => ({ default: module.Game })));
-const GameSummaryPage = lazy(() =>
-  import("@/features/game-summary").then((module) => ({ default: module.GameSummaryPage })),
-);
-const GameDetailPage = lazy(() =>
-  import("@/features/statistics").then((module) => ({ default: module.GameDetailPage })),
-);
-const GamesOverview = lazy(() =>
-  import("@/features/statistics").then((module) => ({ default: module.GamesOverview })),
-);
-const Settings = lazy(() =>
-  import("@/features/settings").then((module) => ({ default: module.Settings })),
-);
-const Statistics = lazy(() =>
-  import("@/features/statistics").then((module) => ({ default: module.Statistics })),
-);
-const JoinedGamePage = lazy(() =>
-  import("@/features/joined-game").then((module) => ({ default: module.JoinedGamePage })),
-);
-const PlayerProfile = lazy(() =>
-  import("@/features/player").then((module) => ({ default: module.PlayerProfile })),
-);
+const StartPage = lazy(() => import("@/pages/StartPage"));
+const GamePage = lazy(() => import("@/pages/GamePage"));
+const GameSummaryPage = lazy(() => import("@/pages/GameSummaryPage"));
+const GameDetailPage = lazy(() => import("@/pages/StatisticsPage/GameDetailPage"));
+const GamesOverview = lazy(() => import("@/pages/StatisticsPage/GamesOverview"));
+const SettingsPage = lazy(() => import("@/pages/SettingsPage"));
+const Statistics = lazy(() => import("@/pages/StatisticsPage"));
+const JoinedGamePage = lazy(() => import("@/pages/JoinedGamePage"));
+const PlayerProfile = lazy(() => import("@/pages/PlayerProfilePage"));
 
 type WindowWithIdleCallback = Window & {
   requestIdleCallback?: (callback: IdleRequestCallback) => number;
@@ -41,13 +27,13 @@ function App(): React.JSX.Element {
   useEffect(() => {
     const windowWithIdleCallback = window as WindowWithIdleCallback;
     const warmUpRoutes = () => {
-      void import("@/features/start");
-      void import("@/features/game");
-      void import("@/features/game-summary");
-      void import("@/features/settings");
-      void import("@/features/statistics");
-      void import("@/features/joined-game");
-      void import("@/features/player");
+      void import("@/pages/StartPage");
+      void import("@/pages/GamePage");
+      void import("@/pages/GameSummaryPage");
+      void import("@/pages/SettingsPage");
+      void import("@/pages/StatisticsPage");
+      void import("@/pages/JoinedGamePage");
+      void import("@/pages/PlayerProfilePage");
     };
 
     if (windowWithIdleCallback.requestIdleCallback && windowWithIdleCallback.cancelIdleCallback) {
@@ -75,17 +61,17 @@ function App(): React.JSX.Element {
           <Suspense fallback={<div className="page-loader" aria-hidden="true" />}>
             <Routes>
               <Route path="/" element={<LoginPage />} />
-              <Route path="/register" element={<RegistrationPage />} />
+              <Route path="/register" element={<RegisterPage />} />
 
               <Route element={<ProtectedRoutes allowedRoles={["ROLE_ADMIN"]} />}>
                 <Route path="/start" element={<StartPage />} />
                 <Route path="/start/:id" element={<StartPage />} />
-                <Route path="/game/:id" element={<Game />} />
+                <Route path="/game/:id" element={<GamePage />} />
                 <Route path="/summary/:id" element={<GameSummaryPage />} />
                 <Route path="/details/:id" element={<GameDetailPage />} />
                 <Route path="/gamesoverview" element={<GamesOverview />} />
-                <Route path="/settings" element={<Settings />} />
-                <Route path="/settings/:id" element={<Settings />} />
+                <Route path="/settings" element={<SettingsPage />} />
+                <Route path="/settings/:id" element={<SettingsPage />} />
                 <Route path="/statistics" element={<Statistics />} />
               </Route>
 

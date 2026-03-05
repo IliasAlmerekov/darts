@@ -13,7 +13,7 @@ git clone <repository-url>
 2. Install dependencies:
 
 ```bash
- npm install
+npm install
 ```
 
 ## Getting Started
@@ -26,45 +26,109 @@ npm run dev
 
 Create a `.env` file in the project root using `.env.example` as a template.
 
-## Architecture (FSD)
+## Architecture
 
-This project follows Feature-Sliced Design (FSD). The key idea is to separate code by responsibility and prevent cross-feature coupling.
+This project uses a **pages-based architecture**. Route-level pages are grouped in `src/pages`, while cross-cutting logic and reusable UI live in `src/shared`.
 
-Layers overview:
+### Top-level layout
 
-- `app/` — application bootstrap, providers, global styles
-- `entities/` — domain entities and core models
-- `features/` — business features (main development unit)
-- `shared/` — shared UI, hooks, lib utilities, types, and stores
-
-Rules:
-
-- Do not import internals of another feature. Only import from `features/<feature>/index.ts`.
-- Shared logic should live in `shared/`, not duplicated across features.
-
-## Directory structure
-
-```bash
-└───src
-    ├───app
-    │   └───styles
-    ├───assets
-    │   ├───fonts
-    │   │   └───circularXX
-    │   └───icons
-    ├───entities
-    ├───features
-    └───shared
+```
+src/
+├── app/          # Application bootstrap, routing, global styles, ErrorBoundary
+├── assets/       # Static assets: fonts, icons
+├── pages/        # Route-level pages (screen modules)
+└── shared/       # Shared utilities, UI components, types, API client
 ```
 
-## Common Commit Types (Conventional Commits)
+### Page structure
 
-Use the following types for your commit messages:
+Each page module is colocated in its own folder and typically follows this shape:
 
-- **feat**: A new feature
-- **fix**: A bug fix
-- **docs**: Documentation changes only
-- **style**: Code style changes (formatting, no logic changes)
-- **refactor**: Code restructuring without changing functionality
-- **test**: Adding or updating tests
-- **chore**: Maintenance tasks (e.g., configs, build tools)
+```
+pages/<PageName>/
+├── index.tsx       # Route entry/page composition
+├── components/     # Page-local UI blocks
+├── lib/            # Pure helpers/business rules (optional)
+├── *.module.css    # Page styles (CSS Modules)
+└── *.test.ts(x)    # Unit/integration tests near implementation
+```
+
+Not every page needs all folders; keep only what is required.
+
+### Pages
+
+| Page                | Responsibility                                |
+| ------------------- | --------------------------------------------- |
+| `LoginPage`         | Login flow                                    |
+| `RegisterPage`      | Registration flow                             |
+| `StartPage`         | Pre-game lobby, player preparation            |
+| `GamePage`          | Active game scoring flow                      |
+| `GameSummaryPage`   | Post-game summary                             |
+| `StatisticsPage`    | Statistics screens (`GamesOverview`, details) |
+| `SettingsPage`      | Game/application settings                     |
+| `JoinedGamePage`    | Player view for joined games                  |
+| `PlayerProfilePage` | Player profile                                |
+
+### Shared
+
+```
+shared/
+├── api/            # API modules grouped by domain
+├── hooks/          # Reusable hooks
+├── lib/
+│   ├── api/        # Base HTTP client, error types
+│   ├── soundPlayer.ts
+│   ├── parseThrowValue.ts
+│   ├── player-mappers.ts
+│   └── ...
+├── store/          # Global Nanostores
+├── types/          # Shared TypeScript types and ambient declarations
+└── ui/             # Reusable UI components (Button, Overlay, Pagination, etc.)
+```
+
+### Rules
+
+- Shared logic lives in `shared/`, not copied between pages.
+- `shared/` must not import from upper layers (`pages` or `app`).
+- Keep route-level pages thin: read params, connect hooks/api, render UI.
+- Reuse shared UI and utilities before introducing new global modules.
+
+## Scripts
+
+| Command                      | Description                               |
+| ---------------------------- | ----------------------------------------- |
+| `npm run dev`                | Start dev server                          |
+| `npm run build`              | Type-check and build for production       |
+| `npm run typecheck`          | Run TypeScript type-checking              |
+| `npm run eslint`             | Lint JS/TS sources                        |
+| `npm run stylelint`          | Lint CSS modules                          |
+| `npm run test`               | Run unit/integration tests (Vitest)       |
+| `npm run test:e2e`           | Run end-to-end tests (Playwright)         |
+| `npm run architecture:check` | Check import rules via dependency-cruiser |
+| `npm run knip`               | Find unused exports and dead code         |
+
+## Tech stack
+
+- **React 18** — functional components only
+- **TypeScript** — strict mode
+- **Vite** — build tooling
+- **React Router 6** — client-side routing with lazy-loaded routes
+- **Nanostores** — lightweight state management
+- **CSS Modules** — scoped styles
+- **@dnd-kit** — drag and drop
+- **Vitest** — unit and integration tests
+- **Playwright** — end-to-end tests
+
+## Commit conventions
+
+Commits follow [Conventional Commits](https://www.conventionalcommits.org/):
+
+| Type       | When to use                          |
+| ---------- | ------------------------------------ |
+| `feat`     | New feature                          |
+| `fix`      | Bug fix                              |
+| `refactor` | Code change with no behaviour change |
+| `test`     | Adding or updating tests             |
+| `docs`     | Documentation only                   |
+| `style`    | Formatting, no logic change          |
+| `chore`    | Config, build tooling, deps          |
