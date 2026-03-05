@@ -28,6 +28,20 @@ const gameStateVersionById = new Map<number, string>();
 
 type ParsedResponse = unknown;
 
+function isRecord(data: unknown): data is Record<string, unknown> {
+  return typeof data === "object" && data !== null;
+}
+
+function isGameThrowsResponse(data: unknown): data is GameThrowsResponse {
+  if (!isRecord(data)) {
+    return false;
+  }
+
+  return (
+    typeof data.id === "number" && Array.isArray(data.players) && typeof data.status === "string"
+  );
+}
+
 function buildConditionalGameUrl(gameId: number, stateVersion: string | null): string {
   const endpoint = GAME_ENDPOINT(gameId);
   if (!stateVersion) return `${API_BASE_URL}${endpoint}`;
@@ -53,7 +67,12 @@ function getNextStateVersion(response: Response): string | null {
  * Fetches the current game state including throws and players.
  */
 export async function getGameThrows(gameId: number): Promise<GameThrowsResponse> {
-  return apiClient.get(GAME_ENDPOINT(gameId));
+  const data: unknown = await apiClient.get(GAME_ENDPOINT(gameId));
+  if (!isGameThrowsResponse(data)) {
+    throw new ApiError("Unexpected response shape", { status: 200, data });
+  }
+
+  return data;
 }
 
 /**
@@ -101,12 +120,20 @@ export async function getGameThrowsIfChanged(gameId: number): Promise<GameThrows
     });
   }
 
+  if (!isGameThrowsResponse(data)) {
+    throw new ApiError("Unexpected response shape", {
+      status: response.status,
+      data,
+      url: response.url,
+    });
+  }
+
   const nextVersion = getNextStateVersion(response);
   if (nextVersion) {
     gameStateVersionById.set(gameId, nextVersion);
   }
 
-  return data as GameThrowsResponse;
+  return data;
 }
 
 /**
