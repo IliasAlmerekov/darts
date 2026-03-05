@@ -19,16 +19,10 @@ interface UseThrowHandlerOptions {
 interface UseThrowHandlerReturn {
   handleThrow: (value: string | number) => Promise<void>;
   handleUndo: () => Promise<void>;
-  /**
-   * Backward-compatible flag used by existing consumers.
-   * In non-blocking throw mode it only reflects undo processing.
-   */
-  isActionInFlight: boolean;
   pendingThrowCount: number;
   isQueueFull: boolean;
   syncMessage: string | null;
   clearSyncMessage: () => void;
-  isUndoInFlight: boolean;
 }
 
 type ApiErrorPayload = {
@@ -613,11 +607,9 @@ export function useThrowHandler({ gameId }: UseThrowHandlerOptions): UseThrowHan
   return {
     handleThrow,
     handleUndo,
-    isActionInFlight: false,
     pendingThrowCount,
     isQueueFull: pendingThrowCount >= 3,
     syncMessage,
     clearSyncMessage,
-    isUndoInFlight: false,
   };
 }

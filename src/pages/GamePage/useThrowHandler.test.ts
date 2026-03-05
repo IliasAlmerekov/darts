@@ -166,7 +166,8 @@ describe("useThrowHandler", () => {
 
     expect(vi.mocked(recordThrow)).toHaveBeenCalledTimes(1);
     expect(result.current.pendingThrowCount).toBe(1);
-    expect(result.current.isActionInFlight).toBe(false);
+    expect(result.current).not.toHaveProperty("isActionInFlight");
+    expect(result.current).not.toHaveProperty("isUndoInFlight");
     expect(currentGameState.players[0]?.score).toBe(281);
 
     await act(async () => {
