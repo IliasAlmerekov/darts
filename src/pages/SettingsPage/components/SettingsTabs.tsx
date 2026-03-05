@@ -32,7 +32,7 @@ function SettingsTabsComponent({
   return (
     <section className={styles.group}>
       <h2 className={styles.title}>{title}</h2>
-      <div className={clsx(styles.tabs, { [styles.tabsGrid]: mobileLayout === "grid" })}>
+      <div className={clsx(styles.tabs, { [styles.tabsGrid ?? ""]: mobileLayout === "grid" })}>
         <span
           className={styles.slider}
           style={{
@@ -48,7 +48,7 @@ function SettingsTabsComponent({
             <button
               key={option.id}
               type="button"
-              className={clsx(styles.button, { [styles.buttonActive]: isActive })}
+              className={clsx(styles.button, { [styles.buttonActive ?? ""]: isActive })}
               onClick={() => onChange(option.id)}
               aria-pressed={isActive}
               disabled={disabled}

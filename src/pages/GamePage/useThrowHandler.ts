@@ -230,10 +230,12 @@ function applyOptimisticThrow(
       return updatedState;
     }
 
-    players[nextIndex].currentRoundThrows = [];
-    players[nextIndex].throwsInCurrentRound = 0;
+    const nextPlayerBust = players[nextIndex];
+    if (!nextPlayerBust) return updatedState;
+    nextPlayerBust.currentRoundThrows = [];
+    nextPlayerBust.throwsInCurrentRound = 0;
     setActivePlayer(players, nextIndex);
-    updatedState.activePlayerId = players[nextIndex].id;
+    updatedState.activePlayerId = nextPlayerBust.id;
     updatedState.currentThrowCount = 0;
     if (wrapped) {
       updatedState.currentRound = currentGameData.currentRound + 1;
@@ -273,10 +275,12 @@ function applyOptimisticThrow(
     return updatedState;
   }
 
-  players[nextIndex].currentRoundThrows = [];
-  players[nextIndex].throwsInCurrentRound = 0;
+  const nextPlayer = players[nextIndex];
+  if (!nextPlayer) return updatedState;
+  nextPlayer.currentRoundThrows = [];
+  nextPlayer.throwsInCurrentRound = 0;
   setActivePlayer(players, nextIndex);
-  updatedState.activePlayerId = players[nextIndex].id;
+  updatedState.activePlayerId = nextPlayer.id;
   updatedState.currentThrowCount = 0;
   if (wrapped) {
     updatedState.currentRound = currentGameData.currentRound + 1;

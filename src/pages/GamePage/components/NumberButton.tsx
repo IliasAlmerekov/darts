@@ -20,11 +20,11 @@ export function NumberButton({
       disabled={disabled}
       onClick={handleClick}
       className={clsx(styles.button, styles.copylarge, {
-        [styles.undo]: value === "Undo",
-        [styles.triple]: value === "Triple",
-        [styles.double]: value === "Double",
-        [styles.active]: isActive,
-        [styles.disabled]: disabled,
+        [styles.undo ?? ""]: value === "Undo",
+        [styles.triple ?? ""]: value === "Triple",
+        [styles.double ?? ""]: value === "Double",
+        [styles.active ?? ""]: isActive,
+        [styles.disabled ?? ""]: disabled,
       })}
     >
       {value === "Undo" ? <img src={Undo} alt="Undo" /> : value}

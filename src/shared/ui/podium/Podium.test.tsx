@@ -41,6 +41,6 @@ describe("Podium", () => {
 
     const winnerBadges = screen.getAllByText("WINNER");
     expect(winnerBadges).toHaveLength(1);
-    expect(winnerBadges[0].closest(`.${styles.winnerCard}`)).toBeTruthy();
+    expect(winnerBadges[0]!.closest(`.${styles.winnerCard}`)).toBeTruthy();
   });
 });

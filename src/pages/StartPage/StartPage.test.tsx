@@ -113,7 +113,7 @@ describe("StartPage", () => {
     );
 
     const guestButton = screen.getByRole("button", { name: "Play as a guest" });
-    expect(guestButton.classList.contains(styles.guestButtonMobile)).toBe(true);
+    expect(guestButton.classList.contains(styles.guestButtonMobile ?? "")).toBe(true);
 
     const actionRow = guestButton.closest(`.${styles.mobileActionRow}`);
     expect(actionRow).not.toBeNull();
@@ -173,7 +173,7 @@ describe("StartPage", () => {
     expect(createButtons.length).toBe(2);
 
     for (const createButton of createButtons) {
-      expect(createButton.classList.contains(styles.createNewPlayerButton)).toBe(true);
+      expect(createButton.classList.contains(styles.createNewPlayerButton ?? "")).toBe(true);
       expect(createButton.querySelector("img")).toBeTruthy();
     }
   });
