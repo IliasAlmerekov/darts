@@ -105,7 +105,7 @@ describe("useGameSummaryPage", () => {
     expect(navigateMock).not.toHaveBeenCalledWith("/game/42");
   });
 
-  it("starts rematch game immediately and navigates to game route", async () => {
+  it("navigates to game route after startGame resolves", async () => {
     const { result } = renderHook(() => useGameSummaryPage());
 
     await act(async () => {
@@ -121,6 +121,101 @@ describe("useGameSummaryPage", () => {
       status: "started",
     });
     expect(navigateMock).toHaveBeenCalledWith("/game/77");
+  });
+
+  it("does not navigate when startGame fails", async () => {
+    startGameMock.mockRejectedValueOnce(new Error("server error"));
+
+    const { result } = renderHook(() => useGameSummaryPage());
+
+    await act(async () => {
+      await result.current.handlePlayAgain();
+    });
+
+    expect(startGameMock).toHaveBeenCalled();
+    expect(navigateMock).not.toHaveBeenCalled();
+    expect(result.current.error).toBeTruthy();
+  });
+
+  it("prevents concurrent handlePlayAgain calls while starting", async () => {
+    let resolveStartGame!: () => void;
+    startGameMock.mockImplementation(
+      () =>
+        new Promise<void>((resolve) => {
+          resolveStartGame = resolve;
+        }),
+    );
+
+    const { result } = renderHook(() => useGameSummaryPage());
+
+    let firstCall: Promise<void>;
+    await act(async () => {
+      firstCall = result.current.handlePlayAgain();
+    });
+
+    await act(async () => {
+      await result.current.handlePlayAgain();
+    });
+
+    await act(async () => {
+      resolveStartGame();
+      await firstCall!;
+    });
+
+    expect(createRematchMock).toHaveBeenCalledTimes(1);
+    expect(startGameMock).toHaveBeenCalledTimes(1);
+  });
+
+  it("navigate is called after startGame resolves, not before", async () => {
+    let resolveStartGame!: () => void;
+    startGameMock.mockImplementation(
+      () =>
+        new Promise<void>((resolve) => {
+          resolveStartGame = resolve;
+        }),
+    );
+
+    const { result } = renderHook(() => useGameSummaryPage());
+
+    let callPromise: Promise<void>;
+    await act(async () => {
+      callPromise = result.current.handlePlayAgain();
+    });
+
+    expect(navigateMock).not.toHaveBeenCalled();
+
+    await act(async () => {
+      resolveStartGame();
+      await callPromise!;
+    });
+
+    expect(navigateMock).toHaveBeenCalledWith("/game/77");
+  });
+
+  it("starting flag is true while startGame is pending and false after", async () => {
+    let resolveStartGame!: () => void;
+    startGameMock.mockImplementation(
+      () =>
+        new Promise<void>((resolve) => {
+          resolveStartGame = resolve;
+        }),
+    );
+
+    const { result } = renderHook(() => useGameSummaryPage());
+
+    let callPromise: Promise<void>;
+    await act(async () => {
+      callPromise = result.current.handlePlayAgain();
+    });
+
+    expect(result.current.starting).toBe(true);
+
+    await act(async () => {
+      resolveStartGame();
+      await callPromise!;
+    });
+
+    expect(result.current.starting).toBe(false);
   });
 
   it("does not navigate when rematch response misses game id", async () => {
