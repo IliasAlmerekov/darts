@@ -23,14 +23,14 @@ const ProtectedRoutes: React.FC<ProtectedRoutesProps> = ({ allowedRoles = ["ROLE
   }
 
   if (!loggedInUser) {
-    return <Navigate to={ROUTES.login} />;
+    return <Navigate to={ROUTES.login} state={{ from: pathname }} replace />;
   }
 
   const roles = loggedInUser.roles;
   const isAuthorized = Array.isArray(roles) && roles.some((r: string) => allowedRoles.includes(r));
 
   if (!isAuthorized) {
-    return <Navigate to={ROUTES.login} />;
+    return <Navigate to={ROUTES.login} state={{ from: pathname }} replace />;
   }
 
   return <Outlet />;

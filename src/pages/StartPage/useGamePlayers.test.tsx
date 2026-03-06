@@ -34,7 +34,7 @@ const buildGameThrowsResponse = (
   overrides: Partial<GameThrowsResponse> = {},
 ): GameThrowsResponse => ({
   id: 1,
-  status: "active",
+  status: "started",
   currentRound: 1,
   activePlayerId: 1,
   currentThrowCount: 0,

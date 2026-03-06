@@ -1,3 +1,5 @@
+import type { GameStatus } from "./game";
+
 export interface PaginatedRequest {
   [key: string]: string | number | boolean | null | undefined;
   limit?: number;
@@ -20,7 +22,7 @@ export interface StartGameRequest {
   doubleOut: boolean;
   tripleOut: boolean;
   round?: number;
-  status?: string;
+  status?: GameStatus;
 }
 
 export interface ThrowRequest {

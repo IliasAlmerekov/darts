@@ -1,0 +1,85 @@
+// @vitest-environment jsdom
+import { renderHook, waitFor } from "@testing-library/react";
+import { beforeEach, describe, expect, it, vi } from "vitest";
+import { useLoginPage } from "./useLoginPage";
+
+const navigateMock = vi.fn();
+const useLoginMock = vi.fn();
+const useAuthenticatedUserMock = vi.fn();
+const getActiveGameIdMock = vi.fn();
+
+vi.mock("react-router-dom", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("react-router-dom")>();
+  return {
+    ...actual,
+    useNavigate: () => navigateMock,
+  };
+});
+
+vi.mock("./useLogin", () => ({
+  useLogin: () => useLoginMock(),
+}));
+
+vi.mock("@/shared/hooks/useAuthenticatedUser", () => ({
+  useAuthenticatedUser: () => useAuthenticatedUserMock(),
+}));
+
+vi.mock("@/store", () => ({
+  getActiveGameId: () => getActiveGameIdMock(),
+}));
+
+describe("useLoginPage", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    useLoginMock.mockReturnValue({
+      login: vi.fn(),
+      loading: false,
+      error: null,
+    });
+    useAuthenticatedUserMock.mockReturnValue({
+      user: null,
+      loading: false,
+      error: null,
+    });
+    getActiveGameIdMock.mockReturnValue(null);
+  });
+
+  it("redirects authenticated users to the generic start route from a game-specific start redirect", async () => {
+    useAuthenticatedUserMock.mockReturnValue({
+      user: {
+        success: true,
+        roles: ["ROLE_ADMIN"],
+        id: 1,
+        redirect: "/start/42",
+      },
+      loading: false,
+      error: null,
+    });
+
+    renderHook(() => useLoginPage());
+
+    await waitFor(() => {
+      expect(navigateMock).toHaveBeenCalledWith("/start");
+    });
+  });
+
+  it("prefers the cached active game route when one exists", async () => {
+    useAuthenticatedUserMock.mockReturnValue({
+      user: {
+        success: true,
+        roles: ["ROLE_ADMIN"],
+        id: 1,
+        redirect: "/start",
+      },
+      loading: false,
+      error: null,
+    });
+    getActiveGameIdMock.mockReturnValue(99);
+
+    renderHook(() => useLoginPage());
+
+    await waitFor(() => {
+      expect(navigateMock).toHaveBeenCalledWith("/start/99");
+    });
+  });
+});

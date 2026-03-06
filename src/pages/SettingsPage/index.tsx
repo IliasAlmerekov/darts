@@ -5,6 +5,7 @@ import { useStore } from "@nanostores/react";
 import { $gameData, $gameSettings, setGameData } from "@/store";
 import { $currentGameId, setCurrentGameId } from "@/store";
 import { getGameThrows, saveGameSettings } from "@/shared/api/game";
+import type { GameMode } from "@/types";
 import styles from "./Settings.module.css";
 import { SettingsTabs } from "./components/SettingsTabs";
 
@@ -12,7 +13,7 @@ const GAME_MODE_OPTIONS = [
   { label: "Single-out", id: "single-out" },
   { label: "Double-out", id: "double-out" },
   { label: "Triple-out", id: "triple-out" },
-] as const;
+] as const satisfies ReadonlyArray<{ label: string; id: GameMode }>;
 
 const POINTS_OPTIONS = [
   { label: "101", id: 101 },
@@ -21,6 +22,16 @@ const POINTS_OPTIONS = [
   { label: "401", id: 401 },
   { label: "501", id: 501 },
 ] as const;
+
+function resolveGameMode(doubleOut: boolean, tripleOut: boolean): GameMode {
+  if (doubleOut) return "double-out";
+  if (tripleOut) return "triple-out";
+  return "single-out";
+}
+
+function isGameMode(id: string | number): id is GameMode {
+  return GAME_MODE_OPTIONS.some((option) => option.id === id);
+}
 
 function SettingsPage(): JSX.Element {
   const { id: gameIdParam } = useParams<{ id?: string }>();
@@ -38,17 +49,11 @@ function SettingsPage(): JSX.Element {
   }, [gameIdParam, currentGameIdFromStore]);
   const [isSaving, setIsSaving] = useState(false);
   const [savingScope, setSavingScope] = useState<"game-mode" | "points" | null>(null);
-  const initialGameMode: "single-out" | "double-out" | "triple-out" = gameSettings
-    ? gameSettings.doubleOut
-      ? "double-out"
-      : gameSettings.tripleOut
-        ? "triple-out"
-        : "single-out"
+  const initialGameMode: GameMode = gameSettings
+    ? resolveGameMode(gameSettings.doubleOut, gameSettings.tripleOut)
     : "single-out";
   const initialPoints = gameSettings?.startScore ?? 301;
-  const [selectedGameMode, setSelectedGameMode] = useState<
-    "single-out" | "double-out" | "triple-out"
-  >(initialGameMode);
+  const [selectedGameMode, setSelectedGameMode] = useState<GameMode>(initialGameMode);
   const [selectedPoints, setSelectedPoints] = useState<number>(initialPoints);
   const [hasHydratedSelection, setHasHydratedSelection] = useState(() => Boolean(gameSettings));
   const selectedGameModeRef = useRef(selectedGameMode);
@@ -91,12 +96,11 @@ function SettingsPage(): JSX.Element {
   }, [currentGameId, gameData?.id]);
 
   // Mapping between backend settings and UI representation
-  const currentGameMode = useMemo(() => {
-    if (!gameSettings) return "single-out";
-    if (gameSettings.doubleOut) return "double-out";
-    if (gameSettings.tripleOut) return "triple-out";
-    return "single-out";
-  }, [gameSettings]);
+  const currentGameMode = useMemo(
+    () =>
+      gameSettings ? resolveGameMode(gameSettings.doubleOut, gameSettings.tripleOut) : "single-out",
+    [gameSettings],
+  );
 
   const currentPoints = gameSettings?.startScore ?? 301;
   const effectiveGameId = currentGameId ?? gameData?.id ?? null;
@@ -142,8 +146,9 @@ function SettingsPage(): JSX.Element {
 
   const handleGameModeClick = useCallback(async (id: string | number) => {
     if (isSavingRef.current) return;
+    if (!isGameMode(id)) return;
 
-    const mode = id.toString() as "single-out" | "double-out" | "triple-out";
+    const mode = id;
     const isDoubleOut = mode === "double-out";
     const isTripleOut = mode === "triple-out";
     const previousMode = selectedGameModeRef.current;
