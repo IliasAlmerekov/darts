@@ -1,3 +1,4 @@
+// @vitest-environment node
 import { describe, expect, it } from "vitest";
 import type { PlayerProps } from "@/types";
 import { sortPlayerStats } from "./sort-player-stats";
