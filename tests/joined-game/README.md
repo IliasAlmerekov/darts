@@ -55,7 +55,8 @@ npx playwright test --ui
 
 ## Test Credentials
 
-Use environment variables for credentials in local/CI runs:
+Use environment variables for credentials in local/CI runs. The auth-dependent
+specs read them at runtime and fail fast if they are missing:
 
 - `PLAYWRIGHT_TEST_EMAIL`
 - `PLAYWRIGHT_TEST_PASSWORD`
@@ -66,6 +67,14 @@ Example (PowerShell):
 $env:PLAYWRIGHT_TEST_EMAIL="tester@example.com"
 $env:PLAYWRIGHT_TEST_PASSWORD="change-me"
 npm run test:e2e
+```
+
+Local alternative:
+
+```bash
+# .env.local
+PLAYWRIGHT_TEST_EMAIL=tester@example.com
+PLAYWRIGHT_TEST_PASSWORD=change-me
 ```
 
 ## Debugging Commands
