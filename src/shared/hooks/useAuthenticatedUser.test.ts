@@ -3,6 +3,7 @@ import { renderHook, waitFor } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { useAuthenticatedUser } from "./useAuthenticatedUser";
 import type { AuthenticatedUser } from "@/shared/api/auth";
+import { resetAuthStore } from "@/store/auth";
 
 const getAuthenticatedUserMock = vi.fn();
 const setCurrentGameIdMock = vi.fn();
@@ -39,6 +40,7 @@ function createAbortError(): Error {
 describe("useAuthenticatedUser", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    resetAuthStore();
   });
 
   it("passes a live signal and timeoutMs 5000 when starting auth check", async () => {
@@ -117,5 +119,28 @@ describe("useAuthenticatedUser", () => {
 
     expect(result.current.user).toBeNull();
     expect(result.current.error).toBeNull();
+  });
+
+  it("reuses cached auth result after the first successful check", async () => {
+    getAuthenticatedUserMock.mockResolvedValue({
+      success: true,
+      roles: ["ROLE_ADMIN"],
+      id: 3,
+      redirect: "/start",
+    });
+
+    const firstHook = renderHook(() => useAuthenticatedUser());
+
+    await waitFor(() => {
+      expect(firstHook.result.current.loading).toBe(false);
+    });
+
+    firstHook.unmount();
+
+    const secondHook = renderHook(() => useAuthenticatedUser());
+
+    expect(secondHook.result.current.loading).toBe(false);
+    expect(secondHook.result.current.user).toMatchObject({ id: 3 });
+    expect(getAuthenticatedUserMock).toHaveBeenCalledTimes(1);
   });
 });

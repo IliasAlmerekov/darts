@@ -1,5 +1,7 @@
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
+import { useStore } from "@nanostores/react";
 import { getAuthenticatedUser, type AuthenticatedUser } from "@/shared/api/auth";
+import { $authChecked, $authError, $user, setAuthenticatedUser, setAuthError } from "@/store/auth";
 import { setCurrentGameId } from "@/store";
 
 const AUTHENTICATED_USER_TIMEOUT_MS = 5000;
@@ -18,14 +20,18 @@ function isAbortError(error: unknown): boolean {
  * Fetches the currently authenticated user and exposes loading/error state.
  */
 export const useAuthenticatedUser = (): UseAuthenticatedUserResult => {
-  const [user, setUser] = useState<AuthenticatedUser | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const user = useStore($user);
+  const checked = useStore($authChecked);
+  const error = useStore($authError);
 
   useEffect(() => {
+    if (checked) {
+      return;
+    }
+
     const controller = new AbortController();
 
-    const fetchUser = async () => {
+    const fetchUser = async (): Promise<void> => {
       try {
         const userData = await getAuthenticatedUser({
           signal: controller.signal,
@@ -35,25 +41,27 @@ export const useAuthenticatedUser = (): UseAuthenticatedUserResult => {
           return;
         }
 
+        setAuthenticatedUser(userData);
+
         if (userData) {
-          setUser(userData);
           if (typeof userData.gameId === "number") {
             setCurrentGameId(userData.gameId);
           }
         }
       } catch (err) {
-        if (isAbortError(err) || controller.signal.aborted) {
+        if (controller.signal.aborted) {
+          return;
+        }
+
+        if (isAbortError(err)) {
+          setAuthenticatedUser(null);
           return;
         }
 
         if (err instanceof Error) {
-          setError(err.message);
+          setAuthError(err.message);
         } else {
-          setError("Unknown error");
-        }
-      } finally {
-        if (!controller.signal.aborted) {
-          setLoading(false);
+          setAuthError("Unknown error");
         }
       }
     };
@@ -63,7 +71,7 @@ export const useAuthenticatedUser = (): UseAuthenticatedUserResult => {
     return () => {
       controller.abort();
     };
-  }, []);
+  }, [checked]);
 
-  return { user, loading, error };
+  return { user, loading: !checked, error };
 };
