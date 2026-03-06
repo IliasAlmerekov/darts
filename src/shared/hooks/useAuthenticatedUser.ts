@@ -2,6 +2,8 @@ import { useEffect, useState } from "react";
 import { getAuthenticatedUser, type AuthenticatedUser } from "@/shared/api/auth";
 import { setCurrentGameId } from "@/store";
 
+const AUTHENTICATED_USER_TIMEOUT_MS = 5000;
+
 type UseAuthenticatedUserResult = {
   user: AuthenticatedUser | null;
   loading: boolean;
@@ -22,16 +24,13 @@ export const useAuthenticatedUser = (): UseAuthenticatedUserResult => {
 
   useEffect(() => {
     const controller = new AbortController();
-    const safetyTimeoutId = window.setTimeout(() => {
-      if (!controller.signal.aborted) {
-        controller.abort();
-        setLoading(false);
-      }
-    }, 10000);
 
     const fetchUser = async () => {
       try {
-        const userData = await getAuthenticatedUser({ signal: controller.signal });
+        const userData = await getAuthenticatedUser({
+          signal: controller.signal,
+          timeoutMs: AUTHENTICATED_USER_TIMEOUT_MS,
+        });
         if (controller.signal.aborted) {
           return;
         }
@@ -53,7 +52,6 @@ export const useAuthenticatedUser = (): UseAuthenticatedUserResult => {
           setError("Unknown error");
         }
       } finally {
-        window.clearTimeout(safetyTimeoutId);
         if (!controller.signal.aborted) {
           setLoading(false);
         }
@@ -63,7 +61,6 @@ export const useAuthenticatedUser = (): UseAuthenticatedUserResult => {
     void fetchUser();
 
     return () => {
-      window.clearTimeout(safetyTimeoutId);
       controller.abort();
     };
   }, []);
