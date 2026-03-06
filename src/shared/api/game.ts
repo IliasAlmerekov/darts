@@ -63,6 +63,10 @@ function getNextStateVersion(response: Response): string | null {
   return response.headers.get("X-Game-State-Version") ?? response.headers.get("ETag");
 }
 
+function isAbortError(error: unknown): boolean {
+  return error instanceof Error && error.name === "AbortError";
+}
+
 /**
  * Fetches the current game state including throws and players.
  */
@@ -78,7 +82,10 @@ export async function getGameThrows(gameId: number): Promise<GameThrowsResponse>
 /**
  * Fetches game state conditionally and returns null if state has not changed.
  */
-export async function getGameThrowsIfChanged(gameId: number): Promise<GameThrowsResponse | null> {
+export async function getGameThrowsIfChanged(
+  gameId: number,
+  signal?: AbortSignal,
+): Promise<GameThrowsResponse | null> {
   const currentVersion = gameStateVersionById.get(gameId) ?? null;
   const requestUrl = buildConditionalGameUrl(gameId, currentVersion);
 
@@ -92,8 +99,12 @@ export async function getGameThrowsIfChanged(gameId: number): Promise<GameThrows
         Accept: "application/json",
         ...(currentVersion ? { "If-None-Match": currentVersion } : {}),
       },
+      signal,
     });
   } catch (error) {
+    if (isAbortError(error)) {
+      throw error;
+    }
     throw new NetworkError("Network request failed", error);
   }
 

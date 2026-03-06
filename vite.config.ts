@@ -35,9 +35,9 @@ export default defineConfig(({ mode }) => {
       },
     },
     test: {
-      environment: "node",
+      environment: "jsdom",
       globals: true,
-      include: ["src/**/*.test.{ts,tsx}", "src/**/*.spec.{ts,tsx}"],
+      include: ["src/**/*.test.{ts,tsx}"],
       exclude: ["specs/**"],
     },
   };

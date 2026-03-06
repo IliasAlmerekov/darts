@@ -111,6 +111,11 @@ const LOGOUT_ENDPOINT = "/logout";
 const REGISTER_ENDPOINT = "/register";
 const AUTH_CHECK_TIMEOUT_MS = 8000;
 
+type GetAuthenticatedUserOptions = {
+  signal?: AbortSignal;
+  timeoutMs?: number;
+};
+
 /**
  * Logs in a user using email/password credentials.
  */
@@ -158,9 +163,24 @@ export async function registerUser(
 /**
  * Fetches the currently authenticated user, if any.
  */
-export async function getAuthenticatedUser(): Promise<AuthenticatedUser | null> {
+export async function getAuthenticatedUser(
+  options: GetAuthenticatedUserOptions = {},
+): Promise<AuthenticatedUser | null> {
   const controller = new AbortController();
-  const timeoutId = window.setTimeout(() => controller.abort(), AUTH_CHECK_TIMEOUT_MS);
+  const timeoutMs = options.timeoutMs ?? AUTH_CHECK_TIMEOUT_MS;
+  const forwardAbort = (): void => {
+    controller.abort();
+  };
+
+  if (options.signal) {
+    if (options.signal.aborted) {
+      controller.abort();
+    } else {
+      options.signal.addEventListener("abort", forwardAbort, { once: true });
+    }
+  }
+
+  const timeoutId = window.setTimeout(() => controller.abort(), timeoutMs);
 
   let response: Response;
   try {
@@ -173,6 +193,7 @@ export async function getAuthenticatedUser(): Promise<AuthenticatedUser | null> 
       signal: controller.signal,
     });
   } finally {
+    options.signal?.removeEventListener("abort", forwardAbort);
     window.clearTimeout(timeoutId);
   }
 
