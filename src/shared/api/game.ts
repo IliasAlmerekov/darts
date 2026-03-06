@@ -1,6 +1,12 @@
 import { apiClient, API_BASE_URL, triggerUnauthorizedHandler } from "./client";
 import { ApiError, ForbiddenError, NetworkError, UnauthorizedError } from "./errors";
-import type { GameThrowsResponse, ThrowAckResponse, ThrowRequest, StartGameRequest } from "@/types";
+import type {
+  GameStatus,
+  GameThrowsResponse,
+  ThrowAckResponse,
+  ThrowRequest,
+  StartGameRequest,
+} from "@/types";
 import type { FinishedPlayerResponse, RematchResponse, CreateGameSettingsPayload } from "@/types";
 
 // ---------------------------------------------------------------------------
@@ -28,8 +34,14 @@ const gameStateVersionById = new Map<number, string>();
 
 type ParsedResponse = unknown;
 
+const GAME_STATUS_VALUES: readonly GameStatus[] = ["lobby", "started", "finished"];
+
 function isRecord(data: unknown): data is Record<string, unknown> {
   return typeof data === "object" && data !== null;
+}
+
+function isGameStatus(value: unknown): value is GameStatus {
+  return typeof value === "string" && GAME_STATUS_VALUES.includes(value as GameStatus);
 }
 
 function isGameThrowsResponse(data: unknown): data is GameThrowsResponse {
@@ -37,9 +49,7 @@ function isGameThrowsResponse(data: unknown): data is GameThrowsResponse {
     return false;
   }
 
-  return (
-    typeof data.id === "number" && Array.isArray(data.players) && typeof data.status === "string"
-  );
+  return typeof data.id === "number" && Array.isArray(data.players) && isGameStatus(data.status);
 }
 
 function isFinishedPlayerResponseArray(data: unknown): data is FinishedPlayerResponse[] {
@@ -64,7 +74,8 @@ function isThrowAckResponse(data: unknown): data is ThrowAckResponse {
     typeof data.success === "boolean" &&
     typeof data.gameId === "number" &&
     typeof data.stateVersion === "string" &&
-    isRecord(data.scoreboardDelta)
+    isRecord(data.scoreboardDelta) &&
+    isGameStatus(data.scoreboardDelta.status)
   );
 }
 

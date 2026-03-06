@@ -1,14 +1,6 @@
-export enum GameStatus {
-  Lobby = "lobby",
-  Started = "started",
-  Finished = "finished",
-}
+export type GameStatus = "lobby" | "started" | "finished";
 
-export enum GameMode {
-  Standard = "standard",
-  DoubleOut = "double-out",
-  TripleOut = "triple-out",
-}
+export type GameMode = "single-out" | "double-out" | "triple-out";
 
 export interface GamePlayer {
   id: number;
@@ -61,7 +53,7 @@ export type RoundHistory = {
 
 export type GameThrowsResponse = {
   id: number;
-  status: string;
+  status: GameStatus;
   currentRound: number;
   activePlayerId: number;
   currentThrowCount: number;
@@ -110,7 +102,7 @@ export type ScoreboardPlayerDelta = {
 export type ScoreboardDelta = {
   changedPlayers: ScoreboardPlayerDelta[];
   winnerId: number | null;
-  status: string;
+  status: GameStatus;
   currentRound: number;
 };
 

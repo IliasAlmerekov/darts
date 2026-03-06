@@ -18,7 +18,7 @@ const mockGameData: GameThrowsResponse = {
   activePlayerId: 1,
   currentRound: 3,
   currentThrowCount: 2,
-  status: "playing",
+  status: "started",
   winnerId: null,
   settings: {
     startScore: 501,
@@ -140,7 +140,7 @@ describe("game-state store", () => {
 
   describe("deriveWinnerId", () => {
     it("returns existing winnerId when provided", () => {
-      const gameData = {
+      const gameData: GameThrowsResponse = {
         ...mockGameData,
         status: "finished",
         winnerId: 2,
@@ -150,7 +150,7 @@ describe("game-state store", () => {
     });
 
     it("returns winner by score when exactly one player has score > 0", () => {
-      const gameData = {
+      const gameData: GameThrowsResponse = {
         ...mockGameData,
         status: "finished",
         winnerId: null,
@@ -180,7 +180,7 @@ describe("game-state store", () => {
     });
 
     it("fills winnerId for finished game when derivable", () => {
-      const gameData = {
+      const gameData: GameThrowsResponse = {
         ...mockGameData,
         status: "finished",
         winnerId: null,

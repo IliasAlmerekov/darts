@@ -191,9 +191,9 @@ describe("shouldAutoFinishGame", () => {
     expect(shouldAutoFinishGame(data, false)).toBe(false);
   });
 
-  it("returns true even when status is reopen-like, as long as only one active player remains", () => {
+  it("returns true when the game is not finished and only one active player remains", () => {
     const data = buildGameData({
-      status: "reopened",
+      status: "lobby",
       players: [
         {
           id: 1,

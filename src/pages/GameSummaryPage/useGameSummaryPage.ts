@@ -90,7 +90,7 @@ export function useGameSummaryPage() {
   });
   const podiumData = podiumList.length === 2 ? podiumListWithPlaceholder : podiumList;
 
-  const handleUndo = async (): Promise<void> => {
+  const handleUndo = useCallback(async (): Promise<void> => {
     if (!finishedGameIdFromRoute) return;
 
     try {
@@ -106,10 +106,10 @@ export function useGameSummaryPage() {
       console.error("Failed to reopen game and undo throw:", err);
       setError(toUserErrorMessage(err, "Could not reopen game and undo throw."));
     }
-  };
+  }, [finishedGameIdFromRoute, navigate]);
 
-  const handlePlayAgain = async (): Promise<void> => {
-    if (!finishedGameIdFromRoute || starting || startGameInFlightRef.current) return;
+  const handlePlayAgain = useCallback(async (): Promise<void> => {
+    if (!finishedGameIdFromRoute || startGameInFlightRef.current) return;
 
     startGameInFlightRef.current = true;
     setStarting(true);
@@ -146,14 +146,13 @@ export function useGameSummaryPage() {
       startGameInFlightRef.current = false;
       setStarting(false);
     }
-  };
+  }, [finishedGameIdFromRoute, gameSettings, navigate]);
 
-  const handleBackToStart = async (): Promise<void> => {
-    resetRoomStore();
+  const handleBackToStart = useCallback(async (): Promise<void> => {
     if (!finishedGameIdFromRoute) return;
-    if (finishedGameIdFromRoute) {
-      setLastFinishedGameId(finishedGameIdFromRoute);
-    }
+
+    setLastFinishedGameId(finishedGameIdFromRoute);
+    resetRoomStore();
 
     try {
       setError(null);
@@ -169,7 +168,7 @@ export function useGameSummaryPage() {
       console.error("Failed to start rematch:", err);
       setError(toUserErrorMessage(err, "Could not return to start."));
     }
-  };
+  }, [finishedGameIdFromRoute, navigate]);
 
   return {
     error,

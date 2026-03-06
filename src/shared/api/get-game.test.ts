@@ -52,6 +52,16 @@ describe("getGameThrowsIfChanged", () => {
     });
   });
 
+  it("throws ApiError when getGameThrows receives an unknown game status", async () => {
+    vi.spyOn(apiClient, "get").mockResolvedValueOnce({ id: 520, players: [], status: "active" });
+
+    await expect(getGameThrows(520)).rejects.toMatchObject({
+      name: "ApiError",
+      message: "Unexpected response shape",
+      status: 200,
+    });
+  });
+
   it("returns data on 200 and stores game state version", async () => {
     const fetchMock = vi.spyOn(globalThis, "fetch").mockResolvedValueOnce(
       createMockResponse({
