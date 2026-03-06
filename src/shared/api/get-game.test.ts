@@ -1,3 +1,4 @@
+// @vitest-environment node
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { getGameThrows, getGameThrowsIfChanged, resetGameStateVersion } from "./game";
 import { apiClient } from "./client";
@@ -111,6 +112,15 @@ describe("getGameThrowsIfChanged", () => {
       name: "ApiError",
       message: "Unexpected response shape",
       status: 200,
+    });
+  });
+
+  it("rethrows AbortError without converting it to NetworkError", async () => {
+    const abortError = Object.assign(new Error("aborted"), { name: "AbortError" });
+    vi.spyOn(globalThis, "fetch").mockRejectedValueOnce(abortError);
+
+    await expect(getGameThrowsIfChanged(520)).rejects.toMatchObject({
+      name: "AbortError",
     });
   });
 });

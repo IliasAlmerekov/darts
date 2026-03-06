@@ -8,6 +8,10 @@ type UseAuthenticatedUserResult = {
   error: string | null;
 };
 
+function isAbortError(error: unknown): boolean {
+  return error instanceof Error && error.name === "AbortError";
+}
+
 /**
  * Fetches the currently authenticated user and exposes loading/error state.
  */
@@ -17,13 +21,21 @@ export const useAuthenticatedUser = (): UseAuthenticatedUserResult => {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
+    const controller = new AbortController();
     const safetyTimeoutId = window.setTimeout(() => {
-      setLoading(false);
+      if (!controller.signal.aborted) {
+        controller.abort();
+        setLoading(false);
+      }
     }, 10000);
 
     const fetchUser = async () => {
       try {
-        const userData = await getAuthenticatedUser();
+        const userData = await getAuthenticatedUser({ signal: controller.signal });
+        if (controller.signal.aborted) {
+          return;
+        }
+
         if (userData) {
           setUser(userData);
           if (typeof userData.gameId === "number") {
@@ -31,6 +43,10 @@ export const useAuthenticatedUser = (): UseAuthenticatedUserResult => {
           }
         }
       } catch (err) {
+        if (isAbortError(err) || controller.signal.aborted) {
+          return;
+        }
+
         if (err instanceof Error) {
           setError(err.message);
         } else {
@@ -38,7 +54,9 @@ export const useAuthenticatedUser = (): UseAuthenticatedUserResult => {
         }
       } finally {
         window.clearTimeout(safetyTimeoutId);
-        setLoading(false);
+        if (!controller.signal.aborted) {
+          setLoading(false);
+        }
       }
     };
 
@@ -46,6 +64,7 @@ export const useAuthenticatedUser = (): UseAuthenticatedUserResult => {
 
     return () => {
       window.clearTimeout(safetyTimeoutId);
+      controller.abort();
     };
   }, []);
 
