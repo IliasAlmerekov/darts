@@ -1,4 +1,4 @@
-import { useCallback, useEffect } from "react";
+import { useCallback, useEffect, useRef } from "react";
 import { useStore } from "@nanostores/react";
 import { getGameThrowsIfChanged, resetGameStateVersion } from "@/shared/api/game";
 import type { GameThrowsResponse } from "@/types";
@@ -16,6 +16,10 @@ interface UseGameStateReturn {
   updateGameData: (data: GameThrowsResponse) => void;
 }
 
+function isAbortError(error: unknown): boolean {
+  return error instanceof Error && error.name === "AbortError";
+}
+
 /**
  * Loads and exposes the current game state from the API and store.
  */
@@ -23,11 +27,13 @@ export function useGameState({ gameId }: UseGameStateOptions): UseGameStateRetur
   const gameData = useStore($gameData);
   const isLoading = useStore($isLoading);
   const error = useStore($error);
+  const requestIdRef = useRef(0);
 
   useEffect(() => {
     if (!gameId) {
       setGameData(null);
       setError(null);
+      setLoading(false);
       return;
     }
 
@@ -39,32 +45,50 @@ export function useGameState({ gameId }: UseGameStateOptions): UseGameStateRetur
     setError(null);
   }, [gameId]);
 
-  const fetchGameData = useCallback(async () => {
-    if (!gameId) return;
-    const hasCachedSnapshot = $gameData.get()?.id === gameId;
-    if (!hasCachedSnapshot) {
-      setLoading(true);
-    }
-    setError(null);
+  const fetchGameData = useCallback(
+    async (signal?: AbortSignal) => {
+      if (!gameId || signal?.aborted) {
+        return;
+      }
 
-    try {
-      const data = await getGameThrowsIfChanged(gameId);
-      if (data) {
-        setGameData(data);
-      }
-    } catch (err) {
-      const fetchError = err instanceof Error ? err : new Error("Failed to fetch game data");
-      setError(fetchError);
-      console.error("Failed to fetch game data:", fetchError);
-    } finally {
+      const requestId = ++requestIdRef.current;
+      const hasCachedSnapshot = $gameData.get()?.id === gameId;
       if (!hasCachedSnapshot) {
-        setLoading(false);
+        setLoading(true);
       }
-    }
-  }, [gameId]);
+      setError(null);
+
+      try {
+        const data = await getGameThrowsIfChanged(gameId, signal);
+        if (signal?.aborted || requestId !== requestIdRef.current) {
+          return;
+        }
+        if (data) {
+          setGameData(data);
+        }
+      } catch (err) {
+        if (isAbortError(err) || signal?.aborted || requestId !== requestIdRef.current) {
+          return;
+        }
+        const fetchError = err instanceof Error ? err : new Error("Failed to fetch game data");
+        setError(fetchError);
+        console.error("Failed to fetch game data:", fetchError);
+      } finally {
+        if (requestId === requestIdRef.current && !signal?.aborted) {
+          setLoading(false);
+        }
+      }
+    },
+    [gameId],
+  );
 
   useEffect(() => {
-    void fetchGameData();
+    const controller = new AbortController();
+    void fetchGameData(controller.signal);
+
+    return () => {
+      controller.abort();
+    };
   }, [fetchGameData]);
 
   const updateGameData = useCallback((data: GameThrowsResponse) => {
@@ -75,7 +99,7 @@ export function useGameState({ gameId }: UseGameStateOptions): UseGameStateRetur
     gameData,
     isLoading,
     error,
-    refetch: fetchGameData,
+    refetch: () => fetchGameData(),
     updateGameData,
   };
 }
