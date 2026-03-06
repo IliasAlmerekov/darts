@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { renderHook } from "@testing-library/react";
+import { renderHook, waitFor } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { useAuthenticatedUser } from "./useAuthenticatedUser";
 import type { AuthenticatedUser } from "@/shared/api/auth";
@@ -32,22 +32,62 @@ function createDeferredAuth(): DeferredAuth {
   };
 }
 
+function createAbortError(): Error {
+  return Object.assign(new Error("aborted"), { name: "AbortError" });
+}
+
 describe("useAuthenticatedUser", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+  });
+
+  it("passes a live signal and timeoutMs 5000 when starting auth check", async () => {
+    getAuthenticatedUserMock.mockResolvedValue(null);
+    const setTimeoutSpy = vi.spyOn(window, "setTimeout");
+    const { result } = renderHook(() => useAuthenticatedUser());
+
+    try {
+      expect(setTimeoutSpy).not.toHaveBeenCalled();
+      expect(getAuthenticatedUserMock).toHaveBeenCalledWith(
+        expect.objectContaining({
+          signal: expect.any(AbortSignal),
+          timeoutMs: 5000,
+        }),
+      );
+
+      const [firstCallOptions] = getAuthenticatedUserMock.mock.calls[0] as [
+        { signal?: AbortSignal; timeoutMs?: number },
+      ];
+
+      expect(firstCallOptions.signal?.aborted).toBe(false);
+    } finally {
+      setTimeoutSpy.mockRestore();
+    }
+
+    await waitFor(() => {
+      expect(result.current.loading).toBe(false);
+    });
   });
 
   it("aborts request on unmount and skips late store updates", async () => {
     const deferred = createDeferredAuth();
     let capturedSignal: AbortSignal | undefined;
 
-    getAuthenticatedUserMock.mockImplementation((options?: { signal?: AbortSignal }) => {
-      capturedSignal = options?.signal;
-      return deferred.promise;
-    });
+    getAuthenticatedUserMock.mockImplementation(
+      (options?: { signal?: AbortSignal; timeoutMs?: number }) => {
+        capturedSignal = options?.signal;
+        return deferred.promise;
+      },
+    );
 
     const { unmount } = renderHook(() => useAuthenticatedUser());
     expect(getAuthenticatedUserMock).toHaveBeenCalledTimes(1);
+    expect(getAuthenticatedUserMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        signal: expect.any(AbortSignal),
+        timeoutMs: 5000,
+      }),
+    );
 
     unmount();
     expect(capturedSignal?.aborted).toBe(true);
@@ -64,5 +104,18 @@ describe("useAuthenticatedUser", () => {
     await Promise.resolve();
 
     expect(setCurrentGameIdMock).not.toHaveBeenCalled();
+  });
+
+  it("stops loading without surfacing an error after an abort-like rejection", async () => {
+    getAuthenticatedUserMock.mockRejectedValue(createAbortError());
+
+    const { result } = renderHook(() => useAuthenticatedUser());
+
+    await waitFor(() => {
+      expect(result.current.loading).toBe(false);
+    });
+
+    expect(result.current.user).toBeNull();
+    expect(result.current.error).toBeNull();
   });
 });
