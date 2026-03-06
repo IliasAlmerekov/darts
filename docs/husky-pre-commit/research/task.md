@@ -6,11 +6,11 @@
 
 ## Ticket
 
-### 4.1 Создать `.husky/pre-commit`
+### 4.1 Create `.husky/pre-commit`
 
-Проблема: `lint-staged` настроен в `package.json`, но `.husky/pre-commit` отсутствует, поэтому `lint-staged` не запускается автоматически.
+Problem: `lint-staged` is configured in `package.json`, but `.husky/pre-commit` is missing, so `lint-staged` does not run automatically.
 
-Задача:
+Task:
 
 ```sh
 #!/usr/bin/env sh
@@ -24,4 +24,4 @@ npx lint-staged
 chmod +x .husky/pre-commit
 ```
 
-Также удалить из `package.json` скрипт `"husky": "npm run stylelint && npm run eslint"`, потому что он запускает полный линтинг проекта вместо проверки только staged-файлов.
+Also remove the `"husky": "npm run stylelint && npm run eslint"` script from `package.json`, because it runs full-project linting instead of checking only staged files.
