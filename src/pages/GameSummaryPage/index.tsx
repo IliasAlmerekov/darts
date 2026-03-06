@@ -12,6 +12,7 @@ import { $gameSettings } from "@/store";
 function GameSummaryPage(): React.JSX.Element {
   const {
     error,
+    starting,
     podiumData,
     newList,
     leaderBoardList,
@@ -63,6 +64,7 @@ function GameSummaryPage(): React.JSX.Element {
             type="primary"
             isInverted
             className={styles.summaryActionButton}
+            disabled={starting}
             handleClick={handlePlayAgain}
           />
         </div>

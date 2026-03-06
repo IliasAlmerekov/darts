@@ -1,5 +1,7 @@
-import { ApiError, ForbiddenError, NetworkError, UnauthorizedError } from "./errors";
+import { ApiError, ForbiddenError, NetworkError, TimeoutError, UnauthorizedError } from "./errors";
 import type { ApiRequestConfig, QueryParams } from "./types";
+
+const DEFAULT_TIMEOUT_MS = 30_000;
 
 const ENV_API_BASE_URL = import.meta.env.VITE_API_BASE_URL as string | undefined;
 export type AuthRedirectHandler = () => void;
@@ -54,7 +56,21 @@ function isJsonBody(body: unknown): boolean {
 }
 
 async function request<T>(endpoint: string, config: ApiRequestConfig = {}): Promise<T> {
-  const { method = "GET", query, body, headers, skipAuthRedirect, ...rest } = config;
+  const { method = "GET", query, body, headers, skipAuthRedirect, timeoutMs, ...rest } = config;
+
+  const timeoutDuration = timeoutMs ?? DEFAULT_TIMEOUT_MS;
+  const controller = new AbortController();
+  const externalSignal = rest.signal;
+
+  if (externalSignal?.aborted) {
+    controller.abort(externalSignal.reason);
+  } else {
+    externalSignal?.addEventListener("abort", () => controller.abort(externalSignal.reason), {
+      once: true,
+    });
+  }
+
+  const timeoutId = window.setTimeout(() => controller.abort("timeout"), timeoutDuration);
 
   const fetchConfig: RequestInit = {
     method,
@@ -65,18 +81,29 @@ async function request<T>(endpoint: string, config: ApiRequestConfig = {}): Prom
       ...headers,
     },
     ...rest,
+    signal: controller.signal,
   };
 
   if (body != null && method !== "GET") {
     fetchConfig.body = isJsonBody(body) ? JSON.stringify(body) : (body as BodyInit);
   }
 
+  const url = buildUrl(endpoint, query);
   let response: Response;
 
   try {
-    response = await fetch(buildUrl(endpoint, query), fetchConfig);
+    response = await fetch(url, fetchConfig);
   } catch (error) {
+    clearTimeout(timeoutId);
+    if (error instanceof DOMException && error.name === "AbortError") {
+      if (controller.signal.reason === "timeout") {
+        throw new TimeoutError(`Request timed out after ${timeoutDuration}ms`, url);
+      }
+      throw error;
+    }
     throw new NetworkError("Network request failed", error);
+  } finally {
+    clearTimeout(timeoutId);
   }
 
   const data = response.headers.get("content-type")?.includes("application/json")

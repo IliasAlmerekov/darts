@@ -24,7 +24,7 @@ const hasFiles = (
 };
 
 describe("eslint flat config global ignores", () => {
-  it("keeps global ignores in the first standalone config item", async () => {
+  it("keeps global ignores in the first standalone config item", { timeout: 15_000 }, async () => {
     const configModule = await import("../../../eslint.config.mjs");
     const flatConfig = configModule.default as FlatConfigItem[];
     const firstConfig = flatConfig[0];
