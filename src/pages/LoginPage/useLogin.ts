@@ -1,9 +1,11 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import { loginWithCredentials, getAuthenticatedUser } from "@/shared/api/auth";
 import { invalidateAuthState, setAuthenticatedUser } from "@/store/auth";
 import { mapAuthErrorMessage } from "@/lib/auth-error-handling";
 import { ROUTES } from "@/lib/routes";
+
+const isInternalPath = (path: string): boolean => path.startsWith("/") && !path.startsWith("//");
 
 /**
  * Provides login flow state and action.
@@ -12,13 +14,19 @@ export function useLogin() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const navigate = useNavigate();
+  const location = useLocation();
+
+  const from = ((): string => {
+    const raw = (location.state as { from?: string } | null)?.from;
+    return raw && isInternalPath(raw) ? raw : ROUTES.start();
+  })();
 
   const navigateToRedirect = (redirect: string): void => {
     if (/^https?:\/\//i.test(redirect)) {
       window.location.assign(redirect);
       return;
     }
-    const redirectPath = redirect === ROUTES.start() ? ROUTES.start() : redirect;
+    const redirectPath = redirect === ROUTES.start() ? from : redirect;
     navigate(redirectPath);
   };
 
