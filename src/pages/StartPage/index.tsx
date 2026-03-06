@@ -7,6 +7,7 @@ import { SortableContext, verticalListSortingStrategy } from "@dnd-kit/sortable"
 import { restrictToVerticalAxis } from "@dnd-kit/modifiers";
 import { AdminLayout } from "@/shared/ui/admin-layout";
 import Plus from "@/assets/icons/plus.svg";
+import UserAddIcon from "@/assets/icons/user-add.svg";
 import Button from "@/shared/ui/button/Button";
 import { ErrorState } from "@/shared/ui/error-state";
 import { API_BASE_URL } from "@/shared/api";
@@ -101,24 +102,7 @@ function StartPage(): React.JSX.Element {
             aria-label="Play as a guest"
             title={isLobbyFull ? "The lobby is full. Remove a player to add another." : undefined}
           >
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              width="24"
-              height="24"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              className={styles.guestButtonIcon}
-              aria-hidden="true"
-            >
-              <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
-              <circle cx="9" cy="7" r="4" />
-              <line x1="19" x2="19" y1="8" y2="14" />
-              <line x1="22" x2="16" y1="11" y2="11" />
-            </svg>
+            <img src={UserAddIcon} alt="Play as a guest" className={styles.guestButtonIcon} />
           </button>
         </div>
       )}

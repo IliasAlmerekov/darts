@@ -92,32 +92,42 @@ npx prettier --check .
 
 **REQUIRED** for any non-trivial change (new feature, refactor, complex bug fix):
 
-| Phase        | Command                       | Agent                                        | Artifact                                              |
-| ------------ | ----------------------------- | -------------------------------------------- | ----------------------------------------------------- |
-| 1. Research  | `/research_codebase <ticket>` | `research-lead` + `research-sub`             | `docs/<feature>/research.md`                          |
-| 2. Design    | `/design_feature`             | `architect`                                  | `docs/<feature>/design-summary.md`                    |
-| 3. Plan      | `/plan_feature`               | `planner`                                    | `docs/<feature>/implementation-plan.md`               |
-| 4. Implement | `/implement_feature <N>`      | `coder` → `reviewer` → `security` → `tester` | production code + `docs/<feature>/phase-0N-report.md` |
+| Phase        | Command                       | Agent                                        | Artifact                                                             |
+| ------------ | ----------------------------- | -------------------------------------------- | -------------------------------------------------------------------- |
+| 1. Research  | `/research_codebase <ticket>` | `research-lead` + `research-sub`             | `docs/<feature>/research/research.md`                                |
+| 2. Design    | `/design_feature`             | `architect`                                  | `docs/<feature>/design/design-summary.md`                            |
+| 3. Plan      | `/plan_feature`               | `planner`                                    | `docs/<feature>/plan/implementation-plan.md`                         |
+| 4. Implement | `/implement_feature <N>`      | `coder` → `reviewer` → `security` → `tester` | production code + `docs/<feature>/implementation/phase-0N-report.md` |
 
 **NEVER** skip or merge phases without explicit user approval.
 
 ### Feature Folder Convention
 
-Each feature gets its own folder created automatically at Phase 1:
+Each feature gets its own folder created automatically at Phase 1 with subfolders per phase:
 
 ```
 docs/
-  .current-feature          # slug of the active feature (read by phases 2-4)
   add-player-statistics/    # example feature folder
-    research.md             # Phase 1
-    design-summary.md       # Phase 2
-    api-contracts.md        # Phase 2
-    implementation-plan.md  # Phase 3
-    phase-01.md             # Phase 3
-    phase-02.md             # Phase 3
-    verification-matrix.md  # Phase 3
-    progress-log.md         # Phase 4 (appended per phase)
-    phase-01-report.md      # Phase 4
+    research/               # Phase 1 artifacts
+      research.md
+    design/                 # Phase 2 artifacts
+      design-summary.md
+      api-contracts.md
+      component-architecture.md
+      data-flow.md
+      sequence.md
+      state-design.md
+      test-strategy.md
+      adr-001-*.md
+    plan/                   # Phase 3 artifacts
+      implementation-plan.md
+      phase-01.md
+      phase-02.md
+      verification-matrix.md
+    implementation/         # Phase 4 artifacts
+      progress-log.md
+      phase-01-report.md
+      phase-02-report.md
 ```
 
 ## Testing Policy

@@ -1,7 +1,7 @@
 // @vitest-environment node
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { getGameThrows, getGameThrowsIfChanged, resetGameStateVersion } from "./game";
-import { apiClient } from "./client";
+import { apiClient, clearUnauthorizedHandler, setUnauthorizedHandler } from "./client";
 
 type MockResponseOptions = {
   status: number;
@@ -28,6 +28,7 @@ function createMockResponse(options: MockResponseOptions): Response {
 describe("getGameThrowsIfChanged", () => {
   beforeEach(() => {
     resetGameStateVersion();
+    clearUnauthorizedHandler();
     vi.restoreAllMocks();
   });
 
@@ -122,5 +123,24 @@ describe("getGameThrowsIfChanged", () => {
     await expect(getGameThrowsIfChanged(520)).rejects.toMatchObject({
       name: "AbortError",
     });
+  });
+
+  it("calls the unauthorized handler on 401 during conditional fetch", async () => {
+    const unauthorizedHandler = vi.fn();
+    setUnauthorizedHandler(unauthorizedHandler);
+
+    vi.spyOn(globalThis, "fetch").mockResolvedValueOnce(
+      createMockResponse({
+        status: 401,
+        body: { message: "Unauthorized" },
+        headers: { "content-type": "application/json" },
+      }),
+    );
+
+    await expect(getGameThrowsIfChanged(520)).rejects.toMatchObject({
+      name: "UnauthorizedError",
+      status: 401,
+    });
+    expect(unauthorizedHandler).toHaveBeenCalledTimes(1);
   });
 });

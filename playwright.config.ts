@@ -1,4 +1,13 @@
+import { existsSync } from "node:fs";
 import { defineConfig, devices } from "@playwright/test";
+
+if (existsSync(".env")) {
+  process.loadEnvFile(".env");
+}
+
+if (existsSync(".env.local")) {
+  process.loadEnvFile(".env.local");
+}
 
 const baseURL = process.env.PLAYWRIGHT_BASE_URL ?? "http://127.0.0.1:5173";
 

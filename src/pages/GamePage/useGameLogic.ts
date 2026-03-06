@@ -85,11 +85,6 @@ export const useGameLogic = () => {
     };
   }, []);
 
-  useEffect(() => {
-    // Warm up summary route chunk to keep Game -> Summary navigation instant.
-    void import("@/pages/GameSummaryPage");
-  }, []);
-
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isSavingSettings, setIsSavingSettings] = useState(false);
   const [settingsError, setSettingsError] = useState<string | null>(null);

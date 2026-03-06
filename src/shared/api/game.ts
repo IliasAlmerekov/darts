@@ -1,4 +1,4 @@
-import { apiClient, API_BASE_URL } from "./client";
+import { apiClient, API_BASE_URL, triggerUnauthorizedHandler } from "./client";
 import { ApiError, ForbiddenError, NetworkError, UnauthorizedError } from "./errors";
 import type { GameThrowsResponse, ThrowAckResponse, ThrowRequest, StartGameRequest } from "@/types";
 import type { FinishedPlayerResponse, RematchResponse, CreateGameSettingsPayload } from "@/types";
@@ -115,7 +115,7 @@ export async function getGameThrowsIfChanged(
   const data = await parseResponseBody(response);
 
   if (response.status === 401) {
-    window.location.href = "/";
+    triggerUnauthorizedHandler();
     throw new UnauthorizedError("Unauthorized", data, response.url);
   }
 
