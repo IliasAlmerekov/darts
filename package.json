@@ -28,7 +28,6 @@
     "test:e2e": "playwright test",
     "secrets:check": "node ./scripts/check-secrets.mjs",
     "prepare": "husky",
-    "husky": "npm run stylelint && npm run eslint",
     "commitlint": "commitlint --edit",
     "knip": "knip"
   },

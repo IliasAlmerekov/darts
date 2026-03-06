@@ -5,10 +5,10 @@ import ErrorBoundary from "@/app/ErrorBoundary";
 import ScrollToTop from "@/app/ScrollToTop";
 import NotFoundPage from "@/app/routes/NotFoundPage";
 import ProtectedRoutes from "@/app/ProtectedRoutes";
-import LoginPage from "@/pages/LoginPage";
-import RegisterPage from "@/pages/RegisterPage";
 import { ROUTES } from "@/lib/routes";
 
+const LoginPage = lazy(() => import("@/pages/LoginPage"));
+const RegisterPage = lazy(() => import("@/pages/RegisterPage"));
 const StartPage = lazy(() => import("@/pages/StartPage"));
 const GamePage = lazy(() => import("@/pages/GamePage"));
 const GameSummaryPage = lazy(() => import("@/pages/GameSummaryPage"));
