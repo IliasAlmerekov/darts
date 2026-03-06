@@ -3,7 +3,6 @@ import type { ReactNode } from "react";
 import { render, screen } from "@testing-library/react";
 import { Outlet } from "react-router-dom";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import App from "./App";
 
 vi.mock("@/app/ErrorBoundary", () => ({
   default: ({ children }: { children: ReactNode }) => <>{children}</>,
@@ -66,9 +65,13 @@ vi.mock("@/pages/PlayerProfilePage", () => ({
 }));
 
 describe("App routing", () => {
-  beforeEach(() => {
+  let App: typeof import("./App").default;
+
+  beforeEach(async () => {
     vi.useRealTimers();
+    vi.resetModules();
     window.history.pushState({}, "", "/");
+    ({ default: App } = await import("./App"));
   });
 
   it("renders login page for root route", async () => {
