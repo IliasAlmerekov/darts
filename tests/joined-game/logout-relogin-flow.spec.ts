@@ -2,9 +2,11 @@
 // seed: tests/joined-game/seed.spec.ts
 
 import { test, expect } from "@playwright/test";
-import { getAuthTestCredentials } from "./auth-test-credentials";
+import { getAuthTestCredentials, skipWhenAuthCredentialsMissing } from "./auth-test-credentials";
 
 test.describe("Authentication Flow and Redirects", () => {
+  skipWhenAuthCredentialsMissing();
+
   test("Logout and Re-login Flow", async ({ page, context }) => {
     const { email: testEmail, password: testPassword } = getAuthTestCredentials();
     const emailField = page.getByRole("textbox", { name: "Email *" });

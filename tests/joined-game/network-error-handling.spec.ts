@@ -2,9 +2,11 @@
 // seed: tests/joined-game/seed.spec.ts
 
 import { test, expect } from "@playwright/test";
-import { getAuthTestCredentials } from "./auth-test-credentials";
+import { getAuthTestCredentials, skipWhenAuthCredentialsMissing } from "./auth-test-credentials";
 
 test.describe("Error Handling and Edge Cases", () => {
+  skipWhenAuthCredentialsMissing();
+
   test("Network Error Handling", async ({ page }) => {
     const { email: testEmail, password: testPassword } = getAuthTestCredentials();
 

@@ -2,9 +2,12 @@
 // seed: tests/start/create-game.spec.ts
 
 import { test, expect } from "@playwright/test";
+import { skipWhenAuthCredentialsMissing } from "./auth-test-credentials";
 import { loginAsAdmin } from "./start-page-helpers";
 
 test.describe("Error Handling and Edge Cases", () => {
+  skipWhenAuthCredentialsMissing();
+
   test("Handle game creation with invalid data", async ({ page }) => {
     await loginAsAdmin(page);
 

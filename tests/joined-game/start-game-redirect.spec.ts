@@ -2,9 +2,12 @@
 // seed: tests/start/create-game.spec.ts
 
 import { test, expect } from "@playwright/test";
+import { skipWhenAuthCredentialsMissing } from "./auth-test-credentials";
 import { addGuestPlayer, createGame, loginAsAdmin } from "./start-page-helpers";
 
 test.describe("Create Game with QR Code", () => {
+  skipWhenAuthCredentialsMissing();
+
   test("Start game and redirect to game page", async ({ page }) => {
     const firstGuestName = `GuestA${Date.now()}`;
     const secondGuestName = `GuestB${Date.now()}`;

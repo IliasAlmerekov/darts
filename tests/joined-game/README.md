@@ -56,7 +56,8 @@ npx playwright test --ui
 ## Test Credentials
 
 Use environment variables for credentials in local/CI runs. The auth-dependent
-specs read them at runtime and fail fast if they are missing:
+specs use them when available and are skipped with an explicit reason when they
+are missing:
 
 - `PLAYWRIGHT_TEST_EMAIL`
 - `PLAYWRIGHT_TEST_PASSWORD`

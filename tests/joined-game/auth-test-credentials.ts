@@ -1,23 +1,23 @@
-type AuthTestCredentials = {
-  email: string;
-  password: string;
-};
+import { test } from "@playwright/test";
+import {
+  resolvePlaywrightAuthTestCredentials,
+  type PlaywrightAuthTestCredentials,
+} from "../../src/shared/lib/playwrightAuthCredentials";
 
-function requireEnvVariable(name: "PLAYWRIGHT_TEST_EMAIL" | "PLAYWRIGHT_TEST_PASSWORD"): string {
-  const value = process.env[name]?.trim();
+const resolvedAuthTestCredentials = resolvePlaywrightAuthTestCredentials();
+const shouldSkipAuthDependentTests = !resolvedAuthTestCredentials.isConfigured;
+const authTestSkipReason = resolvedAuthTestCredentials.isConfigured
+  ? ""
+  : resolvedAuthTestCredentials.skipReason;
 
-  if (!value) {
-    throw new Error(
-      `Missing ${name}. Set it in .env/.env.local for local runs or provide it as a CI secret.`,
-    );
-  }
-
-  return value;
+export function skipWhenAuthCredentialsMissing(): void {
+  test.skip(shouldSkipAuthDependentTests, authTestSkipReason);
 }
 
-export function getAuthTestCredentials(): AuthTestCredentials {
-  return {
-    email: requireEnvVariable("PLAYWRIGHT_TEST_EMAIL"),
-    password: requireEnvVariable("PLAYWRIGHT_TEST_PASSWORD"),
-  };
+export function getAuthTestCredentials(): PlaywrightAuthTestCredentials {
+  if (!resolvedAuthTestCredentials.isConfigured) {
+    throw new Error(authTestSkipReason);
+  }
+
+  return resolvedAuthTestCredentials.credentials;
 }
