@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
 import { useStore } from "@nanostores/react";
 import { getFinishedGame, createRematch, startGame, undoLastThrow } from "@/shared/api/game";
@@ -19,6 +19,8 @@ export function useGameSummaryPage() {
   const { id: summaryGameIdParam } = useParams<{ id?: string }>();
   const [serverFinished, setServerFinished] = useState<FinishedPlayerResponse[]>([]);
   const [error, setError] = useState<string | null>(null);
+  const [starting, setStarting] = useState<boolean>(false);
+  const startGameInFlightRef = useRef<boolean>(false);
 
   const finishedGameIdFromRoute = useMemo(() => {
     const stateGameId = (location.state as { finishedGameId?: number } | null)?.finishedGameId;
@@ -107,7 +109,10 @@ export function useGameSummaryPage() {
   };
 
   const handlePlayAgain = async (): Promise<void> => {
-    if (!finishedGameIdFromRoute) return;
+    if (!finishedGameIdFromRoute || starting || startGameInFlightRef.current) return;
+
+    startGameInFlightRef.current = true;
+    setStarting(true);
 
     try {
       setError(null);
@@ -125,22 +130,21 @@ export function useGameSummaryPage() {
       const doubleOut = gameSettings?.doubleOut ?? false;
       const tripleOut = gameSettings?.tripleOut ?? false;
 
-      // Navigate immediately for fast UX; start call continues in background.
-      navigate(ROUTES.game(rematch.gameId));
-
-      void startGame(rematch.gameId, {
+      await startGame(rematch.gameId, {
         startScore: startScoreValue,
         doubleOut,
         tripleOut,
         round: 1,
         status: "started",
-      }).catch((startError) => {
-        console.error("Failed to start rematch game:", startError);
-        setError(toUserErrorMessage(startError, "Could not start a rematch."));
       });
+
+      navigate(ROUTES.game(rematch.gameId));
     } catch (err) {
       console.error("Failed to start rematch:", err);
       setError(toUserErrorMessage(err, "Could not start a rematch."));
+    } finally {
+      startGameInFlightRef.current = false;
+      setStarting(false);
     }
   };
 
@@ -169,6 +173,7 @@ export function useGameSummaryPage() {
 
   return {
     error,
+    starting,
     podiumData,
     newList,
     leaderBoardList,

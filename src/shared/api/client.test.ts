@@ -1,6 +1,7 @@
 // @vitest-environment jsdom
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { apiClient, clearUnauthorizedHandler, setUnauthorizedHandler } from "./client";
+import { TimeoutError } from "./errors";
 
 type MockResponseOptions = {
   status: number;
@@ -70,5 +71,93 @@ describe("apiClient unauthorized handling", () => {
       status: 401,
     });
     expect(unauthorizedHandler).not.toHaveBeenCalled();
+  });
+});
+
+describe("apiClient request timeout", () => {
+  beforeEach(() => {
+    vi.useFakeTimers();
+    vi.restoreAllMocks();
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  it("should throw TimeoutError when request exceeds timeoutMs", async () => {
+    vi.spyOn(globalThis, "fetch").mockImplementation(
+      (_url, init) =>
+        new Promise((_resolve, reject) => {
+          init?.signal?.addEventListener("abort", () => {
+            reject(Object.assign(new DOMException("The operation was aborted.", "AbortError")));
+          });
+        }),
+    );
+
+    const requestPromise = apiClient.get("/slow", { timeoutMs: 5000 });
+    vi.advanceTimersByTime(5000);
+
+    await expect(requestPromise).rejects.toThrow(TimeoutError);
+    await expect(requestPromise).rejects.toMatchObject({
+      name: "TimeoutError",
+    });
+  });
+
+  it("should not throw TimeoutError when request completes in time", async () => {
+    vi.spyOn(globalThis, "fetch").mockResolvedValueOnce(
+      createMockResponse({
+        status: 200,
+        body: { ok: true },
+        headers: { "content-type": "application/json" },
+      }),
+    );
+
+    const result = await apiClient.get("/fast", { timeoutMs: 5000 });
+    expect(result).toEqual({ ok: true });
+  });
+
+  it("should use default 30s timeout when timeoutMs is not specified", async () => {
+    vi.spyOn(globalThis, "fetch").mockImplementation(
+      (_url, init) =>
+        new Promise((_resolve, reject) => {
+          init?.signal?.addEventListener("abort", () => {
+            reject(Object.assign(new DOMException("The operation was aborted.", "AbortError")));
+          });
+        }),
+    );
+
+    const requestPromise = apiClient.get("/slow");
+
+    vi.advanceTimersByTime(29_999);
+    // Should still be pending
+    let resolved = false;
+    requestPromise.then(() => (resolved = true)).catch(() => (resolved = true));
+    await vi.advanceTimersByTimeAsync(0);
+    expect(resolved).toBe(false);
+
+    vi.advanceTimersByTime(1);
+    await expect(requestPromise).rejects.toThrow(TimeoutError);
+  });
+
+  it("should propagate external AbortSignal abort", async () => {
+    const externalController = new AbortController();
+
+    vi.spyOn(globalThis, "fetch").mockImplementation(
+      (_url, init) =>
+        new Promise((_resolve, reject) => {
+          init?.signal?.addEventListener("abort", () => {
+            reject(Object.assign(new DOMException("The operation was aborted.", "AbortError")));
+          });
+        }),
+    );
+
+    const requestPromise = apiClient.get("/slow", {
+      timeoutMs: 30_000,
+      signal: externalController.signal,
+    });
+
+    externalController.abort();
+
+    await expect(requestPromise).rejects.toThrow(DOMException);
   });
 });

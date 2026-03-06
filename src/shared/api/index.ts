@@ -5,7 +5,7 @@ export {
   clearUnauthorizedHandler,
   setUnauthorizedHandler,
 } from "./client";
-export { ApiError, ForbiddenError, NetworkError, UnauthorizedError } from "./errors";
+export { ApiError, ForbiddenError, NetworkError, TimeoutError, UnauthorizedError } from "./errors";
 export type { ApiRequestConfig, ErrorPayload, HttpMethod, QueryParams, QueryValue } from "./types";
 
 // Domain API modules

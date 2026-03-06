@@ -37,3 +37,10 @@ export class NetworkError extends ApiError {
     this.name = "NetworkError";
   }
 }
+
+export class TimeoutError extends ApiError {
+  constructor(message = "Request timed out", url?: string) {
+    super(message, { status: 0, url });
+    this.name = "TimeoutError";
+  }
+}

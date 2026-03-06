@@ -2,7 +2,15 @@ import { useCallback, useEffect, useRef } from "react";
 import { useStore } from "@nanostores/react";
 import { getGameThrowsIfChanged, resetGameStateVersion } from "@/shared/api/game";
 import type { GameThrowsResponse } from "@/types";
-import { $gameData, $isLoading, $error, setGameData, setLoading, setError } from "@/store";
+import {
+  $gameData,
+  $isLoading,
+  $error,
+  resetGameStore,
+  setGameData,
+  setLoading,
+  setError,
+} from "@/store";
 
 interface UseGameStateOptions {
   gameId: number | null;
@@ -30,18 +38,19 @@ export function useGameState({ gameId }: UseGameStateOptions): UseGameStateRetur
   const requestIdRef = useRef(0);
 
   useEffect(() => {
+    requestIdRef.current += 1;
+
     if (!gameId) {
-      setGameData(null);
-      setError(null);
-      setLoading(false);
+      resetGameStore();
       return;
     }
 
     resetGameStateVersion(gameId);
-    const currentGameData = $gameData.get();
-    if (!currentGameData || currentGameData.id !== gameId) {
-      setGameData(null);
+    if ($gameData.get()?.id !== gameId) {
+      resetGameStore();
+      return;
     }
+
     setError(null);
   }, [gameId]);
 

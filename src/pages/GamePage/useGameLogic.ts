@@ -1,7 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
-import { useStore } from "@nanostores/react";
-
 import { useRoomStream } from "@/shared/hooks/useRoomStream";
 import { useGameState } from "./useGameState";
 import { useThrowHandler } from "./useThrowHandler";
@@ -15,7 +13,7 @@ import {
   resetGameStateVersion,
 } from "@/shared/api/game";
 import type { GameThrowsResponse } from "@/types";
-import { $invitation, setInvitation, resetRoomStore } from "@/store";
+import { setInvitation, resetRoomStore } from "@/store";
 import { unlockSounds } from "@/lib/soundPlayer";
 import { toUserErrorMessage } from "@/lib/error-to-user-message";
 import { ROUTES } from "@/lib/routes";
@@ -53,17 +51,18 @@ export function shouldNavigateToSummary(
   return gameData.id === gameId && gameData.status === "finished";
 }
 
+export function parseGameIdParam(gameIdParam: string | undefined): number | null {
+  if (!gameIdParam) return null;
+  const parsed = Number(gameIdParam);
+  return Number.isFinite(parsed) ? parsed : null;
+}
+
 export const useGameLogic = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { id: gameIdParam } = useParams<{ id?: string }>();
-  const invitation = useStore($invitation);
 
-  const gameId = useMemo(() => {
-    if (!gameIdParam) return invitation?.gameId ?? null;
-    const parsed = Number(gameIdParam);
-    return Number.isFinite(parsed) ? parsed : (invitation?.gameId ?? null);
-  }, [gameIdParam, invitation?.gameId]);
+  const gameId = useMemo(() => parseGameIdParam(gameIdParam), [gameIdParam]);
 
   const { gameData, isLoading, error, refetch, updateGameData } = useGameState({ gameId });
   const { handleThrow, handleUndo } = useThrowHandler({ gameId });

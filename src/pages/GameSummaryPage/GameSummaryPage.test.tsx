@@ -7,6 +7,7 @@ import GameSummaryPage from ".";
 
 type GameSummaryHookMockResult = {
   error: string | null;
+  starting: boolean;
   podiumData: WinnerPlayerProps[];
   newList: WinnerPlayerProps[];
   leaderBoardList: WinnerPlayerProps[];
@@ -20,6 +21,7 @@ const buildSummaryHookMockResult = (
   overrides: Partial<GameSummaryHookMockResult> = {},
 ): GameSummaryHookMockResult => ({
   error: null,
+  starting: false,
   podiumData: [],
   newList: [],
   leaderBoardList: [],
@@ -85,5 +87,23 @@ describe("GameSummaryPage", () => {
     expect(screen.getByRole("alert")).toBeTruthy();
     expect(screen.getByText("Summary action failed")).toBeTruthy();
     expect(screen.getByRole("button", { name: "Retry" })).toBeTruthy();
+  });
+
+  it("disables Play Again button while startGame is pending", () => {
+    useGameSummaryPageMock.mockReturnValue(buildSummaryHookMockResult({ starting: true }));
+
+    render(<GameSummaryPage />);
+
+    const playAgainButton = screen.getByRole("button", { name: "Play Again" });
+    expect(playAgainButton.hasAttribute("disabled")).toBe(true);
+  });
+
+  it("enables Play Again button when not starting", () => {
+    useGameSummaryPageMock.mockReturnValue(buildSummaryHookMockResult({ starting: false }));
+
+    render(<GameSummaryPage />);
+
+    const playAgainButton = screen.getByRole("button", { name: "Play Again" });
+    expect(playAgainButton.hasAttribute("disabled")).toBe(false);
   });
 });
