@@ -2,9 +2,12 @@
 // seed: tests/joined-game/seed.spec.ts
 
 import { test, expect } from "@playwright/test";
+import { mockFailedLogin } from "./auth-route-mocks";
 
 test.describe("Login Form Functionality", () => {
   test("Login with Wrong Credentials", async ({ page }) => {
+    await mockFailedLogin(page);
+
     // 1. Navigate to the login page
     await page.goto("http://localhost:5173/");
 

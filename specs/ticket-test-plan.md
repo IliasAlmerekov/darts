@@ -1,201 +1,146 @@
-# Create Game Feature Test Plan
+# Throw Feature Test Plan
 
 ## Application Overview
 
-Test plan for the darts application's create game feature. This covers the complete flow from game creation to game start, including QR code generation for guest players, player invitation, and proper redirection to the active game page.
+Comprehensive test plan for the throw feature on `/game/:id`, focused on scoring input, turn progression, bust and checkout behavior, undo flows, and settings-driven throw validation. All scenarios assume a blank/fresh state and deterministic API responses using route mocks as needed.
 
 ## Test Scenarios
 
-### 1. Create Game with QR Code
+### 1. Basic Throw Mechanics and Validation
 
-**Seed:** `tests/start/create-game.spec.ts`
+**Seed:** `tests/game/basic-throw.spec.ts`
 
-#### 1.1. Create new game successfully with QR code generation
+#### 1.1. Record a single standard throw and update active player state
 
-**File:** `tests/start/create-game.spec.ts`
-
-**Steps:**
-
-1. Navigate to the start page at '/start' as an admin user
-   - expect: The start page loads successfully
-   - expect: Game creation form is visible
-   - expect: User has ROLE_ADMIN privileges
-
-2. Click the 'Create New Game' or equivalent game creation button
-   - expect: Game creation form/modal opens
-   - expect: Form includes game settings options (name, type, round configuration)
-
-3. Fill in the game details (game name, dart rules, number of players)
-   - expect: All form fields accept valid input
-   - expect: Form validation works properly
-
-4. Submit the game creation form
-   - expect: Game is created successfully
-   - expect: Server responds with game ID
-   - expect: QR code is generated automatically
-
-5. Verify the QR code is displayed and functional
-   - expect: QR code image is visible
-   - expect: QR code contains a valid join URL (e.g., http://localhost:5173/join/{gameId})
-   - expect: QR code is scannable
-
-6. Verify game details are correctly displayed
-   - expect: Game name matches input
-   - expect: Game settings are correctly saved
-   - expect: Game status is 'waiting for players' or similar
-
-#### 1.2. Add guest player to created game
-
-**File:** `tests/start/create-game.spec.ts`
+**File:** `tests/game/basic-throw.spec.ts`
 
 **Steps:**
 
-1. From the game creation page, locate the 'Add Guest Player' option
-   - expect: Add guest player button/link is visible
-   - expect: Guest player invitation interface is accessible
+1. Open `/game/{gameId}` with a started game state (2 players, score 301 each, player 1 active, zero throws in current round).
+   - expect: Game page renders header controls (Back to Home, Settings), scoreboard, and keypad.
+   - expect: Undo button is disabled before any throw is entered.
+   - expect: Player 1 is visually marked as the active player.
 
-2. Click 'Add Guest Player' or similar action
-   - expect: Guest player form opens
-   - expect: Form includes fields for guest name
+2. Click keypad button `20` once.
+   - expect: A throw request is sent to `POST /api/game/{id}/throw/delta` with value=20 and no double/triple flags.
+   - expect: Player 1 score decreases from 301 to 281 after reconciliation.
+   - expect: First throw slot for Player 1 displays `20` (or equivalent throw marker).
+   - expect: Undo button becomes enabled.
 
-3. Enter guest player name 'TestGuest'
-   - expect: Guest name field accepts input
-   - expect: No registration/authentication required for guest
+#### 1.2. Apply Double and Triple modifiers as one-shot throw multipliers
 
-4. Confirm adding the guest player
-   - expect: Guest player is added to the game
-   - expect: Player list updates to include the guest
-   - expect: Guest player shows as 'waiting' or 'ready'
-
-5. Verify guest player appears in the players list
-   - expect: Guest player 'TestGuest' is visible in players list
-   - expect: Player count increases
-   - expect: Guest player has appropriate status indicator
-
-#### 1.3. Start game and redirect to game page
-
-**File:** `tests/start/create-game.spec.ts`
+**File:** `tests/game/basic-throw.spec.ts`
 
 **Steps:**
 
-1. Ensure minimum required players are present (admin + guest)
-   - expect: At least 2 players are in the game
-   - expect: All players have appropriate ready status
-   - expect: Start game button becomes enabled
+1. With fresh game state, click `Double` and then click `20`.
+   - expect: Double modifier visibly enters active state before number selection.
+   - expect: Throw request payload marks `isDouble=true` and base value=20.
+   - expect: Score decreases by 40 points.
+   - expect: Double modifier resets to inactive immediately after the throw.
 
-2. Click 'Start Game' button
-   - expect: Game start confirmation appears
-   - expect: All players are notified game is starting
+2. With fresh game state, click `Triple` and inspect disabled values, then click `19`.
+   - expect: `25` and `0` are disabled while Triple is active.
+   - expect: Throw request payload marks `isTriple=true` and base value=19.
+   - expect: Score decreases by 57 points.
+   - expect: Triple modifier resets to inactive immediately after the throw.
 
-3. Confirm game start action
-   - expect: Game transitions from 'waiting' to 'active' status
-   - expect: Server processes game start request
-   - expect: Success notification appears
+#### 1.3. Complete three throws and switch turn to next active player
 
-4. Verify automatic redirect to game page
-   - expect: Page redirects to /game/{gameId}
-   - expect: Game interface loads properly
-   - expect: Active game UI is displayed
-
-5. Verify game page displays correctly
-   - expect: URL matches /game/{gameId} pattern
-   - expect: Game scoreboard is visible
-   - expect: Player names are displayed
-   - expect: Dart throwing interface is ready
-
-6. Verify game state is properly initialized
-   - expect: Current player turn is indicated
-   - expect: Score displays show initial values (e.g., 501 for each player)
-   - expect: Game timer starts if applicable
-
-### 2. Error Handling and Edge Cases
-
-**Seed:** `tests/start/create-game.spec.ts`
-
-#### 2.1. Handle game creation with invalid data
-
-**File:** `tests/start/create-game-error-handling.spec.ts`
+**File:** `tests/game/basic-throw.spec.ts`
 
 **Steps:**
 
-1. Attempt to create game with empty name field
-   - expect: Validation error message appears
-   - expect: Form submission is blocked
-   - expect: Error message indicates required fields
+1. Start with Player 1 active and submit three valid throws (e.g., `20`, `19`, `18`) in sequence.
+   - expect: Each throw updates the current round throw display for Player 1 in order.
+   - expect: After third throw is reconciled, active player changes from Player 1 to Player 2.
+   - expect: Current throw counter resets to 0 for the new active player.
+   - expect: Player 1 current throw display is cleared for the new turn and prior throws move to round history display.
 
-2. Attempt to create game with invalid characters in name
-   - expect: Validation prevents special characters if not allowed
-   - expect: Appropriate error message shown
+#### 1.4. Handle bust when throw would produce invalid remaining score
 
-3. Test maximum character limits for game name
-   - expect: Field enforces character limits
-   - expect: Clear feedback given to user
-
-#### 2.2. Handle network failures during game creation
-
-**File:** `tests/start/create-game-network-errors.spec.ts`
+**File:** `tests/game/basic-throw.spec.ts`
 
 **Steps:**
 
-1. Simulate network error during game creation request
-   - expect: Error message displays explaining network issue
-   - expect: User can retry the action
-   - expect: Form data is preserved for retry
+1. Initialize game with Player 1 score set to a bust-prone value (e.g., 10) and keep standard out rules.
+   - expect: Player 1 is active and can throw.
+   - expect: No bust icon is visible before the throw.
 
-2. Test server timeout during game creation
-   - expect: Timeout handling works properly
-   - expect: User receives appropriate feedback
-   - expect: Loading states are managed correctly
+2. Submit a throw that exceeds remaining score (e.g., `20`) or produces a forbidden finish under active out rules.
+   - expect: Thrown attempt is marked as bust for that turn.
+   - expect: Player score returns to pre-throw score after reconciliation.
+   - expect: Bust indicator appears in throw display/history for the busted throw.
+   - expect: Turn passes to next eligible player after bust resolution.
 
-#### 2.3. Maximum players limit enforcement
+#### 1.5. Enforce checkout rules from Settings (Double-out and Triple-out)
 
-**File:** `tests/start/create-game-limits.spec.ts`
-
-**Steps:**
-
-1. Attempt to add more players than maximum allowed
-   - expect: System enforces player limit
-   - expect: Add player button becomes disabled when limit reached
-   - expect: Clear message explains limit
-
-### 3. QR Code Functionality
-
-**Seed:** `tests/start/create-game.spec.ts`
-
-#### 3.1. QR code accessibility and usability
-
-**File:** `tests/start/qr-code-functionality.spec.ts`
+**File:** `tests/game/basic-throw.spec.ts`
 
 **Steps:**
 
-1. Verify QR code has proper alt text for screen readers
-   - expect: QR code image has descriptive alt text
-   - expect: Alternative join link is provided for accessibility
+1. Open Settings overlay, switch to `Double-out`, save, and close overlay.
+   - expect: Settings overlay opens with selectable game mode options.
+   - expect: Save action persists successfully and overlay closes.
+   - expect: Subsequent throw behavior follows Double-out constraints.
 
-2. Test QR code in different screen sizes
-   - expect: QR code remains visible and scannable on mobile devices
-   - expect: QR code scales appropriately with viewport
+2. Set active player to a finishable score (e.g., 20) and throw single `20` under Double-out mode.
+   - expect: Single throw to zero is rejected as valid checkout (treated as invalid finish/bust path).
+   - expect: Player does not finish the game from an invalid checkout.
+   - expect: A valid double checkout (e.g., `D10`) is accepted and can finish player when applicable.
 
-3. Verify join URL format in QR code
-   - expect: QR code contains valid URL
-   - expect: URL includes correct game ID
-   - expect: URL is accessible and not expired
+#### 1.6. Undo last throw within current turn
 
-### 4. User Permissions and Security
-
-**Seed:** `tests/start/create-game.spec.ts`
-
-#### 4.1. Admin role required for game creation
-
-**File:** `tests/start/admin-permissions.spec.ts`
+**File:** `tests/game/basic-throw.spec.ts`
 
 **Steps:**
 
-1. Attempt to access /start page with ROLE_PLAYER account
-   - expect: Access is denied
-   - expect: User is redirected to appropriate page
-   - expect: Security error is handled gracefully
+1. Submit two valid throws for active player (e.g., `20`, `19`).
+   - expect: Undo button is enabled after throws are present.
+   - expect: Throw display shows two values in current round.
 
-2. Verify game creation requires ROLE_ADMIN
-   - expect: Only admin users can create games
-   - expect: Game creation controls are hidden from non-admin users
+2. Click Undo once.
+   - expect: Request is sent to `DELETE /api/game/{id}/throw`.
+   - expect: Most recent throw is removed from current throw display.
+   - expect: Score increases by the exact amount of the removed throw.
+   - expect: Current throw count decrements by one and active player remains unchanged if turn not ended.
+
+#### 1.7. Undo from finish overlay after a winning throw
+
+**File:** `tests/game/basic-throw.spec.ts`
+
+**Steps:**
+
+1. Set active player to a finishable score and submit a valid finishing throw.
+   - expect: Finish confirmation overlay appears with `Continue` and `Undo Throw` actions.
+   - expect: Winning player is recognized in state and throw input is effectively blocked behind overlay.
+
+2. Click `Undo Throw` in overlay.
+   - expect: Finishing throw is reverted via undo flow.
+   - expect: Player score returns to pre-finish value.
+   - expect: Finish overlay closes or updates to allow continued play.
+   - expect: Game remains in started state and throw input is re-enabled.
+
+#### 1.8. Recover from throw conflict by syncing latest server state
+
+**File:** `tests/game/basic-throw.spec.ts`
+
+**Steps:**
+
+1. Queue a throw while backend responds with `409 GAME_THROW_NOT_ALLOWED` for `POST /throw/delta`, then provide fresh game snapshot on refetch.
+   - expect: Client triggers reconciliation by refetching latest game state.
+   - expect: Local pending throw queue is cleared after sync.
+   - expect: UI reflects server-authoritative player scores/turn.
+   - expect: A user-safe game action error/sync message is shown if implemented by UI.
+
+#### 1.9. Keyboard accessibility for throw input controls
+
+**File:** `tests/game/basic-throw.spec.ts`
+
+**Steps:**
+
+1. Navigate throw controls using keyboard only (Tab/Shift+Tab/Enter/Space).
+   - expect: Undo, modifier, and numeric throw controls are reachable and operable from keyboard.
+   - expect: Visible focus indicator is present on focused controls.
+   - expect: Disabled controls (e.g., invalid values during Triple mode) are not actionable via keyboard.
+   - expect: Throw action results are equivalent to mouse interaction.

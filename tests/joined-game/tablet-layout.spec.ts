@@ -2,9 +2,12 @@
 // seed: tests/joined-game/seed.spec.ts
 
 import { test, expect } from "@playwright/test";
+import { mockFailedLogin } from "./auth-route-mocks";
 
 test.describe("Cross-Browser and Responsive Tests", () => {
   test("Tablet Layout", async ({ page }) => {
+    await mockFailedLogin(page);
+
     // 1. Navigate to login page on tablet viewport (768x1024)
     await page.setViewportSize({ width: 768, height: 1024 });
     await page.goto("http://localhost:5173/");
