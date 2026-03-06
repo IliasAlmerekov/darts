@@ -1,10 +1,11 @@
 import React, { Suspense, lazy, useEffect } from "react";
-import { BrowserRouter, Route, Routes } from "react-router-dom";
+import { BrowserRouter, Route, Routes, useNavigate } from "react-router-dom";
 import "@/app/styles/index.css";
 import ErrorBoundary from "@/app/ErrorBoundary";
 import ScrollToTop from "@/app/ScrollToTop";
 import NotFoundPage from "@/app/routes/NotFoundPage";
 import ProtectedRoutes from "@/app/ProtectedRoutes";
+import { clearUnauthorizedHandler, setUnauthorizedHandler } from "@/shared/api";
 import { ROUTES } from "@/lib/routes";
 
 const LoginPage = lazy(() => import("@/pages/LoginPage"));
@@ -23,6 +24,22 @@ type WindowWithIdleCallback = Window & {
   requestIdleCallback?: (callback: IdleRequestCallback) => number;
   cancelIdleCallback?: (handle: number) => void;
 };
+
+function UnauthorizedNavigationBridge(): null {
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    setUnauthorizedHandler(() => {
+      navigate(ROUTES.login);
+    });
+
+    return () => {
+      clearUnauthorizedHandler();
+    };
+  }, [navigate]);
+
+  return null;
+}
 
 function App(): React.JSX.Element {
   useEffect(() => {
@@ -58,6 +75,7 @@ function App(): React.JSX.Element {
     <div className="app">
       <ErrorBoundary>
         <BrowserRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
+          <UnauthorizedNavigationBridge />
           <ScrollToTop />
           <Suspense fallback={<div className="page-loader" aria-hidden="true" />}>
             <Routes>

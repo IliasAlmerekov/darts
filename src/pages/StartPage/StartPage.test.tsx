@@ -119,6 +119,8 @@ describe("StartPage", () => {
     expect(actionRow).not.toBeNull();
 
     expect(screen.queryByText("Play as a guest")).toBeNull();
+    expect(screen.getByRole("img", { name: "Play as a guest" })).toBeTruthy();
+    expect(guestButton.querySelector("svg")).toBeNull();
   });
 
   it("renders page-level error and dismisses it", () => {
