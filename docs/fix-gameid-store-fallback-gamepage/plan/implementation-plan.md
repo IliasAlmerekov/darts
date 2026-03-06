@@ -1,4 +1,5 @@
 # Implementation Plan: Fix gameId Store Fallback in GamePage
+
 **Date:** 2026-03-06
 **Research:** docs/fix-gameid-store-fallback-gamepage/research/research.md
 
@@ -8,9 +9,9 @@ Remove the `$invitation` store fallback from the `gameId` useMemo in `useGameLog
 
 ## Phase Overview
 
-| # | Phase name | Layer | New files | Modified files | Complexity |
-|---|-----------|-------|-----------|----------------|------------|
-| 01 | Hook Fix and Tests | pages/GamePage | 0 | 2 | Low |
+| #   | Phase name         | Layer          | New files | Modified files | Complexity |
+| --- | ------------------ | -------------- | --------- | -------------- | ---------- |
+| 01  | Hook Fix and Tests | pages/GamePage | 0         | 2              | Low        |
 
 ## Dependency Order
 
