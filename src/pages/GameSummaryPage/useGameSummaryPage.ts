@@ -7,6 +7,7 @@ import { $gameSettings, setGameData } from "@/store";
 import { setInvitation, setLastFinishedGameId, resetRoomStore } from "@/store";
 import { playSound } from "@/lib/soundPlayer";
 import { toUserErrorMessage } from "@/lib/error-to-user-message";
+import { ROUTES } from "@/lib/routes";
 
 /**
  * Loads summary data for a finished game and provides rematch actions.
@@ -96,7 +97,7 @@ export function useGameSummaryPage() {
       setGameData(updatedGameState);
 
       playSound("undo");
-      navigate(`/game/${finishedGameIdFromRoute}`, {
+      navigate(ROUTES.game(finishedGameIdFromRoute), {
         state: { skipFinishOverlay: true },
       });
     } catch (err) {
@@ -125,7 +126,7 @@ export function useGameSummaryPage() {
       const tripleOut = gameSettings?.tripleOut ?? false;
 
       // Navigate immediately for fast UX; start call continues in background.
-      navigate(`/game/${rematch.gameId}`);
+      navigate(ROUTES.game(rematch.gameId));
 
       void startGame(rematch.gameId, {
         startScore: startScoreValue,
@@ -159,7 +160,7 @@ export function useGameSummaryPage() {
         invitationLink: rematch.invitationLink,
       });
 
-      navigate(`/start/${rematch.gameId}`);
+      navigate(ROUTES.start(rematch.gameId));
     } catch (err) {
       console.error("Failed to start rematch:", err);
       setError(toUserErrorMessage(err, "Could not return to start."));

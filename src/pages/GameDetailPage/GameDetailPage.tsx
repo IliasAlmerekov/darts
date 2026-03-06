@@ -2,6 +2,7 @@ import React from "react";
 import { useStore } from "@nanostores/react";
 import styles from "./GameDetailPage.module.css";
 import { Link } from "react-router-dom";
+import { ROUTES } from "@/lib/routes";
 import { Podium } from "@/shared/ui/podium";
 import BackBtn from "@/assets/icons/back.svg";
 import { AdminLayout } from "@/shared/ui/admin-layout";
@@ -17,7 +18,7 @@ export default function GameDetailPage(): React.JSX.Element {
     <AdminLayout currentGameId={currentGameId}>
       <div className={styles.gameDetails}>
         <div className={styles.linkBtn}>
-          <Link to="/gamesoverview" className="back-btn">
+          <Link to={ROUTES.gamesOverview} className="back-btn">
             <img src={BackBtn} alt="Back button" />
           </Link>
         </div>

@@ -7,6 +7,7 @@ import NotFoundPage from "@/app/routes/NotFoundPage";
 import ProtectedRoutes from "@/app/ProtectedRoutes";
 import LoginPage from "@/pages/LoginPage";
 import RegisterPage from "@/pages/RegisterPage";
+import { ROUTES } from "@/lib/routes";
 
 const StartPage = lazy(() => import("@/pages/StartPage"));
 const GamePage = lazy(() => import("@/pages/GamePage"));
@@ -60,24 +61,24 @@ function App(): React.JSX.Element {
           <ScrollToTop />
           <Suspense fallback={<div className="page-loader" aria-hidden="true" />}>
             <Routes>
-              <Route path="/" element={<LoginPage />} />
-              <Route path="/register" element={<RegisterPage />} />
+              <Route path={ROUTES.login} element={<LoginPage />} />
+              <Route path={ROUTES.register} element={<RegisterPage />} />
 
               <Route element={<ProtectedRoutes allowedRoles={["ROLE_ADMIN"]} />}>
-                <Route path="/start" element={<StartPage />} />
-                <Route path="/start/:id" element={<StartPage />} />
+                <Route path={ROUTES.start()} element={<StartPage />} />
+                <Route path={`${ROUTES.start()}/:id`} element={<StartPage />} />
                 <Route path="/game/:id" element={<GamePage />} />
                 <Route path="/summary/:id" element={<GameSummaryPage />} />
                 <Route path="/details/:id" element={<GameDetailPage />} />
-                <Route path="/gamesoverview" element={<GamesOverview />} />
-                <Route path="/settings" element={<SettingsPage />} />
-                <Route path="/settings/:id" element={<SettingsPage />} />
-                <Route path="/statistics" element={<Statistics />} />
+                <Route path={ROUTES.gamesOverview} element={<GamesOverview />} />
+                <Route path={ROUTES.settings()} element={<SettingsPage />} />
+                <Route path={`${ROUTES.settings()}/:id`} element={<SettingsPage />} />
+                <Route path={ROUTES.statistics} element={<Statistics />} />
               </Route>
 
               <Route element={<ProtectedRoutes allowedRoles={["ROLE_PLAYER"]} />}>
-                <Route path="/joined" element={<JoinedGamePage />} />
-                <Route path="/playerprofile" element={<PlayerProfile />} />
+                <Route path={ROUTES.joined} element={<JoinedGamePage />} />
+                <Route path={ROUTES.playerProfile} element={<PlayerProfile />} />
               </Route>
 
               <Route path="*" element={<NotFoundPage />} />

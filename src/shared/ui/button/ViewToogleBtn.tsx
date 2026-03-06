@@ -2,12 +2,13 @@ import React, { useEffect, useRef, useState, useCallback } from "react";
 import clsx from "clsx";
 import styles from "./ViewToogleBtn.module.css";
 import { useLocation, useNavigate } from "react-router-dom";
+import { ROUTES } from "@/lib/routes";
 
 function ViewToogleButton() {
   const location = useLocation();
   const navigate = useNavigate();
 
-  const activeView = location.pathname === "/gamesoverview" ? "games" : "players";
+  const activeView = location.pathname === ROUTES.gamesOverview ? "games" : "players";
   const [previewView, setPreviewView] = useState<"players" | "games" | null>(null);
   const timerRef = useRef<number | null>(null);
   const displayedView = previewView ?? activeView;
@@ -37,7 +38,7 @@ function ViewToogleButton() {
       }
 
       timerRef.current = window.setTimeout(() => {
-        navigate(targetView === "players" ? "/statistics" : "/gamesoverview");
+        navigate(targetView === "players" ? ROUTES.statistics : ROUTES.gamesOverview);
       }, 180);
     },
     [activeView, navigate],

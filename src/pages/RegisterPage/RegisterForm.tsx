@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { Link } from "react-router-dom";
 import { Mail, Lock, Eye, EyeOff, User } from "lucide-react";
 import styles from "./AuthForm.module.css";
+import { ROUTES } from "@/lib/routes";
 
 interface RegistrationFormProps {
   error: string | null;
@@ -104,7 +105,7 @@ export function RegisterForm({
       </form>
 
       <p className={styles.formLink}>
-        Already have an account? <Link to="/">Sign in</Link>
+        Already have an account? <Link to={ROUTES.login}>Sign in</Link>
       </p>
     </>
   );

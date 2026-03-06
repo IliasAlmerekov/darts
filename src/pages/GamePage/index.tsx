@@ -12,6 +12,7 @@ import deleteIcon from "@/assets/icons/delete.svg";
 import Undo from "@/assets/icons/undo-copy.svg";
 import settingsIcon from "@/assets/icons/settings-inactive.svg";
 import { toUserErrorMessage } from "@/lib/error-to-user-message";
+import { ROUTES } from "@/lib/routes";
 
 import styles from "./Game.module.css";
 import SettingsOverlay from "./components/SettingsOverlay";
@@ -182,7 +183,7 @@ function GamePage() {
           variant="page"
           title="Game not available"
           message="Game identifier is missing. Reopen the room or return to start."
-          primaryAction={{ label: "Back to start", to: "/start" }}
+          primaryAction={{ label: "Back to start", to: ROUTES.start() }}
         />
       </div>
     );
@@ -197,7 +198,7 @@ function GamePage() {
           title="Could not load game"
           message={message}
           primaryAction={{ label: "Retry", onClick: () => void refetch() }}
-          secondaryAction={{ label: "Back to start", to: "/start" }}
+          secondaryAction={{ label: "Back to start", to: ROUTES.start() }}
         />
       </div>
     );
