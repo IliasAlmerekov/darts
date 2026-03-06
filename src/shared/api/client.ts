@@ -2,6 +2,9 @@ import { ApiError, ForbiddenError, NetworkError, UnauthorizedError } from "./err
 import type { ApiRequestConfig, QueryParams } from "./types";
 
 const ENV_API_BASE_URL = import.meta.env.VITE_API_BASE_URL as string | undefined;
+export type AuthRedirectHandler = () => void;
+
+let onUnauthorized: AuthRedirectHandler | null = null;
 
 function resolveApiBaseUrl(): string {
   if (!ENV_API_BASE_URL) {
@@ -13,6 +16,18 @@ function resolveApiBaseUrl(): string {
 }
 
 export const API_BASE_URL = resolveApiBaseUrl();
+
+export function setUnauthorizedHandler(handler: AuthRedirectHandler): void {
+  onUnauthorized = handler;
+}
+
+export function clearUnauthorizedHandler(): void {
+  onUnauthorized = null;
+}
+
+export function triggerUnauthorizedHandler(): void {
+  onUnauthorized?.();
+}
 
 function buildUrl(endpoint: string, query?: QueryParams): string {
   const path = endpoint.startsWith("/") ? endpoint : `/${endpoint}`;
@@ -70,7 +85,7 @@ async function request<T>(endpoint: string, config: ApiRequestConfig = {}): Prom
 
   if (response.status === 401) {
     if (!skipAuthRedirect) {
-      window.location.href = "/";
+      triggerUnauthorizedHandler();
     }
     throw new UnauthorizedError("Unauthorized", data, response.url);
   }
