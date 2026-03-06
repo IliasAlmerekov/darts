@@ -10,7 +10,6 @@ export interface LoginResponse {
   success?: boolean;
   error?: string | null;
   last_username?: string | null;
-  [key: string]: unknown;
 }
 
 export interface LoginCredentials {
@@ -20,7 +19,6 @@ export interface LoginCredentials {
 
 export interface RegistrationResponse {
   redirect?: string;
-  [key: string]: unknown;
 }
 
 export interface RegistrationData {
@@ -200,9 +198,20 @@ export async function getAuthenticatedUser(
   }
 
   if (response.ok) {
-    const data = await response.json();
-    if (data.success) {
-      return data.user ?? data;
+    const data: unknown = await response.json().catch(() => null);
+
+    if (
+      typeof data === "object" &&
+      data !== null &&
+      "success" in data &&
+      (data as Record<string, unknown>).success === true
+    ) {
+      const record = data as Record<string, unknown>;
+      const user = (record.user ?? data) as AuthenticatedUser;
+      if (typeof user.id !== "number" || !Array.isArray(user.roles)) {
+        return null;
+      }
+      return user;
     }
   }
 

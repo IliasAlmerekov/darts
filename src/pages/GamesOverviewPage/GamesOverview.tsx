@@ -13,7 +13,7 @@ import {
   PaginationPrevious,
 } from "@/shared/ui/pagination";
 import { getGamesOverview } from "@/shared/api/statistics";
-import type { FinishedGameProps, GameDataProps } from "@/types";
+import type { FinishedGameProps } from "@/types";
 import { StatisticsHeaderControls } from "@/shared/ui/statistics-header-controls";
 
 type GamesPaginationProps = {
@@ -58,8 +58,7 @@ export default function GamesOverviewPage(): JSX.Element {
   const limit = 9;
 
   useEffect(() => {
-    getGamesOverview(limit, offset).then((response) => {
-      const data = response as GameDataProps;
+    getGamesOverview(limit, offset).then((data) => {
       if (data.items) {
         setGames(data.items);
         setTotal(data.total ?? 0);
