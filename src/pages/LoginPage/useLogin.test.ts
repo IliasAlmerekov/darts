@@ -4,14 +4,20 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { useLogin } from "./useLogin";
 
 const navigateMock = vi.fn();
+const useLocationMock = vi.fn();
 const loginWithCredentialsMock = vi.fn();
 const getAuthenticatedUserMock = vi.fn();
 const invalidateAuthStateMock = vi.fn();
 const setAuthenticatedUserMock = vi.fn();
 
-vi.mock("react-router-dom", () => ({
-  useNavigate: () => navigateMock,
-}));
+vi.mock("react-router-dom", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("react-router-dom")>();
+  return {
+    ...actual,
+    useNavigate: () => navigateMock,
+    useLocation: () => useLocationMock(),
+  };
+});
 
 vi.mock("@/shared/api/auth", () => ({
   loginWithCredentials: (...args: unknown[]) => loginWithCredentialsMock(...args),
@@ -26,6 +32,13 @@ vi.mock("@/store/auth", () => ({
 describe("useLogin", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    useLocationMock.mockReturnValue({
+      pathname: "/",
+      search: "",
+      hash: "",
+      key: "test",
+      state: null,
+    });
   });
 
   it("navigates when login request fails but authenticated session already exists", async () => {
@@ -81,5 +94,28 @@ describe("useLogin", () => {
     expect(invalidateAuthStateMock).toHaveBeenCalledTimes(1);
     expect(navigateMock).toHaveBeenCalledWith("/start/42");
     expect(getAuthenticatedUserMock).not.toHaveBeenCalled();
+  });
+
+  it("redirects to the protected source route after a successful login redirect", async () => {
+    useLocationMock.mockReturnValue({
+      pathname: "/",
+      search: "",
+      hash: "",
+      key: "test",
+      state: { from: "/statistics" },
+    });
+    loginWithCredentialsMock.mockResolvedValueOnce({
+      success: true,
+      redirect: "/start",
+    });
+
+    const { result } = renderHook(() => useLogin());
+
+    await act(async () => {
+      await result.current.login("admin@test.com", "password");
+    });
+
+    expect(invalidateAuthStateMock).toHaveBeenCalledTimes(1);
+    expect(navigateMock).toHaveBeenCalledWith("/statistics");
   });
 });

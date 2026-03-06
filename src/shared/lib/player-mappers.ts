@@ -59,7 +59,7 @@ export function mapPlayerToUI(
   index: number,
   currentRoundNumber?: number,
 ): UIPlayer {
-  const rounds = mapRoundHistory(player.roundHistory as unknown as BackendRoundHistory[]);
+  const rounds = mapRoundHistory(player.roundHistory);
   const currentRoundData = mapCurrentRound(player.currentRoundThrows);
   const shouldPlaceCurrentRound =
     "number" === typeof currentRoundNumber &&

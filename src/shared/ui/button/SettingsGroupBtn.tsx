@@ -8,7 +8,7 @@ type ButtonOption = {
 
 type SettingsGroupProps = {
   title: string;
-  options: ButtonOption[];
+  options: readonly ButtonOption[];
   selectedId?: string | number;
   onClick?: (id: string | number) => void;
 };

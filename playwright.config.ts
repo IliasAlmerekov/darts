@@ -9,7 +9,7 @@ if (existsSync(".env.local")) {
   process.loadEnvFile(".env.local");
 }
 
-const baseURL = process.env.PLAYWRIGHT_BASE_URL ?? "http://127.0.0.1:5173";
+const baseURL = process.env.PLAYWRIGHT_BASE_URL ?? "http://localhost:5173";
 
 export default defineConfig({
   testDir: "./tests/joined-game",

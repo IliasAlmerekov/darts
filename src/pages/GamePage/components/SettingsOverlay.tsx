@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Overlay } from "@/shared/ui/overlay";
 import { SettingsGroupBtn, Button } from "@/shared/ui/button";
+import type { GameMode } from "@/types";
 import styles from "./SettingsOverlay.module.css";
 import deleteIcon from "@/assets/icons/delete.svg";
 
@@ -15,6 +16,22 @@ type SettingsOverlayProps = {
   error?: string | null;
 };
 
+const GAME_MODE_OPTIONS = [
+  { label: "Single-out", id: "single-out" },
+  { label: "Double-out", id: "double-out" },
+  { label: "Triple-out", id: "triple-out" },
+] as const satisfies ReadonlyArray<{ label: string; id: GameMode }>;
+
+function resolveGameMode(doubleOut: boolean, tripleOut: boolean): GameMode {
+  if (doubleOut) return "double-out";
+  if (tripleOut) return "triple-out";
+  return "single-out";
+}
+
+function isGameMode(id: string | number): id is GameMode {
+  return GAME_MODE_OPTIONS.some((option) => option.id === id);
+}
+
 function SettingsOverlay({
   isOpen,
   onClose,
@@ -25,12 +42,12 @@ function SettingsOverlay({
   isSaving = false,
   error = null,
 }: SettingsOverlayProps) {
-  const [gameMode, setGameMode] = useState<"single-out" | "double-out" | "triple-out">(
-    initialDoubleOut ? "double-out" : initialTripleOut ? "triple-out" : "single-out",
+  const [gameMode, setGameMode] = useState<GameMode>(
+    resolveGameMode(initialDoubleOut, initialTripleOut),
   );
 
   useEffect(() => {
-    setGameMode(initialDoubleOut ? "double-out" : initialTripleOut ? "triple-out" : "single-out");
+    setGameMode(resolveGameMode(initialDoubleOut, initialTripleOut));
   }, [initialDoubleOut, initialTripleOut, initialStartScore]);
 
   const handleSave = () => {
@@ -52,13 +69,13 @@ function SettingsOverlay({
         <div className={styles.settingsBodyContainer}>
           <SettingsGroupBtn
             title="Game Mode"
-            options={[
-              { label: "Single-out", id: "single-out" },
-              { label: "Double-out", id: "double-out" },
-              { label: "Triple-out", id: "triple-out" },
-            ]}
+            options={GAME_MODE_OPTIONS}
             selectedId={gameMode}
-            onClick={(id) => setGameMode(id as typeof gameMode)}
+            onClick={(id) => {
+              if (isGameMode(id)) {
+                setGameMode(id);
+              }
+            }}
           />
         </div>
         <Button

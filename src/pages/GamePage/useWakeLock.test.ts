@@ -1,0 +1,249 @@
+// @vitest-environment jsdom
+import { renderHook, waitFor } from "@testing-library/react";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { useWakeLock } from "./useWakeLock";
+
+function setNavigatorWakeLock(request: (type?: WakeLockType) => Promise<WakeLockSentinel>): void {
+  Object.defineProperty(navigator, "wakeLock", {
+    configurable: true,
+    value: {
+      request,
+    } satisfies Pick<WakeLock, "request">,
+  });
+}
+
+let initialWakeLockDescriptor: PropertyDescriptor | undefined;
+let hasOwnWakeLockDescriptor = false;
+
+type Deferred<T> = {
+  promise: Promise<T>;
+  resolve: (value: T) => void;
+};
+
+function createDeferred<T>(): Deferred<T> {
+  let resolvePromise: (value: T) => void = () => {};
+  const promise = new Promise<T>((resolve) => {
+    resolvePromise = resolve;
+  });
+
+  return {
+    promise,
+    resolve: resolvePromise,
+  };
+}
+
+async function flushMicrotasks(): Promise<void> {
+  await Promise.resolve();
+  await Promise.resolve();
+}
+
+function restoreNavigatorWakeLock(): void {
+  if (hasOwnWakeLockDescriptor && initialWakeLockDescriptor) {
+    Object.defineProperty(navigator, "wakeLock", initialWakeLockDescriptor);
+    return;
+  }
+
+  Reflect.deleteProperty(navigator, "wakeLock");
+}
+
+describe("useWakeLock", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    hasOwnWakeLockDescriptor = Object.prototype.hasOwnProperty.call(navigator, "wakeLock");
+    initialWakeLockDescriptor = Object.getOwnPropertyDescriptor(navigator, "wakeLock");
+    restoreNavigatorWakeLock();
+  });
+
+  afterEach(() => {
+    restoreNavigatorWakeLock();
+  });
+
+  it("does not request wake lock when API is unsupported", () => {
+    expect("wakeLock" in navigator).toBe(false);
+    expect(() => renderHook(() => useWakeLock(true))).not.toThrow();
+  });
+
+  it("requests a screen wake lock when enabled", async () => {
+    const releaseMock = vi.fn().mockResolvedValue(undefined);
+    const sentinel = { release: releaseMock } as unknown as WakeLockSentinel;
+    const requestMock = vi.fn().mockResolvedValue(sentinel);
+
+    setNavigatorWakeLock(requestMock);
+    renderHook(() => useWakeLock(true));
+
+    await waitFor(() => {
+      expect(requestMock).toHaveBeenCalledWith("screen");
+      expect(requestMock).toHaveBeenCalledTimes(1);
+    });
+  });
+
+  it("does not request wake lock when disabled in a supported browser", async () => {
+    const requestMock = vi.fn().mockResolvedValue({} as WakeLockSentinel);
+
+    setNavigatorWakeLock(requestMock);
+    renderHook(() => useWakeLock(false));
+    await flushMicrotasks();
+
+    expect(requestMock).not.toHaveBeenCalled();
+  });
+
+  it("releases the sentinel when disabled after acquisition", async () => {
+    const releaseMock = vi.fn().mockResolvedValue(undefined);
+    const sentinel = { release: releaseMock } as unknown as WakeLockSentinel;
+    const requestMock = vi.fn().mockResolvedValue(sentinel);
+
+    setNavigatorWakeLock(requestMock);
+
+    const { rerender } = renderHook(
+      ({ isEnabled }: { isEnabled: boolean }) => useWakeLock(isEnabled),
+      {
+        initialProps: { isEnabled: true },
+      },
+    );
+
+    await waitFor(() => {
+      expect(requestMock).toHaveBeenCalledWith("screen");
+    });
+
+    rerender({ isEnabled: false });
+
+    await waitFor(() => {
+      expect(releaseMock).toHaveBeenCalledTimes(1);
+    });
+  });
+
+  it("releases the sentinel on unmount", async () => {
+    const releaseMock = vi.fn().mockResolvedValue(undefined);
+    const sentinel = { release: releaseMock } as unknown as WakeLockSentinel;
+    const requestMock = vi.fn().mockResolvedValue(sentinel);
+
+    setNavigatorWakeLock(requestMock);
+    const { unmount } = renderHook(() => useWakeLock(true));
+
+    await waitFor(() => {
+      expect(requestMock).toHaveBeenCalledWith("screen");
+    });
+
+    unmount();
+
+    await waitFor(() => {
+      expect(releaseMock).toHaveBeenCalledTimes(1);
+    });
+  });
+
+  it("swallows wake-lock request rejection", async () => {
+    const requestMock = vi.fn().mockRejectedValue(new Error("denied"));
+
+    setNavigatorWakeLock(requestMock);
+    const { rerender } = renderHook(
+      ({ isEnabled }: { isEnabled: boolean }) => useWakeLock(isEnabled),
+      {
+        initialProps: { isEnabled: true },
+      },
+    );
+
+    await waitFor(() => {
+      expect(requestMock).toHaveBeenCalledTimes(1);
+      expect(requestMock).toHaveBeenCalledWith("screen");
+    });
+
+    expect(() => rerender({ isEnabled: false })).not.toThrow();
+  });
+
+  it("releases a late sentinel when unmounted before pending request resolves", async () => {
+    const releaseMock = vi.fn().mockResolvedValue(undefined);
+    const sentinel = { release: releaseMock } as unknown as WakeLockSentinel;
+    const requestDeferred = createDeferred<WakeLockSentinel>();
+    const requestMock = vi.fn().mockReturnValue(requestDeferred.promise);
+
+    setNavigatorWakeLock(requestMock);
+    const { unmount } = renderHook(() => useWakeLock(true));
+
+    await waitFor(() => {
+      expect(requestMock).toHaveBeenCalledTimes(1);
+      expect(requestMock).toHaveBeenCalledWith("screen");
+    });
+
+    unmount();
+
+    requestDeferred.resolve(sentinel);
+    await flushMicrotasks();
+
+    await waitFor(() => {
+      expect(releaseMock).toHaveBeenCalledTimes(1);
+    });
+  });
+
+  it("releases a late sentinel when toggled off before pending request resolves", async () => {
+    const releaseMock = vi.fn().mockResolvedValue(undefined);
+    const sentinel = { release: releaseMock } as unknown as WakeLockSentinel;
+    const requestDeferred = createDeferred<WakeLockSentinel>();
+    const requestMock = vi.fn().mockReturnValue(requestDeferred.promise);
+
+    setNavigatorWakeLock(requestMock);
+    const { rerender } = renderHook(
+      ({ isEnabled }: { isEnabled: boolean }) => useWakeLock(isEnabled),
+      {
+        initialProps: { isEnabled: true },
+      },
+    );
+
+    await waitFor(() => {
+      expect(requestMock).toHaveBeenCalledTimes(1);
+      expect(requestMock).toHaveBeenCalledWith("screen");
+    });
+
+    rerender({ isEnabled: false });
+    requestDeferred.resolve(sentinel);
+    await flushMicrotasks();
+
+    await waitFor(() => {
+      expect(releaseMock).toHaveBeenCalledTimes(1);
+    });
+  });
+
+  it("swallows release rejection on disable cleanup", async () => {
+    const releaseMock = vi.fn().mockRejectedValue(new Error("release failed"));
+    const sentinel = { release: releaseMock } as unknown as WakeLockSentinel;
+    const requestMock = vi.fn().mockResolvedValue(sentinel);
+
+    setNavigatorWakeLock(requestMock);
+    const { rerender } = renderHook(
+      ({ isEnabled }: { isEnabled: boolean }) => useWakeLock(isEnabled),
+      {
+        initialProps: { isEnabled: true },
+      },
+    );
+
+    await waitFor(() => {
+      expect(requestMock).toHaveBeenCalledTimes(1);
+      expect(requestMock).toHaveBeenCalledWith("screen");
+    });
+
+    expect(() => rerender({ isEnabled: false })).not.toThrow();
+
+    await waitFor(() => {
+      expect(releaseMock).toHaveBeenCalledTimes(1);
+    });
+  });
+
+  it("swallows release rejection on unmount cleanup", async () => {
+    const releaseMock = vi.fn().mockRejectedValue(new Error("release failed"));
+    const sentinel = { release: releaseMock } as unknown as WakeLockSentinel;
+    const requestMock = vi.fn().mockResolvedValue(sentinel);
+
+    setNavigatorWakeLock(requestMock);
+    const { unmount } = renderHook(() => useWakeLock(true));
+
+    await waitFor(() => {
+      expect(requestMock).toHaveBeenCalledTimes(1);
+      expect(requestMock).toHaveBeenCalledWith("screen");
+    });
+
+    expect(() => unmount()).not.toThrow();
+
+    await waitFor(() => {
+      expect(releaseMock).toHaveBeenCalledTimes(1);
+    });
+  });
+});

@@ -98,6 +98,22 @@ describe("App routing", () => {
     expect(await screen.findByRole("heading", { name: "Create an account" })).toBeTruthy();
   });
 
+  it("renders start page for /start route", async () => {
+    window.history.pushState({}, "", "/start");
+
+    render(<App />);
+
+    expect(await screen.findByText("Start Page")).toBeTruthy();
+  });
+
+  it("renders start page for /start/:id route", async () => {
+    window.history.pushState({}, "", "/start/game-42");
+
+    render(<App />);
+
+    expect(await screen.findByText("Start Page")).toBeTruthy();
+  });
+
   it("registers unauthorized navigation and clears it on unmount", async () => {
     window.history.pushState({}, "", "/register");
 

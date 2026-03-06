@@ -11,7 +11,7 @@ import {
   PaginationPrevious,
 } from "@/shared/ui/pagination";
 import { getPlayerStats } from "@/shared/api/statistics";
-import type { PlayerProps, PlayerDataProps } from "@/types";
+import type { PlayerProps } from "@/types";
 import type { SortMethod } from "@/shared/ui/sort-tabs";
 import { StatisticsHeaderControls } from "@/shared/ui/statistics-header-controls";
 import { sortPlayerStats } from "./lib/sort-player-stats";
@@ -66,8 +66,7 @@ export default function StatisticsPage(): JSX.Element {
       sortParam = "average:desc";
     }
 
-    getPlayerStats(limit, offset, sortParam).then((response) => {
-      const data = response as PlayerDataProps;
+    getPlayerStats(limit, offset, sortParam).then((data) => {
       if (data.items) {
         setStats(sortPlayerStats(data.items, sortMethod));
         setTotal(data.total ?? 0);

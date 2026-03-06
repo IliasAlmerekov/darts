@@ -73,12 +73,13 @@ export async function persistPlayerOrder({
   }
 }
 
+const START_SOUND_PATH = "/sounds/start-round-sound.mp3";
+const MAX_LOBBY_PLAYERS = 10;
+
 /**
  * Manages start page state, player order, and room lifecycle actions.
  */
 export function useStartPage() {
-  const START_SOUND_PATH = "/sounds/start-round-sound.mp3";
-  const MAX_LOBBY_PLAYERS = 10;
   const navigate = useNavigate();
   const { id: gameIdParam } = useParams<{ id?: string }>();
 

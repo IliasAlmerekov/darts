@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { act, renderHook } from "@testing-library/react";
+import { act, renderHook, waitFor } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { useGameSummaryPage } from "./useGameSummaryPage";
 import { playSound } from "@/lib/soundPlayer";
@@ -10,6 +10,11 @@ const createRematchMock = vi.fn();
 const startGameMock = vi.fn();
 const undoLastThrowMock = vi.fn();
 const setGameDataMock = vi.fn();
+const gameSettingsMock = {
+  startScore: 301,
+  doubleOut: false,
+  tripleOut: false,
+};
 
 vi.mock("react-router-dom", () => ({
   useNavigate: () => navigateMock,
@@ -37,11 +42,7 @@ vi.mock("@/store", async (importOriginal) => {
 });
 
 vi.mock("@nanostores/react", () => ({
-  useStore: () => ({
-    startScore: 301,
-    doubleOut: false,
-    tripleOut: false,
-  }),
+  useStore: () => gameSettingsMock,
 }));
 
 vi.mock("@/lib/soundPlayer", () => ({
@@ -232,5 +233,20 @@ describe("useGameSummaryPage", () => {
     });
 
     expect(navigateMock).not.toHaveBeenCalledWith("/start/77");
+  });
+
+  it("keeps action handlers referentially stable across rerenders when dependencies do not change", async () => {
+    const { result } = renderHook(() => useGameSummaryPage());
+    const initialHandleUndo = result.current.handleUndo;
+    const initialHandlePlayAgain = result.current.handlePlayAgain;
+    const initialHandleBackToStart = result.current.handleBackToStart;
+
+    await waitFor(() => {
+      expect(getFinishedGameMock).toHaveBeenCalledWith(42);
+    });
+
+    expect(result.current.handleUndo).toBe(initialHandleUndo);
+    expect(result.current.handlePlayAgain).toBe(initialHandlePlayAgain);
+    expect(result.current.handleBackToStart).toBe(initialHandleBackToStart);
   });
 });

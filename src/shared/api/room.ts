@@ -1,5 +1,30 @@
 import { apiClient } from "./client";
+import { ApiError } from "./errors";
 import type { CreateRoomResponse, AddGuestPayload, GuestPlayer } from "@/types";
+
+// ---------------------------------------------------------------------------
+// Guards
+// ---------------------------------------------------------------------------
+
+function isRecord(data: unknown): data is Record<string, unknown> {
+  return typeof data === "object" && data !== null;
+}
+
+function isCreateRoomResponse(data: unknown): data is CreateRoomResponse {
+  return (
+    isRecord(data) && typeof data.gameId === "number" && typeof data.invitationLink === "string"
+  );
+}
+
+function isGuestPlayerResponse(data: unknown): data is { success: true; player: GuestPlayer } {
+  return (
+    isRecord(data) &&
+    data.success === true &&
+    isRecord(data.player) &&
+    typeof (data.player as Record<string, unknown>).id === "number" &&
+    typeof (data.player as Record<string, unknown>).name === "string"
+  );
+}
 
 // ---------------------------------------------------------------------------
 // Endpoints
@@ -24,7 +49,11 @@ export type CreateGamePayload = {
  * Fetches an invitation link for a game.
  */
 export async function getInvitation(gameId: number): Promise<CreateRoomResponse> {
-  return apiClient.post<CreateRoomResponse>(CREATE_INVITE_ENDPOINT(gameId));
+  const data: unknown = await apiClient.post(CREATE_INVITE_ENDPOINT(gameId));
+  if (!isCreateRoomResponse(data)) {
+    throw new ApiError("Unexpected response shape for invitation", { status: 200, data });
+  }
+  return data;
 }
 
 /**
@@ -36,8 +65,17 @@ export async function createRoom(payload?: CreateGamePayload): Promise<CreateRoo
       ? payload
       : {};
 
-  const room = await apiClient.post<{ gameId: number }>(CREATE_ROOM_ENDPOINT, body);
-  const invite = await apiClient.post<CreateRoomResponse>(CREATE_INVITE_ENDPOINT(room.gameId));
+  const room: unknown = await apiClient.post(CREATE_ROOM_ENDPOINT, body);
+  if (!isRecord(room) || typeof room.gameId !== "number") {
+    throw new ApiError("Unexpected response shape for create room", { status: 200, data: room });
+  }
+  const invite: unknown = await apiClient.post(CREATE_INVITE_ENDPOINT(room.gameId));
+  if (!isCreateRoomResponse(invite)) {
+    throw new ApiError("Unexpected response shape for room invitation", {
+      status: 200,
+      data: invite,
+    });
+  }
 
   return {
     gameId: invite.gameId,
@@ -67,11 +105,6 @@ export async function updatePlayerOrder(
 // Guest players
 // ---------------------------------------------------------------------------
 
-type AddGuestSuccessResponse = {
-  success: true;
-  player: GuestPlayer;
-};
-
 /**
  * Adds a guest player to a game room.
  */
@@ -79,9 +112,9 @@ export async function addGuestPlayer(
   gameId: number,
   payload: AddGuestPayload,
 ): Promise<GuestPlayer> {
-  const response = await apiClient.post<AddGuestSuccessResponse>(
-    ADD_GUEST_ENDPOINT(gameId),
-    payload,
-  );
-  return response.player;
+  const data: unknown = await apiClient.post(ADD_GUEST_ENDPOINT(gameId), payload);
+  if (!isGuestPlayerResponse(data)) {
+    throw new ApiError("Unexpected response shape for add guest", { status: 200, data });
+  }
+  return data.player;
 }
