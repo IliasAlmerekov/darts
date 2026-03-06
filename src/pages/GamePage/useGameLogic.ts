@@ -4,6 +4,7 @@ import { useRoomStream } from "@/shared/hooks/useRoomStream";
 import { useGameState } from "./useGameState";
 import { useThrowHandler } from "./useThrowHandler";
 import { useGameSounds } from "./useGameSounds";
+import { useWakeLock } from "./useWakeLock";
 import { getFinishedPlayers, mapPlayersToUI } from "@/lib/player-mappers";
 import {
   updateGameSettings,
@@ -67,8 +68,10 @@ export const useGameLogic = () => {
   const { gameData, isLoading, error, refetch, updateGameData } = useGameState({ gameId });
   const { handleThrow, handleUndo } = useThrowHandler({ gameId });
   const { event } = useRoomStream(gameId);
+  const isGameActive = gameData?.status === "started";
 
   useGameSounds(gameData);
+  useWakeLock(isGameActive);
 
   useEffect(() => {
     const handler = () => {
