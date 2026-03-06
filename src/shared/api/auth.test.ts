@@ -1,6 +1,8 @@
 // @vitest-environment jsdom
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { getAuthenticatedUser } from "./auth";
+import { getAuthenticatedUser, logout } from "./auth";
+import { apiClient } from "./client";
+import { $authChecked, $user, setAuthenticatedUser } from "@/store/auth";
 
 type AuthResponseBody = {
   success: boolean;
@@ -75,5 +77,27 @@ describe("getAuthenticatedUser", () => {
     await vi.advanceTimersByTimeAsync(51);
 
     await assertion;
+  });
+});
+
+describe("logout", () => {
+  beforeEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  it("invalidates cached auth state after successful logout", async () => {
+    setAuthenticatedUser({
+      success: true,
+      roles: ["ROLE_ADMIN"],
+      id: 11,
+      redirect: "/start",
+    });
+    vi.spyOn(apiClient, "post").mockResolvedValueOnce(undefined);
+
+    await logout();
+
+    expect(apiClient.post).toHaveBeenCalledWith("/logout");
+    expect($user.get()).toBeNull();
+    expect($authChecked.get()).toBe(false);
   });
 });

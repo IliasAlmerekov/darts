@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { renderHook, waitFor } from "@testing-library/react";
+import { act, renderHook, waitFor } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { useGameState } from "./useGameState";
 import type { GameThrowsResponse } from "@/types";
@@ -53,11 +53,10 @@ describe("useGameState", () => {
     gameStore.resetGameStore();
   });
 
-  it("aborts old request on gameId change and ignores stale response", async () => {
+  it("resets the shared store on gameId change and ignores stale response", async () => {
     const firstRequest = createDeferred<GameThrowsResponse | null>();
     const secondRequest = createDeferred<GameThrowsResponse | null>();
     const calls: Array<{ gameId: number; signal?: AbortSignal }> = [];
-    const setGameDataSpy = vi.spyOn(gameStore, "setGameData");
 
     getGameThrowsIfChangedMock.mockImplementation((gameId: number, signal?: AbortSignal) => {
       calls.push({ gameId, signal });
@@ -69,19 +68,24 @@ describe("useGameState", () => {
       return secondRequest.promise;
     });
 
+    gameStore.setGameData(createGameData(1));
+    const setGameDataSpy = vi.spyOn(gameStore, "setGameData");
+    const initialProps: { gameId: number | null } = { gameId: 1 };
+
     const { result, rerender } = renderHook(
       ({ gameId }: { gameId: number | null }) => useGameState({ gameId }),
-      { initialProps: { gameId: 1 } },
+      { initialProps },
     );
 
-    await waitFor(() => {
-      expect(getGameThrowsIfChangedMock).toHaveBeenCalledWith(1, expect.any(AbortSignal));
-    });
+    expect(result.current.gameData?.id).toBe(1);
 
     rerender({ gameId: 2 });
 
     await waitFor(() => {
       expect(getGameThrowsIfChangedMock).toHaveBeenCalledWith(2, expect.any(AbortSignal));
+    });
+    await waitFor(() => {
+      expect(result.current.gameData).toBeNull();
     });
 
     expect(calls[0]?.signal?.aborted).toBe(true);
@@ -96,7 +100,55 @@ describe("useGameState", () => {
     await Promise.resolve();
     await Promise.resolve();
 
+    const staleWriteCalls = setGameDataSpy.mock.calls.filter(
+      ([data]) => (data as GameThrowsResponse | null)?.id === 1,
+    );
+
     expect(result.current.gameData?.id).toBe(2);
-    expect(setGameDataSpy).not.toHaveBeenCalledWith(expect.objectContaining({ id: 1 }));
+    expect(staleWriteCalls).toHaveLength(0);
+  });
+
+  it("invalidates in-flight manual refetch when gameId is cleared", async () => {
+    const manualRefetch = createDeferred<GameThrowsResponse | null>();
+    const setGameDataSpy = vi.spyOn(gameStore, "setGameData");
+
+    getGameThrowsIfChangedMock
+      .mockResolvedValueOnce(createGameData(1))
+      .mockImplementationOnce(() => manualRefetch.promise);
+    const initialProps: { gameId: number | null } = { gameId: 1 };
+
+    const { result, rerender } = renderHook(
+      ({ gameId }: { gameId: number | null }) => useGameState({ gameId }),
+      { initialProps },
+    );
+
+    await waitFor(() => {
+      expect(result.current.gameData?.id).toBe(1);
+    });
+
+    act(() => {
+      void result.current.refetch();
+    });
+
+    await waitFor(() => {
+      expect(getGameThrowsIfChangedMock).toHaveBeenCalledTimes(2);
+    });
+
+    rerender({ gameId: null });
+
+    await waitFor(() => {
+      expect(result.current.gameData).toBeNull();
+      expect(result.current.isLoading).toBe(false);
+      expect(result.current.error).toBeNull();
+    });
+
+    const setGameDataCallCountBeforeResolve = setGameDataSpy.mock.calls.length;
+
+    manualRefetch.resolve(createGameData(1));
+    await Promise.resolve();
+    await Promise.resolve();
+
+    expect(result.current.gameData).toBeNull();
+    expect(setGameDataSpy).toHaveBeenCalledTimes(setGameDataCallCountBeforeResolve);
   });
 });

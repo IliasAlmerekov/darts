@@ -42,11 +42,10 @@ describe("useGameDetailPage", () => {
 
     await waitFor(() => {
       expect(getFinishedGameMock).toHaveBeenCalledWith(42);
+      expect(result.current.error).toBeNull();
+      expect(result.current.newList).toHaveLength(2);
+      expect(result.current.podiumData).toHaveLength(3);
     });
-
-    expect(result.current.error).toBeNull();
-    expect(result.current.newList).toHaveLength(2);
-    expect(result.current.podiumData).toHaveLength(3);
   });
 
   it("returns an error and skips loading when route id is invalid", async () => {

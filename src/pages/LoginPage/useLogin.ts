@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { loginWithCredentials, getAuthenticatedUser } from "@/shared/api/auth";
+import { invalidateAuthState, setAuthenticatedUser } from "@/store/auth";
 import { mapAuthErrorMessage } from "@/lib/auth-error-handling";
 import { ROUTES } from "@/lib/routes";
 
@@ -32,6 +33,7 @@ export function useLogin() {
         if (!response.error) {
           const authenticatedUser = await getAuthenticatedUser();
           if (authenticatedUser?.redirect) {
+            setAuthenticatedUser(authenticatedUser);
             navigateToRedirect(authenticatedUser.redirect);
             return;
           }
@@ -50,11 +52,13 @@ export function useLogin() {
         if (response.redirect.startsWith("/api/")) {
           const authenticatedUser = await getAuthenticatedUser();
           if (authenticatedUser?.redirect) {
+            setAuthenticatedUser(authenticatedUser);
             navigateToRedirect(authenticatedUser.redirect);
             return;
           }
         }
 
+        invalidateAuthState();
         navigateToRedirect(response.redirect);
       }
     } catch (error) {
@@ -62,6 +66,7 @@ export function useLogin() {
       try {
         const authenticatedUser = await getAuthenticatedUser();
         if (authenticatedUser?.redirect) {
+          setAuthenticatedUser(authenticatedUser);
           navigateToRedirect(authenticatedUser.redirect);
           return;
         }
