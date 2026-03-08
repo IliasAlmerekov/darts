@@ -1,4 +1,5 @@
 import { apiClient, API_BASE_URL } from "./client";
+import { TimeoutError } from "./errors";
 import { invalidateAuthState } from "@/store/auth";
 
 // ---------------------------------------------------------------------------
@@ -169,18 +170,18 @@ export async function getAuthenticatedUser(
   const controller = new AbortController();
   const timeoutMs = options.timeoutMs ?? AUTH_CHECK_TIMEOUT_MS;
   const forwardAbort = (): void => {
-    controller.abort();
+    controller.abort(options.signal?.reason);
   };
 
   if (options.signal) {
     if (options.signal.aborted) {
-      controller.abort();
+      controller.abort(options.signal.reason);
     } else {
       options.signal.addEventListener("abort", forwardAbort, { once: true });
     }
   }
 
-  const timeoutId = window.setTimeout(() => controller.abort(), timeoutMs);
+  const timeoutId = window.setTimeout(() => controller.abort("timeout"), timeoutMs);
 
   let response: Response;
   try {
@@ -192,9 +193,24 @@ export async function getAuthenticatedUser(
       },
       signal: controller.signal,
     });
+  } catch (error) {
+    if (error instanceof DOMException && error.name === "AbortError") {
+      if (controller.signal.reason === "timeout") {
+        throw new TimeoutError(
+          `Request timed out after ${timeoutMs}ms`,
+          `${API_BASE_URL}/login/success`,
+        );
+      }
+    }
+
+    throw error;
   } finally {
     options.signal?.removeEventListener("abort", forwardAbort);
     window.clearTimeout(timeoutId);
+  }
+
+  if (response.status === 401) {
+    return null;
   }
 
   if (response.ok) {

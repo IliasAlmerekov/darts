@@ -1,6 +1,7 @@
 import { useEffect } from "react";
 import { useStore } from "@nanostores/react";
 import { getAuthenticatedUser, type AuthenticatedUser } from "@/shared/api/auth";
+import { TimeoutError } from "@/shared/api/errors";
 import { $authChecked, $authError, $user, setAuthenticatedUser, setAuthError } from "@/store/auth";
 import { setCurrentGameId } from "@/store";
 
@@ -50,6 +51,10 @@ export const useAuthenticatedUser = (): UseAuthenticatedUserResult => {
         }
       } catch (err) {
         if (controller.signal.aborted) {
+          return;
+        }
+
+        if (err instanceof TimeoutError) {
           return;
         }
 
