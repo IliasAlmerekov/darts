@@ -7,7 +7,12 @@ import type {
   ThrowRequest,
   StartGameRequest,
 } from "@/types";
-import type { FinishedPlayerResponse, RematchResponse, CreateGameSettingsPayload } from "@/types";
+import type {
+  FinishedPlayerResponse,
+  RematchResponse,
+  CreateGameSettingsPayload,
+  GameSettingsResponse,
+} from "@/types";
 
 // ---------------------------------------------------------------------------
 // Endpoints
@@ -310,6 +315,27 @@ type UpdateGameSettingsPayload = Partial<{
   doubleOut: boolean;
   tripleOut: boolean;
 }>;
+
+function isGameSettingsResponse(data: unknown): data is GameSettingsResponse {
+  return (
+    isRecord(data) &&
+    typeof data.startScore === "number" &&
+    typeof data.doubleOut === "boolean" &&
+    typeof data.tripleOut === "boolean"
+  );
+}
+
+/**
+ * Fetches the canonical settings for a game by its id.
+ * Used to retrieve the original rules before starting a rematch.
+ */
+export async function getGameSettings(gameId: number): Promise<GameSettingsResponse> {
+  const data: unknown = await apiClient.get(GAME_SETTINGS_ENDPOINT(gameId));
+  if (!isGameSettingsResponse(data)) {
+    throw new ApiError("Unexpected response shape for game settings", { status: 200, data });
+  }
+  return data;
+}
 
 /**
  * Creates game settings for a new game.
