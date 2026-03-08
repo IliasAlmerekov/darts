@@ -25,6 +25,18 @@ vi.mock("@/shared/api", () => ({
   setUnauthorizedHandler: vi.fn(),
 }));
 
+vi.mock("@/shared/store/auth", () => ({
+  invalidateAuthState: vi.fn(),
+}));
+
+vi.mock("@/shared/store/game-session", () => ({
+  resetRoomStore: vi.fn(),
+}));
+
+vi.mock("@/shared/store/game-state", () => ({
+  resetGameStore: vi.fn(),
+}));
+
 vi.mock("@/pages/LoginPage", () => ({
   default: () => <h1>You have successfully left the game</h1>,
 }));
@@ -70,6 +82,9 @@ vi.mock("@/pages/PlayerProfilePage", () => ({
 }));
 
 import { clearUnauthorizedHandler, setUnauthorizedHandler } from "@/shared/api";
+import { invalidateAuthState } from "@/shared/store/auth";
+import { resetRoomStore } from "@/shared/store/game-session";
+import { resetGameStore } from "@/shared/store/game-state";
 
 describe("App routing", () => {
   let App: typeof import("./App").default;
@@ -141,6 +156,49 @@ describe("App routing", () => {
     expect(vi.mocked(clearUnauthorizedHandler).mock.calls.length).toBeGreaterThan(
       cleanupCallCountBeforeUnmount,
     );
+  });
+
+  it("should clear auth, room, and game stores when unauthorized handler fires", async () => {
+    window.history.pushState({}, "", "/start");
+
+    render(<App />);
+
+    expect(await screen.findByText("Start Page")).toBeTruthy();
+    expect(setUnauthorizedHandler).toHaveBeenCalledTimes(1);
+
+    const handler = vi.mocked(setUnauthorizedHandler).mock.calls[0]?.[0];
+
+    expect(handler).toBeTypeOf("function");
+
+    act(() => {
+      handler?.();
+    });
+
+    expect(vi.mocked(invalidateAuthState)).toHaveBeenCalledTimes(1);
+    expect(vi.mocked(resetRoomStore)).toHaveBeenCalledTimes(1);
+    expect(vi.mocked(resetGameStore)).toHaveBeenCalledTimes(1);
+  });
+
+  it("should navigate to login with state.from set to the current pathname when unauthorized", async () => {
+    window.history.pushState({}, "", "/start");
+
+    render(<App />);
+
+    expect(await screen.findByText("Start Page")).toBeTruthy();
+    expect(setUnauthorizedHandler).toHaveBeenCalledTimes(1);
+
+    const handler = vi.mocked(setUnauthorizedHandler).mock.calls[0]?.[0];
+
+    expect(handler).toBeTypeOf("function");
+
+    act(() => {
+      handler?.();
+    });
+
+    expect(
+      await screen.findByRole("heading", { name: "You have successfully left the game" }),
+    ).toBeTruthy();
+    expect(window.location.pathname).toBe("/");
   });
 
   it("renders 404 page for unknown route", async () => {

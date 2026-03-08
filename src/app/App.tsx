@@ -7,6 +7,9 @@ import NotFoundPage from "@/app/routes/NotFoundPage";
 import ProtectedRoutes from "@/app/ProtectedRoutes";
 import { clearUnauthorizedHandler, setUnauthorizedHandler } from "@/shared/api";
 import { ROUTES } from "@/lib/routes";
+import { invalidateAuthState } from "@/shared/store/auth";
+import { resetRoomStore } from "@/shared/store/game-session";
+import { resetGameStore } from "@/shared/store/game-state";
 
 const LoginPage = lazy(() => import("@/pages/LoginPage"));
 const RegisterPage = lazy(() => import("@/pages/RegisterPage"));
@@ -30,7 +33,10 @@ function UnauthorizedNavigationBridge(): null {
 
   useEffect(() => {
     setUnauthorizedHandler(() => {
-      navigate(ROUTES.login);
+      invalidateAuthState();
+      resetRoomStore();
+      resetGameStore();
+      navigate(ROUTES.login, { state: { from: window.location.pathname }, replace: true });
     });
 
     return () => {

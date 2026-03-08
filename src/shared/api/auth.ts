@@ -147,7 +147,7 @@ export async function registerUser(
 ): Promise<RegistrationResponse> {
   if (refreshCsrf) {
     try {
-      await fetch(REGISTER_ENDPOINT, { method: "GET", credentials: "include" });
+      await apiClient.get(REGISTER_ENDPOINT, { skipAuthRedirect: true });
     } catch {
       // Ignore prefetch errors; proceed with registration attempt
     }
