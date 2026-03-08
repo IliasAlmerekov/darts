@@ -127,8 +127,6 @@ describe("registerUser", () => {
     expect(getSpy).not.toHaveBeenCalled();
   });
 
-  // Ticket 2: CSRF ping must go through apiClient.get, NOT raw fetch("/register")
-  // This test FAILS on the current buggy implementation (bare fetch call on line 150)
   it("should route CSRF ping through apiClient.get with skipAuthRedirect when refreshCsrf is true", async () => {
     const getSpy = vi.spyOn(apiClient, "get").mockResolvedValueOnce(undefined);
     vi.spyOn(apiClient, "post").mockResolvedValueOnce({ redirect: "/start" });

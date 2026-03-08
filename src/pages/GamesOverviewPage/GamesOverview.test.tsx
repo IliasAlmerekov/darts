@@ -22,24 +22,12 @@ vi.mock("@/shared/ui/pagination", () => ({
   Pagination: ({ children }: { children: React.ReactNode }) => <nav>{children}</nav>,
   PaginationContent: ({ children }: { children: React.ReactNode }) => <ul>{children}</ul>,
   PaginationItem: ({ children }: { children: React.ReactNode }) => <li>{children}</li>,
-  PaginationPrevious: ({
-    onClick,
-    disabled,
-  }: {
-    onClick: () => void;
-    disabled: boolean;
-  }) => (
+  PaginationPrevious: ({ onClick, disabled }: { onClick: () => void; disabled: boolean }) => (
     <button onClick={onClick} disabled={disabled}>
       Previous
     </button>
   ),
-  PaginationNext: ({
-    onClick,
-    disabled,
-  }: {
-    onClick: () => void;
-    disabled: boolean;
-  }) => (
+  PaginationNext: ({ onClick, disabled }: { onClick: () => void; disabled: boolean }) => (
     <button onClick={onClick} disabled={disabled}>
       Next
     </button>
@@ -190,8 +178,8 @@ describe("GamesOverviewPage", () => {
     renderPage();
 
     expect(screen.getByText("Alice")).toBeTruthy();
-    expect(screen.getByText("4")).toBeTruthy();   // playersCount
-    expect(screen.getByText("12")).toBeTruthy();  // winnerRounds
+    expect(screen.getByText("4")).toBeTruthy(); // playersCount
+    expect(screen.getByText("12")).toBeTruthy(); // winnerRounds
   });
 
   it("should render detail link for each game card", () => {

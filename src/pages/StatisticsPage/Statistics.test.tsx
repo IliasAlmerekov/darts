@@ -24,9 +24,7 @@ vi.mock("@/shared/ui/statistics-header-controls", () => ({
   }) => (
     <div>
       <h1>{title}</h1>
-      {onSortChange && (
-        <button onClick={() => onSortChange("score")}>Sort by score</button>
-      )}
+      {onSortChange && <button onClick={() => onSortChange("score")}>Sort by score</button>}
     </div>
   ),
 }));
@@ -35,24 +33,12 @@ vi.mock("@/shared/ui/pagination", () => ({
   Pagination: ({ children }: { children: React.ReactNode }) => <nav>{children}</nav>,
   PaginationContent: ({ children }: { children: React.ReactNode }) => <ul>{children}</ul>,
   PaginationItem: ({ children }: { children: React.ReactNode }) => <li>{children}</li>,
-  PaginationPrevious: ({
-    onClick,
-    disabled,
-  }: {
-    onClick: () => void;
-    disabled: boolean;
-  }) => (
+  PaginationPrevious: ({ onClick, disabled }: { onClick: () => void; disabled: boolean }) => (
     <button onClick={onClick} disabled={disabled}>
       Previous
     </button>
   ),
-  PaginationNext: ({
-    onClick,
-    disabled,
-  }: {
-    onClick: () => void;
-    disabled: boolean;
-  }) => (
+  PaginationNext: ({ onClick, disabled }: { onClick: () => void; disabled: boolean }) => (
     <button onClick={onClick} disabled={disabled}>
       Next
     </button>

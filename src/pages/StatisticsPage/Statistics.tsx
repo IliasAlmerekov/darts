@@ -121,11 +121,15 @@ export default function StatisticsPage(): JSX.Element {
                   <div className={styles.playerStats}>
                     <div className={styles.roundStat}>
                       <span className={styles.statLabel}>Ø Round</span>
-                      <span className={styles.statValue}>{player.scoreAverage?.toFixed(1) || 0}</span>
+                      <span className={styles.statValue}>
+                        {player.scoreAverage?.toFixed(1) || 0}
+                      </span>
                     </div>
                     <div className={styles.gamesStat}>
                       <span className={styles.statLabel}>Played games</span>
-                      <span className={styles.statValue}>{Math.round(player.gamesPlayed || 0)}</span>
+                      <span className={styles.statValue}>
+                        {Math.round(player.gamesPlayed || 0)}
+                      </span>
                     </div>
                   </div>
                 </div>

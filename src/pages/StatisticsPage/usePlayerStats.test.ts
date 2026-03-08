@@ -22,7 +22,9 @@ describe("usePlayerStats", () => {
   it("should start with loading true and no data", () => {
     getPlayerStatsMock.mockReturnValue(new Promise(() => {})); // never resolves
 
-    const { result } = renderHook(() => usePlayerStats({ limit: 10, offset: 0, sortParam: "name:asc" }));
+    const { result } = renderHook(() =>
+      usePlayerStats({ limit: 10, offset: 0, sortParam: "name:asc" }),
+    );
 
     expect(result.current.loading).toBe(true);
     expect(result.current.stats).toEqual([]);
@@ -32,7 +34,9 @@ describe("usePlayerStats", () => {
   it("should expose fetched stats and total when API succeeds", async () => {
     getPlayerStatsMock.mockResolvedValue({ items: PLAYERS, total: 2 });
 
-    const { result } = renderHook(() => usePlayerStats({ limit: 10, offset: 0, sortParam: "name:asc" }));
+    const { result } = renderHook(() =>
+      usePlayerStats({ limit: 10, offset: 0, sortParam: "name:asc" }),
+    );
 
     await waitFor(() => {
       expect(result.current.loading).toBe(false);
@@ -46,7 +50,9 @@ describe("usePlayerStats", () => {
   it("should handle paginated response with items array", async () => {
     getPlayerStatsMock.mockResolvedValue({ items: PLAYERS, total: 42 });
 
-    const { result } = renderHook(() => usePlayerStats({ limit: 10, offset: 0, sortParam: "name:asc" }));
+    const { result } = renderHook(() =>
+      usePlayerStats({ limit: 10, offset: 0, sortParam: "name:asc" }),
+    );
 
     await waitFor(() => expect(result.current.loading).toBe(false));
 
@@ -57,7 +63,9 @@ describe("usePlayerStats", () => {
   it("should fall back to array length as total when API returns plain array", async () => {
     getPlayerStatsMock.mockResolvedValue(PLAYERS);
 
-    const { result } = renderHook(() => usePlayerStats({ limit: 10, offset: 0, sortParam: "name:asc" }));
+    const { result } = renderHook(() =>
+      usePlayerStats({ limit: 10, offset: 0, sortParam: "name:asc" }),
+    );
 
     await waitFor(() => expect(result.current.loading).toBe(false));
 
@@ -68,7 +76,9 @@ describe("usePlayerStats", () => {
   it("should set error message and stop loading when API rejects", async () => {
     getPlayerStatsMock.mockRejectedValue(new Error("Network error"));
 
-    const { result } = renderHook(() => usePlayerStats({ limit: 10, offset: 0, sortParam: "name:asc" }));
+    const { result } = renderHook(() =>
+      usePlayerStats({ limit: 10, offset: 0, sortParam: "name:asc" }),
+    );
 
     await waitFor(() => expect(result.current.loading).toBe(false));
 
@@ -80,7 +90,9 @@ describe("usePlayerStats", () => {
     getPlayerStatsMock.mockRejectedValueOnce(new Error("fail"));
     getPlayerStatsMock.mockResolvedValueOnce({ items: PLAYERS, total: 2 });
 
-    const { result } = renderHook(() => usePlayerStats({ limit: 10, offset: 0, sortParam: "name:asc" }));
+    const { result } = renderHook(() =>
+      usePlayerStats({ limit: 10, offset: 0, sortParam: "name:asc" }),
+    );
 
     await waitFor(() => expect(result.current.error).toBe("Could not load player statistics"));
 
@@ -116,8 +128,7 @@ describe("usePlayerStats", () => {
     getPlayerStatsMock.mockResolvedValue({ items: PLAYERS, total: 2 });
 
     const { result, rerender } = renderHook(
-      ({ sortParam }: { sortParam: string }) =>
-        usePlayerStats({ limit: 10, offset: 0, sortParam }),
+      ({ sortParam }: { sortParam: string }) => usePlayerStats({ limit: 10, offset: 0, sortParam }),
       { initialProps: { sortParam: "name:asc" } },
     );
 

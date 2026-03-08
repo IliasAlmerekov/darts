@@ -15,7 +15,10 @@ type UseGamesOverviewResult = {
   retry: () => void;
 };
 
-export function useGamesOverview({ limit, offset }: UseGamesOverviewParams): UseGamesOverviewResult {
+export function useGamesOverview({
+  limit,
+  offset,
+}: UseGamesOverviewParams): UseGamesOverviewResult {
   const [games, setGames] = useState<FinishedGameProps[]>([]);
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(true);
