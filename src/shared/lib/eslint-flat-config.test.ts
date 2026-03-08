@@ -8,6 +8,11 @@ const SHARED_IGNORES = ["src/shared/types/game.ts", "src/shared/types/player.ts"
 type FlatConfigItem = {
   files?: string[];
   ignores?: string[];
+  languageOptions?: {
+    parserOptions?: {
+      project?: string | string[];
+    };
+  };
 };
 
 const hasFiles = (
@@ -47,6 +52,15 @@ describe("eslint flat config global ignores", () => {
     expect(tsConfig?.ignores?.some((ignore) => GLOBAL_IGNORES.includes(ignore)) ?? false).toBe(
       false,
     );
+  });
+
+  it("uses the eslint tsconfig so staged test files can be linted", async () => {
+    const configModule = await import("../../../eslint.config.mjs");
+    const flatConfig = configModule.default as FlatConfigItem[];
+    const tsConfig = flatConfig.find((item) => hasFiles(item, TS_FILES));
+
+    expect(tsConfig).toBeDefined();
+    expect(tsConfig?.languageOptions?.parserOptions?.project).toBe("./tsconfig.eslint.json");
   });
 
   it("preserves src/shared scoped ignores in the shared override", async () => {

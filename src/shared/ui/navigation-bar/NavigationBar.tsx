@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
-import { useNavigate, useLocation } from "react-router-dom";
+import { matchPath, useNavigate, useLocation } from "react-router-dom";
 import { ROUTES } from "@/lib/routes";
 import settingsCogInactive from "@/assets/icons/settings-inactive.svg";
 import settingsCog from "@/assets/icons/settings.svg";
@@ -65,7 +65,7 @@ function NavigationBar({ className, currentGameId = null }: NavigationBarProps):
           location.pathname.startsWith(ROUTES.start() + "/"))) ||
       (itemId === "statistics" &&
         (location.pathname === ROUTES.gamesOverview ||
-          location.pathname.startsWith("/details/"))) ||
+          matchPath(ROUTES.detailsPattern, location.pathname) !== null)) ||
       (itemId === "settings" && location.pathname.startsWith(ROUTES.settings()))
     );
   };

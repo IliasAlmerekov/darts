@@ -38,7 +38,7 @@ test.describe("User Permissions and Security", () => {
     await page.goto("http://localhost:5173/start");
 
     await expect(page).toHaveURL("http://localhost:5173/");
-    await expect(page.getByRole("heading", { name: "Sign in" })).toBeVisible();
+    await expect(page.getByRole("textbox", { name: /Email/i })).toBeVisible();
     await expect(page.getByRole("button", { name: /create game/i })).not.toBeVisible();
   });
 });
