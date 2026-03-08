@@ -5,6 +5,7 @@ import { ApiError } from "@/shared/api";
 import { useStartPage } from "./useStartPage";
 
 const navigateMock = vi.fn();
+const useParamsMock = vi.fn(() => ({}));
 const setCurrentGameIdMock = vi.fn();
 const setInvitationMock = vi.fn();
 const setGameDataMock = vi.fn();
@@ -23,7 +24,7 @@ const storeValues = new Map<string, unknown>();
 
 vi.mock("react-router-dom", () => ({
   useNavigate: () => navigateMock,
-  useParams: () => ({}),
+  useParams: () => useParamsMock(),
 }));
 
 const emptyPlayers: never[] = [];
@@ -81,6 +82,7 @@ function deferred<T>(): Deferred<T> {
 describe("useStartPage action guards", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    useParamsMock.mockReturnValue({});
     storeValues.set("gameSettings", null);
     storeValues.set("lastFinishedGameId", null);
     storeValues.set("currentGameId", null);
@@ -93,7 +95,9 @@ describe("useStartPage action guards", () => {
   });
 
   it("prevents duplicate startGame calls while first request is pending", async () => {
+    useParamsMock.mockReturnValue({ id: "10" });
     storeValues.set("invitation", { gameId: 10, invitationLink: "/invite/10" });
+    storeValues.set("currentGameId", 10);
 
     const pending = deferred<void>();
     gameFlowMock.startGame.mockReturnValueOnce(pending.promise);
@@ -155,7 +159,9 @@ describe("useStartPage action guards", () => {
   });
 
   it("shows username taken suggestions when guest nickname already exists in current game", async () => {
+    useParamsMock.mockReturnValue({ id: "10" });
     storeValues.set("invitation", { gameId: 10, invitationLink: "/invite/10" });
+    storeValues.set("currentGameId", 10);
     gameFlowMock.addGuestPlayer.mockRejectedValueOnce(
       new ApiError("Request failed", {
         status: 409,
@@ -186,7 +192,9 @@ describe("useStartPage action guards", () => {
   });
 
   it("closes guest overlay after successful guest creation", async () => {
+    useParamsMock.mockReturnValue({ id: "10" });
     storeValues.set("invitation", { gameId: 10, invitationLink: "/invite/10" });
+    storeValues.set("currentGameId", 10);
     gameFlowMock.addGuestPlayer.mockResolvedValueOnce({ id: 1, name: "Alex" });
 
     const { result } = renderHook(() => useStartPage());
@@ -207,7 +215,9 @@ describe("useStartPage action guards", () => {
   });
 
   it("blocks guest creation when lobby is full", async () => {
+    useParamsMock.mockReturnValue({ id: "10" });
     storeValues.set("invitation", { gameId: 10, invitationLink: "/invite/10" });
+    storeValues.set("currentGameId", 10);
     gamePlayersResult.count = 10;
 
     const { result } = renderHook(() => useStartPage());
@@ -223,7 +233,9 @@ describe("useStartPage action guards", () => {
   });
 
   it("validates guest username requires at least 3 letters before api call", async () => {
+    useParamsMock.mockReturnValue({ id: "10" });
     storeValues.set("invitation", { gameId: 10, invitationLink: "/invite/10" });
+    storeValues.set("currentGameId", 10);
 
     const { result } = renderHook(() => useStartPage());
 

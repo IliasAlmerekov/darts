@@ -1,6 +1,12 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
-import { getFinishedGame, getGameSettings, createRematch, startGame, undoLastThrow } from "@/shared/api/game";
+import {
+  getFinishedGame,
+  getGameSettings,
+  createRematch,
+  startGame,
+  undoLastThrow,
+} from "@/shared/api/game";
 import type { FinishedPlayerResponse, WinnerPlayerProps } from "@/types";
 import { setGameData } from "@/store";
 import { setInvitation, setLastFinishedGameId, resetRoomStore } from "@/store";
