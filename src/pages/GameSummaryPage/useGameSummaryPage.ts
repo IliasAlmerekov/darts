@@ -1,9 +1,8 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
-import { useStore } from "@nanostores/react";
-import { getFinishedGame, createRematch, startGame, undoLastThrow } from "@/shared/api/game";
+import { getFinishedGame, getGameSettings, createRematch, startGame, undoLastThrow } from "@/shared/api/game";
 import type { FinishedPlayerResponse, WinnerPlayerProps } from "@/types";
-import { $gameSettings, setGameData } from "@/store";
+import { setGameData } from "@/store";
 import { setInvitation, setLastFinishedGameId, resetRoomStore } from "@/store";
 import { playSound } from "@/lib/soundPlayer";
 import { toUserErrorMessage } from "@/lib/error-to-user-message";
@@ -15,7 +14,6 @@ import { ROUTES } from "@/lib/routes";
 export function useGameSummaryPage() {
   const navigate = useNavigate();
   const location = useLocation();
-  const gameSettings = useStore($gameSettings);
   const { id: summaryGameIdParam } = useParams<{ id?: string }>();
   const [serverFinished, setServerFinished] = useState<FinishedPlayerResponse[]>([]);
   const [error, setError] = useState<string | null>(null);
@@ -116,6 +114,7 @@ export function useGameSummaryPage() {
 
     try {
       setError(null);
+      const canonicalSettings = await getGameSettings(finishedGameIdFromRoute);
       const rematch = await createRematch(finishedGameIdFromRoute);
       if (!rematch?.gameId) {
         throw new Error("Invalid rematch response: missing game id");
@@ -126,14 +125,10 @@ export function useGameSummaryPage() {
         invitationLink: rematch.invitationLink,
       });
 
-      const startScoreValue = gameSettings?.startScore ?? 301;
-      const doubleOut = gameSettings?.doubleOut ?? false;
-      const tripleOut = gameSettings?.tripleOut ?? false;
-
       await startGame(rematch.gameId, {
-        startScore: startScoreValue,
-        doubleOut,
-        tripleOut,
+        startScore: canonicalSettings.startScore,
+        doubleOut: canonicalSettings.doubleOut,
+        tripleOut: canonicalSettings.tripleOut,
         round: 1,
         status: "started",
       });
@@ -146,7 +141,7 @@ export function useGameSummaryPage() {
       startGameInFlightRef.current = false;
       setStarting(false);
     }
-  }, [finishedGameIdFromRoute, gameSettings, navigate]);
+  }, [finishedGameIdFromRoute, navigate]);
 
   const handleBackToStart = useCallback(async (): Promise<void> => {
     if (!finishedGameIdFromRoute) return;

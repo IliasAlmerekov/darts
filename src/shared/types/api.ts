@@ -70,6 +70,12 @@ export type CreateGameSettingsPayload = {
   tripleOut: boolean;
 };
 
+export interface GameSettingsResponse {
+  startScore: number;
+  doubleOut: boolean;
+  tripleOut: boolean;
+}
+
 export interface RoomStreamEvent<T = unknown> {
   type: string;
   data: T;
