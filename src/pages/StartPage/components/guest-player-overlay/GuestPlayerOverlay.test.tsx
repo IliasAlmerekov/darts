@@ -78,4 +78,22 @@ describe("GuestPlayerOverlay", () => {
 
     expect(onSuggestionClick).toHaveBeenCalledWith("Alex 2");
   });
+
+  it("exposes the guest form as an accessible modal dialog", () => {
+    render(
+      <GuestPlayerOverlay
+        isOpen
+        username="Guest"
+        onUsernameChange={() => {}}
+        onAdd={() => {}}
+        onClose={() => {}}
+      />,
+    );
+
+    const dialog = screen.getByRole("dialog", { name: "Play as a guest" });
+    const input = screen.getByLabelText("Username");
+
+    expect(dialog.getAttribute("aria-modal")).toBe("true");
+    expect(dialog.contains(input)).toBe(true);
+  });
 });
