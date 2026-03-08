@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useState } from "react";
+import React, { useCallback, useState } from "react";
 import { useStore } from "@nanostores/react";
 import styles from "./Statistics.module.css";
 import { AdminLayout } from "@/shared/ui/admin-layout";
@@ -10,11 +10,12 @@ import {
   PaginationNext,
   PaginationPrevious,
 } from "@/shared/ui/pagination";
-import { getPlayerStats } from "@/shared/api/statistics";
-import type { PlayerProps } from "@/types";
 import type { SortMethod } from "@/shared/ui/sort-tabs";
 import { StatisticsHeaderControls } from "@/shared/ui/statistics-header-controls";
 import { sortPlayerStats } from "./lib/sort-player-stats";
+import { usePlayerStats } from "./usePlayerStats";
+
+const LIMIT = 10;
 
 type StatisticsPaginationProps = {
   offset: number;
@@ -50,33 +51,24 @@ const StatisticsPagination = React.memo(function StatisticsPagination({
   );
 });
 
+function sortParamFromMethod(method: SortMethod): string {
+  if (method === "alphabetically") return "name:asc";
+  return "average:desc";
+}
+
 export default function StatisticsPage(): JSX.Element {
   const currentGameId = useStore($currentGameId);
   const [sortMethod, setSortMethod] = useState<SortMethod>("alphabetically");
-  const [stats, setStats] = useState<PlayerProps[]>([]);
   const [offset, setOffset] = useState(0);
-  const [total, setTotal] = useState(0);
-  const limit = 10;
 
-  useEffect(() => {
-    let sortParam = "average:desc";
-    if (sortMethod === "alphabetically") {
-      sortParam = "name:asc";
-    } else if (sortMethod === "score") {
-      sortParam = "average:desc";
-    }
+  const sortParam = sortParamFromMethod(sortMethod);
+  const { stats, total, loading, error, retry } = usePlayerStats({
+    limit: LIMIT,
+    offset,
+    sortParam,
+  });
 
-    getPlayerStats(limit, offset, sortParam).then((data) => {
-      if (data.items) {
-        setStats(sortPlayerStats(data.items, sortMethod));
-        setTotal(data.total ?? 0);
-      } else if (Array.isArray(data)) {
-        // Fallback for old API response
-        setStats(sortPlayerStats(data, sortMethod));
-        setTotal(data.length);
-      }
-    });
-  }, [offset, sortMethod]);
+  const sorted = sortPlayerStats(stats, sortMethod);
 
   const handleSortChange = useCallback((method: SortMethod): void => {
     setSortMethod(method);
@@ -84,12 +76,12 @@ export default function StatisticsPage(): JSX.Element {
   }, []);
 
   const handlePreviousPage = useCallback(() => {
-    setOffset((previousOffset) => Math.max(0, previousOffset - limit));
-  }, [limit]);
+    setOffset((prev) => Math.max(0, prev - LIMIT));
+  }, []);
 
   const handleNextPage = useCallback(() => {
-    setOffset((previousOffset) => previousOffset + limit);
-  }, [limit]);
+    setOffset((prev) => prev + LIMIT);
+  }, []);
 
   return (
     <AdminLayout currentGameId={currentGameId}>
@@ -100,28 +92,51 @@ export default function StatisticsPage(): JSX.Element {
             sortValue={sortMethod}
             onSortChange={handleSortChange}
           />
-          <div className={styles.playerList}>
-            {stats.map((player, index) => (
-              <div key={player.playerId} className={styles.playerRow}>
-                <div className={styles.playerNumber}>{offset + index + 1}.</div>
-                <div className={styles.playerName}>{player.name}</div>
-                <div className={styles.playerStats}>
-                  <div className={styles.roundStat}>
-                    <span className={styles.statLabel}>Ø Round</span>
-                    <span className={styles.statValue}>{player.scoreAverage?.toFixed(1) || 0}</span>
-                  </div>
-                  <div className={styles.gamesStat}>
-                    <span className={styles.statLabel}>Played games</span>
-                    <span className={styles.statValue}>{Math.round(player.gamesPlayed || 0)}</span>
+
+          {loading && (
+            <div role="status" className={styles.statusMessage}>
+              Loading…
+            </div>
+          )}
+
+          {!loading && error !== null && (
+            <div className={styles.statusMessage}>
+              <p>{error}</p>
+              <button type="button" onClick={retry}>
+                Retry
+              </button>
+            </div>
+          )}
+
+          {!loading && error === null && sorted.length === 0 && (
+            <div className={styles.statusMessage}>No player statistics available.</div>
+          )}
+
+          {!loading && error === null && sorted.length > 0 && (
+            <div className={styles.playerList}>
+              {sorted.map((player, index) => (
+                <div key={player.playerId} className={styles.playerRow}>
+                  <div className={styles.playerNumber}>{offset + index + 1}.</div>
+                  <div className={styles.playerName}>{player.name}</div>
+                  <div className={styles.playerStats}>
+                    <div className={styles.roundStat}>
+                      <span className={styles.statLabel}>Ø Round</span>
+                      <span className={styles.statValue}>{player.scoreAverage?.toFixed(1) || 0}</span>
+                    </div>
+                    <div className={styles.gamesStat}>
+                      <span className={styles.statLabel}>Played games</span>
+                      <span className={styles.statValue}>{Math.round(player.gamesPlayed || 0)}</span>
+                    </div>
                   </div>
                 </div>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          )}
+
           <StatisticsPagination
             offset={offset}
             total={total}
-            limit={limit}
+            limit={LIMIT}
             onPrevious={handlePreviousPage}
             onNext={handleNextPage}
           />

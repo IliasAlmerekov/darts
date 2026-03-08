@@ -69,6 +69,15 @@
   color: var(--darkblue);
 }
 
+.statusMessage {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-sm);
+  padding: var(--space-lg) 0;
+  color: var(--darkgrey);
+}
+
 .paginationControls {
   display: flex;
   justify-content: center;
