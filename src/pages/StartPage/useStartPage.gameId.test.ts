@@ -136,6 +136,20 @@ describe("resolveGameId", () => {
     // 0 is not a valid game ID
     expect(resolveGameId("0")).toBeNull();
   });
+
+  it("should treat scientific-notation string as numeric when it resolves to a positive integer", () => {
+    // Number("1e2") === 100 — isInteger passes, so this is accepted.
+    // React Router won't produce such params in practice; documenting the behaviour.
+    expect(resolveGameId("1e2")).toBe(100);
+  });
+
+  it("should return null for 'NaN' string", () => {
+    expect(resolveGameId("NaN")).toBeNull();
+  });
+
+  it("should return null for 'Infinity' string", () => {
+    expect(resolveGameId("Infinity")).toBeNull();
+  });
 });
 
 // ─── useStartPage — gameId derivation ────────────────────────────────────────
@@ -290,5 +304,86 @@ describe("useStartPage — restore effect is triggered only by URL param", () =>
     });
 
     expect(navigateMock).toHaveBeenCalledWith("/start/77", { replace: true });
+  });
+
+  it("should redirect to bare /start when URL gameId is present but store has no currentGameId", async () => {
+    // Deep-link to /start/42 with no session state → user has no active game
+    useParamsMock.mockReturnValue({ id: "42" });
+    storeValues.set("currentGameId", null);
+
+    await act(async () => {
+      renderHook(() => useStartPage());
+    });
+
+    expect(navigateMock).toHaveBeenCalledWith("/start", { replace: true });
+  });
+
+  it("should redirect away when game status is not lobby after restore", async () => {
+    // Game 42 is already started — user shouldn't land in its lobby view.
+    // Use mockResolvedValueOnce so that after the first successful redirect the
+    // restore-effect re-run (triggered by isRestoring → false) gets a
+    // never-resolving promise, keeping isRestoring=true and breaking the loop.
+    useParamsMock.mockReturnValue({ id: "42" });
+    storeValues.set("currentGameId", 42);
+    gameFlowMock.getGameThrows
+      .mockResolvedValueOnce({ status: "started", id: 42, players: [], settings: null })
+      .mockReturnValue(new Promise(() => {})); // never resolves — stops the cycle
+
+    await act(async () => {
+      renderHook(() => useStartPage());
+    });
+
+    expect(navigateMock).toHaveBeenCalledWith("/start/42", { replace: true });
+  });
+
+  it("should redirect to currentGameId route when getGameThrows throws a network error", async () => {
+    useParamsMock.mockReturnValue({ id: "42" });
+    storeValues.set("currentGameId", 42);
+    gameFlowMock.getGameThrows
+      .mockRejectedValueOnce(new Error("Network error"))
+      .mockReturnValue(new Promise(() => {})); // stops the re-run cycle
+
+    await act(async () => {
+      renderHook(() => useStartPage());
+    });
+
+    expect(navigateMock).toHaveBeenCalledWith("/start/42", { replace: true });
+  });
+
+  it("should redirect to bare /start when getGameThrows throws and store has no currentGameId", async () => {
+    useParamsMock.mockReturnValue({ id: "42" });
+    storeValues.set("currentGameId", null);
+    // Network error — but currentGameId is null, so no ID in the redirect
+    gameFlowMock.getGameThrows
+      .mockRejectedValueOnce(new Error("Network error"))
+      .mockReturnValue(new Promise(() => {})); // stops the re-run cycle
+
+    await act(async () => {
+      renderHook(() => useStartPage());
+    });
+
+    expect(navigateMock).toHaveBeenCalledWith("/start", { replace: true });
+  });
+
+  it("should update currentGameId from invitation API response after successful restore", async () => {
+    // The invitation endpoint returns the canonical gameId — that must win over the URL param
+    useParamsMock.mockReturnValue({ id: "42" });
+    storeValues.set("currentGameId", 42);
+    gameFlowMock.getGameThrows.mockResolvedValue({
+      status: "lobby",
+      id: 42,
+      players: [],
+      settings: null,
+    });
+    gameFlowMock.getInvitation.mockResolvedValue({
+      gameId: 42,
+      invitationLink: "/invite/42",
+    });
+
+    await act(async () => {
+      renderHook(() => useStartPage());
+    });
+
+    expect(setCurrentGameIdMock).toHaveBeenCalledWith(42);
   });
 });
