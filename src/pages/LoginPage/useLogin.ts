@@ -4,8 +4,7 @@ import { loginWithCredentials, getAuthenticatedUser } from "@/shared/api/auth";
 import { invalidateAuthState, setAuthenticatedUser } from "@/store/auth";
 import { mapAuthErrorMessage } from "@/lib/auth-error-handling";
 import { ROUTES } from "@/lib/routes";
-
-const isInternalPath = (path: string): boolean => path.startsWith("/") && !path.startsWith("//");
+import { resolveSafeLoginRedirect } from "./lib/safeRedirect";
 
 /**
  * Provides login flow state and action.
@@ -17,16 +16,16 @@ export function useLogin() {
   const location = useLocation();
 
   const from = ((): string => {
-    const raw = (location.state as { from?: string } | null)?.from;
-    return raw && isInternalPath(raw) ? raw : ROUTES.start();
+    return resolveSafeLoginRedirect(
+      (location.state as { from?: string } | null)?.from,
+      ROUTES.start(),
+    );
   })();
 
   const navigateToRedirect = (redirect: string): void => {
-    if (/^https?:\/\//i.test(redirect)) {
-      window.location.assign(redirect);
-      return;
-    }
-    const redirectPath = redirect === ROUTES.start() ? from : redirect;
+    const safeRedirect = resolveSafeLoginRedirect(redirect, from);
+    const redirectPath = safeRedirect === ROUTES.start() ? from : safeRedirect;
+
     navigate(redirectPath);
   };
 
