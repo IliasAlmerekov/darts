@@ -106,7 +106,10 @@ describe("registerUser", () => {
     const getSpy = vi.spyOn(apiClient, "get").mockResolvedValueOnce(undefined);
     vi.spyOn(apiClient, "post").mockResolvedValueOnce({ redirect: "/start" });
 
-    await registerUser({ username: "alice", email: "alice@example.com", password: "s3cr3t" }, false);
+    await registerUser(
+      { username: "alice", email: "alice@example.com", password: "s3cr3t" },
+      false,
+    );
 
     expect(getSpy).not.toHaveBeenCalled();
   });

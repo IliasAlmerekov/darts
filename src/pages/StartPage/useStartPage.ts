@@ -26,6 +26,18 @@ import { validateGuestUsername } from "./lib/guestUsername";
 import type { AddGuestErrorResponse } from "@/types";
 import { ROUTES } from "@/lib/routes";
 
+/**
+ * Parses the raw URL route param into a valid game ID.
+ * Returns null for anything that is not a positive integer string.
+ * Invitation and session-storage values are intentionally NOT consulted —
+ * the route param is the single authoritative source for the active game.
+ */
+export function resolveGameId(gameIdParam: string | undefined): number | null {
+  if (!gameIdParam) return null;
+  const parsed = Number(gameIdParam);
+  return Number.isInteger(parsed) && parsed > 0 ? parsed : null;
+}
+
 export function shouldRedirectToCurrentGame(
   gameIdParam?: string,
   invitationGameId?: number | null,
@@ -102,13 +114,7 @@ export function useStartPage() {
   const isLobbyFullRef = useRef(false);
   const gameIdRef = useRef<number | null>(null);
 
-  const gameId = useMemo(() => {
-    if (gameIdParam) {
-      const parsed = Number(gameIdParam);
-      return Number.isFinite(parsed) ? parsed : null;
-    }
-    return invitation?.gameId ?? null;
-  }, [gameIdParam, invitation?.gameId]);
+  const gameId = useMemo(() => resolveGameId(gameIdParam), [gameIdParam]);
 
   useEffect(() => {
     if (shouldRedirectToCurrentGame(gameIdParam, invitation?.gameId, currentGameId)) {
