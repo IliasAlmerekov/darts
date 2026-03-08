@@ -14,9 +14,3 @@ export interface ApiRequestConfig extends Omit<RequestInit, "body" | "method" | 
   acceptedStatuses?: number[];
   returnResponse?: boolean;
 }
-
-export type ErrorPayload = {
-  error?: string;
-  message?: string;
-  [key: string]: unknown;
-};

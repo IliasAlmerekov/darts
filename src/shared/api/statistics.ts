@@ -33,8 +33,12 @@ export async function getPlayerStats(
   limit: number = 10,
   offset: number = 0,
   sort: string = "average:desc",
+  signal?: AbortSignal,
 ): Promise<PlayerDataProps> {
-  const data: unknown = await apiClient.get("/players/stats", { query: { limit, offset, sort } });
+  const data: unknown = await apiClient.get("/players/stats", {
+    query: { limit, offset, sort },
+    signal,
+  });
   if (!isPlayerDataResponse(data)) {
     throw new ApiError("Unexpected response shape for player stats", { status: 200, data });
   }
@@ -47,9 +51,12 @@ export async function getPlayerStats(
 export async function getGamesOverview(
   limit: number = 9,
   offset: number = 0,
-  sort: string = "average:desc",
+  signal?: AbortSignal,
 ): Promise<GameDataProps> {
-  const data: unknown = await apiClient.get("/games/overview", { query: { limit, offset, sort } });
+  const data: unknown = await apiClient.get("/games/overview", {
+    query: { limit, offset },
+    signal,
+  });
   if (!isGameDataResponse(data)) {
     throw new ApiError("Unexpected response shape for games overview", { status: 200, data });
   }

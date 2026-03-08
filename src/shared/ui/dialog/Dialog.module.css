@@ -1,0 +1,20 @@
+.closeButton {
+  right: var(--space-md);
+  position: absolute;
+  top: var(--space-md);
+  border: none;
+  padding: 0;
+  margin: 0;
+  background: none;
+  outline: none;
+  cursor: pointer;
+}
+
+.closeButton:focus {
+  outline: none;
+}
+
+.closeButton img {
+  width: 100%;
+  padding: 1px;
+}

@@ -10,6 +10,7 @@ import { ROUTES } from "@/lib/routes";
 import { invalidateAuthState } from "@/shared/store/auth";
 import { resetRoomStore } from "@/shared/store/game-session";
 import { resetGameStore } from "@/shared/store/game-state";
+import { UniversalSkeleton } from "@/shared/ui/skeletons";
 
 const LoginPage = lazy(() => import("@/pages/LoginPage"));
 const RegisterPage = lazy(() => import("@/pages/RegisterPage"));
@@ -83,7 +84,7 @@ function App(): React.JSX.Element {
         <BrowserRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
           <UnauthorizedNavigationBridge />
           <ScrollToTop />
-          <Suspense fallback={<div className="page-loader" aria-hidden="true" />}>
+          <Suspense fallback={<UniversalSkeleton />}>
             <Routes>
               <Route path={ROUTES.login} element={<LoginPage />} />
               <Route path={ROUTES.register} element={<RegisterPage />} />

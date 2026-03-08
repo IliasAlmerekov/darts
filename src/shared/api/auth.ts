@@ -1,4 +1,5 @@
 import { apiClient, API_BASE_URL } from "./client";
+import { TimeoutError } from "./errors";
 import { invalidateAuthState } from "@/store/auth";
 
 // ---------------------------------------------------------------------------
@@ -36,74 +37,6 @@ export interface AuthenticatedUser {
   redirect: string;
   gameId?: number | null;
 }
-
-export type CsrfTokenPurpose = "authenticate" | "user_registration";
-
-export type CsrfTokenMap = {
-  authenticate: string;
-  user_registration: string;
-};
-
-// ---------------------------------------------------------------------------
-// CSRF
-// ---------------------------------------------------------------------------
-
-const CSRF_ENDPOINT = "/csrf";
-
-type CsrfTokensResponse = {
-  success: boolean;
-  tokens: CsrfTokenMap;
-};
-
-let csrfTokensCache: CsrfTokenMap | null = null;
-let csrfTokensPromise: Promise<CsrfTokenMap> | null = null;
-
-/**
- * Fetches CSRF tokens, with optional cache bypass.
- */
-export async function getCsrfTokens(force = false): Promise<CsrfTokenMap> {
-  if (!force && csrfTokensCache) {
-    return csrfTokensCache;
-  }
-
-  if (!force && csrfTokensPromise) {
-    return csrfTokensPromise;
-  }
-
-  csrfTokensPromise = apiClient
-    .get<CsrfTokensResponse>(CSRF_ENDPOINT, { skipAuthRedirect: true })
-    .then((response) => {
-      if (!response?.tokens?.authenticate || !response?.tokens?.user_registration) {
-        throw new Error("CSRF token response is missing required tokens");
-      }
-
-      csrfTokensCache = response.tokens;
-      return response.tokens;
-    })
-    .finally(() => {
-      csrfTokensPromise = null;
-    });
-
-  return csrfTokensPromise;
-}
-
-/**
- * Returns a single CSRF token for the requested purpose.
- */
-export async function getCsrfToken(purpose: CsrfTokenPurpose, force = false): Promise<string> {
-  const tokens = await getCsrfTokens(force);
-  const token = tokens[purpose];
-
-  if (!token) {
-    throw new Error(`Missing CSRF token for ${purpose}`);
-  }
-
-  return token;
-}
-
-// ---------------------------------------------------------------------------
-// Auth
-// ---------------------------------------------------------------------------
 
 const LOGIN_ENDPOINT = "/login";
 const LOGOUT_ENDPOINT = "/logout";
@@ -169,18 +102,18 @@ export async function getAuthenticatedUser(
   const controller = new AbortController();
   const timeoutMs = options.timeoutMs ?? AUTH_CHECK_TIMEOUT_MS;
   const forwardAbort = (): void => {
-    controller.abort();
+    controller.abort(options.signal?.reason);
   };
 
   if (options.signal) {
     if (options.signal.aborted) {
-      controller.abort();
+      controller.abort(options.signal.reason);
     } else {
       options.signal.addEventListener("abort", forwardAbort, { once: true });
     }
   }
 
-  const timeoutId = window.setTimeout(() => controller.abort(), timeoutMs);
+  const timeoutId = window.setTimeout(() => controller.abort("timeout"), timeoutMs);
 
   let response: Response;
   try {
@@ -192,9 +125,24 @@ export async function getAuthenticatedUser(
       },
       signal: controller.signal,
     });
+  } catch (error) {
+    if (error instanceof DOMException && error.name === "AbortError") {
+      if (controller.signal.reason === "timeout") {
+        throw new TimeoutError(
+          `Request timed out after ${timeoutMs}ms`,
+          `${API_BASE_URL}/login/success`,
+        );
+      }
+    }
+
+    throw error;
   } finally {
     options.signal?.removeEventListener("abort", forwardAbort);
     window.clearTimeout(timeoutId);
+  }
+
+  if (response.status === 401) {
+    return null;
   }
 
   if (response.ok) {

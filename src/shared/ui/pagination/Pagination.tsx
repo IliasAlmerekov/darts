@@ -52,7 +52,7 @@ export const PaginationItem = React.forwardRef<HTMLLIElement, React.ComponentPro
 );
 PaginationItem.displayName = "PaginationItem";
 
-export type PaginationLinkProps = {
+type PaginationLinkProps = {
   isActive?: boolean;
   size?: Size;
   variant?: Variant;

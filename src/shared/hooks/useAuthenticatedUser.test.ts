@@ -2,8 +2,9 @@
 import { renderHook, waitFor } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { useAuthenticatedUser } from "./useAuthenticatedUser";
+import { TimeoutError } from "@/shared/api/errors";
 import type { AuthenticatedUser } from "@/shared/api/auth";
-import { resetAuthStore } from "@/store/auth";
+import { $authChecked, $authError, $user, resetAuthStore } from "@/store/auth";
 
 const getAuthenticatedUserMock = vi.fn();
 const setCurrentGameIdMock = vi.fn();
@@ -31,10 +32,6 @@ function createDeferredAuth(): DeferredAuth {
     promise,
     resolve: resolvePromise,
   };
-}
-
-function createAbortError(): Error {
-  return Object.assign(new Error("aborted"), { name: "AbortError" });
 }
 
 describe("useAuthenticatedUser", () => {
@@ -108,8 +105,37 @@ describe("useAuthenticatedUser", () => {
     expect(setCurrentGameIdMock).not.toHaveBeenCalled();
   });
 
-  it("stops loading without surfacing an error after an abort-like rejection", async () => {
-    getAuthenticatedUserMock.mockRejectedValue(createAbortError());
+  it("keeps the bootstrap unresolved on timeout instead of converting it to a logged-out state", async () => {
+    const existingUser: AuthenticatedUser = {
+      success: true,
+      roles: ["ROLE_ADMIN"],
+      id: 77,
+      redirect: "/start",
+      gameId: 13,
+    };
+    $user.set(existingUser);
+    $authChecked.set(false);
+    $authError.set(null);
+
+    getAuthenticatedUserMock.mockRejectedValue(
+      new TimeoutError("Request timed out after 5000ms", "/api/login/success"),
+    );
+
+    const { result } = renderHook(() => useAuthenticatedUser());
+
+    await waitFor(() => {
+      expect(getAuthenticatedUserMock).toHaveBeenCalledTimes(1);
+    });
+    await Promise.resolve();
+    await Promise.resolve();
+
+    expect(result.current.user).toMatchObject({ id: 77, gameId: 13 });
+    expect(result.current.loading).toBe(true);
+    expect(result.current.error).toBeNull();
+  });
+
+  it("marks auth as unauthenticated when the auth API resolves null", async () => {
+    getAuthenticatedUserMock.mockResolvedValue(null);
 
     const { result } = renderHook(() => useAuthenticatedUser());
 

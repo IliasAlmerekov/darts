@@ -73,5 +73,3 @@ export function ErrorState({
     </section>
   );
 }
-
-export default ErrorState;

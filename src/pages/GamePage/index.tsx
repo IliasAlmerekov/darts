@@ -51,6 +51,9 @@ const OverlaysSection = React.memo(function OverlaysSection({
   handleCloseSettings,
   handleSaveSettings,
 }: OverlaysSectionProps): JSX.Element {
+  const finishOverlayTitleId = React.useId();
+  const exitOverlayTitleId = React.useId();
+
   return (
     <>
       <Overlay
@@ -58,9 +61,12 @@ const OverlaysSection = React.memo(function OverlaysSection({
         backdropClassName={styles.centeredOverlayBackground}
         isOpen={shouldShowFinishOverlay}
         src={deleteIcon}
+        ariaLabelledBy={finishOverlayTitleId}
       >
         <div className={styles.finishGameOverlay}>
-          <p className={styles.overlayHeading}>Player Finished! Continue Game?</p>
+          <p className={styles.overlayHeading} id={finishOverlayTitleId}>
+            Player Finished! Continue Game?
+          </p>
           <div>
             <Button label="Continue" handleClick={handleContinueGame} type="primary" link="" />
             <LinkButton
@@ -78,9 +84,12 @@ const OverlaysSection = React.memo(function OverlaysSection({
         isOpen={isExitOverlayOpen}
         onClose={handleCloseExitOverlay}
         src={deleteIcon}
+        ariaLabelledBy={exitOverlayTitleId}
       >
         <div className={styles.finishGameOverlay}>
-          <p className={styles.overlayHeading}>End Game?</p>
+          <p className={styles.overlayHeading} id={exitOverlayTitleId}>
+            End Game?
+          </p>
           <p>A new game with the same players will be created.</p>
           <div>
             <Button label="Yes" handleClick={handleExitGame} type="primary" link="" />
