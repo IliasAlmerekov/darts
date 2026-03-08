@@ -161,3 +161,51 @@ describe("apiClient request timeout", () => {
     await expect(requestPromise).rejects.toThrow(DOMException);
   });
 });
+
+describe("apiClient response passthrough", () => {
+  beforeEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  it("returns parsed data together with the Response when returnResponse is enabled", async () => {
+    const response = createMockResponse({
+      status: 200,
+      body: { ok: true },
+      headers: { "content-type": "application/json" },
+      url: "http://localhost/api/game/520",
+    });
+
+    vi.spyOn(globalThis, "fetch").mockResolvedValueOnce(response);
+
+    const result = await apiClient.request<{ ok: boolean }>("/game/520", {
+      method: "GET",
+      returnResponse: true,
+    });
+
+    expect(result).toEqual({
+      data: { ok: true },
+      response,
+    });
+  });
+
+  it("returns null for accepted 304 responses instead of throwing ApiError", async () => {
+    const response = createMockResponse({
+      status: 304,
+      headers: { ETag: "etag-v1" },
+      url: "http://localhost/api/game/520?since=etag-v1",
+    });
+
+    vi.spyOn(globalThis, "fetch").mockResolvedValueOnce(response);
+
+    const result = await apiClient.request<null>("/game/520", {
+      method: "GET",
+      acceptedStatuses: [304],
+      returnResponse: true,
+    });
+
+    expect(result).toEqual({
+      data: null,
+      response,
+    });
+  });
+});

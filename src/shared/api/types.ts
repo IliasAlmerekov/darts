@@ -11,6 +11,8 @@ export interface ApiRequestConfig extends Omit<RequestInit, "body" | "method" | 
   headers?: HeadersInit;
   skipAuthRedirect?: boolean;
   timeoutMs?: number;
+  acceptedStatuses?: number[];
+  returnResponse?: boolean;
 }
 
 export type ErrorPayload = {

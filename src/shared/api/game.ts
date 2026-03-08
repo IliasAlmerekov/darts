@@ -1,5 +1,5 @@
-import { apiClient, API_BASE_URL, triggerUnauthorizedHandler } from "./client";
-import { ApiError, ForbiddenError, NetworkError, UnauthorizedError } from "./errors";
+import { apiClient } from "./client";
+import { ApiError } from "./errors";
 import type {
   GameStatus,
   GameThrowsResponse,
@@ -90,29 +90,8 @@ function isRematchLikeResponse(
   return isRecord(data) && typeof data.gameId === "number";
 }
 
-function buildConditionalGameUrl(gameId: number, stateVersion: string | null): string {
-  const endpoint = GAME_ENDPOINT(gameId);
-  if (!stateVersion) return `${API_BASE_URL}${endpoint}`;
-
-  const encodedVersion = encodeURIComponent(stateVersion);
-  return `${API_BASE_URL}${endpoint}?since=${encodedVersion}`;
-}
-
-async function parseResponseBody(response: Response): Promise<ParsedResponse> {
-  const isJson = response.headers.get("content-type")?.includes("application/json");
-  if (isJson) {
-    return response.json().catch(() => null);
-  }
-
-  return response.text().catch(() => null);
-}
-
 function getNextStateVersion(response: Response): string | null {
   return response.headers.get("X-Game-State-Version") ?? response.headers.get("ETag");
-}
-
-function isAbortError(error: unknown): boolean {
-  return error instanceof Error && error.name === "AbortError";
 }
 
 /**
@@ -135,48 +114,19 @@ export async function getGameThrowsIfChanged(
   signal?: AbortSignal,
 ): Promise<GameThrowsResponse | null> {
   const currentVersion = gameStateVersionById.get(gameId) ?? null;
-  const requestUrl = buildConditionalGameUrl(gameId, currentVersion);
-
-  let response: Response;
-
-  try {
-    response = await fetch(requestUrl, {
-      method: "GET",
-      credentials: "include",
-      headers: {
-        Accept: "application/json",
-        ...(currentVersion ? { "If-None-Match": currentVersion } : {}),
-      },
-      signal,
-    });
-  } catch (error) {
-    if (isAbortError(error)) {
-      throw error;
-    }
-    throw new NetworkError("Network request failed", error);
-  }
+  const { data, response } = await apiClient.request<ParsedResponse>(GAME_ENDPOINT(gameId), {
+    method: "GET",
+    query: currentVersion ? { since: currentVersion } : undefined,
+    headers: {
+      ...(currentVersion ? { "If-None-Match": currentVersion } : {}),
+    },
+    signal,
+    acceptedStatuses: [304],
+    returnResponse: true,
+  });
 
   if (response.status === 304) {
     return null;
-  }
-
-  const data = await parseResponseBody(response);
-
-  if (response.status === 401) {
-    triggerUnauthorizedHandler();
-    throw new UnauthorizedError("Unauthorized", data, response.url);
-  }
-
-  if (response.status === 403) {
-    throw new ForbiddenError("Access denied", data, response.url);
-  }
-
-  if (!response.ok) {
-    throw new ApiError("Request failed", {
-      status: response.status,
-      data,
-      url: response.url,
-    });
   }
 
   if (!isGameThrowsResponse(data)) {

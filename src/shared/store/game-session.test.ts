@@ -44,3 +44,103 @@ describe("game-session store", () => {
     expect(window.sessionStorage.getItem(GAME_ID_STORAGE_KEY)).toBeNull();
   });
 });
+
+// ─── Ticket 4 — store-as-cache contract ──────────────────────────────────────
+// $currentGameId is cache/preload only; setting the same value must be a no-op
+// so that URL-derived gameId always remains the authoritative source.
+
+describe("game-session store — Ticket 4: store is cache, not authority", () => {
+  beforeEach(() => {
+    window.sessionStorage.clear();
+    vi.resetModules();
+  });
+
+  it("should initialise $currentGameId to null when sessionStorage is empty", async () => {
+    const roomStore = await import("./game-session");
+    expect(roomStore.$currentGameId.get()).toBeNull();
+  });
+
+  it("should initialise $currentGameId from sessionStorage (preload for navigation)", async () => {
+    // The store acts as a preload hint — URL param overrides it once the page mounts
+    window.sessionStorage.setItem(GAME_ID_STORAGE_KEY, "55");
+    const roomStore = await import("./game-session");
+    expect(roomStore.$currentGameId.get()).toBe(55);
+  });
+
+  it("should NOT mutate the store when setCurrentGameId is called with the same value", async () => {
+    const roomStore = await import("./game-session");
+    roomStore.setCurrentGameId(42);
+
+    const storeSpy = vi.spyOn(roomStore.$currentGameId, "set");
+    roomStore.setCurrentGameId(42);
+
+    expect(storeSpy).not.toHaveBeenCalled();
+  });
+
+  it("should persist to sessionStorage when setCurrentGameId receives a new value", async () => {
+    const roomStore = await import("./game-session");
+    roomStore.setCurrentGameId(99);
+
+    expect(window.sessionStorage.getItem(GAME_ID_STORAGE_KEY)).toBe("99");
+    expect(roomStore.$currentGameId.get()).toBe(99);
+  });
+
+  it("should remove the key from sessionStorage when setCurrentGameId receives null", async () => {
+    window.sessionStorage.setItem(GAME_ID_STORAGE_KEY, "33");
+    const roomStore = await import("./game-session");
+    roomStore.setCurrentGameId(null);
+
+    expect(window.sessionStorage.getItem(GAME_ID_STORAGE_KEY)).toBeNull();
+    expect(roomStore.$currentGameId.get()).toBeNull();
+  });
+
+  it("should return null from getActiveGameId when no game is stored", async () => {
+    const roomStore = await import("./game-session");
+    expect(roomStore.getActiveGameId()).toBeNull();
+  });
+
+  it("should return the stored gameId from getActiveGameId", async () => {
+    const roomStore = await import("./game-session");
+    roomStore.setCurrentGameId(7);
+    expect(roomStore.getActiveGameId()).toBe(7);
+  });
+
+  it("should gracefully fall back to null when sessionStorage contains corrupt game id", async () => {
+    window.sessionStorage.setItem(GAME_ID_STORAGE_KEY, "not-a-number");
+    const roomStore = await import("./game-session");
+    expect(roomStore.$currentGameId.get()).toBeNull();
+  });
+
+  it("should gracefully fall back to null when sessionStorage contains corrupt invitation JSON", async () => {
+    window.sessionStorage.setItem(INVITATION_STORAGE_KEY, "{broken json");
+    const roomStore = await import("./game-session");
+    expect(roomStore.$invitation.get()).toBeNull();
+  });
+
+  it("should gracefully fall back to null when invitation JSON is valid but fails schema check", async () => {
+    // gameId is a string — not a number — so the shape guard must reject it
+    window.sessionStorage.setItem(
+      INVITATION_STORAGE_KEY,
+      JSON.stringify({ gameId: "42", invitationLink: "/invite/42" }),
+    );
+    const roomStore = await import("./game-session");
+    expect(roomStore.$invitation.get()).toBeNull();
+  });
+
+  it("should set invitation and update currentGameId atomically via setInvitation", async () => {
+    const roomStore = await import("./game-session");
+    roomStore.setInvitation({ gameId: 8, invitationLink: "/invite/8" });
+
+    expect(roomStore.$invitation.get()).toEqual({ gameId: 8, invitationLink: "/invite/8" });
+    expect(roomStore.$currentGameId.get()).toBe(8);
+  });
+
+  it("should clear invitation store and sessionStorage when setInvitation receives null", async () => {
+    const roomStore = await import("./game-session");
+    roomStore.setInvitation({ gameId: 8, invitationLink: "/invite/8" });
+    roomStore.setInvitation(null);
+
+    expect(roomStore.$invitation.get()).toBeNull();
+    expect(window.sessionStorage.getItem(INVITATION_STORAGE_KEY)).toBeNull();
+  });
+});

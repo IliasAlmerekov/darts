@@ -5,6 +5,10 @@ const DEFAULT_TIMEOUT_MS = 30_000;
 
 const ENV_API_BASE_URL = import.meta.env.VITE_API_BASE_URL as string | undefined;
 export type AuthRedirectHandler = () => void;
+export interface ApiResponse<T> {
+  data: T;
+  response: Response;
+}
 
 let onUnauthorized: AuthRedirectHandler | null = null;
 
@@ -55,8 +59,57 @@ function isJsonBody(body: unknown): boolean {
   );
 }
 
-async function request<T>(endpoint: string, config: ApiRequestConfig = {}): Promise<T> {
-  const { method = "GET", query, body, headers, skipAuthRedirect, timeoutMs, ...rest } = config;
+function getErrorMessage(data: unknown, fallback: string): string {
+  if (typeof data !== "object" || data === null) {
+    return fallback;
+  }
+
+  const errorPayload = data as { error?: unknown; message?: unknown };
+  if (typeof errorPayload.error === "string" && errorPayload.error) {
+    return errorPayload.error;
+  }
+
+  if (typeof errorPayload.message === "string" && errorPayload.message) {
+    return errorPayload.message;
+  }
+
+  return fallback;
+}
+
+async function parseResponseData(response: Response): Promise<unknown> {
+  if (response.status === 204 || response.status === 205 || response.status === 304) {
+    return null;
+  }
+
+  return response.headers.get("content-type")?.includes("application/json")
+    ? await response.json().catch(() => null)
+    : await response.text().catch(() => null);
+}
+
+function isAcceptedStatus(status: number, acceptedStatuses?: number[]): boolean {
+  return acceptedStatuses?.includes(status) ?? false;
+}
+
+async function request<T>(
+  endpoint: string,
+  config: ApiRequestConfig & { returnResponse: true },
+): Promise<ApiResponse<T>>;
+async function request<T>(endpoint: string, config?: ApiRequestConfig): Promise<T>;
+async function request<T>(
+  endpoint: string,
+  config: ApiRequestConfig = {},
+): Promise<T | ApiResponse<T>> {
+  const {
+    method = "GET",
+    query,
+    body,
+    headers,
+    skipAuthRedirect,
+    timeoutMs,
+    acceptedStatuses,
+    returnResponse,
+    ...rest
+  } = config;
 
   const timeoutDuration = timeoutMs ?? DEFAULT_TIMEOUT_MS;
   const controller = new AbortController();
@@ -106,9 +159,7 @@ async function request<T>(endpoint: string, config: ApiRequestConfig = {}): Prom
     clearTimeout(timeoutId);
   }
 
-  const data = response.headers.get("content-type")?.includes("application/json")
-    ? await response.json().catch(() => null)
-    : await response.text().catch(() => null);
+  const data = await parseResponseData(response);
 
   if (response.status === 401) {
     if (!skipAuthRedirect) {
@@ -118,18 +169,25 @@ async function request<T>(endpoint: string, config: ApiRequestConfig = {}): Prom
   }
 
   if (response.status === 403) {
-    throw new ForbiddenError(data?.error || data?.message || "Access denied", data, response.url);
+    throw new ForbiddenError(getErrorMessage(data, "Access denied"), data, response.url);
   }
 
-  if (!response.ok) {
-    throw new ApiError(data?.error || data?.message || "Request failed", {
+  if (!response.ok && !isAcceptedStatus(response.status, acceptedStatuses)) {
+    throw new ApiError(getErrorMessage(data, "Request failed"), {
       status: response.status,
       data,
       url: response.url,
     });
   }
 
-  return data;
+  if (returnResponse) {
+    return {
+      data: data as T,
+      response,
+    };
+  }
+
+  return data as T;
 }
 
 export const apiClient = {
