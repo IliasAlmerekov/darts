@@ -1,12 +1,6 @@
 // Core HTTP client
-export {
-  apiClient,
-  API_BASE_URL,
-  clearUnauthorizedHandler,
-  setUnauthorizedHandler,
-} from "./client";
-export { ApiError, ForbiddenError, NetworkError, TimeoutError, UnauthorizedError } from "./errors";
-export type { ApiRequestConfig, ErrorPayload, HttpMethod, QueryParams, QueryValue } from "./types";
+export { API_BASE_URL, clearUnauthorizedHandler, setUnauthorizedHandler } from "./client";
+export { ApiError, NetworkError, UnauthorizedError } from "./errors";
 
 // Domain API modules
 export * from "./game";

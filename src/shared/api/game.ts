@@ -290,9 +290,7 @@ export async function getGameSettings(gameId: number): Promise<GameSettingsRespo
 /**
  * Creates game settings for a new game.
  */
-export async function createGameSettings(
-  payload: CreateGameSettingsPayload,
-): Promise<GameThrowsResponse> {
+async function createGameSettings(payload: CreateGameSettingsPayload): Promise<GameThrowsResponse> {
   const data: unknown = await apiClient.post(CREATE_GAME_SETTINGS_ENDPOINT, payload);
   if (!isGameThrowsResponse(data)) {
     throw new ApiError("Unexpected response shape for create game settings", { status: 200, data });

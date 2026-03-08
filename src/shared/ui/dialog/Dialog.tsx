@@ -17,7 +17,7 @@ function getFocusableElements(container: HTMLElement): HTMLElement[] {
   );
 }
 
-export type DialogProps = {
+type DialogProps = {
   isOpen?: boolean;
   onClose?: () => void;
   className: string;
