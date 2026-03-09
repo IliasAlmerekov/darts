@@ -221,7 +221,7 @@ export const useGameLogic = () => {
         updateGameData(updatedGame);
         setIsSettingsOpen(false);
       } catch (err) {
-        setSettingsError(err instanceof Error ? err.message : "Failed to update settings");
+        setSettingsError(toUserErrorMessage(err, "Failed to update settings"));
       } finally {
         setIsSavingSettings(false);
       }
