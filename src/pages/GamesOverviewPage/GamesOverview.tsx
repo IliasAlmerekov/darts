@@ -4,6 +4,7 @@ import styles from "./GamesOverview.module.css";
 import { Link } from "react-router-dom";
 import { ROUTES } from "@/lib/routes";
 import { AdminLayout } from "@/shared/ui/admin-layout";
+import Button from "@/shared/ui/button/Button";
 import { $currentGameId } from "@/store";
 import {
   Pagination,
@@ -79,9 +80,9 @@ export default function GamesOverviewPage(): JSX.Element {
         {!loading && error !== null && (
           <div className={styles.statusMessage}>
             <p>{error}</p>
-            <button type="button" onClick={retry}>
-              Retry
-            </button>
+            <div className={styles.retryAction}>
+              <Button label="Retry" handleClick={retry} type="primary" />
+            </div>
           </div>
         )}
 

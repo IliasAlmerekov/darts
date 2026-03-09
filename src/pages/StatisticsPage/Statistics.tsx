@@ -2,6 +2,7 @@ import React, { useCallback, useState } from "react";
 import { useStore } from "@nanostores/react";
 import styles from "./Statistics.module.css";
 import { AdminLayout } from "@/shared/ui/admin-layout";
+import Button from "@/shared/ui/button/Button";
 import { $currentGameId } from "@/store";
 import {
   Pagination,
@@ -102,9 +103,9 @@ export default function StatisticsPage(): JSX.Element {
           {!loading && error !== null && (
             <div className={styles.statusMessage}>
               <p>{error}</p>
-              <button type="button" onClick={retry}>
-                Retry
-              </button>
+              <div className={styles.retryAction}>
+                <Button label="Retry" handleClick={retry} type="primary" />
+              </div>
             </div>
           )}
 

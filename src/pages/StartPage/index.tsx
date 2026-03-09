@@ -21,7 +21,6 @@ import Plus from "@/assets/icons/plus.svg";
 import UserAddIcon from "@/assets/icons/user-add.svg";
 import Button from "@/shared/ui/button/Button";
 import { ErrorState } from "@/shared/ui/error-state";
-import { API_BASE_URL } from "@/shared/api";
 import QRCode from "./components/qr-code/QRCode";
 import { LivePlayersList } from "./components/live-players-list/LivePlayersList";
 import { useStartPage } from "./useStartPage";
@@ -29,11 +28,19 @@ import { $currentGameId } from "@/store";
 import GuestPlayerOverlay from "./components/guest-player-overlay/GuestPlayerOverlay";
 
 function toAbsoluteInvitationLink(invitationLink: string): string {
-  try {
-    const apiOrigin = new URL(API_BASE_URL, window.location.origin).origin;
-    return new URL(invitationLink, apiOrigin).toString();
-  } catch {
+  const normalizedInvitationLink = invitationLink.trim();
+  if (!normalizedInvitationLink) {
     return invitationLink;
+  }
+
+  try {
+    return new URL(normalizedInvitationLink).toString();
+  } catch {
+    try {
+      return new URL(normalizedInvitationLink, window.location.origin).toString();
+    } catch {
+      return invitationLink;
+    }
   }
 }
 
