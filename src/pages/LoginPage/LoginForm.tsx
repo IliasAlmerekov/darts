@@ -33,7 +33,7 @@ export function LoginForm({
       {success && <div className={`${styles.alert} ${styles.alertSuccess}`}>{success}</div>}
       {error && <div className={`${styles.alert} ${styles.alertDanger}`}>{error}</div>}
 
-      <form onSubmit={onSubmit} className={styles.form}>
+      <form onSubmit={onSubmit} className={styles.form} data-testid="login-form">
         <div className={styles.fieldGroup}>
           <label htmlFor="_username" className={styles.formLabel}>
             Email <span className={styles.required}>*</span>

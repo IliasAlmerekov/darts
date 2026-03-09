@@ -1,8 +1,25 @@
 // spec: specs/login-test-plan.md
 // seed: tests/shared/seed.spec.ts
 
-import { test, expect } from "@playwright/test";
+import { test, expect, type Locator } from "@playwright/test";
 import { mockFailedLogin } from "../shared/auth-route-mocks";
+
+type ElementSize = {
+  width: number;
+  height: number;
+};
+
+const getElementSize = async (locator: Locator): Promise<ElementSize> => {
+  const box = await locator.boundingBox();
+
+  return box ? { width: box.width, height: box.height } : { width: 0, height: 0 };
+};
+
+const getFontSize = async (locator: Locator): Promise<number> => {
+  return locator.evaluate((element) =>
+    Number.parseInt(window.getComputedStyle(element).fontSize, 10),
+  );
+};
 
 test.describe("Cross-Browser and Responsive Tests", () => {
   test("Tablet Layout", async ({ page }) => {
@@ -11,62 +28,44 @@ test.describe("Cross-Browser and Responsive Tests", () => {
     await page.setViewportSize({ width: 768, height: 1024 });
     await page.goto("http://localhost:5173/");
 
-    await expect(page.getByRole("heading", { name: "Sign in" })).toBeVisible();
-    await expect(page.getByRole("textbox", { name: "Email *" })).toBeVisible();
-    await expect(page.getByRole("textbox", { name: "Password *" })).toBeVisible();
-    await expect(page.getByRole("button", { name: "Sign in" })).toBeVisible();
+    const signInHeading = page.getByRole("heading", { name: "Sign in" });
+    const emailField = page.getByRole("textbox", { name: "Email *" });
+    const passwordField = page.getByRole("textbox", { name: "Password *" });
+    const signInButton = page.getByRole("button", { name: "Sign in" });
+    const showPasswordButton = page.getByRole("button", { name: "Show password" });
+    const rememberCheckbox = page.getByRole("checkbox", { name: "Remember me" });
+    const signUpLink = page.getByRole("link", { name: "Sign up" });
+    const loginForm = page.getByTestId("login-form");
 
-    const tabletLayout = await page.evaluate(() => {
-      const hasHorizontalScroll =
-        document.documentElement.scrollWidth > document.documentElement.clientWidth;
+    await expect(signInHeading).toBeVisible();
+    await expect(emailField).toBeVisible();
+    await expect(passwordField).toBeVisible();
+    await expect(signInButton).toBeVisible();
+    await expect(showPasswordButton).toBeVisible();
+    await expect(rememberCheckbox).toBeVisible();
+    await expect(signUpLink).toBeVisible();
 
-      const signInButton =
-        document.querySelector('button[type="submit"]') || document.querySelector("button");
-      const emailField = document.querySelector('input[type="email"]');
-      const passwordField = document.querySelector('input[type="password"]');
-      const showPasswordBtn =
-        document.querySelector('button[aria-label*="password"], button[title*="password"]') ||
-        document.querySelectorAll("button")[1];
-      const rememberCheckbox = document.querySelector('input[type="checkbox"]');
-      const signUpLink = document.querySelector('a[href="/register"]');
-
-      const getElementSize = (element) => {
-        if (!element) return { width: 0, height: 0 };
-        const rect = element.getBoundingClientRect();
-        return { width: rect.width, height: rect.height };
-      };
-
-      const signInSize = getElementSize(signInButton);
-      const emailSize = getElementSize(emailField);
-      const passwordSize = getElementSize(passwordField);
-      const showPasswordSize = getElementSize(showPasswordBtn);
-      const checkboxSize = getElementSize(rememberCheckbox);
-      const signUpSize = getElementSize(signUpLink);
-
-      const emailStyles = emailField ? window.getComputedStyle(emailField) : null;
-      const passwordStyles = passwordField ? window.getComputedStyle(passwordField) : null;
-
-      const emailFontSize = emailStyles ? parseInt(emailStyles.fontSize) : 0;
-      const passwordFontSize = passwordStyles ? parseInt(passwordStyles.fontSize) : 0;
-
-      const formContainer = document.querySelector("form") || document.querySelector("div");
-      const containerWidth = formContainer ? formContainer.getBoundingClientRect().width : 0;
-
-      return {
-        hasHorizontalScroll,
-        signInButtonSize: signInSize,
-        emailFieldSize: emailSize,
-        passwordFieldSize: passwordSize,
-        showPasswordSize,
-        checkboxSize,
-        signUpLinkSize: signUpSize,
-        emailFontSize,
-        passwordFontSize,
-        containerWidth,
-        viewportWidth: window.innerWidth,
-        viewportHeight: window.innerHeight,
-      };
+    const hasHorizontalScroll = await page.evaluate(() => {
+      return document.documentElement.scrollWidth > document.documentElement.clientWidth;
     });
+    const signInButtonSize = await getElementSize(signInButton);
+    const emailFieldSize = await getElementSize(emailField);
+    const passwordFieldSize = await getElementSize(passwordField);
+    const emailFontSize = await getFontSize(emailField);
+    const passwordFontSize = await getFontSize(passwordField);
+    const loginFormSize = await getElementSize(loginForm);
+
+    const tabletLayout = {
+      hasHorizontalScroll,
+      signInButtonSize,
+      emailFieldSize,
+      passwordFieldSize,
+      emailFontSize,
+      passwordFontSize,
+      containerWidth: loginFormSize.width,
+      viewportWidth: page.viewportSize()?.width ?? 0,
+      viewportHeight: page.viewportSize()?.height ?? 0,
+    };
 
     expect(tabletLayout.hasHorizontalScroll).toBe(false);
     expect(tabletLayout.viewportWidth).toBe(768);
@@ -77,35 +76,28 @@ test.describe("Cross-Browser and Responsive Tests", () => {
     expect(tabletLayout.emailFontSize).toBeGreaterThanOrEqual(16);
     expect(tabletLayout.passwordFontSize).toBeGreaterThanOrEqual(16);
 
-    await page.getByRole("textbox", { name: "Email *" }).fill("tablet.test@example.com");
-    await page.getByRole("textbox", { name: "Password *" }).fill("tabletPassword123");
+    await emailField.fill("tablet.test@example.com");
+    await passwordField.fill("tabletPassword123");
 
-    await expect(page.getByRole("textbox", { name: "Email *" })).toHaveValue(
-      "tablet.test@example.com",
-    );
-    await expect(page.getByRole("textbox", { name: "Password *" })).toHaveValue(
-      "tabletPassword123",
-    );
+    await expect(emailField).toHaveValue("tablet.test@example.com");
+    await expect(passwordField).toHaveValue("tabletPassword123");
 
-    await page.getByRole("button", { name: "Sign in" }).click();
+    await signInButton.click();
 
     await expect(page.getByText("Incorrect email or password.")).toBeVisible();
-    await expect(page.getByRole("textbox", { name: "Email *" })).toBeEnabled();
-    await expect(page.getByRole("textbox", { name: "Password *" })).toBeEnabled();
-    await expect(page.getByRole("button", { name: "Sign in" })).toBeEnabled();
+    await expect(emailField).toBeEnabled();
+    await expect(passwordField).toBeEnabled();
+    await expect(signInButton).toBeEnabled();
 
-    const postInteractionLayout = await page.evaluate(() => {
-      const hasHorizontalScroll =
-        document.documentElement.scrollWidth > document.documentElement.clientWidth;
-      const containerWidth = document.querySelector("form")
-        ? document.querySelector("form").getBoundingClientRect().width
-        : document.querySelector("div").getBoundingClientRect().width;
-
-      return {
-        hasHorizontalScrollAfterInteraction: hasHorizontalScroll,
-        containerWidthAfterInteraction: containerWidth,
-      };
+    const hasHorizontalScrollAfterInteraction = await page.evaluate(() => {
+      return document.documentElement.scrollWidth > document.documentElement.clientWidth;
     });
+    const loginFormSizeAfterInteraction = await getElementSize(loginForm);
+
+    const postInteractionLayout = {
+      hasHorizontalScrollAfterInteraction,
+      containerWidthAfterInteraction: loginFormSizeAfterInteraction.width,
+    };
 
     expect(postInteractionLayout.hasHorizontalScrollAfterInteraction).toBe(false);
     expect(postInteractionLayout.containerWidthAfterInteraction).toBeGreaterThan(0);

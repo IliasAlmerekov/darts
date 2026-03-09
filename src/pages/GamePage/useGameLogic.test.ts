@@ -6,6 +6,7 @@ import {
   shouldNavigateToSummary,
   parseGameIdParam,
 } from "./useGameLogic";
+import { calculateShouldShowFinishOverlay } from "./gameLogic.helpers";
 import type { GameThrowsResponse } from "@/types";
 
 function buildGameData(overrides?: Partial<GameThrowsResponse>): GameThrowsResponse {
@@ -252,6 +253,147 @@ describe("shouldNavigateToSummary", () => {
     });
 
     expect(shouldNavigateToSummary(data, 559)).toBe(false);
+  });
+});
+
+describe("calculateShouldShowFinishOverlay", () => {
+  it("returns true when a player finished and more than one active player remains", () => {
+    const data = buildGameData({
+      currentRound: 4,
+      players: [
+        {
+          id: 1,
+          name: "P1",
+          score: 26,
+          isActive: true,
+          isBust: false,
+          position: null,
+          throwsInCurrentRound: 0,
+          currentRoundThrows: [],
+          roundHistory: [{ throws: [{ value: 20 }] }],
+        },
+        {
+          id: 2,
+          name: "P2",
+          score: 40,
+          isActive: false,
+          isBust: false,
+          position: null,
+          throwsInCurrentRound: 0,
+          currentRoundThrows: [],
+          roundHistory: [{ throws: [{ value: 20 }] }],
+        },
+        {
+          id: 3,
+          name: "P3",
+          score: 0,
+          isActive: false,
+          isBust: false,
+          position: 1,
+          throwsInCurrentRound: 0,
+          currentRoundThrows: [],
+          roundHistory: [{ throws: [{ value: 20 }] }],
+        },
+      ],
+    });
+
+    expect(
+      calculateShouldShowFinishOverlay({
+        gameData: data,
+        dismissedZeroScorePlayerIds: [],
+        skipFinishOverlay: false,
+        zeroScorePlayerIds: [3],
+      }),
+    ).toBe(true);
+  });
+
+  it("returns false when the finished players were already dismissed", () => {
+    const data = buildGameData({
+      currentRound: 4,
+      players: [
+        {
+          id: 1,
+          name: "P1",
+          score: 26,
+          isActive: true,
+          isBust: false,
+          position: null,
+          throwsInCurrentRound: 0,
+          currentRoundThrows: [],
+          roundHistory: [{ throws: [{ value: 20 }] }],
+        },
+        {
+          id: 2,
+          name: "P2",
+          score: 40,
+          isActive: false,
+          isBust: false,
+          position: null,
+          throwsInCurrentRound: 0,
+          currentRoundThrows: [],
+          roundHistory: [{ throws: [{ value: 20 }] }],
+        },
+        {
+          id: 3,
+          name: "P3",
+          score: 0,
+          isActive: false,
+          isBust: false,
+          position: 1,
+          throwsInCurrentRound: 0,
+          currentRoundThrows: [],
+          roundHistory: [{ throws: [{ value: 20 }] }],
+        },
+      ],
+    });
+
+    expect(
+      calculateShouldShowFinishOverlay({
+        gameData: data,
+        dismissedZeroScorePlayerIds: [3],
+        skipFinishOverlay: false,
+        zeroScorePlayerIds: [3],
+      }),
+    ).toBe(false);
+  });
+
+  it("returns false when the game should auto-finish instead", () => {
+    const data = buildGameData({
+      currentRound: 4,
+      players: [
+        {
+          id: 1,
+          name: "P1",
+          score: 26,
+          isActive: true,
+          isBust: false,
+          position: null,
+          throwsInCurrentRound: 0,
+          currentRoundThrows: [],
+          roundHistory: [{ throws: [{ value: 20 }] }],
+        },
+        {
+          id: 2,
+          name: "P2",
+          score: 0,
+          isActive: false,
+          isBust: false,
+          position: 1,
+          throwsInCurrentRound: 0,
+          currentRoundThrows: [],
+          roundHistory: [{ throws: [{ value: 20 }] }],
+        },
+      ],
+    });
+
+    expect(
+      calculateShouldShowFinishOverlay({
+        gameData: data,
+        dismissedZeroScorePlayerIds: [],
+        skipFinishOverlay: false,
+        zeroScorePlayerIds: [2],
+      }),
+    ).toBe(false);
   });
 });
 

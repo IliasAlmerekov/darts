@@ -328,7 +328,7 @@ test.describe("Basic Throw Mechanics and Validation", () => {
 
     const doubleButton = page.getByRole("button", { name: "Double" });
     await doubleButton.click();
-    await expect(doubleButton).toHaveClass(/active/);
+    await expect(doubleButton).toHaveAttribute("aria-pressed", "true");
 
     const doubleThrowRequestPromise = page.waitForRequest("**/api/game/1/throw/delta");
     await page.getByRole("button", { name: "20", exact: true }).click();
@@ -337,7 +337,7 @@ test.describe("Basic Throw Mechanics and Validation", () => {
 
     expect(doublePayload).toMatchObject({ value: 20, isDouble: true, isTriple: false });
     await expect(playerCard(page, "Player 1")).toContainText("261");
-    await expect(doubleButton).not.toHaveClass(/active/);
+    await expect(doubleButton).toHaveAttribute("aria-pressed", "false");
 
     const tripleButton = page.getByRole("button", { name: "Triple" });
     await tripleButton.click();
@@ -352,7 +352,7 @@ test.describe("Basic Throw Mechanics and Validation", () => {
 
     expect(triplePayload).toMatchObject({ value: 19, isDouble: false, isTriple: true });
     await expect(playerCard(page, "Player 1")).toContainText("204");
-    await expect(tripleButton).not.toHaveClass(/active/);
+    await expect(tripleButton).toHaveAttribute("aria-pressed", "false");
   });
 
   test("1.3 Complete three throws and switch turn to next active player", async ({ page }) => {
