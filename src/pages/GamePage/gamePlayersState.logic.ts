@@ -11,6 +11,7 @@ export interface BuildGamePlayersStateOptions {
   gameData: GameThrowsResponse | null;
   hasError: boolean;
   isLoading: boolean;
+  isUndoPending: boolean;
   skipFinishOverlay: boolean;
 }
 
@@ -52,6 +53,7 @@ export function buildGamePlayersDerivedState({
   gameData,
   hasError,
   isLoading,
+  isUndoPending,
   skipFinishOverlay,
 }: BuildGamePlayersStateOptions): GamePlayersDerivedState {
   const playerUI = mapPlayersToUI(gameData?.players ?? [], gameData?.currentRound);
@@ -72,6 +74,7 @@ export function buildGamePlayersDerivedState({
     hasError ||
     !gameData ||
     shouldShowFinishOverlay ||
+    isUndoPending ||
     areAllPlayersAtStartScore(gameData);
 
   return {
