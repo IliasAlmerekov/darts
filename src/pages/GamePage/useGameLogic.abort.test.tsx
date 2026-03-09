@@ -12,6 +12,7 @@ const useGameSoundsMock = vi.fn();
 const useWakeLockMock = vi.fn();
 const finishGameMock = vi.fn();
 const resetGameStateVersionMock = vi.fn();
+const updateGameDataMock = vi.fn();
 
 vi.mock("react-router-dom", () => ({
   useNavigate: () => navigateMock,
@@ -123,7 +124,7 @@ function setDefaultMocks(gameData: GameThrowsResponse | null): void {
     isLoading: false,
     error: null,
     refetch: vi.fn(),
-    updateGameData: vi.fn(),
+    updateGameData: updateGameDataMock,
   });
   useThrowHandlerMock.mockReturnValue({
     handleThrow: vi.fn(),
@@ -179,6 +180,26 @@ describe("useGameLogic auto-finish abort handling", () => {
 
     expect(consoleErrorSpy).not.toHaveBeenCalled();
     expect(navigateMock).not.toHaveBeenCalled();
+    expect(updateGameDataMock).not.toHaveBeenCalled();
     expect(resetGameStateVersionMock).not.toHaveBeenCalled();
+  });
+
+  it("does not navigate to summary from a local optimistic finished status while auto-finish is pending", async () => {
+    const pendingFinish = deferred<never>();
+
+    setDefaultMocks(buildAutoFinishGameData());
+    finishGameMock.mockReturnValue(pendingFinish.promise);
+
+    const { unmount } = renderHook(() => useGameLogic());
+
+    await waitFor(() => {
+      expect(finishGameMock).toHaveBeenCalledTimes(1);
+    });
+
+    expect(updateGameDataMock).not.toHaveBeenCalled();
+    expect(navigateMock).not.toHaveBeenCalled();
+    expect(resetGameStateVersionMock).not.toHaveBeenCalled();
+
+    unmount();
   });
 });
