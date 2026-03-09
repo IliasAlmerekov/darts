@@ -25,10 +25,10 @@ const ProtectedRoutes: React.FC<ProtectedRoutesProps> = ({ allowedRoles = ["ROLE
   const { pathname } = useLocation();
 
   if (checking) {
-    if (pathname.includes(ROUTES.start())) {
+    if (pathname === ROUTES.start() || pathname.startsWith(ROUTES.start() + "/")) {
       return <StartPageSkeleton />;
     }
-    if (pathname.includes(ROUTES.joined)) {
+    if (pathname === ROUTES.joined || pathname.startsWith(ROUTES.joined + "/")) {
       return <LoginSuccessSkeleton />;
     }
     return <UniversalSkeleton />;

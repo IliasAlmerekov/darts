@@ -15,10 +15,13 @@ export function NumberButton({
   isActive,
   disabled,
 }: NumberButtonProps): JSX.Element {
+  const isToggle = value === "Double" || value === "Triple";
+
   return (
     <button
       disabled={disabled}
       onClick={handleClick}
+      aria-pressed={isToggle ? (isActive ?? false) : undefined}
       className={clsx(styles.button, styles.copylarge, {
         [styles.undo ?? ""]: value === "Undo",
         [styles.triple ?? ""]: value === "Triple",

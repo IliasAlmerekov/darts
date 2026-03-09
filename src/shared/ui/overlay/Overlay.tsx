@@ -3,16 +3,16 @@ import { Dialog } from "@/shared/ui/dialog";
 import styles from "./Overlay.module.css";
 
 type OverlayProps = {
-  isOpen?: boolean;
-  onClose?: () => void;
+  isOpen?: boolean | undefined;
+  onClose?: (() => void) | undefined;
   handleClick?: () => void;
-  className?: string;
-  backdropClassName?: string;
+  className?: string | undefined;
+  backdropClassName?: string | undefined;
   src?: string;
   children: React.ReactNode;
   activeOverlay?: "" | "deletePlayer" | "createPlayer" | "Settings";
-  ariaLabel?: string;
-  ariaLabelledBy?: string;
+  ariaLabel?: string | undefined;
+  ariaLabelledBy?: string | undefined;
 };
 
 function Overlay({

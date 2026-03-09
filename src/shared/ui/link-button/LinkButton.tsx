@@ -7,7 +7,7 @@ type Props = {
   icon?: string;
   label?: ReactNode;
   handleClick?: () => void;
-  className?: string;
+  className?: string | undefined;
   disabled?: boolean;
 };
 

@@ -11,7 +11,7 @@ test.describe("Login Form Functionality", () => {
     const { email: testEmail, password: testPassword } = getAuthTestCredentials();
 
     // 1. Navigate to the login page at root URL '/'
-    await page.goto("http://localhost:5173/");
+    await page.goto("/");
 
     // Wait for form to become interactive
     await page.getByText("Sign in").first().waitFor({ state: "visible" });
@@ -32,6 +32,6 @@ test.describe("Login Form Functionality", () => {
     await page.getByRole("button", { name: "Sign in" }).click();
 
     // Verify successful redirect to start page
-    await expect(page).toHaveURL("http://localhost:5173/start");
+    await expect(page).toHaveURL("/start");
   });
 });

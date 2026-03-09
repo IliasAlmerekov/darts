@@ -3,18 +3,18 @@ import { useMemo } from "react";
 interface UsePlayerThrowsDisplayParams {
   isActive: boolean;
   roundsCountLength: number;
-  currentThrow1?: number | string | JSX.Element;
-  currentThrow2?: number | string | JSX.Element;
-  currentThrow3?: number | string | JSX.Element;
-  prevThrow1?: number | string | JSX.Element;
-  prevThrow2?: number | string | JSX.Element;
-  prevThrow3?: number | string | JSX.Element;
-  throw1IsBust?: boolean;
-  throw2IsBust?: boolean;
-  throw3IsBust?: boolean;
-  prevThrow1IsBust?: boolean;
-  prevThrow2IsBust?: boolean;
-  prevThrow3IsBust?: boolean;
+  currentThrow1?: number | string | JSX.Element | undefined;
+  currentThrow2?: number | string | JSX.Element | undefined;
+  currentThrow3?: number | string | JSX.Element | undefined;
+  prevThrow1?: number | string | JSX.Element | undefined;
+  prevThrow2?: number | string | JSX.Element | undefined;
+  prevThrow3?: number | string | JSX.Element | undefined;
+  throw1IsBust?: boolean | undefined;
+  throw2IsBust?: boolean | undefined;
+  throw3IsBust?: boolean | undefined;
+  prevThrow1IsBust?: boolean | undefined;
+  prevThrow2IsBust?: boolean | undefined;
+  prevThrow3IsBust?: boolean | undefined;
   bustIcon: JSX.Element;
 }
 
