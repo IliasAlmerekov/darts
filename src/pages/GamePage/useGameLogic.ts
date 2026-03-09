@@ -1,68 +1,67 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
 import { useRoomStream } from "@/shared/hooks/useRoomStream";
 import { useGameState } from "./useGameState";
 import { useThrowHandler } from "./useThrowHandler";
 import { useGameSounds } from "./useGameSounds";
 import { useWakeLock } from "./useWakeLock";
-import { getFinishedPlayers, mapPlayersToUI } from "@/lib/player-mappers";
+import type { GameThrowsResponse, UIPlayer } from "@/types";
+import { parseGameIdParam } from "./gameLogic.helpers";
+import { useGameExitFlow, useGameSettingsFlow } from "./useGameActions";
 import {
-  updateGameSettings,
-  createRematch,
-  abortGame,
-  finishGame,
-  resetGameStateVersion,
-} from "@/shared/api/game";
-import type { GameThrowsResponse } from "@/types";
-import { setInvitation, resetRoomStore } from "@/store";
-import { unlockSounds } from "@/lib/soundPlayer";
-import { toUserErrorMessage } from "@/lib/error-to-user-message";
-import { ROUTES } from "@/lib/routes";
+  useAutoFinishGame,
+  useGameSummaryNavigation,
+  useInteractionSoundUnlock,
+  useRoomEventRefetch,
+} from "./useGamePageEffects";
+import { useGamePlayersState } from "./useGamePlayersState";
+
+export {
+  areAllPlayersAtStartScore,
+  parseGameIdParam,
+  shouldAutoFinishGame,
+  shouldNavigateToSummary,
+} from "./gameLogic.helpers";
+
+interface GameSettingsFormValues {
+  doubleOut: boolean;
+  tripleOut: boolean;
+}
+
+interface UseGameLogicResult {
+  activePlayer: GameThrowsResponse["players"][number] | null;
+  activePlayers: UIPlayer[];
+  clearPageError: () => void;
+  error: Error | null;
+  finishedPlayers: UIPlayer[];
+  gameData: GameThrowsResponse | null;
+  gameId: number | null;
+  handleCloseExitOverlay: () => void;
+  handleCloseSettings: () => void;
+  handleContinueGame: () => void;
+  handleExitGame: () => Promise<void>;
+  handleOpenExitOverlay: () => void;
+  handleOpenSettings: () => void;
+  handleSaveSettings: (settings: GameSettingsFormValues) => Promise<void>;
+  handleThrow: (value: string | number) => Promise<void>;
+  handleUndo: () => Promise<void>;
+  handleUndoFromOverlay: () => Promise<void>;
+  isExitOverlayOpen: boolean;
+  isInteractionDisabled: boolean;
+  isLoading: boolean;
+  isSavingSettings: boolean;
+  isSettingsOpen: boolean;
+  isUndoDisabled: boolean;
+  pageError: string | null;
+  refetch: () => Promise<void>;
+  settingsError: string | null;
+  shouldShowFinishOverlay: boolean;
+}
 
 /**
- * Aggregates game state, side effects, and UI handlers for the game page.
+ * Orchestrates smaller page-specific hooks into the game page contract.
  */
-export function areAllPlayersAtStartScore(gameData: GameThrowsResponse | null): boolean {
-  if (!gameData) return true;
-  return gameData.players.every((player) => player.score === gameData.settings.startScore);
-}
-
-export function shouldAutoFinishGame(
-  gameData: GameThrowsResponse | null,
-  shouldShowFinishOverlay: boolean,
-): boolean {
-  if (!gameData || "finished" === gameData.status || shouldShowFinishOverlay) {
-    return false;
-  }
-
-  const activePlayersCount = gameData.players.filter((player) => player.score > 0).length;
-  const finishedPlayersCount = gameData.players.filter((player) => player.score === 0).length;
-
-  return activePlayersCount === 1 && finishedPlayersCount >= 1;
-}
-
-export function shouldNavigateToSummary(
-  gameData: GameThrowsResponse | null,
-  gameId: number | null,
-): boolean {
-  if (!gameData || null === gameId) {
-    return false;
-  }
-
-  return gameData.id === gameId && gameData.status === "finished";
-}
-
-export function parseGameIdParam(gameIdParam: string | undefined): number | null {
-  if (!gameIdParam) return null;
-  const parsed = Number(gameIdParam);
-  return Number.isFinite(parsed) ? parsed : null;
-}
-
-function isAbortError(error: unknown): boolean {
-  return error instanceof Error && error.name === "AbortError";
-}
-
-export const useGameLogic = () => {
+export function useGameLogic(): UseGameLogicResult {
   const navigate = useNavigate();
   const location = useLocation();
   const { id: gameIdParam } = useParams<{ id?: string }>();
@@ -73,196 +72,63 @@ export const useGameLogic = () => {
   const { handleThrow, handleUndo } = useThrowHandler({ gameId });
   const { event } = useRoomStream(gameId);
   const isGameActive = gameData?.status === "started";
+  const skipFinishOverlay =
+    (location.state as { skipFinishOverlay?: boolean } | null)?.skipFinishOverlay === true;
 
   useGameSounds(gameData);
   useWakeLock(isGameActive);
+  useInteractionSoundUnlock();
 
-  useEffect(() => {
-    const handler = () => {
-      unlockSounds();
-    };
-
-    window.addEventListener("pointerdown", handler, { once: true, passive: true });
-    window.addEventListener("keydown", handler, { once: true });
-
-    return () => {
-      window.removeEventListener("pointerdown", handler);
-      window.removeEventListener("keydown", handler);
-    };
-  }, []);
-
-  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
-  const [isSavingSettings, setIsSavingSettings] = useState(false);
-  const [settingsError, setSettingsError] = useState<string | null>(null);
   const [pageError, setPageError] = useState<string | null>(null);
-  const [dismissedZeroScorePlayerIds, setDismissedZeroScorePlayerIds] = useState<number[]>([]);
-  const [isExitOverlayOpen, setIsExitOverlayOpen] = useState(false);
-  const isAutoFinishingRef = useRef(false);
+  const {
+    activePlayer,
+    activePlayers,
+    finishedPlayers,
+    handleContinueGame,
+    handleUndoFromOverlay,
+    isInteractionDisabled,
+    isUndoDisabled,
+    shouldShowFinishOverlay,
+  } = useGamePlayersState({
+    error,
+    gameData,
+    gameId,
+    handleUndo,
+    isLoading,
+    skipFinishOverlay,
+  });
+  const {
+    handleCloseSettings,
+    handleOpenSettings,
+    handleSaveSettings,
+    isSavingSettings,
+    isSettingsOpen,
+    settingsError,
+  } = useGameSettingsFlow({
+    gameData,
+    gameId,
+    updateGameData,
+  });
+  const { handleCloseExitOverlay, handleExitGame, handleOpenExitOverlay, isExitOverlayOpen } =
+    useGameExitFlow({
+      gameId,
+      navigate,
+      setPageError,
+    });
 
-  const playerUI = useMemo(
-    () => mapPlayersToUI(gameData?.players ?? [], gameData?.currentRound),
-    [gameData?.currentRound, gameData?.players],
-  );
-  const finishedPlayers = useMemo(() => getFinishedPlayers(playerUI), [playerUI]);
-  const activePlayers = useMemo(() => playerUI.filter((p) => p.score > 0), [playerUI]);
+  useGameSummaryNavigation({ gameData, gameId, navigate });
+  useRoomEventRefetch({ event, refetch });
+  useAutoFinishGame({
+    gameData,
+    gameId,
+    refetch,
+    setPageError,
+    shouldShowFinishOverlay,
+  });
 
-  const activePlayer = useMemo(() => {
-    if (!gameData) return null;
-    return gameData.players.find((p) => p.id === gameData.activePlayerId) ?? null;
-  }, [gameData]);
-
-  const zeroScorePlayerIds = useMemo(
-    () => playerUI.filter((p) => p.score === 0).map((p) => p.id),
-    [playerUI],
-  );
-
-  const shouldShowFinishOverlay = useMemo(() => {
-    const shouldSkipFinishOverlay =
-      true === (location.state as { skipFinishOverlay?: boolean } | null)?.skipFinishOverlay;
-    if (shouldSkipFinishOverlay) {
-      return false;
-    }
-
-    const hasZeroScore = zeroScorePlayerIds.length > 0;
-    const hasUndismissed = zeroScorePlayerIds.some(
-      (id) => !dismissedZeroScorePlayerIds.includes(id),
-    );
-
-    if (!hasZeroScore || !hasUndismissed || gameData?.status === "finished") {
-      return false;
-    }
-
-    // If only one player remains active, we auto-finish and navigate to summary.
-    if (shouldAutoFinishGame(gameData, false)) {
-      return false;
-    }
-
-    return true;
-  }, [dismissedZeroScorePlayerIds, gameData, location.state, zeroScorePlayerIds]);
-
-  const isInteractionDisabled = isLoading || !!error || !gameData || shouldShowFinishOverlay;
-  const isUndoDisabled =
-    isLoading ||
-    !!error ||
-    !gameData ||
-    shouldShowFinishOverlay ||
-    areAllPlayersAtStartScore(gameData);
-
-  useEffect(() => {
-    setDismissedZeroScorePlayerIds((prev) => prev.filter((id) => zeroScorePlayerIds.includes(id)));
-  }, [zeroScorePlayerIds]);
-
-  useEffect(() => {
-    if (gameId !== null && shouldNavigateToSummary(gameData, gameId)) {
-      navigate(ROUTES.summary(gameId), { state: { finishedGameId: gameId } });
-    }
-  }, [gameData, gameId, navigate]);
-
-  useEffect(() => {
-    if (!event) return;
-    if ("game-started" === event.type || "game-finished" === event.type) {
-      void refetch();
-    }
-  }, [event, refetch]);
-
-  useEffect(() => {
-    if (!gameId || !shouldAutoFinishGame(gameData, shouldShowFinishOverlay)) {
-      return;
-    }
-
-    if (isAutoFinishingRef.current) {
-      return;
-    }
-
-    isAutoFinishingRef.current = true;
-    const controller = new AbortController();
-    const { signal } = controller;
-
-    finishGame(gameId, signal)
-      .then(() => {
-        if (signal.aborted) {
-          return;
-        }
-        resetGameStateVersion(gameId);
-        void refetch();
-      })
-      .catch((err) => {
-        if (isAbortError(err) || signal.aborted) {
-          return;
-        }
-        console.error("Failed to auto-finish game:", err);
-        setPageError(toUserErrorMessage(err, "Could not finish the game automatically."));
-      })
-      .finally(() => {
-        isAutoFinishingRef.current = false;
-      });
-
-    return () => {
-      controller.abort();
-      isAutoFinishingRef.current = false;
-    };
-  }, [gameData, gameId, refetch, shouldShowFinishOverlay]);
-
-  useEffect(() => {
-    setDismissedZeroScorePlayerIds([]);
-  }, [gameId]);
-
-  const handleContinueGame = useCallback(() => {
-    setDismissedZeroScorePlayerIds((prev) => Array.from(new Set([...prev, ...zeroScorePlayerIds])));
-  }, [zeroScorePlayerIds]);
-
-  const handleUndoFromOverlay = useCallback(async () => {
-    await handleUndo();
-    setDismissedZeroScorePlayerIds((prev) => Array.from(new Set([...prev, ...zeroScorePlayerIds])));
-  }, [handleUndo, zeroScorePlayerIds]);
-
-  const handleOpenSettings = useCallback(() => setIsSettingsOpen(true), []);
-  const handleCloseSettings = useCallback(() => setIsSettingsOpen(false), []);
-
-  const handleSaveSettings = useCallback(
-    async (settings: { doubleOut: boolean; tripleOut: boolean }) => {
-      if (!gameData || !gameId) return;
-
-      setSettingsError(null);
-      setIsSavingSettings(true);
-
-      try {
-        const updatedGame = await updateGameSettings(gameId, settings);
-        updateGameData(updatedGame);
-        setIsSettingsOpen(false);
-      } catch (err) {
-        setSettingsError(toUserErrorMessage(err, "Failed to update settings"));
-      } finally {
-        setIsSavingSettings(false);
-      }
-    },
-    [gameData, gameId, updateGameData],
-  );
-
-  const handleOpenExitOverlay = useCallback(() => setIsExitOverlayOpen(true), []);
-  const handleCloseExitOverlay = useCallback(() => setIsExitOverlayOpen(false), []);
-  const clearPageError = useCallback(() => setPageError(null), []);
-
-  const handleExitGame = useCallback(async () => {
-    if (!gameId) return;
-
-    try {
-      setPageError(null);
-      await abortGame(gameId);
-      resetRoomStore();
-      const rematch = await createRematch(gameId);
-
-      setInvitation({
-        gameId: rematch.gameId,
-        invitationLink: rematch.invitationLink,
-      });
-
-      navigate(ROUTES.start(rematch.gameId));
-    } catch (err) {
-      console.error("Failed to exit game:", err);
-      setPageError(toUserErrorMessage(err, "Could not leave the game. Please try again."));
-    }
-  }, [gameId, navigate]);
+  const clearPageError = useCallback(() => {
+    setPageError(null);
+  }, []);
 
   return {
     gameId,
@@ -293,4 +159,4 @@ export const useGameLogic = () => {
     handleExitGame,
     refetch,
   };
-};
+}
