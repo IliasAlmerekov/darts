@@ -112,6 +112,7 @@ describe("buildGamePlayersDerivedState", () => {
       gameData,
       hasError: false,
       isLoading: false,
+      isUndoPending: false,
       skipFinishOverlay: false,
     });
 
@@ -130,6 +131,7 @@ describe("buildGamePlayersDerivedState", () => {
       gameData: buildGameData(),
       hasError: false,
       isLoading: false,
+      isUndoPending: false,
       skipFinishOverlay: false,
     });
 
@@ -144,10 +146,133 @@ describe("buildGamePlayersDerivedState", () => {
       gameData: buildGameData(),
       hasError: true,
       isLoading: false,
+      isUndoPending: false,
       skipFinishOverlay: false,
     });
 
     expect(result.isInteractionDisabled).toBe(true);
     expect(result.isUndoDisabled).toBe(true);
+  });
+
+  it("should disable undo when isUndoPending is true and game has throws", () => {
+    const gameData = buildGameData({
+      players: [
+        {
+          id: 1,
+          name: "P1",
+          score: 280,
+          isActive: true,
+          isBust: false,
+          position: null,
+          throwsInCurrentRound: 1,
+          currentRoundThrows: [{ value: 21 }],
+          roundHistory: [],
+        },
+        {
+          id: 2,
+          name: "P2",
+          score: 301,
+          isActive: false,
+          isBust: false,
+          position: null,
+          throwsInCurrentRound: 0,
+          currentRoundThrows: [],
+          roundHistory: [],
+        },
+      ],
+    });
+
+    const result = buildGamePlayersDerivedState({
+      dismissedZeroScorePlayerIds: [],
+      gameData,
+      hasError: false,
+      isLoading: false,
+      isUndoPending: true,
+      skipFinishOverlay: false,
+    });
+
+    expect(result.isUndoDisabled).toBe(true);
+    expect(result.isInteractionDisabled).toBe(true);
+  });
+
+  it("should enable undo when isUndoPending is false and game has throws", () => {
+    const gameData = buildGameData({
+      players: [
+        {
+          id: 1,
+          name: "P1",
+          score: 280,
+          isActive: true,
+          isBust: false,
+          position: null,
+          throwsInCurrentRound: 1,
+          currentRoundThrows: [{ value: 21 }],
+          roundHistory: [],
+        },
+        {
+          id: 2,
+          name: "P2",
+          score: 301,
+          isActive: false,
+          isBust: false,
+          position: null,
+          throwsInCurrentRound: 0,
+          currentRoundThrows: [],
+          roundHistory: [],
+        },
+      ],
+    });
+
+    const result = buildGamePlayersDerivedState({
+      dismissedZeroScorePlayerIds: [],
+      gameData,
+      hasError: false,
+      isLoading: false,
+      isUndoPending: false,
+      skipFinishOverlay: false,
+    });
+
+    expect(result.isUndoDisabled).toBe(false);
+  });
+
+  it("should disable all interactions when isUndoPending is true even if other conditions would enable them", () => {
+    const gameData = buildGameData({
+      players: [
+        {
+          id: 1,
+          name: "P1",
+          score: 280,
+          isActive: true,
+          isBust: false,
+          position: null,
+          throwsInCurrentRound: 1,
+          currentRoundThrows: [{ value: 21 }],
+          roundHistory: [],
+        },
+        {
+          id: 2,
+          name: "P2",
+          score: 301,
+          isActive: false,
+          isBust: false,
+          position: null,
+          throwsInCurrentRound: 0,
+          currentRoundThrows: [],
+          roundHistory: [],
+        },
+      ],
+    });
+
+    const result = buildGamePlayersDerivedState({
+      dismissedZeroScorePlayerIds: [],
+      gameData,
+      hasError: false,
+      isLoading: false,
+      isUndoPending: true,
+      skipFinishOverlay: false,
+    });
+
+    expect(result.isUndoDisabled).toBe(true);
+    expect(result.isInteractionDisabled).toBe(true);
   });
 });

@@ -31,7 +31,6 @@ export interface PlayerThrowsDisplay {
 
 export function getPlayerThrowsDisplay({
   isActive,
-  roundsCountLength,
   currentThrow1,
   currentThrow2,
   currentThrow3,
@@ -46,7 +45,7 @@ export function getPlayerThrowsDisplay({
   prevThrow3IsBust,
   bustIcon,
 }: PlayerThrowsDisplayOptions): PlayerThrowsDisplay {
-  const shouldClearPrev = isActive && roundsCountLength > 1;
+  const shouldClearPrev = isActive;
   const hasCurrentThrows =
     currentThrow1 !== undefined || currentThrow2 !== undefined || currentThrow3 !== undefined;
 

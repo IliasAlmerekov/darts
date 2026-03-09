@@ -1,5 +1,5 @@
 import { apiClient, API_BASE_URL } from "./client";
-import { TimeoutError } from "./errors";
+import { ApiError, TimeoutError } from "./errors";
 import { invalidateAuthState } from "@/store/auth";
 
 // ---------------------------------------------------------------------------
@@ -48,6 +48,66 @@ type GetAuthenticatedUserOptions = {
   timeoutMs?: number;
 };
 
+function isRecord(data: unknown): data is Record<string, unknown> {
+  return typeof data === "object" && data !== null;
+}
+
+function isFiniteNumber(value: unknown): value is number {
+  return typeof value === "number" && Number.isFinite(value);
+}
+
+function isNullableString(value: unknown): value is string | null {
+  return typeof value === "string" || value === null;
+}
+
+function isStringArray(value: unknown): value is string[] {
+  return Array.isArray(value) && value.every((item) => typeof item === "string");
+}
+
+function isLoginResponse(data: unknown): data is LoginResponse {
+  if (!isRecord(data)) {
+    return false;
+  }
+
+  const hasKnownField =
+    "redirect" in data || "success" in data || "error" in data || "last_username" in data;
+
+  return (
+    hasKnownField &&
+    (data.redirect === undefined || typeof data.redirect === "string") &&
+    (data.success === undefined || typeof data.success === "boolean") &&
+    (data.error === undefined || isNullableString(data.error)) &&
+    (data.last_username === undefined || isNullableString(data.last_username))
+  );
+}
+
+function isRegistrationResponse(data: unknown): data is RegistrationResponse {
+  return isRecord(data) && (data.redirect === undefined || typeof data.redirect === "string");
+}
+
+function isAuthenticatedUser(data: unknown): data is AuthenticatedUser {
+  return (
+    isRecord(data) &&
+    data.success === true &&
+    isStringArray(data.roles) &&
+    isFiniteNumber(data.id) &&
+    typeof data.redirect === "string" &&
+    (data.email === undefined || isNullableString(data.email)) &&
+    (data.username === undefined || isNullableString(data.username)) &&
+    (data.gameId === undefined || data.gameId === null || isFiniteNumber(data.gameId))
+  );
+}
+
+function isAuthenticatedUserEnvelope(
+  data: unknown,
+): data is { success: true; user: AuthenticatedUser } {
+  return isRecord(data) && data.success === true && isAuthenticatedUser(data.user);
+}
+
+function isUnauthenticatedAuthResponse(data: unknown): boolean {
+  return isRecord(data) && data.success === false;
+}
+
 /**
  * Logs in a user using email/password credentials.
  */
@@ -56,10 +116,16 @@ export async function loginWithCredentials(credentials: LoginCredentials): Promi
   payload.set("_username", credentials.email);
   payload.set("_password", credentials.password);
 
-  return apiClient.post<LoginResponse>(LOGIN_ENDPOINT, payload.toString(), {
+  const response: unknown = await apiClient.post(LOGIN_ENDPOINT, payload.toString(), {
     headers: { "Content-Type": "application/x-www-form-urlencoded" },
     skipAuthRedirect: true,
   });
+
+  if (!isLoginResponse(response)) {
+    throw new ApiError("Unexpected response shape for login", { status: 200, data: response });
+  }
+
+  return response;
 }
 
 /**
@@ -86,11 +152,20 @@ export async function registerUser(
     }
   }
 
-  return apiClient.post<RegistrationResponse>(REGISTER_ENDPOINT, {
+  const response: unknown = await apiClient.post(REGISTER_ENDPOINT, {
     username: data.username,
     email: data.email,
     plainPassword: data.password,
   });
+
+  if (!isRegistrationResponse(response)) {
+    throw new ApiError("Unexpected response shape for registration", {
+      status: 200,
+      data: response,
+    });
+  }
+
+  return response;
 }
 
 /**
@@ -148,19 +223,23 @@ export async function getAuthenticatedUser(
   if (response.ok) {
     const data: unknown = await response.json().catch(() => null);
 
-    if (
-      typeof data === "object" &&
-      data !== null &&
-      "success" in data &&
-      (data as Record<string, unknown>).success === true
-    ) {
-      const record = data as Record<string, unknown>;
-      const user = (record.user ?? data) as AuthenticatedUser;
-      if (typeof user.id !== "number" || !Array.isArray(user.roles)) {
-        return null;
-      }
-      return user;
+    if (isAuthenticatedUserEnvelope(data)) {
+      return data.user;
     }
+
+    if (isAuthenticatedUser(data)) {
+      return data;
+    }
+
+    if (isUnauthenticatedAuthResponse(data)) {
+      return null;
+    }
+
+    throw new ApiError("Unexpected response shape for authenticated user", {
+      status: response.status,
+      data,
+      url: response.url,
+    });
   }
 
   return null;

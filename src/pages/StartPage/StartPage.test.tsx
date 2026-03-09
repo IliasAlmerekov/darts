@@ -184,10 +184,10 @@ describe("StartPage", () => {
     }
   });
 
-  it("passes absolute invitation link to QRCode", () => {
+  it("resolves relative invitation links on the frontend origin", () => {
     useStartPageMock.mockReturnValueOnce(
       buildHookResult({
-        invitation: { invitationLink: "/invite/abc", gameId: 42 },
+        invitation: { invitationLink: "/api/invite/join/abc", gameId: 42 },
       }),
     );
 
@@ -198,7 +198,31 @@ describe("StartPage", () => {
     );
 
     const qrCode = screen.getByTestId("qr-code");
-    expect(qrCode.getAttribute("data-invitation-link")).toBe("http://localhost:3000/invite/abc");
+    expect(qrCode.getAttribute("data-invitation-link")).toBe(
+      "http://localhost:3000/api/invite/join/abc",
+    );
+  });
+
+  it("preserves absolute invitation links from the backend", () => {
+    useStartPageMock.mockReturnValueOnce(
+      buildHookResult({
+        invitation: {
+          invitationLink: "https://darts-sigma.vercel.app/api/invite/join/abc",
+          gameId: 42,
+        },
+      }),
+    );
+
+    render(
+      <MemoryRouter>
+        <StartPage />
+      </MemoryRouter>,
+    );
+
+    const qrCode = screen.getByTestId("qr-code");
+    expect(qrCode.getAttribute("data-invitation-link")).toBe(
+      "https://darts-sigma.vercel.app/api/invite/join/abc",
+    );
   });
 
   it("keeps Start label while button is disabled during game start", () => {

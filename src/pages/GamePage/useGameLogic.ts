@@ -69,7 +69,7 @@ export function useGameLogic(): UseGameLogicResult {
   const gameId = useMemo(() => parseGameIdParam(gameIdParam), [gameIdParam]);
 
   const { gameData, isLoading, error, refetch, updateGameData } = useGameState({ gameId });
-  const { handleThrow, handleUndo } = useThrowHandler({ gameId });
+  const { handleThrow, handleUndo, isUndoPending } = useThrowHandler({ gameId });
   const { event } = useRoomStream(gameId);
   const isGameActive = gameData?.status === "started";
   const skipFinishOverlay =
@@ -95,6 +95,7 @@ export function useGameLogic(): UseGameLogicResult {
     gameId,
     handleUndo,
     isLoading,
+    isUndoPending,
     skipFinishOverlay,
   });
   const {

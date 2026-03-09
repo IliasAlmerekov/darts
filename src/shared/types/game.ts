@@ -20,7 +20,7 @@ export type GameThrowsResponse = {
   id: number;
   status: GameStatus;
   currentRound: number;
-  activePlayerId: number;
+  activePlayerId: number | null;
   currentThrowCount: number;
   players: {
     id: number;
