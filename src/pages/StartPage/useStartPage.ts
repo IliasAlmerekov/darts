@@ -61,6 +61,17 @@ type PersistPlayerOrderParams = {
   shouldRollback: () => boolean;
 };
 
+type GamePlayersResult = ReturnType<typeof useGamePlayers>;
+type StartPageLatestState = {
+  players: GamePlayersResult["players"];
+  appendOptimisticPlayer: GamePlayersResult["appendOptimisticPlayer"];
+  removeOptimisticPlayer: GamePlayersResult["removeOptimisticPlayer"];
+  guestUsername: string;
+  isAddingGuest: boolean;
+  isLobbyFull: boolean;
+  gameId: number | null;
+};
+
 export async function persistPlayerOrder({
   gameId,
   nextOrder,
@@ -83,6 +94,10 @@ export async function persistPlayerOrder({
       onRollback(previousOrder);
     }
   }
+}
+
+function isAbortError(error: unknown): boolean {
+  return error instanceof Error && error.name === "AbortError";
 }
 
 const START_SOUND_PATH = "/sounds/start-round-sound.mp3";
@@ -109,10 +124,6 @@ export function useStartPage() {
   const [guestSuggestions, setGuestSuggestions] = useState<string[]>([]);
   const [isAddingGuest, setIsAddingGuest] = useState(false);
   const [pageError, setPageError] = useState<string | null>(null);
-  const guestUsernameRef = useRef(guestUsername);
-  const isAddingGuestRef = useRef(isAddingGuest);
-  const isLobbyFullRef = useRef(false);
-  const gameIdRef = useRef<number | null>(null);
 
   const gameId = useMemo(() => resolveGameId(gameIdParam), [gameIdParam]);
 
@@ -133,31 +144,25 @@ export function useStartPage() {
   const playerOrderRequestIdRef = useRef(0);
   const createRoomInFlightRef = useRef(false);
   const startGameInFlightRef = useRef(false);
-  const playersRef = useRef(players);
-  const appendOptimisticPlayerRef = useRef(appendOptimisticPlayer);
-  const removeOptimisticPlayerRef = useRef(removeOptimisticPlayer);
+  const latestStateRef = useRef<StartPageLatestState>({
+    players,
+    appendOptimisticPlayer,
+    removeOptimisticPlayer,
+    guestUsername,
+    isAddingGuest,
+    isLobbyFull,
+    gameId,
+  });
 
-  useEffect(() => {
-    playersRef.current = players;
-  }, [players]);
-  useEffect(() => {
-    appendOptimisticPlayerRef.current = appendOptimisticPlayer;
-  }, [appendOptimisticPlayer]);
-  useEffect(() => {
-    removeOptimisticPlayerRef.current = removeOptimisticPlayer;
-  }, [removeOptimisticPlayer]);
-  useEffect(() => {
-    guestUsernameRef.current = guestUsername;
-  }, [guestUsername]);
-  useEffect(() => {
-    isAddingGuestRef.current = isAddingGuest;
-  }, [isAddingGuest]);
-  useEffect(() => {
-    isLobbyFullRef.current = isLobbyFull;
-  }, [isLobbyFull]);
-  useEffect(() => {
-    gameIdRef.current = gameId;
-  }, [gameId]);
+  latestStateRef.current = {
+    players,
+    appendOptimisticPlayer,
+    removeOptimisticPlayer,
+    guestUsername,
+    isAddingGuest,
+    isLobbyFull,
+    gameId,
+  };
 
   useEffect(() => {
     if (players.length <= 0) {
@@ -239,14 +244,15 @@ export function useStartPage() {
 
   const handleRemovePlayer = useCallback(
     async (playerId: number, currentGameId: number): Promise<void> => {
-      const removedPlayer = playersRef.current.find((player) => player.id === playerId);
-      removeOptimisticPlayerRef.current?.(playerId);
+      const { players, removeOptimisticPlayer, appendOptimisticPlayer } = latestStateRef.current;
+      const removedPlayer = players.find((player) => player.id === playerId);
+      removeOptimisticPlayer(playerId);
 
       try {
         await leaveRoom(currentGameId, playerId);
       } catch (error) {
         if (removedPlayer) {
-          appendOptimisticPlayerRef.current?.(removedPlayer);
+          appendOptimisticPlayer(removedPlayer);
         }
         setPageError(toUserErrorMessage(error, "Could not remove player. Please try again."));
       }
@@ -255,11 +261,17 @@ export function useStartPage() {
   );
 
   useEffect(() => {
-    if (!gameId || invitation?.gameId === gameId || isRestoring) return;
+    if (!gameId || invitation?.gameId === gameId) return;
+    const controller = new AbortController();
+    const { signal } = controller;
 
     const restoreData = async () => {
       setIsRestoring(true);
       try {
+        if (signal.aborted) {
+          return;
+        }
+
         if (currentGameId && currentGameId !== gameId) {
           console.warn(`Redirecting from game ${gameId} to active game ${currentGameId}`);
           navigate(ROUTES.start(currentGameId), { replace: true });
@@ -273,7 +285,10 @@ export function useStartPage() {
           return;
         }
 
-        const gameData = await getGameThrows(gameId);
+        const gameData = await getGameThrows(gameId, signal);
+        if (signal.aborted) {
+          return;
+        }
 
         if (gameData.status !== "lobby") {
           console.warn(`Access to game ${gameId} denied - status: ${gameData.status}`);
@@ -288,17 +303,26 @@ export function useStartPage() {
         setGameData(gameData);
 
         try {
-          const inviteResponse = await getInvitation(gameId);
+          const inviteResponse = await getInvitation(gameId, signal);
+          if (signal.aborted) {
+            return;
+          }
           setInvitation({
             gameId: inviteResponse.gameId,
             invitationLink: inviteResponse.invitationLink,
           });
           setCurrentGameId(inviteResponse.gameId);
         } catch (error) {
+          if (isAbortError(error) || signal.aborted) {
+            return;
+          }
           console.warn("Could not load invitation link:", error);
           setCurrentGameId(gameId);
         }
       } catch (error) {
+        if (isAbortError(error) || signal.aborted) {
+          return;
+        }
         console.error("Failed to restore game data:", error);
         if (currentGameId) {
           navigate(ROUTES.start(currentGameId), { replace: true });
@@ -306,12 +330,18 @@ export function useStartPage() {
           navigate(ROUTES.start(), { replace: true });
         }
       } finally {
-        setIsRestoring(false);
+        if (!signal.aborted) {
+          setIsRestoring(false);
+        }
       }
     };
 
-    restoreData();
-  }, [gameId, invitation?.gameId, isRestoring, navigate, currentGameId]);
+    void restoreData();
+
+    return () => {
+      controller.abort();
+    };
+  }, [gameId, invitation?.gameId, navigate, currentGameId]);
 
   useEffect(() => {
     if (invitation?.gameId) {
@@ -427,18 +457,25 @@ export function useStartPage() {
   }, []);
 
   const handleAddGuest = useCallback(async (): Promise<void> => {
-    const currentGameId = gameIdRef.current;
-    if (!currentGameId || isAddingGuestRef.current) {
+    const {
+      gameId: currentGameId,
+      guestUsername,
+      isAddingGuest,
+      isLobbyFull,
+      appendOptimisticPlayer,
+    } = latestStateRef.current;
+
+    if (!currentGameId || isAddingGuest) {
       setGuestError("Please create a game first.");
       return;
     }
 
-    if (isLobbyFullRef.current) {
+    if (isLobbyFull) {
       setGuestError("The lobby is full. Remove a player to add another.");
       return;
     }
 
-    const trimmedUsername = guestUsernameRef.current.trim();
+    const trimmedUsername = guestUsername.trim();
     const validationError = validateGuestUsername(trimmedUsername);
     if (validationError) {
       setGuestError(validationError);
@@ -451,7 +488,7 @@ export function useStartPage() {
 
     try {
       const guestPlayer = await addGuestPlayer(currentGameId, { username: trimmedUsername });
-      appendOptimisticPlayer?.(guestPlayer);
+      appendOptimisticPlayer(guestPlayer);
       closeGuestOverlay();
     } catch (error) {
       const apiError = getGuestErrorFromApi(error);
@@ -464,7 +501,7 @@ export function useStartPage() {
     } finally {
       setIsAddingGuest(false);
     }
-  }, [appendOptimisticPlayer, closeGuestOverlay, getGuestErrorFromApi]);
+  }, [closeGuestOverlay, getGuestErrorFromApi]);
 
   return {
     invitation,

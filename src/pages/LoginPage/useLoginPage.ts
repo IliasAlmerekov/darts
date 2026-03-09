@@ -14,7 +14,7 @@ export function useLoginPage() {
   const [submitError, setSubmitError] = useState<string | null>(null);
   const { login, loading, error: loginError } = useLogin();
   const navigate = useNavigate();
-  const { user, loading: checking } = useAuthenticatedUser();
+  const { user } = useAuthenticatedUser();
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>): Promise<void> => {
     e.preventDefault();
@@ -56,7 +56,6 @@ export function useLoginPage() {
   return {
     error: submitError ?? loginError,
     loading,
-    checking,
     handleSubmit,
   };
 }

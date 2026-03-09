@@ -28,8 +28,22 @@ describe("room/create-room api", () => {
 
     const response = await getInvitation(520);
 
-    expect(apiClient.post).toHaveBeenCalledWith("/invite/create/520");
+    expect(apiClient.post).toHaveBeenCalledWith("/invite/create/520", undefined, undefined);
     expect(response.gameId).toBe(520);
+  });
+
+  it("forwards AbortSignal for invitation requests", async () => {
+    const controller = new AbortController();
+    vi.mocked(apiClient.post).mockResolvedValueOnce({
+      gameId: 520,
+      invitationLink: "/invite/520",
+    });
+
+    await getInvitation(520, controller.signal);
+
+    expect(apiClient.post).toHaveBeenCalledWith("/invite/create/520", undefined, {
+      signal: controller.signal,
+    });
   });
 
   it("creates room and then requests invitation via POST", async () => {

@@ -14,7 +14,7 @@ const getGameSettingsMock = vi.fn();
 
 // Mutable state for router/store — allows per-test overrides without vi.doMock
 let locationState: { finishedGameId?: number } | null = { finishedGameId: 42 };
-let routeParams: { id?: string } = { id: "42" };
+let routeParams: { id?: string | undefined } = { id: "42" };
 let storeGameSettings: { startScore: number; doubleOut: boolean; tripleOut: boolean } | null = {
   startScore: 301,
   doubleOut: false,

@@ -56,7 +56,7 @@ describe("useGameState", () => {
   it("resets the shared store on gameId change and ignores stale response", async () => {
     const firstRequest = createDeferred<GameThrowsResponse | null>();
     const secondRequest = createDeferred<GameThrowsResponse | null>();
-    const calls: Array<{ gameId: number; signal?: AbortSignal }> = [];
+    const calls: Array<{ gameId: number; signal?: AbortSignal | undefined }> = [];
 
     getGameThrowsIfChangedMock.mockImplementation((gameId: number, signal?: AbortSignal) => {
       calls.push({ gameId, signal });

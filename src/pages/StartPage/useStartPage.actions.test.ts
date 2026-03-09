@@ -9,6 +9,8 @@ const useParamsMock = vi.fn(() => ({}));
 const setCurrentGameIdMock = vi.fn();
 const setInvitationMock = vi.fn();
 const setGameDataMock = vi.fn();
+const appendOptimisticPlayerMock = vi.fn();
+const removeOptimisticPlayerMock = vi.fn();
 
 const gameFlowMock = {
   updatePlayerOrder: vi.fn(),
@@ -27,8 +29,19 @@ vi.mock("react-router-dom", () => ({
   useParams: () => useParamsMock(),
 }));
 
-const emptyPlayers: never[] = [];
-const gamePlayersResult = { players: emptyPlayers, count: 0 };
+type MockPlayer = {
+  id: number;
+  name: string;
+  position: number | null;
+};
+
+const emptyPlayers: MockPlayer[] = [];
+const gamePlayersResult = {
+  players: emptyPlayers,
+  count: 0,
+  appendOptimisticPlayer: appendOptimisticPlayerMock,
+  removeOptimisticPlayer: removeOptimisticPlayerMock,
+};
 
 vi.mock("./useGamePlayers", () => ({
   useGamePlayers: () => gamePlayersResult,
@@ -87,6 +100,7 @@ describe("useStartPage action guards", () => {
     storeValues.set("lastFinishedGameId", null);
     storeValues.set("currentGameId", null);
     storeValues.set("invitation", null);
+    gamePlayersResult.players = [];
     gamePlayersResult.count = 0;
   });
 
@@ -250,5 +264,28 @@ describe("useStartPage action guards", () => {
 
     expect(gameFlowMock.addGuestPlayer).not.toHaveBeenCalled();
     expect(result.current.guestError).toBe("Username must contain at least 3 letters.");
+  });
+
+  it("uses the latest players snapshot for remove rollback after rerender", async () => {
+    useParamsMock.mockReturnValue({ id: "10" });
+    storeValues.set("invitation", { gameId: 10, invitationLink: "/invite/10" });
+    storeValues.set("currentGameId", 10);
+    gamePlayersResult.players = [{ id: 1, name: "Alex", position: 0 }];
+    gamePlayersResult.count = 1;
+    gameFlowMock.leaveRoom.mockRejectedValueOnce(new Error("network"));
+
+    const { result, rerender } = renderHook(() => useStartPage());
+    const removePlayer = result.current.handleRemovePlayer;
+
+    gamePlayersResult.players = [{ id: 2, name: "Sam", position: 1 }];
+    rerender();
+
+    await act(async () => {
+      await removePlayer(2, 10);
+    });
+
+    expect(removeOptimisticPlayerMock).toHaveBeenCalledWith(2);
+    expect(gameFlowMock.leaveRoom).toHaveBeenCalledWith(10, 2);
+    expect(appendOptimisticPlayerMock).toHaveBeenCalledWith({ id: 2, name: "Sam", position: 1 });
   });
 });

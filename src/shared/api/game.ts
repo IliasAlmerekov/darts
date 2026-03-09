@@ -97,8 +97,11 @@ function getNextStateVersion(response: Response): string | null {
 /**
  * Fetches the current game state including throws and players.
  */
-export async function getGameThrows(gameId: number): Promise<GameThrowsResponse> {
-  const data: unknown = await apiClient.get(GAME_ENDPOINT(gameId));
+export async function getGameThrows(
+  gameId: number,
+  signal?: AbortSignal,
+): Promise<GameThrowsResponse> {
+  const data: unknown = await apiClient.get(GAME_ENDPOINT(gameId), signal ? { signal } : undefined);
   if (!isGameThrowsResponse(data)) {
     throw new ApiError("Unexpected response shape", { status: 200, data });
   }
@@ -116,11 +119,9 @@ export async function getGameThrowsIfChanged(
   const currentVersion = gameStateVersionById.get(gameId) ?? null;
   const { data, response } = await apiClient.request<ParsedResponse>(GAME_ENDPOINT(gameId), {
     method: "GET",
-    query: currentVersion ? { since: currentVersion } : undefined,
-    headers: {
-      ...(currentVersion ? { "If-None-Match": currentVersion } : {}),
-    },
-    signal,
+    ...(currentVersion ? { query: { since: currentVersion } } : {}),
+    ...(currentVersion ? { headers: { "If-None-Match": currentVersion } } : {}),
+    ...(signal ? { signal } : {}),
     acceptedStatuses: [304],
     returnResponse: true,
   });
@@ -188,8 +189,15 @@ export async function startGame(gameId: number, config: StartGameRequest): Promi
 /**
  * Marks a game as finished and returns final standings.
  */
-export async function finishGame(gameId: number): Promise<FinishedPlayerResponse[]> {
-  const data: unknown = await apiClient.post(FINISH_GAME_ENDPOINT(gameId));
+export async function finishGame(
+  gameId: number,
+  signal?: AbortSignal,
+): Promise<FinishedPlayerResponse[]> {
+  const data: unknown = await apiClient.post(
+    FINISH_GAME_ENDPOINT(gameId),
+    undefined,
+    signal ? { signal } : undefined,
+  );
   if (!isFinishedPlayerResponseArray(data)) {
     throw new ApiError("Unexpected response shape for finish game", { status: 200, data });
   }
