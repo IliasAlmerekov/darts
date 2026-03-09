@@ -68,7 +68,8 @@ export function buildGamePlayersDerivedState({
     skipFinishOverlay,
     zeroScorePlayerIds,
   });
-  const isInteractionDisabled = isLoading || hasError || !gameData || shouldShowFinishOverlay;
+  const isInteractionDisabled =
+    isLoading || hasError || !gameData || shouldShowFinishOverlay || isUndoPending;
   const isUndoDisabled =
     isLoading ||
     hasError ||

@@ -151,4 +151,23 @@ describe("useGameState", () => {
     expect(result.current.gameData).toBeNull();
     expect(setGameDataSpy).toHaveBeenCalledTimes(setGameDataCallCountBeforeResolve);
   });
+
+  it("keeps refetch stable between rerenders for the same game", async () => {
+    getGameThrowsIfChangedMock.mockResolvedValue(createGameData(1));
+
+    const { result, rerender } = renderHook(
+      ({ gameId }: { gameId: number | null }) => useGameState({ gameId }),
+      { initialProps: { gameId: 1 } },
+    );
+
+    await waitFor(() => {
+      expect(result.current.gameData?.id).toBe(1);
+    });
+
+    const initialRefetch = result.current.refetch;
+
+    rerender({ gameId: 1 });
+
+    expect(result.current.refetch).toBe(initialRefetch);
+  });
 });

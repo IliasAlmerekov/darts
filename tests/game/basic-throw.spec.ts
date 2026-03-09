@@ -54,8 +54,10 @@ type RouteOptions = {
   initialState: MockGameState;
   throwStates?: MockGameState[];
   undoStates?: MockGameState[];
+  undoResponseDelayMs?: number;
   conflictOnThrow?: boolean;
   conflictRefetchState?: MockGameState;
+  onUndoRequest?: (request: Request) => void;
   onSettingsRequest?: (payload: { doubleOut?: boolean; tripleOut?: boolean }) => void;
 };
 
@@ -209,9 +211,14 @@ const installGameRoutes = async (page: Page, options: RouteOptions): Promise<voi
       return;
     }
 
+    options.onUndoRequest?.(request);
     const nextState = undoStates.shift();
     if (nextState) {
       currentState = nextState;
+    }
+
+    if (options.undoResponseDelayMs) {
+      await new Promise((resolve) => setTimeout(resolve, options.undoResponseDelayMs));
     }
 
     await route.fulfill({
@@ -672,6 +679,100 @@ test.describe("Basic Throw Mechanics and Validation", () => {
     await expect(playerCard(page, "Player 1")).toContainText("20");
     await expect(page.getByText("Player Finished! Continue Game?")).toHaveCount(0);
     await expect(number20).toBeEnabled();
+  });
+
+  test("1.7b Rapid undo from finish overlay keeps state stable for the next throw", async ({
+    page,
+  }) => {
+    const consoleMessages: string[] = [];
+    page.on("console", (message) => {
+      consoleMessages.push(message.text());
+    });
+
+    const stateAfterWinningThrow = createState({
+      activePlayerId: 2,
+      winnerId: 1,
+      currentThrowCount: 0,
+      players: [
+        createPlayer(1, "Player 1", 0, false, {
+          position: 1,
+          roundHistory: [
+            {
+              round: 1,
+              throws: [{ value: 20, isDouble: false, isTriple: false, isBust: false }],
+            },
+          ],
+        }),
+        createPlayer(2, "Player 2", 301, true),
+        createPlayer(3, "Player 3", 301, false),
+      ],
+    });
+
+    const stateAfterUndo = createState({
+      winnerId: null,
+      currentThrowCount: 0,
+      players: [
+        createPlayer(1, "Player 1", 20, true),
+        createPlayer(2, "Player 2", 301, false),
+        createPlayer(3, "Player 3", 301, false),
+      ],
+    });
+
+    const stateAfterThrowFollowingUndo = createState({
+      currentThrowCount: 1,
+      players: [
+        createPlayer(1, "Player 1", 15, true, {
+          throwsInCurrentRound: 1,
+          currentRoundThrows: [{ value: 5, isDouble: false, isTriple: false, isBust: false }],
+        }),
+        createPlayer(2, "Player 2", 301, false),
+        createPlayer(3, "Player 3", 301, false),
+      ],
+    });
+
+    let undoRequestCount = 0;
+
+    await mockAuth(page);
+    await installGameRoutes(page, {
+      initialState: createState({
+        players: [
+          createPlayer(1, "Player 1", 20, true),
+          createPlayer(2, "Player 2", 301, false),
+          createPlayer(3, "Player 3", 301, false),
+        ],
+      }),
+      throwStates: [stateAfterWinningThrow, stateAfterThrowFollowingUndo],
+      undoStates: [stateAfterUndo],
+      undoResponseDelayMs: 150,
+      onUndoRequest: () => {
+        undoRequestCount += 1;
+      },
+    });
+
+    await openGame(page);
+
+    await page.getByRole("button", { name: "20", exact: true }).click();
+    await expect(page.getByText("Player Finished! Continue Game?")).toBeVisible();
+
+    await page.getByRole("button", { name: "Undo Throw" }).dblclick();
+
+    await expect(page.getByText("Player Finished! Continue Game?")).toHaveCount(0);
+    expect(undoRequestCount).toBe(1);
+
+    const numberFive = page.getByRole("button", { name: "5", exact: true });
+    await expect(numberFive).toBeEnabled();
+    await numberFive.click();
+
+    await expect(playerCard(page, "Player 1")).toContainText("15");
+
+    const relevantConsoleMessages = consoleMessages.filter((message) => {
+      return (
+        message.includes("Maximum update depth exceeded") ||
+        message.includes("Cannot throw: no active player found")
+      );
+    });
+
+    expect(relevantConsoleMessages).toEqual([]);
   });
 
   test("1.8 Recover from throw conflict by syncing latest server state", async ({ page }) => {

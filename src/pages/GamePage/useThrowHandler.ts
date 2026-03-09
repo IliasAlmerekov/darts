@@ -85,6 +85,8 @@ export function useThrowHandler({ gameId }: UseThrowHandlerOptions): UseThrowHan
               isBust: player.isBust,
             })),
           });
+          await reconcileGameState("Game state was out of sync. Refreshed latest game state.");
+          playSound("error");
           return;
         }
 

@@ -192,6 +192,7 @@ describe("buildGamePlayersDerivedState", () => {
     });
 
     expect(result.isUndoDisabled).toBe(true);
+    expect(result.isInteractionDisabled).toBe(true);
   });
 
   it("should enable undo when isUndoPending is false and game has throws", () => {
@@ -234,7 +235,7 @@ describe("buildGamePlayersDerivedState", () => {
     expect(result.isUndoDisabled).toBe(false);
   });
 
-  it("should disable undo when isUndoPending is true even if other conditions would enable it", () => {
+  it("should disable all interactions when isUndoPending is true even if other conditions would enable them", () => {
     const gameData = buildGameData({
       players: [
         {
@@ -272,6 +273,6 @@ describe("buildGamePlayersDerivedState", () => {
     });
 
     expect(result.isUndoDisabled).toBe(true);
-    expect(result.isInteractionDisabled).toBe(false);
+    expect(result.isInteractionDisabled).toBe(true);
   });
 });

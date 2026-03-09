@@ -2,7 +2,7 @@ import { useCallback, useRef, useState } from "react";
 import type { MutableRefObject } from "react";
 import { undoLastThrow } from "@/shared/api/game";
 import { playSound } from "@/lib/soundPlayer";
-import { $gameData, setGameData } from "@/store";
+import { $gameData, normalizeGameData, setGameData } from "@/store";
 import type { GameThrowsResponse } from "@/types";
 import { applyOptimisticUndo } from "./throwStateService";
 
@@ -49,15 +49,17 @@ export function useUndoFlow({ gameId, reconcileGameState }: UseUndoFlowOptions):
       }
 
       const updatedGameState: GameThrowsResponse = await undoLastThrow(gameId);
+      const normalizedUpdatedGameState = normalizeGameData(updatedGameState);
 
       if (
-        typeof updatedGameState.activePlayerId !== "number" ||
-        !Number.isFinite(updatedGameState.activePlayerId)
+        !normalizedUpdatedGameState ||
+        typeof normalizedUpdatedGameState.activePlayerId !== "number" ||
+        !Number.isFinite(normalizedUpdatedGameState.activePlayerId)
       ) {
         console.error("Undo returned invalid activePlayerId:", updatedGameState.activePlayerId);
         await reconcileGameState("");
       } else {
-        setGameData(updatedGameState);
+        setGameData(normalizedUpdatedGameState);
         playSound("undo");
       }
     } catch (error) {
