@@ -8,6 +8,18 @@ type ProtectedRoutesProps = {
   allowedRoles?: string[];
 };
 
+function getFallbackRouteForAuthenticatedUser(roles: string[] | undefined): string {
+  if (Array.isArray(roles) && roles.includes("ROLE_ADMIN")) {
+    return ROUTES.start();
+  }
+
+  if (Array.isArray(roles) && roles.includes("ROLE_PLAYER")) {
+    return ROUTES.joined;
+  }
+
+  return ROUTES.login;
+}
+
 const ProtectedRoutes: React.FC<ProtectedRoutesProps> = ({ allowedRoles = ["ROLE_ADMIN"] }) => {
   const { user: loggedInUser, loading: checking } = useAuthenticatedUser();
   const { pathname } = useLocation();
@@ -30,7 +42,7 @@ const ProtectedRoutes: React.FC<ProtectedRoutesProps> = ({ allowedRoles = ["ROLE
   const isAuthorized = Array.isArray(roles) && roles.some((r: string) => allowedRoles.includes(r));
 
   if (!isAuthorized) {
-    return <Navigate to={ROUTES.login} state={{ from: pathname }} replace />;
+    return <Navigate to={getFallbackRouteForAuthenticatedUser(roles)} replace />;
   }
 
   return <Outlet />;

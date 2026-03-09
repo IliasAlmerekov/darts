@@ -105,7 +105,7 @@ describe("useAuthenticatedUser", () => {
     expect(setCurrentGameIdMock).not.toHaveBeenCalled();
   });
 
-  it("keeps the bootstrap unresolved on timeout instead of converting it to a logged-out state", async () => {
+  it("marks auth as checked and unauthenticated when the auth bootstrap times out", async () => {
     const existingUser: AuthenticatedUser = {
       success: true,
       roles: ["ROLE_ADMIN"],
@@ -126,12 +126,14 @@ describe("useAuthenticatedUser", () => {
     await waitFor(() => {
       expect(getAuthenticatedUserMock).toHaveBeenCalledTimes(1);
     });
-    await Promise.resolve();
-    await Promise.resolve();
+    await waitFor(() => {
+      expect(result.current.loading).toBe(false);
+    });
 
-    expect(result.current.user).toMatchObject({ id: 77, gameId: 13 });
-    expect(result.current.loading).toBe(true);
+    expect(result.current.user).toBeNull();
+    expect(result.current.loading).toBe(false);
     expect(result.current.error).toBeNull();
+    expect($authChecked.get()).toBe(true);
   });
 
   it("marks auth as unauthenticated when the auth API resolves null", async () => {

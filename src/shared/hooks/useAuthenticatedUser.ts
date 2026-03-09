@@ -55,6 +55,7 @@ export const useAuthenticatedUser = (): UseAuthenticatedUserResult => {
         }
 
         if (err instanceof TimeoutError) {
+          setAuthenticatedUser(null);
           return;
         }
 
