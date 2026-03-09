@@ -33,77 +33,81 @@ function isGameMode(id: string | number): id is GameMode {
   return GAME_MODE_OPTIONS.some((option) => option.id === id);
 }
 
+function parseRouteGameId(gameIdParam: string | undefined): number | null {
+  if (!gameIdParam) {
+    return null;
+  }
+
+  const parsed = Number(gameIdParam);
+  return Number.isFinite(parsed) ? parsed : null;
+}
+
 function SettingsPage(): JSX.Element {
   const { id: gameIdParam } = useParams<{ id?: string }>();
   const gameData = useStore($gameData);
   const gameSettings = useStore($gameSettings);
   const currentGameIdFromStore = useStore($currentGameId);
 
-  // Use gameId from URL if available, otherwise fall back to store
-  const currentGameId = useMemo(() => {
-    if (gameIdParam) {
-      const parsed = Number(gameIdParam);
-      return Number.isFinite(parsed) ? parsed : currentGameIdFromStore;
-    }
-    return currentGameIdFromStore;
-  }, [gameIdParam, currentGameIdFromStore]);
+  const routeGameId = useMemo(() => parseRouteGameId(gameIdParam), [gameIdParam]);
   const [isSaving, setIsSaving] = useState(false);
   const [savingScope, setSavingScope] = useState<"game-mode" | "points" | null>(null);
-  const initialGameMode: GameMode = gameSettings
-    ? resolveGameMode(gameSettings.doubleOut, gameSettings.tripleOut)
-    : "single-out";
-  const initialPoints = gameSettings?.startScore ?? 301;
-  const [selectedGameMode, setSelectedGameMode] = useState<GameMode>(initialGameMode);
-  const [selectedPoints, setSelectedPoints] = useState<number>(initialPoints);
-  const [hasHydratedSelection, setHasHydratedSelection] = useState(() => Boolean(gameSettings));
+  const [selectedGameMode, setSelectedGameMode] = useState<GameMode>("single-out");
+  const [selectedPoints, setSelectedPoints] = useState<number>(301);
+  const [hasHydratedSelection, setHasHydratedSelection] = useState(false);
   const selectedGameModeRef = useRef(selectedGameMode);
   const selectedPointsRef = useRef(selectedPoints);
   const effectiveGameIdRef = useRef<number | null>(null);
   const isSavingRef = useRef(false);
+  const activeGameSettings =
+    routeGameId !== null && gameData?.id === routeGameId ? gameSettings : null;
 
-  // Update store with gameId from URL or already loaded game data.
+  // Keep the session store aligned only with the canonical route id.
   useEffect(() => {
-    const resolvedGameId = currentGameId ?? gameData?.id ?? null;
-    if (resolvedGameId && resolvedGameId !== currentGameIdFromStore) {
-      setCurrentGameId(resolvedGameId);
+    if (routeGameId !== null && routeGameId !== currentGameIdFromStore) {
+      setCurrentGameId(routeGameId);
     }
-  }, [currentGameId, currentGameIdFromStore, gameData?.id]);
+  }, [routeGameId, currentGameIdFromStore]);
 
   useEffect(() => {
     setHasHydratedSelection(false);
-  }, [currentGameId]);
+    if (routeGameId === null) {
+      setSelectedGameMode("single-out");
+      setSelectedPoints(301);
+    }
+  }, [routeGameId]);
 
-  // Load game settings from backend on mount or when gameId changes
+  // Load settings only for the explicit route game id.
   useEffect(() => {
-    if (!currentGameId) {
+    if (!routeGameId) {
       return;
     }
 
     const loadGameSettings = async () => {
       try {
-        const loadedGameData = await getGameThrows(currentGameId);
+        const loadedGameData = await getGameThrows(routeGameId);
         setGameData(loadedGameData);
       } catch (error) {
         console.error("Failed to load game settings:", error);
       }
     };
 
-    const hasCurrentGameInStore = gameData?.id === currentGameId;
+    const hasCurrentGameInStore = gameData?.id === routeGameId;
     if (!hasCurrentGameInStore) {
       void loadGameSettings();
-      return;
     }
-  }, [currentGameId, gameData?.id]);
+  }, [routeGameId, gameData?.id]);
 
-  // Mapping between backend settings and UI representation
+  // Only hydrate the UI from canonical settings for the route game.
   const currentGameMode = useMemo(
     () =>
-      gameSettings ? resolveGameMode(gameSettings.doubleOut, gameSettings.tripleOut) : "single-out",
-    [gameSettings],
+      activeGameSettings
+        ? resolveGameMode(activeGameSettings.doubleOut, activeGameSettings.tripleOut)
+        : "single-out",
+    [activeGameSettings],
   );
 
-  const currentPoints = gameSettings?.startScore ?? 301;
-  const effectiveGameId = currentGameId ?? gameData?.id ?? null;
+  const currentPoints = activeGameSettings?.startScore ?? 301;
+  const effectiveGameId = routeGameId;
 
   useEffect(() => {
     selectedGameModeRef.current = selectedGameMode;
@@ -125,28 +129,19 @@ function SettingsPage(): JSX.Element {
     if (hasHydratedSelection) {
       return;
     }
-    if (!gameSettings) {
-      return;
-    }
-    if (effectiveGameId && gameData?.id !== effectiveGameId) {
+    if (!activeGameSettings) {
       return;
     }
 
     setSelectedGameMode(currentGameMode);
     setSelectedPoints(currentPoints);
     setHasHydratedSelection(true);
-  }, [
-    currentGameMode,
-    currentPoints,
-    effectiveGameId,
-    gameData?.id,
-    gameSettings,
-    hasHydratedSelection,
-  ]);
+  }, [activeGameSettings, currentGameMode, currentPoints, hasHydratedSelection]);
 
   const handleGameModeClick = useCallback(async (id: string | number) => {
     if (isSavingRef.current) return;
     if (!isGameMode(id)) return;
+    if (!effectiveGameIdRef.current) return;
 
     const mode = id;
     const isDoubleOut = mode === "double-out";
@@ -182,6 +177,7 @@ function SettingsPage(): JSX.Element {
 
   const handlePointsClick = useCallback(async (id: string | number) => {
     if (isSavingRef.current) return;
+    if (!effectiveGameIdRef.current) return;
 
     const points = Number(id);
     const currentMode = selectedGameModeRef.current;

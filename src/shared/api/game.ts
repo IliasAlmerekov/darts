@@ -26,7 +26,6 @@ const REOPEN_GAME_ENDPOINT = (id: number) => `/game/${id}/reopen`;
 const ABORT_GAME_ENDPOINT = (id: number) => `/game/${id}/abort`;
 const REMATCH_ENDPOINT = (id: number) => `/room/${id}/rematch`;
 const CREATE_INVITE_ENDPOINT = (id: number) => `/invite/create/${id}`;
-const CREATE_GAME_SETTINGS_ENDPOINT = "/game/settings";
 const GAME_SETTINGS_ENDPOINT = (id: number) => `/game/${id}/settings`;
 const RECORD_THROW_ENDPOINT = (id: number) => `/game/${id}/throw/delta`;
 const UNDO_THROW_ENDPOINT = (id: number) => `/game/${id}/throw`;
@@ -296,17 +295,6 @@ export async function getGameSettings(gameId: number): Promise<GameSettingsRespo
 }
 
 /**
- * Creates game settings for a new game.
- */
-async function createGameSettings(payload: CreateGameSettingsPayload): Promise<GameThrowsResponse> {
-  const data: unknown = await apiClient.post(CREATE_GAME_SETTINGS_ENDPOINT, payload);
-  if (!isGameThrowsResponse(data)) {
-    throw new ApiError("Unexpected response shape for create game settings", { status: 200, data });
-  }
-  return data;
-}
-
-/**
  * Updates settings for an existing game.
  */
 export async function updateGameSettings(
@@ -321,16 +309,20 @@ export async function updateGameSettings(
 }
 
 /**
- * Creates or updates game settings depending on whether a game id is provided.
+ * Saves settings for an existing game and rejects when game id is missing.
  */
 export async function saveGameSettings(
   payload: CreateGameSettingsPayload,
   gameId?: number | null,
 ): Promise<GameThrowsResponse> {
-  if (gameId) {
-    return updateGameSettings(gameId, payload);
+  if (typeof gameId !== "number" || !Number.isFinite(gameId)) {
+    throw new ApiError("Cannot save game settings without an active gameId", {
+      status: 400,
+      data: payload,
+    });
   }
-  return createGameSettings(payload);
+
+  return updateGameSettings(gameId, payload);
 }
 
 // ---------------------------------------------------------------------------
