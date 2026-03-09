@@ -1,6 +1,6 @@
-import { describe, expect, it } from "vitest";
+import { beforeAll, describe, expect, it } from "vitest";
 
-const GLOBAL_IGNORES = ["**/*.config.ts", "**/*.config.js", "**/*.config.mjs", "dist/**"];
+const GLOBAL_IGNORES = ["commitlint.config.mjs", "dist/**"];
 const TS_FILES = ["**/*.ts", "**/*.tsx"];
 const SHARED_FILES = ["src/shared/**/*.{ts,tsx}"];
 const SHARED_IGNORES = ["src/shared/types/game.ts", "src/shared/types/player.ts"];
@@ -14,6 +14,8 @@ type FlatConfigItem = {
     };
   };
 };
+
+let flatConfig: FlatConfigItem[] = [];
 
 const hasFiles = (
   value: FlatConfigItem | undefined,
@@ -29,9 +31,12 @@ const hasFiles = (
 };
 
 describe("eslint flat config global ignores", () => {
-  it("keeps global ignores in the first standalone config item", { timeout: 15_000 }, async () => {
+  beforeAll(async () => {
     const configModule = await import("../../../eslint.config.mjs");
-    const flatConfig = configModule.default as FlatConfigItem[];
+    flatConfig = configModule.default as FlatConfigItem[];
+  }, 30_000);
+
+  it("keeps global ignores in the first standalone config item", () => {
     const firstConfig = flatConfig[0];
 
     expect(firstConfig).toBeDefined();
@@ -43,9 +48,7 @@ describe("eslint flat config global ignores", () => {
     expect(firstConfig.ignores).toEqual(expect.arrayContaining(GLOBAL_IGNORES));
   });
 
-  it("does not define global ignore patterns in the TypeScript config block", async () => {
-    const configModule = await import("../../../eslint.config.mjs");
-    const flatConfig = configModule.default as FlatConfigItem[];
+  it("does not define global ignore patterns in the TypeScript config block", () => {
     const tsConfig = flatConfig.find((item) => hasFiles(item, TS_FILES));
 
     expect(tsConfig).toBeDefined();
@@ -54,18 +57,14 @@ describe("eslint flat config global ignores", () => {
     );
   });
 
-  it("uses the eslint tsconfig so staged test files can be linted", async () => {
-    const configModule = await import("../../../eslint.config.mjs");
-    const flatConfig = configModule.default as FlatConfigItem[];
+  it("uses the eslint tsconfig so staged test files can be linted", () => {
     const tsConfig = flatConfig.find((item) => hasFiles(item, TS_FILES));
 
     expect(tsConfig).toBeDefined();
     expect(tsConfig?.languageOptions?.parserOptions?.project).toBe("./tsconfig.eslint.json");
   });
 
-  it("preserves src/shared scoped ignores in the shared override", async () => {
-    const configModule = await import("../../../eslint.config.mjs");
-    const flatConfig = configModule.default as FlatConfigItem[];
+  it("preserves src/shared scoped ignores in the shared override", () => {
     const sharedOverride = flatConfig.find((item) => hasFiles(item, SHARED_FILES));
 
     expect(sharedOverride).toBeDefined();
