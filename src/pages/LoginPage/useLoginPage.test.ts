@@ -2,11 +2,13 @@
 import { renderHook, waitFor } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { useLoginPage } from "./useLoginPage";
+import { ROUTES } from "@/lib/routes";
 
 const navigateMock = vi.fn();
 const useLoginMock = vi.fn();
 const useAuthenticatedUserMock = vi.fn();
 const getActiveGameIdMock = vi.fn();
+const assignMock = vi.fn();
 
 vi.mock("react-router-dom", async (importOriginal) => {
   const actual = await importOriginal<typeof import("react-router-dom")>();
@@ -31,6 +33,13 @@ vi.mock("@/store", () => ({
 describe("useLoginPage", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    Object.defineProperty(window, "location", {
+      configurable: true,
+      value: {
+        ...window.location,
+        assign: assignMock,
+      },
+    });
     useLoginMock.mockReturnValue({
       login: vi.fn(),
       loading: false,
@@ -80,6 +89,26 @@ describe("useLoginPage", () => {
 
     await waitFor(() => {
       expect(navigateMock).toHaveBeenCalledWith("/start/99");
+    });
+  });
+
+  it("falls back to the internal start route when the authenticated user has an external redirect", async () => {
+    useAuthenticatedUserMock.mockReturnValue({
+      user: {
+        success: true,
+        roles: ["ROLE_ADMIN"],
+        id: 1,
+        redirect: "https://evil.example/phishing",
+      },
+      loading: false,
+      error: null,
+    });
+
+    renderHook(() => useLoginPage());
+
+    await waitFor(() => {
+      expect(assignMock).not.toHaveBeenCalled();
+      expect(navigateMock).toHaveBeenCalledWith(ROUTES.start());
     });
   });
 });

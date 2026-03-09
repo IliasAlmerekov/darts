@@ -72,11 +72,11 @@ describe("ProtectedRoutes", () => {
     expect(screen.queryByTestId("outlet-content")).toBeNull();
   });
 
-  it("should redirect to / when user lacks the required role", () => {
+  it("should redirect player users to /joined when they lack admin permissions", () => {
     mockUseAuthenticatedUser.mockReturnValue({
       user: {
         success: true,
-        roles: ["ROLE_USER"],
+        roles: ["ROLE_PLAYER"],
         id: 1,
         redirect: "/start",
       },
@@ -84,9 +84,51 @@ describe("ProtectedRoutes", () => {
       error: null,
     });
 
-    renderProtectedRoutes("/game/42");
+    render(
+      <MemoryRouter initialEntries={["/game/42"]}>
+        <Routes>
+          <Route element={<ProtectedRoutes allowedRoles={["ROLE_ADMIN"]} />}>
+            <Route
+              path="/game/42"
+              element={<div data-testid="outlet-content">Protected Content</div>}
+            />
+          </Route>
+          <Route path="/joined" element={<div data-testid="joined-page">Joined</div>} />
+        </Routes>
+      </MemoryRouter>,
+    );
 
-    expect(screen.getByTestId("home-page")).toBeDefined();
+    expect(screen.getByTestId("joined-page")).toBeDefined();
+    expect(screen.queryByTestId("outlet-content")).toBeNull();
+  });
+
+  it("should redirect admin users to /start when they lack player permissions", () => {
+    mockUseAuthenticatedUser.mockReturnValue({
+      user: {
+        success: true,
+        roles: ["ROLE_ADMIN"],
+        id: 1,
+        redirect: "/start",
+      },
+      loading: false,
+      error: null,
+    });
+
+    render(
+      <MemoryRouter initialEntries={["/joined"]}>
+        <Routes>
+          <Route element={<ProtectedRoutes allowedRoles={["ROLE_PLAYER"]} />}>
+            <Route
+              path="/joined"
+              element={<div data-testid="outlet-content">Protected Content</div>}
+            />
+          </Route>
+          <Route path="/start" element={<div data-testid="start-page">Start</div>} />
+        </Routes>
+      </MemoryRouter>,
+    );
+
+    expect(screen.getByTestId("start-page")).toBeDefined();
     expect(screen.queryByTestId("outlet-content")).toBeNull();
   });
 

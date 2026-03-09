@@ -1,4 +1,4 @@
-export const MIN_GUEST_LETTERS = 3;
+const MIN_GUEST_LETTERS = 3;
 
 export function countLetters(value: string): number {
   const matches = value.match(/\p{L}/gu);

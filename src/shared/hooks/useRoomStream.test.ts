@@ -22,6 +22,12 @@ class MockEventSource {
     this.listeners.set(type, handler);
   }
 
+  removeEventListener(type: string, handler: (e: MessageEvent<string>) => void): void {
+    if (this.listeners.get(type) === handler) {
+      this.listeners.delete(type);
+    }
+  }
+
   emit(type: string, data: string): void {
     const handler = this.listeners.get(type);
     handler?.(new MessageEvent(type, { data }));

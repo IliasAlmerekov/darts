@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useState } from "react";
+import React, { useCallback, useState } from "react";
 import { useStore } from "@nanostores/react";
 import styles from "./GamesOverview.module.css";
 import { Link } from "react-router-dom";
@@ -12,9 +12,10 @@ import {
   PaginationNext,
   PaginationPrevious,
 } from "@/shared/ui/pagination";
-import { getGamesOverview } from "@/shared/api/statistics";
-import type { FinishedGameProps } from "@/types";
 import { StatisticsHeaderControls } from "@/shared/ui/statistics-header-controls";
+import { useGamesOverview } from "./useGamesOverview";
+
+const LIMIT = 9;
 
 type GamesPaginationProps = {
   offset: number;
@@ -52,75 +53,85 @@ const GamesPagination = React.memo(function GamesPagination({
 
 export default function GamesOverviewPage(): JSX.Element {
   const currentGameId = useStore($currentGameId);
-  const [games, setGames] = useState<FinishedGameProps[]>([]);
   const [offset, setOffset] = useState(0);
-  const [total, setTotal] = useState(0);
-  const limit = 9;
 
-  useEffect(() => {
-    getGamesOverview(limit, offset).then((data) => {
-      if (data.items) {
-        setGames(data.items);
-        setTotal(data.total ?? 0);
-      } else if (Array.isArray(data)) {
-        setGames(data);
-        setTotal(data.length);
-      }
-    });
-  }, [offset]);
+  const { games, total, loading, error, retry } = useGamesOverview({ limit: LIMIT, offset });
 
   const handlePreviousPage = useCallback(() => {
-    setOffset((previousOffset) => Math.max(0, previousOffset - limit));
-  }, [limit]);
+    setOffset((prev) => Math.max(0, prev - LIMIT));
+  }, []);
 
   const handleNextPage = useCallback(() => {
-    setOffset((previousOffset) => previousOffset + limit);
-  }, [limit]);
+    setOffset((prev) => prev + LIMIT);
+  }, []);
 
   return (
     <AdminLayout currentGameId={currentGameId}>
       <div className={styles.gameOverview}>
         <StatisticsHeaderControls title="Games Overview" sortValue="alphabetically" sortDisabled />
-        <div className={styles.overview}>
-          {games.map((game) => (
-            <div key={game.id} className={styles.gameContainer}>
-              <div className={styles.gameCard}>
-                <h4>
-                  {" "}
-                  {new Date(game.date).toLocaleDateString("de-De", {
-                    day: "2-digit",
-                    month: "2-digit",
-                    year: "numeric",
-                  })}{" "}
-                </h4>
-                <p>
-                  <span className="stat-label">
-                    Players <span className="stat-value">{game.playersCount}</span>
-                  </span>
-                </p>
-                <p>
-                  {" "}
-                  <span className="stat-label">
-                    Player Won: <span className="stat-value">{game.winnerName}</span>
-                  </span>
-                </p>
-                <p>
-                  {" "}
-                  <span className="stat-label">
-                    Rounds: <span className="stat-value">{game.winnerRounds}</span>
-                  </span>
-                </p>
+
+        {loading && (
+          <div role="status" className={styles.statusMessage}>
+            Loading…
+          </div>
+        )}
+
+        {!loading && error !== null && (
+          <div className={styles.statusMessage}>
+            <p>{error}</p>
+            <button type="button" onClick={retry}>
+              Retry
+            </button>
+          </div>
+        )}
+
+        {!loading && error === null && games.length === 0 && (
+          <div className={styles.statusMessage}>No games found.</div>
+        )}
+
+        {!loading && error === null && games.length > 0 && (
+          <div className={styles.overview}>
+            {games.map((game) => (
+              <div key={game.id} className={styles.gameContainer}>
+                <div className={styles.gameCard}>
+                  <h4>
+                    {" "}
+                    {new Date(game.date).toLocaleDateString("de-De", {
+                      day: "2-digit",
+                      month: "2-digit",
+                      year: "numeric",
+                    })}{" "}
+                  </h4>
+                  <p>
+                    <span className="stat-label">
+                      Players <span className="stat-value">{game.playersCount}</span>
+                    </span>
+                  </p>
+                  <p>
+                    {" "}
+                    <span className="stat-label">
+                      Player Won: <span className="stat-value">{game.winnerName}</span>
+                    </span>
+                  </p>
+                  <p>
+                    {" "}
+                    <span className="stat-label">
+                      Rounds: <span className="stat-value">{game.winnerRounds}</span>
+                    </span>
+                  </p>
+                </div>
+                <div className={styles.detailsLink}>
+                  <Link to={ROUTES.details(game.id)}>details</Link>
+                </div>
               </div>
-              <div className={styles.detailsLink}>
-                <Link to={ROUTES.details(game.id)}>details</Link>
-              </div>
-            </div>
-          ))}
-        </div>
+            ))}
+          </div>
+        )}
+
         <GamesPagination
           offset={offset}
           total={total}
-          limit={limit}
+          limit={LIMIT}
           onPrevious={handlePreviousPage}
           onNext={handleNextPage}
         />

@@ -57,30 +57,27 @@ Not every page needs all folders; keep only what is required.
 
 ### Pages
 
-| Page                | Responsibility                                |
-| ------------------- | --------------------------------------------- |
-| `LoginPage`         | Login flow                                    |
-| `RegisterPage`      | Registration flow                             |
-| `StartPage`         | Pre-game lobby, player preparation            |
-| `GamePage`          | Active game scoring flow                      |
-| `GameSummaryPage`   | Post-game summary                             |
-| `StatisticsPage`    | Statistics screens (`GamesOverview`, details) |
-| `SettingsPage`      | Game/application settings                     |
-| `JoinedGamePage`    | Player view for joined games                  |
-| `PlayerProfilePage` | Player profile                                |
+| Page                | Responsibility                     |
+| ------------------- | ---------------------------------- |
+| `LoginPage`         | Login flow                         |
+| `RegisterPage`      | Registration flow                  |
+| `StartPage`         | Pre-game lobby, player preparation |
+| `GamePage`          | Active game scoring flow           |
+| `GameSummaryPage`   | Post-game summary                  |
+| `GamesOverviewPage` | List of all games                  |
+| `GameDetailPage`    | Single game details and statistics |
+| `StatisticsPage`    | Player statistics summary          |
+| `SettingsPage`      | Game/application settings          |
+| `JoinedGamePage`    | Player view for joined games       |
+| `PlayerProfilePage` | Player profile                     |
 
 ### Shared
 
 ```
 shared/
-├── api/            # API modules grouped by domain
+├── api/            # API modules grouped by domain (client, errors, mappers)
 ├── hooks/          # Reusable hooks
-├── lib/
-│   ├── api/        # Base HTTP client, error types
-│   ├── soundPlayer.ts
-│   ├── parseThrowValue.ts
-│   ├── player-mappers.ts
-│   └── ...
+├── lib/            # Pure utilities (parseThrowValue, player-mappers, routes, soundPlayer, etc.)
 ├── store/          # Global Nanostores
 ├── types/          # Shared TypeScript types and ambient declarations
 └── ui/             # Reusable UI components (Button, Overlay, Pagination, etc.)
@@ -95,17 +92,19 @@ shared/
 
 ## Scripts
 
-| Command                      | Description                               |
-| ---------------------------- | ----------------------------------------- |
-| `npm run dev`                | Start dev server                          |
-| `npm run build`              | Type-check and build for production       |
-| `npm run typecheck`          | Run TypeScript type-checking              |
-| `npm run eslint`             | Lint JS/TS sources                        |
-| `npm run stylelint`          | Lint CSS modules                          |
-| `npm run test`               | Run unit/integration tests (Vitest)       |
-| `npm run test:e2e`           | Run end-to-end tests (Playwright)         |
-| `npm run architecture:check` | Check import rules via dependency-cruiser |
-| `npm run knip`               | Find unused exports and dead code         |
+| Command                 | Description                             |
+| ----------------------- | --------------------------------------- |
+| `npm run dev`           | Start dev server                        |
+| `npm run build`         | Type-check and build for production     |
+| `npm run preview`       | Preview production build locally        |
+| `npm run typecheck`     | Run TypeScript type-checking            |
+| `npm run eslint`        | Lint JS/TS sources                      |
+| `npm run stylelint`     | Lint CSS modules                        |
+| `npm run test`          | Run unit/integration tests (Vitest)     |
+| `npm run coverage`      | Run tests with coverage report          |
+| `npm run test:e2e`      | Run end-to-end tests (Playwright)       |
+| `npm run secrets:check` | Scan for accidentally committed secrets |
+| `npm run knip`          | Find unused exports and dead code       |
 
 ## Tech stack
 

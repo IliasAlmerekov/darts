@@ -1,6 +1,6 @@
 import type { BackendPlayer, BackendRoundHistory, UIPlayer, UIRound } from "@/types";
 
-export function mapRoundHistory(roundHistory: BackendRoundHistory[]): UIRound[] {
+function mapRoundHistory(roundHistory: BackendRoundHistory[]): UIRound[] {
   if (!Array.isArray(roundHistory)) {
     return [];
   }
@@ -27,7 +27,7 @@ export function mapRoundHistory(roundHistory: BackendRoundHistory[]): UIRound[] 
   return rounds;
 }
 
-export function mapCurrentRound(currentRoundThrows: BackendPlayer["currentRoundThrows"]): UIRound {
+function mapCurrentRound(currentRoundThrows: BackendPlayer["currentRoundThrows"]): UIRound {
   if (!Array.isArray(currentRoundThrows)) {
     return {};
   }
@@ -54,7 +54,7 @@ function hasAnyThrow(round: UIRound): boolean {
   );
 }
 
-export function mapPlayerToUI(
+function mapPlayerToUI(
   player: BackendPlayer,
   index: number,
   currentRoundNumber?: number,
@@ -88,10 +88,6 @@ export function mapPlayerToUI(
 
 export function mapPlayersToUI(players: BackendPlayer[], currentRoundNumber?: number): UIPlayer[] {
   return players.map((player, index) => mapPlayerToUI(player, index, currentRoundNumber));
-}
-
-export function getActivePlayer(players: UIPlayer[]): UIPlayer | null {
-  return players.find((player) => player.isActive) ?? null;
 }
 
 export function getFinishedPlayers(players: UIPlayer[]): UIPlayer[] {

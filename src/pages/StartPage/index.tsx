@@ -2,8 +2,19 @@ import styles from "./StartPage.module.css";
 import React from "react";
 import { useStore } from "@nanostores/react";
 import clsx from "clsx";
-import { DndContext, closestCenter } from "@dnd-kit/core";
-import { SortableContext, verticalListSortingStrategy } from "@dnd-kit/sortable";
+import {
+  DndContext,
+  closestCenter,
+  PointerSensor,
+  KeyboardSensor,
+  useSensor,
+  useSensors,
+} from "@dnd-kit/core";
+import {
+  SortableContext,
+  verticalListSortingStrategy,
+  sortableKeyboardCoordinates,
+} from "@dnd-kit/sortable";
 import { restrictToVerticalAxis } from "@dnd-kit/modifiers";
 import { AdminLayout } from "@/shared/ui/admin-layout";
 import Plus from "@/assets/icons/plus.svg";
@@ -28,6 +39,10 @@ function toAbsoluteInvitationLink(invitationLink: string): string {
 
 function StartPage(): React.JSX.Element {
   const currentGameId = useStore($currentGameId);
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
+    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
+  );
   const {
     invitation,
     gameId,
@@ -140,6 +155,7 @@ function StartPage(): React.JSX.Element {
           <div className={styles.addedPlayerList}>
             <div className={styles.playersListArea}>
               <DndContext
+                sensors={sensors}
                 collisionDetection={closestCenter}
                 onDragEnd={handleDragEnd}
                 modifiers={[restrictToVerticalAxis]}

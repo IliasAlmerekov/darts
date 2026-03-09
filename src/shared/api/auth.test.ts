@@ -2,6 +2,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { getAuthenticatedUser, logout, registerUser } from "./auth";
 import { apiClient } from "./client";
+import { TimeoutError } from "./errors";
 import { $authChecked, $user, setAuthenticatedUser } from "@/store/auth";
 
 type AuthResponseBody = {
@@ -55,7 +56,19 @@ describe("getAuthenticatedUser", () => {
     });
   });
 
-  it("aborts request after timeout", async () => {
+  it("returns null for a 401 auth-check response", async () => {
+    vi.spyOn(globalThis, "fetch").mockResolvedValueOnce({
+      ok: false,
+      status: 401,
+      headers: new Headers({ "content-type": "application/json" }),
+      url: "/api/login/success",
+      json: vi.fn(async () => ({ message: "Unauthorized" })),
+    } as unknown as Response);
+
+    await expect(getAuthenticatedUser()).resolves.toBeNull();
+  });
+
+  it("throws TimeoutError after timeout instead of treating the request as logged out", async () => {
     vi.useFakeTimers();
 
     vi.spyOn(globalThis, "fetch").mockImplementation((_input, init) => {
@@ -65,7 +78,7 @@ describe("getAuthenticatedUser", () => {
         signal?.addEventListener(
           "abort",
           () => {
-            reject(Object.assign(new Error("aborted"), { name: "AbortError" }));
+            reject(new DOMException("The operation was aborted.", "AbortError"));
           },
           { once: true },
         );
@@ -73,10 +86,10 @@ describe("getAuthenticatedUser", () => {
     });
 
     const requestPromise = getAuthenticatedUser({ timeoutMs: 50 });
-    const assertion = expect(requestPromise).rejects.toMatchObject({ name: "AbortError" });
+    const errorPromise = requestPromise.catch((reason: unknown) => reason);
     await vi.advanceTimersByTimeAsync(51);
-
-    await assertion;
+    const error = await errorPromise;
+    expect(error).toBeInstanceOf(TimeoutError);
   });
 });
 
@@ -114,8 +127,6 @@ describe("registerUser", () => {
     expect(getSpy).not.toHaveBeenCalled();
   });
 
-  // Ticket 2: CSRF ping must go through apiClient.get, NOT raw fetch("/register")
-  // This test FAILS on the current buggy implementation (bare fetch call on line 150)
   it("should route CSRF ping through apiClient.get with skipAuthRedirect when refreshCsrf is true", async () => {
     const getSpy = vi.spyOn(apiClient, "get").mockResolvedValueOnce(undefined);
     vi.spyOn(apiClient, "post").mockResolvedValueOnce({ redirect: "/start" });

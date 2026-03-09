@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useId, useState } from "react";
 import { Overlay } from "@/shared/ui/overlay";
 import { SettingsGroupBtn, Button } from "@/shared/ui/button";
 import type { GameMode } from "@/types";
@@ -42,6 +42,7 @@ function SettingsOverlay({
   isSaving = false,
   error = null,
 }: SettingsOverlayProps) {
+  const titleId = useId();
   const [gameMode, setGameMode] = useState<GameMode>(
     resolveGameMode(initialDoubleOut, initialTripleOut),
   );
@@ -63,9 +64,12 @@ function SettingsOverlay({
       isOpen={isOpen}
       src={deleteIcon}
       onClose={onClose}
+      ariaLabelledBy={titleId}
     >
       <div className={styles.settingsOverlay}>
-        <h3 className={styles.overlayHeadline}>Settings</h3>
+        <h3 className={styles.overlayHeadline} id={titleId}>
+          Settings
+        </h3>
         <div className={styles.settingsBodyContainer}>
           <SettingsGroupBtn
             title="Game Mode"

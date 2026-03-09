@@ -5,7 +5,7 @@ const DEFAULT_TIMEOUT_MS = 30_000;
 
 const ENV_API_BASE_URL = import.meta.env.VITE_API_BASE_URL as string | undefined;
 export type AuthRedirectHandler = () => void;
-export interface ApiResponse<T> {
+interface ApiResponse<T> {
   data: T;
   response: Response;
 }
@@ -31,7 +31,7 @@ export function clearUnauthorizedHandler(): void {
   onUnauthorized = null;
 }
 
-export function triggerUnauthorizedHandler(): void {
+function triggerUnauthorizedHandler(): void {
   onUnauthorized?.();
 }
 

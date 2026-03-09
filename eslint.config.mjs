@@ -7,7 +7,7 @@ import jsxA11y from "eslint-plugin-jsx-a11y";
 
 export default [
   {
-    ignores: ["**/*.config.ts", "**/*.config.js", "**/*.config.mjs", "dist/**"],
+    ignores: ["commitlint.config.mjs", "dist/**"],
   },
   js.configs.recommended,
   ...tseslint.configs.recommended,
@@ -16,7 +16,7 @@ export default [
     languageOptions: {
       parser: tseslint.parser,
       parserOptions: {
-        project: "./tsconfig.json",
+        project: "./tsconfig.eslint.json",
         ecmaVersion: "latest",
         sourceType: "module",
         ecmaFeatures: {
@@ -98,8 +98,12 @@ export default [
         {
           patterns: [
             {
-              group: ["@/pages/*"],
+              group: ["@/pages/*", "../pages/*"],
               message: "Pages must not import from other pages. Use shared/ for cross-page code.",
+            },
+            {
+              group: ["@/app/*", "../app/*"],
+              message: "Pages must not import from app/. Move shared logic to shared/.",
             },
           ],
         },

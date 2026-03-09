@@ -6,7 +6,7 @@ type MockLoginFailureOptions = {
 
 const DEFAULT_INVALID_CREDENTIALS_ERROR = "Incorrect email or password";
 
-export async function mockUnauthenticatedSession(page: Page): Promise<void> {
+async function mockUnauthenticatedSession(page: Page): Promise<void> {
   await page.context().clearCookies();
 
   await page.route("**/api/login/success", async (route) => {

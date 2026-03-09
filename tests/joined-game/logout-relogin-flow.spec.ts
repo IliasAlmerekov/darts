@@ -33,32 +33,19 @@ test.describe("Authentication Flow and Redirects", () => {
     // 3. Navigate to a protected route to test authentication
     await page.goto("http://localhost:5173/start");
 
-    // Wait for page to fully load and determine authentication state
-    await page.waitForLoadState("domcontentloaded");
+    // Wait for auth redirect resolution. After clearing cookies, the app may either:
+    // 1) redirect to the login route, or
+    // 2) remain authenticated when the session is backed by secure cookies.
+    await expect
+      .poll(() => new URL(page.url()).pathname, { timeout: 10000 })
+      .toMatch(/^\/(?:start)?$/);
 
-    // Check if user was redirected to login page (which should happen after clearing cookies)
-    // Wait a bit for any redirects to complete
-    await page.waitForURL(/.*/, { timeout: 3000 }).catch(() => {});
-
-    const currentState = await page.evaluate(() => {
-      return {
-        pathname: window.location.pathname,
-        hasEmailInput: !!document.querySelector('input[type="email"]'),
-        hasSignInHeading: !!document.querySelector("h1")?.textContent?.includes("Sign in"),
-        hasSignInButton: Array.from(document.querySelectorAll("button")).some((btn) =>
-          btn.textContent?.includes("Sign in"),
-        ),
-        url: window.location.href,
-      };
-    });
-
-    const isOnLoginPage =
-      currentState.pathname === "/" &&
-      currentState.hasEmailInput &&
-      (currentState.hasSignInHeading || currentState.hasSignInButton);
+    const currentPath = new URL(page.url()).pathname;
+    const isOnLoginPage = currentPath === "/";
 
     if (isOnLoginPage) {
       // If redirected to login page, verify login form is accessible
+      await expect(emailField).toBeVisible();
       await expect(page.getByRole("heading", { name: "Sign in" })).toBeVisible();
 
       // 4. Login again with the same valid credentials

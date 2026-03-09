@@ -1,17 +1,5 @@
 import type { GameStatus } from "./game";
 
-export interface PaginatedRequest {
-  [key: string]: string | number | boolean | null | undefined;
-  limit?: number;
-  offset?: number;
-  sort?: string;
-}
-
-export interface PaginatedResponse<T> {
-  items: T[];
-  total: number;
-}
-
 export interface CreateRoomResponse {
   gameId: number;
   invitationLink: string;

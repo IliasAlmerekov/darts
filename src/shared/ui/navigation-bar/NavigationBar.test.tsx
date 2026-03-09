@@ -2,13 +2,14 @@
 import { render, screen } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import { describe, expect, it } from "vitest";
+import { ROUTES } from "@/lib/routes";
 import NavigationBar from "./NavigationBar";
 import styles from "./NavigationBar.module.css";
 
 describe("NavigationBar", () => {
   it("marks Statistics as active on details route", () => {
     render(
-      <MemoryRouter initialEntries={["/details/551"]}>
+      <MemoryRouter initialEntries={[ROUTES.details(551)]}>
         <NavigationBar />
       </MemoryRouter>,
     );

@@ -32,11 +32,20 @@ export function useRoomStream(gameId: number | null): {
     const url = `${API_BASE_URL}${SSE_STREAM_ENDPOINT(gameId)}`;
     let retryDelay = INITIAL_RETRY_DELAY_MS;
     let retryTimerId: ReturnType<typeof setTimeout> | null = null;
-    let currentSource: EventSource | null = null;
+
+    const EVENT_TYPES = [
+      "player-joined",
+      "player-left",
+      "game-started",
+      "throw",
+      "throw-recorded",
+      "game-finished",
+    ] as const;
+
+    let cleanupSource: (() => void) | null = null;
 
     function connect(): void {
       const eventSource = new EventSource(url, { withCredentials: true });
-      currentSource = eventSource;
 
       eventSource.onopen = () => {
         setIsConnected(true);
@@ -53,16 +62,29 @@ export function useRoomStream(gameId: number | null): {
         setEvent({ type, data: parsedData });
       };
 
-      eventSource.addEventListener("player-joined", setEventFrom("player-joined"));
-      eventSource.addEventListener("player-left", setEventFrom("player-left"));
-      eventSource.addEventListener("game-started", setEventFrom("game-started"));
-      eventSource.addEventListener("throw", setEventFrom("throw"));
-      eventSource.addEventListener("throw-recorded", setEventFrom("throw-recorded"));
-      eventSource.addEventListener("game-finished", setEventFrom("game-finished"));
+      const handlers = EVENT_TYPES.map((type) => ({
+        type,
+        handler: setEventFrom(type),
+      }));
+
+      for (const { type, handler } of handlers) {
+        eventSource.addEventListener(type, handler);
+      }
+
+      function dispose(): void {
+        for (const { type, handler } of handlers) {
+          eventSource.removeEventListener(type, handler);
+        }
+        eventSource.onopen = null;
+        eventSource.onerror = null;
+        eventSource.close();
+      }
+
+      cleanupSource = dispose;
 
       eventSource.onerror = () => {
         setIsConnected(false);
-        eventSource.close();
+        dispose();
         retryTimerId = setTimeout(() => {
           retryDelay = Math.min(retryDelay * 2, MAX_RETRY_DELAY_MS);
           connect();
@@ -74,7 +96,7 @@ export function useRoomStream(gameId: number | null): {
 
     return () => {
       if (retryTimerId !== null) clearTimeout(retryTimerId);
-      currentSource?.close();
+      cleanupSource?.();
     };
   }, [gameId]);
 

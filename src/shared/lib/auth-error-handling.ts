@@ -1,6 +1,6 @@
 import { ApiError, NetworkError, UnauthorizedError } from "@/shared/api";
 
-export type AuthFlow = "login" | "registration";
+type AuthFlow = "login" | "registration";
 
 const AUTH_ERROR_MESSAGES = {
   loginFailed: "Login failed. Please try again.",

@@ -53,15 +53,24 @@ function GuestPlayerOverlay({
   suggestions = [],
   onSuggestionClick,
 }: GuestPlayerOverlayProps): React.JSX.Element {
+  const titleId = React.useId();
   const trimmedUsername = username.trim();
   const isAddDisabled = isAdding || trimmedUsername.length === 0;
   const errorId = error ? "guest-username-error" : undefined;
   const hasSuggestions = suggestions.length > 0;
 
   return (
-    <Overlay isOpen={isOpen} onClose={onClose} src={deleteIcon} className={styles.guestOverlayBox}>
+    <Overlay
+      isOpen={isOpen}
+      onClose={onClose}
+      src={deleteIcon}
+      className={styles.guestOverlayBox}
+      ariaLabelledBy={titleId}
+    >
       <div className={styles.overlayContent}>
-        <h3 className={styles.heading}>Play as a guest</h3>
+        <h3 className={styles.heading} id={titleId}>
+          Play as a guest
+        </h3>
         <div className={styles.fieldGroup}>
           <label className={styles.label} htmlFor="guest-username">
             Username

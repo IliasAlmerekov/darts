@@ -198,8 +198,8 @@ export function useStartPage() {
 
       if (over && active.id !== over.id) {
         setPlayerOrder((items) => {
-          const oldIndex = items.indexOf(active.id as number);
-          const newIndex = items.indexOf(over.id as number);
+          const oldIndex = items.indexOf(Number(active.id));
+          const newIndex = items.indexOf(Number(over.id));
           if (oldIndex === -1 || newIndex === -1) {
             return items;
           }

@@ -1,1 +1,1 @@
-npm run typecheck && npm test
+npm run eslint && npm run stylelint && npm run typecheck && npm test && npx prettier --check .

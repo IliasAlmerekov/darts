@@ -16,7 +16,15 @@ type Props = {
 };
 
 function SelectedPlayerItem({ ...props }: Props): React.JSX.Element {
-  const { attributes, listeners, isDragging, setNodeRef, transform, transition } = useSortable({
+  const {
+    attributes,
+    listeners,
+    isDragging,
+    setActivatorNodeRef,
+    setNodeRef,
+    transform,
+    transition,
+  } = useSortable({
     id: props.user.id,
     transition:
       props.dragEnd === false
@@ -32,7 +40,7 @@ function SelectedPlayerItem({ ...props }: Props): React.JSX.Element {
 
   const style = {
     opacity: isDragging ? 0.4 : undefined,
-    transform: CSS.Translate.toString(transform),
+    transform: CSS.Transform.toString(transform),
     transition,
   };
 
@@ -40,6 +48,8 @@ function SelectedPlayerItem({ ...props }: Props): React.JSX.Element {
     <div ref={setNodeRef} style={style} className={styles.selectedPlayerItem}>
       <div className={styles.playerMain}>
         <button
+          ref={setActivatorNodeRef}
+          type="button"
           {...attributes}
           {...listeners}
           className={styles.moveButton}

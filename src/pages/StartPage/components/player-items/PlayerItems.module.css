@@ -8,7 +8,7 @@
 }
 
 .selectedPlayerItem {
-  touch-action: none;
+  align-items: center;
 }
 
 .deleteButton,
@@ -22,6 +22,18 @@
 .deleteButton img {
   width: 100%;
   padding: 1px;
+}
+
+.moveButton {
+  touch-action: none;
+  cursor: grab;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.moveButton:active {
+  cursor: grabbing;
 }
 
 .playerMain {

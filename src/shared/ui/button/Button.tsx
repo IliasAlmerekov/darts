@@ -2,7 +2,7 @@ import clsx from "clsx";
 import { Link, To } from "react-router-dom";
 import styles from "./Button.module.css";
 
-export interface ButtonProps {
+interface ButtonProps {
   isLink?: boolean;
   isInverted?: boolean;
   iconSrc?: string;

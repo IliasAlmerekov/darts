@@ -2,6 +2,7 @@
 import { act, renderHook } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { useLogin } from "./useLogin";
+import { ROUTES } from "@/lib/routes";
 
 const navigateMock = vi.fn();
 const useLocationMock = vi.fn();
@@ -9,6 +10,7 @@ const loginWithCredentialsMock = vi.fn();
 const getAuthenticatedUserMock = vi.fn();
 const invalidateAuthStateMock = vi.fn();
 const setAuthenticatedUserMock = vi.fn();
+const assignMock = vi.fn();
 
 vi.mock("react-router-dom", async (importOriginal) => {
   const actual = await importOriginal<typeof import("react-router-dom")>();
@@ -32,6 +34,13 @@ vi.mock("@/store/auth", () => ({
 describe("useLogin", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    Object.defineProperty(window, "location", {
+      configurable: true,
+      value: {
+        ...window.location,
+        assign: assignMock,
+      },
+    });
     useLocationMock.mockReturnValue({
       pathname: "/",
       search: "",
@@ -117,5 +126,22 @@ describe("useLogin", () => {
 
     expect(invalidateAuthStateMock).toHaveBeenCalledTimes(1);
     expect(navigateMock).toHaveBeenCalledWith("/statistics");
+  });
+
+  it("falls back to the internal start route when login returns an external redirect", async () => {
+    loginWithCredentialsMock.mockResolvedValueOnce({
+      success: true,
+      redirect: "https://evil.example/phishing",
+    });
+
+    const { result } = renderHook(() => useLogin());
+
+    await act(async () => {
+      await result.current.login("admin@test.com", "password");
+    });
+
+    expect(invalidateAuthStateMock).toHaveBeenCalledTimes(1);
+    expect(assignMock).not.toHaveBeenCalled();
+    expect(navigateMock).toHaveBeenCalledWith(ROUTES.start());
   });
 });

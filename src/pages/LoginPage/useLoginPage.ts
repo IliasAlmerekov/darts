@@ -5,6 +5,7 @@ import { useLogin } from "./useLogin";
 import { getActiveGameId } from "@/store";
 import { mapAuthErrorMessage } from "@/lib/auth-error-handling";
 import { ROUTES } from "@/lib/routes";
+import { resolveSafeLoginRedirect } from "./lib/safeRedirect";
 
 /**
  * Orchestrates login page state, submission, and redirect logic.
@@ -43,14 +44,10 @@ export function useLoginPage() {
         return;
       }
 
-      const redirectPath = user.redirect?.startsWith(`${ROUTES.start()}/`)
-        ? ROUTES.start()
-        : user.redirect || ROUTES.start();
-
-      if (/^https?:\/\//i.test(redirectPath)) {
-        window.location.assign(redirectPath);
-        return;
-      }
+      const redirectPath =
+        user.redirect?.startsWith(`${ROUTES.start()}/`) === true
+          ? ROUTES.start()
+          : resolveSafeLoginRedirect(user.redirect, ROUTES.start());
 
       navigate(redirectPath);
     }
