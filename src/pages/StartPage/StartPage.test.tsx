@@ -64,13 +64,17 @@ const buildHookResult = (overrides: Partial<StartPageHookResult> = {}): StartPag
 });
 
 const useStartPageMock = vi.fn((): StartPageHookResult => buildHookResult());
+const livePlayersListMock = vi.fn((props: unknown) => {
+  void props;
+  return <div data-testid="live-players-list" />;
+});
 
 vi.mock("./useStartPage", () => ({
   useStartPage: () => useStartPageMock(),
 }));
 
 vi.mock("./components/live-players-list/LivePlayersList", () => ({
-  LivePlayersList: () => <div data-testid="live-players-list" />,
+  LivePlayersList: (props: unknown) => livePlayersListMock(props),
 }));
 
 vi.mock("@/shared/ui/navigation-bar", () => ({
@@ -212,5 +216,32 @@ describe("StartPage", () => {
 
     const startButton = screen.getByRole("button", { name: "Start" });
     expect(startButton).toHaveProperty("disabled", true);
+  });
+
+  it("passes live player data from useStartPage into LivePlayersList", () => {
+    useStartPageMock.mockReturnValueOnce(
+      buildHookResult({
+        players: [{ id: 7, name: "Alex", position: 0 }],
+        playerCount: 1,
+        playerOrder: [7],
+      }),
+    );
+
+    render(
+      <MemoryRouter>
+        <StartPage />
+      </MemoryRouter>,
+    );
+
+    const livePlayersListProps = livePlayersListMock.mock.calls.at(-1)?.[0];
+
+    expect(livePlayersListProps).toEqual(
+      expect.objectContaining({
+        players: [{ id: 7, name: "Alex", position: 0 }],
+        playerCount: 1,
+        playerOrder: [7],
+      }),
+    );
+    expect(livePlayersListProps).not.toHaveProperty("gameId");
   });
 });

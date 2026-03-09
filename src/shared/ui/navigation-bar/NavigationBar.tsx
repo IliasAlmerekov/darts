@@ -12,8 +12,8 @@ import Madebydeepblue from "@/assets/icons/madeByDeepblue.svg";
 import clsx from "clsx";
 
 type NavigationBarProps = {
-  className?: string;
-  currentGameId?: number | null;
+  className?: string | undefined;
+  currentGameId?: number | null | undefined;
 };
 
 function NavigationBar({ className, currentGameId = null }: NavigationBarProps): React.JSX.Element {

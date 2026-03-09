@@ -8,6 +8,10 @@ interface UseEventSourceOptions {
 
 /**
  * Subscribes to a server-sent events stream and cleans up on unmount.
+ *
+ * IMPORTANT: `handler` must be a stable reference (wrapped in `useCallback`)
+ * at the call site. An unstable handler causes EventSource to be recreated
+ * on every render, which leads to connection thrashing.
  */
 export const useEventSource = (
   url: string | null,

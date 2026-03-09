@@ -1,6 +1,6 @@
 // @vitest-environment node
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { getGameThrows, getGameThrowsIfChanged, resetGameStateVersion } from "./game";
+import { finishGame, getGameThrows, getGameThrowsIfChanged, resetGameStateVersion } from "./game";
 import { apiClient, clearUnauthorizedHandler, setUnauthorizedHandler } from "./client";
 import { TimeoutError } from "./errors";
 
@@ -40,7 +40,19 @@ describe("getGameThrowsIfChanged", () => {
     const data = await getGameThrows(520);
 
     expect(data).toEqual(response);
-    expect(apiClient.get).toHaveBeenCalledWith("/game/520");
+    expect(apiClient.get).toHaveBeenCalledWith("/game/520", undefined);
+  });
+
+  it("forwards AbortSignal through getGameThrows", async () => {
+    const controller = new AbortController();
+    const response = { id: 520, players: [], status: "started" };
+    vi.spyOn(apiClient, "get").mockResolvedValueOnce(response);
+
+    await getGameThrows(520, controller.signal);
+
+    expect(apiClient.get).toHaveBeenCalledWith("/game/520", {
+      signal: controller.signal,
+    });
   });
 
   it("throws ApiError when getGameThrows receives invalid response shape", async () => {
@@ -60,6 +72,18 @@ describe("getGameThrowsIfChanged", () => {
       name: "ApiError",
       message: "Unexpected response shape",
       status: 200,
+    });
+  });
+
+  it("forwards AbortSignal through finishGame", async () => {
+    const controller = new AbortController();
+    const response = [{ playerId: 1, username: "P1", position: 1 }];
+    vi.spyOn(apiClient, "post").mockResolvedValueOnce(response);
+
+    await finishGame(520, controller.signal);
+
+    expect(apiClient.post).toHaveBeenCalledWith("/game/520/finish", undefined, {
+      signal: controller.signal,
     });
   });
 

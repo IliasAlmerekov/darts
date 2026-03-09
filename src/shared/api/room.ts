@@ -41,15 +41,22 @@ const ADD_GUEST_ENDPOINT = (id: number) => `/room/${id}/guest`;
 // ---------------------------------------------------------------------------
 
 export type CreateGamePayload = {
-  previousGameId?: number;
+  previousGameId?: number | undefined;
   playerIds?: number[];
 };
 
 /**
  * Fetches an invitation link for a game.
  */
-export async function getInvitation(gameId: number): Promise<CreateRoomResponse> {
-  const data: unknown = await apiClient.post(CREATE_INVITE_ENDPOINT(gameId));
+export async function getInvitation(
+  gameId: number,
+  signal?: AbortSignal,
+): Promise<CreateRoomResponse> {
+  const data: unknown = await apiClient.post(
+    CREATE_INVITE_ENDPOINT(gameId),
+    undefined,
+    signal ? { signal } : undefined,
+  );
   if (!isCreateRoomResponse(data)) {
     throw new ApiError("Unexpected response shape for invitation", { status: 200, data });
   }

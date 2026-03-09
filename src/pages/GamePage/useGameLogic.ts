@@ -58,6 +58,10 @@ export function parseGameIdParam(gameIdParam: string | undefined): number | null
   return Number.isFinite(parsed) ? parsed : null;
 }
 
+function isAbortError(error: unknown): boolean {
+  return error instanceof Error && error.name === "AbortError";
+}
+
 export const useGameLogic = () => {
   const navigate = useNavigate();
   const location = useLocation();
@@ -171,6 +175,8 @@ export const useGameLogic = () => {
     }
 
     isAutoFinishingRef.current = true;
+    const controller = new AbortController();
+    const { signal } = controller;
 
     if (gameData && "finished" !== gameData.status) {
       updateGameData({
@@ -179,18 +185,29 @@ export const useGameLogic = () => {
       });
     }
 
-    finishGame(gameId)
+    finishGame(gameId, signal)
       .then(() => {
+        if (signal.aborted) {
+          return;
+        }
         resetGameStateVersion(gameId);
         void refetch();
       })
       .catch((err) => {
+        if (isAbortError(err) || signal.aborted) {
+          return;
+        }
         console.error("Failed to auto-finish game:", err);
         setPageError(toUserErrorMessage(err, "Could not finish the game automatically."));
       })
       .finally(() => {
         isAutoFinishingRef.current = false;
       });
+
+    return () => {
+      controller.abort();
+      isAutoFinishingRef.current = false;
+    };
   }, [gameData, gameId, refetch, shouldShowFinishOverlay, updateGameData]);
 
   useEffect(() => {

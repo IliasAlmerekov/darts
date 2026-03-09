@@ -70,6 +70,17 @@ function StartPage(): React.JSX.Element {
     handleAddGuest,
   } = useStartPage();
 
+  const handleRemovePlayerFromList = React.useCallback(
+    (playerId: number): void => {
+      if (!gameId) {
+        return;
+      }
+
+      void handleRemovePlayer(playerId, gameId);
+    },
+    [gameId, handleRemovePlayer],
+  );
+
   const createGameButton = (
     <Button
       className={styles.createNewPlayerButton}
@@ -162,10 +173,9 @@ function StartPage(): React.JSX.Element {
               >
                 <SortableContext items={playerOrder} strategy={verticalListSortingStrategy}>
                   <LivePlayersList
-                    gameId={gameId}
                     players={players}
                     playerCount={playerCount}
-                    onRemovePlayer={handleRemovePlayer}
+                    onRemovePlayer={handleRemovePlayerFromList}
                     dragEnd={false}
                     playerOrder={playerOrder}
                     maxPlayers={10}

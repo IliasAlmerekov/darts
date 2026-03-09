@@ -1,5 +1,4 @@
 import React, { useMemo } from "react";
-import { useGamePlayers } from "../../useGamePlayers";
 import SelectedPlayerItem from "../player-items/SelectedPlayerItem";
 import styles from "./LivePlayersList.module.css";
 
@@ -10,28 +9,23 @@ type LivePlayer = {
 };
 
 interface LivePlayersListProps {
-  gameId: number | null;
-  onRemovePlayer?: (playerId: number, gameId: number) => void;
+  onRemovePlayer?: (playerId: number) => void;
   dragEnd?: boolean;
   playerOrder?: number[];
   maxPlayers?: number;
-  players?: LivePlayer[];
-  playerCount?: number;
+  players: LivePlayer[];
+  playerCount: number;
 }
 
 function LivePlayersListComponent({
-  gameId,
   onRemovePlayer,
   dragEnd,
   playerOrder,
   maxPlayers = 10,
-  players: playersFromProps,
-  playerCount: playerCountFromProps,
+  players,
+  playerCount,
 }: LivePlayersListProps): React.JSX.Element {
-  const { players: playersFromHook, count: countFromHook } = useGamePlayers(gameId);
-  const players = playersFromProps ?? playersFromHook;
-  const count = playerCountFromProps ?? countFromHook;
-  const isFull = count >= maxPlayers;
+  const isFull = playerCount >= maxPlayers;
 
   const sortedPlayers = useMemo(() => {
     if (!playerOrder || playerOrder.length === 0) {
@@ -59,7 +53,7 @@ function LivePlayersListComponent({
           className={`${styles.listCount} ${isFull ? styles.listCountFull : styles.listCountOpen}`}
           aria-live="polite"
         >
-          {isFull ? `${count}/${maxPlayers} Full` : `${count}/${maxPlayers}`}
+          {isFull ? `${playerCount}/${maxPlayers} Full` : `${playerCount}/${maxPlayers}`}
         </div>
       </div>
       <div className={styles.selectedPlayerListScroll}>
@@ -74,8 +68,8 @@ function LivePlayersListComponent({
               name={player.name}
               user={player}
               handleClick={() => {
-                if (onRemovePlayer && gameId) {
-                  onRemovePlayer(player.id, gameId);
+                if (onRemovePlayer) {
+                  onRemovePlayer(player.id);
                 }
               }}
               alt="Remove player"
@@ -90,9 +84,9 @@ function LivePlayersListComponent({
 
 export const LivePlayersList = React.memo(LivePlayersListComponent, (previousProps, nextProps) => {
   return (
-    previousProps.gameId === nextProps.gameId &&
     previousProps.dragEnd === nextProps.dragEnd &&
     previousProps.maxPlayers === nextProps.maxPlayers &&
+    previousProps.onRemovePlayer === nextProps.onRemovePlayer &&
     previousProps.playerCount === nextProps.playerCount &&
     previousProps.players === nextProps.players &&
     previousProps.playerOrder === nextProps.playerOrder

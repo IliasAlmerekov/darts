@@ -27,7 +27,7 @@ type ApiErrorPayload = {
 type AuthErrorInput = {
   flow: AuthFlow;
   error?: unknown;
-  rawMessage?: string | null;
+  rawMessage?: string | null | undefined;
 };
 
 function isRecord(value: unknown): value is Record<string, unknown> {

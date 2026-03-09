@@ -1,10 +1,21 @@
-# Playwright E2E Tests for Joined Game Feature
+# Playwright E2E Tests for Joined Game
 
-## Current Status
+## Scope
 
-✅ **Test files generated**: 3 comprehensive test files covering key scenarios from the test plan  
-✅ **Playwright installed**: `@playwright/test` is in package.json  
-⚠️ **Version conflict**: If you see "Playwright Test did not expect test() to be called here" errors, follow the fix below
+This folder now contains only the specs for the dedicated joined-game feature:
+
+- `display-confirmation.spec.ts`
+- `page-layout.spec.ts`
+- `unauthenticated-access.spec.ts`
+
+Other Playwright scenarios now live in scenario-based folders under `tests/`, such as:
+
+- `tests/auth/`
+- `tests/accessibility/`
+- `tests/responsive/`
+- `tests/start/`
+- `tests/game/`
+- `tests/shared/`
 
 ## Fixing Version Conflicts
 
@@ -38,19 +49,17 @@ npm run dev
 # In another terminal, run all tests
 npm run test:e2e
 
-# Run a specific test
+# Run a specific joined-game test
 npx playwright test tests/joined-game/display-confirmation.spec.ts
 
 # Run with UI mode
 npx playwright test --ui
 ```
 
-## Generated Test Files
+## Joined-game Test Files
 
-### 1. Page Display Tests
-
-- `display-confirmation.spec.ts` - Verifies page content and headings
-- `page-layout.spec.ts` - Tests CSS styling, layout structure, and responsive design
+- `display-confirmation.spec.ts` - Verifies joined-game confirmation content and headings
+- `page-layout.spec.ts` - Tests joined-game layout structure and overflow behavior
 - `unauthenticated-access.spec.ts` - Tests redirect behavior for unauthorized users
 
 ## Test Credentials

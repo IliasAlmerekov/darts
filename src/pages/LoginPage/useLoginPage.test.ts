@@ -111,4 +111,9 @@ describe("useLoginPage", () => {
       expect(navigateMock).toHaveBeenCalledWith(ROUTES.start());
     });
   });
+
+  it("should not expose checking in return value", () => {
+    const { result } = renderHook(() => useLoginPage());
+    expect(result.current).not.toHaveProperty("checking");
+  });
 });

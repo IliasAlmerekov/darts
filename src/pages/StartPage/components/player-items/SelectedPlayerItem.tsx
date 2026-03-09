@@ -12,7 +12,7 @@ type Props = {
   user: UserProps;
   handleClick: () => void;
   alt?: string;
-  dragEnd?: boolean;
+  dragEnd?: boolean | undefined;
 };
 
 function SelectedPlayerItem({ ...props }: Props): React.JSX.Element {

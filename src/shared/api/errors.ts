@@ -1,12 +1,12 @@
 export class ApiError extends Error {
   status: number;
   data?: unknown;
-  url?: string;
+  url?: string | undefined;
   originalError?: unknown;
 
   constructor(
     message: string,
-    options: { status: number; data?: unknown; url?: string; originalError?: unknown },
+    options: { status: number; data?: unknown; url?: string | undefined; originalError?: unknown },
   ) {
     super(message);
     this.name = "ApiError";
