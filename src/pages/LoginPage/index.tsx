@@ -6,7 +6,7 @@ import { LoginForm } from "./LoginForm";
 import deepblueLogo from "@/assets/icons/madeByDeepblue.svg";
 
 function LoginPage(): React.JSX.Element {
-  const { error, loading, checking, handleSubmit } = useLoginPage();
+  const { error, loading, handleSubmit } = useLoginPage();
   const location = useLocation();
   const successMessage =
     new URLSearchParams(location.search).get("left") === "1"
@@ -25,7 +25,7 @@ function LoginPage(): React.JSX.Element {
               <LoginForm
                 error={error}
                 success={successMessage}
-                loading={loading || checking}
+                loading={loading}
                 onSubmit={handleSubmit}
               />
             </div>

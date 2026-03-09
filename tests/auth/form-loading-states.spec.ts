@@ -19,10 +19,11 @@ test.describe("User Interface Interactions", () => {
     const emailField = page.getByRole("textbox", { name: "Email *" });
     const passwordField = page.getByLabel("Password *");
     const rememberMeCheckbox = page.getByRole("checkbox", { name: "Remember me" });
-    const submitButton = page.getByRole("button", { name: /Sign in|Signing in/ });
+    const submitButton = page.getByRole("button", { name: "Sign in" });
 
-    // The auth check can complete before the first assertion, so accept either
-    // a transient disabled state or an already interactive form.
+    // Button must be immediately enabled — session check must not block form interaction
+    await expect(page.getByRole("button", { name: "Sign in" })).not.toBeDisabled();
+
     await expect(emailField).toBeVisible();
     await expect(passwordField).toBeVisible();
     await expect(rememberMeCheckbox).toBeVisible();
