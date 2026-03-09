@@ -205,6 +205,38 @@ describe("useStartPage action guards", () => {
     expect(result.current.isGuestOverlayOpen).toBe(true);
   });
 
+  it("prevents duplicate addGuest calls while first request is pending", async () => {
+    useParamsMock.mockReturnValue({ id: "10" });
+    storeValues.set("invitation", { gameId: 10, invitationLink: "/invite/10" });
+    storeValues.set("currentGameId", 10);
+
+    const pending = deferred<{ id: number; name: string }>();
+    gameFlowMock.addGuestPlayer.mockReturnValueOnce(pending.promise);
+
+    const { result } = renderHook(() => useStartPage());
+
+    await act(async () => {
+      result.current.openGuestOverlay();
+      result.current.setGuestUsername("Alex");
+    });
+
+    let firstCall = Promise.resolve();
+    let secondCall = Promise.resolve();
+    await act(async () => {
+      firstCall = result.current.handleAddGuest();
+      secondCall = result.current.handleAddGuest();
+    });
+
+    expect(gameFlowMock.addGuestPlayer).toHaveBeenCalledTimes(1);
+    expect(gameFlowMock.addGuestPlayer).toHaveBeenCalledWith(10, { username: "Alex" });
+
+    await act(async () => {
+      pending.resolve({ id: 1, name: "Alex" });
+      await firstCall;
+      await secondCall;
+    });
+  });
+
   it("closes guest overlay after successful guest creation", async () => {
     useParamsMock.mockReturnValue({ id: "10" });
     storeValues.set("invitation", { gameId: 10, invitationLink: "/invite/10" });
