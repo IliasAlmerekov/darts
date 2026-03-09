@@ -8,7 +8,7 @@
  * Red phase: these tests FAIL against the current implementation and will
  * turn green once useStartPage is refactored per the ticket.
  */
-import { act, renderHook } from "@testing-library/react";
+import { act, renderHook, waitFor } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { resolveGameId } from "./useStartPage";
 import { useStartPage } from "./useStartPage";
@@ -105,6 +105,33 @@ function mockLobbyGame(gameId: number) {
   });
 }
 
+type Deferred<T> = {
+  promise: Promise<T>;
+  resolve: (value: T) => void;
+  reject: (reason?: unknown) => void;
+};
+
+function deferred<T>(): Deferred<T> {
+  let resolve!: (value: T) => void;
+  let reject!: (reason?: unknown) => void;
+  const promise = new Promise<T>((res, rej) => {
+    resolve = res;
+    reject = rej;
+  });
+
+  return { promise, resolve, reject };
+}
+
+function createAbortError(): DOMException {
+  return new DOMException("The operation was aborted.", "AbortError");
+}
+
+function resetGameFlowMocks(): void {
+  Object.values(gameFlowMock).forEach((mockFn) => {
+    mockFn.mockReset();
+  });
+}
+
 // ─── resolveGameId (pure function) ───────────────────────────────────────────
 
 describe("resolveGameId", () => {
@@ -157,6 +184,7 @@ describe("resolveGameId", () => {
 describe("useStartPage — gameId is derived exclusively from URL param", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    resetGameFlowMocks();
     defaultStoreState();
     useParamsMock.mockReturnValue({});
   });
@@ -209,6 +237,7 @@ describe("useStartPage — gameId is derived exclusively from URL param", () => 
 describe("useStartPage — redirect when URL has no gameId", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    resetGameFlowMocks();
     defaultStoreState();
     useParamsMock.mockReturnValue({});
   });
@@ -259,6 +288,7 @@ describe("useStartPage — redirect when URL has no gameId", () => {
 describe("useStartPage — restore effect is triggered only by URL param", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    resetGameFlowMocks();
     defaultStoreState();
     useParamsMock.mockReturnValue({});
   });
@@ -289,7 +319,9 @@ describe("useStartPage — restore effect is triggered only by URL param", () =>
     });
 
     // restore fires because gameIdParam is present and invitation is absent
-    expect(gameFlowMock.getGameThrows).toHaveBeenCalledWith(42);
+    await waitFor(() => {
+      expect(gameFlowMock.getGameThrows).toHaveBeenCalledWith(42, expect.any(AbortSignal));
+    });
   });
 
   it("should redirect away when URL gameId does not match currentGameId in store", async () => {
@@ -333,7 +365,9 @@ describe("useStartPage — restore effect is triggered only by URL param", () =>
       renderHook(() => useStartPage());
     });
 
-    expect(navigateMock).toHaveBeenCalledWith("/start/42", { replace: true });
+    await waitFor(() => {
+      expect(navigateMock).toHaveBeenCalledWith("/start/42", { replace: true });
+    });
   });
 
   it("should redirect to currentGameId route when getGameThrows throws a network error", async () => {
@@ -347,7 +381,9 @@ describe("useStartPage — restore effect is triggered only by URL param", () =>
       renderHook(() => useStartPage());
     });
 
-    expect(navigateMock).toHaveBeenCalledWith("/start/42", { replace: true });
+    await waitFor(() => {
+      expect(navigateMock).toHaveBeenCalledWith("/start/42", { replace: true });
+    });
   });
 
   it("should redirect to bare /start when getGameThrows throws and store has no currentGameId", async () => {
@@ -384,6 +420,81 @@ describe("useStartPage — restore effect is triggered only by URL param", () =>
       renderHook(() => useStartPage());
     });
 
-    expect(setCurrentGameIdMock).toHaveBeenCalledWith(42);
+    await waitFor(() => {
+      expect(setCurrentGameIdMock).toHaveBeenCalledWith(42);
+    });
+  });
+});
+
+describe("useStartPage — restore effect abort handling", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    resetGameFlowMocks();
+    defaultStoreState();
+    useParamsMock.mockReturnValue({ id: "42" });
+    storeValues.set("currentGameId", 42);
+  });
+
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  it("passes one AbortSignal through restore requests and aborts it on unmount", async () => {
+    gameFlowMock.getGameThrows.mockResolvedValue({
+      status: "lobby",
+      id: 42,
+      players: [],
+      settings: null,
+    });
+    gameFlowMock.getInvitation.mockImplementation(() => new Promise(() => {}));
+
+    const { unmount } = renderHook(() => useStartPage());
+
+    await waitFor(() => {
+      expect(gameFlowMock.getInvitation).toHaveBeenCalledTimes(1);
+    });
+
+    const restoreSignal = gameFlowMock.getGameThrows.mock.calls[0]?.[1] as AbortSignal | undefined;
+    const invitationSignal = gameFlowMock.getInvitation.mock.calls[0]?.[1] as
+      | AbortSignal
+      | undefined;
+
+    expect(restoreSignal).toBeInstanceOf(AbortSignal);
+    expect(invitationSignal).toBe(restoreSignal);
+
+    unmount();
+
+    expect(restoreSignal?.aborted).toBe(true);
+    expect(invitationSignal?.aborted).toBe(true);
+  });
+
+  it("ignores AbortError from restore requests after cleanup", async () => {
+    const pendingRestore = deferred<{
+      status: "lobby";
+      id: number;
+      players: [];
+      settings: null;
+    }>();
+    const consoleErrorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+
+    gameFlowMock.getGameThrows.mockReturnValue(pendingRestore.promise);
+
+    const { unmount } = renderHook(() => useStartPage());
+
+    await waitFor(() => {
+      expect(gameFlowMock.getGameThrows).toHaveBeenCalledTimes(1);
+    });
+
+    unmount();
+    pendingRestore.reject(createAbortError());
+
+    await act(async () => {
+      await pendingRestore.promise.catch(() => undefined);
+    });
+
+    expect(navigateMock).not.toHaveBeenCalled();
+    expect(setInvitationMock).not.toHaveBeenCalled();
+    expect(setCurrentGameIdMock).not.toHaveBeenCalled();
+    expect(consoleErrorSpy).not.toHaveBeenCalled();
   });
 });

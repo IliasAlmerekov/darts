@@ -85,6 +85,10 @@ export async function persistPlayerOrder({
   }
 }
 
+function isAbortError(error: unknown): boolean {
+  return error instanceof Error && error.name === "AbortError";
+}
+
 const START_SOUND_PATH = "/sounds/start-round-sound.mp3";
 const MAX_LOBBY_PLAYERS = 10;
 
@@ -255,11 +259,17 @@ export function useStartPage() {
   );
 
   useEffect(() => {
-    if (!gameId || invitation?.gameId === gameId || isRestoring) return;
+    if (!gameId || invitation?.gameId === gameId) return;
+    const controller = new AbortController();
+    const { signal } = controller;
 
     const restoreData = async () => {
       setIsRestoring(true);
       try {
+        if (signal.aborted) {
+          return;
+        }
+
         if (currentGameId && currentGameId !== gameId) {
           console.warn(`Redirecting from game ${gameId} to active game ${currentGameId}`);
           navigate(ROUTES.start(currentGameId), { replace: true });
@@ -273,7 +283,10 @@ export function useStartPage() {
           return;
         }
 
-        const gameData = await getGameThrows(gameId);
+        const gameData = await getGameThrows(gameId, signal);
+        if (signal.aborted) {
+          return;
+        }
 
         if (gameData.status !== "lobby") {
           console.warn(`Access to game ${gameId} denied - status: ${gameData.status}`);
@@ -288,17 +301,26 @@ export function useStartPage() {
         setGameData(gameData);
 
         try {
-          const inviteResponse = await getInvitation(gameId);
+          const inviteResponse = await getInvitation(gameId, signal);
+          if (signal.aborted) {
+            return;
+          }
           setInvitation({
             gameId: inviteResponse.gameId,
             invitationLink: inviteResponse.invitationLink,
           });
           setCurrentGameId(inviteResponse.gameId);
         } catch (error) {
+          if (isAbortError(error) || signal.aborted) {
+            return;
+          }
           console.warn("Could not load invitation link:", error);
           setCurrentGameId(gameId);
         }
       } catch (error) {
+        if (isAbortError(error) || signal.aborted) {
+          return;
+        }
         console.error("Failed to restore game data:", error);
         if (currentGameId) {
           navigate(ROUTES.start(currentGameId), { replace: true });
@@ -306,12 +328,18 @@ export function useStartPage() {
           navigate(ROUTES.start(), { replace: true });
         }
       } finally {
-        setIsRestoring(false);
+        if (!signal.aborted) {
+          setIsRestoring(false);
+        }
       }
     };
 
-    restoreData();
-  }, [gameId, invitation?.gameId, isRestoring, navigate, currentGameId]);
+    void restoreData();
+
+    return () => {
+      controller.abort();
+    };
+  }, [gameId, invitation?.gameId, navigate, currentGameId]);
 
   useEffect(() => {
     if (invitation?.gameId) {
