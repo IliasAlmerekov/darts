@@ -27,6 +27,56 @@ describe("statistics api", () => {
     await expect(getPlayerStats()).resolves.toEqual(response);
   });
 
+  it("normalizes legacy player stats fields from the backend", async () => {
+    vi.spyOn(apiClient, "get").mockResolvedValueOnce({
+      items: [
+        {
+          playerId: 1,
+          username: "Alice",
+          average: "55.5",
+          gamesPlayed: "10",
+        },
+      ],
+      total: "1",
+    });
+
+    await expect(getPlayerStats()).resolves.toEqual({
+      items: [
+        {
+          id: 1,
+          playerId: 1,
+          name: "Alice",
+          scoreAverage: 55.5,
+          gamesPlayed: 10,
+        },
+      ],
+      total: 1,
+    });
+  });
+
+  it("accepts nullable optional statistics fields and keeps them undefined", async () => {
+    vi.spyOn(apiClient, "get").mockResolvedValueOnce([
+      {
+        id: 2,
+        playerId: 2,
+        username: "Bob",
+        average: null,
+        gamesPlayed: null,
+      },
+    ]);
+
+    await expect(getPlayerStats()).resolves.toEqual({
+      items: [
+        {
+          id: 2,
+          playerId: 2,
+          name: "Bob",
+        },
+      ],
+      total: 1,
+    });
+  });
+
   it("throws ApiError when player stats contain malformed nested item fields", async () => {
     vi.spyOn(apiClient, "get").mockResolvedValueOnce({
       items: [
@@ -34,7 +84,7 @@ describe("statistics api", () => {
           id: 1,
           playerId: 1,
           name: "Alice",
-          scoreAverage: "55.5",
+          average: "not-a-number",
           gamesPlayed: 10,
         },
       ],
