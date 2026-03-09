@@ -8,10 +8,10 @@ let sseHandler: ((event: MessageEvent<string>) => void) | null = null;
 vi.mock("@/shared/hooks/useEventSource", () => ({
   useEventSource: (
     _url: string | null,
-    _eventName: string,
-    handler: (event: MessageEvent<string>) => void,
+    listeners: ReadonlyArray<{ handler: (event: MessageEvent<string>) => void }>,
   ) => {
-    sseHandler = handler;
+    sseHandler = listeners[0]?.handler ?? null;
+    return { error: null, isConnected: false };
   },
 }));
 
