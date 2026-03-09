@@ -13,6 +13,8 @@ const useWakeLockMock = vi.fn();
 const finishGameMock = vi.fn();
 const resetGameStateVersionMock = vi.fn();
 const updateGameDataMock = vi.fn();
+const useGameSettingsFlowMock = vi.fn();
+const useGameExitFlowMock = vi.fn();
 
 vi.mock("react-router-dom", () => ({
   useNavigate: () => navigateMock,
@@ -38,6 +40,23 @@ vi.mock("./useGameSounds", () => ({
 
 vi.mock("./useWakeLock", () => ({
   useWakeLock: (isEnabled: boolean) => useWakeLockMock(isEnabled),
+}));
+
+vi.mock("./useGamePageEffects", async () => {
+  const actual =
+    await vi.importActual<typeof import("./useGamePageEffects")>("./useGamePageEffects");
+
+  return {
+    ...actual,
+    useGameSummaryNavigation: vi.fn(),
+    useInteractionSoundUnlock: vi.fn(),
+    useRoomEventRefetch: vi.fn(),
+  };
+});
+
+vi.mock("./useGameActions", () => ({
+  useGameSettingsFlow: (options: unknown) => useGameSettingsFlowMock(options),
+  useGameExitFlow: (options: unknown) => useGameExitFlowMock(options),
 }));
 
 vi.mock("@/shared/api/game", () => ({
@@ -133,6 +152,20 @@ function setDefaultMocks(gameData: GameThrowsResponse | null): void {
   useRoomStreamMock.mockReturnValue({ event: null });
   useGameSoundsMock.mockReturnValue(undefined);
   useWakeLockMock.mockReturnValue(undefined);
+  useGameSettingsFlowMock.mockReturnValue({
+    handleCloseSettings: vi.fn(),
+    handleOpenSettings: vi.fn(),
+    handleSaveSettings: vi.fn(),
+    isSavingSettings: false,
+    isSettingsOpen: false,
+    settingsError: null,
+  });
+  useGameExitFlowMock.mockReturnValue({
+    handleCloseExitOverlay: vi.fn(),
+    handleExitGame: vi.fn(),
+    handleOpenExitOverlay: vi.fn(),
+    isExitOverlayOpen: false,
+  });
 }
 
 describe("useGameLogic auto-finish abort handling", () => {

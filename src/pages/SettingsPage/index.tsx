@@ -42,6 +42,10 @@ function parseRouteGameId(gameIdParam: string | undefined): number | null {
   return Number.isFinite(parsed) ? parsed : null;
 }
 
+function isAbortError(error: unknown): boolean {
+  return error instanceof Error && error.name === "AbortError";
+}
+
 function SettingsPage(): JSX.Element {
   const { id: gameIdParam } = useParams<{ id?: string }>();
   const gameData = useStore($gameData);
@@ -82,11 +86,20 @@ function SettingsPage(): JSX.Element {
       return;
     }
 
+    const controller = new AbortController();
+    const { signal } = controller;
+
     const loadGameSettings = async () => {
       try {
-        const loadedGameData = await getGameThrows(routeGameId);
+        const loadedGameData = await getGameThrows(routeGameId, signal);
+        if (signal.aborted) {
+          return;
+        }
         setGameData(loadedGameData);
       } catch (error) {
+        if (isAbortError(error) || signal.aborted) {
+          return;
+        }
         console.error("Failed to load game settings:", error);
       }
     };
@@ -95,6 +108,10 @@ function SettingsPage(): JSX.Element {
     if (!hasCurrentGameInStore) {
       void loadGameSettings();
     }
+
+    return () => {
+      controller.abort();
+    };
   }, [routeGameId, gameData?.id]);
 
   // Only hydrate the UI from canonical settings for the route game.

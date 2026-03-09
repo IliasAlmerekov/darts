@@ -43,6 +43,19 @@ describe("game-session store", () => {
     expect(window.sessionStorage.getItem(INVITATION_STORAGE_KEY)).toBeNull();
     expect(window.sessionStorage.getItem(GAME_ID_STORAGE_KEY)).toBeNull();
   });
+
+  it("preserves last finished game id when resetting room-scoped state", async () => {
+    const roomStore = await import("./game-session");
+
+    roomStore.setLastFinishedGameId(88);
+    roomStore.setInvitation({ gameId: 12, invitationLink: "/invite/12" });
+
+    roomStore.resetRoomStore();
+
+    expect(roomStore.$lastFinishedGameId.get()).toBe(88);
+    expect(roomStore.$invitation.get()).toBeNull();
+    expect(roomStore.$currentGameId.get()).toBeNull();
+  });
 });
 
 // ─── Ticket 4 — store-as-cache contract ──────────────────────────────────────

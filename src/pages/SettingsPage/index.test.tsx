@@ -1,9 +1,16 @@
 // @vitest-environment jsdom
 import type { ReactNode } from "react";
-import { fireEvent, render, screen } from "@testing-library/react";
+import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { resetGameStore, resetRoomStore, setCurrentGameId } from "@/store";
+import {
+  $currentGameId,
+  $gameData,
+  resetGameStore,
+  resetRoomStore,
+  setCurrentGameId,
+  setGameData,
+} from "@/store";
 import type { GameThrowsResponse } from "@/types";
 import SettingsPage from ".";
 
@@ -36,8 +43,25 @@ function createGameResponse(): GameThrowsResponse {
   };
 }
 
-function renderSettingsPage(initialEntry: string): void {
-  render(
+type Deferred<T> = {
+  promise: Promise<T>;
+  resolve: (value: T) => void;
+};
+
+function createDeferred<T>(): Deferred<T> {
+  let resolvePromise: (value: T) => void = () => {};
+  const promise = new Promise<T>((resolve) => {
+    resolvePromise = resolve;
+  });
+
+  return {
+    promise,
+    resolve: resolvePromise,
+  };
+}
+
+function renderSettingsPage(initialEntry: string): ReturnType<typeof render> {
+  return render(
     <MemoryRouter initialEntries={[initialEntry]}>
       <Routes>
         <Route path="/settings" element={<SettingsPage />} />
@@ -75,5 +99,124 @@ describe("SettingsPage", () => {
 
     expect(saveGameSettingsMock).not.toHaveBeenCalled();
     expect(getGameThrowsMock).not.toHaveBeenCalled();
+  });
+
+  it("treats the route gameId as authoritative and ignores stale shared game settings", async () => {
+    setCurrentGameId(99);
+    setGameData({
+      ...createGameResponse(),
+      id: 99,
+      settings: {
+        startScore: 501,
+        doubleOut: true,
+        tripleOut: false,
+      },
+    });
+    getGameThrowsMock.mockResolvedValueOnce({
+      ...createGameResponse(),
+      id: 42,
+      settings: {
+        startScore: 401,
+        doubleOut: false,
+        tripleOut: true,
+      },
+    });
+
+    renderSettingsPage("/settings/42");
+
+    expect(screen.getByRole("button", { name: "Single-out" }).getAttribute("aria-pressed")).toBe(
+      "true",
+    );
+    expect(screen.getByRole("button", { name: "501" }).getAttribute("aria-pressed")).toBe("false");
+
+    await waitFor(() => {
+      expect(getGameThrowsMock).toHaveBeenCalledWith(42, expect.any(AbortSignal));
+      expect($currentGameId.get()).toBe(42);
+    });
+
+    await waitFor(() => {
+      expect(screen.getByRole("button", { name: "Triple-out" }).getAttribute("aria-pressed")).toBe(
+        "true",
+      );
+      expect(screen.getByRole("button", { name: "401" }).getAttribute("aria-pressed")).toBe("true");
+    });
+  });
+
+  it("saves settings for the route gameId even when another page left a different game in the store", async () => {
+    setCurrentGameId(99);
+    setGameData({
+      ...createGameResponse(),
+      id: 99,
+      settings: {
+        startScore: 501,
+        doubleOut: true,
+        tripleOut: false,
+      },
+    });
+    getGameThrowsMock.mockResolvedValueOnce({
+      ...createGameResponse(),
+      id: 42,
+      settings: {
+        startScore: 401,
+        doubleOut: false,
+        tripleOut: true,
+      },
+    });
+    saveGameSettingsMock.mockResolvedValueOnce({
+      ...createGameResponse(),
+      id: 42,
+      settings: {
+        startScore: 401,
+        doubleOut: true,
+        tripleOut: false,
+      },
+    });
+
+    renderSettingsPage("/settings/42");
+
+    await waitFor(() => {
+      expect(screen.getByRole("button", { name: "Triple-out" }).getAttribute("aria-pressed")).toBe(
+        "true",
+      );
+    });
+
+    fireEvent.click(screen.getByRole("button", { name: "Double-out" }));
+
+    await waitFor(() => {
+      expect(saveGameSettingsMock).toHaveBeenCalledWith(
+        {
+          startScore: 401,
+          doubleOut: true,
+          tripleOut: false,
+        },
+        42,
+      );
+    });
+  });
+
+  it("aborts an in-flight route settings load on unmount so it cannot overwrite shared game state later", async () => {
+    const pendingLoad = createDeferred<GameThrowsResponse>();
+    getGameThrowsMock.mockImplementation(() => pendingLoad.promise);
+
+    const { unmount } = renderSettingsPage("/settings/42");
+
+    await waitFor(() => {
+      expect(getGameThrowsMock).toHaveBeenCalledWith(42, expect.any(AbortSignal));
+    });
+
+    const loadSignal = getGameThrowsMock.mock.calls[0]?.[1] as AbortSignal | undefined;
+
+    expect(loadSignal?.aborted).toBe(false);
+
+    unmount();
+
+    expect(loadSignal?.aborted).toBe(true);
+
+    await act(async () => {
+      pendingLoad.resolve(createGameResponse());
+      await pendingLoad.promise;
+    });
+
+    expect($gameData.get()).toBeNull();
   });
 });

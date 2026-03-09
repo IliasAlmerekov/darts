@@ -10,6 +10,9 @@ const createRematchMock = vi.fn();
 const startGameMock = vi.fn();
 const undoLastThrowMock = vi.fn();
 const setGameDataMock = vi.fn();
+const setInvitationMock = vi.fn();
+const setLastFinishedGameIdMock = vi.fn();
+const resetRoomStoreMock = vi.fn();
 const getGameSettingsMock = vi.fn();
 
 // Mutable state for router/store — allows per-test overrides without vi.doMock
@@ -41,9 +44,9 @@ vi.mock("@/store", async (importOriginal) => {
     ...original,
     $gameSettings: { key: "gameSettings" },
     setGameData: (...args: unknown[]) => setGameDataMock(...args),
-    setInvitation: vi.fn(),
-    setLastFinishedGameId: vi.fn(),
-    resetRoomStore: vi.fn(),
+    setInvitation: (...args: unknown[]) => setInvitationMock(...args),
+    setLastFinishedGameId: (...args: unknown[]) => setLastFinishedGameIdMock(...args),
+    resetRoomStore: (...args: unknown[]) => resetRoomStoreMock(...args),
   };
 });
 
@@ -59,6 +62,9 @@ describe("useGameSummaryPage", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     setGameDataMock.mockReset();
+    setInvitationMock.mockReset();
+    setLastFinishedGameIdMock.mockReset();
+    resetRoomStoreMock.mockReset();
 
     // Reset mutable router/store state to defaults before each test
     locationState = { finishedGameId: 42 };
@@ -139,6 +145,20 @@ describe("useGameSummaryPage", () => {
       status: "started",
     });
     expect(navigateMock).toHaveBeenCalledWith("/game/77");
+  });
+
+  it("does not overwrite shared game state when starting a rematch", async () => {
+    const { result } = renderHook(() => useGameSummaryPage());
+
+    await act(async () => {
+      await result.current.handlePlayAgain();
+    });
+
+    expect(setGameDataMock).not.toHaveBeenCalled();
+    expect(setInvitationMock).toHaveBeenCalledWith({
+      gameId: 77,
+      invitationLink: "/invite/77",
+    });
   });
 
   it("does not navigate when startGame fails", async () => {
@@ -250,6 +270,22 @@ describe("useGameSummaryPage", () => {
     });
 
     expect(navigateMock).not.toHaveBeenCalledWith("/start/77");
+  });
+
+  it("does not overwrite shared game state when returning to start from summary", async () => {
+    const { result } = renderHook(() => useGameSummaryPage());
+
+    await act(async () => {
+      await result.current.handleBackToStart();
+    });
+
+    expect(resetRoomStoreMock).toHaveBeenCalledTimes(1);
+    expect(setGameDataMock).not.toHaveBeenCalled();
+    expect(setInvitationMock).toHaveBeenCalledWith({
+      gameId: 77,
+      invitationLink: "/invite/77",
+    });
+    expect(navigateMock).toHaveBeenCalledWith("/start/77");
   });
 
   it("keeps action handlers referentially stable across rerenders when dependencies do not change", async () => {
