@@ -61,6 +61,17 @@ type PersistPlayerOrderParams = {
   shouldRollback: () => boolean;
 };
 
+type GamePlayersResult = ReturnType<typeof useGamePlayers>;
+type StartPageLatestState = {
+  players: GamePlayersResult["players"];
+  appendOptimisticPlayer: GamePlayersResult["appendOptimisticPlayer"];
+  removeOptimisticPlayer: GamePlayersResult["removeOptimisticPlayer"];
+  guestUsername: string;
+  isAddingGuest: boolean;
+  isLobbyFull: boolean;
+  gameId: number | null;
+};
+
 export async function persistPlayerOrder({
   gameId,
   nextOrder,
@@ -113,10 +124,6 @@ export function useStartPage() {
   const [guestSuggestions, setGuestSuggestions] = useState<string[]>([]);
   const [isAddingGuest, setIsAddingGuest] = useState(false);
   const [pageError, setPageError] = useState<string | null>(null);
-  const guestUsernameRef = useRef(guestUsername);
-  const isAddingGuestRef = useRef(isAddingGuest);
-  const isLobbyFullRef = useRef(false);
-  const gameIdRef = useRef<number | null>(null);
 
   const gameId = useMemo(() => resolveGameId(gameIdParam), [gameIdParam]);
 
@@ -137,31 +144,25 @@ export function useStartPage() {
   const playerOrderRequestIdRef = useRef(0);
   const createRoomInFlightRef = useRef(false);
   const startGameInFlightRef = useRef(false);
-  const playersRef = useRef(players);
-  const appendOptimisticPlayerRef = useRef(appendOptimisticPlayer);
-  const removeOptimisticPlayerRef = useRef(removeOptimisticPlayer);
+  const latestStateRef = useRef<StartPageLatestState>({
+    players,
+    appendOptimisticPlayer,
+    removeOptimisticPlayer,
+    guestUsername,
+    isAddingGuest,
+    isLobbyFull,
+    gameId,
+  });
 
-  useEffect(() => {
-    playersRef.current = players;
-  }, [players]);
-  useEffect(() => {
-    appendOptimisticPlayerRef.current = appendOptimisticPlayer;
-  }, [appendOptimisticPlayer]);
-  useEffect(() => {
-    removeOptimisticPlayerRef.current = removeOptimisticPlayer;
-  }, [removeOptimisticPlayer]);
-  useEffect(() => {
-    guestUsernameRef.current = guestUsername;
-  }, [guestUsername]);
-  useEffect(() => {
-    isAddingGuestRef.current = isAddingGuest;
-  }, [isAddingGuest]);
-  useEffect(() => {
-    isLobbyFullRef.current = isLobbyFull;
-  }, [isLobbyFull]);
-  useEffect(() => {
-    gameIdRef.current = gameId;
-  }, [gameId]);
+  latestStateRef.current = {
+    players,
+    appendOptimisticPlayer,
+    removeOptimisticPlayer,
+    guestUsername,
+    isAddingGuest,
+    isLobbyFull,
+    gameId,
+  };
 
   useEffect(() => {
     if (players.length <= 0) {
@@ -243,14 +244,15 @@ export function useStartPage() {
 
   const handleRemovePlayer = useCallback(
     async (playerId: number, currentGameId: number): Promise<void> => {
-      const removedPlayer = playersRef.current.find((player) => player.id === playerId);
-      removeOptimisticPlayerRef.current?.(playerId);
+      const { players, removeOptimisticPlayer, appendOptimisticPlayer } = latestStateRef.current;
+      const removedPlayer = players.find((player) => player.id === playerId);
+      removeOptimisticPlayer(playerId);
 
       try {
         await leaveRoom(currentGameId, playerId);
       } catch (error) {
         if (removedPlayer) {
-          appendOptimisticPlayerRef.current?.(removedPlayer);
+          appendOptimisticPlayer(removedPlayer);
         }
         setPageError(toUserErrorMessage(error, "Could not remove player. Please try again."));
       }
@@ -455,18 +457,25 @@ export function useStartPage() {
   }, []);
 
   const handleAddGuest = useCallback(async (): Promise<void> => {
-    const currentGameId = gameIdRef.current;
-    if (!currentGameId || isAddingGuestRef.current) {
+    const {
+      gameId: currentGameId,
+      guestUsername,
+      isAddingGuest,
+      isLobbyFull,
+      appendOptimisticPlayer,
+    } = latestStateRef.current;
+
+    if (!currentGameId || isAddingGuest) {
       setGuestError("Please create a game first.");
       return;
     }
 
-    if (isLobbyFullRef.current) {
+    if (isLobbyFull) {
       setGuestError("The lobby is full. Remove a player to add another.");
       return;
     }
 
-    const trimmedUsername = guestUsernameRef.current.trim();
+    const trimmedUsername = guestUsername.trim();
     const validationError = validateGuestUsername(trimmedUsername);
     if (validationError) {
       setGuestError(validationError);
@@ -479,7 +488,7 @@ export function useStartPage() {
 
     try {
       const guestPlayer = await addGuestPlayer(currentGameId, { username: trimmedUsername });
-      appendOptimisticPlayer?.(guestPlayer);
+      appendOptimisticPlayer(guestPlayer);
       closeGuestOverlay();
     } catch (error) {
       const apiError = getGuestErrorFromApi(error);
@@ -492,7 +501,7 @@ export function useStartPage() {
     } finally {
       setIsAddingGuest(false);
     }
-  }, [appendOptimisticPlayer, closeGuestOverlay, getGuestErrorFromApi]);
+  }, [closeGuestOverlay, getGuestErrorFromApi]);
 
   return {
     invitation,
