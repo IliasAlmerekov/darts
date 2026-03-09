@@ -178,13 +178,6 @@ export const useGameLogic = () => {
     const controller = new AbortController();
     const { signal } = controller;
 
-    if (gameData && "finished" !== gameData.status) {
-      updateGameData({
-        ...gameData,
-        status: "finished",
-      });
-    }
-
     finishGame(gameId, signal)
       .then(() => {
         if (signal.aborted) {
@@ -208,7 +201,7 @@ export const useGameLogic = () => {
       controller.abort();
       isAutoFinishingRef.current = false;
     };
-  }, [gameData, gameId, refetch, shouldShowFinishOverlay, updateGameData]);
+  }, [gameData, gameId, refetch, shouldShowFinishOverlay]);
 
   useEffect(() => {
     setDismissedZeroScorePlayerIds([]);

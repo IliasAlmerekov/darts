@@ -15,7 +15,7 @@ test.describe("Error Handling and Edge Cases", () => {
       await route.abort("failed");
     });
 
-    const createGameButton = page.locator("button:visible", { hasText: /^create game$/i });
+    const createGameButton = page.getByRole("button", { name: /^create game$/i });
     await createGameButton.click();
 
     const errorState = page.getByRole("alert");
