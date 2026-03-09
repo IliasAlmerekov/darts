@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { useEventSource } from "@/shared/hooks/useEventSource";
+import { useEventSource, type EventSourceListener } from "@/shared/hooks/useEventSource";
 import { getGameThrows } from "@/shared/api/game";
 import { $gameData } from "@/store";
 
@@ -120,6 +120,10 @@ export function useGamePlayers(gameId: number | null) {
     [sortPlayers],
   );
 
+  const listeners = useMemo<readonly EventSourceListener[]>(() => {
+    return [{ event: "players", handler: handlePlayers }];
+  }, [handlePlayers]);
+
   const appendOptimisticPlayer = useCallback(
     (player: OptimisticPlayer): void => {
       setPlayers((currentPlayers) => {
@@ -149,7 +153,7 @@ export function useGamePlayers(gameId: number | null) {
     );
   }, []);
 
-  useEventSource(url, "players", handlePlayers, { withCredentials: true });
+  useEventSource(url, listeners, { withCredentials: true });
 
   return { players, count: players.length, appendOptimisticPlayer, removeOptimisticPlayer };
 }

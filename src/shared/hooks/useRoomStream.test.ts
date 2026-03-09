@@ -88,6 +88,7 @@ describe("useRoomStream — connection lifecycle", () => {
     });
 
     expect(result.current.isConnected).toBe(false);
+    expect(result.current.error?.message).toBe("[useEventSource] EventSource connection failed");
   });
 
   it("should not create EventSource when gameId is null", () => {
@@ -97,9 +98,10 @@ describe("useRoomStream — connection lifecycle", () => {
   });
 
   it("should create EventSource with withCredentials: true", () => {
-    renderHook(() => useRoomStream(1));
+    const { result } = renderHook(() => useRoomStream(1));
 
     expect(MockEventSource.instances[0]!.withCredentials).toBe(true);
+    expect(result.current.error).toBeNull();
   });
 });
 
@@ -267,7 +269,7 @@ describe("useRoomStream — reconnect backoff", () => {
   });
 
   it("should reset retryDelay to 1000ms when reconnect succeeds after errors", () => {
-    renderHook(() => useRoomStream(1));
+    const { result } = renderHook(() => useRoomStream(1));
 
     // First error → 1000ms
     act(() => {
@@ -293,6 +295,8 @@ describe("useRoomStream — reconnect backoff", () => {
       MockEventSource.instances[2]!.simulateOpen();
     });
 
+    expect(result.current.error).toBeNull();
+
     // Fourth error → should be 1000ms again (reset after success)
     act(() => {
       MockEventSource.instances[2]!.simulateError();
@@ -309,6 +313,23 @@ describe("useRoomStream — reconnect backoff", () => {
     });
 
     expect(MockEventSource.instances.length).toBe(4);
+  });
+
+  it("should expose explicit error until reconnect opens successfully", () => {
+    const { result } = renderHook(() => useRoomStream(1));
+
+    act(() => {
+      MockEventSource.instances[0]!.simulateError();
+    });
+
+    expect(result.current.error?.message).toBe("[useEventSource] EventSource connection failed");
+
+    act(() => {
+      vi.advanceTimersByTime(1000);
+      MockEventSource.instances[1]!.simulateOpen();
+    });
+
+    expect(result.current.error).toBeNull();
   });
 });
 

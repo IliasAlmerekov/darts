@@ -1,11 +1,10 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { getFinishedPlayers, mapPlayersToUI } from "@/lib/player-mappers";
 import type { GameThrowsResponse, UIPlayer } from "@/types";
 import {
-  areAllPlayersAtStartScore,
-  calculateShouldShowFinishOverlay,
-  getZeroScorePlayerIds,
-} from "./gameLogic.helpers";
+  appendDismissedPlayerIds,
+  buildGamePlayersDerivedState,
+  filterDismissedPlayerIds,
+} from "./gamePlayersState.logic";
 
 interface UseGamePlayersStateOptions {
   error: Error | null;
@@ -27,10 +26,6 @@ interface UseGamePlayersStateResult {
   shouldShowFinishOverlay: boolean;
 }
 
-function appendDismissedPlayers(previousIds: number[], zeroScorePlayerIds: number[]): number[] {
-  return Array.from(new Set([...previousIds, ...zeroScorePlayerIds]));
-}
-
 export function useGamePlayersState({
   error,
   gameData,
@@ -41,45 +36,29 @@ export function useGamePlayersState({
 }: UseGamePlayersStateOptions): UseGamePlayersStateResult {
   const [dismissedZeroScorePlayerIds, setDismissedZeroScorePlayerIds] = useState<number[]>([]);
 
-  const playerUI = useMemo(
-    () => mapPlayersToUI(gameData?.players ?? [], gameData?.currentRound),
-    [gameData?.currentRound, gameData?.players],
-  );
-  const finishedPlayers = useMemo(() => getFinishedPlayers(playerUI), [playerUI]);
-  const activePlayers = useMemo(() => playerUI.filter((player) => player.score > 0), [playerUI]);
-
-  const activePlayer = useMemo(() => {
-    if (!gameData) {
-      return null;
-    }
-
-    return gameData.players.find((player) => player.id === gameData.activePlayerId) ?? null;
-  }, [gameData]);
-
-  const zeroScorePlayerIds = useMemo(() => getZeroScorePlayerIds(playerUI), [playerUI]);
-
-  const shouldShowFinishOverlay = useMemo(
+  const {
+    activePlayer,
+    activePlayers,
+    finishedPlayers,
+    isInteractionDisabled,
+    isUndoDisabled,
+    shouldShowFinishOverlay,
+    zeroScorePlayerIds,
+  } = useMemo(
     () =>
-      calculateShouldShowFinishOverlay({
-        gameData,
+      buildGamePlayersDerivedState({
         dismissedZeroScorePlayerIds,
+        gameData,
+        hasError: !!error,
+        isLoading,
         skipFinishOverlay,
-        zeroScorePlayerIds,
       }),
-    [dismissedZeroScorePlayerIds, gameData, skipFinishOverlay, zeroScorePlayerIds],
+    [dismissedZeroScorePlayerIds, error, gameData, isLoading, skipFinishOverlay],
   );
-
-  const isInteractionDisabled = isLoading || !!error || !gameData || shouldShowFinishOverlay;
-  const isUndoDisabled =
-    isLoading ||
-    !!error ||
-    !gameData ||
-    shouldShowFinishOverlay ||
-    areAllPlayersAtStartScore(gameData);
 
   useEffect(() => {
     setDismissedZeroScorePlayerIds((previousIds) =>
-      previousIds.filter((id) => zeroScorePlayerIds.includes(id)),
+      filterDismissedPlayerIds(previousIds, zeroScorePlayerIds),
     );
   }, [zeroScorePlayerIds]);
 
@@ -89,14 +68,14 @@ export function useGamePlayersState({
 
   const handleContinueGame = useCallback(() => {
     setDismissedZeroScorePlayerIds((previousIds) =>
-      appendDismissedPlayers(previousIds, zeroScorePlayerIds),
+      appendDismissedPlayerIds(previousIds, zeroScorePlayerIds),
     );
   }, [zeroScorePlayerIds]);
 
   const handleUndoFromOverlay = useCallback(async () => {
     await handleUndo();
     setDismissedZeroScorePlayerIds((previousIds) =>
-      appendDismissedPlayers(previousIds, zeroScorePlayerIds),
+      appendDismissedPlayerIds(previousIds, zeroScorePlayerIds),
     );
   }, [handleUndo, zeroScorePlayerIds]);
 
