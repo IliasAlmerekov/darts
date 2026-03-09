@@ -89,6 +89,30 @@ import { resetGameStore } from "@/shared/store/game-state";
 describe("App routing", () => {
   let App: typeof import("./App").default;
 
+  const renderApp = async (): Promise<ReturnType<typeof render>> => {
+    let rendered: ReturnType<typeof render> | undefined;
+
+    await act(async () => {
+      rendered = render(<App />);
+    });
+
+    if (!rendered) {
+      throw new Error("Expected App to render");
+    }
+
+    return rendered;
+  };
+
+  const triggerUnauthorizedHandler = async (): Promise<void> => {
+    const handler = vi.mocked(setUnauthorizedHandler).mock.calls[0]?.[0];
+
+    expect(handler).toBeTypeOf("function");
+
+    await act(async () => {
+      handler?.();
+    });
+  };
+
   beforeEach(async () => {
     vi.clearAllMocks();
     vi.useRealTimers();
@@ -98,7 +122,7 @@ describe("App routing", () => {
   });
 
   it("renders login page for root route", async () => {
-    render(<App />);
+    await renderApp();
 
     expect(
       await screen.findByRole("heading", { name: "You have successfully left the game" }),
@@ -108,7 +132,7 @@ describe("App routing", () => {
   it("renders register page for /register route", async () => {
     window.history.pushState({}, "", "/register");
 
-    render(<App />);
+    await renderApp();
 
     expect(await screen.findByRole("heading", { name: "Create an account" })).toBeTruthy();
   });
@@ -116,7 +140,7 @@ describe("App routing", () => {
   it("renders start page for /start route", async () => {
     window.history.pushState({}, "", "/start");
 
-    render(<App />);
+    await renderApp();
 
     expect(await screen.findByText("Start Page")).toBeTruthy();
   });
@@ -124,7 +148,7 @@ describe("App routing", () => {
   it("renders start page for /start/:id route", async () => {
     window.history.pushState({}, "", "/start/game-42");
 
-    render(<App />);
+    await renderApp();
 
     expect(await screen.findByText("Start Page")).toBeTruthy();
   });
@@ -132,18 +156,12 @@ describe("App routing", () => {
   it("registers unauthorized navigation and clears it on unmount", async () => {
     window.history.pushState({}, "", "/register");
 
-    const { unmount } = render(<App />);
+    const { unmount } = await renderApp();
 
     expect(await screen.findByRole("heading", { name: "Create an account" })).toBeTruthy();
     expect(setUnauthorizedHandler).toHaveBeenCalledTimes(1);
 
-    const handler = vi.mocked(setUnauthorizedHandler).mock.calls[0]?.[0];
-
-    expect(handler).toBeTypeOf("function");
-
-    act(() => {
-      handler?.();
-    });
+    await triggerUnauthorizedHandler();
 
     expect(
       await screen.findByRole("heading", { name: "You have successfully left the game" }),
@@ -151,7 +169,9 @@ describe("App routing", () => {
 
     const cleanupCallCountBeforeUnmount = vi.mocked(clearUnauthorizedHandler).mock.calls.length;
 
-    unmount();
+    await act(async () => {
+      unmount();
+    });
 
     expect(vi.mocked(clearUnauthorizedHandler).mock.calls.length).toBeGreaterThan(
       cleanupCallCountBeforeUnmount,
@@ -161,18 +181,12 @@ describe("App routing", () => {
   it("should clear auth, room, and game stores when unauthorized handler fires", async () => {
     window.history.pushState({}, "", "/start");
 
-    render(<App />);
+    await renderApp();
 
     expect(await screen.findByText("Start Page")).toBeTruthy();
     expect(setUnauthorizedHandler).toHaveBeenCalledTimes(1);
 
-    const handler = vi.mocked(setUnauthorizedHandler).mock.calls[0]?.[0];
-
-    expect(handler).toBeTypeOf("function");
-
-    act(() => {
-      handler?.();
-    });
+    await triggerUnauthorizedHandler();
 
     expect(vi.mocked(invalidateAuthState)).toHaveBeenCalledTimes(1);
     expect(vi.mocked(resetRoomStore)).toHaveBeenCalledTimes(1);
@@ -182,18 +196,12 @@ describe("App routing", () => {
   it("should navigate to login with state.from set to the current pathname when unauthorized", async () => {
     window.history.pushState({}, "", "/start");
 
-    render(<App />);
+    await renderApp();
 
     expect(await screen.findByText("Start Page")).toBeTruthy();
     expect(setUnauthorizedHandler).toHaveBeenCalledTimes(1);
 
-    const handler = vi.mocked(setUnauthorizedHandler).mock.calls[0]?.[0];
-
-    expect(handler).toBeTypeOf("function");
-
-    act(() => {
-      handler?.();
-    });
+    await triggerUnauthorizedHandler();
 
     expect(
       await screen.findByRole("heading", { name: "You have successfully left the game" }),
@@ -204,7 +212,7 @@ describe("App routing", () => {
   it("renders 404 page for unknown route", async () => {
     window.history.pushState({}, "", "/unknown-route");
 
-    render(<App />);
+    await renderApp();
 
     expect(await screen.findByRole("heading", { name: "Page not found" })).toBeTruthy();
   });

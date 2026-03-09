@@ -76,6 +76,9 @@ function GamePlayerItem({
       className={className}
       id={id}
       data-active-player={isActive ? "true" : undefined}
+      role="group"
+      aria-label={name}
+      aria-current={isActive ? "true" : undefined}
       tabIndex={isActive ? -1 : undefined}
     >
       <div>

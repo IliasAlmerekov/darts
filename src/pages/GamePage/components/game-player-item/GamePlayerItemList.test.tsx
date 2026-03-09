@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { render } from "@testing-library/react";
+import { render, screen } from "@testing-library/react";
 import { describe, expect, it, vi, beforeEach, afterEach } from "vitest";
 import type { WinnerPlayerProps } from "@/types";
 import GamePlayerItemList from "./GamePlayerItemList";
@@ -45,6 +45,9 @@ describe("GamePlayerItemList", () => {
 
     vi.runAllTimers();
 
+    expect(screen.getByRole("group", { name: "Player 2" }).getAttribute("aria-current")).toBe(
+      "true",
+    );
     expect(document.activeElement?.getAttribute("data-active-player")).toBe("true");
     expect(scrollIntoViewMock).toHaveBeenCalledTimes(1);
     expect(scrollIntoViewMock).toHaveBeenCalledWith({

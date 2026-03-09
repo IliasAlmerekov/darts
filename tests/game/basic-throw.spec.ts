@@ -1,7 +1,7 @@
 // spec: specs/ticket-test-plan.md
 // seed: tests/shared/seed.spec.ts
 
-import { test, expect, type Page, type Route, type Request } from "@playwright/test";
+import { test, expect, type Locator, type Page, type Route, type Request } from "@playwright/test";
 
 type PlayerThrow = {
   value: number;
@@ -108,6 +108,17 @@ const createScoreboardDelta = (state: MockGameState) => ({
   status: state.status,
   currentRound: state.currentRound,
 });
+
+const backToHomeButton = (page: Page): Locator =>
+  page.getByRole("button", { name: "Back to Home" });
+
+const settingsButton = (page: Page): Locator => page.getByRole("button", { name: "Settings" });
+
+const undoButton = (page: Page): Locator => page.getByRole("button", { name: "Undo" });
+
+const playerCard = (page: Page, name: string): Locator => page.getByRole("group", { name });
+
+const bustIcons = (scope: Page | Locator): Locator => scope.getByRole("img", { name: "Bust icon" });
 
 const mockAuth = async (page: Page): Promise<void> => {
   await page.route("**/api/login/success", async (route) => {
@@ -238,15 +249,9 @@ const installGameRoutes = async (page: Page, options: RouteOptions): Promise<voi
 
 const openGame = async (page: Page, gameId = 1): Promise<void> => {
   await page.goto(`/game/${gameId}`);
-  await expect(page.locator('img[alt="Back to Home"]')).toBeVisible();
-  await expect(page.locator('img[alt="Settings"]')).toBeVisible();
+  await expect(backToHomeButton(page)).toBeVisible();
+  await expect(settingsButton(page)).toBeVisible();
 };
-
-const undoButton = (page: Page) =>
-  page.locator('img[alt="Undo"]').locator("xpath=ancestor::button[1]").first();
-
-const playerCard = (page: Page, name: string) =>
-  page.locator('[class*="gamePlayerItem"]', { hasText: name }).first();
 
 test.describe("Basic Throw Mechanics and Validation", () => {
   test("1.1 Record a single standard throw and update active player state", async ({ page }) => {
@@ -270,7 +275,7 @@ test.describe("Basic Throw Mechanics and Validation", () => {
     await openGame(page);
     await expect(page.getByRole("button", { name: "20", exact: true })).toBeVisible();
     await expect(undoButton(page)).toBeDisabled();
-    await expect(page.locator('[data-active-player="true"]')).toContainText("Player 1");
+    await expect(playerCard(page, "Player 1")).toHaveAttribute("aria-current", "true");
 
     const throwRequestPromise = page.waitForRequest("**/api/game/1/throw/delta");
     await page.getByRole("button", { name: "20", exact: true }).click();
@@ -414,7 +419,7 @@ test.describe("Basic Throw Mechanics and Validation", () => {
 
     await page.getByRole("button", { name: "18", exact: true }).click();
 
-    await expect(page.locator('[data-active-player="true"]')).toContainText("Player 2");
+    await expect(playerCard(page, "Player 2")).toHaveAttribute("aria-current", "true");
     await expect(playerCard(page, "Player 2")).toContainText("301");
 
     const p1 = playerCard(page, "Player 1");
@@ -448,15 +453,15 @@ test.describe("Basic Throw Mechanics and Validation", () => {
     });
 
     await openGame(page);
-    await expect(page.locator('[data-active-player="true"]')).toContainText("Player 1");
-    await expect(page.locator('img[alt="Bust icon"]')).toHaveCount(0);
+    await expect(playerCard(page, "Player 1")).toHaveAttribute("aria-current", "true");
+    await expect(bustIcons(page)).toHaveCount(0);
 
     await page.getByRole("button", { name: "20", exact: true }).click();
 
     const p1 = playerCard(page, "Player 1");
     await expect(p1).toContainText("10");
-    await expect(p1.locator('img[alt="Bust icon"]').first()).toBeVisible();
-    await expect(page.locator('[data-active-player="true"]')).toContainText("Player 2");
+    await expect(bustIcons(p1)).not.toHaveCount(0);
+    await expect(playerCard(page, "Player 2")).toHaveAttribute("aria-current", "true");
   });
 
   test("1.5 Enforce checkout rules from Settings (Double-out and Triple-out)", async ({ page }) => {
@@ -519,7 +524,7 @@ test.describe("Basic Throw Mechanics and Validation", () => {
 
     await openGame(page);
 
-    await page.locator('img[alt="Settings"]').click();
+    await settingsButton(page).click();
     await expect(page.getByRole("heading", { name: "Settings" })).toBeVisible();
     await page.getByRole("button", { name: "Double-out" }).click();
     await page.getByRole("button", { name: "Save" }).click();
@@ -530,7 +535,7 @@ test.describe("Basic Throw Mechanics and Validation", () => {
     await page.getByRole("button", { name: "20", exact: true }).click();
     const p1AfterBust = playerCard(page, "Player 1");
     await expect(p1AfterBust).toContainText("20");
-    await expect(p1AfterBust.locator('img[alt="Bust icon"]').first()).toBeVisible();
+    await expect(bustIcons(p1AfterBust)).not.toHaveCount(0);
 
     await page.getByRole("button", { name: "Double" }).click();
     const winningThrowRequestPromise = page.waitForRequest("**/api/game/1/throw/delta");
@@ -602,7 +607,7 @@ test.describe("Basic Throw Mechanics and Validation", () => {
 
     const p1AfterUndo = playerCard(page, "Player 1");
     await expect(p1AfterUndo).toContainText("281");
-    await expect(page.locator('[data-active-player="true"]')).toContainText("Player 1");
+    await expect(playerCard(page, "Player 1")).toHaveAttribute("aria-current", "true");
   });
 
   test("1.7 Undo from finish overlay after a winning throw", async ({ page }) => {
@@ -698,7 +703,7 @@ test.describe("Basic Throw Mechanics and Validation", () => {
 
     await page.getByRole("button", { name: "20", exact: true }).click();
 
-    await expect(page.locator('[data-active-player="true"]')).toContainText("Player 2");
+    await expect(playerCard(page, "Player 2")).toHaveAttribute("aria-current", "true");
     await expect(playerCard(page, "Player 1")).toContainText("281");
 
     const optionalSyncMessage = page.getByText(
