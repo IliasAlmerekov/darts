@@ -559,4 +559,269 @@ describe("useThrowHandler", () => {
 
     expect(vi.mocked(undoLastThrow)).toHaveBeenCalledWith(1);
   });
+
+  it("should return isUndoPending: false initially", () => {
+    const { result } = renderHook(() => useThrowHandler({ gameId: 1 }));
+    expect(result.current.isUndoPending).toBe(false);
+  });
+
+  it("should set isUndoPending: true while undo is in-flight", async () => {
+    const pendingUndo = createDeferred<GameThrowsResponse>();
+    vi.mocked(undoLastThrow).mockReturnValueOnce(pendingUndo.promise);
+
+    currentGameState = buildGameData({
+      currentThrowCount: 1,
+      players: [
+        {
+          id: 1,
+          name: "P1",
+          score: 280,
+          isActive: true,
+          isBust: false,
+          position: null,
+          throwsInCurrentRound: 1,
+          currentRoundThrows: [{ value: 21, isDouble: false, isTriple: false, isBust: false }],
+          roundHistory: [],
+        },
+        {
+          id: 2,
+          name: "P2",
+          score: 301,
+          isActive: false,
+          isBust: false,
+          position: null,
+          throwsInCurrentRound: 0,
+          currentRoundThrows: [],
+          roundHistory: [],
+        },
+      ],
+    });
+
+    const { result } = renderHook(() => useThrowHandler({ gameId: 1 }));
+
+    act(() => {
+      void result.current.handleUndo();
+    });
+
+    await waitFor(() => expect(result.current.isUndoPending).toBe(true));
+
+    await act(async () => {
+      pendingUndo.resolve(buildGameData());
+      await pendingUndo.promise;
+    });
+
+    await waitFor(() => expect(result.current.isUndoPending).toBe(false));
+  });
+
+  it("should set isUndoPending: false after undo completes", async () => {
+    vi.mocked(undoLastThrow).mockResolvedValueOnce(buildGameData());
+
+    currentGameState = buildGameData({
+      currentThrowCount: 1,
+      players: [
+        {
+          id: 1,
+          name: "P1",
+          score: 280,
+          isActive: true,
+          isBust: false,
+          position: null,
+          throwsInCurrentRound: 1,
+          currentRoundThrows: [{ value: 21, isDouble: false, isTriple: false, isBust: false }],
+          roundHistory: [],
+        },
+        {
+          id: 2,
+          name: "P2",
+          score: 301,
+          isActive: false,
+          isBust: false,
+          position: null,
+          throwsInCurrentRound: 0,
+          currentRoundThrows: [],
+          roundHistory: [],
+        },
+      ],
+    });
+
+    const { result } = renderHook(() => useThrowHandler({ gameId: 1 }));
+
+    await act(async () => {
+      await result.current.handleUndo();
+    });
+
+    expect(result.current.isUndoPending).toBe(false);
+  });
+
+  it("should set isUndoPending: false after undo API failure", async () => {
+    vi.mocked(undoLastThrow).mockRejectedValueOnce(new Error("network error"));
+    vi.mocked(getGameThrows).mockResolvedValueOnce(buildGameData());
+
+    currentGameState = buildGameData({
+      currentThrowCount: 1,
+      players: [
+        {
+          id: 1,
+          name: "P1",
+          score: 280,
+          isActive: true,
+          isBust: false,
+          position: null,
+          throwsInCurrentRound: 1,
+          currentRoundThrows: [{ value: 21, isDouble: false, isTriple: false, isBust: false }],
+          roundHistory: [],
+        },
+        {
+          id: 2,
+          name: "P2",
+          score: 301,
+          isActive: false,
+          isBust: false,
+          position: null,
+          throwsInCurrentRound: 0,
+          currentRoundThrows: [],
+          roundHistory: [],
+        },
+      ],
+    });
+
+    const { result } = renderHook(() => useThrowHandler({ gameId: 1 }));
+
+    await act(async () => {
+      await result.current.handleUndo();
+    });
+
+    await waitFor(() => expect(result.current.isUndoPending).toBe(false));
+  });
+
+  it("should call reconcileGameState when server returns null activePlayerId", async () => {
+    const invalidResponse = buildGameData({ activePlayerId: null as unknown as number });
+    vi.mocked(undoLastThrow).mockResolvedValueOnce(invalidResponse);
+    vi.mocked(getGameThrows).mockResolvedValueOnce(buildGameData());
+
+    currentGameState = buildGameData({
+      currentThrowCount: 1,
+      players: [
+        {
+          id: 1,
+          name: "P1",
+          score: 280,
+          isActive: true,
+          isBust: false,
+          position: null,
+          throwsInCurrentRound: 1,
+          currentRoundThrows: [{ value: 21, isDouble: false, isTriple: false, isBust: false }],
+          roundHistory: [],
+        },
+        {
+          id: 2,
+          name: "P2",
+          score: 301,
+          isActive: false,
+          isBust: false,
+          position: null,
+          throwsInCurrentRound: 0,
+          currentRoundThrows: [],
+          roundHistory: [],
+        },
+      ],
+    });
+
+    const { result } = renderHook(() => useThrowHandler({ gameId: 1 }));
+
+    await act(async () => {
+      await result.current.handleUndo();
+    });
+
+    await waitFor(() => expect(vi.mocked(getGameThrows)).toHaveBeenCalledWith(1));
+    expect(vi.mocked(setGameData)).not.toHaveBeenCalledWith(invalidResponse);
+  });
+
+  it("should call reconcileGameState when undo API throws", async () => {
+    vi.mocked(undoLastThrow).mockRejectedValueOnce(new Error("server error"));
+    vi.mocked(getGameThrows).mockResolvedValueOnce(buildGameData());
+
+    currentGameState = buildGameData({
+      currentThrowCount: 1,
+      players: [
+        {
+          id: 1,
+          name: "P1",
+          score: 280,
+          isActive: true,
+          isBust: false,
+          position: null,
+          throwsInCurrentRound: 1,
+          currentRoundThrows: [{ value: 21, isDouble: false, isTriple: false, isBust: false }],
+          roundHistory: [],
+        },
+        {
+          id: 2,
+          name: "P2",
+          score: 301,
+          isActive: false,
+          isBust: false,
+          position: null,
+          throwsInCurrentRound: 0,
+          currentRoundThrows: [],
+          roundHistory: [],
+        },
+      ],
+    });
+
+    const { result } = renderHook(() => useThrowHandler({ gameId: 1 }));
+
+    await act(async () => {
+      await result.current.handleUndo();
+    });
+
+    await waitFor(() => expect(vi.mocked(getGameThrows)).toHaveBeenCalledWith(1));
+  });
+
+  it("should not call undoLastThrow twice on rapid undo clicks", async () => {
+    const pendingUndo = createDeferred<GameThrowsResponse>();
+    vi.mocked(undoLastThrow).mockReturnValueOnce(pendingUndo.promise);
+
+    currentGameState = buildGameData({
+      currentThrowCount: 1,
+      players: [
+        {
+          id: 1,
+          name: "P1",
+          score: 280,
+          isActive: true,
+          isBust: false,
+          position: null,
+          throwsInCurrentRound: 1,
+          currentRoundThrows: [{ value: 21, isDouble: false, isTriple: false, isBust: false }],
+          roundHistory: [],
+        },
+        {
+          id: 2,
+          name: "P2",
+          score: 301,
+          isActive: false,
+          isBust: false,
+          position: null,
+          throwsInCurrentRound: 0,
+          currentRoundThrows: [],
+          roundHistory: [],
+        },
+      ],
+    });
+
+    const { result } = renderHook(() => useThrowHandler({ gameId: 1 }));
+
+    act(() => {
+      void result.current.handleUndo();
+      void result.current.handleUndo();
+    });
+
+    await act(async () => {
+      pendingUndo.resolve(buildGameData());
+      await pendingUndo.promise;
+    });
+
+    expect(vi.mocked(undoLastThrow)).toHaveBeenCalledTimes(1);
+  });
 });

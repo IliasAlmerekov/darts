@@ -1,4 +1,4 @@
-import { useCallback, useRef } from "react";
+import { useCallback, useRef, useState } from "react";
 import type { MutableRefObject } from "react";
 import { undoLastThrow } from "@/shared/api/game";
 import { playSound } from "@/lib/soundPlayer";
@@ -8,19 +8,23 @@ import { applyOptimisticUndo } from "./throwStateService";
 
 interface UseUndoFlowOptions {
   gameId: number | null;
+  reconcileGameState: (message: string) => Promise<void>;
 }
 
 interface UseUndoFlowReturn {
   executeUndo: () => Promise<void>;
   isUndoInFlightRef: MutableRefObject<boolean>;
+  isUndoPending: boolean;
   resetUndoState: () => void;
 }
 
-export function useUndoFlow({ gameId }: UseUndoFlowOptions): UseUndoFlowReturn {
+export function useUndoFlow({ gameId, reconcileGameState }: UseUndoFlowOptions): UseUndoFlowReturn {
   const isUndoInFlightRef = useRef(false);
+  const [isUndoPending, setIsUndoPending] = useState(false);
 
   const resetUndoState = useCallback((): void => {
     isUndoInFlightRef.current = false;
+    setIsUndoPending(false);
   }, []);
 
   const executeUndo = useCallback(async (): Promise<void> => {
@@ -29,9 +33,11 @@ export function useUndoFlow({ gameId }: UseUndoFlowOptions): UseUndoFlowReturn {
     }
 
     isUndoInFlightRef.current = true;
+    setIsUndoPending(true);
 
     if (!gameId) {
       isUndoInFlightRef.current = false;
+      setIsUndoPending(false);
       return;
     }
 
@@ -43,19 +49,31 @@ export function useUndoFlow({ gameId }: UseUndoFlowOptions): UseUndoFlowReturn {
       }
 
       const updatedGameState: GameThrowsResponse = await undoLastThrow(gameId);
-      setGameData(updatedGameState);
-      playSound("undo");
+
+      if (
+        typeof updatedGameState.activePlayerId !== "number" ||
+        !Number.isFinite(updatedGameState.activePlayerId)
+      ) {
+        console.error("Undo returned invalid activePlayerId:", updatedGameState.activePlayerId);
+        await reconcileGameState("");
+      } else {
+        setGameData(updatedGameState);
+        playSound("undo");
+      }
     } catch (error) {
       console.error("Failed to undo throw:", error);
+      await reconcileGameState("");
       playSound("error");
     } finally {
+      setIsUndoPending(false);
       isUndoInFlightRef.current = false;
     }
-  }, [gameId]);
+  }, [gameId, reconcileGameState]);
 
   return {
     executeUndo,
     isUndoInFlightRef,
+    isUndoPending,
     resetUndoState,
   };
 }
