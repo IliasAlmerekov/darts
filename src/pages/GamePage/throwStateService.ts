@@ -293,7 +293,9 @@ export function applyScoreboardDeltaToGameState(
   });
 
   if (activePlayerId !== previousActivePlayerId) {
-    finalizePlayerTurn(previousActivePlayerId);
+    if (previousActivePlayerId !== null) {
+      finalizePlayerTurn(previousActivePlayerId);
+    }
     const nextActivePlayer = players.find((player) => player.id === activePlayerId);
     if (nextActivePlayer) {
       nextActivePlayer.currentRoundThrows = [];
