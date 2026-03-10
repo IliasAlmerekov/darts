@@ -4,6 +4,7 @@ import { useStore } from "@nanostores/react";
 import { $gameData, $gameSettings, setGameSettings } from "@/store";
 import { $currentGameId, setCurrentGameId } from "@/store";
 import { getGameSettings, saveGameSettings } from "@/shared/api/game";
+import { clientLogger } from "@/shared/lib/clientLogger";
 import type { GameMode, GameSettingsResponse } from "@/types";
 import styles from "./Settings.module.css";
 import { SettingsTabs } from "./components/SettingsTabs";
@@ -101,7 +102,10 @@ function SettingsPage(): JSX.Element {
         if (isAbortError(error) || signal.aborted) {
           return;
         }
-        console.error("Failed to load game settings:", error);
+        clientLogger.error("settings.load.failed", {
+          context: { routeGameId },
+          error,
+        });
       }
     };
 
@@ -186,7 +190,13 @@ function SettingsPage(): JSX.Element {
     } catch (error) {
       setSelectedGameMode(previousMode);
       selectedGameModeRef.current = previousMode;
-      console.error("Failed to save game mode:", error);
+      clientLogger.error("settings.save-game-mode.failed", {
+        context: {
+          gameId: effectiveGameIdRef.current,
+          requestedMode: mode,
+        },
+        error,
+      });
     } finally {
       setIsSaving(false);
       setSavingScope(null);
@@ -224,7 +234,13 @@ function SettingsPage(): JSX.Element {
     } catch (error) {
       setSelectedPoints(previousPoints);
       selectedPointsRef.current = previousPoints;
-      console.error("Failed to save points:", error);
+      clientLogger.error("settings.save-points.failed", {
+        context: {
+          gameId: effectiveGameIdRef.current,
+          requestedPoints: points,
+        },
+        error,
+      });
     } finally {
       setIsSaving(false);
       setSavingScope(null);

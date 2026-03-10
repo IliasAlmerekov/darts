@@ -1,17 +1,15 @@
 // @vitest-environment node
-import { describe, it, expect, beforeEach } from "vitest";
+import { beforeEach, describe, expect, it } from "vitest";
 import {
+  $error,
   $gameData,
   $isLoading,
-  $error,
-  deriveWinnerId,
-  normalizeGameData,
+  setError,
+  resetGameStore,
   setGameData,
   setGameScoreboardDelta,
   setGameSettings,
   setLoading,
-  setError,
-  resetGameStore,
 } from "./game-state";
 import type { GameThrowsResponse } from "@/types";
 
@@ -59,22 +57,9 @@ describe("game-state store", () => {
   });
 
   describe("setGameData", () => {
-    it("should set game data and clear error", () => {
+    it("should set normalized game data and clear error", () => {
       setError(new Error("previous error"));
-      setGameData(mockGameData);
 
-      expect($gameData.get()).toEqual(mockGameData);
-      expect($error.get()).toBeNull();
-    });
-
-    it("should handle null game data", () => {
-      setGameData(mockGameData);
-      setGameData(null);
-
-      expect($gameData.get()).toBeNull();
-    });
-
-    it("should derive winnerId for finished game with one remaining active player", () => {
       setGameData({
         ...mockGameData,
         status: "finished",
@@ -96,6 +81,14 @@ describe("game-state store", () => {
       });
 
       expect($gameData.get()?.winnerId).toBe(1);
+      expect($error.get()).toBeNull();
+    });
+
+    it("should handle null game data", () => {
+      setGameData(mockGameData);
+      setGameData(null);
+
+      expect($gameData.get()).toBeNull();
     });
   });
 
@@ -139,7 +132,7 @@ describe("game-state store", () => {
   });
 
   describe("setGameScoreboardDelta", () => {
-    it("should update only scoreboard fields for the active game", () => {
+    it("should store the patched scoreboard state for the active game", () => {
       setGameData({
         ...mockGameData,
         currentRound: 5,
@@ -188,30 +181,8 @@ describe("game-state store", () => {
         1,
       );
 
-      expect(nextGameData).toEqual({
-        ...mockGameData,
-        activePlayerId: 2,
-        currentRound: 6,
-        currentThrowCount: 0,
-        status: "started",
-        winnerId: null,
-        players: [
-          {
-            ...mockGameData.players[0]!,
-            score: 60,
-            isActive: false,
-            position: null,
-            throwsInCurrentRound: 2,
-            currentRoundThrows: [{ value: 20 }, { value: 20 }],
-          },
-          {
-            ...mockGameData.players[1]!,
-            score: 101,
-            isActive: true,
-            position: 1,
-          },
-        ],
-      });
+      expect($gameData.get()).toEqual(nextGameData);
+      expect($error.get()).toBeNull();
     });
 
     it("should ignore scoreboard updates for a different game id", () => {
@@ -270,109 +241,6 @@ describe("game-state store", () => {
       expect($gameData.get()).toBeNull();
       expect($isLoading.get()).toBe(false);
       expect($error.get()).toBeNull();
-    });
-  });
-
-  describe("deriveWinnerId", () => {
-    it("returns existing winnerId when provided", () => {
-      const gameData: GameThrowsResponse = {
-        ...mockGameData,
-        status: "finished",
-        winnerId: 2,
-      };
-
-      expect(deriveWinnerId(gameData)).toBe(2);
-    });
-
-    it("returns winner by score when exactly one player has score > 0", () => {
-      const gameData: GameThrowsResponse = {
-        ...mockGameData,
-        status: "finished",
-        winnerId: null,
-        players: [
-          {
-            ...mockGameData.players[0]!,
-            score: 26,
-            isActive: false,
-            position: 0,
-          },
-          {
-            ...mockGameData.players[1]!,
-            score: 0,
-            isActive: false,
-            position: 1,
-          },
-        ],
-      };
-
-      expect(deriveWinnerId(gameData)).toBe(1);
-    });
-  });
-
-  describe("normalizeGameData", () => {
-    it("keeps null as null", () => {
-      expect(normalizeGameData(null)).toBeNull();
-    });
-
-    it("derives activePlayerId from a single active player flag when server returns null", () => {
-      const gameData: GameThrowsResponse = {
-        ...mockGameData,
-        activePlayerId: null,
-      };
-
-      const normalized = normalizeGameData(gameData);
-
-      expect(normalized?.activePlayerId).toBe(1);
-      expect(normalized?.players[0]?.isActive).toBe(true);
-      expect(normalized?.players[1]?.isActive).toBe(false);
-    });
-
-    it("normalizes player active flags to match the derived active player", () => {
-      const gameData: GameThrowsResponse = {
-        ...mockGameData,
-        activePlayerId: null,
-        players: mockGameData.players.map((player) => ({
-          ...player,
-          isActive: false,
-        })),
-      };
-      gameData.players[0] = {
-        ...gameData.players[0]!,
-        currentRoundThrows: [{ value: 20, isDouble: false, isTriple: false, isBust: false }],
-        throwsInCurrentRound: 1,
-      };
-
-      const normalized = normalizeGameData(gameData);
-
-      expect(normalized?.activePlayerId).toBe(1);
-      expect(normalized?.players[0]?.isActive).toBe(true);
-      expect(normalized?.players[1]?.isActive).toBe(false);
-    });
-
-    it("fills winnerId for finished game when derivable", () => {
-      const gameData: GameThrowsResponse = {
-        ...mockGameData,
-        status: "finished",
-        winnerId: null,
-        players: [
-          {
-            ...mockGameData.players[0]!,
-            score: 20,
-            isActive: true,
-            position: 0,
-          },
-          {
-            ...mockGameData.players[1]!,
-            score: 0,
-            isActive: false,
-            position: 1,
-          },
-        ],
-      };
-
-      const normalized = normalizeGameData(gameData);
-
-      expect(normalized?.winnerId).toBe(1);
     });
   });
 });

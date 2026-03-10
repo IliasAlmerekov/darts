@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { getGamesOverview } from "@/shared/api/statistics";
+import { clientLogger } from "@/shared/lib/clientLogger";
 import type { FinishedGameProps } from "@/types";
 
 type UseGamesOverviewParams = {
@@ -45,7 +46,10 @@ export function useGamesOverview({
       })
       .catch((err: unknown) => {
         if (controller.signal.aborted) return;
-        console.error("Failed to fetch games overview:", err);
+        clientLogger.error("statistics.games-overview.fetch.failed", {
+          context: { limit, offset },
+          error: err,
+        });
         setError("Could not load games overview");
         setLoading(false);
       });

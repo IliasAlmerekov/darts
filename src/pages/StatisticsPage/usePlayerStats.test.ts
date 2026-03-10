@@ -1,6 +1,7 @@
 // @vitest-environment jsdom
 import { renderHook, waitFor, act } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { invalidateAuthState } from "@/shared/store/auth";
 import type { PlayerProps } from "@/types";
 import {
   clearPlayerStatsCache,
@@ -263,6 +264,72 @@ describe("usePlayerStats", () => {
     expect(result.current.loading).toBe(false);
     expect(result.current.stats).toEqual(PLAYERS);
     expect(getPlayerStatsMock).toHaveBeenCalledTimes(1);
+  });
+
+  it("clears cached statistics when auth state is invalidated", async () => {
+    getPlayerStatsMock.mockResolvedValueOnce({ items: PLAYERS, total: 2 }).mockResolvedValueOnce({
+      items: [{ id: 3, playerId: 3, name: "Carol", scoreAverage: 62.1, gamesPlayed: 8 }],
+      total: 1,
+    });
+
+    const firstRender = renderHook(() =>
+      usePlayerStats({ limit: 10, offset: 0, sortParam: "name:asc" }),
+    );
+
+    await waitFor(() => expect(firstRender.result.current.loading).toBe(false));
+    expect(getPlayerStatsMock).toHaveBeenCalledTimes(1);
+
+    firstRender.unmount();
+    invalidateAuthState();
+
+    const secondRender = renderHook(() =>
+      usePlayerStats({ limit: 10, offset: 0, sortParam: "name:asc" }),
+    );
+
+    expect(secondRender.result.current.loading).toBe(true);
+
+    await waitFor(() => expect(secondRender.result.current.loading).toBe(false));
+    expect(secondRender.result.current.stats).toEqual([
+      { id: 3, playerId: 3, name: "Carol", scoreAverage: 62.1, gamesPlayed: 8 },
+    ]);
+    expect(getPlayerStatsMock).toHaveBeenCalledTimes(2);
+  });
+
+  it("does not repopulate cache from requests started before auth invalidation", async () => {
+    let resolvePrefetch: ((value: { items: PlayerProps[]; total: number }) => void) | undefined;
+
+    getPlayerStatsMock
+      .mockImplementationOnce(
+        () =>
+          new Promise<{ items: PlayerProps[]; total: number }>((resolve) => {
+            resolvePrefetch = resolve;
+          }),
+      )
+      .mockResolvedValueOnce({
+        items: [{ id: 4, playerId: 4, name: "Dylan", scoreAverage: 58.4, gamesPlayed: 12 }],
+        total: 1,
+      });
+
+    const prefetchPromise = prefetchInitialPlayerStats();
+
+    invalidateAuthState();
+
+    await act(async () => {
+      resolvePrefetch?.({ items: PLAYERS, total: 2 });
+      await prefetchPromise;
+    });
+
+    const { result } = renderHook(() =>
+      usePlayerStats({ limit: 10, offset: 0, sortParam: "name:asc" }),
+    );
+
+    expect(result.current.loading).toBe(true);
+
+    await waitFor(() => expect(result.current.loading).toBe(false));
+    expect(result.current.stats).toEqual([
+      { id: 4, playerId: 4, name: "Dylan", scoreAverage: 58.4, gamesPlayed: 12 },
+    ]);
+    expect(getPlayerStatsMock).toHaveBeenCalledTimes(2);
   });
 
   it("should pass limit, offset and sortParam to the API call", async () => {

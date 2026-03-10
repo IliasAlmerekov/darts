@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { registerUser, type RegistrationResponse } from "@/shared/api/auth";
 import { mapAuthErrorMessage } from "@/lib/auth-error-handling";
 import { ApiError } from "@/shared/api";
+import { clientLogger } from "@/shared/lib/clientLogger";
 import { ROUTES } from "@/lib/routes";
 
 /**
@@ -48,7 +49,9 @@ export function useRegistration() {
       }
       return response;
     } catch (err) {
-      console.error("Registration error:", err);
+      clientLogger.error("auth.registration.failed", {
+        error: err,
+      });
       setError(
         mapAuthErrorMessage({
           flow: "registration",

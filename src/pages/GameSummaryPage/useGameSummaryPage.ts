@@ -28,6 +28,7 @@ import { playSound } from "@/lib/soundPlayer";
 import { toUserErrorMessage } from "@/lib/error-to-user-message";
 import { ROUTES } from "@/lib/routes";
 import { applyOptimisticUndo } from "@/shared/lib/applyOptimisticUndo";
+import { clientLogger } from "@/shared/lib/clientLogger";
 
 interface SummaryLocationState {
   finishedGameId?: number;
@@ -112,7 +113,10 @@ export function useGameSummaryPage() {
       setLastFinishedGameId(finishedGameIdFromRoute);
       setLastFinishedGameSummary({ gameId: finishedGameIdFromRoute, summary: data });
     } catch (err: unknown) {
-      console.error("Failed to fetch finished game:", err);
+      clientLogger.error("game-summary.fetch.failed", {
+        context: { finishedGameId: finishedGameIdFromRoute },
+        error: err,
+      });
       setError(toUserErrorMessage(err, "Could not load finished game data."));
     }
   }, [finishedGameIdFromRoute]);
@@ -224,7 +228,13 @@ export function useGameSummaryPage() {
       if (!serverUndoApplied && currentGameData && currentGameData.id === finishedGameIdFromRoute) {
         setGameData(currentGameData);
       }
-      console.error("Failed to reopen game and undo throw:", err);
+      clientLogger.error("game-summary.undo-reopen.failed", {
+        context: {
+          finishedGameId: finishedGameIdFromRoute,
+          serverUndoApplied,
+        },
+        error: err,
+      });
       setError(toUserErrorMessage(err, "Could not reopen game and undo throw."));
     }
   }, [finishedGameIdFromRoute, navigate]);
@@ -251,7 +261,10 @@ export function useGameSummaryPage() {
       }
       navigate(ROUTES.game(rematch.gameId));
     } catch (err) {
-      console.error("Failed to start rematch:", err);
+      clientLogger.error("game-summary.rematch.start.failed", {
+        context: { finishedGameId: finishedGameIdFromRoute },
+        error: err,
+      });
       setError(toUserErrorMessage(err, "Could not start a rematch."));
     } finally {
       startGameInFlightRef.current = false;
@@ -275,7 +288,10 @@ export function useGameSummaryPage() {
       setCurrentGameId(rematch.gameId);
       navigate(ROUTES.start(rematch.gameId));
     } catch (err) {
-      console.error("Failed to start rematch:", err);
+      clientLogger.error("game-summary.rematch.return-to-start.failed", {
+        context: { finishedGameId: finishedGameIdFromRoute },
+        error: err,
+      });
       setError(toUserErrorMessage(err, "Could not return to start."));
     }
   }, [finishedGameIdFromRoute, navigate]);

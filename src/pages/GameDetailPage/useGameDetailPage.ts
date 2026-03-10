@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useParams } from "react-router-dom";
 import { getFinishedGame } from "@/shared/api/game";
+import { clientLogger } from "@/shared/lib/clientLogger";
 import type { FinishedPlayerResponse, WinnerPlayerProps } from "@/types";
 
 type UseGameDetailPageResult = {
@@ -39,7 +40,10 @@ export function useGameDetailPage(): UseGameDetailPageResult {
         setError(null);
       })
       .catch((err: unknown) => {
-        console.error("Failed to fetch finished game details:", err);
+        clientLogger.error("game-detail.finished-game.fetch.failed", {
+          context: { finishedGameId: finishedGameIdFromRoute },
+          error: err,
+        });
         setError("Could not load finished game data");
       });
   }, [finishedGameIdFromRoute]);
