@@ -6,6 +6,7 @@ import ScrollToTop from "@/app/ScrollToTop";
 import AdminLayoutRoute from "@/app/routes/AdminLayoutRoute";
 import NotFoundPage from "@/app/routes/NotFoundPage";
 import ProtectedRoutes from "@/app/ProtectedRoutes";
+import { scheduleSelectiveRouteWarmUp } from "@/app/routeWarmup";
 import { clearUnauthorizedHandler, setUnauthorizedHandler } from "@/shared/api";
 import { ROUTES } from "@/lib/routes";
 import { invalidateAuthState } from "@/shared/store/auth";
@@ -24,11 +25,6 @@ const SettingsPage = lazy(() => import("@/pages/SettingsPage"));
 const Statistics = lazy(() => import("@/pages/StatisticsPage"));
 const JoinedGamePage = lazy(() => import("@/pages/JoinedGamePage"));
 const PlayerProfile = lazy(() => import("@/pages/PlayerProfilePage"));
-
-type WindowWithIdleCallback = Window & {
-  requestIdleCallback?: (callback: IdleRequestCallback) => number;
-  cancelIdleCallback?: (handle: number) => void;
-};
 
 function UnauthorizedNavigationBridge(): null {
   const navigate = useNavigate();
@@ -51,32 +47,7 @@ function UnauthorizedNavigationBridge(): null {
 
 function App(): React.JSX.Element {
   useEffect(() => {
-    const windowWithIdleCallback = window as WindowWithIdleCallback;
-    const warmUpRoutes = () => {
-      void import("@/pages/StartPage");
-      void import("@/pages/GamePage");
-      void import("@/pages/GameSummaryPage");
-      void import("@/pages/SettingsPage");
-      void import("@/pages/StatisticsPage");
-      void import("@/pages/JoinedGamePage");
-      void import("@/pages/PlayerProfilePage");
-    };
-
-    if (windowWithIdleCallback.requestIdleCallback && windowWithIdleCallback.cancelIdleCallback) {
-      const idleCallbackId = windowWithIdleCallback.requestIdleCallback(() => {
-        warmUpRoutes();
-      });
-      return () => {
-        windowWithIdleCallback.cancelIdleCallback?.(idleCallbackId);
-      };
-    }
-
-    const timeoutId = window.setTimeout(() => {
-      warmUpRoutes();
-    }, 300);
-    return () => {
-      window.clearTimeout(timeoutId);
-    };
+    return scheduleSelectiveRouteWarmUp();
   }, []);
 
   return (
