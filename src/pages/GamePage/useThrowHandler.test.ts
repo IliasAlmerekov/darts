@@ -499,6 +499,7 @@ describe("useThrowHandler", () => {
   });
 
   it("reconciles game state when the local active player is missing before a throw", async () => {
+    const consoleErrorSpy = vi.spyOn(console, "error").mockImplementation(() => undefined);
     currentGameState = buildGameData({
       activePlayerId: null,
       players: [
@@ -539,6 +540,17 @@ describe("useThrowHandler", () => {
     expect(result.current.syncMessage).toBe(
       "Game state was out of sync. Refreshed latest game state.",
     );
+    expect(consoleErrorSpy).toHaveBeenCalledWith(
+      "[client:error] game.throw.missing-active-player",
+      {
+        context: {
+          activePlayerId: null,
+          gameId: 1,
+          playerCount: 2,
+        },
+      },
+    );
+    consoleErrorSpy.mockRestore();
   });
 
   it("applies optimistic undo immediately while waiting for server response", async () => {
