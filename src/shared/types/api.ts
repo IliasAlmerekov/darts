@@ -1,4 +1,4 @@
-import type { GameStatus, ScoreboardDelta } from "./game";
+import type { GameStatus, GameThrowsResponse, ScoreboardDelta } from "./game";
 
 export interface CreateRoomResponse {
   gameId: number;
@@ -73,6 +73,8 @@ export interface UndoAckResponse {
   scoreboardDelta: ScoreboardDelta;
   serverTs: string;
 }
+
+export type UndoThrowResponse = GameThrowsResponse | UndoAckResponse;
 
 export interface RoomStreamEvent<T = unknown> {
   type: string;

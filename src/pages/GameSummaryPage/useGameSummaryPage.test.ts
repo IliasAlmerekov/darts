@@ -3,13 +3,16 @@ import { act, renderHook, waitFor } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { useGameSummaryPage } from "./useGameSummaryPage";
 import { playSound } from "@/lib/soundPlayer";
+import type { GameThrowsResponse, ScoreboardDelta, UndoAckResponse } from "@/types";
 
 const navigateMock = vi.fn();
 const getFinishedGameMock = vi.fn();
+const getGameThrowsMock = vi.fn();
 const createRematchMock = vi.fn();
 const startGameMock = vi.fn();
 const undoLastThrowMock = vi.fn();
 const setGameDataMock = vi.fn();
+const setGameScoreboardDeltaMock = vi.fn();
 const setInvitationMock = vi.fn();
 const setLastFinishedGameIdMock = vi.fn();
 const setLastFinishedGameSummaryMock = vi.fn();
@@ -34,6 +37,7 @@ let storeGameSettings: { startScore: number; doubleOut: boolean; tripleOut: bool
   doubleOut: false,
   tripleOut: false,
 };
+let currentGameState: GameThrowsResponse | null = null;
 
 vi.mock("react-router-dom", () => ({
   useNavigate: () => navigateMock,
@@ -43,6 +47,7 @@ vi.mock("react-router-dom", () => ({
 
 vi.mock("@/shared/api/game", () => ({
   getFinishedGame: (...args: unknown[]) => getFinishedGameMock(...args),
+  getGameThrows: (...args: unknown[]) => getGameThrowsMock(...args),
   getGameSettings: (...args: unknown[]) => getGameSettingsMock(...args),
   createRematch: (...args: unknown[]) => createRematchMock(...args),
   startGame: (...args: unknown[]) => startGameMock(...args),
@@ -53,11 +58,15 @@ vi.mock("@/store", async (importOriginal) => {
   const original = await importOriginal<Record<string, unknown>>();
   return {
     ...original,
+    $gameData: {
+      get: () => currentGameState,
+    },
     $gameSettings: { key: "gameSettings" },
     $lastFinishedGameSummary: {
       get: () => lastFinishedGameSummaryStore,
     },
     setGameData: (...args: unknown[]) => setGameDataMock(...args),
+    setGameScoreboardDelta: (...args: unknown[]) => setGameScoreboardDeltaMock(...args),
     setInvitation: (...args: unknown[]) => setInvitationMock(...args),
     setLastFinishedGameId: (...args: unknown[]) => setLastFinishedGameIdMock(...args),
     setLastFinishedGameSummary: (...args: unknown[]) => setLastFinishedGameSummaryMock(...args),
@@ -73,10 +82,135 @@ vi.mock("@/lib/soundPlayer", () => ({
   playSound: vi.fn(),
 }));
 
+function buildFinishedGameState(): GameThrowsResponse {
+  return {
+    id: 42,
+    status: "finished",
+    currentRound: 7,
+    activePlayerId: 1,
+    currentThrowCount: 0,
+    winnerId: 1,
+    settings: { startScore: 301, doubleOut: false, tripleOut: false },
+    players: [
+      {
+        id: 1,
+        name: "Alice",
+        score: 0,
+        isActive: true,
+        isBust: false,
+        position: 1,
+        throwsInCurrentRound: 0,
+        currentRoundThrows: [],
+        roundHistory: [
+          {
+            round: 7,
+            throws: [
+              { value: 20, isDouble: false, isTriple: false, isBust: false },
+              { value: 20, isDouble: false, isTriple: false, isBust: false },
+              { value: 20, isDouble: false, isTriple: false, isBust: false },
+            ],
+          },
+        ],
+      },
+      {
+        id: 2,
+        name: "Bob",
+        score: 40,
+        isActive: false,
+        isBust: false,
+        position: null,
+        throwsInCurrentRound: 0,
+        currentRoundThrows: [],
+        roundHistory: [],
+      },
+    ],
+  };
+}
+
+function buildStartedGameState(): GameThrowsResponse {
+  return {
+    ...buildFinishedGameState(),
+    status: "started",
+    currentRound: 7,
+    currentThrowCount: 2,
+    winnerId: null,
+    players: [
+      {
+        ...buildFinishedGameState().players[0]!,
+        score: 20,
+        isActive: true,
+        position: null,
+        throwsInCurrentRound: 2,
+        currentRoundThrows: [
+          { value: 20, isDouble: false, isTriple: false, isBust: false },
+          { value: 20, isDouble: false, isTriple: false, isBust: false },
+        ],
+        roundHistory: [],
+      },
+      {
+        ...buildFinishedGameState().players[1]!,
+      },
+    ],
+  };
+}
+
+function buildUndoAck(overrides: Partial<UndoAckResponse> = {}): UndoAckResponse {
+  return {
+    success: true,
+    gameId: 42,
+    stateVersion: "undo-v1",
+    scoreboardDelta: {
+      changedPlayers: [],
+      winnerId: null,
+      status: "started",
+      currentRound: 7,
+    },
+    serverTs: "2026-03-10T10:00:00.000Z",
+    ...overrides,
+  };
+}
+
+function applyScoreboardDelta(currentState: GameThrowsResponse, scoreboardDelta: ScoreboardDelta) {
+  const changedPlayerById = new Map(
+    scoreboardDelta.changedPlayers.map((playerDelta) => [playerDelta.playerId, playerDelta]),
+  );
+  const players = currentState.players.map((player) => {
+    const playerDelta = changedPlayerById.get(player.id);
+    if (!playerDelta) {
+      return player;
+    }
+
+    return {
+      ...player,
+      score: playerDelta.score,
+      position: playerDelta.position,
+      isActive: playerDelta.isActive,
+      isBust: typeof playerDelta.isBust === "boolean" ? playerDelta.isBust : player.isBust,
+    };
+  });
+  const activePlayerId =
+    scoreboardDelta.changedPlayers.find((playerDelta) => playerDelta.isActive)?.playerId ??
+    currentState.activePlayerId;
+  const activePlayer = players.find((player) => player.id === activePlayerId);
+
+  return {
+    ...currentState,
+    players,
+    activePlayerId,
+    currentRound: scoreboardDelta.currentRound,
+    status: scoreboardDelta.status,
+    winnerId: scoreboardDelta.winnerId,
+    currentThrowCount: activePlayer
+      ? Math.max(activePlayer.currentRoundThrows.length, activePlayer.throwsInCurrentRound)
+      : currentState.currentThrowCount,
+  };
+}
+
 describe("useGameSummaryPage", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     setGameDataMock.mockReset();
+    setGameScoreboardDeltaMock.mockReset();
     setInvitationMock.mockReset();
     setLastFinishedGameIdMock.mockReset();
     setLastFinishedGameSummaryMock.mockReset();
@@ -87,8 +221,10 @@ describe("useGameSummaryPage", () => {
     routeParams = { id: "42" };
     lastFinishedGameSummaryStore = null;
     storeGameSettings = { startScore: 301, doubleOut: false, tripleOut: false };
+    currentGameState = buildFinishedGameState();
 
     getFinishedGameMock.mockResolvedValue([]);
+    getGameThrowsMock.mockResolvedValue(buildStartedGameState());
     startGameMock.mockResolvedValue(undefined);
     getGameSettingsMock.mockResolvedValue({
       startScore: 301,
@@ -100,19 +236,42 @@ describe("useGameSummaryPage", () => {
       gameId: 77,
       invitationLink: "/invite/77",
     });
-    undoLastThrowMock.mockResolvedValue({
-      id: 42,
-      status: "started",
-      currentRound: 1,
-      activePlayerId: 1,
-      currentThrowCount: 0,
-      winnerId: null,
-      settings: { startScore: 301, doubleOut: false, tripleOut: false },
-      players: [],
+    undoLastThrowMock.mockResolvedValue(buildUndoAck());
+    setGameDataMock.mockImplementation((nextState: GameThrowsResponse | null) => {
+      currentGameState = nextState;
+    });
+    setGameScoreboardDeltaMock.mockImplementation((scoreboardDelta: ScoreboardDelta) => {
+      if (!currentGameState) {
+        return null;
+      }
+
+      currentGameState = applyScoreboardDelta(currentGameState, scoreboardDelta);
+      return currentGameState;
     });
   });
 
-  it("undoes last throw and navigates back to game route", async () => {
+  it("undoes last throw from compact ack and navigates back to game route", async () => {
+    undoLastThrowMock.mockResolvedValueOnce(
+      buildUndoAck({
+        scoreboardDelta: {
+          changedPlayers: [
+            {
+              playerId: 1,
+              name: "Alice",
+              score: 20,
+              position: null,
+              isActive: true,
+              isGuest: false,
+              isBust: false,
+            },
+          ],
+          winnerId: null,
+          status: "started",
+          currentRound: 7,
+        },
+      }),
+    );
+
     const { result } = renderHook(() => useGameSummaryPage());
 
     await act(async () => {
@@ -126,10 +285,71 @@ describe("useGameSummaryPage", () => {
         status: "started",
       }),
     );
+    expect(setGameScoreboardDeltaMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        currentRound: 7,
+        status: "started",
+      }),
+      42,
+    );
+    expect(getGameThrowsMock).not.toHaveBeenCalledWith(42);
     expect(playSound).toHaveBeenCalledWith("undo");
     expect(navigateMock).toHaveBeenCalledWith("/game/42", {
       state: { skipFinishOverlay: true },
     });
+  });
+
+  it("keeps supporting the legacy full undo response", async () => {
+    const legacyGameState = buildStartedGameState();
+    undoLastThrowMock.mockResolvedValueOnce(legacyGameState);
+
+    const { result } = renderHook(() => useGameSummaryPage());
+
+    await act(async () => {
+      await result.current.handleUndo();
+    });
+
+    expect(setGameScoreboardDeltaMock).not.toHaveBeenCalled();
+    expect(setGameDataMock).toHaveBeenCalledWith(legacyGameState);
+    expect(navigateMock).toHaveBeenCalledWith("/game/42", {
+      state: { skipFinishOverlay: true },
+    });
+  });
+
+  it("falls back to full game refresh when compact undo cannot be applied locally", async () => {
+    currentGameState = null;
+    const refreshedGameState = buildStartedGameState();
+    undoLastThrowMock.mockResolvedValueOnce(
+      buildUndoAck({
+        scoreboardDelta: {
+          changedPlayers: [
+            {
+              playerId: 1,
+              name: "Alice",
+              score: 20,
+              position: null,
+              isActive: true,
+              isGuest: false,
+              isBust: false,
+            },
+          ],
+          winnerId: null,
+          status: "started",
+          currentRound: 7,
+        },
+      }),
+    );
+    getGameThrowsMock.mockResolvedValueOnce(refreshedGameState);
+
+    const { result } = renderHook(() => useGameSummaryPage());
+
+    await act(async () => {
+      await result.current.handleUndo();
+    });
+
+    expect(setGameScoreboardDeltaMock).toHaveBeenCalledWith(expect.any(Object), 42);
+    expect(getGameThrowsMock).toHaveBeenCalledWith(42);
+    expect(setGameDataMock).toHaveBeenCalledWith(refreshedGameState);
   });
 
   it("does not navigate when undo fails", async () => {
@@ -142,7 +362,7 @@ describe("useGameSummaryPage", () => {
     });
 
     expect(undoLastThrowMock).toHaveBeenCalledWith(42);
-    expect(setGameDataMock).not.toHaveBeenCalled();
+    expect(setGameScoreboardDeltaMock).not.toHaveBeenCalled();
     expect(navigateMock).not.toHaveBeenCalledWith("/game/42");
   });
 

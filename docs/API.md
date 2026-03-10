@@ -29,7 +29,7 @@ All API requests go through the API client with base URL:
 
 - `GET /api/game/{gameId}` — fetch game state. See `src/features/game/api/get-game.ts`.
 - `POST /api/game/{gameId}/throw` — record a throw. See `src/features/game/api/record-throw.ts`.
-- `DELETE /api/game/{gameId}/throw` — undo last throw. Backend may return a compact ack during rollout; `src/shared/api/game.ts` temporarily hydrates it back to full game state for callers.
+- `DELETE /api/game/{gameId}/throw` — undo last throw. Backend may return either the legacy full game state or a compact ack; compact handling now happens in the undo hooks/store layer.
 - `POST /api/game/{gameId}/start` — start game. See `src/features/game/api/start-game.ts`.
 - `PATCH /api/game/{gameId}/abort` — abort game. See `src/features/game/api/abort-game.ts`.
 - `POST /api/game/{gameId}/finish` — finish game and return summary-ready standings DTO. See `src/features/game/api/finish-game.ts`.

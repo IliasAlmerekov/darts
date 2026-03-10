@@ -2,15 +2,24 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
 import {
   getFinishedGame,
+  getGameThrows,
   getGameSettings,
   createRematch,
   startGame,
   undoLastThrow,
 } from "@/shared/api/game";
-import type { FinishedPlayerResponse, GameSummaryResponse, WinnerPlayerProps } from "@/types";
+import type {
+  FinishedPlayerResponse,
+  GameSummaryResponse,
+  GameThrowsResponse,
+  UndoAckResponse,
+  WinnerPlayerProps,
+} from "@/types";
 import {
+  $gameData,
   $lastFinishedGameSummary,
   setGameData,
+  setGameScoreboardDelta,
   setInvitation,
   setLastFinishedGameId,
   setLastFinishedGameSummary,
@@ -19,6 +28,7 @@ import {
 import { playSound } from "@/lib/soundPlayer";
 import { toUserErrorMessage } from "@/lib/error-to-user-message";
 import { ROUTES } from "@/lib/routes";
+import { applyOptimisticUndo } from "@/shared/lib/applyOptimisticUndo";
 
 interface SummaryLocationState {
   finishedGameId?: number;
@@ -46,6 +56,12 @@ function isFinishedPlayerResponse(value: unknown): value is FinishedPlayerRespon
 
 function isGameSummaryResponse(value: unknown): value is GameSummaryResponse {
   return Array.isArray(value) && value.every(isFinishedPlayerResponse);
+}
+
+function isUndoAckResponse(
+  response: GameThrowsResponse | UndoAckResponse,
+): response is UndoAckResponse {
+  return "scoreboardDelta" in response;
 }
 
 /**
@@ -162,16 +178,50 @@ export function useGameSummaryPage() {
   const handleUndo = useCallback(async (): Promise<void> => {
     if (!finishedGameIdFromRoute) return;
 
+    const currentGameData = $gameData.get();
+    const optimisticUndoState =
+      currentGameData && currentGameData.id === finishedGameIdFromRoute
+        ? applyOptimisticUndo(currentGameData)
+        : null;
+    let serverUndoApplied = false;
+
     try {
       setError(null);
-      const updatedGameState = await undoLastThrow(finishedGameIdFromRoute);
-      setGameData(updatedGameState);
+      if (optimisticUndoState) {
+        setGameData(optimisticUndoState);
+      }
+
+      const undoResponse = await undoLastThrow(finishedGameIdFromRoute);
+      serverUndoApplied = true;
+
+      if (isUndoAckResponse(undoResponse)) {
+        const patchedGameState = setGameScoreboardDelta(
+          undoResponse.scoreboardDelta,
+          finishedGameIdFromRoute,
+        );
+        const needsFullRefresh =
+          optimisticUndoState === null ||
+          patchedGameState === null ||
+          (patchedGameState.status === "started" &&
+            (typeof patchedGameState.activePlayerId !== "number" ||
+              !Number.isFinite(patchedGameState.activePlayerId)));
+
+        if (needsFullRefresh) {
+          const refreshedGameState = await getGameThrows(finishedGameIdFromRoute);
+          setGameData(refreshedGameState);
+        }
+      } else {
+        setGameData(undoResponse);
+      }
 
       playSound("undo");
       navigate(ROUTES.game(finishedGameIdFromRoute), {
         state: { skipFinishOverlay: true },
       });
     } catch (err) {
+      if (!serverUndoApplied && currentGameData && currentGameData.id === finishedGameIdFromRoute) {
+        setGameData(currentGameData);
+      }
       console.error("Failed to reopen game and undo throw:", err);
       setError(toUserErrorMessage(err, "Could not reopen game and undo throw."));
     }

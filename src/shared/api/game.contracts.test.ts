@@ -104,8 +104,8 @@ describe("game api contract adapters", () => {
     expect(response).toEqual(fullResponse);
   });
 
-  it("hydrates full game state when undo returns a compact acknowledgement", async () => {
-    const deleteSpy = vi.spyOn(apiClient, "delete").mockResolvedValueOnce({
+  it("returns compact undo acknowledgement without refetching game state", async () => {
+    const compactUndoAck = {
       success: true,
       gameId: 42,
       stateVersion: "v-undo-1",
@@ -126,13 +126,12 @@ describe("game api contract adapters", () => {
         currentRound: 2,
       },
       serverTs: "2026-03-10T10:00:00.000Z",
-    });
-    const getSpy = vi.spyOn(apiClient, "get").mockResolvedValueOnce(createLegacyGameResponse());
+    };
+    const deleteSpy = vi.spyOn(apiClient, "delete").mockResolvedValueOnce(compactUndoAck);
 
     const response = await undoLastThrow(42);
 
     expect(deleteSpy).toHaveBeenCalledWith("/game/42/throw");
-    expect(getSpy).toHaveBeenCalledWith("/game/42", undefined);
-    expect(response).toEqual(createLegacyGameResponse());
+    expect(response).toEqual(compactUndoAck);
   });
 });

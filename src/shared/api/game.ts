@@ -6,6 +6,7 @@ import type {
   GameThrowsResponse,
   ThrowAckResponse,
   ThrowRequest,
+  UndoThrowResponse,
   UndoAckResponse,
   StartGameRequest,
 } from "@/types";
@@ -485,11 +486,10 @@ export async function recordThrow(
 }
 
 /**
- * Undoes the last throw. During phased rollout the backend may still return a full
- * game state; once compact undo acknowledgements are enabled we re-fetch the state here
- * to preserve the existing public contract for callers.
+ * Undoes the last throw and returns either the legacy full game state or the
+ * compact acknowledgement used by the targeted scoreboard update flow.
  */
-export async function undoLastThrow(gameId: number): Promise<GameThrowsResponse> {
+export async function undoLastThrow(gameId: number): Promise<UndoThrowResponse> {
   const data: unknown = await apiClient.delete(UNDO_THROW_ENDPOINT(gameId));
   if (isGameThrowsResponse(data)) {
     return data;
@@ -497,7 +497,7 @@ export async function undoLastThrow(gameId: number): Promise<GameThrowsResponse>
 
   if (isUndoAckResponse(data)) {
     setGameStateVersion(gameId, data.stateVersion);
-    return getGameThrows(gameId);
+    return data;
   }
 
   throw new ApiError("Unexpected response shape for undo throw", { status: 200, data });

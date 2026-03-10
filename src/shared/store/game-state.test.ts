@@ -7,6 +7,7 @@ import {
   deriveWinnerId,
   normalizeGameData,
   setGameData,
+  setGameScoreboardDelta,
   setGameSettings,
   setLoading,
   setError,
@@ -133,6 +134,100 @@ describe("game-state store", () => {
         99,
       );
 
+      expect($gameData.get()).toEqual(mockGameData);
+    });
+  });
+
+  describe("setGameScoreboardDelta", () => {
+    it("should update only scoreboard fields for the active game", () => {
+      setGameData({
+        ...mockGameData,
+        currentRound: 5,
+        currentThrowCount: 2,
+        players: [
+          {
+            ...mockGameData.players[0]!,
+            score: 40,
+            throwsInCurrentRound: 2,
+            currentRoundThrows: [{ value: 20 }, { value: 20 }],
+          },
+          {
+            ...mockGameData.players[1]!,
+            score: 101,
+            isActive: false,
+          },
+        ],
+      });
+
+      const nextGameData = setGameScoreboardDelta(
+        {
+          changedPlayers: [
+            {
+              playerId: 1,
+              name: "Alice",
+              score: 60,
+              position: null,
+              isActive: false,
+              isGuest: false,
+              isBust: false,
+            },
+            {
+              playerId: 2,
+              name: "Bob",
+              score: 101,
+              position: 1,
+              isActive: true,
+              isGuest: false,
+              isBust: false,
+            },
+          ],
+          winnerId: null,
+          status: "started",
+          currentRound: 6,
+        },
+        1,
+      );
+
+      expect(nextGameData).toEqual({
+        ...mockGameData,
+        activePlayerId: 2,
+        currentRound: 6,
+        currentThrowCount: 0,
+        status: "started",
+        winnerId: null,
+        players: [
+          {
+            ...mockGameData.players[0]!,
+            score: 60,
+            isActive: false,
+            position: null,
+            throwsInCurrentRound: 2,
+            currentRoundThrows: [{ value: 20 }, { value: 20 }],
+          },
+          {
+            ...mockGameData.players[1]!,
+            score: 101,
+            isActive: true,
+            position: 1,
+          },
+        ],
+      });
+    });
+
+    it("should ignore scoreboard updates for a different game id", () => {
+      setGameData(mockGameData);
+
+      const nextGameData = setGameScoreboardDelta(
+        {
+          changedPlayers: [],
+          winnerId: null,
+          status: "started",
+          currentRound: 4,
+        },
+        99,
+      );
+
+      expect(nextGameData).toBeNull();
       expect($gameData.get()).toEqual(mockGameData);
     });
   });
