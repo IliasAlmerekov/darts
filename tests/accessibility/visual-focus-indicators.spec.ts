@@ -1,7 +1,7 @@
 // spec: specs/login-test-plan.md
 // seed: tests/shared/seed.spec.ts
 
-import { test, expect } from "@playwright/test";
+import { test, expect, type Locator } from "@playwright/test";
 
 test.describe("Accessibility and Usability", () => {
   test("Visual Focus Indicators", async ({ page }) => {
@@ -13,44 +13,36 @@ test.describe("Accessibility and Usability", () => {
 
     await page.keyboard.press("Tab");
     await expect(emailField).toBeFocused();
+    await expect(emailField).toBeVisible();
 
-    const emailFocusStyle = await page.evaluate(() => {
-      const emailField = document.querySelector('input[type="email"]');
-      const styles = window.getComputedStyle(emailField);
-      return {
-        hasFocusIndicator:
-          styles.outline !== "none" ||
-          styles.boxShadow !== "none" ||
-          styles.border.includes("rgb(0, 0, 219)"),
-        isVisible: emailField?.offsetParent !== null,
-      };
+    const emailHasFocusIndicator = await emailField.evaluate((el) => {
+      const styles = window.getComputedStyle(el);
+      return (
+        styles.outlineStyle !== "none" ||
+        styles.boxShadow !== "none" ||
+        styles.borderColor.includes("rgb(0, 0, 219)")
+      );
     });
-    expect(emailFocusStyle.hasFocusIndicator).toBe(true);
-    expect(emailFocusStyle.isVisible).toBe(true);
+    expect(emailHasFocusIndicator).toBe(true);
 
     const passwordField = page.getByLabel("Password *");
     await page.keyboard.press("Tab");
     await expect(passwordField).toBeFocused();
 
+    const showPasswordButton = page.getByRole("button", { name: "Show password" });
     await page.keyboard.press("Tab");
-    await expect(page.getByRole("button", { name: "Show password" })).toBeFocused();
+    await expect(showPasswordButton).toBeFocused();
+    await expect(showPasswordButton).toBeVisible();
 
-    const buttonFocusStyle = await page.evaluate(() => {
-      const activeElement = document.activeElement;
-      if (!activeElement) return { hasFocusIndicator: false, isVisible: false };
-
-      const styles = window.getComputedStyle(activeElement);
-      return {
-        hasFocusIndicator:
-          styles.outline !== "none" ||
-          styles.outlineStyle === "auto" ||
-          styles.boxShadow !== "none",
-        isVisible: activeElement.offsetParent !== null,
-        outlineWidth: styles.outlineWidth,
-      };
+    const buttonHasFocusIndicator = await showPasswordButton.evaluate((el) => {
+      const styles = window.getComputedStyle(el);
+      return (
+        styles.outlineStyle !== "none" ||
+        styles.outlineStyle === "auto" ||
+        styles.boxShadow !== "none"
+      );
     });
-    expect(buttonFocusStyle.hasFocusIndicator).toBe(true);
-    expect(buttonFocusStyle.isVisible).toBe(true);
+    expect(buttonHasFocusIndicator).toBe(true);
 
     await page.keyboard.press("Tab");
     await expect(page.getByRole("checkbox", { name: "Remember me" })).toBeFocused();
@@ -61,7 +53,7 @@ test.describe("Accessibility and Usability", () => {
     await page.keyboard.press("Tab");
     await expect(page.getByRole("link", { name: "Sign up" })).toBeFocused();
 
-    const allFocusableElements = [
+    const allFocusableElements: Locator[] = [
       emailField,
       passwordField,
       page.getByRole("button", { name: "Show password" }),
@@ -75,26 +67,26 @@ test.describe("Accessibility and Usability", () => {
       await expect(element).toBeEnabled();
     }
 
-    const focusContrastTest = await page.evaluate(() => {
-      const elements = [
-        document.querySelector('input[type="email"]'),
-        document.querySelector('input[type="password"]'),
-        document.querySelector("button"),
-        document.querySelector('input[type="checkbox"]'),
-        document.querySelector("a"),
-      ].filter(Boolean);
+    // Verify form inputs and interactive elements carry visible styling
+    // (matches original selector set: email, password, show-password button, checkbox, link)
+    const styledElements = [
+      emailField,
+      passwordField,
+      page.getByRole("button", { name: "Show password" }),
+      page.getByRole("checkbox", { name: "Remember me" }),
+      page.getByRole("link", { name: "Sign up" }),
+    ];
 
-      return elements.every((element) => {
-        const styles = window.getComputedStyle(element);
+    for (const element of styledElements) {
+      const hasFocusStyle = await element.evaluate((el) => {
+        const styles = window.getComputedStyle(el);
         const hasVisibleOutline =
           styles.outline !== "none" && styles.outlineColor !== "transparent";
         const hasVisibleBoxShadow = styles.boxShadow !== "none";
         const hasVisibleBorder = styles.borderWidth !== "0px";
-
         return hasVisibleOutline || hasVisibleBoxShadow || hasVisibleBorder;
       });
-    });
-
-    expect(focusContrastTest).toBe(true);
+      expect(hasFocusStyle).toBe(true);
+    }
   });
 });

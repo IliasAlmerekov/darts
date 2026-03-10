@@ -122,28 +122,15 @@ test.describe("Responsive admin layouts", () => {
     await expect(leftPanel).toBeVisible();
     await expect(rightPanel).toBeVisible();
 
-    const panelPositions = await page.evaluate(() => {
-      const left = document.querySelector('[class*="existingPlayerList"]');
-      const right = document.querySelector('[class*="addedPlayerList"]');
-      if (!left || !right) return null;
+    const [leftBox, rightBox] = await Promise.all([
+      leftPanel.boundingBox(),
+      rightPanel.boundingBox(),
+    ]);
 
-      const leftBox = left.getBoundingClientRect();
-      const rightBox = right.getBoundingClientRect();
-      if (
-        leftBox.width === 0 ||
-        leftBox.height === 0 ||
-        rightBox.width === 0 ||
-        rightBox.height === 0
-      ) {
-        return null;
-      }
-
-      return { leftY: leftBox.y, rightY: rightBox.y };
-    });
-
-    expect(panelPositions).not.toBeNull();
-    if (panelPositions) {
-      expect(panelPositions.leftY).toBeLessThanOrEqual(panelPositions.rightY);
+    expect(leftBox).not.toBeNull();
+    expect(rightBox).not.toBeNull();
+    if (leftBox && rightBox) {
+      expect(leftBox.y).toBeLessThanOrEqual(rightBox.y);
     }
   });
 
@@ -278,14 +265,10 @@ test.describe("Responsive admin layouts", () => {
 
     const heading = page.getByRole("heading", { name: /scan the qr code/i });
     await expect(heading).toBeVisible();
-    await expect
-      .poll(() => heading.evaluate((el) => getComputedStyle(el).textAlign))
-      .toBe("center");
+    await expect(heading).toHaveCSS("text-align", "center");
 
     await page.setViewportSize({ width: 360, height: 800 });
-    await expect
-      .poll(() => heading.evaluate((el) => getComputedStyle(el).textAlign))
-      .toBe("center");
+    await expect(heading).toHaveCSS("text-align", "center");
   });
 
   test("Start page enlarges QR code and hides invite link on mobile", async ({ page }) => {
@@ -306,18 +289,14 @@ test.describe("Responsive admin layouts", () => {
     await expect(qrSvg).toBeVisible();
     await expect(inviteLink).toBeVisible();
 
-    await expect
-      .poll(() => qrSvg.evaluate((el) => Math.round(el.getBoundingClientRect().width)))
-      .toBeGreaterThan(150);
-    const desktopQrWidth = await qrSvg.evaluate((el) =>
-      Math.round(el.getBoundingClientRect().width),
-    );
+    const desktopQrBox = await qrSvg.boundingBox();
+    expect(desktopQrBox?.width).toBeGreaterThan(150);
+    const desktopQrWidth = Math.round(desktopQrBox?.width ?? 0);
 
     await page.setViewportSize({ width: 360, height: 800 });
 
-    const mobileQrWidth = await qrSvg.evaluate((el) =>
-      Math.round(el.getBoundingClientRect().width),
-    );
+    const mobileQrBox = await qrSvg.boundingBox();
+    const mobileQrWidth = Math.round(mobileQrBox?.width ?? 0);
     expect(mobileQrWidth).toBeGreaterThanOrEqual(150);
     expect(mobileQrWidth).toBeLessThan(desktopQrWidth);
     await expect(inviteLink).toBeHidden();
@@ -421,17 +400,13 @@ test.describe("Responsive admin layouts", () => {
     }
 
     const startBoxAfter = await startButton.boundingBox();
-    const startContainerMargin = await startContainer.evaluate((el) => {
-      return getComputedStyle(el).marginBottom;
-    });
-
     expect(startBoxBefore).not.toBeNull();
     expect(startBoxAfter).not.toBeNull();
 
     if (startBoxBefore && startBoxAfter) {
       expect(Math.round(startBoxBefore.y)).toBe(Math.round(startBoxAfter.y));
     }
-    expect(startContainerMargin).toBe("20px");
+    await expect(startContainer).toHaveCSS("margin-bottom", "20px");
   });
 
   test("Start button stays visible at the bottom on short screens", async ({ page }) => {
@@ -461,11 +436,8 @@ test.describe("Responsive admin layouts", () => {
 
       await expect(startButton).toBeInViewport();
 
-      const distanceToViewportBottom = await startButton.evaluate((el) => {
-        const rect = el.getBoundingClientRect();
-        return window.innerHeight - rect.bottom;
-      });
-
+      const startBtnBox = await startButton.boundingBox();
+      const distanceToViewportBottom = 768 - (startBtnBox!.y + startBtnBox!.height);
       expect(distanceToViewportBottom).toBeGreaterThanOrEqual(0);
       expect(distanceToViewportBottom).toBeLessThanOrEqual(64);
     }
@@ -497,9 +469,8 @@ test.describe("Responsive admin layouts", () => {
       expect(deepblueBox.x).toBeLessThan(firstIconBox.x);
     }
 
-    await expect
-      .poll(() => navIcons.first().evaluate((el) => (el as HTMLImageElement).width))
-      .toBeLessThanOrEqual(18);
+    const iconBox = await navIcons.first().boundingBox();
+    expect(iconBox?.width).toBeLessThanOrEqual(18);
   });
 
   test("Game page adapts without overflow", async ({ page }) => {
@@ -541,12 +512,11 @@ test.describe("Responsive admin layouts", () => {
     await expect(throwDisplay).toBeVisible();
     await expect(scorePointer).toBeVisible();
 
-    await expect
-      .poll(() => throwDisplay.evaluate((el) => getComputedStyle(el).flexWrap))
-      .toBe("nowrap");
-    await expect
-      .poll(() => scorePointer.evaluate((el) => parseFloat(getComputedStyle(el).paddingLeft)))
-      .toBeGreaterThan(0);
+    await expect(throwDisplay).toHaveCSS("flex-wrap", "nowrap");
+    const paddingLeft = await scorePointer.evaluate((el) =>
+      parseFloat(getComputedStyle(el).paddingLeft),
+    );
+    expect(paddingLeft).toBeGreaterThan(0);
 
     const [containerBox, undoBox] = await Promise.all([
       keyboardAndUndo.boundingBox(),
