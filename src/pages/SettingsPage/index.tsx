@@ -1,6 +1,5 @@
 import { useState, useMemo, useEffect, useCallback, useRef } from "react";
 import { useParams } from "react-router-dom";
-import { AdminLayout } from "@/shared/ui/admin-layout";
 import { useStore } from "@nanostores/react";
 import { $gameData, $gameSettings, setGameData } from "@/store";
 import { $currentGameId, setCurrentGameId } from "@/store";
@@ -230,30 +229,28 @@ function SettingsPage(): JSX.Element {
   }, []);
 
   return (
-    <AdminLayout currentGameId={currentGameIdFromStore}>
-      <div className={styles.settings}>
-        <h1>Settings</h1>
-        <section className={styles.settingsSection}>
-          <div className={styles.settingsBody}>
-            <SettingsTabs
-              title="Game Mode"
-              options={GAME_MODE_OPTIONS}
-              selectedId={selectedGameMode}
-              onChange={handleGameModeClick}
-              disabled={isSaving && savingScope === "game-mode"}
-            />
-            <SettingsTabs
-              title="Points"
-              options={POINTS_OPTIONS}
-              selectedId={selectedPoints}
-              onChange={handlePointsClick}
-              disabled={isSaving && savingScope === "points"}
-              mobileLayout="grid"
-            />
-          </div>
-        </section>
-      </div>
-    </AdminLayout>
+    <div className={styles.settings}>
+      <h1>Settings</h1>
+      <section className={styles.settingsSection}>
+        <div className={styles.settingsBody}>
+          <SettingsTabs
+            title="Game Mode"
+            options={GAME_MODE_OPTIONS}
+            selectedId={selectedGameMode}
+            onChange={handleGameModeClick}
+            disabled={isSaving && savingScope === "game-mode"}
+          />
+          <SettingsTabs
+            title="Points"
+            options={POINTS_OPTIONS}
+            selectedId={selectedPoints}
+            onChange={handlePointsClick}
+            disabled={isSaving && savingScope === "points"}
+            mobileLayout="grid"
+          />
+        </div>
+      </section>
+    </div>
   );
 }
 

@@ -1,11 +1,8 @@
 import React, { useCallback, useState } from "react";
-import { useStore } from "@nanostores/react";
 import styles from "./GamesOverview.module.css";
 import { Link } from "react-router-dom";
 import { ROUTES } from "@/lib/routes";
-import { AdminLayout } from "@/shared/ui/admin-layout";
 import Button from "@/shared/ui/button/Button";
-import { $currentGameId } from "@/store";
 import {
   Pagination,
   PaginationContent,
@@ -53,7 +50,6 @@ const GamesPagination = React.memo(function GamesPagination({
 });
 
 export default function GamesOverviewPage(): JSX.Element {
-  const currentGameId = useStore($currentGameId);
   const [offset, setOffset] = useState(0);
 
   const { games, total, loading, error, retry } = useGamesOverview({ limit: LIMIT, offset });
@@ -67,76 +63,74 @@ export default function GamesOverviewPage(): JSX.Element {
   }, []);
 
   return (
-    <AdminLayout currentGameId={currentGameId}>
-      <div className={styles.gameOverview}>
-        <StatisticsHeaderControls title="Games Overview" sortValue="alphabetically" sortDisabled />
+    <div className={styles.gameOverview}>
+      <StatisticsHeaderControls title="Games Overview" sortValue="alphabetically" sortDisabled />
 
-        {loading && (
-          <div role="status" className={styles.statusMessage}>
-            Loading…
+      {loading && (
+        <div role="status" className={styles.statusMessage}>
+          Loading…
+        </div>
+      )}
+
+      {!loading && error !== null && (
+        <div className={styles.statusMessage}>
+          <p>{error}</p>
+          <div className={styles.retryAction}>
+            <Button label="Retry" handleClick={retry} type="primary" />
           </div>
-        )}
+        </div>
+      )}
 
-        {!loading && error !== null && (
-          <div className={styles.statusMessage}>
-            <p>{error}</p>
-            <div className={styles.retryAction}>
-              <Button label="Retry" handleClick={retry} type="primary" />
-            </div>
-          </div>
-        )}
+      {!loading && error === null && games.length === 0 && (
+        <div className={styles.statusMessage}>No games found.</div>
+      )}
 
-        {!loading && error === null && games.length === 0 && (
-          <div className={styles.statusMessage}>No games found.</div>
-        )}
-
-        {!loading && error === null && games.length > 0 && (
-          <div className={styles.overview}>
-            {games.map((game) => (
-              <div key={game.id} className={styles.gameContainer}>
-                <div className={styles.gameCard}>
-                  <h4>
-                    {" "}
-                    {new Date(game.date).toLocaleDateString("de-De", {
-                      day: "2-digit",
-                      month: "2-digit",
-                      year: "numeric",
-                    })}{" "}
-                  </h4>
-                  <p>
-                    <span className="stat-label">
-                      Players <span className="stat-value">{game.playersCount}</span>
-                    </span>
-                  </p>
-                  <p>
-                    {" "}
-                    <span className="stat-label">
-                      Player Won: <span className="stat-value">{game.winnerName}</span>
-                    </span>
-                  </p>
-                  <p>
-                    {" "}
-                    <span className="stat-label">
-                      Rounds: <span className="stat-value">{game.winnerRounds}</span>
-                    </span>
-                  </p>
-                </div>
-                <div className={styles.detailsLink}>
-                  <Link to={ROUTES.details(game.id)}>details</Link>
-                </div>
+      {!loading && error === null && games.length > 0 && (
+        <div className={styles.overview}>
+          {games.map((game) => (
+            <div key={game.id} className={styles.gameContainer}>
+              <div className={styles.gameCard}>
+                <h4>
+                  {" "}
+                  {new Date(game.date).toLocaleDateString("de-De", {
+                    day: "2-digit",
+                    month: "2-digit",
+                    year: "numeric",
+                  })}{" "}
+                </h4>
+                <p>
+                  <span className="stat-label">
+                    Players <span className="stat-value">{game.playersCount}</span>
+                  </span>
+                </p>
+                <p>
+                  {" "}
+                  <span className="stat-label">
+                    Player Won: <span className="stat-value">{game.winnerName}</span>
+                  </span>
+                </p>
+                <p>
+                  {" "}
+                  <span className="stat-label">
+                    Rounds: <span className="stat-value">{game.winnerRounds}</span>
+                  </span>
+                </p>
               </div>
-            ))}
-          </div>
-        )}
+              <div className={styles.detailsLink}>
+                <Link to={ROUTES.details(game.id)}>details</Link>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
 
-        <GamesPagination
-          offset={offset}
-          total={total}
-          limit={LIMIT}
-          onPrevious={handlePreviousPage}
-          onNext={handleNextPage}
-        />
-      </div>
-    </AdminLayout>
+      <GamesPagination
+        offset={offset}
+        total={total}
+        limit={LIMIT}
+        onPrevious={handlePreviousPage}
+        onNext={handleNextPage}
+      />
+    </div>
   );
 }
