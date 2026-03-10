@@ -40,8 +40,8 @@ test("Verify page layout and styling", async ({ page }) => {
     // Verify the card is visible
     await expect(card).toBeVisible();
 
-    // Verify the success message box has proper styling
-    const successBox = page.locator("h3").filter({ hasText: "Willkommen im Spiel!" });
+    // Verify the welcome message block is visible
+    const successBox = page.getByText("Willkommen, testuser!");
     await expect(successBox).toBeVisible();
 
     // Verify the heading is visible
