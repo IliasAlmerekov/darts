@@ -11,72 +11,52 @@ test.describe("Cross-Browser and Responsive Tests", () => {
     await page.setViewportSize({ width: 375, height: 667 });
     await page.goto("http://localhost:5173/");
 
+    const signInButton = page.getByRole("button", { name: "Sign in" });
+    const emailField = page.getByRole("textbox", { name: "Email *" });
+    const passwordField = page.getByRole("textbox", { name: "Password *" });
+
     await expect(page.getByRole("heading", { name: "Sign in" })).toBeVisible();
-    await expect(page.getByRole("textbox", { name: "Email *" })).toBeVisible();
-    await expect(page.getByRole("textbox", { name: "Password *" })).toBeVisible();
-    await expect(page.getByRole("button", { name: "Sign in" })).toBeVisible();
+    await expect(emailField).toBeVisible();
+    await expect(passwordField).toBeVisible();
+    await expect(signInButton).toBeVisible();
 
-    const mobileLayout = await page.evaluate(() => {
-      const hasHorizontalScroll =
-        document.documentElement.scrollWidth > document.documentElement.clientWidth;
+    const hasHorizontalScroll = await page.evaluate(
+      () => document.documentElement.scrollWidth > document.documentElement.clientWidth,
+    );
+    expect(hasHorizontalScroll).toBe(false);
 
-      const signInButton =
-        document.querySelector('button[type="submit"]') || document.querySelector("button");
-      const emailField = document.querySelector('input[type="email"]');
-      const passwordField = document.querySelector('input[type="password"]');
+    const signInBox = await signInButton.boundingBox();
+    expect(signInBox?.height).toBeGreaterThanOrEqual(44);
 
-      const getElementSize = (element) => {
-        if (!element) return { width: 0, height: 0 };
-        const rect = element.getBoundingClientRect();
-        return { width: rect.width, height: rect.height };
-      };
+    const emailFontSize = await emailField.evaluate((el) =>
+      parseFloat(getComputedStyle(el).fontSize),
+    );
+    const passwordFontSize = await passwordField.evaluate((el) =>
+      parseFloat(getComputedStyle(el).fontSize),
+    );
+    expect(emailFontSize).toBeGreaterThanOrEqual(16);
+    expect(passwordFontSize).toBeGreaterThanOrEqual(16);
 
-      const signInSize = getElementSize(signInButton);
-      const emailSize = getElementSize(emailField);
-      const passwordSize = getElementSize(passwordField);
+    const viewport = page.viewportSize();
+    expect(viewport?.width).toBe(375);
+    expect(viewport?.height).toBe(667);
 
-      const emailStyles = emailField ? window.getComputedStyle(emailField) : null;
-      const passwordStyles = passwordField ? window.getComputedStyle(passwordField) : null;
+    await emailField.fill("test@example.com");
+    await passwordField.fill("password123");
 
-      const emailFontSize = emailStyles ? parseInt(emailStyles.fontSize) : 0;
-      const passwordFontSize = passwordStyles ? parseInt(passwordStyles.fontSize) : 0;
+    await expect(emailField).toHaveValue("test@example.com");
+    await expect(passwordField).toHaveValue("password123");
 
-      return {
-        hasHorizontalScroll,
-        signInButtonSize: signInSize,
-        emailFieldSize: emailSize,
-        passwordFieldSize: passwordSize,
-        emailFontSize,
-        passwordFontSize,
-        viewportWidth: window.innerWidth,
-        viewportHeight: window.innerHeight,
-      };
-    });
-
-    expect(mobileLayout.hasHorizontalScroll).toBe(false);
-    expect(mobileLayout.signInButtonSize.height).toBeGreaterThanOrEqual(44);
-    expect(mobileLayout.emailFontSize).toBeGreaterThanOrEqual(16);
-    expect(mobileLayout.passwordFontSize).toBeGreaterThanOrEqual(16);
-    expect(mobileLayout.viewportWidth).toBe(375);
-    expect(mobileLayout.viewportHeight).toBe(667);
-
-    await page.getByRole("textbox", { name: "Email *" }).fill("test@example.com");
-    await page.getByRole("textbox", { name: "Password *" }).fill("password123");
-
-    await expect(page.getByRole("textbox", { name: "Email *" })).toHaveValue("test@example.com");
-    await expect(page.getByRole("textbox", { name: "Password *" })).toHaveValue("password123");
-
-    await page.getByRole("button", { name: "Sign in" }).click();
+    await signInButton.click();
 
     await expect(page.getByText("Incorrect email or password.")).toBeVisible();
-    await expect(page.getByRole("textbox", { name: "Email *" })).toBeEnabled();
-    await expect(page.getByRole("textbox", { name: "Password *" })).toBeEnabled();
-    await expect(page.getByRole("button", { name: "Sign in" })).toBeEnabled();
+    await expect(emailField).toBeEnabled();
+    await expect(passwordField).toBeEnabled();
+    await expect(signInButton).toBeEnabled();
 
-    const postInteractionLayout = await page.evaluate(() => ({
-      hasHorizontalScroll:
-        document.documentElement.scrollWidth > document.documentElement.clientWidth,
-    }));
-    expect(postInteractionLayout.hasHorizontalScroll).toBe(false);
+    const hasHorizontalScrollAfter = await page.evaluate(
+      () => document.documentElement.scrollWidth > document.documentElement.clientWidth,
+    );
+    expect(hasHorizontalScrollAfter).toBe(false);
   });
 });

@@ -1,6 +1,7 @@
 import { useCallback, useEffect } from "react";
 import { parseThrowValue } from "@/lib/parseThrowValue";
 import { playSound } from "@/lib/soundPlayer";
+import { clientLogger } from "@/shared/lib/clientLogger";
 import { $gameData, setGameData } from "@/store";
 import { applyOptimisticThrow } from "./throwStateService";
 import { isThrowNotAllowedConflict, useThrowReconciliation } from "./useThrowReconciliation";
@@ -57,7 +58,7 @@ export function useThrowHandler({ gameId }: UseThrowHandlerOptions): UseThrowHan
   const handleThrow = useCallback(
     async (value: string | number): Promise<void> => {
       if (isUndoInFlightRef.current) {
-        console.warn("Cannot throw: undo is still processing");
+        clientLogger.warn("game.throw.blocked.undo-in-flight");
         return;
       }
 
@@ -66,7 +67,12 @@ export function useThrowHandler({ gameId }: UseThrowHandlerOptions): UseThrowHan
         const currentGameData = $gameData.get();
 
         if (!gameId || !currentGameData) {
-          console.warn("Cannot throw: missing gameId or gameData");
+          clientLogger.warn("game.throw.blocked.missing-context", {
+            context: {
+              hasGameData: currentGameData !== null,
+              hasGameId: gameId !== null,
+            },
+          });
           return;
         }
 
@@ -75,15 +81,12 @@ export function useThrowHandler({ gameId }: UseThrowHandlerOptions): UseThrowHan
         );
 
         if (!activePlayer) {
-          console.error("Cannot throw: no active player found", {
-            activePlayerId: currentGameData.activePlayerId,
-            players: currentGameData.players.map((player) => ({
-              id: player.id,
-              name: player.name,
-              score: player.score,
-              isActive: player.isActive,
-              isBust: player.isBust,
-            })),
+          clientLogger.error("game.throw.missing-active-player", {
+            context: {
+              activePlayerId: currentGameData.activePlayerId,
+              gameId,
+              playerCount: currentGameData.players.length,
+            },
           });
           await reconcileGameState("Game state was out of sync. Refreshed latest game state.");
           playSound("error");
@@ -98,7 +101,13 @@ export function useThrowHandler({ gameId }: UseThrowHandlerOptions): UseThrowHan
         const parsedThrow = parseThrowValue(value);
         const optimisticState = applyOptimisticThrow(currentGameData, parsedThrow, activePlayer.id);
         if (!optimisticState) {
-          console.error("Cannot throw: failed to build optimistic game state");
+          clientLogger.error("game.throw.optimistic-state.failed", {
+            context: {
+              activePlayerId: activePlayer.id,
+              gameId,
+              throwValue: parsedThrow.value,
+            },
+          });
           return;
         }
 
@@ -111,7 +120,10 @@ export function useThrowHandler({ gameId }: UseThrowHandlerOptions): UseThrowHan
         });
         void drainQueue();
       } catch (error) {
-        console.error("Failed to record throw:", error);
+        clientLogger.error("game.throw.record.failed", {
+          context: { gameId },
+          error,
+        });
         await reconcileGameState("Throw failed. Refreshed game state from server.");
         playSound("error");
       }
@@ -129,7 +141,7 @@ export function useThrowHandler({ gameId }: UseThrowHandlerOptions): UseThrowHan
 
   const handleUndo = useCallback(async (): Promise<void> => {
     if (isUndoInFlightRef.current) {
-      console.warn("Cannot undo: previous undo action is still processing");
+      clientLogger.warn("game.undo.blocked.undo-in-flight");
       return;
     }
 
@@ -140,7 +152,7 @@ export function useThrowHandler({ gameId }: UseThrowHandlerOptions): UseThrowHan
     }
 
     if (!gameId) {
-      console.warn("Cannot undo: missing gameId");
+      clientLogger.warn("game.undo.blocked.missing-game-id");
       return;
     }
 

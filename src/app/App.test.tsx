@@ -107,6 +107,7 @@ describe("App routing", () => {
 
     await act(async () => {
       rendered = render(<App />);
+      await vi.dynamicImportSettled();
     });
 
     if (!rendered) {

@@ -1,5 +1,6 @@
 import { useMemo, useState } from "react";
 import { API_BASE_URL } from "@/shared/api";
+import { clientLogger } from "@/shared/lib/clientLogger";
 import type { RoomStreamEvent } from "@/types";
 import { useEventSource, type EventSourceListener } from "./useEventSource";
 
@@ -40,7 +41,9 @@ export function useRoomStream(gameId: number | null): UseRoomStreamResult {
       handler: (streamEvent: MessageEvent<string>) => {
         const parsedData = parseRoomStreamEventData(streamEvent.data);
         if (parsedData === null) {
-          console.warn("[useRoomStream] Received invalid SSE payload", { type });
+          clientLogger.warn("room-stream.invalid-payload", {
+            context: { type },
+          });
           return;
         }
 
