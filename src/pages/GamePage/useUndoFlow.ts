@@ -3,8 +3,8 @@ import type { MutableRefObject } from "react";
 import { undoLastThrow } from "@/shared/api/game";
 import { playSound } from "@/lib/soundPlayer";
 import { clientLogger } from "@/shared/lib/clientLogger";
-import { $gameData, normalizeGameData, setGameData } from "@/store";
-import type { GameThrowsResponse } from "@/types";
+import { $gameData, normalizeGameData, setGameData, setGameScoreboardDelta } from "@/store";
+import type { GameThrowsResponse, UndoAckResponse } from "@/types";
 import { applyOptimisticUndo } from "./throwStateService";
 
 interface UseUndoFlowOptions {
@@ -17,6 +17,12 @@ interface UseUndoFlowReturn {
   isUndoInFlightRef: MutableRefObject<boolean>;
   isUndoPending: boolean;
   resetUndoState: () => void;
+}
+
+function isUndoAckResponse(
+  response: GameThrowsResponse | UndoAckResponse,
+): response is UndoAckResponse {
+  return "scoreboardDelta" in response;
 }
 
 export function useUndoFlow({ gameId, reconcileGameState }: UseUndoFlowOptions): UseUndoFlowReturn {
@@ -49,8 +55,31 @@ export function useUndoFlow({ gameId, reconcileGameState }: UseUndoFlowOptions):
         setGameData(optimisticUndoState);
       }
 
-      const updatedGameState: GameThrowsResponse = await undoLastThrow(gameId);
-      const normalizedUpdatedGameState = normalizeGameData(updatedGameState);
+      const undoResponse = await undoLastThrow(gameId);
+      if (isUndoAckResponse(undoResponse)) {
+        const patchedGameState = setGameScoreboardDelta(undoResponse.scoreboardDelta, gameId);
+        if (
+          patchedGameState &&
+          (patchedGameState.status !== "started" ||
+            (typeof patchedGameState.activePlayerId === "number" &&
+              Number.isFinite(patchedGameState.activePlayerId)))
+        ) {
+          playSound("undo");
+          return;
+        }
+
+        clientLogger.error("game.undo.compact-ack.apply-failed", {
+          context: {
+            gameId,
+            hasPatchedGameState: patchedGameState !== null,
+          },
+        });
+        await reconcileGameState("");
+        playSound("undo");
+        return;
+      }
+
+      const normalizedUpdatedGameState = normalizeGameData(undoResponse);
 
       if (
         !normalizedUpdatedGameState ||
@@ -59,7 +88,7 @@ export function useUndoFlow({ gameId, reconcileGameState }: UseUndoFlowOptions):
       ) {
         clientLogger.error("game.undo.invalid-active-player-id", {
           context: {
-            activePlayerId: updatedGameState.activePlayerId,
+            activePlayerId: undoResponse.activePlayerId,
             gameId,
           },
         });

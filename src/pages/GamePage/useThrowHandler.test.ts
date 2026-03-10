@@ -1,9 +1,14 @@
 // @vitest-environment jsdom
 import { act, renderHook, waitFor } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import type { GameThrowsResponse, ThrowAckResponse } from "@/types";
+import type {
+  GameThrowsResponse,
+  ScoreboardDelta,
+  ThrowAckResponse,
+  UndoAckResponse,
+} from "@/types";
 import { ApiError } from "@/shared/api";
-import { $gameData, setGameData } from "@/store";
+import { $gameData, setGameData, setGameScoreboardDelta } from "@/store";
 import {
   getGameThrows,
   recordThrow,
@@ -29,6 +34,7 @@ vi.mock("@/store", async (importOriginal) => {
       get: vi.fn(),
     },
     setGameData: vi.fn(),
+    setGameScoreboardDelta: vi.fn(),
   };
 });
 
@@ -111,6 +117,61 @@ function buildThrowAck(overrides: Partial<ThrowAckResponse> = {}): ThrowAckRespo
   };
 }
 
+function buildUndoAck(overrides: Partial<UndoAckResponse> = {}): UndoAckResponse {
+  return {
+    success: true,
+    gameId: 1,
+    stateVersion: "undo-v1",
+    scoreboardDelta: {
+      changedPlayers: [],
+      winnerId: null,
+      status: "started",
+      currentRound: 1,
+    },
+    serverTs: new Date().toISOString(),
+    ...overrides,
+  };
+}
+
+function applyScoreboardDelta(
+  currentGameState: GameThrowsResponse,
+  scoreboardDelta: ScoreboardDelta,
+) {
+  const changedPlayerById = new Map(
+    scoreboardDelta.changedPlayers.map((playerDelta) => [playerDelta.playerId, playerDelta]),
+  );
+  const players = currentGameState.players.map((player) => {
+    const playerDelta = changedPlayerById.get(player.id);
+    if (!playerDelta) {
+      return player;
+    }
+
+    return {
+      ...player,
+      score: playerDelta.score,
+      position: playerDelta.position,
+      isActive: playerDelta.isActive,
+      isBust: typeof playerDelta.isBust === "boolean" ? playerDelta.isBust : player.isBust,
+    };
+  });
+  const activePlayerId =
+    scoreboardDelta.changedPlayers.find((playerDelta) => playerDelta.isActive)?.playerId ??
+    currentGameState.activePlayerId;
+  const activePlayer = players.find((player) => player.id === activePlayerId);
+
+  return {
+    ...currentGameState,
+    players,
+    activePlayerId,
+    currentRound: scoreboardDelta.currentRound,
+    status: scoreboardDelta.status,
+    winnerId: scoreboardDelta.winnerId,
+    currentThrowCount: activePlayer
+      ? Math.max(activePlayer.currentRoundThrows.length, activePlayer.throwsInCurrentRound)
+      : currentGameState.currentThrowCount,
+  };
+}
+
 describe("isThrowNotAllowedConflict", () => {
   it("returns true for 409 GAME_THROW_NOT_ALLOWED", () => {
     const error = new ApiError("Request failed", {
@@ -149,6 +210,10 @@ describe("useThrowHandler", () => {
     vi.mocked($gameData.get).mockImplementation(() => currentGameState);
     vi.mocked(setGameData).mockImplementation((nextState) => {
       currentGameState = nextState as GameThrowsResponse;
+    });
+    vi.mocked(setGameScoreboardDelta).mockImplementation((scoreboardDelta) => {
+      currentGameState = applyScoreboardDelta(currentGameState, scoreboardDelta as ScoreboardDelta);
+      return currentGameState;
     });
   });
 
@@ -613,6 +678,78 @@ describe("useThrowHandler", () => {
     });
 
     expect(vi.mocked(undoLastThrow)).toHaveBeenCalledWith(1);
+  });
+
+  it("applies compact undo acknowledgement through targeted scoreboard updates", async () => {
+    currentGameState = buildGameData({
+      activePlayerId: 1,
+      currentRound: 3,
+      currentThrowCount: 2,
+      players: [
+        {
+          id: 1,
+          name: "P1",
+          score: 250,
+          isActive: true,
+          isBust: false,
+          position: null,
+          throwsInCurrentRound: 2,
+          currentRoundThrows: [
+            { value: 20, isDouble: false, isTriple: false, isBust: false },
+            { value: 31, isDouble: false, isTriple: false, isBust: false },
+          ],
+          roundHistory: [],
+        },
+        {
+          id: 2,
+          name: "P2",
+          score: 301,
+          isActive: false,
+          isBust: false,
+          position: null,
+          throwsInCurrentRound: 0,
+          currentRoundThrows: [],
+          roundHistory: [],
+        },
+      ],
+    });
+    vi.mocked(undoLastThrow).mockResolvedValueOnce(
+      buildUndoAck({
+        scoreboardDelta: {
+          changedPlayers: [
+            {
+              playerId: 1,
+              name: "P1",
+              score: 281,
+              position: null,
+              isActive: true,
+              isGuest: false,
+              isBust: false,
+            },
+          ],
+          winnerId: null,
+          status: "started",
+          currentRound: 3,
+        },
+      }),
+    );
+
+    const { result } = renderHook(() => useThrowHandler({ gameId: 1 }));
+
+    await act(async () => {
+      await result.current.handleUndo();
+    });
+
+    expect(vi.mocked(setGameScoreboardDelta)).toHaveBeenCalledWith(
+      expect.objectContaining({
+        currentRound: 3,
+        status: "started",
+      }),
+      1,
+    );
+    expect(vi.mocked(getGameThrows)).not.toHaveBeenCalled();
+    expect(currentGameState.players[0]?.score).toBe(281);
+    expect(currentGameState.currentThrowCount).toBe(1);
   });
 
   it("should return isUndoPending: false initially", () => {

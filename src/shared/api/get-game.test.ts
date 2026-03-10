@@ -1,6 +1,12 @@
 // @vitest-environment node
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { finishGame, getGameThrows, getGameThrowsIfChanged, resetGameStateVersion } from "./game";
+import {
+  finishGame,
+  getGameSettings,
+  getGameThrows,
+  getGameThrowsIfChanged,
+  resetGameStateVersion,
+} from "./game";
 import { apiClient, clearUnauthorizedHandler, setUnauthorizedHandler } from "./client";
 import { TimeoutError } from "./errors";
 
@@ -81,6 +87,21 @@ describe("getGameThrowsIfChanged", () => {
     await getGameThrows(520, controller.signal);
 
     expect(apiClient.get).toHaveBeenCalledWith("/game/520", {
+      signal: controller.signal,
+    });
+  });
+
+  it("forwards AbortSignal through getGameSettings", async () => {
+    const controller = new AbortController();
+    vi.spyOn(apiClient, "get").mockResolvedValueOnce({
+      startScore: 301,
+      doubleOut: false,
+      tripleOut: true,
+    });
+
+    await getGameSettings(520, controller.signal);
+
+    expect(apiClient.get).toHaveBeenCalledWith("/game/520/settings", {
       signal: controller.signal,
     });
   });

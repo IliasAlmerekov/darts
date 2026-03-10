@@ -2,16 +2,20 @@ import { apiClient } from "./client";
 import { ApiError } from "./errors";
 import type {
   GameStatus,
+  GameSummaryResponse,
   GameThrowsResponse,
   ThrowAckResponse,
   ThrowRequest,
+  UndoThrowResponse,
+  UndoAckResponse,
   StartGameRequest,
 } from "@/types";
 import type {
-  FinishedPlayerResponse,
-  RematchResponse,
   CreateGameSettingsPayload,
   GameSettingsResponse,
+  RematchGameResponse,
+  RematchResponse,
+  StartRematchResponse,
 } from "@/types";
 
 // ---------------------------------------------------------------------------
@@ -46,6 +50,10 @@ function isRecord(data: unknown): data is Record<string, unknown> {
 
 function isFiniteNumber(value: unknown): value is number {
   return typeof value === "number" && Number.isFinite(value);
+}
+
+function isPositiveFiniteNumber(value: unknown): value is number {
+  return isFiniteNumber(value) && value > 0;
 }
 
 function isNullableFiniteNumber(value: unknown): value is number | null {
@@ -119,7 +127,7 @@ function isGameThrowsResponse(data: unknown): data is GameThrowsResponse {
   );
 }
 
-function isFinishedPlayerResponseArray(data: unknown): data is FinishedPlayerResponse[] {
+function isGameSummaryResponse(data: unknown): data is GameSummaryResponse {
   return (
     Array.isArray(data) &&
     data.every(
@@ -131,6 +139,20 @@ function isFinishedPlayerResponseArray(data: unknown): data is FinishedPlayerRes
         isFiniteNumber(item.roundsPlayed) &&
         isFiniteNumber(item.roundAverage),
     )
+  );
+}
+
+function isUndoAckResponse(data: unknown): data is UndoAckResponse {
+  if (!isRecord(data)) {
+    return false;
+  }
+
+  return (
+    typeof data.success === "boolean" &&
+    isFiniteNumber(data.gameId) &&
+    typeof data.stateVersion === "string" &&
+    isScoreboardDelta(data.scoreboardDelta) &&
+    typeof data.serverTs === "string"
   );
 }
 
@@ -191,10 +213,10 @@ function isThrowAckResponse(data: unknown): data is ThrowAckResponse {
 
 function isRematchLikeResponse(
   data: unknown,
-): data is RematchResponse | { gameId: number; invitationLink?: string; success?: boolean } {
+): data is RematchGameResponse | { gameId: number; invitationLink?: string; success?: boolean } {
   return (
     isRecord(data) &&
-    isFiniteNumber(data.gameId) &&
+    isPositiveFiniteNumber(data.gameId) &&
     (data.invitationLink === undefined || typeof data.invitationLink === "string") &&
     (data.success === undefined || typeof data.success === "boolean")
   );
@@ -202,6 +224,18 @@ function isRematchLikeResponse(
 
 function isMessageResponse(data: unknown): data is { message: string } {
   return isRecord(data) && typeof data.message === "string";
+}
+
+function extractGameSettingsResponse(data: unknown): GameSettingsResponse | null {
+  if (isGameSettingsResponse(data)) {
+    return data;
+  }
+
+  if (isGameThrowsResponse(data)) {
+    return data.settings;
+  }
+
+  return null;
 }
 
 function getNextStateVersion(response: Response): string | null {
@@ -306,13 +340,13 @@ export async function startGame(gameId: number, config: StartGameRequest): Promi
 export async function finishGame(
   gameId: number,
   signal?: AbortSignal,
-): Promise<FinishedPlayerResponse[]> {
+): Promise<GameSummaryResponse> {
   const data: unknown = await apiClient.post(
     FINISH_GAME_ENDPOINT(gameId),
     undefined,
     signal ? { signal } : undefined,
   );
-  if (!isFinishedPlayerResponseArray(data)) {
+  if (!isGameSummaryResponse(data)) {
     throw new ApiError("Unexpected response shape for finish game", { status: 200, data });
   }
   return data;
@@ -321,9 +355,9 @@ export async function finishGame(
 /**
  * Fetches final standings for a finished game.
  */
-export async function getFinishedGame(gameId: number): Promise<FinishedPlayerResponse[]> {
+export async function getFinishedGame(gameId: number): Promise<GameSummaryResponse> {
   const data: unknown = await apiClient.get(FINISHED_GAME_ENDPOINT(gameId));
-  if (!isFinishedPlayerResponseArray(data)) {
+  if (!isGameSummaryResponse(data)) {
     throw new ApiError("Unexpected response shape for finished game", { status: 200, data });
   }
   return data;
@@ -353,17 +387,30 @@ export async function abortGame(gameId: number): Promise<{ message: string }> {
 }
 
 /**
- * Creates a rematch and returns invitation details for the new game.
+ * Creates a rematch and returns the new game id plus any invitation link already
+ * provided by the backend. This does not trigger the invite fallback call.
  */
-export async function createRematch(previousGameId: number): Promise<RematchResponse> {
+export async function createRematchGame(previousGameId: number): Promise<RematchGameResponse> {
   const rematch: unknown = await apiClient.post(REMATCH_ENDPOINT(previousGameId));
   if (!isRematchLikeResponse(rematch)) {
     throw new ApiError("Unexpected response shape for rematch", { status: 200, data: rematch });
   }
 
-  if ("invitationLink" in rematch && rematch.invitationLink) {
+  return {
+    success: "success" in rematch ? !!rematch.success : true,
+    gameId: rematch.gameId,
+    ...(rematch.invitationLink ? { invitationLink: rematch.invitationLink } : {}),
+  };
+}
+
+/**
+ * Creates a rematch and returns invitation details for the new game.
+ */
+export async function createRematch(previousGameId: number): Promise<RematchResponse> {
+  const rematch = await createRematchGame(previousGameId);
+  if (rematch.invitationLink) {
     return {
-      success: "success" in rematch ? !!rematch.success : true,
+      success: rematch.success,
       gameId: rematch.gameId,
       invitationLink: rematch.invitationLink,
     };
@@ -378,9 +425,35 @@ export async function createRematch(previousGameId: number): Promise<RematchResp
     throw new ApiError("Unexpected response shape for invite", { status: 200, data: invite });
   }
   return {
-    success: "success" in rematch ? !!rematch.success : true,
+    success: rematch.success,
     gameId: invite.gameId,
     invitationLink: invite.invitationLink,
+  };
+}
+
+/**
+ * Starts a rematch using canonical settings for the finished game.
+ * The hook layer calls this single adapter so backend contract changes stay localized here.
+ */
+export async function startRematch(previousGameId: number): Promise<StartRematchResponse> {
+  const [settings, rematch] = await Promise.all([
+    getGameSettings(previousGameId),
+    createRematchGame(previousGameId),
+  ]);
+
+  await startGame(rematch.gameId, {
+    startScore: settings.startScore,
+    doubleOut: settings.doubleOut,
+    tripleOut: settings.tripleOut,
+    round: 1,
+    status: "started",
+  });
+
+  return {
+    success: rematch.success,
+    gameId: rematch.gameId,
+    settings,
+    ...(rematch.invitationLink ? { invitationLink: rematch.invitationLink } : {}),
   };
 }
 
@@ -397,8 +470,14 @@ type UpdateGameSettingsPayload = Partial<{
  * Fetches the canonical settings for a game by its id.
  * Used to retrieve the original rules before starting a rematch.
  */
-export async function getGameSettings(gameId: number): Promise<GameSettingsResponse> {
-  const data: unknown = await apiClient.get(GAME_SETTINGS_ENDPOINT(gameId));
+export async function getGameSettings(
+  gameId: number,
+  signal?: AbortSignal,
+): Promise<GameSettingsResponse> {
+  const data: unknown = await apiClient.get(
+    GAME_SETTINGS_ENDPOINT(gameId),
+    signal ? { signal } : undefined,
+  );
   if (!isGameSettingsResponse(data)) {
     throw new ApiError("Unexpected response shape for game settings", { status: 200, data });
   }
@@ -411,12 +490,13 @@ export async function getGameSettings(gameId: number): Promise<GameSettingsRespo
 export async function updateGameSettings(
   gameId: number,
   payload: UpdateGameSettingsPayload,
-): Promise<GameThrowsResponse> {
+): Promise<GameSettingsResponse> {
   const data: unknown = await apiClient.patch(GAME_SETTINGS_ENDPOINT(gameId), payload);
-  if (!isGameThrowsResponse(data)) {
+  const settings = extractGameSettingsResponse(data);
+  if (!settings) {
     throw new ApiError("Unexpected response shape for update game settings", { status: 200, data });
   }
-  return data;
+  return settings;
 }
 
 /**
@@ -425,7 +505,7 @@ export async function updateGameSettings(
 export async function saveGameSettings(
   payload: CreateGameSettingsPayload,
   gameId?: number | null,
-): Promise<GameThrowsResponse> {
+): Promise<GameSettingsResponse> {
   if (typeof gameId !== "number" || !Number.isFinite(gameId)) {
     throw new ApiError("Cannot save game settings without an active gameId", {
       status: 400,
@@ -455,12 +535,19 @@ export async function recordThrow(
 }
 
 /**
- * Undoes the last throw and returns the complete updated game state.
+ * Undoes the last throw and returns either the legacy full game state or the
+ * compact acknowledgement used by the targeted scoreboard update flow.
  */
-export async function undoLastThrow(gameId: number): Promise<GameThrowsResponse> {
+export async function undoLastThrow(gameId: number): Promise<UndoThrowResponse> {
   const data: unknown = await apiClient.delete(UNDO_THROW_ENDPOINT(gameId));
-  if (!isGameThrowsResponse(data)) {
-    throw new ApiError("Unexpected response shape for undo throw", { status: 200, data });
+  if (isGameThrowsResponse(data)) {
+    return data;
   }
-  return data;
+
+  if (isUndoAckResponse(data)) {
+    setGameStateVersion(gameId, data.stateVersion);
+    return data;
+  }
+
+  throw new ApiError("Unexpected response shape for undo throw", { status: 200, data });
 }

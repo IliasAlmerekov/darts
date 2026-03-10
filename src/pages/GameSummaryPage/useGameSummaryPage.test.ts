@@ -3,26 +3,36 @@ import { act, renderHook, waitFor } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { useGameSummaryPage } from "./useGameSummaryPage";
 import { playSound } from "@/lib/soundPlayer";
+import type { GameThrowsResponse, ScoreboardDelta, UndoAckResponse } from "@/types";
 
 const navigateMock = vi.fn();
 const getFinishedGameMock = vi.fn();
-const createRematchMock = vi.fn();
-const startGameMock = vi.fn();
+const getGameThrowsMock = vi.fn();
+const createRematchGameMock = vi.fn();
+const startRematchMock = vi.fn();
 const undoLastThrowMock = vi.fn();
+const setCurrentGameIdMock = vi.fn();
 const setGameDataMock = vi.fn();
+const setGameScoreboardDeltaMock = vi.fn();
 const setInvitationMock = vi.fn();
 const setLastFinishedGameIdMock = vi.fn();
+const setLastFinishedGameSummaryMock = vi.fn();
 const resetRoomStoreMock = vi.fn();
-const getGameSettingsMock = vi.fn();
 
 // Mutable state for router/store — allows per-test overrides without vi.doMock
-let locationState: { finishedGameId?: number } | null = { finishedGameId: 42 };
+let locationState: { finishedGameId?: number; summary?: unknown } | null = { finishedGameId: 42 };
 let routeParams: { id?: string | undefined } = { id: "42" };
-let storeGameSettings: { startScore: number; doubleOut: boolean; tripleOut: boolean } | null = {
-  startScore: 301,
-  doubleOut: false,
-  tripleOut: false,
-};
+let lastFinishedGameSummaryStore: {
+  gameId: number;
+  summary: Array<{
+    playerId: number;
+    username: string;
+    position: number;
+    roundsPlayed: number;
+    roundAverage: number;
+  }>;
+} | null = null;
+let currentGameState: GameThrowsResponse | null = null;
 
 vi.mock("react-router-dom", () => ({
   useNavigate: () => navigateMock,
@@ -32,9 +42,9 @@ vi.mock("react-router-dom", () => ({
 
 vi.mock("@/shared/api/game", () => ({
   getFinishedGame: (...args: unknown[]) => getFinishedGameMock(...args),
-  getGameSettings: (...args: unknown[]) => getGameSettingsMock(...args),
-  createRematch: (...args: unknown[]) => createRematchMock(...args),
-  startGame: (...args: unknown[]) => startGameMock(...args),
+  getGameThrows: (...args: unknown[]) => getGameThrowsMock(...args),
+  createRematchGame: (...args: unknown[]) => createRematchGameMock(...args),
+  startRematch: (...args: unknown[]) => startRematchMock(...args),
   undoLastThrow: (...args: unknown[]) => undoLastThrowMock(...args),
 }));
 
@@ -42,60 +52,219 @@ vi.mock("@/store", async (importOriginal) => {
   const original = await importOriginal<Record<string, unknown>>();
   return {
     ...original,
-    $gameSettings: { key: "gameSettings" },
+    $gameData: {
+      get: () => currentGameState,
+    },
+    $lastFinishedGameSummary: {
+      get: () => lastFinishedGameSummaryStore,
+    },
+    setCurrentGameId: (...args: unknown[]) => setCurrentGameIdMock(...args),
     setGameData: (...args: unknown[]) => setGameDataMock(...args),
+    setGameScoreboardDelta: (...args: unknown[]) => setGameScoreboardDeltaMock(...args),
     setInvitation: (...args: unknown[]) => setInvitationMock(...args),
     setLastFinishedGameId: (...args: unknown[]) => setLastFinishedGameIdMock(...args),
+    setLastFinishedGameSummary: (...args: unknown[]) => setLastFinishedGameSummaryMock(...args),
     resetRoomStore: (...args: unknown[]) => resetRoomStoreMock(...args),
   };
 });
-
-vi.mock("@nanostores/react", () => ({
-  useStore: () => storeGameSettings,
-}));
 
 vi.mock("@/lib/soundPlayer", () => ({
   playSound: vi.fn(),
 }));
 
+function buildFinishedGameState(): GameThrowsResponse {
+  return {
+    id: 42,
+    status: "finished",
+    currentRound: 7,
+    activePlayerId: 1,
+    currentThrowCount: 0,
+    winnerId: 1,
+    settings: { startScore: 301, doubleOut: false, tripleOut: false },
+    players: [
+      {
+        id: 1,
+        name: "Alice",
+        score: 0,
+        isActive: true,
+        isBust: false,
+        position: 1,
+        throwsInCurrentRound: 0,
+        currentRoundThrows: [],
+        roundHistory: [
+          {
+            round: 7,
+            throws: [
+              { value: 20, isDouble: false, isTriple: false, isBust: false },
+              { value: 20, isDouble: false, isTriple: false, isBust: false },
+              { value: 20, isDouble: false, isTriple: false, isBust: false },
+            ],
+          },
+        ],
+      },
+      {
+        id: 2,
+        name: "Bob",
+        score: 40,
+        isActive: false,
+        isBust: false,
+        position: null,
+        throwsInCurrentRound: 0,
+        currentRoundThrows: [],
+        roundHistory: [],
+      },
+    ],
+  };
+}
+
+function buildStartedGameState(): GameThrowsResponse {
+  return {
+    ...buildFinishedGameState(),
+    status: "started",
+    currentRound: 7,
+    currentThrowCount: 2,
+    winnerId: null,
+    players: [
+      {
+        ...buildFinishedGameState().players[0]!,
+        score: 20,
+        isActive: true,
+        position: null,
+        throwsInCurrentRound: 2,
+        currentRoundThrows: [
+          { value: 20, isDouble: false, isTriple: false, isBust: false },
+          { value: 20, isDouble: false, isTriple: false, isBust: false },
+        ],
+        roundHistory: [],
+      },
+      {
+        ...buildFinishedGameState().players[1]!,
+      },
+    ],
+  };
+}
+
+function buildUndoAck(overrides: Partial<UndoAckResponse> = {}): UndoAckResponse {
+  return {
+    success: true,
+    gameId: 42,
+    stateVersion: "undo-v1",
+    scoreboardDelta: {
+      changedPlayers: [],
+      winnerId: null,
+      status: "started",
+      currentRound: 7,
+    },
+    serverTs: "2026-03-10T10:00:00.000Z",
+    ...overrides,
+  };
+}
+
+function applyScoreboardDelta(currentState: GameThrowsResponse, scoreboardDelta: ScoreboardDelta) {
+  const changedPlayerById = new Map(
+    scoreboardDelta.changedPlayers.map((playerDelta) => [playerDelta.playerId, playerDelta]),
+  );
+  const players = currentState.players.map((player) => {
+    const playerDelta = changedPlayerById.get(player.id);
+    if (!playerDelta) {
+      return player;
+    }
+
+    return {
+      ...player,
+      score: playerDelta.score,
+      position: playerDelta.position,
+      isActive: playerDelta.isActive,
+      isBust: typeof playerDelta.isBust === "boolean" ? playerDelta.isBust : player.isBust,
+    };
+  });
+  const activePlayerId =
+    scoreboardDelta.changedPlayers.find((playerDelta) => playerDelta.isActive)?.playerId ??
+    currentState.activePlayerId;
+  const activePlayer = players.find((player) => player.id === activePlayerId);
+
+  return {
+    ...currentState,
+    players,
+    activePlayerId,
+    currentRound: scoreboardDelta.currentRound,
+    status: scoreboardDelta.status,
+    winnerId: scoreboardDelta.winnerId,
+    currentThrowCount: activePlayer
+      ? Math.max(activePlayer.currentRoundThrows.length, activePlayer.throwsInCurrentRound)
+      : currentState.currentThrowCount,
+  };
+}
+
 describe("useGameSummaryPage", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     setGameDataMock.mockReset();
+    setGameScoreboardDeltaMock.mockReset();
+    setCurrentGameIdMock.mockReset();
     setInvitationMock.mockReset();
     setLastFinishedGameIdMock.mockReset();
+    setLastFinishedGameSummaryMock.mockReset();
     resetRoomStoreMock.mockReset();
 
     // Reset mutable router/store state to defaults before each test
     locationState = { finishedGameId: 42 };
     routeParams = { id: "42" };
-    storeGameSettings = { startScore: 301, doubleOut: false, tripleOut: false };
+    lastFinishedGameSummaryStore = null;
+    currentGameState = buildFinishedGameState();
 
     getFinishedGameMock.mockResolvedValue([]);
-    startGameMock.mockResolvedValue(undefined);
-    getGameSettingsMock.mockResolvedValue({
-      startScore: 301,
-      doubleOut: false,
-      tripleOut: false,
-    });
-    createRematchMock.mockResolvedValue({
+    getGameThrowsMock.mockResolvedValue(buildStartedGameState());
+    startRematchMock.mockResolvedValue({
       success: true,
       gameId: 77,
+      settings: {
+        startScore: 301,
+        doubleOut: false,
+        tripleOut: false,
+      },
       invitationLink: "/invite/77",
     });
-    undoLastThrowMock.mockResolvedValue({
-      id: 42,
-      status: "started",
-      currentRound: 1,
-      activePlayerId: 1,
-      currentThrowCount: 0,
-      winnerId: null,
-      settings: { startScore: 301, doubleOut: false, tripleOut: false },
-      players: [],
+    createRematchGameMock.mockResolvedValue({
+      success: true,
+      gameId: 77,
+    });
+    undoLastThrowMock.mockResolvedValue(buildUndoAck());
+    setGameDataMock.mockImplementation((nextState: GameThrowsResponse | null) => {
+      currentGameState = nextState;
+    });
+    setGameScoreboardDeltaMock.mockImplementation((scoreboardDelta: ScoreboardDelta) => {
+      if (!currentGameState) {
+        return null;
+      }
+
+      currentGameState = applyScoreboardDelta(currentGameState, scoreboardDelta);
+      return currentGameState;
     });
   });
 
-  it("undoes last throw and navigates back to game route", async () => {
+  it("undoes last throw from compact ack and navigates back to game route", async () => {
+    undoLastThrowMock.mockResolvedValueOnce(
+      buildUndoAck({
+        scoreboardDelta: {
+          changedPlayers: [
+            {
+              playerId: 1,
+              name: "Alice",
+              score: 20,
+              position: null,
+              isActive: true,
+              isGuest: false,
+              isBust: false,
+            },
+          ],
+          winnerId: null,
+          status: "started",
+          currentRound: 7,
+        },
+      }),
+    );
+
     const { result } = renderHook(() => useGameSummaryPage());
 
     await act(async () => {
@@ -109,10 +278,71 @@ describe("useGameSummaryPage", () => {
         status: "started",
       }),
     );
+    expect(setGameScoreboardDeltaMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        currentRound: 7,
+        status: "started",
+      }),
+      42,
+    );
+    expect(getGameThrowsMock).not.toHaveBeenCalledWith(42);
     expect(playSound).toHaveBeenCalledWith("undo");
     expect(navigateMock).toHaveBeenCalledWith("/game/42", {
       state: { skipFinishOverlay: true },
     });
+  });
+
+  it("keeps supporting the legacy full undo response", async () => {
+    const legacyGameState = buildStartedGameState();
+    undoLastThrowMock.mockResolvedValueOnce(legacyGameState);
+
+    const { result } = renderHook(() => useGameSummaryPage());
+
+    await act(async () => {
+      await result.current.handleUndo();
+    });
+
+    expect(setGameScoreboardDeltaMock).not.toHaveBeenCalled();
+    expect(setGameDataMock).toHaveBeenCalledWith(legacyGameState);
+    expect(navigateMock).toHaveBeenCalledWith("/game/42", {
+      state: { skipFinishOverlay: true },
+    });
+  });
+
+  it("falls back to full game refresh when compact undo cannot be applied locally", async () => {
+    currentGameState = null;
+    const refreshedGameState = buildStartedGameState();
+    undoLastThrowMock.mockResolvedValueOnce(
+      buildUndoAck({
+        scoreboardDelta: {
+          changedPlayers: [
+            {
+              playerId: 1,
+              name: "Alice",
+              score: 20,
+              position: null,
+              isActive: true,
+              isGuest: false,
+              isBust: false,
+            },
+          ],
+          winnerId: null,
+          status: "started",
+          currentRound: 7,
+        },
+      }),
+    );
+    getGameThrowsMock.mockResolvedValueOnce(refreshedGameState);
+
+    const { result } = renderHook(() => useGameSummaryPage());
+
+    await act(async () => {
+      await result.current.handleUndo();
+    });
+
+    expect(setGameScoreboardDeltaMock).toHaveBeenCalledWith(expect.any(Object), 42);
+    expect(getGameThrowsMock).toHaveBeenCalledWith(42);
+    expect(setGameDataMock).toHaveBeenCalledWith(refreshedGameState);
   });
 
   it("does not navigate when undo fails", async () => {
@@ -125,25 +355,19 @@ describe("useGameSummaryPage", () => {
     });
 
     expect(undoLastThrowMock).toHaveBeenCalledWith(42);
-    expect(setGameDataMock).not.toHaveBeenCalled();
+    expect(setGameScoreboardDeltaMock).not.toHaveBeenCalled();
     expect(navigateMock).not.toHaveBeenCalledWith("/game/42");
   });
 
-  it("navigates to game route after startGame resolves", async () => {
+  it("navigates to game route after startRematch resolves", async () => {
     const { result } = renderHook(() => useGameSummaryPage());
 
     await act(async () => {
       await result.current.handlePlayAgain();
     });
 
-    expect(createRematchMock).toHaveBeenCalledWith(42);
-    expect(startGameMock).toHaveBeenCalledWith(77, {
-      startScore: 301,
-      doubleOut: false,
-      tripleOut: false,
-      round: 1,
-      status: "started",
-    });
+    expect(startRematchMock).toHaveBeenCalledWith(42);
+    expect(setCurrentGameIdMock).toHaveBeenCalledWith(77);
     expect(navigateMock).toHaveBeenCalledWith("/game/77");
   });
 
@@ -161,8 +385,8 @@ describe("useGameSummaryPage", () => {
     });
   });
 
-  it("does not navigate when startGame fails", async () => {
-    startGameMock.mockRejectedValueOnce(new Error("server error"));
+  it("does not navigate when startRematch fails", async () => {
+    startRematchMock.mockRejectedValueOnce(new Error("server error"));
 
     const { result } = renderHook(() => useGameSummaryPage());
 
@@ -170,17 +394,22 @@ describe("useGameSummaryPage", () => {
       await result.current.handlePlayAgain();
     });
 
-    expect(startGameMock).toHaveBeenCalled();
+    expect(startRematchMock).toHaveBeenCalled();
     expect(navigateMock).not.toHaveBeenCalled();
     expect(result.current.error).toBeTruthy();
   });
 
   it("prevents concurrent handlePlayAgain calls while starting", async () => {
-    let resolveStartGame!: () => void;
-    startGameMock.mockImplementation(
+    let resolveStartRematch!: (value: {
+      success: boolean;
+      gameId: number;
+      settings: { startScore: number; doubleOut: boolean; tripleOut: boolean };
+      invitationLink?: string;
+    }) => void;
+    startRematchMock.mockImplementation(
       () =>
-        new Promise<void>((resolve) => {
-          resolveStartGame = resolve;
+        new Promise((resolve) => {
+          resolveStartRematch = resolve;
         }),
     );
 
@@ -196,20 +425,32 @@ describe("useGameSummaryPage", () => {
     });
 
     await act(async () => {
-      resolveStartGame();
+      resolveStartRematch({
+        success: true,
+        gameId: 77,
+        settings: {
+          startScore: 301,
+          doubleOut: false,
+          tripleOut: false,
+        },
+      });
       await firstCall!;
     });
 
-    expect(createRematchMock).toHaveBeenCalledTimes(1);
-    expect(startGameMock).toHaveBeenCalledTimes(1);
+    expect(startRematchMock).toHaveBeenCalledTimes(1);
   });
 
-  it("navigate is called after startGame resolves, not before", async () => {
-    let resolveStartGame!: () => void;
-    startGameMock.mockImplementation(
+  it("navigate is called after startRematch resolves, not before", async () => {
+    let resolveStartRematch!: (value: {
+      success: boolean;
+      gameId: number;
+      settings: { startScore: number; doubleOut: boolean; tripleOut: boolean };
+      invitationLink?: string;
+    }) => void;
+    startRematchMock.mockImplementation(
       () =>
-        new Promise<void>((resolve) => {
-          resolveStartGame = resolve;
+        new Promise((resolve) => {
+          resolveStartRematch = resolve;
         }),
     );
 
@@ -223,19 +464,32 @@ describe("useGameSummaryPage", () => {
     expect(navigateMock).not.toHaveBeenCalled();
 
     await act(async () => {
-      resolveStartGame();
+      resolveStartRematch({
+        success: true,
+        gameId: 77,
+        settings: {
+          startScore: 301,
+          doubleOut: false,
+          tripleOut: false,
+        },
+      });
       await callPromise!;
     });
 
     expect(navigateMock).toHaveBeenCalledWith("/game/77");
   });
 
-  it("starting flag is true while startGame is pending and false after", async () => {
-    let resolveStartGame!: () => void;
-    startGameMock.mockImplementation(
+  it("starting flag is true while startRematch is pending and false after", async () => {
+    let resolveStartRematch!: (value: {
+      success: boolean;
+      gameId: number;
+      settings: { startScore: number; doubleOut: boolean; tripleOut: boolean };
+      invitationLink?: string;
+    }) => void;
+    startRematchMock.mockImplementation(
       () =>
-        new Promise<void>((resolve) => {
-          resolveStartGame = resolve;
+        new Promise((resolve) => {
+          resolveStartRematch = resolve;
         }),
     );
 
@@ -249,7 +503,15 @@ describe("useGameSummaryPage", () => {
     expect(result.current.starting).toBe(true);
 
     await act(async () => {
-      resolveStartGame();
+      resolveStartRematch({
+        success: true,
+        gameId: 77,
+        settings: {
+          startScore: 301,
+          doubleOut: false,
+          tripleOut: false,
+        },
+      });
       await callPromise!;
     });
 
@@ -257,10 +519,14 @@ describe("useGameSummaryPage", () => {
   });
 
   it("does not navigate when rematch response misses game id", async () => {
-    createRematchMock.mockResolvedValueOnce({
+    startRematchMock.mockResolvedValueOnce({
       success: false,
       gameId: 0,
-      invitationLink: "",
+      settings: {
+        startScore: 301,
+        doubleOut: false,
+        tripleOut: false,
+      },
     });
 
     const { result } = renderHook(() => useGameSummaryPage());
@@ -281,10 +547,8 @@ describe("useGameSummaryPage", () => {
 
     expect(resetRoomStoreMock).toHaveBeenCalledTimes(1);
     expect(setGameDataMock).not.toHaveBeenCalled();
-    expect(setInvitationMock).toHaveBeenCalledWith({
-      gameId: 77,
-      invitationLink: "/invite/77",
-    });
+    expect(setCurrentGameIdMock).toHaveBeenCalledWith(77);
+    expect(setInvitationMock).not.toHaveBeenCalled();
     expect(navigateMock).toHaveBeenCalledWith("/start/77");
   });
 
@@ -303,56 +567,109 @@ describe("useGameSummaryPage", () => {
     expect(result.current.handleBackToStart).toBe(initialHandleBackToStart);
   });
 
-  // ---------------------------------------------------------------------------
-  // Ticket 3 — Rematch stale settings
-  // handlePlayAgain must fetch canonical game settings from the server using
-  // finishedGameId instead of reading from the local $gameSettings store.
-  // After a page refresh or cold start the store may hold default/stale values.
-  // ---------------------------------------------------------------------------
-  describe("handlePlayAgain — canonical settings (Ticket 3)", () => {
-    it("should fetch game settings from API with finishedGameId before starting rematch", async () => {
+  it("ignores summary from navigation state and refetches finished game", async () => {
+    locationState = {
+      finishedGameId: 42,
+      summary: [
+        {
+          playerId: 1,
+          username: "Alice",
+          position: 1,
+          roundsPlayed: 5,
+          roundAverage: 60.2,
+        },
+      ],
+    };
+    getFinishedGameMock.mockResolvedValueOnce([
+      {
+        playerId: 3,
+        username: "Carol",
+        position: 1,
+        roundsPlayed: 6,
+        roundAverage: 75.4,
+      },
+    ]);
+
+    const { result } = renderHook(() => useGameSummaryPage());
+
+    await waitFor(() => {
+      expect(getFinishedGameMock).toHaveBeenCalledWith(42);
+    });
+    await waitFor(() => {
+      expect(result.current.newList).toEqual([
+        expect.objectContaining({
+          id: 3,
+          name: "Carol",
+          scoreAverage: 75.4,
+          roundCount: 6,
+        }),
+      ]);
+    });
+    expect(setLastFinishedGameSummaryMock).toHaveBeenCalledWith({
+      gameId: 42,
+      summary: [
+        {
+          playerId: 3,
+          username: "Carol",
+          position: 1,
+          roundsPlayed: 6,
+          roundAverage: 75.4,
+        },
+      ],
+    });
+  });
+
+  it("uses summary from store without refetching finished game", () => {
+    locationState = { finishedGameId: 42 };
+    lastFinishedGameSummaryStore = {
+      gameId: 42,
+      summary: [
+        {
+          playerId: 2,
+          username: "Bob",
+          position: 1,
+          roundsPlayed: 4,
+          roundAverage: 45.5,
+        },
+      ],
+    };
+
+    const { result } = renderHook(() => useGameSummaryPage());
+
+    expect(getFinishedGameMock).not.toHaveBeenCalled();
+    expect(result.current.newList).toEqual([
+      expect.objectContaining({
+        id: 2,
+        name: "Bob",
+        scoreAverage: 45.5,
+        roundCount: 4,
+      }),
+    ]);
+    expect(setLastFinishedGameSummaryMock).not.toHaveBeenCalled();
+    expect(setLastFinishedGameIdMock).toHaveBeenCalledWith(42);
+  });
+
+  describe("handlePlayAgain", () => {
+    it("calls the rematch adapter with the finished game id", async () => {
       const { result } = renderHook(() => useGameSummaryPage());
 
       await act(async () => {
         await result.current.handlePlayAgain();
       });
 
-      expect(getGameSettingsMock).toHaveBeenCalledWith(42);
-      expect(getGameSettingsMock).toHaveBeenCalledTimes(1);
+      expect(startRematchMock).toHaveBeenCalledWith(42);
+      expect(startRematchMock).toHaveBeenCalledTimes(1);
     });
 
-    it("should use canonical settings from API, not values from local store", async () => {
-      // Local store has stale 301 defaults, but the finished game used 501/doubleOut.
-      getGameSettingsMock.mockResolvedValueOnce({
-        startScore: 501,
-        doubleOut: true,
-        tripleOut: false,
-      });
-
-      const { result } = renderHook(() => useGameSummaryPage());
-
-      await act(async () => {
-        await result.current.handlePlayAgain();
-      });
-
-      expect(startGameMock).toHaveBeenCalledWith(
-        77,
-        expect.objectContaining({
+    it("does not set invitation when the rematch adapter returns only a game id", async () => {
+      startRematchMock.mockResolvedValueOnce({
+        success: true,
+        gameId: 77,
+        settings: {
           startScore: 501,
           doubleOut: true,
           tripleOut: false,
-        }),
-      );
-    });
-
-    it("should use canonical settings from API when local store is null after cold start", async () => {
-      // Simulate cold start: store has no persisted state.
-      storeGameSettings = null;
-
-      getGameSettingsMock.mockResolvedValueOnce({
-        startScore: 501,
-        doubleOut: false,
-        tripleOut: true,
+        },
       });
 
       const { result } = renderHook(() => useGameSummaryPage());
@@ -361,33 +678,11 @@ describe("useGameSummaryPage", () => {
         await result.current.handlePlayAgain();
       });
 
-      expect(getGameSettingsMock).toHaveBeenCalledWith(42);
-      expect(startGameMock).toHaveBeenCalledWith(
-        77,
-        expect.objectContaining({
-          startScore: 501,
-          doubleOut: false,
-          tripleOut: true,
-        }),
-      );
+      expect(setInvitationMock).not.toHaveBeenCalled();
+      expect(setCurrentGameIdMock).toHaveBeenCalledWith(77);
     });
 
-    it("should not call startGame and should set error when getGameSettings fails", async () => {
-      getGameSettingsMock.mockRejectedValueOnce(new Error("settings not found"));
-
-      const { result } = renderHook(() => useGameSummaryPage());
-
-      await act(async () => {
-        await result.current.handlePlayAgain();
-      });
-
-      expect(startGameMock).not.toHaveBeenCalled();
-      expect(navigateMock).not.toHaveBeenCalled();
-      expect(result.current.error).toBeTruthy();
-    });
-
-    it("should not call getGameSettings when finishedGameId is absent", async () => {
-      // Simulate direct navigation to /summary without a game id (no location state, no route param).
+    it("does not call the rematch adapter when finishedGameId is absent", async () => {
       locationState = null;
       routeParams = { id: undefined };
 
@@ -397,8 +692,7 @@ describe("useGameSummaryPage", () => {
         await result.current.handlePlayAgain();
       });
 
-      expect(getGameSettingsMock).not.toHaveBeenCalled();
-      expect(createRematchMock).not.toHaveBeenCalled();
+      expect(startRematchMock).not.toHaveBeenCalled();
     });
   });
 });

@@ -1,13 +1,14 @@
 import { useCallback, useEffect, useRef } from "react";
 import { useStore } from "@nanostores/react";
 import { getGameThrowsIfChanged, resetGameStateVersion } from "@/shared/api/game";
-import type { GameThrowsResponse } from "@/types";
+import type { GameSettingsResponse, GameThrowsResponse } from "@/types";
 import {
   $gameData,
   $isLoading,
   $error,
   resetGameStore,
   setGameData,
+  setGameSettings,
   setLoading,
   setError,
 } from "@/store";
@@ -21,7 +22,7 @@ interface UseGameStateReturn {
   isLoading: boolean;
   error: Error | null;
   refetch: () => Promise<void>;
-  updateGameData: (data: GameThrowsResponse) => void;
+  updateGameSettings: (settings: GameSettingsResponse) => void;
 }
 
 function isAbortError(error: unknown): boolean {
@@ -100,9 +101,16 @@ export function useGameState({ gameId }: UseGameStateOptions): UseGameStateRetur
     };
   }, [fetchGameData]);
 
-  const updateGameData = useCallback((data: GameThrowsResponse) => {
-    setGameData(data);
-  }, []);
+  const updateGameSettings = useCallback(
+    (settings: GameSettingsResponse) => {
+      if (!gameId) {
+        return;
+      }
+
+      setGameSettings(settings, gameId);
+    },
+    [gameId],
+  );
 
   const refetch = useCallback(() => fetchGameData(), [fetchGameData]);
 
@@ -111,6 +119,6 @@ export function useGameState({ gameId }: UseGameStateOptions): UseGameStateRetur
     isLoading,
     error,
     refetch,
-    updateGameData,
+    updateGameSettings,
   };
 }

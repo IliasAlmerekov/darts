@@ -3,13 +3,19 @@ import { finishGame, resetGameStateVersion } from "@/shared/api/game";
 import { toUserErrorMessage } from "@/lib/error-to-user-message";
 import { ROUTES } from "@/lib/routes";
 import { unlockSounds } from "@/lib/soundPlayer";
-import type { GameThrowsResponse } from "@/types";
+import { setLastFinishedGameId, setLastFinishedGameSummary } from "@/store";
+import type { GameSummaryResponse, GameThrowsResponse } from "@/types";
 import { shouldAutoFinishGame, shouldNavigateToSummary } from "./gameLogic.helpers";
+
+interface GameSummaryNavigationState {
+  finishedGameId: number;
+  summary?: GameSummaryResponse;
+}
 
 interface UseGameSummaryNavigationOptions {
   gameData: GameThrowsResponse | null;
   gameId: number | null;
-  navigate: (to: string, options?: { state?: { finishedGameId: number } }) => void;
+  navigate: (to: string, options?: { state?: GameSummaryNavigationState }) => void;
 }
 
 interface UseRoomEventRefetchOptions {
@@ -20,7 +26,7 @@ interface UseRoomEventRefetchOptions {
 interface UseAutoFinishGameOptions {
   gameData: GameThrowsResponse | null;
   gameId: number | null;
-  refetch: () => Promise<void>;
+  navigate: (to: string, options?: { state?: GameSummaryNavigationState }) => void;
   setPageError: (message: string | null) => void;
   shouldShowFinishOverlay: boolean;
 }
@@ -72,7 +78,7 @@ export function useRoomEventRefetch({ event, refetch }: UseRoomEventRefetchOptio
 export function useAutoFinishGame({
   gameData,
   gameId,
-  refetch,
+  navigate,
   setPageError,
   shouldShowFinishOverlay,
 }: UseAutoFinishGameOptions): void {
@@ -92,13 +98,17 @@ export function useAutoFinishGame({
     const { signal } = controller;
 
     finishGame(gameId, signal)
-      .then(() => {
+      .then((summary) => {
         if (signal.aborted) {
           return;
         }
 
         resetGameStateVersion(gameId);
-        void refetch();
+        setLastFinishedGameId(gameId);
+        setLastFinishedGameSummary({ gameId, summary });
+        navigate(ROUTES.summary(gameId), {
+          state: { finishedGameId: gameId, summary },
+        });
       })
       .catch((error: unknown) => {
         if (isAbortError(error) || signal.aborted) {
@@ -116,5 +126,5 @@ export function useAutoFinishGame({
       controller.abort();
       isAutoFinishingRef.current = false;
     };
-  }, [gameData, gameId, refetch, setPageError, shouldShowFinishOverlay]);
+  }, [gameData, gameId, navigate, setPageError, shouldShowFinishOverlay]);
 }
