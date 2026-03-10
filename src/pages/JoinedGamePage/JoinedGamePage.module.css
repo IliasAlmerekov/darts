@@ -1,28 +1,138 @@
-.loginContainer {
-  margin-top: var(--space-lg);
-  padding: 0 var(--page-padding);
-}
-
-.loginRow {
+.container {
+  min-height: 100dvh;
   display: flex;
-  justify-content: center;
+  flex-direction: column;
+  background-color: var(--lightgrey);
+}
+
+.row {
+  flex: 1;
+  display: flex;
   align-items: center;
-  min-height: 60vh;
+  justify-content: center;
+  padding: var(--padding-sm);
 }
 
-.loginCol {
+.col {
   width: 100%;
-  max-width: 520px;
+  max-width: 448px;
 }
 
-.loginCard {
-  background: #fff;
-  border-radius: 8px;
-  box-shadow:
-    0 4px 6px rgb(0 0 0 / 10%),
-    0 1px 3px rgb(0 0 0 / 8%);
+.card {
+  background: var(--white);
+  border: 1px solid rgb(226 232 240);
+  border-radius: var(--radius-md);
+  box-shadow: 0 10px 15px -3px rgb(0 0 0 / 10%);
 }
 
-.loginCardBody {
-  padding: var(--card-padding);
+.cardBody {
+  padding: var(--padding-md);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md);
+}
+
+/* ── Header ─────────────────────────────────────────────────────────────── */
+
+.header {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+}
+
+.checkIcon {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background-color: var(--color-primary);
+}
+
+.checkIcon::after {
+  content: "";
+  display: block;
+  width: 10px;
+  height: 16px;
+  border-right: 3px solid var(--white);
+  border-bottom: 3px solid var(--white);
+  transform: rotate(45deg) translate(-1px, -2px);
+}
+
+.title {
+  margin: 0;
+  font-size: var(--font-size-28);
+  font-weight: var(--font-weight-bold);
+  color: var(--darkblue);
+  line-height: var(--line-height-33);
+  letter-spacing: var(--letter-spacing-tight);
+}
+
+/* ── Info block ──────────────────────────────────────────────────────────── */
+
+.info {
+  padding: var(--padding-sm) var(--padding-md);
+  background-color: var(--lightgrey);
+  border-radius: var(--radius-sm);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xs);
+}
+
+.welcome {
+  margin: 0;
+  font-size: var(--font-size-16);
+  font-weight: var(--font-weight-bold);
+  color: var(--darkblue);
+}
+
+.gameId {
+  margin: 0;
+  font-size: var(--font-size-14);
+  color: var(--color-text-muted);
+}
+
+/* ── Waiting indicator ───────────────────────────────────────────────────── */
+
+.waiting {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+}
+
+.spinner {
+  flex-shrink: 0;
+  display: inline-block;
+  width: 18px;
+  height: 18px;
+  border: 2px solid rgb(0 0 219 / 20%);
+  border-top-color: var(--color-primary);
+  border-radius: 50%;
+  animation: spin 0.9s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.waitingText {
+  margin: 0;
+  font-size: var(--font-size-14);
+  color: var(--color-text-muted);
+}
+
+/* ── Responsive ──────────────────────────────────────────────────────────── */
+
+@media (width <= 600px) {
+  .col {
+    max-width: 360px;
+  }
+
+  .cardBody {
+    padding: var(--padding-sm);
+  }
 }

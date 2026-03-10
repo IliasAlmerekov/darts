@@ -12,6 +12,7 @@ interface GamePlayerItemListProps {
 function GamePlayerItemListComponent({ userMap, round }: GamePlayerItemListProps): JSX.Element {
   const activePlayerId = userMap.find((item) => item.isActive)?.id ?? null;
   const previousActivePlayerIdRef = useRef<number | null>(null);
+  const activePlayerElementRef = useRef<HTMLDivElement | null>(null);
 
   useLayoutEffect(() => {
     if (!activePlayerId || typeof window === "undefined") {
@@ -31,9 +32,7 @@ function GamePlayerItemListComponent({ userMap, round }: GamePlayerItemListProps
 
     firstAnimationFrameId = window.requestAnimationFrame(() => {
       secondAnimationFrameId = window.requestAnimationFrame(() => {
-        const activePlayerElement = document.querySelector<HTMLElement>(
-          '[data-active-player="true"]',
-        );
+        const activePlayerElement = activePlayerElementRef.current;
         activePlayerElement?.focus({ preventScroll: true });
         activePlayerElement?.scrollIntoView({
           behavior: "smooth",
@@ -82,6 +81,7 @@ function GamePlayerItemListComponent({ userMap, round }: GamePlayerItemListProps
             prevThrow2IsBust={previousRound?.throw2IsBust}
             prevThrow3IsBust={previousRound?.throw3IsBust}
             id={item.isActive ? "playerid" : ""}
+            {...(item.isActive ? { itemRef: activePlayerElementRef } : {})}
           />
         );
       })}

@@ -30,6 +30,7 @@ describe("GamePlayerItemList", () => {
   });
 
   afterEach(() => {
+    vi.useRealTimers();
     vi.unstubAllGlobals();
   });
 
@@ -69,6 +70,30 @@ describe("GamePlayerItemList", () => {
     expect(scrollIntoViewMock).not.toHaveBeenCalled();
   });
 
+  it("focuses the active player inside the rendered list instead of a matching document node", () => {
+    vi.useFakeTimers();
+
+    render(
+      <>
+        <button data-active-player="true" tabIndex={-1} type="button">
+          Outside active player
+        </button>
+        <GamePlayerItemList
+          userMap={[createPlayer(1, "Player 1", false), createPlayer(2, "Player 2", true)]}
+          round={1}
+        />
+      </>,
+    );
+
+    vi.runAllTimers();
+
+    const activePlayer = screen.getByRole("group", { name: "Player 2" });
+
+    expect(document.activeElement).toBe(activePlayer);
+    expect(scrollIntoViewMock).toHaveBeenCalledTimes(1);
+    expect(scrollIntoViewMock.mock.instances[0]).toBe(activePlayer);
+  });
+
   it("does not scroll again when active player id stays the same", () => {
     vi.useFakeTimers();
 
@@ -94,6 +119,5 @@ describe("GamePlayerItemList", () => {
 
     vi.runAllTimers();
     expect(scrollIntoViewMock).toHaveBeenCalledTimes(1);
-    vi.useRealTimers();
   });
 });
