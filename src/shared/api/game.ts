@@ -142,6 +142,44 @@ function isGameSummaryResponse(data: unknown): data is GameSummaryResponse {
   );
 }
 
+function normalizeFinishedPlayer(item: unknown, index: number): GameSummaryResponse[number] | null {
+  if (!isRecord(item) || !isFiniteNumber(item.roundAverage)) {
+    return null;
+  }
+
+  const playerId = isFiniteNumber(item.playerId) ? item.playerId : index + 1;
+  const username =
+    typeof item.username === "string" && item.username.trim().length > 0
+      ? item.username
+      : `Player ${index + 1}`;
+  const position = isFiniteNumber(item.position) ? item.position : index + 1;
+  const roundsPlayed = isFiniteNumber(item.roundsPlayed) ? item.roundsPlayed : 0;
+
+  return {
+    playerId,
+    username,
+    position,
+    roundsPlayed,
+    roundAverage: item.roundAverage,
+  };
+}
+
+function normalizeGameSummaryResponse(data: unknown): GameSummaryResponse | null {
+  if (isGameSummaryResponse(data)) {
+    return data;
+  }
+
+  if (!isRecord(data) || !Array.isArray(data.finishedPlayers)) {
+    return null;
+  }
+
+  const finishedPlayers = data.finishedPlayers
+    .map((item, index) => normalizeFinishedPlayer(item, index))
+    .filter((item): item is NonNullable<typeof item> => item !== null);
+
+  return finishedPlayers.length === data.finishedPlayers.length ? finishedPlayers : null;
+}
+
 function isUndoAckResponse(data: unknown): data is UndoAckResponse {
   if (!isRecord(data)) {
     return false;
@@ -326,8 +364,6 @@ export function setGameStateVersion(gameId: number, stateVersion: string): void 
  */
 export async function startGame(gameId: number, config: StartGameRequest): Promise<void> {
   await apiClient.post(START_GAME_ENDPOINT(gameId), {
-    status: config.status,
-    round: config.round,
     startscore: config.startScore,
     doubleout: config.doubleOut,
     tripleout: config.tripleOut,
@@ -346,10 +382,11 @@ export async function finishGame(
     undefined,
     signal ? { signal } : undefined,
   );
-  if (!isGameSummaryResponse(data)) {
+  const summary = normalizeGameSummaryResponse(data);
+  if (!summary) {
     throw new ApiError("Unexpected response shape for finish game", { status: 200, data });
   }
-  return data;
+  return summary;
 }
 
 /**
@@ -357,10 +394,11 @@ export async function finishGame(
  */
 export async function getFinishedGame(gameId: number): Promise<GameSummaryResponse> {
   const data: unknown = await apiClient.get(FINISHED_GAME_ENDPOINT(gameId));
-  if (!isGameSummaryResponse(data)) {
+  const summary = normalizeGameSummaryResponse(data);
+  if (!summary) {
     throw new ApiError("Unexpected response shape for finished game", { status: 200, data });
   }
-  return data;
+  return summary;
 }
 
 /**

@@ -4,6 +4,7 @@ import { toUserErrorMessage } from "@/lib/error-to-user-message";
 import { ROUTES } from "@/lib/routes";
 import { unlockSounds } from "@/lib/soundPlayer";
 import { setLastFinishedGameId, setLastFinishedGameSummary } from "@/store";
+import { clientLogger } from "@/shared/lib/clientLogger";
 import type { GameSummaryResponse, GameThrowsResponse } from "@/types";
 import { shouldAutoFinishGame, shouldNavigateToSummary } from "./gameLogic.helpers";
 
@@ -115,7 +116,10 @@ export function useAutoFinishGame({
           return;
         }
 
-        console.error("Failed to auto-finish game:", error);
+        clientLogger.error("game.auto-finish.failed", {
+          context: { gameId },
+          error,
+        });
         setPageError(toUserErrorMessage(error, "Could not finish the game automatically."));
       })
       .finally(() => {

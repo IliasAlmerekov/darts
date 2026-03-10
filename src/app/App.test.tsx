@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import type { ReactNode } from "react";
-import { act, render, screen } from "@testing-library/react";
+import { act, render, screen, waitForElementToBeRemoved } from "@testing-library/react";
 import { Outlet } from "react-router-dom";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -110,6 +110,16 @@ describe("App routing", () => {
       rendered = render(<App />);
       await vi.dynamicImportSettled();
     });
+
+    const loadingPage = screen.queryByRole("status", { name: "Loading page" });
+
+    if (loadingPage) {
+      await waitForElementToBeRemoved(loadingPage);
+
+      await act(async () => {
+        await vi.dynamicImportSettled();
+      });
+    }
 
     if (!rendered) {
       throw new Error("Expected App to render");

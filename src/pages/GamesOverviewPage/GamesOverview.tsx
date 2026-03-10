@@ -62,6 +62,23 @@ export default function GamesOverviewPage(): JSX.Element {
     setOffset((prev) => prev + LIMIT);
   }, []);
 
+  const formatGameDate = useCallback((value: string | null): string => {
+    if (!value) {
+      return "Unknown date";
+    }
+
+    const parsedDate = new Date(value);
+    if (Number.isNaN(parsedDate.getTime())) {
+      return "Unknown date";
+    }
+
+    return parsedDate.toLocaleDateString("de-De", {
+      day: "2-digit",
+      month: "2-digit",
+      year: "numeric",
+    });
+  }, []);
+
   return (
     <div className={styles.gameOverview}>
       <StatisticsHeaderControls title="Games Overview" sortValue="alphabetically" sortDisabled />
@@ -90,27 +107,18 @@ export default function GamesOverviewPage(): JSX.Element {
           {games.map((game) => (
             <div key={game.id} className={styles.gameContainer}>
               <div className={styles.gameCard}>
-                <h4>
-                  {" "}
-                  {new Date(game.date).toLocaleDateString("de-De", {
-                    day: "2-digit",
-                    month: "2-digit",
-                    year: "numeric",
-                  })}{" "}
-                </h4>
+                <h4>{formatGameDate(game.date)}</h4>
                 <p>
                   <span className="stat-label">
                     Players <span className="stat-value">{game.playersCount}</span>
                   </span>
                 </p>
                 <p>
-                  {" "}
                   <span className="stat-label">
-                    Player Won: <span className="stat-value">{game.winnerName}</span>
+                    Player Won: <span className="stat-value">{game.winnerName ?? "Unknown"}</span>
                   </span>
                 </p>
                 <p>
-                  {" "}
                   <span className="stat-label">
                     Rounds: <span className="stat-value">{game.winnerRounds}</span>
                   </span>

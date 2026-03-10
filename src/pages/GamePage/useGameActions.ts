@@ -2,6 +2,7 @@ import { useCallback, useState } from "react";
 import type { Dispatch, SetStateAction } from "react";
 import { useNavigate } from "react-router-dom";
 import { abortGame, createRematch, updateGameSettings } from "@/shared/api/game";
+import { clientLogger } from "@/shared/lib/clientLogger";
 import { toUserErrorMessage } from "@/lib/error-to-user-message";
 import { ROUTES } from "@/lib/routes";
 import { resetRoomStore, setInvitation } from "@/store";
@@ -122,7 +123,10 @@ export function useGameExitFlow({
 
       navigate(ROUTES.start(rematch.gameId));
     } catch (error) {
-      console.error("Failed to exit game:", error);
+      clientLogger.error("game.exit.failed", {
+        context: { gameId },
+        error,
+      });
       setPageError(toUserErrorMessage(error, "Could not leave the game. Please try again."));
     }
   }, [gameId, navigate, setPageError]);

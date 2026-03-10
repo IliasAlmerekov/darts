@@ -32,18 +32,32 @@ export type UseGuestFlowResult = {
   handleAddGuest: () => Promise<void>;
 };
 
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null;
+}
+
+function isAddGuestErrorResponse(data: unknown): data is AddGuestErrorResponse {
+  if (!isRecord(data)) {
+    return false;
+  }
+
+  return (
+    data.success === false &&
+    data.error === "USERNAME_TAKEN" &&
+    typeof data.message === "string" &&
+    (data.suggestions === undefined ||
+      (Array.isArray(data.suggestions) &&
+        data.suggestions.every((suggestion) => typeof suggestion === "string")))
+  );
+}
+
 function getGuestErrorFromApi(error: unknown): AddGuestErrorResponse | null {
   if (!(error instanceof ApiError) || error.status !== 409) {
     return null;
   }
 
   const data = error.data;
-  if (typeof data !== "object" || data === null) {
-    return null;
-  }
-
-  const typed = data as AddGuestErrorResponse;
-  return typed.error === "USERNAME_TAKEN" ? typed : null;
+  return isAddGuestErrorResponse(data) ? data : null;
 }
 
 /**

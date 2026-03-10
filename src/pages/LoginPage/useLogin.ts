@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { loginWithCredentials, getAuthenticatedUser } from "@/shared/api/auth";
+import { clientLogger } from "@/shared/lib/clientLogger";
 import { invalidateAuthState, setAuthenticatedUser } from "@/store/auth";
 import { mapAuthErrorMessage } from "@/lib/auth-error-handling";
 import { ROUTES } from "@/lib/routes";
@@ -69,7 +70,9 @@ export function useLogin() {
         navigateToRedirect(response.redirect);
       }
     } catch (error) {
-      console.error("Login error:", error);
+      clientLogger.error("auth.login.failed", {
+        error,
+      });
       try {
         const authenticatedUser = await getAuthenticatedUser();
         if (authenticatedUser?.redirect) {
@@ -78,7 +81,9 @@ export function useLogin() {
           return;
         }
       } catch (sessionCheckError) {
-        console.error("Failed to check authenticated user after login error:", sessionCheckError);
+        clientLogger.error("auth.login.session-check-after-error.failed", {
+          error: sessionCheckError,
+        });
       }
 
       setError(

@@ -41,6 +41,7 @@ export interface AuthenticatedUser {
 const LOGIN_ENDPOINT = "/login";
 const LOGOUT_ENDPOINT = "/logout";
 const REGISTER_ENDPOINT = "/register";
+const CSRF_ENDPOINT = "/csrf";
 const AUTH_CHECK_TIMEOUT_MS = 8000;
 
 type GetAuthenticatedUserOptions = {
@@ -146,7 +147,7 @@ export async function registerUser(
 ): Promise<RegistrationResponse> {
   if (refreshCsrf) {
     try {
-      await apiClient.get(REGISTER_ENDPOINT, { skipAuthRedirect: true });
+      await apiClient.get(CSRF_ENDPOINT, { skipAuthRedirect: true });
     } catch {
       // Ignore prefetch errors; proceed with registration attempt
     }

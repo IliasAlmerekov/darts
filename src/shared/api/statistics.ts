@@ -49,6 +49,18 @@ function parseString(value: unknown): string | null {
   return typeof value === "string" ? value : null;
 }
 
+function parseNullableString(value: unknown): string | null | undefined {
+  if (value === undefined) {
+    return undefined;
+  }
+
+  if (value === null || typeof value === "string") {
+    return value;
+  }
+
+  return undefined;
+}
+
 function parseAliasedString(data: Record<string, unknown>, keys: readonly string[]): string | null {
   for (const key of keys) {
     if (!(key in data) || data[key] === undefined || data[key] === null) {
@@ -59,6 +71,21 @@ function parseAliasedString(data: Record<string, unknown>, keys: readonly string
   }
 
   return null;
+}
+
+function parseAliasedNullableString(
+  data: Record<string, unknown>,
+  keys: readonly string[],
+): string | null | undefined {
+  for (const key of keys) {
+    if (!(key in data)) {
+      continue;
+    }
+
+    return parseNullableString(data[key]);
+  }
+
+  return undefined;
 }
 
 function parseAliasedFiniteNumber(
@@ -132,17 +159,15 @@ function normalizeFinishedGameItem(data: unknown) {
 
   const id = parseFiniteNumber(data.id);
   const winnerRounds = parseFiniteNumber(data.winnerRounds);
-  const winnerName = parseString(data.winnerName);
+  const winnerName = parseNullableString(data.winnerName);
   const playersCount = parseFiniteNumber(data.playersCount);
-  const date = parseString(data.date);
+  const date = parseAliasedNullableString(data, ["date", "finishedAt"]);
 
-  if (
-    id === null ||
-    winnerRounds === null ||
-    winnerName === null ||
-    playersCount === null ||
-    date === null
-  ) {
+  if (id === null || winnerRounds === null || playersCount === null) {
+    return null;
+  }
+
+  if (winnerName === undefined || date === undefined) {
     return null;
   }
 
@@ -233,11 +258,17 @@ function normalizeGamesOverviewResponse(data: unknown): GameDataProps | null {
 export async function getPlayerStats(
   limit: number = 10,
   offset: number = 0,
-  sort: string = "average:desc",
+  sort?: string,
   signal?: AbortSignal,
 ): Promise<PlayerDataProps> {
+  const query = {
+    limit,
+    offset,
+    ...(sort ? { sort } : {}),
+  };
+
   const data: unknown = await apiClient.get("/players/stats", {
-    query: { limit, offset, sort },
+    query,
     signal,
   });
   const normalized = normalizePlayerDataResponse(data);

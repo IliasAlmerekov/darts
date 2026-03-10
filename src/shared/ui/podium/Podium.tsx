@@ -32,7 +32,7 @@ function Podium({ userMap, list, startScore = 301 }: PodiumProps): JSX.Element {
 
         return (
           <PodiumPlayerCard
-            key={index}
+            key={item.id}
             className={clsx(styles.podiumPlayerCard, {
               [styles.first ?? ""]: index === 0,
               [styles.second ?? ""]: index === 1,

@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef } from "react";
 import { useStore } from "@nanostores/react";
 import { getGameThrowsIfChanged, resetGameStateVersion } from "@/shared/api/game";
+import { clientLogger } from "@/shared/lib/clientLogger";
 import type { GameSettingsResponse, GameThrowsResponse } from "@/types";
 import {
   $gameData,
@@ -82,7 +83,10 @@ export function useGameState({ gameId }: UseGameStateOptions): UseGameStateRetur
         }
         const fetchError = err instanceof Error ? err : new Error("Failed to fetch game data");
         setError(fetchError);
-        console.error("Failed to fetch game data:", fetchError);
+        clientLogger.error("game.fetch.failed", {
+          context: { gameId },
+          error: fetchError,
+        });
       } finally {
         if (requestId === requestIdRef.current && !signal?.aborted) {
           setLoading(false);

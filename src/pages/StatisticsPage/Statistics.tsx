@@ -49,8 +49,8 @@ const StatisticsPagination = React.memo(function StatisticsPagination({
   );
 });
 
-function sortParamFromMethod(method: SortMethod): string {
-  if (method === "alphabetically") return "name:asc";
+function sortParamFromMethod(method: SortMethod): string | undefined {
+  if (method === "alphabetically") return undefined;
   return "average:desc";
 }
 

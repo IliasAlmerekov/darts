@@ -43,4 +43,22 @@ describe("Podium", () => {
     expect(winnerBadges).toHaveLength(1);
     expect(winnerBadges[0]!.closest(`.${styles.winnerCard}`)).toBeTruthy();
   });
+
+  it("preserves player cards when podium order changes", () => {
+    const players = [
+      buildPlayer(1, "Alice", 0, 10, 45.5),
+      buildPlayer(2, "Bob", 0, 11, 40.2),
+      buildPlayer(3, "Cara", 0, 12, 39.9),
+    ];
+    const { rerender } = render(<Podium userMap={players} list={players} />);
+
+    const aliceCardBeforeReorder = screen.getByText("Alice").closest(`.${styles.playerName}`);
+    expect(aliceCardBeforeReorder).toBeTruthy();
+
+    const reorderedPlayers = [players[2]!, players[1]!, players[0]!];
+    rerender(<Podium userMap={reorderedPlayers} list={reorderedPlayers} />);
+
+    const aliceCardAfterReorder = screen.getByText("Alice").closest(`.${styles.playerName}`);
+    expect(aliceCardAfterReorder).toBe(aliceCardBeforeReorder);
+  });
 });

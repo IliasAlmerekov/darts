@@ -36,6 +36,8 @@ export function useRoomStream(gameId: number | null): UseRoomStreamResult {
   const [event, setEvent] = useState<RoomStreamEvent | null>(null);
 
   const listeners = useMemo<readonly EventSourceListener[]>(() => {
+    // `listeners` must stay referentially stable for `useEventSource`.
+    // They do not capture `gameId`; reconnects are driven by the URL memo below.
     return ROOM_STREAM_EVENT_TYPES.map((type) => ({
       event: type,
       handler: (streamEvent: MessageEvent<string>) => {

@@ -1,10 +1,11 @@
 // @vitest-environment node
-import { beforeEach, describe, expect, it } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import {
   $authChecked,
   $authError,
   $user,
   invalidateAuthState,
+  registerAuthInvalidationListener,
   resetAuthStore,
   setAuthenticatedUser,
   setAuthError,
@@ -56,5 +57,17 @@ describe("auth store", () => {
     expect($user.get()).toBeNull();
     expect($authChecked.get()).toBe(false);
     expect($authError.get()).toBeNull();
+  });
+
+  it("should notify auth invalidation listeners and allow unsubscribe", () => {
+    const listener = vi.fn();
+    const unsubscribe = registerAuthInvalidationListener(listener);
+
+    invalidateAuthState();
+    expect(listener).toHaveBeenCalledTimes(1);
+
+    unsubscribe();
+    invalidateAuthState();
+    expect(listener).toHaveBeenCalledTimes(1);
   });
 });

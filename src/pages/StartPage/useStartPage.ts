@@ -7,7 +7,7 @@ import { useGuestFlow } from "./useGuestFlow";
 import { persistPlayerOrder, usePlayerOrderPersistence } from "./usePlayerOrderPersistence";
 import { resolveGameId, shouldRedirectToCurrentGame, useRoomRestore } from "./useRoomRestore";
 import { useStartPageError } from "./useStartPageError";
-import { $currentGameId, $gameSettings, $invitation, $lastFinishedGameId } from "@/store";
+import { $currentGameId, $invitation, $lastFinishedGameId } from "@/store";
 import { leaveRoom } from "@/shared/api/room";
 import { toUserErrorMessage } from "@/lib/error-to-user-message";
 
@@ -57,7 +57,6 @@ export function useStartPage(): UseStartPageResult {
   const navigate = useNavigate();
   const { id: gameIdParam } = useParams<{ id?: string }>();
 
-  const gameSettings = useStore($gameSettings);
   const lastFinishedGameId = useStore($lastFinishedGameId);
   const invitation = useStore($invitation);
   const currentGameId = useStore($currentGameId);
@@ -87,7 +86,6 @@ export function useStartPage(): UseStartPageResult {
     gameId,
     invitationGameId: invitation?.gameId,
     lastFinishedGameId,
-    gameSettings,
     navigate,
     setPageError,
   });
