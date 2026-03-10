@@ -163,13 +163,9 @@ describe("SettingsPage", () => {
       },
     });
     saveGameSettingsMock.mockResolvedValueOnce({
-      ...createGameResponse(),
-      id: 42,
-      settings: {
-        startScore: 401,
-        doubleOut: true,
-        tripleOut: false,
-      },
+      startScore: 401,
+      doubleOut: true,
+      tripleOut: false,
     });
 
     renderSettingsPage("/settings/42");
@@ -191,6 +187,21 @@ describe("SettingsPage", () => {
         },
         42,
       );
+      expect($gameData.get()).toEqual(
+        expect.objectContaining({
+          id: 42,
+          status: "lobby",
+          currentRound: 1,
+          currentThrowCount: 0,
+          players: [],
+          winnerId: null,
+        }),
+      );
+      expect($gameData.get()?.settings).toEqual({
+        startScore: 401,
+        doubleOut: true,
+        tripleOut: false,
+      });
     });
   });
 

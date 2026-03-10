@@ -4,6 +4,7 @@ import { useStore } from "@nanostores/react";
 import { $gameData, $gameSettings, setGameData } from "@/store";
 import { $currentGameId, setCurrentGameId } from "@/store";
 import { getGameThrows, saveGameSettings } from "@/shared/api/game";
+import { mergeGameSettings } from "@/lib/mergeGameSettings";
 import type { GameMode } from "@/types";
 import styles from "./Settings.module.css";
 import { SettingsTabs } from "./components/SettingsTabs";
@@ -179,7 +180,15 @@ function SettingsPage(): JSX.Element {
         },
         effectiveGameIdRef.current,
       );
-      setGameData(response);
+      const updatedGameData = mergeGameSettings(
+        $gameData.get(),
+        response,
+        effectiveGameIdRef.current,
+      );
+
+      if (updatedGameData) {
+        setGameData(updatedGameData);
+      }
     } catch (error) {
       setSelectedGameMode(previousMode);
       selectedGameModeRef.current = previousMode;
@@ -216,7 +225,15 @@ function SettingsPage(): JSX.Element {
         },
         effectiveGameIdRef.current,
       );
-      setGameData(response);
+      const updatedGameData = mergeGameSettings(
+        $gameData.get(),
+        response,
+        effectiveGameIdRef.current,
+      );
+
+      if (updatedGameData) {
+        setGameData(updatedGameData);
+      }
     } catch (error) {
       setSelectedPoints(previousPoints);
       selectedPointsRef.current = previousPoints;

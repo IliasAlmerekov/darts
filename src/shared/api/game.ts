@@ -2,17 +2,14 @@ import { apiClient } from "./client";
 import { ApiError } from "./errors";
 import type {
   GameStatus,
+  GameSummaryResponse,
   GameThrowsResponse,
   ThrowAckResponse,
   ThrowRequest,
+  UndoAckResponse,
   StartGameRequest,
 } from "@/types";
-import type {
-  FinishedPlayerResponse,
-  RematchResponse,
-  CreateGameSettingsPayload,
-  GameSettingsResponse,
-} from "@/types";
+import type { RematchResponse, CreateGameSettingsPayload, GameSettingsResponse } from "@/types";
 
 // ---------------------------------------------------------------------------
 // Endpoints
@@ -119,7 +116,7 @@ function isGameThrowsResponse(data: unknown): data is GameThrowsResponse {
   );
 }
 
-function isFinishedPlayerResponseArray(data: unknown): data is FinishedPlayerResponse[] {
+function isGameSummaryResponse(data: unknown): data is GameSummaryResponse {
   return (
     Array.isArray(data) &&
     data.every(
@@ -131,6 +128,20 @@ function isFinishedPlayerResponseArray(data: unknown): data is FinishedPlayerRes
         isFiniteNumber(item.roundsPlayed) &&
         isFiniteNumber(item.roundAverage),
     )
+  );
+}
+
+function isUndoAckResponse(data: unknown): data is UndoAckResponse {
+  if (!isRecord(data)) {
+    return false;
+  }
+
+  return (
+    typeof data.success === "boolean" &&
+    isFiniteNumber(data.gameId) &&
+    typeof data.stateVersion === "string" &&
+    isScoreboardDelta(data.scoreboardDelta) &&
+    typeof data.serverTs === "string"
   );
 }
 
@@ -202,6 +213,18 @@ function isRematchLikeResponse(
 
 function isMessageResponse(data: unknown): data is { message: string } {
   return isRecord(data) && typeof data.message === "string";
+}
+
+function extractGameSettingsResponse(data: unknown): GameSettingsResponse | null {
+  if (isGameSettingsResponse(data)) {
+    return data;
+  }
+
+  if (isGameThrowsResponse(data)) {
+    return data.settings;
+  }
+
+  return null;
 }
 
 function getNextStateVersion(response: Response): string | null {
@@ -306,13 +329,13 @@ export async function startGame(gameId: number, config: StartGameRequest): Promi
 export async function finishGame(
   gameId: number,
   signal?: AbortSignal,
-): Promise<FinishedPlayerResponse[]> {
+): Promise<GameSummaryResponse> {
   const data: unknown = await apiClient.post(
     FINISH_GAME_ENDPOINT(gameId),
     undefined,
     signal ? { signal } : undefined,
   );
-  if (!isFinishedPlayerResponseArray(data)) {
+  if (!isGameSummaryResponse(data)) {
     throw new ApiError("Unexpected response shape for finish game", { status: 200, data });
   }
   return data;
@@ -321,9 +344,9 @@ export async function finishGame(
 /**
  * Fetches final standings for a finished game.
  */
-export async function getFinishedGame(gameId: number): Promise<FinishedPlayerResponse[]> {
+export async function getFinishedGame(gameId: number): Promise<GameSummaryResponse> {
   const data: unknown = await apiClient.get(FINISHED_GAME_ENDPOINT(gameId));
-  if (!isFinishedPlayerResponseArray(data)) {
+  if (!isGameSummaryResponse(data)) {
     throw new ApiError("Unexpected response shape for finished game", { status: 200, data });
   }
   return data;
@@ -411,12 +434,13 @@ export async function getGameSettings(gameId: number): Promise<GameSettingsRespo
 export async function updateGameSettings(
   gameId: number,
   payload: UpdateGameSettingsPayload,
-): Promise<GameThrowsResponse> {
+): Promise<GameSettingsResponse> {
   const data: unknown = await apiClient.patch(GAME_SETTINGS_ENDPOINT(gameId), payload);
-  if (!isGameThrowsResponse(data)) {
+  const settings = extractGameSettingsResponse(data);
+  if (!settings) {
     throw new ApiError("Unexpected response shape for update game settings", { status: 200, data });
   }
-  return data;
+  return settings;
 }
 
 /**
@@ -425,7 +449,7 @@ export async function updateGameSettings(
 export async function saveGameSettings(
   payload: CreateGameSettingsPayload,
   gameId?: number | null,
-): Promise<GameThrowsResponse> {
+): Promise<GameSettingsResponse> {
   if (typeof gameId !== "number" || !Number.isFinite(gameId)) {
     throw new ApiError("Cannot save game settings without an active gameId", {
       status: 400,
@@ -455,12 +479,20 @@ export async function recordThrow(
 }
 
 /**
- * Undoes the last throw and returns the complete updated game state.
+ * Undoes the last throw. During phased rollout the backend may still return a full
+ * game state; once compact undo acknowledgements are enabled we re-fetch the state here
+ * to preserve the existing public contract for callers.
  */
 export async function undoLastThrow(gameId: number): Promise<GameThrowsResponse> {
   const data: unknown = await apiClient.delete(UNDO_THROW_ENDPOINT(gameId));
-  if (!isGameThrowsResponse(data)) {
-    throw new ApiError("Unexpected response shape for undo throw", { status: 200, data });
+  if (isGameThrowsResponse(data)) {
+    return data;
   }
-  return data;
+
+  if (isUndoAckResponse(data)) {
+    setGameStateVersion(gameId, data.stateVersion);
+    return getGameThrows(gameId);
+  }
+
+  throw new ApiError("Unexpected response shape for undo throw", { status: 200, data });
 }

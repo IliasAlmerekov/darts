@@ -29,13 +29,14 @@ All API requests go through the API client with base URL:
 
 - `GET /api/game/{gameId}` — fetch game state. See `src/features/game/api/get-game.ts`.
 - `POST /api/game/{gameId}/throw` — record a throw. See `src/features/game/api/record-throw.ts`.
-- `DELETE /api/game/{gameId}/throw` — undo last throw. See `src/features/game/api/undo-throw.ts`.
+- `DELETE /api/game/{gameId}/throw` — undo last throw. Backend may return a compact ack during rollout; `src/shared/api/game.ts` temporarily hydrates it back to full game state for callers.
 - `POST /api/game/{gameId}/start` — start game. See `src/features/game/api/start-game.ts`.
 - `PATCH /api/game/{gameId}/abort` — abort game. See `src/features/game/api/abort-game.ts`.
-- `POST /api/game/{gameId}/finish` — finish game. See `src/features/game/api/finish-game.ts`.
+- `POST /api/game/{gameId}/finish` — finish game and return summary-ready standings DTO. See `src/features/game/api/finish-game.ts`.
 - `GET /api/game/{gameId}/finished` — get finished game results. See `src/features/game/api/finish-game.ts`.
 - `POST /api/game/settings` — create game settings. See `src/features/game/api/game-settings.ts`.
-- `PATCH /api/game/{gameId}/settings` — update game settings. See `src/features/game/api/game-settings.ts`.
+- `GET /api/game/{gameId}/settings` — fetch canonical game settings for an existing game.
+- `PATCH /api/game/{gameId}/settings` — update game settings and return a compact settings DTO. `src/shared/api/game.ts` also accepts the legacy full game response during phased rollout.
 - `POST /api/room/{gameId}/rematch` — create rematch. See `src/features/game/api/rematch.ts`.
 
 ## Statistics

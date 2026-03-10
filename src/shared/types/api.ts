@@ -1,4 +1,4 @@
-import type { GameStatus } from "./game";
+import type { GameStatus, ScoreboardDelta } from "./game";
 
 export interface CreateRoomResponse {
   gameId: number;
@@ -28,6 +28,8 @@ export interface FinishedPlayerResponse {
   roundsPlayed: number;
   roundAverage: number;
 }
+
+export type GameSummaryResponse = FinishedPlayerResponse[];
 
 export interface RematchResponse {
   success: boolean;
@@ -62,6 +64,14 @@ export interface GameSettingsResponse {
   startScore: number;
   doubleOut: boolean;
   tripleOut: boolean;
+}
+
+export interface UndoAckResponse {
+  success: boolean;
+  gameId: number;
+  stateVersion: string;
+  scoreboardDelta: ScoreboardDelta;
+  serverTs: string;
 }
 
 export interface RoomStreamEvent<T = unknown> {

@@ -2,6 +2,7 @@ import { useCallback, useState } from "react";
 import type { Dispatch, SetStateAction } from "react";
 import { useNavigate } from "react-router-dom";
 import { abortGame, createRematch, updateGameSettings } from "@/shared/api/game";
+import { mergeGameSettings } from "@/lib/mergeGameSettings";
 import { toUserErrorMessage } from "@/lib/error-to-user-message";
 import { ROUTES } from "@/lib/routes";
 import { resetRoomStore, setInvitation } from "@/store";
@@ -67,7 +68,13 @@ export function useGameSettingsFlow({
       setIsSavingSettings(true);
 
       try {
-        const updatedGame = await updateGameSettings(gameId, settings);
+        const updatedSettings = await updateGameSettings(gameId, settings);
+        const updatedGame = mergeGameSettings(gameData, updatedSettings, gameId);
+
+        if (!updatedGame) {
+          throw new Error("Cannot merge updated settings without current game state");
+        }
+
         updateGameData(updatedGame);
         setIsSettingsOpen(false);
       } catch (error) {
