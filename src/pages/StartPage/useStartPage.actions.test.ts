@@ -205,6 +205,36 @@ describe("useStartPage action guards", () => {
     expect(result.current.isGuestOverlayOpen).toBe(true);
   });
 
+  it("falls back to a generic guest error when the 409 payload shape is invalid", async () => {
+    useParamsMock.mockReturnValue({ id: "10" });
+    storeValues.set("invitation", { gameId: 10, invitationLink: "/invite/10" });
+    storeValues.set("currentGameId", 10);
+    gameFlowMock.addGuestPlayer.mockRejectedValueOnce(
+      new ApiError("Request failed", {
+        status: 409,
+        data: {
+          success: false,
+          error: "USERNAME_TAKEN",
+          suggestions: ["Alex2", 3],
+        },
+      }),
+    );
+
+    const { result } = renderHook(() => useStartPage());
+
+    await act(async () => {
+      result.current.openGuestOverlay();
+      result.current.setGuestUsername("Alex");
+    });
+
+    await act(async () => {
+      await result.current.handleAddGuest();
+    });
+
+    expect(result.current.guestError).toBe("Could not add guest. Please try again.");
+    expect(result.current.guestSuggestions).toEqual([]);
+  });
+
   it("prevents duplicate addGuest calls while first request is pending", async () => {
     useParamsMock.mockReturnValue({ id: "10" });
     storeValues.set("invitation", { gameId: 10, invitationLink: "/invite/10" });
