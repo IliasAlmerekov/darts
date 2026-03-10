@@ -115,6 +115,6 @@ export type FinishedGameProps = {
 };
 
 export type GameDataProps = {
-  items?: FinishedGameProps[];
-  total?: number;
+  items: FinishedGameProps[];
+  total: number;
 };

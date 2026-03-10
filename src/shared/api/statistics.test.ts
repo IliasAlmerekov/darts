@@ -98,7 +98,7 @@ describe("statistics api", () => {
     });
   });
 
-  it("returns games overview array when every game item is valid", async () => {
+  it("normalizes games overview arrays to a paginated response", async () => {
     const response = [
       {
         id: 10,
@@ -111,7 +111,38 @@ describe("statistics api", () => {
 
     vi.spyOn(apiClient, "get").mockResolvedValueOnce(response);
 
-    await expect(getGamesOverview()).resolves.toEqual(response);
+    await expect(getGamesOverview()).resolves.toEqual({
+      items: response,
+      total: 1,
+    });
+  });
+
+  it("normalizes stringified games overview numbers from the backend", async () => {
+    vi.spyOn(apiClient, "get").mockResolvedValueOnce({
+      items: [
+        {
+          id: "10",
+          winnerRounds: "6",
+          winnerName: "Alice",
+          playersCount: "2",
+          date: "2026-03-09T12:00:00Z",
+        },
+      ],
+      total: "1",
+    });
+
+    await expect(getGamesOverview()).resolves.toEqual({
+      items: [
+        {
+          id: 10,
+          winnerRounds: 6,
+          winnerName: "Alice",
+          playersCount: 2,
+          date: "2026-03-09T12:00:00Z",
+        },
+      ],
+      total: 1,
+    });
   });
 
   it("throws ApiError when games overview contains malformed nested item fields", async () => {
@@ -120,7 +151,7 @@ describe("statistics api", () => {
         id: 10,
         winnerRounds: 6,
         winnerName: "Alice",
-        playersCount: "2",
+        playersCount: "two",
         date: "2026-03-09T12:00:00Z",
       },
     ]);
