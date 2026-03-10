@@ -138,7 +138,9 @@ describe("useRoomStream — event delivery", () => {
     });
 
     expect(result.current.event).toBeNull();
-    expect(warnSpy).toHaveBeenCalled();
+    expect(warnSpy).toHaveBeenCalledWith("[client:warn] room-stream.invalid-payload", {
+      context: { type: "throw" },
+    });
     warnSpy.mockRestore();
   });
 });

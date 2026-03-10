@@ -1,5 +1,6 @@
 // @vitest-environment jsdom
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { REDACTED_VALUE } from "@/shared/lib/clientLogger";
 
 const GAME_ID_STORAGE_KEY = "darts_current_game_id";
 const INVITATION_STORAGE_KEY = "darts_current_invitation";
@@ -155,5 +156,38 @@ describe("game-session store — Ticket 4: store is cache, not authority", () =>
 
     expect(roomStore.$invitation.get()).toBeNull();
     expect(window.sessionStorage.getItem(INVITATION_STORAGE_KEY)).toBeNull();
+  });
+
+  it("should redact invitationLink when sessionStorage persistence fails", async () => {
+    const consoleErrorSpy = vi.spyOn(console, "error").mockImplementation(() => undefined);
+    const setItemSpy = vi.spyOn(Storage.prototype, "setItem").mockImplementation(() => {
+      throw new Error("quota exceeded");
+    });
+    const roomStore = await import("./game-session");
+
+    roomStore.setInvitation({
+      gameId: 8,
+      invitationLink: "https://example.com/invite/8?token=secret",
+    });
+
+    expect(consoleErrorSpy).toHaveBeenCalledWith(
+      "[client:error] game-session.persist-invitation.failed",
+      {
+        context: {
+          storageKey: INVITATION_STORAGE_KEY,
+          invitation: {
+            gameId: 8,
+            invitationLink: REDACTED_VALUE,
+          },
+        },
+        error: expect.objectContaining({
+          message: "quota exceeded",
+          name: "Error",
+        }),
+      },
+    );
+
+    setItemSpy.mockRestore();
+    consoleErrorSpy.mockRestore();
   });
 });

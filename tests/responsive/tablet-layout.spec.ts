@@ -1,25 +1,8 @@
 // spec: specs/login-test-plan.md
 // seed: tests/shared/seed.spec.ts
 
-import { test, expect, type Locator } from "@playwright/test";
+import { test, expect } from "@playwright/test";
 import { mockFailedLogin } from "../shared/auth-route-mocks";
-
-type ElementSize = {
-  width: number;
-  height: number;
-};
-
-const getElementSize = async (locator: Locator): Promise<ElementSize> => {
-  const box = await locator.boundingBox();
-
-  return box ? { width: box.width, height: box.height } : { width: 0, height: 0 };
-};
-
-const getFontSize = async (locator: Locator): Promise<number> => {
-  return locator.evaluate((element) =>
-    Number.parseInt(window.getComputedStyle(element).fontSize, 10),
-  );
-};
 
 test.describe("Cross-Browser and Responsive Tests", () => {
   test("Tablet Layout", async ({ page }) => {
@@ -45,36 +28,35 @@ test.describe("Cross-Browser and Responsive Tests", () => {
     await expect(rememberCheckbox).toBeVisible();
     await expect(signUpLink).toBeVisible();
 
-    const hasHorizontalScroll = await page.evaluate(() => {
-      return document.documentElement.scrollWidth > document.documentElement.clientWidth;
-    });
-    const signInButtonSize = await getElementSize(signInButton);
-    const emailFieldSize = await getElementSize(emailField);
-    const passwordFieldSize = await getElementSize(passwordField);
-    const emailFontSize = await getFontSize(emailField);
-    const passwordFontSize = await getFontSize(passwordField);
-    const loginFormSize = await getElementSize(loginForm);
+    const hasHorizontalScroll = await page.evaluate(
+      () => document.documentElement.scrollWidth > document.documentElement.clientWidth,
+    );
+    expect(hasHorizontalScroll).toBe(false);
 
-    const tabletLayout = {
-      hasHorizontalScroll,
-      signInButtonSize,
-      emailFieldSize,
-      passwordFieldSize,
-      emailFontSize,
-      passwordFontSize,
-      containerWidth: loginFormSize.width,
-      viewportWidth: page.viewportSize()?.width ?? 0,
-      viewportHeight: page.viewportSize()?.height ?? 0,
-    };
+    const viewport = page.viewportSize();
+    expect(viewport?.width).toBe(768);
+    expect(viewport?.height).toBe(1024);
 
-    expect(tabletLayout.hasHorizontalScroll).toBe(false);
-    expect(tabletLayout.viewportWidth).toBe(768);
-    expect(tabletLayout.viewportHeight).toBe(1024);
-    expect(tabletLayout.signInButtonSize.height).toBeGreaterThanOrEqual(44);
-    expect(tabletLayout.emailFieldSize.height).toBeGreaterThanOrEqual(44);
-    expect(tabletLayout.passwordFieldSize.height).toBeGreaterThanOrEqual(44);
-    expect(tabletLayout.emailFontSize).toBeGreaterThanOrEqual(16);
-    expect(tabletLayout.passwordFontSize).toBeGreaterThanOrEqual(16);
+    const [signInBox, emailBox, passwordBox, loginFormBox] = await Promise.all([
+      signInButton.boundingBox(),
+      emailField.boundingBox(),
+      passwordField.boundingBox(),
+      loginForm.boundingBox(),
+    ]);
+
+    expect(signInBox?.height).toBeGreaterThanOrEqual(44);
+    expect(emailBox?.height).toBeGreaterThanOrEqual(44);
+    expect(passwordBox?.height).toBeGreaterThanOrEqual(44);
+    expect(loginFormBox?.width).toBeGreaterThan(0);
+
+    const emailFontSize = await emailField.evaluate((el) =>
+      parseFloat(getComputedStyle(el).fontSize),
+    );
+    const passwordFontSize = await passwordField.evaluate((el) =>
+      parseFloat(getComputedStyle(el).fontSize),
+    );
+    expect(emailFontSize).toBeGreaterThanOrEqual(16);
+    expect(passwordFontSize).toBeGreaterThanOrEqual(16);
 
     await emailField.fill("tablet.test@example.com");
     await passwordField.fill("tabletPassword123");
@@ -89,17 +71,12 @@ test.describe("Cross-Browser and Responsive Tests", () => {
     await expect(passwordField).toBeEnabled();
     await expect(signInButton).toBeEnabled();
 
-    const hasHorizontalScrollAfterInteraction = await page.evaluate(() => {
-      return document.documentElement.scrollWidth > document.documentElement.clientWidth;
-    });
-    const loginFormSizeAfterInteraction = await getElementSize(loginForm);
+    const hasHorizontalScrollAfterInteraction = await page.evaluate(
+      () => document.documentElement.scrollWidth > document.documentElement.clientWidth,
+    );
+    expect(hasHorizontalScrollAfterInteraction).toBe(false);
 
-    const postInteractionLayout = {
-      hasHorizontalScrollAfterInteraction,
-      containerWidthAfterInteraction: loginFormSizeAfterInteraction.width,
-    };
-
-    expect(postInteractionLayout.hasHorizontalScrollAfterInteraction).toBe(false);
-    expect(postInteractionLayout.containerWidthAfterInteraction).toBeGreaterThan(0);
+    const loginFormBoxAfterInteraction = await loginForm.boundingBox();
+    expect(loginFormBoxAfterInteraction?.width).toBeGreaterThan(0);
   });
 });

@@ -1,4 +1,5 @@
 import { atom } from "nanostores";
+import { clientLogger } from "@/shared/lib/clientLogger";
 
 export interface Invitation {
   gameId: number;
@@ -38,7 +39,10 @@ function getStoredGameId(): number | null {
       return Number.isFinite(parsed) ? parsed : null;
     }
   } catch (error) {
-    console.error("Failed to read game ID from sessionStorage:", error);
+    clientLogger.error("game-session.read-game-id.failed", {
+      context: { storageKey: STORAGE_KEY },
+      error,
+    });
   }
   return null;
 }
@@ -55,7 +59,10 @@ function setStoredGameId(gameId: number | null): void {
       window.sessionStorage.removeItem(STORAGE_KEY);
     }
   } catch (error) {
-    console.error("Failed to save game ID to sessionStorage:", error);
+    clientLogger.error("game-session.persist-game-id.failed", {
+      context: { gameId, storageKey: STORAGE_KEY },
+      error,
+    });
   }
 }
 
@@ -73,7 +80,10 @@ function getStoredInvitation(): Invitation | null {
     const parsed: unknown = JSON.parse(stored);
     return isValidInvitation(parsed) ? parsed : null;
   } catch (error) {
-    console.error("Failed to read invitation from sessionStorage:", error);
+    clientLogger.error("game-session.read-invitation.failed", {
+      context: { storageKey: INVITATION_STORAGE_KEY },
+      error,
+    });
     return null;
   }
 }
@@ -90,7 +100,10 @@ function setStoredInvitation(invitation: Invitation | null): void {
       window.sessionStorage.removeItem(INVITATION_STORAGE_KEY);
     }
   } catch (error) {
-    console.error("Failed to save invitation to sessionStorage:", error);
+    clientLogger.error("game-session.persist-invitation.failed", {
+      context: { storageKey: INVITATION_STORAGE_KEY, invitation },
+      error,
+    });
     return;
   }
 }

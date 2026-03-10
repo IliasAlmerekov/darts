@@ -1,6 +1,7 @@
 import { useCallback, useState } from "react";
 import { ApiError } from "@/shared/api";
 import { getGameThrows, resetGameStateVersion } from "@/shared/api/game";
+import { clientLogger } from "@/shared/lib/clientLogger";
 import { setGameData } from "@/store";
 
 type ApiErrorPayload = {
@@ -58,7 +59,10 @@ export function useThrowReconciliation({
         const refreshedGameState = await getGameThrows(gameId);
         setGameData(refreshedGameState);
       } catch (refreshError) {
-        console.error("Failed to refresh game state during reconciliation:", refreshError);
+        clientLogger.error("game.reconciliation.refresh.failed", {
+          context: { gameId },
+          error: refreshError,
+        });
       } finally {
         setSyncMessage(message);
       }

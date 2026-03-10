@@ -27,6 +27,7 @@ interface GamePlayerItemProps {
   prevThrow2IsBust?: boolean | undefined;
   prevThrow3IsBust?: boolean | undefined;
   id: string;
+  itemRef?: React.Ref<HTMLDivElement>;
 }
 
 const bustIcon = <img src={bustIconX} alt="Bust icon" />;
@@ -51,6 +52,7 @@ function GamePlayerItem({
   prevThrow2IsBust,
   prevThrow3IsBust,
   id,
+  itemRef,
 }: GamePlayerItemProps): JSX.Element {
   // Business logic: calculate throw display values
   const displayThrows = usePlayerThrowsDisplay({
@@ -75,6 +77,7 @@ function GamePlayerItem({
     <div
       className={className}
       id={id}
+      ref={itemRef}
       data-active-player={isActive ? "true" : undefined}
       role="group"
       aria-label={name}

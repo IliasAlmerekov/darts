@@ -1,4 +1,5 @@
 import React from "react";
+import { clientLogger } from "@/shared/lib/clientLogger";
 
 type ErrorBoundaryProps = {
   children: React.ReactNode;
@@ -27,7 +28,10 @@ class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoundarySta
       return;
     }
 
-    console.error("Unhandled application error:", error, info);
+    clientLogger.error("ui.error-boundary.crash", {
+      context: { componentStack: info.componentStack },
+      error,
+    });
   }
 
   private handleReload = (): void => {

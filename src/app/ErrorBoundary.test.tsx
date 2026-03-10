@@ -39,4 +39,29 @@ describe("ErrorBoundary", () => {
     expect(screen.getByText("Oops")).toBeTruthy();
     expect(screen.getByText("Try again")).toBeTruthy();
   });
+
+  it("logs crashes through the client logging policy", () => {
+    render(
+      <ErrorBoundary fallbackTitle="Oops" fallbackMessage="Try again">
+        <ThrowingChild />
+      </ErrorBoundary>,
+    );
+
+    expect(consoleErrorSpy.mock.calls).toEqual(
+      expect.arrayContaining([
+        [
+          "[client:error] ui.error-boundary.crash",
+          expect.objectContaining({
+            context: expect.objectContaining({
+              componentStack: expect.any(String),
+            }),
+            error: expect.objectContaining({
+              message: "Crash",
+              name: "Error",
+            }),
+          }),
+        ],
+      ]),
+    );
+  });
 });

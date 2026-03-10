@@ -1,5 +1,6 @@
 import { useCallback, useRef, useState } from "react";
 import { recordThrow, setGameStateVersion } from "@/shared/api/game";
+import { clientLogger } from "@/shared/lib/clientLogger";
 import type { ThrowRequest } from "@/types";
 import { playSound } from "@/lib/soundPlayer";
 import { $gameData, setGameData } from "@/store";
@@ -112,7 +113,10 @@ export function useThrowQueue({
             }
           }
         } catch (error) {
-          console.error("Failed to sync queued throw:", error);
+          clientLogger.error("game.throw.queue-sync.failed", {
+            context: { gameId },
+            error,
+          });
           isQueueSyncFailedRef.current = true;
           clearQueue();
 

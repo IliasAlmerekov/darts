@@ -2,6 +2,7 @@ import { useCallback, useRef, useState } from "react";
 import type { MutableRefObject } from "react";
 import { undoLastThrow } from "@/shared/api/game";
 import { playSound } from "@/lib/soundPlayer";
+import { clientLogger } from "@/shared/lib/clientLogger";
 import { $gameData, normalizeGameData, setGameData } from "@/store";
 import type { GameThrowsResponse } from "@/types";
 import { applyOptimisticUndo } from "./throwStateService";
@@ -56,14 +57,22 @@ export function useUndoFlow({ gameId, reconcileGameState }: UseUndoFlowOptions):
         typeof normalizedUpdatedGameState.activePlayerId !== "number" ||
         !Number.isFinite(normalizedUpdatedGameState.activePlayerId)
       ) {
-        console.error("Undo returned invalid activePlayerId:", updatedGameState.activePlayerId);
+        clientLogger.error("game.undo.invalid-active-player-id", {
+          context: {
+            activePlayerId: updatedGameState.activePlayerId,
+            gameId,
+          },
+        });
         await reconcileGameState("");
       } else {
         setGameData(normalizedUpdatedGameState);
         playSound("undo");
       }
     } catch (error) {
-      console.error("Failed to undo throw:", error);
+      clientLogger.error("game.undo.failed", {
+        context: { gameId },
+        error,
+      });
       await reconcileGameState("");
       playSound("error");
     } finally {
