@@ -420,8 +420,14 @@ type UpdateGameSettingsPayload = Partial<{
  * Fetches the canonical settings for a game by its id.
  * Used to retrieve the original rules before starting a rematch.
  */
-export async function getGameSettings(gameId: number): Promise<GameSettingsResponse> {
-  const data: unknown = await apiClient.get(GAME_SETTINGS_ENDPOINT(gameId));
+export async function getGameSettings(
+  gameId: number,
+  signal?: AbortSignal,
+): Promise<GameSettingsResponse> {
+  const data: unknown = await apiClient.get(
+    GAME_SETTINGS_ENDPOINT(gameId),
+    signal ? { signal } : undefined,
+  );
   if (!isGameSettingsResponse(data)) {
     throw new ApiError("Unexpected response shape for game settings", { status: 200, data });
   }

@@ -1,11 +1,10 @@
 import { useState, useMemo, useEffect, useCallback, useRef } from "react";
 import { useParams } from "react-router-dom";
 import { useStore } from "@nanostores/react";
-import { $gameData, $gameSettings, setGameData } from "@/store";
+import { $gameData, $gameSettings, setGameSettings } from "@/store";
 import { $currentGameId, setCurrentGameId } from "@/store";
-import { getGameThrows, saveGameSettings } from "@/shared/api/game";
-import { mergeGameSettings } from "@/lib/mergeGameSettings";
-import type { GameMode } from "@/types";
+import { getGameSettings, saveGameSettings } from "@/shared/api/game";
+import type { GameMode, GameSettingsResponse } from "@/types";
 import styles from "./Settings.module.css";
 import { SettingsTabs } from "./components/SettingsTabs";
 
@@ -57,13 +56,14 @@ function SettingsPage(): JSX.Element {
   const [savingScope, setSavingScope] = useState<"game-mode" | "points" | null>(null);
   const [selectedGameMode, setSelectedGameMode] = useState<GameMode>("single-out");
   const [selectedPoints, setSelectedPoints] = useState<number>(301);
+  const [loadedSettings, setLoadedSettings] = useState<GameSettingsResponse | null>(null);
   const [hasHydratedSelection, setHasHydratedSelection] = useState(false);
   const selectedGameModeRef = useRef(selectedGameMode);
   const selectedPointsRef = useRef(selectedPoints);
   const effectiveGameIdRef = useRef<number | null>(null);
   const isSavingRef = useRef(false);
   const activeGameSettings =
-    routeGameId !== null && gameData?.id === routeGameId ? gameSettings : null;
+    routeGameId !== null && gameData?.id === routeGameId ? gameSettings : loadedSettings;
 
   // Keep the session store aligned only with the canonical route id.
   useEffect(() => {
@@ -74,6 +74,7 @@ function SettingsPage(): JSX.Element {
 
   useEffect(() => {
     setHasHydratedSelection(false);
+    setLoadedSettings(null);
     if (routeGameId === null) {
       setSelectedGameMode("single-out");
       setSelectedPoints(301);
@@ -91,11 +92,11 @@ function SettingsPage(): JSX.Element {
 
     const loadGameSettings = async () => {
       try {
-        const loadedGameData = await getGameThrows(routeGameId, signal);
+        const settings = await getGameSettings(routeGameId, signal);
         if (signal.aborted) {
           return;
         }
-        setGameData(loadedGameData);
+        setLoadedSettings(settings);
       } catch (error) {
         if (isAbortError(error) || signal.aborted) {
           return;
@@ -104,7 +105,7 @@ function SettingsPage(): JSX.Element {
       }
     };
 
-    const hasCurrentGameInStore = gameData?.id === routeGameId;
+    const hasCurrentGameInStore = gameData?.id === routeGameId && gameSettings !== null;
     if (!hasCurrentGameInStore) {
       void loadGameSettings();
     }
@@ -112,7 +113,7 @@ function SettingsPage(): JSX.Element {
     return () => {
       controller.abort();
     };
-  }, [routeGameId, gameData?.id]);
+  }, [routeGameId, gameData?.id, gameSettings]);
 
   // Only hydrate the UI from canonical settings for the route game.
   const currentGameMode = useMemo(
@@ -180,15 +181,8 @@ function SettingsPage(): JSX.Element {
         },
         effectiveGameIdRef.current,
       );
-      const updatedGameData = mergeGameSettings(
-        $gameData.get(),
-        response,
-        effectiveGameIdRef.current,
-      );
-
-      if (updatedGameData) {
-        setGameData(updatedGameData);
-      }
+      setLoadedSettings(response);
+      setGameSettings(response, effectiveGameIdRef.current);
     } catch (error) {
       setSelectedGameMode(previousMode);
       selectedGameModeRef.current = previousMode;
@@ -225,15 +219,8 @@ function SettingsPage(): JSX.Element {
         },
         effectiveGameIdRef.current,
       );
-      const updatedGameData = mergeGameSettings(
-        $gameData.get(),
-        response,
-        effectiveGameIdRef.current,
-      );
-
-      if (updatedGameData) {
-        setGameData(updatedGameData);
-      }
+      setLoadedSettings(response);
+      setGameSettings(response, effectiveGameIdRef.current);
     } catch (error) {
       setSelectedPoints(previousPoints);
       selectedPointsRef.current = previousPoints;

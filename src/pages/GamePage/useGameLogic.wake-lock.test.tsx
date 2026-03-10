@@ -16,7 +16,7 @@ const useGameExitFlowMock = vi.fn();
 const handleThrowMock = vi.fn();
 const handleUndoMock = vi.fn();
 const refetchMock = vi.fn();
-const updateGameDataMock = vi.fn();
+const updateGameSettingsMock = vi.fn();
 
 vi.mock("react-router-dom", () => ({
   useNavigate: () => navigateMock,
@@ -83,7 +83,7 @@ function setDefaultMocks(gameData: GameThrowsResponse | null): void {
     isLoading: false,
     error: null,
     refetch: refetchMock,
-    updateGameData: updateGameDataMock,
+    updateGameSettings: updateGameSettingsMock,
   });
 
   useThrowHandlerMock.mockReturnValue({
@@ -148,7 +148,7 @@ describe("useGameLogic wake-lock wiring", () => {
       isLoading: false,
       error: null,
       refetch: refetchMock,
-      updateGameData: updateGameDataMock,
+      updateGameSettings: updateGameSettingsMock,
     }));
     useThrowHandlerMock.mockReturnValue({
       handleThrow: handleThrowMock,
@@ -199,7 +199,7 @@ describe("useGameLogic wake-lock wiring", () => {
       isLoading: false,
       error: null,
       refetch: refetchMock,
-      updateGameData: updateGameDataMock,
+      updateGameSettings: updateGameSettingsMock,
     }));
     useThrowHandlerMock.mockReturnValue({
       handleThrow: handleThrowMock,

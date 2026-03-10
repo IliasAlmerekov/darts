@@ -11,14 +11,14 @@ import {
   setCurrentGameId,
   setGameData,
 } from "@/store";
-import type { GameThrowsResponse } from "@/types";
+import type { GameSettingsResponse, GameThrowsResponse } from "@/types";
 import SettingsPage from ".";
 
-const getGameThrowsMock = vi.fn();
+const getGameSettingsMock = vi.fn();
 const saveGameSettingsMock = vi.fn();
 
 vi.mock("@/shared/api/game", () => ({
-  getGameThrows: (...args: unknown[]) => getGameThrowsMock(...args),
+  getGameSettings: (...args: unknown[]) => getGameSettingsMock(...args),
   saveGameSettings: (...args: unknown[]) => saveGameSettingsMock(...args),
 }));
 
@@ -40,6 +40,17 @@ function createGameResponse(): GameThrowsResponse {
       doubleOut: false,
       tripleOut: false,
     },
+  };
+}
+
+function createSettingsResponse(
+  overrides: Partial<GameSettingsResponse> = {},
+): GameSettingsResponse {
+  return {
+    startScore: 301,
+    doubleOut: false,
+    tripleOut: false,
+    ...overrides,
   };
 }
 
@@ -77,7 +88,7 @@ describe("SettingsPage", () => {
     resetGameStore();
     resetRoomStore();
 
-    getGameThrowsMock.mockResolvedValue(createGameResponse());
+    getGameSettingsMock.mockResolvedValue(createSettingsResponse());
     saveGameSettingsMock.mockImplementation(() => new Promise(() => {}));
   });
 
@@ -87,7 +98,7 @@ describe("SettingsPage", () => {
     fireEvent.click(screen.getByRole("button", { name: "Double-out" }));
 
     expect(saveGameSettingsMock).not.toHaveBeenCalled();
-    expect(getGameThrowsMock).not.toHaveBeenCalled();
+    expect(getGameSettingsMock).not.toHaveBeenCalled();
   });
 
   it("ignores currentGameId from store on /settings without a route param", () => {
@@ -98,7 +109,7 @@ describe("SettingsPage", () => {
     fireEvent.click(screen.getByRole("button", { name: "Double-out" }));
 
     expect(saveGameSettingsMock).not.toHaveBeenCalled();
-    expect(getGameThrowsMock).not.toHaveBeenCalled();
+    expect(getGameSettingsMock).not.toHaveBeenCalled();
   });
 
   it("treats the route gameId as authoritative and ignores stale shared game settings", async () => {
@@ -112,15 +123,13 @@ describe("SettingsPage", () => {
         tripleOut: false,
       },
     });
-    getGameThrowsMock.mockResolvedValueOnce({
-      ...createGameResponse(),
-      id: 42,
-      settings: {
+    getGameSettingsMock.mockResolvedValueOnce(
+      createSettingsResponse({
         startScore: 401,
         doubleOut: false,
         tripleOut: true,
-      },
-    });
+      }),
+    );
 
     renderSettingsPage("/settings/42");
 
@@ -130,7 +139,7 @@ describe("SettingsPage", () => {
     expect(screen.getByRole("button", { name: "501" }).getAttribute("aria-pressed")).toBe("false");
 
     await waitFor(() => {
-      expect(getGameThrowsMock).toHaveBeenCalledWith(42, expect.any(AbortSignal));
+      expect(getGameSettingsMock).toHaveBeenCalledWith(42, expect.any(AbortSignal));
       expect($currentGameId.get()).toBe(42);
     });
 
@@ -153,15 +162,13 @@ describe("SettingsPage", () => {
         tripleOut: false,
       },
     });
-    getGameThrowsMock.mockResolvedValueOnce({
-      ...createGameResponse(),
-      id: 42,
-      settings: {
+    getGameSettingsMock.mockResolvedValueOnce(
+      createSettingsResponse({
         startScore: 401,
         doubleOut: false,
         tripleOut: true,
-      },
-    });
+      }),
+    );
     saveGameSettingsMock.mockResolvedValueOnce({
       startScore: 401,
       doubleOut: true,
@@ -189,33 +196,31 @@ describe("SettingsPage", () => {
       );
       expect($gameData.get()).toEqual(
         expect.objectContaining({
-          id: 42,
-          status: "lobby",
-          currentRound: 1,
-          currentThrowCount: 0,
-          players: [],
-          winnerId: null,
+          id: 99,
+          settings: {
+            startScore: 501,
+            doubleOut: true,
+            tripleOut: false,
+          },
         }),
       );
-      expect($gameData.get()?.settings).toEqual({
-        startScore: 401,
-        doubleOut: true,
-        tripleOut: false,
-      });
+      expect(screen.getByRole("button", { name: "Double-out" }).getAttribute("aria-pressed")).toBe(
+        "true",
+      );
     });
   });
 
   it("aborts an in-flight route settings load on unmount so it cannot overwrite shared game state later", async () => {
-    const pendingLoad = createDeferred<GameThrowsResponse>();
-    getGameThrowsMock.mockImplementation(() => pendingLoad.promise);
+    const pendingLoad = createDeferred<GameSettingsResponse>();
+    getGameSettingsMock.mockImplementation(() => pendingLoad.promise);
 
     const { unmount } = renderSettingsPage("/settings/42");
 
     await waitFor(() => {
-      expect(getGameThrowsMock).toHaveBeenCalledWith(42, expect.any(AbortSignal));
+      expect(getGameSettingsMock).toHaveBeenCalledWith(42, expect.any(AbortSignal));
     });
 
-    const loadSignal = getGameThrowsMock.mock.calls[0]?.[1] as AbortSignal | undefined;
+    const loadSignal = getGameSettingsMock.mock.calls[0]?.[1] as AbortSignal | undefined;
 
     expect(loadSignal?.aborted).toBe(false);
 
@@ -224,7 +229,7 @@ describe("SettingsPage", () => {
     expect(loadSignal?.aborted).toBe(true);
 
     await act(async () => {
-      pendingLoad.resolve(createGameResponse());
+      pendingLoad.resolve(createSettingsResponse());
       await pendingLoad.promise;
     });
 

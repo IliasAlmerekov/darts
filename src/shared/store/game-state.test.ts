@@ -7,6 +7,7 @@ import {
   deriveWinnerId,
   normalizeGameData,
   setGameData,
+  setGameSettings,
   setLoading,
   setError,
   resetGameStore,
@@ -94,6 +95,45 @@ describe("game-state store", () => {
       });
 
       expect($gameData.get()?.winnerId).toBe(1);
+    });
+  });
+
+  describe("setGameSettings", () => {
+    it("should update only the settings fragment for the active game", () => {
+      setGameData(mockGameData);
+
+      setGameSettings(
+        {
+          startScore: 301,
+          doubleOut: false,
+          tripleOut: true,
+        },
+        1,
+      );
+
+      expect($gameData.get()).toEqual({
+        ...mockGameData,
+        settings: {
+          startScore: 301,
+          doubleOut: false,
+          tripleOut: true,
+        },
+      });
+    });
+
+    it("should ignore settings updates for a different game id", () => {
+      setGameData(mockGameData);
+
+      setGameSettings(
+        {
+          startScore: 301,
+          doubleOut: false,
+          tripleOut: true,
+        },
+        99,
+      );
+
+      expect($gameData.get()).toEqual(mockGameData);
     });
   });
 

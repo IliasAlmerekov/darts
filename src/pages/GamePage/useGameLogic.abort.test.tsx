@@ -12,7 +12,7 @@ const useGameSoundsMock = vi.fn();
 const useWakeLockMock = vi.fn();
 const finishGameMock = vi.fn();
 const resetGameStateVersionMock = vi.fn();
-const updateGameDataMock = vi.fn();
+const updateGameSettingsMock = vi.fn();
 const useGameSettingsFlowMock = vi.fn();
 const useGameExitFlowMock = vi.fn();
 
@@ -143,7 +143,7 @@ function setDefaultMocks(gameData: GameThrowsResponse | null): void {
     isLoading: false,
     error: null,
     refetch: vi.fn(),
-    updateGameData: updateGameDataMock,
+    updateGameSettings: updateGameSettingsMock,
   });
   useThrowHandlerMock.mockReturnValue({
     handleThrow: vi.fn(),
@@ -213,7 +213,7 @@ describe("useGameLogic auto-finish abort handling", () => {
 
     expect(consoleErrorSpy).not.toHaveBeenCalled();
     expect(navigateMock).not.toHaveBeenCalled();
-    expect(updateGameDataMock).not.toHaveBeenCalled();
+    expect(updateGameSettingsMock).not.toHaveBeenCalled();
     expect(resetGameStateVersionMock).not.toHaveBeenCalled();
   });
 
@@ -229,7 +229,7 @@ describe("useGameLogic auto-finish abort handling", () => {
       expect(finishGameMock).toHaveBeenCalledTimes(1);
     });
 
-    expect(updateGameDataMock).not.toHaveBeenCalled();
+    expect(updateGameSettingsMock).not.toHaveBeenCalled();
     expect(navigateMock).not.toHaveBeenCalled();
     expect(resetGameStateVersionMock).not.toHaveBeenCalled();
 

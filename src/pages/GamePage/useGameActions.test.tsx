@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import { act, renderHook, waitFor } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import type { GameThrowsResponse } from "@/types";
+import type { GameSettingsResponse, GameThrowsResponse } from "@/types";
 import { useGameSettingsFlow } from "./useGameActions";
 
 const updateGameSettingsMock = vi.fn();
@@ -51,18 +51,19 @@ describe("useGameSettingsFlow", () => {
   });
 
   it("merges compact settings responses into the existing game state", async () => {
-    const updateGameData = vi.fn();
-    updateGameSettingsMock.mockResolvedValueOnce({
+    const updateGameSettingsStore = vi.fn();
+    const updatedSettings: GameSettingsResponse = {
       startScore: 501,
       doubleOut: true,
       tripleOut: false,
-    });
+    };
+    updateGameSettingsMock.mockResolvedValueOnce(updatedSettings);
 
     const { result } = renderHook(() =>
       useGameSettingsFlow({
         gameData: createGameData(),
         gameId: 42,
-        updateGameData,
+        updateGameSettings: updateGameSettingsStore,
       }),
     );
 
@@ -84,14 +85,7 @@ describe("useGameSettingsFlow", () => {
       });
     });
 
-    expect(updateGameData).toHaveBeenCalledWith({
-      ...createGameData(),
-      settings: {
-        startScore: 501,
-        doubleOut: true,
-        tripleOut: false,
-      },
-    });
+    expect(updateGameSettingsStore).toHaveBeenCalledWith(updatedSettings);
     expect(result.current.isSettingsOpen).toBe(false);
     expect(result.current.settingsError).toBeNull();
   });

@@ -2,11 +2,10 @@ import { useCallback, useState } from "react";
 import type { Dispatch, SetStateAction } from "react";
 import { useNavigate } from "react-router-dom";
 import { abortGame, createRematch, updateGameSettings } from "@/shared/api/game";
-import { mergeGameSettings } from "@/lib/mergeGameSettings";
 import { toUserErrorMessage } from "@/lib/error-to-user-message";
 import { ROUTES } from "@/lib/routes";
 import { resetRoomStore, setInvitation } from "@/store";
-import type { GameThrowsResponse } from "@/types";
+import type { GameSettingsResponse, GameThrowsResponse } from "@/types";
 
 interface GameSettingsFormValues {
   doubleOut: boolean;
@@ -16,7 +15,7 @@ interface GameSettingsFormValues {
 interface UseGameSettingsFlowOptions {
   gameData: GameThrowsResponse | null;
   gameId: number | null;
-  updateGameData: (data: GameThrowsResponse) => void;
+  updateGameSettings: (settings: GameSettingsResponse) => void;
 }
 
 interface UseGameSettingsFlowResult {
@@ -44,7 +43,7 @@ interface UseGameExitFlowResult {
 export function useGameSettingsFlow({
   gameData,
   gameId,
-  updateGameData,
+  updateGameSettings: syncGameSettings,
 }: UseGameSettingsFlowOptions): UseGameSettingsFlowResult {
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isSavingSettings, setIsSavingSettings] = useState(false);
@@ -69,13 +68,7 @@ export function useGameSettingsFlow({
 
       try {
         const updatedSettings = await updateGameSettings(gameId, settings);
-        const updatedGame = mergeGameSettings(gameData, updatedSettings, gameId);
-
-        if (!updatedGame) {
-          throw new Error("Cannot merge updated settings without current game state");
-        }
-
-        updateGameData(updatedGame);
+        syncGameSettings(updatedSettings);
         setIsSettingsOpen(false);
       } catch (error) {
         setSettingsError(toUserErrorMessage(error, "Failed to update settings"));
@@ -83,7 +76,7 @@ export function useGameSettingsFlow({
         setIsSavingSettings(false);
       }
     },
-    [gameData, gameId, updateGameData],
+    [gameData, gameId, syncGameSettings],
   );
 
   return {

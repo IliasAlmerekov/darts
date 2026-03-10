@@ -1,5 +1,5 @@
 import { atom, computed } from "nanostores";
-import type { GameThrowsResponse } from "@/types";
+import type { GameSettingsResponse, GameThrowsResponse } from "@/types";
 
 export const $gameData = atom<GameThrowsResponse | null>(null);
 export const $isLoading = atom<boolean>(false);
@@ -117,6 +117,32 @@ export function normalizeGameData(data: GameThrowsResponse | null): GameThrowsRe
  */
 export function setGameData(data: GameThrowsResponse | null): void {
   $gameData.set(normalizeGameData(data));
+  $error.set(null);
+}
+
+/**
+ * Updates only the settings fragment for the current game state.
+ */
+export function setGameSettings(settings: GameSettingsResponse, expectedGameId?: number): void {
+  const currentGameData = $gameData.get();
+  if (currentGameData === null) {
+    return;
+  }
+
+  if (typeof expectedGameId === "number" && currentGameData.id !== expectedGameId) {
+    return;
+  }
+
+  $gameData.set(
+    normalizeGameData({
+      ...currentGameData,
+      settings: {
+        startScore: settings.startScore,
+        doubleOut: settings.doubleOut,
+        tripleOut: settings.tripleOut,
+      },
+    }),
+  );
   $error.set(null);
 }
 
