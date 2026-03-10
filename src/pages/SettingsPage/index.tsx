@@ -256,14 +256,14 @@ function SettingsPage(): JSX.Element {
           <SettingsTabs
             title="Game Mode"
             options={GAME_MODE_OPTIONS}
-            selectedId={selectedGameMode}
+            selectedId={hasHydratedSelection ? selectedGameMode : currentGameMode}
             onChange={handleGameModeClick}
             disabled={isSaving && savingScope === "game-mode"}
           />
           <SettingsTabs
             title="Points"
             options={POINTS_OPTIONS}
-            selectedId={selectedPoints}
+            selectedId={hasHydratedSelection ? selectedPoints : currentPoints}
             onChange={handlePointsClick}
             disabled={isSaving && savingScope === "points"}
             mobileLayout="grid"
