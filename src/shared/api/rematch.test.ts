@@ -64,8 +64,6 @@ describe("game/rematch api", () => {
     expect(apiClient.get).toHaveBeenCalledWith("/game/520/settings", undefined);
     expect(apiClient.post).toHaveBeenNthCalledWith(1, "/room/520/rematch");
     expect(apiClient.post).toHaveBeenNthCalledWith(2, "/game/777/start", {
-      status: "started",
-      round: 1,
       startscore: 501,
       doubleout: true,
       tripleout: false,

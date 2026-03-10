@@ -145,6 +145,34 @@ describe("statistics api", () => {
     });
   });
 
+  it("accepts swagger games overview items with nullable winner and finishedAt alias", async () => {
+    vi.spyOn(apiClient, "get").mockResolvedValueOnce({
+      items: [
+        {
+          id: 10,
+          winnerRounds: 6,
+          winnerName: null,
+          playersCount: 2,
+          finishedAt: "2026-03-09T12:00:00Z",
+        },
+      ],
+      total: 1,
+    });
+
+    await expect(getGamesOverview()).resolves.toEqual({
+      items: [
+        {
+          id: 10,
+          winnerRounds: 6,
+          winnerName: null,
+          playersCount: 2,
+          date: "2026-03-09T12:00:00Z",
+        },
+      ],
+      total: 1,
+    });
+  });
+
   it("throws ApiError when games overview contains malformed nested item fields", async () => {
     vi.spyOn(apiClient, "get").mockResolvedValueOnce([
       {

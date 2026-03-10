@@ -221,7 +221,7 @@ describe("StatisticsPage", () => {
     expect(usePlayerStatsMock).toHaveBeenLastCalledWith({
       limit: 10,
       offset: 0,
-      sortParam: "name:asc",
+      sortParam: undefined,
     });
     expect(screen.getByText("Alice")).toBeTruthy();
 
@@ -230,7 +230,7 @@ describe("StatisticsPage", () => {
     expect(usePlayerStatsMock).toHaveBeenLastCalledWith({
       limit: 10,
       offset: 10,
-      sortParam: "name:asc",
+      sortParam: undefined,
     });
     expect(screen.getByText("Carol")).toBeTruthy();
     expect(screen.getByText(/page 2 of/i)).toBeTruthy();
@@ -240,7 +240,7 @@ describe("StatisticsPage", () => {
     expect(usePlayerStatsMock).toHaveBeenLastCalledWith({
       limit: 10,
       offset: 0,
-      sortParam: "name:asc",
+      sortParam: undefined,
     });
     expect(screen.getByText("Alice")).toBeTruthy();
     expect(screen.getByText(/page 1 of/i)).toBeTruthy();

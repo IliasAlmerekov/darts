@@ -167,7 +167,7 @@ describe("registerUser", () => {
     await registerUser({ username: "alice", email: "alice@example.com", password: "s3cr3t" }, true);
 
     expect(getSpy).toHaveBeenCalledWith(
-      "/register",
+      "/csrf",
       expect.objectContaining({ skipAuthRedirect: true }),
     );
   });

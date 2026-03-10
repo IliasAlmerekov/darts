@@ -30,7 +30,7 @@ describe("usePlayerStats", () => {
     getPlayerStatsMock.mockReturnValue(new Promise(() => {})); // never resolves
 
     const { result } = renderHook(() =>
-      usePlayerStats({ limit: 10, offset: 0, sortParam: "name:asc" }),
+      usePlayerStats({ limit: 10, offset: 0, sortParam: undefined }),
     );
 
     expect(result.current.loading).toBe(true);
@@ -42,7 +42,7 @@ describe("usePlayerStats", () => {
     getPlayerStatsMock.mockResolvedValue({ items: PLAYERS, total: 2 });
 
     const { result } = renderHook(() =>
-      usePlayerStats({ limit: 10, offset: 0, sortParam: "name:asc" }),
+      usePlayerStats({ limit: 10, offset: 0, sortParam: undefined }),
     );
 
     await waitFor(() => {
@@ -58,7 +58,7 @@ describe("usePlayerStats", () => {
     getPlayerStatsMock.mockResolvedValue({ items: PLAYERS, total: 42 });
 
     const { result } = renderHook(() =>
-      usePlayerStats({ limit: 10, offset: 0, sortParam: "name:asc" }),
+      usePlayerStats({ limit: 10, offset: 0, sortParam: undefined }),
     );
 
     await waitFor(() => expect(result.current.loading).toBe(false));
@@ -71,7 +71,7 @@ describe("usePlayerStats", () => {
     getPlayerStatsMock.mockResolvedValue({ items: [], total: 0 });
 
     const { result } = renderHook(() =>
-      usePlayerStats({ limit: 10, offset: 0, sortParam: "name:asc" }),
+      usePlayerStats({ limit: 10, offset: 0, sortParam: undefined }),
     );
 
     await waitFor(() => expect(result.current.loading).toBe(false));
@@ -84,7 +84,7 @@ describe("usePlayerStats", () => {
     getPlayerStatsMock.mockRejectedValue(new Error("Network error"));
 
     const { result } = renderHook(() =>
-      usePlayerStats({ limit: 10, offset: 0, sortParam: "name:asc" }),
+      usePlayerStats({ limit: 10, offset: 0, sortParam: undefined }),
     );
 
     await waitFor(() => expect(result.current.loading).toBe(false));
@@ -98,7 +98,7 @@ describe("usePlayerStats", () => {
     getPlayerStatsMock.mockResolvedValueOnce({ items: PLAYERS, total: 2 });
 
     const { result } = renderHook(() =>
-      usePlayerStats({ limit: 10, offset: 0, sortParam: "name:asc" }),
+      usePlayerStats({ limit: 10, offset: 0, sortParam: undefined }),
     );
 
     await waitFor(() => expect(result.current.error).toBe("Could not load player statistics"));
@@ -125,7 +125,7 @@ describe("usePlayerStats", () => {
     );
 
     const { result } = renderHook(() =>
-      usePlayerStats({ limit: 10, offset: 0, sortParam: "name:asc" }),
+      usePlayerStats({ limit: 10, offset: 0, sortParam: undefined }),
     );
 
     await waitFor(() => expect(result.current.loading).toBe(false));
@@ -158,7 +158,7 @@ describe("usePlayerStats", () => {
 
     const { result, rerender } = renderHook(
       ({ offset }: { offset: number }) =>
-        usePlayerStats({ limit: 10, offset, sortParam: "name:asc" }),
+        usePlayerStats({ limit: 10, offset, sortParam: undefined }),
       { initialProps: { offset: 0 } },
     );
 
@@ -175,8 +175,9 @@ describe("usePlayerStats", () => {
     getPlayerStatsMock.mockResolvedValue({ items: PLAYERS, total: 2 });
 
     const { result, rerender } = renderHook(
-      ({ sortParam }: { sortParam: string }) => usePlayerStats({ limit: 10, offset: 0, sortParam }),
-      { initialProps: { sortParam: "name:asc" } },
+      ({ sortParam }: { sortParam: string | undefined }) =>
+        usePlayerStats({ limit: 10, offset: 0, sortParam }),
+      { initialProps: { sortParam: undefined as string | undefined } },
     );
 
     await waitFor(() => expect(result.current.loading).toBe(false));
@@ -201,7 +202,7 @@ describe("usePlayerStats", () => {
 
     const { result, rerender } = renderHook(
       ({ offset }: { offset: number }) =>
-        usePlayerStats({ limit: 10, offset, sortParam: "name:asc" }),
+        usePlayerStats({ limit: 10, offset, sortParam: undefined }),
       { initialProps: { offset: 0 } },
     );
 
@@ -234,7 +235,7 @@ describe("usePlayerStats", () => {
 
     const { result, rerender } = renderHook(
       ({ offset }: { offset: number }) =>
-        usePlayerStats({ limit: 10, offset, sortParam: "name:asc" }),
+        usePlayerStats({ limit: 10, offset, sortParam: undefined }),
       { initialProps: { offset: 0 } },
     );
 
@@ -258,7 +259,7 @@ describe("usePlayerStats", () => {
     await prefetchInitialPlayerStats();
 
     const { result } = renderHook(() =>
-      usePlayerStats({ limit: 10, offset: 0, sortParam: "name:asc" }),
+      usePlayerStats({ limit: 10, offset: 0, sortParam: undefined }),
     );
 
     expect(result.current.loading).toBe(false);
@@ -273,7 +274,7 @@ describe("usePlayerStats", () => {
     });
 
     const firstRender = renderHook(() =>
-      usePlayerStats({ limit: 10, offset: 0, sortParam: "name:asc" }),
+      usePlayerStats({ limit: 10, offset: 0, sortParam: undefined }),
     );
 
     await waitFor(() => expect(firstRender.result.current.loading).toBe(false));
@@ -283,7 +284,7 @@ describe("usePlayerStats", () => {
     invalidateAuthState();
 
     const secondRender = renderHook(() =>
-      usePlayerStats({ limit: 10, offset: 0, sortParam: "name:asc" }),
+      usePlayerStats({ limit: 10, offset: 0, sortParam: undefined }),
     );
 
     expect(secondRender.result.current.loading).toBe(true);
@@ -320,7 +321,7 @@ describe("usePlayerStats", () => {
     });
 
     const { result } = renderHook(() =>
-      usePlayerStats({ limit: 10, offset: 0, sortParam: "name:asc" }),
+      usePlayerStats({ limit: 10, offset: 0, sortParam: undefined }),
     );
 
     expect(result.current.loading).toBe(true);
@@ -349,7 +350,7 @@ describe("usePlayerStats", () => {
     getPlayerStatsMock.mockReturnValue(new Promise((res) => (resolve = res)));
 
     const { result, unmount } = renderHook(() =>
-      usePlayerStats({ limit: 10, offset: 0, sortParam: "name:asc" }),
+      usePlayerStats({ limit: 10, offset: 0, sortParam: undefined }),
     );
 
     expect(result.current.loading).toBe(true);
