@@ -79,20 +79,25 @@ describe("game api contract adapters", () => {
   });
 
   it("treats finishGame as summary-ready and returns standings DTO", async () => {
-    const summaryResponse = [
-      {
-        playerId: 7,
-        username: "P1",
-        position: 1,
-        roundsPlayed: 8,
-        roundAverage: 57.3,
-      },
-    ];
+    const summaryResponse = {
+      gameId: 42,
+      winnerRoundsPlayed: 8,
+      winnerRoundAverage: 57.3,
+      finishedPlayers: [
+        {
+          playerId: 7,
+          username: "P1",
+          position: 1,
+          roundsPlayed: 8,
+          roundAverage: 57.3,
+        },
+      ],
+    };
     vi.spyOn(apiClient, "post").mockResolvedValueOnce(summaryResponse);
 
     const response = await finishGame(42);
 
-    expect(response).toEqual(summaryResponse);
+    expect(response).toEqual(summaryResponse.finishedPlayers);
   });
 
   it("keeps supporting the legacy full undo response during phased rollout", async () => {

@@ -9,6 +9,7 @@ const useParamsMock = vi.fn(() => ({}));
 const setCurrentGameIdMock = vi.fn();
 const setInvitationMock = vi.fn();
 const setGameDataMock = vi.fn();
+const resetGameStoreMock = vi.fn();
 const appendOptimisticPlayerMock = vi.fn();
 const removeOptimisticPlayerMock = vi.fn();
 
@@ -16,6 +17,7 @@ const gameFlowMock = {
   updatePlayerOrder: vi.fn(),
   leaveRoom: vi.fn(),
   getGameThrows: vi.fn(),
+  getGameSettings: vi.fn(),
   getInvitation: vi.fn(),
   startGame: vi.fn(),
   createRoom: vi.fn(),
@@ -57,6 +59,7 @@ vi.mock("@/store", async (importOriginal) => {
     ...original,
     $gameSettings: { key: "gameSettings" },
     setGameData: (...args: unknown[]) => setGameDataMock(...args),
+    resetGameStore: (...args: unknown[]) => resetGameStoreMock(...args),
     $lastFinishedGameId: { key: "lastFinishedGameId" },
     $invitation: { key: "invitation" },
     $currentGameId: { key: "currentGameId" },
@@ -67,6 +70,7 @@ vi.mock("@/store", async (importOriginal) => {
 
 vi.mock("@/shared/api/game", () => ({
   getGameThrows: (...args: unknown[]) => gameFlowMock.getGameThrows(...args),
+  getGameSettings: (...args: unknown[]) => gameFlowMock.getGameSettings(...args),
   startGame: (...args: unknown[]) => gameFlowMock.startGame(...args),
 }));
 
@@ -112,6 +116,11 @@ describe("useStartPage action guards", () => {
     useParamsMock.mockReturnValue({ id: "10" });
     storeValues.set("invitation", { gameId: 10, invitationLink: "/invite/10" });
     storeValues.set("currentGameId", 10);
+    gameFlowMock.getGameSettings.mockResolvedValueOnce({
+      startScore: 101,
+      doubleOut: true,
+      tripleOut: false,
+    });
 
     const pending = deferred<void>();
     gameFlowMock.startGame.mockReturnValueOnce(pending.promise);
@@ -131,7 +140,15 @@ describe("useStartPage action guards", () => {
       secondCall = result.current.handleStartGame();
     });
 
+    expect(gameFlowMock.getGameSettings).toHaveBeenCalledTimes(1);
     expect(gameFlowMock.startGame).toHaveBeenCalledTimes(1);
+    expect(gameFlowMock.startGame).toHaveBeenCalledWith(10, {
+      startScore: 101,
+      doubleOut: true,
+      tripleOut: false,
+      round: 1,
+      status: "started",
+    });
 
     await act(async () => {
       pending.resolve();
@@ -139,6 +156,40 @@ describe("useStartPage action guards", () => {
       await secondCall;
     });
 
+    expect(navigateMock).toHaveBeenCalledWith("/game/10");
+  });
+
+  it("starts with canonical room settings and clears stale game state before navigation", async () => {
+    useParamsMock.mockReturnValue({ id: "10" });
+    storeValues.set("gameSettings", { startScore: 301, doubleOut: false, tripleOut: false });
+    storeValues.set("invitation", { gameId: 10, invitationLink: "/invite/10" });
+    storeValues.set("currentGameId", 10);
+    gameFlowMock.getGameSettings.mockResolvedValueOnce({
+      startScore: 101,
+      doubleOut: false,
+      tripleOut: false,
+    });
+    gameFlowMock.startGame.mockResolvedValueOnce(undefined);
+
+    vi.stubGlobal("Audio", function MockAudio(this: { volume: number; play: () => Promise<void> }) {
+      this.volume = 1;
+      this.play = vi.fn().mockResolvedValue(undefined);
+    } as unknown as typeof Audio);
+
+    const { result } = renderHook(() => useStartPage());
+
+    await act(async () => {
+      await result.current.handleStartGame();
+    });
+
+    expect(gameFlowMock.startGame).toHaveBeenCalledWith(10, {
+      startScore: 101,
+      doubleOut: false,
+      tripleOut: false,
+      round: 1,
+      status: "started",
+    });
+    expect(resetGameStoreMock).toHaveBeenCalledTimes(1);
     expect(navigateMock).toHaveBeenCalledWith("/game/10");
   });
 
@@ -203,6 +254,36 @@ describe("useStartPage action guards", () => {
     expect(result.current.guestError).toBe("Username already taken in this game.");
     expect(result.current.guestSuggestions).toEqual(["Alex2", "Alex3"]);
     expect(result.current.isGuestOverlayOpen).toBe(true);
+  });
+
+  it("falls back to a generic guest error when the 409 payload shape is invalid", async () => {
+    useParamsMock.mockReturnValue({ id: "10" });
+    storeValues.set("invitation", { gameId: 10, invitationLink: "/invite/10" });
+    storeValues.set("currentGameId", 10);
+    gameFlowMock.addGuestPlayer.mockRejectedValueOnce(
+      new ApiError("Request failed", {
+        status: 409,
+        data: {
+          success: false,
+          error: "USERNAME_TAKEN",
+          suggestions: ["Alex2", 3],
+        },
+      }),
+    );
+
+    const { result } = renderHook(() => useStartPage());
+
+    await act(async () => {
+      result.current.openGuestOverlay();
+      result.current.setGuestUsername("Alex");
+    });
+
+    await act(async () => {
+      await result.current.handleAddGuest();
+    });
+
+    expect(result.current.guestError).toBe("Could not add guest. Please try again.");
+    expect(result.current.guestSuggestions).toEqual([]);
   });
 
   it("prevents duplicate addGuest calls while first request is pending", async () => {

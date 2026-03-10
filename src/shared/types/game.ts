@@ -109,9 +109,9 @@ export type WinnerPlayerProps = {
 export type FinishedGameProps = {
   id: number;
   winnerRounds: number;
-  winnerName: string;
+  winnerName: string | null;
   playersCount: number;
-  date: string;
+  date: string | null;
 };
 
 export type GameDataProps = {

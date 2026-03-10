@@ -7,7 +7,7 @@ import type { PlayerProps } from "@/types";
 type UsePlayerStatsParams = {
   limit: number;
   offset: number;
-  sortParam: string;
+  sortParam: string | undefined;
 };
 
 type UsePlayerStatsResult = {
@@ -32,7 +32,7 @@ type PlayerStatsRequestResult = PlayerStatsCacheEntry & {
 export const INITIAL_PLAYER_STATS_QUERY: Readonly<PlayerStatsQuery> = {
   limit: 10,
   offset: 0,
-  sortParam: "name:asc",
+  sortParam: undefined,
 };
 
 const playerStatsCache = new Map<string, PlayerStatsCacheEntry>();
@@ -40,7 +40,7 @@ const playerStatsPrefetches = new Map<string, Promise<PlayerStatsRequestResult>>
 let playerStatsCacheGeneration = 0;
 
 function getPlayerStatsQueryKey({ limit, offset, sortParam }: PlayerStatsQuery): string {
-  return `${limit}:${offset}:${sortParam}`;
+  return `${limit}:${offset}:${sortParam ?? ""}`;
 }
 
 function cachePlayerStats(queryKey: string, entry: PlayerStatsCacheEntry): PlayerStatsCacheEntry {

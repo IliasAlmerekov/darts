@@ -182,6 +182,21 @@ describe("GamesOverviewPage", () => {
     expect(screen.getByText("12")).toBeTruthy(); // winnerRounds
   });
 
+  it("renders swagger-compatible fallbacks when winner name or date are missing", () => {
+    useGamesOverviewMock.mockReturnValue({
+      loading: false,
+      error: null,
+      games: [{ id: 3, winnerRounds: 4, winnerName: null, playersCount: 2, date: null }],
+      total: 1,
+      retry: vi.fn(),
+    });
+
+    renderPage();
+
+    expect(screen.getByText("Unknown")).toBeTruthy();
+    expect(screen.getByText("Unknown date")).toBeTruthy();
+  });
+
   it("should render detail link for each game card", () => {
     useGamesOverviewMock.mockReturnValue({
       loading: false,
