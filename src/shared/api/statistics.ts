@@ -125,27 +125,34 @@ function normalizePlayerStatsItem(data: unknown) {
   };
 }
 
-function isFinishedGameItem(data: unknown): boolean {
-  return (
-    isRecord(data) &&
-    isFiniteNumber(data.id) &&
-    isFiniteNumber(data.winnerRounds) &&
-    typeof data.winnerName === "string" &&
-    isFiniteNumber(data.playersCount) &&
-    typeof data.date === "string"
-  );
-}
+function normalizeFinishedGameItem(data: unknown) {
+  if (!isRecord(data)) {
+    return null;
+  }
 
-function isPaginatedResponse(
-  data: unknown,
-  itemGuard: (item: unknown) => boolean,
-): data is { items: unknown[]; total: number } {
-  return (
-    isRecord(data) &&
-    Array.isArray(data.items) &&
-    data.items.every(itemGuard) &&
-    isFiniteNumber(data.total)
-  );
+  const id = parseFiniteNumber(data.id);
+  const winnerRounds = parseFiniteNumber(data.winnerRounds);
+  const winnerName = parseString(data.winnerName);
+  const playersCount = parseFiniteNumber(data.playersCount);
+  const date = parseString(data.date);
+
+  if (
+    id === null ||
+    winnerRounds === null ||
+    winnerName === null ||
+    playersCount === null ||
+    date === null
+  ) {
+    return null;
+  }
+
+  return {
+    id,
+    winnerRounds,
+    winnerName,
+    playersCount,
+    date,
+  };
 }
 
 function normalizePlayerDataResponse(data: unknown): PlayerDataProps | null {
@@ -182,11 +189,38 @@ function normalizePlayerDataResponse(data: unknown): PlayerDataProps | null {
   return normalized;
 }
 
-function isGameDataResponse(data: unknown): data is GameDataProps {
-  return (
-    isPaginatedResponse(data, isFinishedGameItem) ||
-    (Array.isArray(data) && data.every(isFinishedGameItem))
-  );
+function normalizeGamesOverviewResponse(data: unknown): GameDataProps | null {
+  if (Array.isArray(data)) {
+    const items = data
+      .map((item) => normalizeFinishedGameItem(item))
+      .filter((item): item is NonNullable<typeof item> => item !== null);
+
+    return items.length === data.length ? { items, total: items.length } : null;
+  }
+
+  if (!isRecord(data) || !Array.isArray(data.items)) {
+    return null;
+  }
+
+  const total = parseFiniteNumber(data.total);
+  if (total === null) {
+    return null;
+  }
+
+  const items = data.items
+    .map((item) => normalizeFinishedGameItem(item))
+    .filter((item): item is NonNullable<typeof item> => item !== null);
+
+  if (items.length !== data.items.length) {
+    return null;
+  }
+
+  const normalized: NormalizedPaginatedResponse<(typeof items)[number]> = {
+    items,
+    total,
+  };
+
+  return normalized;
 }
 
 // ---------------------------------------------------------------------------
@@ -225,8 +259,9 @@ export async function getGamesOverview(
     query: { limit, offset },
     signal,
   });
-  if (!isGameDataResponse(data)) {
+  const normalized = normalizeGamesOverviewResponse(data);
+  if (normalized === null) {
     throw new ApiError("Unexpected response shape for games overview", { status: 200, data });
   }
-  return data;
+  return normalized;
 }

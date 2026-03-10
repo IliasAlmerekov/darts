@@ -39,8 +39,8 @@ export type PlayerProps = {
 };
 
 export type PlayerDataProps = {
-  items?: PlayerProps[];
-  total?: number;
+  items: PlayerProps[];
+  total: number;
 };
 
 export type UserProps = {

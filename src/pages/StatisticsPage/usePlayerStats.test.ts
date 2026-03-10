@@ -60,8 +60,8 @@ describe("usePlayerStats", () => {
     expect(result.current.stats.at(0)?.name).toBe("Alice");
   });
 
-  it("should fall back to array length as total when API returns plain array", async () => {
-    getPlayerStatsMock.mockResolvedValue(PLAYERS);
+  it("should expose empty stats when API returns empty items array", async () => {
+    getPlayerStatsMock.mockResolvedValue({ items: [], total: 0 });
 
     const { result } = renderHook(() =>
       usePlayerStats({ limit: 10, offset: 0, sortParam: "name:asc" }),
@@ -69,8 +69,8 @@ describe("usePlayerStats", () => {
 
     await waitFor(() => expect(result.current.loading).toBe(false));
 
-    expect(result.current.total).toBe(2);
-    expect(result.current.stats).toHaveLength(2);
+    expect(result.current.total).toBe(0);
+    expect(result.current.stats).toEqual([]);
   });
 
   it("should set error message and stop loading when API rejects", async () => {

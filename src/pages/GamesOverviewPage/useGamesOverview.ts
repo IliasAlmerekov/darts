@@ -36,16 +36,11 @@ export function useGamesOverview({
     setError(null);
 
     getGamesOverview(limit, offset, controller.signal)
-      .then((data) => {
+      .then(({ items, total }) => {
         if (controller.signal.aborted) return;
 
-        if (data.items) {
-          setGames(data.items);
-          setTotal(data.total ?? 0);
-        } else if (Array.isArray(data)) {
-          setGames(data as FinishedGameProps[]);
-          setTotal((data as FinishedGameProps[]).length);
-        }
+        setGames(items);
+        setTotal(total);
         setLoading(false);
       })
       .catch((err: unknown) => {
