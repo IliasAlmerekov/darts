@@ -99,6 +99,22 @@ describe("StatisticsPage", () => {
     expect(screen.getByText("Bob")).toBeTruthy();
   });
 
+  it("should keep rendering the current player list while the next query is loading", () => {
+    usePlayerStatsMock.mockReturnValue({
+      loading: true,
+      error: null,
+      stats: PLAYERS,
+      total: 20,
+      retry: vi.fn(),
+    });
+
+    renderPage();
+
+    expect(screen.getByRole("status")).toBeTruthy();
+    expect(screen.getByText("Alice")).toBeTruthy();
+    expect(screen.getByText("Bob")).toBeTruthy();
+  });
+
   it("should render error message when hook reports a failure", () => {
     usePlayerStatsMock.mockReturnValue({
       loading: false,

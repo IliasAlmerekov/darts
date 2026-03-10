@@ -1,7 +1,12 @@
 // @vitest-environment jsdom
 import { renderHook, waitFor, act } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { usePlayerStats } from "./usePlayerStats";
+import type { PlayerProps } from "@/types";
+import {
+  clearPlayerStatsCache,
+  prefetchInitialPlayerStats,
+  usePlayerStats,
+} from "./usePlayerStats";
 
 const getPlayerStatsMock = vi.fn();
 
@@ -17,6 +22,7 @@ const PLAYERS = [
 describe("usePlayerStats", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    clearPlayerStatsCache();
   });
 
   it("should start with loading true and no data", () => {
@@ -139,6 +145,84 @@ describe("usePlayerStats", () => {
 
     await waitFor(() => expect(result.current.loading).toBe(false));
     expect(getPlayerStatsMock).toHaveBeenCalledTimes(2);
+  });
+
+  it("keeps previous data while the next uncached page is loading", async () => {
+    let resolveNextPage: ((value: { items: PlayerProps[]; total: number }) => void) | undefined;
+
+    getPlayerStatsMock.mockResolvedValueOnce({ items: PLAYERS, total: 20 });
+    getPlayerStatsMock.mockImplementationOnce(
+      () =>
+        new Promise<{ items: PlayerProps[]; total: number }>((resolve) => {
+          resolveNextPage = resolve;
+        }),
+    );
+
+    const { result, rerender } = renderHook(
+      ({ offset }: { offset: number }) =>
+        usePlayerStats({ limit: 10, offset, sortParam: "name:asc" }),
+      { initialProps: { offset: 0 } },
+    );
+
+    await waitFor(() => expect(result.current.loading).toBe(false));
+
+    rerender({ offset: 10 });
+
+    expect(result.current.loading).toBe(true);
+    expect(result.current.stats).toEqual(PLAYERS);
+    expect(result.current.total).toBe(20);
+
+    act(() => {
+      resolveNextPage?.({
+        items: [{ id: 3, playerId: 3, name: "Carol", scoreAverage: 62.1, gamesPlayed: 8 }],
+        total: 20,
+      });
+    });
+
+    await waitFor(() => expect(result.current.loading).toBe(false));
+    expect(result.current.stats).toEqual([
+      { id: 3, playerId: 3, name: "Carol", scoreAverage: 62.1, gamesPlayed: 8 },
+    ]);
+  });
+
+  it("reuses cached data when returning to a previously loaded query", async () => {
+    getPlayerStatsMock.mockResolvedValueOnce({ items: PLAYERS, total: 20 }).mockResolvedValueOnce({
+      items: [{ id: 3, playerId: 3, name: "Carol", scoreAverage: 62.1, gamesPlayed: 8 }],
+      total: 20,
+    });
+
+    const { result, rerender } = renderHook(
+      ({ offset }: { offset: number }) =>
+        usePlayerStats({ limit: 10, offset, sortParam: "name:asc" }),
+      { initialProps: { offset: 0 } },
+    );
+
+    await waitFor(() => expect(result.current.loading).toBe(false));
+
+    rerender({ offset: 10 });
+
+    await waitFor(() => expect(result.current.loading).toBe(false));
+    expect(result.current.stats.at(0)?.name).toBe("Carol");
+
+    rerender({ offset: 0 });
+
+    await waitFor(() => expect(result.current.loading).toBe(false));
+    expect(result.current.stats).toEqual(PLAYERS);
+    expect(getPlayerStatsMock).toHaveBeenCalledTimes(2);
+  });
+
+  it("uses prefetched initial statistics without issuing a second request on mount", async () => {
+    getPlayerStatsMock.mockResolvedValue({ items: PLAYERS, total: 2 });
+
+    await prefetchInitialPlayerStats();
+
+    const { result } = renderHook(() =>
+      usePlayerStats({ limit: 10, offset: 0, sortParam: "name:asc" }),
+    );
+
+    expect(result.current.loading).toBe(false);
+    expect(result.current.stats).toEqual(PLAYERS);
+    expect(getPlayerStatsMock).toHaveBeenCalledTimes(1);
   });
 
   it("should pass limit, offset and sortParam to the API call", async () => {
