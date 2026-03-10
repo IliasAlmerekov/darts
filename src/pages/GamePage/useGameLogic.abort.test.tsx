@@ -12,6 +12,8 @@ const useGameSoundsMock = vi.fn();
 const useWakeLockMock = vi.fn();
 const finishGameMock = vi.fn();
 const resetGameStateVersionMock = vi.fn();
+const setLastFinishedGameIdMock = vi.fn();
+const setLastFinishedGameSummaryMock = vi.fn();
 const updateGameSettingsMock = vi.fn();
 const useGameSettingsFlowMock = vi.fn();
 const useGameExitFlowMock = vi.fn();
@@ -70,6 +72,8 @@ vi.mock("@/shared/api/game", () => ({
 vi.mock("@/store", () => ({
   setInvitation: vi.fn(),
   resetRoomStore: vi.fn(),
+  setLastFinishedGameId: (...args: unknown[]) => setLastFinishedGameIdMock(...args),
+  setLastFinishedGameSummary: (...args: unknown[]) => setLastFinishedGameSummaryMock(...args),
 }));
 
 vi.mock("@/lib/soundPlayer", () => ({
@@ -171,6 +175,39 @@ function setDefaultMocks(gameData: GameThrowsResponse | null): void {
 describe("useGameLogic auto-finish abort handling", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+  });
+
+  it("navigates to summary with finish payload and caches it after auto-finish", async () => {
+    const summaryPayload = [
+      {
+        playerId: 2,
+        username: "Winner",
+        position: 1,
+        roundsPlayed: 3,
+        roundAverage: 55.5,
+      },
+    ];
+
+    setDefaultMocks(buildAutoFinishGameData());
+    finishGameMock.mockResolvedValue(summaryPayload);
+
+    renderHook(() => useGameLogic());
+
+    await waitFor(() => {
+      expect(navigateMock).toHaveBeenCalledWith("/summary/1", {
+        state: {
+          finishedGameId: 1,
+          summary: summaryPayload,
+        },
+      });
+    });
+
+    expect(setLastFinishedGameIdMock).toHaveBeenCalledWith(1);
+    expect(setLastFinishedGameSummaryMock).toHaveBeenCalledWith({
+      gameId: 1,
+      summary: summaryPayload,
+    });
+    expect(resetGameStateVersionMock).toHaveBeenCalledWith(1);
   });
 
   it("passes AbortSignal to finishGame and aborts it on unmount", async () => {

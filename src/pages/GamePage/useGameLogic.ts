@@ -122,7 +122,7 @@ export function useGameLogic(): UseGameLogicResult {
   useAutoFinishGame({
     gameData,
     gameId,
-    refetch,
+    navigate,
     setPageError,
     shouldShowFinishOverlay,
   });

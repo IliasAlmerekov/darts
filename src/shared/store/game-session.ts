@@ -1,9 +1,15 @@
 import { atom } from "nanostores";
 import { clientLogger } from "@/shared/lib/clientLogger";
+import type { GameSummaryResponse } from "@/types";
 
 export interface Invitation {
   gameId: number;
   invitationLink: string;
+}
+
+export interface FinishedGameSummarySnapshot {
+  gameId: number;
+  summary: GameSummaryResponse;
 }
 
 const STORAGE_KEY = "darts_current_game_id";
@@ -111,6 +117,7 @@ function setStoredInvitation(invitation: Invitation | null): void {
 export const $currentGameId = atom<number | null>(getStoredGameId());
 export const $invitation = atom<Invitation | null>(getStoredInvitation());
 export const $lastFinishedGameId = atom<number | null>(null);
+export const $lastFinishedGameSummary = atom<FinishedGameSummarySnapshot | null>(null);
 
 /**
  * Sets the current game id and persists it in session storage.
@@ -148,6 +155,13 @@ export function setInvitation(invitation: Invitation | null): void {
  */
 export function setLastFinishedGameId(gameId: number | null): void {
   $lastFinishedGameId.set(gameId);
+}
+
+/**
+ * Stores the latest finished game summary for the current SPA navigation flow.
+ */
+export function setLastFinishedGameSummary(snapshot: FinishedGameSummarySnapshot | null): void {
+  $lastFinishedGameSummary.set(snapshot);
 }
 
 /**

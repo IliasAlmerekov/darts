@@ -12,12 +12,23 @@ const undoLastThrowMock = vi.fn();
 const setGameDataMock = vi.fn();
 const setInvitationMock = vi.fn();
 const setLastFinishedGameIdMock = vi.fn();
+const setLastFinishedGameSummaryMock = vi.fn();
 const resetRoomStoreMock = vi.fn();
 const getGameSettingsMock = vi.fn();
 
 // Mutable state for router/store — allows per-test overrides without vi.doMock
-let locationState: { finishedGameId?: number } | null = { finishedGameId: 42 };
+let locationState: { finishedGameId?: number; summary?: unknown } | null = { finishedGameId: 42 };
 let routeParams: { id?: string | undefined } = { id: "42" };
+let lastFinishedGameSummaryStore: {
+  gameId: number;
+  summary: Array<{
+    playerId: number;
+    username: string;
+    position: number;
+    roundsPlayed: number;
+    roundAverage: number;
+  }>;
+} | null = null;
 let storeGameSettings: { startScore: number; doubleOut: boolean; tripleOut: boolean } | null = {
   startScore: 301,
   doubleOut: false,
@@ -43,9 +54,13 @@ vi.mock("@/store", async (importOriginal) => {
   return {
     ...original,
     $gameSettings: { key: "gameSettings" },
+    $lastFinishedGameSummary: {
+      get: () => lastFinishedGameSummaryStore,
+    },
     setGameData: (...args: unknown[]) => setGameDataMock(...args),
     setInvitation: (...args: unknown[]) => setInvitationMock(...args),
     setLastFinishedGameId: (...args: unknown[]) => setLastFinishedGameIdMock(...args),
+    setLastFinishedGameSummary: (...args: unknown[]) => setLastFinishedGameSummaryMock(...args),
     resetRoomStore: (...args: unknown[]) => resetRoomStoreMock(...args),
   };
 });
@@ -64,11 +79,13 @@ describe("useGameSummaryPage", () => {
     setGameDataMock.mockReset();
     setInvitationMock.mockReset();
     setLastFinishedGameIdMock.mockReset();
+    setLastFinishedGameSummaryMock.mockReset();
     resetRoomStoreMock.mockReset();
 
     // Reset mutable router/store state to defaults before each test
     locationState = { finishedGameId: 42 };
     routeParams = { id: "42" };
+    lastFinishedGameSummaryStore = null;
     storeGameSettings = { startScore: 301, doubleOut: false, tripleOut: false };
 
     getFinishedGameMock.mockResolvedValue([]);
@@ -301,6 +318,66 @@ describe("useGameSummaryPage", () => {
     expect(result.current.handleUndo).toBe(initialHandleUndo);
     expect(result.current.handlePlayAgain).toBe(initialHandlePlayAgain);
     expect(result.current.handleBackToStart).toBe(initialHandleBackToStart);
+  });
+
+  it("uses summary from navigation state without refetching finished game", () => {
+    locationState = {
+      finishedGameId: 42,
+      summary: [
+        {
+          playerId: 1,
+          username: "Alice",
+          position: 1,
+          roundsPlayed: 5,
+          roundAverage: 60.2,
+        },
+      ],
+    };
+
+    const { result } = renderHook(() => useGameSummaryPage());
+
+    expect(getFinishedGameMock).not.toHaveBeenCalled();
+    expect(result.current.newList).toEqual([
+      expect.objectContaining({
+        id: 1,
+        name: "Alice",
+        scoreAverage: 60.2,
+        roundCount: 5,
+      }),
+    ]);
+    expect(setLastFinishedGameSummaryMock).toHaveBeenCalledWith({
+      gameId: 42,
+      summary: locationState.summary,
+    });
+  });
+
+  it("uses summary from store without refetching finished game", () => {
+    locationState = { finishedGameId: 42 };
+    lastFinishedGameSummaryStore = {
+      gameId: 42,
+      summary: [
+        {
+          playerId: 2,
+          username: "Bob",
+          position: 1,
+          roundsPlayed: 4,
+          roundAverage: 45.5,
+        },
+      ],
+    };
+
+    const { result } = renderHook(() => useGameSummaryPage());
+
+    expect(getFinishedGameMock).not.toHaveBeenCalled();
+    expect(result.current.newList).toEqual([
+      expect.objectContaining({
+        id: 2,
+        name: "Bob",
+        scoreAverage: 45.5,
+        roundCount: 4,
+      }),
+    ]);
+    expect(setLastFinishedGameSummaryMock).toHaveBeenCalledWith(lastFinishedGameSummaryStore);
   });
 
   // ---------------------------------------------------------------------------

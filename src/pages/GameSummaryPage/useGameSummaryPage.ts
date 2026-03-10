@@ -7,12 +7,46 @@ import {
   startGame,
   undoLastThrow,
 } from "@/shared/api/game";
-import type { FinishedPlayerResponse, WinnerPlayerProps } from "@/types";
-import { setGameData } from "@/store";
-import { setInvitation, setLastFinishedGameId, resetRoomStore } from "@/store";
+import type { FinishedPlayerResponse, GameSummaryResponse, WinnerPlayerProps } from "@/types";
+import {
+  $lastFinishedGameSummary,
+  setGameData,
+  setInvitation,
+  setLastFinishedGameId,
+  setLastFinishedGameSummary,
+  resetRoomStore,
+} from "@/store";
 import { playSound } from "@/lib/soundPlayer";
 import { toUserErrorMessage } from "@/lib/error-to-user-message";
 import { ROUTES } from "@/lib/routes";
+
+interface SummaryLocationState {
+  finishedGameId?: number;
+  summary?: unknown;
+}
+
+function isFinishedPlayerResponse(value: unknown): value is FinishedPlayerResponse {
+  if (null === value || "object" !== typeof value) {
+    return false;
+  }
+
+  const player = value as Partial<FinishedPlayerResponse>;
+  return (
+    "number" === typeof player.playerId &&
+    Number.isFinite(player.playerId) &&
+    "string" === typeof player.username &&
+    "number" === typeof player.position &&
+    Number.isFinite(player.position) &&
+    "number" === typeof player.roundsPlayed &&
+    Number.isFinite(player.roundsPlayed) &&
+    "number" === typeof player.roundAverage &&
+    Number.isFinite(player.roundAverage)
+  );
+}
+
+function isGameSummaryResponse(value: unknown): value is GameSummaryResponse {
+  return Array.isArray(value) && value.every(isFinishedPlayerResponse);
+}
 
 /**
  * Loads summary data for a finished game and provides rematch actions.
@@ -27,7 +61,7 @@ export function useGameSummaryPage() {
   const startGameInFlightRef = useRef<boolean>(false);
 
   const finishedGameIdFromRoute = useMemo(() => {
-    const stateGameId = (location.state as { finishedGameId?: number } | null)?.finishedGameId;
+    const stateGameId = (location.state as SummaryLocationState | null)?.finishedGameId;
     if ("number" === typeof stateGameId) {
       return stateGameId;
     }
@@ -40,6 +74,22 @@ export function useGameSummaryPage() {
     return Number.isFinite(parsedParam) ? parsedParam : null;
   }, [location.state, summaryGameIdParam]);
 
+  const summaryFromNavigationState = useMemo(() => {
+    const stateSummary = (location.state as SummaryLocationState | null)?.summary;
+    return isGameSummaryResponse(stateSummary) ? stateSummary : null;
+  }, [location.state]);
+
+  const summaryFromStore = useMemo(() => {
+    const cachedSummary = $lastFinishedGameSummary.get();
+    if (!cachedSummary || cachedSummary.gameId !== finishedGameIdFromRoute) {
+      return null;
+    }
+
+    return cachedSummary.summary;
+  }, [finishedGameIdFromRoute]);
+
+  const finishedSummary = summaryFromNavigationState ?? summaryFromStore ?? serverFinished;
+
   const loadSummary = useCallback(async (): Promise<void> => {
     if (!finishedGameIdFromRoute) return;
 
@@ -48,6 +98,7 @@ export function useGameSummaryPage() {
       const data = await getFinishedGame(finishedGameIdFromRoute);
       setServerFinished(data);
       setLastFinishedGameId(finishedGameIdFromRoute);
+      setLastFinishedGameSummary({ gameId: finishedGameIdFromRoute, summary: data });
     } catch (err: unknown) {
       console.error("Failed to fetch finished game:", err);
       setError(toUserErrorMessage(err, "Could not load finished game data."));
@@ -55,12 +106,26 @@ export function useGameSummaryPage() {
   }, [finishedGameIdFromRoute]);
 
   useEffect(() => {
+    if (!finishedGameIdFromRoute) {
+      return;
+    }
+
+    if (summaryFromNavigationState ?? summaryFromStore) {
+      setError(null);
+      setLastFinishedGameId(finishedGameIdFromRoute);
+      setLastFinishedGameSummary({
+        gameId: finishedGameIdFromRoute,
+        summary: summaryFromNavigationState ?? summaryFromStore ?? [],
+      });
+      return;
+    }
+
     void loadSummary();
-  }, [loadSummary]);
+  }, [finishedGameIdFromRoute, loadSummary, summaryFromNavigationState, summaryFromStore]);
 
   const newList: WinnerPlayerProps[] = useMemo(() => {
-    if (serverFinished.length > 0) {
-      return serverFinished.map((player) => {
+    if (finishedSummary.length > 0) {
+      return finishedSummary.map((player) => {
         const roundsPlayed = Math.max(player.roundsPlayed ?? 0, 1);
         return {
           id: player.playerId,
@@ -79,7 +144,7 @@ export function useGameSummaryPage() {
       });
     }
     return [];
-  }, [serverFinished]);
+  }, [finishedSummary]);
 
   const podiumList = newList.slice(0, 3);
   const leaderBoardList = newList.slice(3, newList.length);
