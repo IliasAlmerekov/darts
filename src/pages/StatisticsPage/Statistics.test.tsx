@@ -99,6 +99,22 @@ describe("StatisticsPage", () => {
     expect(screen.getByText("Bob")).toBeTruthy();
   });
 
+  it("should keep rendering the current player list while the next query is loading", () => {
+    usePlayerStatsMock.mockReturnValue({
+      loading: true,
+      error: null,
+      stats: PLAYERS,
+      total: 20,
+      retry: vi.fn(),
+    });
+
+    renderPage();
+
+    expect(screen.getByRole("status")).toBeTruthy();
+    expect(screen.getByText("Alice")).toBeTruthy();
+    expect(screen.getByText("Bob")).toBeTruthy();
+  });
+
   it("should render error message when hook reports a failure", () => {
     usePlayerStatsMock.mockReturnValue({
       loading: false,
@@ -185,6 +201,48 @@ describe("StatisticsPage", () => {
     renderPage();
 
     // Page 1 of 3 (25 items, limit=10)
+    expect(screen.getByText(/page 1 of/i)).toBeTruthy();
+  });
+
+  it("should update pagination state when moving between pages", () => {
+    usePlayerStatsMock.mockImplementation(({ offset }: { offset: number }) => ({
+      loading: false,
+      error: null,
+      stats:
+        offset === 0
+          ? PLAYERS
+          : [{ id: 3, playerId: 3, name: "Carol", scoreAverage: 62.1, gamesPlayed: 8 }],
+      total: 25,
+      retry: vi.fn(),
+    }));
+
+    renderPage();
+
+    expect(usePlayerStatsMock).toHaveBeenLastCalledWith({
+      limit: 10,
+      offset: 0,
+      sortParam: "name:asc",
+    });
+    expect(screen.getByText("Alice")).toBeTruthy();
+
+    fireEvent.click(screen.getByRole("button", { name: /next/i }));
+
+    expect(usePlayerStatsMock).toHaveBeenLastCalledWith({
+      limit: 10,
+      offset: 10,
+      sortParam: "name:asc",
+    });
+    expect(screen.getByText("Carol")).toBeTruthy();
+    expect(screen.getByText(/page 2 of/i)).toBeTruthy();
+
+    fireEvent.click(screen.getByRole("button", { name: /previous/i }));
+
+    expect(usePlayerStatsMock).toHaveBeenLastCalledWith({
+      limit: 10,
+      offset: 0,
+      sortParam: "name:asc",
+    });
+    expect(screen.getByText("Alice")).toBeTruthy();
     expect(screen.getByText(/page 1 of/i)).toBeTruthy();
   });
 

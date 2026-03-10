@@ -108,7 +108,7 @@ export default function StatisticsPage(): JSX.Element {
           <div className={styles.statusMessage}>No player statistics available.</div>
         )}
 
-        {!loading && error === null && sorted.length > 0 && (
+        {error === null && sorted.length > 0 && (
           <div className={styles.playerList}>
             {sorted.map((player, index) => (
               <div key={player.playerId} className={styles.playerRow}>

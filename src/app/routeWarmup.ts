@@ -30,13 +30,10 @@ export function warmUpSelectiveRoutes(
   });
 }
 
-export function scheduleSelectiveRouteWarmUp(
-  scheduler: WarmUpScheduler = window,
-  warmUp: () => void = warmUpSelectiveRoutes,
-): () => void {
+function scheduleIdleTask(scheduler: WarmUpScheduler = window, task: () => void): () => void {
   if (scheduler.requestIdleCallback && scheduler.cancelIdleCallback) {
     const idleCallbackId = scheduler.requestIdleCallback(() => {
-      warmUp();
+      task();
     });
 
     return () => {
@@ -45,10 +42,31 @@ export function scheduleSelectiveRouteWarmUp(
   }
 
   const timeoutId = scheduler.setTimeout(() => {
-    warmUp();
+    task();
   }, 300);
 
   return () => {
     scheduler.clearTimeout(timeoutId);
   };
+}
+
+export function scheduleSelectiveRouteWarmUp(
+  scheduler: WarmUpScheduler = window,
+  warmUp: () => void = warmUpSelectiveRoutes,
+): () => void {
+  return scheduleIdleTask(scheduler, warmUp);
+}
+
+export async function prefetchStatisticsPageData(): Promise<void> {
+  const { prefetchInitialPlayerStats } = await import("@/pages/StatisticsPage/usePlayerStats");
+  await prefetchInitialPlayerStats();
+}
+
+export function scheduleStatisticsPrefetch(
+  scheduler: WarmUpScheduler = window,
+  prefetch: () => Promise<void> | void = prefetchStatisticsPageData,
+): () => void {
+  return scheduleIdleTask(scheduler, () => {
+    void prefetch();
+  });
 }
