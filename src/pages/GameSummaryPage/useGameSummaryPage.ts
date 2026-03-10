@@ -31,6 +31,23 @@ import { applyOptimisticUndo } from "@/shared/lib/applyOptimisticUndo";
 
 interface SummaryLocationState {
   finishedGameId?: number;
+  summary?: FinishedPlayerResponse[];
+}
+
+function isFinishedPlayerResponseArray(value: unknown): value is FinishedPlayerResponse[] {
+  return (
+    Array.isArray(value) &&
+    value.every(
+      (item) =>
+        item !== null &&
+        typeof item === "object" &&
+        typeof item.playerId === "number" &&
+        typeof item.username === "string" &&
+        typeof item.position === "number" &&
+        typeof item.roundsPlayed === "number" &&
+        typeof item.roundAverage === "number",
+    )
+  );
 }
 
 function isUndoAckResponse(
@@ -65,6 +82,15 @@ export function useGameSummaryPage() {
     return Number.isFinite(parsedParam) ? parsedParam : null;
   }, [location.state, summaryGameIdParam]);
 
+  const summaryFromNavigationState = useMemo(() => {
+    const locationState = location.state as SummaryLocationState | null;
+    if (!locationState || locationState.finishedGameId !== finishedGameIdFromRoute) {
+      return null;
+    }
+
+    return isFinishedPlayerResponseArray(locationState.summary) ? locationState.summary : null;
+  }, [finishedGameIdFromRoute, location.state]);
+
   const summaryFromStore = useMemo(() => {
     const cachedSummary = $lastFinishedGameSummary.get();
     if (!cachedSummary || cachedSummary.gameId !== finishedGameIdFromRoute) {
@@ -74,7 +100,7 @@ export function useGameSummaryPage() {
     return cachedSummary.summary;
   }, [finishedGameIdFromRoute]);
 
-  const finishedSummary = summaryFromStore ?? serverFinished;
+  const finishedSummary = summaryFromNavigationState ?? summaryFromStore ?? serverFinished;
 
   const loadSummary = useCallback(async (): Promise<void> => {
     if (!finishedGameIdFromRoute) return;
@@ -96,6 +122,16 @@ export function useGameSummaryPage() {
       return;
     }
 
+    if (summaryFromNavigationState) {
+      setError(null);
+      setLastFinishedGameId(finishedGameIdFromRoute);
+      setLastFinishedGameSummary({
+        gameId: finishedGameIdFromRoute,
+        summary: summaryFromNavigationState,
+      });
+      return;
+    }
+
     if (summaryFromStore) {
       setError(null);
       setLastFinishedGameId(finishedGameIdFromRoute);
@@ -103,7 +139,7 @@ export function useGameSummaryPage() {
     }
 
     void loadSummary();
-  }, [finishedGameIdFromRoute, loadSummary, summaryFromStore]);
+  }, [finishedGameIdFromRoute, loadSummary, summaryFromNavigationState, summaryFromStore]);
 
   const newList: WinnerPlayerProps[] = useMemo(() => {
     if (finishedSummary.length > 0) {

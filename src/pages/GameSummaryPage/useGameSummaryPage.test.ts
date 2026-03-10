@@ -567,7 +567,7 @@ describe("useGameSummaryPage", () => {
     expect(result.current.handleBackToStart).toBe(initialHandleBackToStart);
   });
 
-  it("ignores summary from navigation state and refetches finished game", async () => {
+  it("uses summary from navigation state without refetching finished game", async () => {
     locationState = {
       finishedGameId: 42,
       summary: [
@@ -580,6 +580,66 @@ describe("useGameSummaryPage", () => {
         },
       ],
     };
+
+    const { result } = renderHook(() => useGameSummaryPage());
+
+    expect(getFinishedGameMock).not.toHaveBeenCalled();
+    expect(result.current.newList).toEqual([
+      expect.objectContaining({
+        id: 1,
+        name: "Alice",
+        scoreAverage: 60.2,
+        roundCount: 5,
+      }),
+    ]);
+    expect(setLastFinishedGameSummaryMock).toHaveBeenCalledWith({
+      gameId: 42,
+      summary: [
+        {
+          playerId: 1,
+          username: "Alice",
+          position: 1,
+          roundsPlayed: 5,
+          roundAverage: 60.2,
+        },
+      ],
+    });
+    expect(setLastFinishedGameIdMock).toHaveBeenCalledWith(42);
+  });
+
+  it("uses summary from store without refetching finished game", () => {
+    locationState = { finishedGameId: 42 };
+    lastFinishedGameSummaryStore = {
+      gameId: 42,
+      summary: [
+        {
+          playerId: 2,
+          username: "Bob",
+          position: 1,
+          roundsPlayed: 4,
+          roundAverage: 45.5,
+        },
+      ],
+    };
+
+    const { result } = renderHook(() => useGameSummaryPage());
+
+    expect(getFinishedGameMock).not.toHaveBeenCalled();
+    expect(result.current.newList).toEqual([
+      expect.objectContaining({
+        id: 2,
+        name: "Bob",
+        scoreAverage: 45.5,
+        roundCount: 4,
+      }),
+    ]);
+    expect(setLastFinishedGameSummaryMock).not.toHaveBeenCalled();
+    expect(setLastFinishedGameIdMock).toHaveBeenCalledWith(42);
+  });
+
+  it("fetches summary from backend for direct URL entry when navigation state and cache are absent", async () => {
+    locationState = null;
+    routeParams = { id: "42" };
     getFinishedGameMock.mockResolvedValueOnce([
       {
         playerId: 3,
@@ -617,36 +677,6 @@ describe("useGameSummaryPage", () => {
         },
       ],
     });
-  });
-
-  it("uses summary from store without refetching finished game", () => {
-    locationState = { finishedGameId: 42 };
-    lastFinishedGameSummaryStore = {
-      gameId: 42,
-      summary: [
-        {
-          playerId: 2,
-          username: "Bob",
-          position: 1,
-          roundsPlayed: 4,
-          roundAverage: 45.5,
-        },
-      ],
-    };
-
-    const { result } = renderHook(() => useGameSummaryPage());
-
-    expect(getFinishedGameMock).not.toHaveBeenCalled();
-    expect(result.current.newList).toEqual([
-      expect.objectContaining({
-        id: 2,
-        name: "Bob",
-        scoreAverage: 45.5,
-        roundCount: 4,
-      }),
-    ]);
-    expect(setLastFinishedGameSummaryMock).not.toHaveBeenCalled();
-    expect(setLastFinishedGameIdMock).toHaveBeenCalledWith(42);
   });
 
   describe("handlePlayAgain", () => {

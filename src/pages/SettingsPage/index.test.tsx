@@ -92,6 +92,53 @@ describe("SettingsPage", () => {
     saveGameSettingsMock.mockImplementation(() => new Promise(() => {}));
   });
 
+  it("hydrates from the active route game in store without fetching settings again", async () => {
+    setCurrentGameId(42);
+    setGameData({
+      ...createGameResponse(),
+      id: 42,
+      settings: {
+        startScore: 401,
+        doubleOut: true,
+        tripleOut: false,
+      },
+    });
+
+    renderSettingsPage("/settings/42");
+
+    await waitFor(() => {
+      expect(screen.getByRole("button", { name: "Double-out" }).getAttribute("aria-pressed")).toBe(
+        "true",
+      );
+      expect(screen.getByRole("button", { name: "401" }).getAttribute("aria-pressed")).toBe("true");
+    });
+
+    expect(getGameSettingsMock).not.toHaveBeenCalled();
+  });
+
+  it("fetches canonical settings on direct route access when the game is not already in store", async () => {
+    getGameSettingsMock.mockResolvedValueOnce(
+      createSettingsResponse({
+        startScore: 501,
+        doubleOut: false,
+        tripleOut: true,
+      }),
+    );
+
+    renderSettingsPage("/settings/42");
+
+    await waitFor(() => {
+      expect(getGameSettingsMock).toHaveBeenCalledWith(42, expect.any(AbortSignal));
+    });
+
+    await waitFor(() => {
+      expect(screen.getByRole("button", { name: "Triple-out" }).getAttribute("aria-pressed")).toBe(
+        "true",
+      );
+      expect(screen.getByRole("button", { name: "501" }).getAttribute("aria-pressed")).toBe("true");
+    });
+  });
+
   it("does not save settings from /settings when there is no active gameId", () => {
     renderSettingsPage("/settings");
 
