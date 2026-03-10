@@ -1,9 +1,6 @@
 import React, { useCallback, useState } from "react";
-import { useStore } from "@nanostores/react";
 import styles from "./Statistics.module.css";
-import { AdminLayout } from "@/shared/ui/admin-layout";
 import Button from "@/shared/ui/button/Button";
-import { $currentGameId } from "@/store";
 import {
   Pagination,
   PaginationContent,
@@ -58,7 +55,6 @@ function sortParamFromMethod(method: SortMethod): string {
 }
 
 export default function StatisticsPage(): JSX.Element {
-  const currentGameId = useStore($currentGameId);
   const [sortMethod, setSortMethod] = useState<SortMethod>("alphabetically");
   const [offset, setOffset] = useState(0);
 
@@ -85,68 +81,62 @@ export default function StatisticsPage(): JSX.Element {
   }, []);
 
   return (
-    <AdminLayout currentGameId={currentGameId}>
-      <div className={styles.playerstatsContainer}>
-        <div className={styles.content}>
-          <StatisticsHeaderControls
-            title="Playerstats"
-            sortValue={sortMethod}
-            onSortChange={handleSortChange}
-          />
+    <div className={styles.playerstatsContainer}>
+      <div className={styles.content}>
+        <StatisticsHeaderControls
+          title="Playerstats"
+          sortValue={sortMethod}
+          onSortChange={handleSortChange}
+        />
 
-          {loading && (
-            <div role="status" className={styles.statusMessage}>
-              Loading…
+        {loading && (
+          <div role="status" className={styles.statusMessage}>
+            Loading…
+          </div>
+        )}
+
+        {!loading && error !== null && (
+          <div className={styles.statusMessage}>
+            <p>{error}</p>
+            <div className={styles.retryAction}>
+              <Button label="Retry" handleClick={retry} type="primary" />
             </div>
-          )}
+          </div>
+        )}
 
-          {!loading && error !== null && (
-            <div className={styles.statusMessage}>
-              <p>{error}</p>
-              <div className={styles.retryAction}>
-                <Button label="Retry" handleClick={retry} type="primary" />
-              </div>
-            </div>
-          )}
+        {!loading && error === null && sorted.length === 0 && (
+          <div className={styles.statusMessage}>No player statistics available.</div>
+        )}
 
-          {!loading && error === null && sorted.length === 0 && (
-            <div className={styles.statusMessage}>No player statistics available.</div>
-          )}
-
-          {!loading && error === null && sorted.length > 0 && (
-            <div className={styles.playerList}>
-              {sorted.map((player, index) => (
-                <div key={player.playerId} className={styles.playerRow}>
-                  <div className={styles.playerNumber}>{offset + index + 1}.</div>
-                  <div className={styles.playerName}>{player.name}</div>
-                  <div className={styles.playerStats}>
-                    <div className={styles.roundStat}>
-                      <span className={styles.statLabel}>Ø Round</span>
-                      <span className={styles.statValue}>
-                        {player.scoreAverage?.toFixed(1) || 0}
-                      </span>
-                    </div>
-                    <div className={styles.gamesStat}>
-                      <span className={styles.statLabel}>Played games</span>
-                      <span className={styles.statValue}>
-                        {Math.round(player.gamesPlayed || 0)}
-                      </span>
-                    </div>
+        {!loading && error === null && sorted.length > 0 && (
+          <div className={styles.playerList}>
+            {sorted.map((player, index) => (
+              <div key={player.playerId} className={styles.playerRow}>
+                <div className={styles.playerNumber}>{offset + index + 1}.</div>
+                <div className={styles.playerName}>{player.name}</div>
+                <div className={styles.playerStats}>
+                  <div className={styles.roundStat}>
+                    <span className={styles.statLabel}>Ø Round</span>
+                    <span className={styles.statValue}>{player.scoreAverage?.toFixed(1) || 0}</span>
+                  </div>
+                  <div className={styles.gamesStat}>
+                    <span className={styles.statLabel}>Played games</span>
+                    <span className={styles.statValue}>{Math.round(player.gamesPlayed || 0)}</span>
                   </div>
                 </div>
-              ))}
-            </div>
-          )}
+              </div>
+            ))}
+          </div>
+        )}
 
-          <StatisticsPagination
-            offset={offset}
-            total={total}
-            limit={LIMIT}
-            onPrevious={handlePreviousPage}
-            onNext={handleNextPage}
-          />
-        </div>
+        <StatisticsPagination
+          offset={offset}
+          total={total}
+          limit={LIMIT}
+          onPrevious={handlePreviousPage}
+          onNext={handleNextPage}
+        />
       </div>
-    </AdminLayout>
+    </div>
   );
 }

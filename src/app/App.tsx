@@ -3,6 +3,7 @@ import { BrowserRouter, Route, Routes, useNavigate } from "react-router-dom";
 import "@/app/styles/index.css";
 import ErrorBoundary from "@/app/ErrorBoundary";
 import ScrollToTop from "@/app/ScrollToTop";
+import AdminLayoutRoute from "@/app/routes/AdminLayoutRoute";
 import NotFoundPage from "@/app/routes/NotFoundPage";
 import ProtectedRoutes from "@/app/ProtectedRoutes";
 import { clearUnauthorizedHandler, setUnauthorizedHandler } from "@/shared/api";
@@ -90,14 +91,16 @@ function App(): React.JSX.Element {
               <Route path={ROUTES.register} element={<RegisterPage />} />
 
               <Route element={<ProtectedRoutes allowedRoles={["ROLE_ADMIN"]} />}>
-                <Route path={`${ROUTES.start()}/:id?`} element={<StartPage />} />
                 <Route path={ROUTES.gamePattern} element={<GamePage />} />
                 <Route path={ROUTES.summaryPattern} element={<GameSummaryPage />} />
-                <Route path={ROUTES.detailsPattern} element={<GameDetailPage />} />
-                <Route path={ROUTES.gamesOverview} element={<GamesOverview />} />
-                <Route path={ROUTES.settings()} element={<SettingsPage />} />
-                <Route path={`${ROUTES.settings()}/:id`} element={<SettingsPage />} />
-                <Route path={ROUTES.statistics} element={<Statistics />} />
+                <Route element={<AdminLayoutRoute />}>
+                  <Route path={`${ROUTES.start()}/:id?`} element={<StartPage />} />
+                  <Route path={ROUTES.detailsPattern} element={<GameDetailPage />} />
+                  <Route path={ROUTES.gamesOverview} element={<GamesOverview />} />
+                  <Route path={ROUTES.settings()} element={<SettingsPage />} />
+                  <Route path={`${ROUTES.settings()}/:id`} element={<SettingsPage />} />
+                  <Route path={ROUTES.statistics} element={<Statistics />} />
+                </Route>
               </Route>
 
               <Route element={<ProtectedRoutes allowedRoles={["ROLE_PLAYER"]} />}>
