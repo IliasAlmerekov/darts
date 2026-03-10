@@ -1,5 +1,5 @@
 import { atom, computed } from "nanostores";
-import type { GameThrowsResponse } from "@/types";
+import type { GameSettingsResponse, GameThrowsResponse, ScoreboardDelta } from "@/types";
 
 export const $gameData = atom<GameThrowsResponse | null>(null);
 export const $isLoading = atom<boolean>(false);
@@ -118,6 +118,98 @@ export function normalizeGameData(data: GameThrowsResponse | null): GameThrowsRe
 export function setGameData(data: GameThrowsResponse | null): void {
   $gameData.set(normalizeGameData(data));
   $error.set(null);
+}
+
+/**
+ * Updates only the settings fragment for the current game state.
+ */
+export function setGameSettings(settings: GameSettingsResponse, expectedGameId?: number): void {
+  const currentGameData = $gameData.get();
+  if (currentGameData === null) {
+    return;
+  }
+
+  if (typeof expectedGameId === "number" && currentGameData.id !== expectedGameId) {
+    return;
+  }
+
+  $gameData.set(
+    normalizeGameData({
+      ...currentGameData,
+      settings: {
+        startScore: settings.startScore,
+        doubleOut: settings.doubleOut,
+        tripleOut: settings.tripleOut,
+      },
+    }),
+  );
+  $error.set(null);
+}
+
+/**
+ * Updates only the scoreboard fragment for the current game state.
+ */
+export function setGameScoreboardDelta(
+  scoreboardDelta: ScoreboardDelta,
+  expectedGameId?: number,
+): GameThrowsResponse | null {
+  const currentGameData = $gameData.get();
+  if (currentGameData === null) {
+    return null;
+  }
+
+  if (typeof expectedGameId === "number" && currentGameData.id !== expectedGameId) {
+    return null;
+  }
+
+  const changedPlayerById = new Map(
+    scoreboardDelta.changedPlayers.map((playerDelta) => [playerDelta.playerId, playerDelta]),
+  );
+
+  const patchedPlayers = currentGameData.players.map((player) => {
+    const playerDelta = changedPlayerById.get(player.id);
+    if (!playerDelta) {
+      return player;
+    }
+
+    return {
+      ...player,
+      score: playerDelta.score,
+      position: playerDelta.position,
+      isActive: playerDelta.isActive,
+      isBust: typeof playerDelta.isBust === "boolean" ? playerDelta.isBust : player.isBust,
+    };
+  });
+
+  const gameDataWithPatchedScoreboard = {
+    ...currentGameData,
+    players: patchedPlayers,
+    currentRound: scoreboardDelta.currentRound,
+    status: scoreboardDelta.status,
+    winnerId: scoreboardDelta.winnerId,
+  };
+  const activePlayerFromDelta = patchedPlayers.find((player) => player.isActive)?.id ?? null;
+  const activePlayerId =
+    activePlayerFromDelta ?? deriveActivePlayerId(gameDataWithPatchedScoreboard);
+  const patchedGameData = {
+    ...gameDataWithPatchedScoreboard,
+    activePlayerId,
+    winnerId: deriveWinnerId(gameDataWithPatchedScoreboard),
+    players: normalizeActiveFlags(patchedPlayers, activePlayerId),
+  };
+  const activePlayer = patchedGameData.players.find(
+    (player) => player.id === patchedGameData.activePlayerId,
+  );
+  const nextGameData = {
+    ...patchedGameData,
+    currentThrowCount: activePlayer
+      ? Math.max(activePlayer.currentRoundThrows.length, activePlayer.throwsInCurrentRound)
+      : gameDataWithPatchedScoreboard.currentThrowCount,
+  };
+
+  $gameData.set(nextGameData);
+  $error.set(null);
+  return nextGameData;
 }
 
 /**

@@ -57,6 +57,28 @@ describe("game-session store", () => {
     expect(roomStore.$invitation.get()).toBeNull();
     expect(roomStore.$currentGameId.get()).toBeNull();
   });
+
+  it("stores and clears the last finished game summary snapshot", async () => {
+    const roomStore = await import("./game-session");
+    const snapshot = {
+      gameId: 88,
+      summary: [
+        {
+          playerId: 1,
+          username: "Alice",
+          position: 1,
+          roundsPlayed: 5,
+          roundAverage: 54.2,
+        },
+      ],
+    };
+
+    roomStore.setLastFinishedGameSummary(snapshot);
+    expect(roomStore.$lastFinishedGameSummary.get()).toEqual(snapshot);
+
+    roomStore.setLastFinishedGameSummary(null);
+    expect(roomStore.$lastFinishedGameSummary.get()).toBeNull();
+  });
 });
 
 // ─── Ticket 4 — store-as-cache contract ──────────────────────────────────────

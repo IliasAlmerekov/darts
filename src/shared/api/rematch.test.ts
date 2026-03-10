@@ -1,6 +1,6 @@
 // @vitest-environment node
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { createRematch } from "./game";
+import { createRematch, createRematchGame, startRematch } from "./game";
 
 vi.mock("@/shared/api/client", () => ({
   apiClient: {
@@ -20,6 +20,19 @@ describe("game/rematch api", () => {
     vi.clearAllMocks();
   });
 
+  it("returns the minimal rematch payload without hydrating invitation data", async () => {
+    vi.mocked(apiClient.post).mockResolvedValueOnce({ gameId: 777, success: true });
+
+    const response = await createRematchGame(520);
+
+    expect(apiClient.post).toHaveBeenCalledTimes(1);
+    expect(apiClient.post).toHaveBeenCalledWith("/room/520/rematch");
+    expect(response).toEqual({
+      success: true,
+      gameId: 777,
+    });
+  });
+
   it("requests invitation via POST when rematch response has no invitationLink", async () => {
     vi.mocked(apiClient.post)
       .mockResolvedValueOnce({ gameId: 777, success: true })
@@ -33,6 +46,38 @@ describe("game/rematch api", () => {
       success: true,
       gameId: 777,
       invitationLink: "/invite/777",
+    });
+  });
+
+  it("starts rematch with canonical settings and returns the new game id", async () => {
+    vi.mocked(apiClient.get).mockResolvedValueOnce({
+      startScore: 501,
+      doubleOut: true,
+      tripleOut: false,
+    });
+    vi.mocked(apiClient.post)
+      .mockResolvedValueOnce({ gameId: 777, success: true })
+      .mockResolvedValueOnce(undefined);
+
+    const response = await startRematch(520);
+
+    expect(apiClient.get).toHaveBeenCalledWith("/game/520/settings", undefined);
+    expect(apiClient.post).toHaveBeenNthCalledWith(1, "/room/520/rematch");
+    expect(apiClient.post).toHaveBeenNthCalledWith(2, "/game/777/start", {
+      status: "started",
+      round: 1,
+      startscore: 501,
+      doubleout: true,
+      tripleout: false,
+    });
+    expect(response).toEqual({
+      success: true,
+      gameId: 777,
+      settings: {
+        startScore: 501,
+        doubleOut: true,
+        tripleOut: false,
+      },
     });
   });
 });
