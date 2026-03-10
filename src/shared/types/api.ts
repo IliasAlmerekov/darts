@@ -31,10 +31,18 @@ export interface FinishedPlayerResponse {
 
 export type GameSummaryResponse = FinishedPlayerResponse[];
 
-export interface RematchResponse {
+export interface RematchGameResponse {
   success: boolean;
   gameId: number;
+  invitationLink?: string;
+}
+
+export interface RematchResponse extends RematchGameResponse {
   invitationLink: string;
+}
+
+export interface StartRematchResponse extends RematchGameResponse {
+  settings: GameSettingsResponse;
 }
 
 export type AddGuestPayload = {

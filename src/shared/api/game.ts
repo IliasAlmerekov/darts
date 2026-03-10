@@ -10,7 +10,13 @@ import type {
   UndoAckResponse,
   StartGameRequest,
 } from "@/types";
-import type { RematchResponse, CreateGameSettingsPayload, GameSettingsResponse } from "@/types";
+import type {
+  CreateGameSettingsPayload,
+  GameSettingsResponse,
+  RematchGameResponse,
+  RematchResponse,
+  StartRematchResponse,
+} from "@/types";
 
 // ---------------------------------------------------------------------------
 // Endpoints
@@ -44,6 +50,10 @@ function isRecord(data: unknown): data is Record<string, unknown> {
 
 function isFiniteNumber(value: unknown): value is number {
   return typeof value === "number" && Number.isFinite(value);
+}
+
+function isPositiveFiniteNumber(value: unknown): value is number {
+  return isFiniteNumber(value) && value > 0;
 }
 
 function isNullableFiniteNumber(value: unknown): value is number | null {
@@ -203,10 +213,10 @@ function isThrowAckResponse(data: unknown): data is ThrowAckResponse {
 
 function isRematchLikeResponse(
   data: unknown,
-): data is RematchResponse | { gameId: number; invitationLink?: string; success?: boolean } {
+): data is RematchGameResponse | { gameId: number; invitationLink?: string; success?: boolean } {
   return (
     isRecord(data) &&
-    isFiniteNumber(data.gameId) &&
+    isPositiveFiniteNumber(data.gameId) &&
     (data.invitationLink === undefined || typeof data.invitationLink === "string") &&
     (data.success === undefined || typeof data.success === "boolean")
   );
@@ -377,17 +387,30 @@ export async function abortGame(gameId: number): Promise<{ message: string }> {
 }
 
 /**
- * Creates a rematch and returns invitation details for the new game.
+ * Creates a rematch and returns the new game id plus any invitation link already
+ * provided by the backend. This does not trigger the invite fallback call.
  */
-export async function createRematch(previousGameId: number): Promise<RematchResponse> {
+export async function createRematchGame(previousGameId: number): Promise<RematchGameResponse> {
   const rematch: unknown = await apiClient.post(REMATCH_ENDPOINT(previousGameId));
   if (!isRematchLikeResponse(rematch)) {
     throw new ApiError("Unexpected response shape for rematch", { status: 200, data: rematch });
   }
 
-  if ("invitationLink" in rematch && rematch.invitationLink) {
+  return {
+    success: "success" in rematch ? !!rematch.success : true,
+    gameId: rematch.gameId,
+    ...(rematch.invitationLink ? { invitationLink: rematch.invitationLink } : {}),
+  };
+}
+
+/**
+ * Creates a rematch and returns invitation details for the new game.
+ */
+export async function createRematch(previousGameId: number): Promise<RematchResponse> {
+  const rematch = await createRematchGame(previousGameId);
+  if (rematch.invitationLink) {
     return {
-      success: "success" in rematch ? !!rematch.success : true,
+      success: rematch.success,
       gameId: rematch.gameId,
       invitationLink: rematch.invitationLink,
     };
@@ -402,9 +425,35 @@ export async function createRematch(previousGameId: number): Promise<RematchResp
     throw new ApiError("Unexpected response shape for invite", { status: 200, data: invite });
   }
   return {
-    success: "success" in rematch ? !!rematch.success : true,
+    success: rematch.success,
     gameId: invite.gameId,
     invitationLink: invite.invitationLink,
+  };
+}
+
+/**
+ * Starts a rematch using canonical settings for the finished game.
+ * The hook layer calls this single adapter so backend contract changes stay localized here.
+ */
+export async function startRematch(previousGameId: number): Promise<StartRematchResponse> {
+  const [settings, rematch] = await Promise.all([
+    getGameSettings(previousGameId),
+    createRematchGame(previousGameId),
+  ]);
+
+  await startGame(rematch.gameId, {
+    startScore: settings.startScore,
+    doubleOut: settings.doubleOut,
+    tripleOut: settings.tripleOut,
+    round: 1,
+    status: "started",
+  });
+
+  return {
+    success: rematch.success,
+    gameId: rematch.gameId,
+    settings,
+    ...(rematch.invitationLink ? { invitationLink: rematch.invitationLink } : {}),
   };
 }
 

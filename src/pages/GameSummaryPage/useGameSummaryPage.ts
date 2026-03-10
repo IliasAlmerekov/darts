@@ -3,14 +3,12 @@ import { useLocation, useNavigate, useParams } from "react-router-dom";
 import {
   getFinishedGame,
   getGameThrows,
-  getGameSettings,
-  createRematch,
-  startGame,
+  createRematchGame,
+  startRematch,
   undoLastThrow,
 } from "@/shared/api/game";
 import type {
   FinishedPlayerResponse,
-  GameSummaryResponse,
   GameThrowsResponse,
   UndoAckResponse,
   WinnerPlayerProps,
@@ -18,6 +16,7 @@ import type {
 import {
   $gameData,
   $lastFinishedGameSummary,
+  setCurrentGameId,
   setGameData,
   setGameScoreboardDelta,
   setInvitation,
@@ -32,30 +31,6 @@ import { applyOptimisticUndo } from "@/shared/lib/applyOptimisticUndo";
 
 interface SummaryLocationState {
   finishedGameId?: number;
-  summary?: unknown;
-}
-
-function isFinishedPlayerResponse(value: unknown): value is FinishedPlayerResponse {
-  if (null === value || "object" !== typeof value) {
-    return false;
-  }
-
-  const player = value as Partial<FinishedPlayerResponse>;
-  return (
-    "number" === typeof player.playerId &&
-    Number.isFinite(player.playerId) &&
-    "string" === typeof player.username &&
-    "number" === typeof player.position &&
-    Number.isFinite(player.position) &&
-    "number" === typeof player.roundsPlayed &&
-    Number.isFinite(player.roundsPlayed) &&
-    "number" === typeof player.roundAverage &&
-    Number.isFinite(player.roundAverage)
-  );
-}
-
-function isGameSummaryResponse(value: unknown): value is GameSummaryResponse {
-  return Array.isArray(value) && value.every(isFinishedPlayerResponse);
 }
 
 function isUndoAckResponse(
@@ -90,11 +65,6 @@ export function useGameSummaryPage() {
     return Number.isFinite(parsedParam) ? parsedParam : null;
   }, [location.state, summaryGameIdParam]);
 
-  const summaryFromNavigationState = useMemo(() => {
-    const stateSummary = (location.state as SummaryLocationState | null)?.summary;
-    return isGameSummaryResponse(stateSummary) ? stateSummary : null;
-  }, [location.state]);
-
   const summaryFromStore = useMemo(() => {
     const cachedSummary = $lastFinishedGameSummary.get();
     if (!cachedSummary || cachedSummary.gameId !== finishedGameIdFromRoute) {
@@ -104,7 +74,7 @@ export function useGameSummaryPage() {
     return cachedSummary.summary;
   }, [finishedGameIdFromRoute]);
 
-  const finishedSummary = summaryFromNavigationState ?? summaryFromStore ?? serverFinished;
+  const finishedSummary = summaryFromStore ?? serverFinished;
 
   const loadSummary = useCallback(async (): Promise<void> => {
     if (!finishedGameIdFromRoute) return;
@@ -126,18 +96,14 @@ export function useGameSummaryPage() {
       return;
     }
 
-    if (summaryFromNavigationState ?? summaryFromStore) {
+    if (summaryFromStore) {
       setError(null);
       setLastFinishedGameId(finishedGameIdFromRoute);
-      setLastFinishedGameSummary({
-        gameId: finishedGameIdFromRoute,
-        summary: summaryFromNavigationState ?? summaryFromStore ?? [],
-      });
       return;
     }
 
     void loadSummary();
-  }, [finishedGameIdFromRoute, loadSummary, summaryFromNavigationState, summaryFromStore]);
+  }, [finishedGameIdFromRoute, loadSummary, summaryFromStore]);
 
   const newList: WinnerPlayerProps[] = useMemo(() => {
     if (finishedSummary.length > 0) {
@@ -235,25 +201,18 @@ export function useGameSummaryPage() {
 
     try {
       setError(null);
-      const canonicalSettings = await getGameSettings(finishedGameIdFromRoute);
-      const rematch = await createRematch(finishedGameIdFromRoute);
+      const rematch = await startRematch(finishedGameIdFromRoute);
       if (!rematch?.gameId) {
         throw new Error("Invalid rematch response: missing game id");
       }
 
-      setInvitation({
-        gameId: rematch.gameId,
-        invitationLink: rematch.invitationLink,
-      });
-
-      await startGame(rematch.gameId, {
-        startScore: canonicalSettings.startScore,
-        doubleOut: canonicalSettings.doubleOut,
-        tripleOut: canonicalSettings.tripleOut,
-        round: 1,
-        status: "started",
-      });
-
+      setCurrentGameId(rematch.gameId);
+      if (rematch.invitationLink) {
+        setInvitation({
+          gameId: rematch.gameId,
+          invitationLink: rematch.invitationLink,
+        });
+      }
       navigate(ROUTES.game(rematch.gameId));
     } catch (err) {
       console.error("Failed to start rematch:", err);
@@ -272,13 +231,12 @@ export function useGameSummaryPage() {
 
     try {
       setError(null);
-      const rematch = await createRematch(finishedGameIdFromRoute);
+      const rematch = await createRematchGame(finishedGameIdFromRoute);
+      if (!rematch?.gameId) {
+        throw new Error("Invalid rematch response: missing game id");
+      }
 
-      setInvitation({
-        gameId: rematch.gameId,
-        invitationLink: rematch.invitationLink,
-      });
-
+      setCurrentGameId(rematch.gameId);
       navigate(ROUTES.start(rematch.gameId));
     } catch (err) {
       console.error("Failed to start rematch:", err);
