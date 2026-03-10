@@ -44,6 +44,59 @@ function isRecord(data: unknown): data is Record<string, unknown> {
   return typeof data === "object" && data !== null;
 }
 
+function isFiniteNumber(value: unknown): value is number {
+  return typeof value === "number" && Number.isFinite(value);
+}
+
+function isNullableFiniteNumber(value: unknown): value is number | null {
+  return value === null || isFiniteNumber(value);
+}
+
+function isPlayerThrow(data: unknown): boolean {
+  return (
+    isRecord(data) &&
+    isFiniteNumber(data.value) &&
+    (data.isDouble === undefined || typeof data.isDouble === "boolean") &&
+    (data.isTriple === undefined || typeof data.isTriple === "boolean") &&
+    (data.isBust === undefined || typeof data.isBust === "boolean")
+  );
+}
+
+function isRoundHistory(data: unknown): boolean {
+  return (
+    isRecord(data) &&
+    (data.round === undefined || isFiniteNumber(data.round)) &&
+    Array.isArray(data.throws) &&
+    data.throws.every(isPlayerThrow)
+  );
+}
+
+function isGamePlayer(data: unknown): boolean {
+  return (
+    isRecord(data) &&
+    isFiniteNumber(data.id) &&
+    typeof data.name === "string" &&
+    isFiniteNumber(data.score) &&
+    typeof data.isActive === "boolean" &&
+    typeof data.isBust === "boolean" &&
+    isNullableFiniteNumber(data.position) &&
+    isFiniteNumber(data.throwsInCurrentRound) &&
+    Array.isArray(data.currentRoundThrows) &&
+    data.currentRoundThrows.every(isPlayerThrow) &&
+    Array.isArray(data.roundHistory) &&
+    data.roundHistory.every(isRoundHistory)
+  );
+}
+
+function isGameSettingsResponse(data: unknown): data is GameSettingsResponse {
+  return (
+    isRecord(data) &&
+    isFiniteNumber(data.startScore) &&
+    typeof data.doubleOut === "boolean" &&
+    typeof data.tripleOut === "boolean"
+  );
+}
+
 function isGameStatus(value: unknown): value is GameStatus {
   return typeof value === "string" && GAME_STATUS_VALUES.includes(value as GameStatus);
 }
@@ -53,7 +106,17 @@ function isGameThrowsResponse(data: unknown): data is GameThrowsResponse {
     return false;
   }
 
-  return typeof data.id === "number" && Array.isArray(data.players) && isGameStatus(data.status);
+  return (
+    isFiniteNumber(data.id) &&
+    isGameStatus(data.status) &&
+    isFiniteNumber(data.currentRound) &&
+    isNullableFiniteNumber(data.activePlayerId) &&
+    isFiniteNumber(data.currentThrowCount) &&
+    Array.isArray(data.players) &&
+    data.players.every(isGamePlayer) &&
+    isNullableFiniteNumber(data.winnerId) &&
+    isGameSettingsResponse(data.settings)
+  );
 }
 
 function isFinishedPlayerResponseArray(data: unknown): data is FinishedPlayerResponse[] {
@@ -62,10 +125,52 @@ function isFinishedPlayerResponseArray(data: unknown): data is FinishedPlayerRes
     data.every(
       (item) =>
         isRecord(item) &&
-        typeof item.playerId === "number" &&
+        isFiniteNumber(item.playerId) &&
         typeof item.username === "string" &&
-        typeof item.position === "number",
+        isFiniteNumber(item.position) &&
+        isFiniteNumber(item.roundsPlayed) &&
+        isFiniteNumber(item.roundAverage),
     )
+  );
+}
+
+function isThrowDelta(data: unknown): boolean {
+  return (
+    isRecord(data) &&
+    isFiniteNumber(data.id) &&
+    isFiniteNumber(data.playerId) &&
+    typeof data.playerName === "string" &&
+    isFiniteNumber(data.value) &&
+    typeof data.isDouble === "boolean" &&
+    typeof data.isTriple === "boolean" &&
+    typeof data.isBust === "boolean" &&
+    isFiniteNumber(data.score) &&
+    isFiniteNumber(data.roundNumber) &&
+    typeof data.timestamp === "string"
+  );
+}
+
+function isScoreboardPlayerDelta(data: unknown): boolean {
+  return (
+    isRecord(data) &&
+    isFiniteNumber(data.playerId) &&
+    typeof data.name === "string" &&
+    isFiniteNumber(data.score) &&
+    isNullableFiniteNumber(data.position) &&
+    typeof data.isActive === "boolean" &&
+    typeof data.isGuest === "boolean" &&
+    (data.isBust === null || typeof data.isBust === "boolean")
+  );
+}
+
+function isScoreboardDelta(data: unknown): boolean {
+  return (
+    isRecord(data) &&
+    Array.isArray(data.changedPlayers) &&
+    data.changedPlayers.every(isScoreboardPlayerDelta) &&
+    isNullableFiniteNumber(data.winnerId) &&
+    isGameStatus(data.status) &&
+    isFiniteNumber(data.currentRound)
   );
 }
 
@@ -76,17 +181,27 @@ function isThrowAckResponse(data: unknown): data is ThrowAckResponse {
 
   return (
     typeof data.success === "boolean" &&
-    typeof data.gameId === "number" &&
+    isFiniteNumber(data.gameId) &&
     typeof data.stateVersion === "string" &&
-    isRecord(data.scoreboardDelta) &&
-    isGameStatus(data.scoreboardDelta.status)
+    (data.throw === null || isThrowDelta(data.throw)) &&
+    isScoreboardDelta(data.scoreboardDelta) &&
+    typeof data.serverTs === "string"
   );
 }
 
 function isRematchLikeResponse(
   data: unknown,
 ): data is RematchResponse | { gameId: number; invitationLink?: string; success?: boolean } {
-  return isRecord(data) && typeof data.gameId === "number";
+  return (
+    isRecord(data) &&
+    isFiniteNumber(data.gameId) &&
+    (data.invitationLink === undefined || typeof data.invitationLink === "string") &&
+    (data.success === undefined || typeof data.success === "boolean")
+  );
+}
+
+function isMessageResponse(data: unknown): data is { message: string } {
+  return isRecord(data) && typeof data.message === "string";
 }
 
 function getNextStateVersion(response: Response): string | null {
@@ -229,7 +344,12 @@ export async function reopenGame(gameId: number): Promise<GameThrowsResponse> {
  * Aborts the specified game on the server.
  */
 export async function abortGame(gameId: number): Promise<{ message: string }> {
-  return apiClient.patch(ABORT_GAME_ENDPOINT(gameId));
+  const data: unknown = await apiClient.patch(ABORT_GAME_ENDPOINT(gameId));
+  if (!isMessageResponse(data)) {
+    throw new ApiError("Unexpected response shape for abort game", { status: 200, data });
+  }
+
+  return data;
 }
 
 /**
@@ -272,15 +392,6 @@ type UpdateGameSettingsPayload = Partial<{
   doubleOut: boolean;
   tripleOut: boolean;
 }>;
-
-function isGameSettingsResponse(data: unknown): data is GameSettingsResponse {
-  return (
-    isRecord(data) &&
-    typeof data.startScore === "number" &&
-    typeof data.doubleOut === "boolean" &&
-    typeof data.tripleOut === "boolean"
-  );
-}
 
 /**
  * Fetches the canonical settings for a game by its id.

@@ -12,6 +12,7 @@ interface UseGamePlayersStateOptions {
   gameId: number | null;
   handleUndo: () => Promise<void>;
   isLoading: boolean;
+  isUndoPending: boolean;
   skipFinishOverlay: boolean;
 }
 
@@ -32,6 +33,7 @@ export function useGamePlayersState({
   gameId,
   handleUndo,
   isLoading,
+  isUndoPending,
   skipFinishOverlay,
 }: UseGamePlayersStateOptions): UseGamePlayersStateResult {
   const [dismissedZeroScorePlayerIds, setDismissedZeroScorePlayerIds] = useState<number[]>([]);
@@ -51,9 +53,10 @@ export function useGamePlayersState({
         gameData,
         hasError: !!error,
         isLoading,
+        isUndoPending,
         skipFinishOverlay,
       }),
-    [dismissedZeroScorePlayerIds, error, gameData, isLoading, skipFinishOverlay],
+    [dismissedZeroScorePlayerIds, error, gameData, isLoading, isUndoPending, skipFinishOverlay],
   );
 
   useEffect(() => {

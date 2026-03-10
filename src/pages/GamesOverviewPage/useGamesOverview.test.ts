@@ -52,15 +52,15 @@ describe("useGamesOverview", () => {
     expect(result.current.games.at(0)?.winnerName).toBe("Alice");
   });
 
-  it("should fall back to array length as total when API returns plain array", async () => {
-    getGamesOverviewMock.mockResolvedValue(GAMES);
+  it("should expose empty games list when API returns empty items array", async () => {
+    getGamesOverviewMock.mockResolvedValue({ items: [], total: 0 });
 
     const { result } = renderHook(() => useGamesOverview({ limit: 9, offset: 0 }));
 
     await waitFor(() => expect(result.current.loading).toBe(false));
 
-    expect(result.current.total).toBe(2);
-    expect(result.current.games).toHaveLength(2);
+    expect(result.current.total).toBe(0);
+    expect(result.current.games).toEqual([]);
   });
 
   it("should set error message and stop loading when API rejects", async () => {
@@ -136,7 +136,7 @@ describe("useGamesOverview", () => {
     expect(result.current.loading).toBe(true);
   });
 
-  it("should expose empty games list when API returns empty items array", async () => {
+  it("should keep error null for an empty normalized response", async () => {
     getGamesOverviewMock.mockResolvedValue({ items: [], total: 0 });
 
     const { result } = renderHook(() => useGamesOverview({ limit: 9, offset: 0 }));

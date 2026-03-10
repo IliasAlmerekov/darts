@@ -78,6 +78,14 @@
   color: var(--darkgrey);
 }
 
+.retryAction {
+  width: min(100%, 220px);
+}
+
+.retryAction button {
+  margin-top: 0;
+}
+
 .paginationControls {
   display: flex;
   justify-content: center;

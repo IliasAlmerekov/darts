@@ -179,6 +179,41 @@ describe("game-state store", () => {
       expect(normalizeGameData(null)).toBeNull();
     });
 
+    it("derives activePlayerId from a single active player flag when server returns null", () => {
+      const gameData: GameThrowsResponse = {
+        ...mockGameData,
+        activePlayerId: null,
+      };
+
+      const normalized = normalizeGameData(gameData);
+
+      expect(normalized?.activePlayerId).toBe(1);
+      expect(normalized?.players[0]?.isActive).toBe(true);
+      expect(normalized?.players[1]?.isActive).toBe(false);
+    });
+
+    it("normalizes player active flags to match the derived active player", () => {
+      const gameData: GameThrowsResponse = {
+        ...mockGameData,
+        activePlayerId: null,
+        players: mockGameData.players.map((player) => ({
+          ...player,
+          isActive: false,
+        })),
+      };
+      gameData.players[0] = {
+        ...gameData.players[0]!,
+        currentRoundThrows: [{ value: 20, isDouble: false, isTriple: false, isBust: false }],
+        throwsInCurrentRound: 1,
+      };
+
+      const normalized = normalizeGameData(gameData);
+
+      expect(normalized?.activePlayerId).toBe(1);
+      expect(normalized?.players[0]?.isActive).toBe(true);
+      expect(normalized?.players[1]?.isActive).toBe(false);
+    });
+
     it("fills winnerId for finished game when derivable", () => {
       const gameData: GameThrowsResponse = {
         ...mockGameData,

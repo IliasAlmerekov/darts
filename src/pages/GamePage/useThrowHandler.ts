@@ -18,6 +18,7 @@ interface UseThrowHandlerReturn {
   isQueueFull: boolean;
   syncMessage: string | null;
   clearSyncMessage: () => void;
+  isUndoPending: boolean;
 }
 
 export { isThrowNotAllowedConflict };
@@ -28,7 +29,10 @@ export { isThrowNotAllowedConflict };
 export function useThrowHandler({ gameId }: UseThrowHandlerOptions): UseThrowHandlerReturn {
   const { syncMessage, updateSyncMessage, clearSyncMessage, reconcileGameState } =
     useThrowReconciliation({ gameId });
-  const { executeUndo, isUndoInFlightRef, resetUndoState } = useUndoFlow({ gameId });
+  const { executeUndo, isUndoInFlightRef, isUndoPending, resetUndoState } = useUndoFlow({
+    gameId,
+    reconcileGameState,
+  });
   const {
     pendingThrowCount,
     isQueueFull,
@@ -81,6 +85,8 @@ export function useThrowHandler({ gameId }: UseThrowHandlerOptions): UseThrowHan
               isBust: player.isBust,
             })),
           });
+          await reconcileGameState("Game state was out of sync. Refreshed latest game state.");
+          playSound("error");
           return;
         }
 
@@ -155,5 +161,6 @@ export function useThrowHandler({ gameId }: UseThrowHandlerOptions): UseThrowHan
     isQueueFull,
     syncMessage,
     clearSyncMessage,
+    isUndoPending,
   };
 }

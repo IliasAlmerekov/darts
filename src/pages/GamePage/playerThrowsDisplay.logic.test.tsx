@@ -76,4 +76,100 @@ describe("getPlayerThrowsDisplay", () => {
     expect(result.throw2).toBeUndefined();
     expect(result.throw3).toBeUndefined();
   });
+
+  it("should show empty slots for active player with no current throws when in round 2", () => {
+    const result = getPlayerThrowsDisplay({
+      isActive: true,
+      roundsCountLength: 1,
+      currentThrow1: undefined,
+      currentThrow2: undefined,
+      currentThrow3: undefined,
+      prevThrow1: 20,
+      prevThrow2: undefined,
+      prevThrow3: undefined,
+      throw1IsBust: undefined,
+      throw2IsBust: undefined,
+      throw3IsBust: undefined,
+      prevThrow1IsBust: false,
+      prevThrow2IsBust: false,
+      prevThrow3IsBust: false,
+      bustIcon,
+    });
+
+    expect(result.throw1).toBeUndefined();
+    expect(result.throw2).toBeUndefined();
+    expect(result.throw3).toBeUndefined();
+  });
+
+  it("should show empty slots for active player with no current throws when in round 1", () => {
+    const result = getPlayerThrowsDisplay({
+      isActive: true,
+      roundsCountLength: 0,
+      currentThrow1: undefined,
+      currentThrow2: undefined,
+      currentThrow3: undefined,
+      prevThrow1: 20,
+      prevThrow2: undefined,
+      prevThrow3: undefined,
+      throw1IsBust: undefined,
+      throw2IsBust: undefined,
+      throw3IsBust: undefined,
+      prevThrow1IsBust: false,
+      prevThrow2IsBust: false,
+      prevThrow3IsBust: false,
+      bustIcon,
+    });
+
+    expect(result.throw1).toBeUndefined();
+    expect(result.throw2).toBeUndefined();
+    expect(result.throw3).toBeUndefined();
+  });
+
+  it("should still show current throws for active player when throws exist", () => {
+    const result = getPlayerThrowsDisplay({
+      isActive: true,
+      roundsCountLength: 1,
+      currentThrow1: 20,
+      currentThrow2: undefined,
+      currentThrow3: undefined,
+      prevThrow1: 25,
+      prevThrow2: 25,
+      prevThrow3: 25,
+      throw1IsBust: false,
+      throw2IsBust: undefined,
+      throw3IsBust: undefined,
+      prevThrow1IsBust: false,
+      prevThrow2IsBust: false,
+      prevThrow3IsBust: false,
+      bustIcon,
+    });
+
+    expect(result.throw1).toBe(20);
+    expect(result.throw2).toBeUndefined();
+    expect(result.throw3).toBeUndefined();
+  });
+
+  it("should still show prev round fallback for inactive player with no current throws", () => {
+    const result = getPlayerThrowsDisplay({
+      isActive: false,
+      roundsCountLength: 1,
+      currentThrow1: undefined,
+      currentThrow2: undefined,
+      currentThrow3: undefined,
+      prevThrow1: 25,
+      prevThrow2: 25,
+      prevThrow3: 25,
+      throw1IsBust: undefined,
+      throw2IsBust: undefined,
+      throw3IsBust: undefined,
+      prevThrow1IsBust: false,
+      prevThrow2IsBust: false,
+      prevThrow3IsBust: false,
+      bustIcon,
+    });
+
+    expect(result.throw1).toBe(25);
+    expect(result.throw2).toBe(25);
+    expect(result.throw3).toBe(25);
+  });
 });

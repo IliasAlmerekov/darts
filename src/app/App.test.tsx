@@ -20,6 +20,14 @@ vi.mock("@/app/ProtectedRoutes", () => ({
   default: () => <Outlet />,
 }));
 
+vi.mock("@/app/routes/AdminLayoutRoute", () => ({
+  default: () => (
+    <div data-testid="admin-layout-route">
+      <Outlet />
+    </div>
+  ),
+}));
+
 vi.mock("@/shared/api", () => ({
   clearUnauthorizedHandler: vi.fn(),
   setUnauthorizedHandler: vi.fn(),
@@ -151,6 +159,24 @@ describe("App routing", () => {
     await renderApp();
 
     expect(await screen.findByText("Start Page")).toBeTruthy();
+  });
+
+  it("renders admin layout route for admin shell pages", async () => {
+    window.history.pushState({}, "", "/statistics");
+
+    await renderApp();
+
+    expect(await screen.findByTestId("admin-layout-route")).toBeTruthy();
+    expect(await screen.findByText("Statistics Page")).toBeTruthy();
+  });
+
+  it("does not render admin layout route for active game pages", async () => {
+    window.history.pushState({}, "", "/game/42");
+
+    await renderApp();
+
+    expect(await screen.findByText("Game Page")).toBeTruthy();
+    expect(screen.queryByTestId("admin-layout-route")).toBeNull();
   });
 
   it("registers unauthorized navigation and clears it on unmount", async () => {

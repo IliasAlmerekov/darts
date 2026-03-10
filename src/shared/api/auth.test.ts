@@ -1,22 +1,11 @@
 // @vitest-environment jsdom
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { getAuthenticatedUser, logout, registerUser } from "./auth";
+import { getAuthenticatedUser, loginWithCredentials, logout, registerUser } from "./auth";
 import { apiClient } from "./client";
 import { TimeoutError } from "./errors";
 import { $authChecked, $user, setAuthenticatedUser } from "@/store/auth";
 
-type AuthResponseBody = {
-  success: boolean;
-  user?: {
-    success: boolean;
-    roles: string[];
-    id: number;
-    redirect: string;
-    gameId?: number | null;
-  };
-};
-
-function createMockResponse(body: AuthResponseBody): Response {
+function createMockResponse(body: unknown): Response {
   return {
     ok: true,
     status: 200,
@@ -90,6 +79,50 @@ describe("getAuthenticatedUser", () => {
     await vi.advanceTimersByTimeAsync(51);
     const error = await errorPromise;
     expect(error).toBeInstanceOf(TimeoutError);
+  });
+
+  it("throws ApiError when auth-check returns malformed authenticated user payload", async () => {
+    vi.spyOn(globalThis, "fetch").mockResolvedValueOnce(
+      createMockResponse({
+        success: true,
+        user: {
+          success: true,
+          roles: ["ROLE_USER"],
+          id: "7",
+          redirect: "/start",
+        },
+      }),
+    );
+
+    await expect(getAuthenticatedUser()).rejects.toMatchObject({
+      name: "ApiError",
+      message: "Unexpected response shape for authenticated user",
+      status: 200,
+    });
+  });
+
+  it("returns null for explicit unauthenticated auth-check payload", async () => {
+    vi.spyOn(globalThis, "fetch").mockResolvedValueOnce(createMockResponse({ success: false }));
+
+    await expect(getAuthenticatedUser()).resolves.toBeNull();
+  });
+});
+
+describe("loginWithCredentials", () => {
+  beforeEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  it("throws ApiError when login returns malformed response shape", async () => {
+    vi.spyOn(apiClient, "post").mockResolvedValueOnce({ redirect: 42 });
+
+    await expect(
+      loginWithCredentials({ email: "alice@example.com", password: "s3cr3t" }),
+    ).rejects.toMatchObject({
+      name: "ApiError",
+      message: "Unexpected response shape for login",
+      status: 200,
+    });
   });
 });
 
@@ -166,6 +199,18 @@ describe("registerUser", () => {
 
     expect(apiClient.post).toHaveBeenCalled();
     expect(result).toEqual({ redirect: "/start" });
+  });
+
+  it("throws ApiError when registration returns malformed response shape", async () => {
+    vi.spyOn(apiClient, "post").mockResolvedValueOnce({ redirect: 42 });
+
+    await expect(
+      registerUser({ username: "alice", email: "alice@example.com", password: "s3cr3t" }),
+    ).rejects.toMatchObject({
+      name: "ApiError",
+      message: "Unexpected response shape for registration",
+      status: 200,
+    });
   });
 });
 

@@ -20,7 +20,7 @@ export type GameThrowsResponse = {
   id: number;
   status: GameStatus;
   currentRound: number;
-  activePlayerId: number;
+  activePlayerId: number | null;
   currentThrowCount: number;
   players: {
     id: number;
@@ -115,6 +115,6 @@ export type FinishedGameProps = {
 };
 
 export type GameDataProps = {
-  items?: FinishedGameProps[];
-  total?: number;
+  items: FinishedGameProps[];
+  total: number;
 };

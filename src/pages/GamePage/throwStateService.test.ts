@@ -90,6 +90,112 @@ describe("throwStateService", () => {
     ]);
   });
 
+  it("restores the previous player after undoing a completed winning throw", () => {
+    const gameState = buildGameData({
+      status: "started",
+      currentRound: 3,
+      currentThrowCount: 0,
+      activePlayerId: 2,
+      winnerId: 1,
+      players: [
+        {
+          id: 1,
+          name: "P1",
+          score: 0,
+          isActive: false,
+          isBust: false,
+          position: 1,
+          throwsInCurrentRound: 0,
+          currentRoundThrows: [],
+          roundHistory: [
+            {
+              round: 3,
+              throws: [{ value: 20, isDouble: false, isTriple: false, isBust: false }],
+            },
+          ],
+        },
+        {
+          id: 2,
+          name: "P2",
+          score: 301,
+          isActive: true,
+          isBust: false,
+          position: null,
+          throwsInCurrentRound: 0,
+          currentRoundThrows: [],
+          roundHistory: [],
+        },
+      ],
+    });
+
+    const nextState = applyOptimisticUndo(gameState);
+
+    expect(nextState?.status).toBe("started");
+    expect(nextState?.winnerId).toBeNull();
+    expect(nextState?.activePlayerId).toBe(1);
+    expect(nextState?.currentRound).toBe(3);
+    expect(nextState?.currentThrowCount).toBe(0);
+    expect(nextState?.players[0]?.score).toBe(20);
+    expect(nextState?.players[0]?.position).toBeNull();
+    expect(nextState?.players[0]?.isActive).toBe(true);
+    expect(nextState?.players[0]?.roundHistory).toEqual([]);
+  });
+
+  it("restores a completed bust turn to the in-progress throws before the bust", () => {
+    const gameState = buildGameData({
+      currentRound: 7,
+      currentThrowCount: 0,
+      activePlayerId: 2,
+      players: [
+        {
+          id: 1,
+          name: "P1",
+          score: 101,
+          isActive: false,
+          isBust: true,
+          position: null,
+          throwsInCurrentRound: 0,
+          currentRoundThrows: [],
+          roundHistory: [
+            {
+              round: 7,
+              throws: [
+                { value: 20, isDouble: false, isTriple: false, isBust: false },
+                { value: 20, isDouble: false, isTriple: false, isBust: false },
+                { value: 70, isDouble: false, isTriple: false, isBust: true },
+              ],
+            },
+          ],
+        },
+        {
+          id: 2,
+          name: "P2",
+          score: 301,
+          isActive: true,
+          isBust: false,
+          position: null,
+          throwsInCurrentRound: 0,
+          currentRoundThrows: [],
+          roundHistory: [],
+        },
+      ],
+    });
+
+    const nextState = applyOptimisticUndo(gameState);
+
+    expect(nextState?.activePlayerId).toBe(1);
+    expect(nextState?.currentRound).toBe(7);
+    expect(nextState?.currentThrowCount).toBe(2);
+    expect(nextState?.players[0]?.score).toBe(61);
+    expect(nextState?.players[0]?.isBust).toBe(false);
+    expect(nextState?.players[0]?.throwsInCurrentRound).toBe(2);
+    expect(nextState?.players[0]?.currentRoundThrows).toEqual([
+      { value: 20, isDouble: false, isTriple: false, isBust: false },
+      { value: 20, isDouble: false, isTriple: false, isBust: false },
+    ]);
+    expect(nextState?.players[0]?.roundHistory).toEqual([]);
+  });
+
   it("optimistically finishes a turn on the third throw and activates the next player", () => {
     const gameState = buildGameData({
       currentThrowCount: 2,

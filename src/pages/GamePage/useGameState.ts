@@ -104,11 +104,13 @@ export function useGameState({ gameId }: UseGameStateOptions): UseGameStateRetur
     setGameData(data);
   }, []);
 
+  const refetch = useCallback(() => fetchGameData(), [fetchGameData]);
+
   return {
     gameData,
     isLoading,
     error,
-    refetch: () => fetchGameData(),
+    refetch,
     updateGameData,
   };
 }

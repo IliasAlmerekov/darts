@@ -38,16 +38,11 @@ export function usePlayerStats({
     setError(null);
 
     getPlayerStats(limit, offset, sortParam, controller.signal)
-      .then((data) => {
+      .then(({ items, total }) => {
         if (controller.signal.aborted) return;
 
-        if (data.items) {
-          setStats(data.items);
-          setTotal(data.total ?? 0);
-        } else if (Array.isArray(data)) {
-          setStats(data);
-          setTotal((data as PlayerProps[]).length);
-        }
+        setStats(items);
+        setTotal(total);
         setLoading(false);
       })
       .catch((err: unknown) => {
