@@ -6,7 +6,7 @@ import ScrollToTop from "@/app/ScrollToTop";
 import AdminLayoutRoute from "@/app/routes/AdminLayoutRoute";
 import NotFoundPage from "@/app/routes/NotFoundPage";
 import ProtectedRoutes from "@/app/ProtectedRoutes";
-import { scheduleSelectiveRouteWarmUp } from "@/app/routeWarmup";
+import { scheduleSelectiveRouteWarmUp, scheduleStatisticsPrefetch } from "@/app/routeWarmup";
 import { clearUnauthorizedHandler, setUnauthorizedHandler } from "@/shared/api";
 import { ROUTES } from "@/lib/routes";
 import { invalidateAuthState } from "@/shared/store/auth";
@@ -47,7 +47,13 @@ function UnauthorizedNavigationBridge(): null {
 
 function App(): React.JSX.Element {
   useEffect(() => {
-    return scheduleSelectiveRouteWarmUp();
+    const stopRouteWarmUp = scheduleSelectiveRouteWarmUp();
+    const stopStatisticsPrefetch = scheduleStatisticsPrefetch();
+
+    return () => {
+      stopStatisticsPrefetch();
+      stopRouteWarmUp();
+    };
   }, []);
 
   return (

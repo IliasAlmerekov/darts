@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 import {
+  scheduleStatisticsPrefetch,
   scheduleSelectiveRouteWarmUp,
   selectiveRouteWarmUpTargets,
   warmUpSelectiveRoutes,
@@ -88,5 +89,32 @@ describe("routeWarmup", () => {
     cleanup();
 
     expect(clearTimeout).toHaveBeenCalledWith(11);
+  });
+
+  it("schedules statistics prefetch with the same idle fallback strategy", () => {
+    const prefetch = vi.fn();
+    const clearTimeout = vi.fn();
+    let scheduledCallback: (() => void) | undefined;
+
+    const cleanup = scheduleStatisticsPrefetch(
+      {
+        setTimeout: vi.fn((callback: () => void) => {
+          scheduledCallback = callback;
+          return 17;
+        }),
+        clearTimeout,
+      },
+      prefetch,
+    );
+
+    expect(prefetch).not.toHaveBeenCalled();
+
+    scheduledCallback?.();
+
+    expect(prefetch).toHaveBeenCalledTimes(1);
+
+    cleanup();
+
+    expect(clearTimeout).toHaveBeenCalledWith(17);
   });
 });

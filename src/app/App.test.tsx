@@ -47,6 +47,7 @@ vi.mock("@/shared/store/game-state", () => ({
 
 vi.mock("@/app/routeWarmup", () => ({
   scheduleSelectiveRouteWarmUp: vi.fn(() => vi.fn()),
+  scheduleStatisticsPrefetch: vi.fn(() => vi.fn()),
 }));
 
 vi.mock("@/pages/LoginPage", () => ({
@@ -94,7 +95,7 @@ vi.mock("@/pages/PlayerProfilePage", () => ({
 }));
 
 import { clearUnauthorizedHandler, setUnauthorizedHandler } from "@/shared/api";
-import { scheduleSelectiveRouteWarmUp } from "@/app/routeWarmup";
+import { scheduleSelectiveRouteWarmUp, scheduleStatisticsPrefetch } from "@/app/routeWarmup";
 import { invalidateAuthState } from "@/shared/store/auth";
 import { resetRoomStore } from "@/shared/store/game-session";
 import { resetGameStore } from "@/shared/store/game-state";
@@ -213,16 +214,20 @@ describe("App routing", () => {
   it("schedules selective route warm-up on mount and runs cleanup on unmount", async () => {
     const stopWarmup = vi.fn();
     vi.mocked(scheduleSelectiveRouteWarmUp).mockReturnValueOnce(stopWarmup);
+    const stopStatisticsPrefetch = vi.fn();
+    vi.mocked(scheduleStatisticsPrefetch).mockReturnValueOnce(stopStatisticsPrefetch);
 
     const { unmount } = await renderApp();
 
     expect(scheduleSelectiveRouteWarmUp).toHaveBeenCalledTimes(1);
+    expect(scheduleStatisticsPrefetch).toHaveBeenCalledTimes(1);
 
     await act(async () => {
       unmount();
     });
 
     expect(stopWarmup).toHaveBeenCalledTimes(1);
+    expect(stopStatisticsPrefetch).toHaveBeenCalledTimes(1);
   });
 
   it("should clear auth, room, and game stores when unauthorized handler fires", async () => {
