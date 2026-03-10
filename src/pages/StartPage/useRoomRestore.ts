@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import type { NavigateFunction } from "react-router-dom";
 import { getGameThrows } from "@/shared/api/game";
 import { getInvitation } from "@/shared/api/room";
+import { clientLogger } from "@/shared/lib/clientLogger";
 import { setCurrentGameId, setGameData, setInvitation } from "@/store";
 import { ROUTES } from "@/lib/routes";
 
@@ -144,7 +145,10 @@ export function useRoomRestore({
           return;
         }
 
-        console.error("Failed to restore game data:", error);
+        clientLogger.error("room.restore.failed", {
+          context: { currentGameId, gameId, invitationGameId },
+          error,
+        });
         navigateToActiveStart(navigate, currentGameId);
       } finally {
         if (!signal.aborted) {

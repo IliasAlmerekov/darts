@@ -1,5 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { getPlayerStats } from "@/shared/api/statistics";
+import { clientLogger } from "@/shared/lib/clientLogger";
+import { registerAuthInvalidationListener } from "@/shared/store/auth";
 import type { PlayerProps } from "@/types";
 
 type UsePlayerStatsParams = {
@@ -23,6 +25,10 @@ type PlayerStatsCacheEntry = {
   total: number;
 };
 
+type PlayerStatsRequestResult = PlayerStatsCacheEntry & {
+  cacheGeneration: number;
+};
+
 export const INITIAL_PLAYER_STATS_QUERY: Readonly<PlayerStatsQuery> = {
   limit: 10,
   offset: 0,
@@ -30,7 +36,8 @@ export const INITIAL_PLAYER_STATS_QUERY: Readonly<PlayerStatsQuery> = {
 };
 
 const playerStatsCache = new Map<string, PlayerStatsCacheEntry>();
-const playerStatsPrefetches = new Map<string, Promise<PlayerStatsCacheEntry>>();
+const playerStatsPrefetches = new Map<string, Promise<PlayerStatsRequestResult>>();
+let playerStatsCacheGeneration = 0;
 
 function getPlayerStatsQueryKey({ limit, offset, sortParam }: PlayerStatsQuery): string {
   return `${limit}:${offset}:${sortParam}`;
@@ -44,19 +51,29 @@ function cachePlayerStats(queryKey: string, entry: PlayerStatsCacheEntry): Playe
 function createPlayerStatsRequest(
   { limit, offset, sortParam }: PlayerStatsQuery,
   signal?: AbortSignal,
-): Promise<PlayerStatsCacheEntry> {
+  cacheGeneration = playerStatsCacheGeneration,
+): Promise<PlayerStatsRequestResult> {
   return getPlayerStats(limit, offset, sortParam, signal).then(({ items, total }) => {
-    return cachePlayerStats(getPlayerStatsQueryKey({ limit, offset, sortParam }), {
-      items,
-      total,
-    });
+    const entry = { items, total };
+
+    if (cacheGeneration === playerStatsCacheGeneration) {
+      cachePlayerStats(getPlayerStatsQueryKey({ limit, offset, sortParam }), entry);
+    }
+
+    return {
+      ...entry,
+      cacheGeneration,
+    };
   });
 }
 
 export function clearPlayerStatsCache(): void {
+  playerStatsCacheGeneration += 1;
   playerStatsCache.clear();
   playerStatsPrefetches.clear();
 }
+
+registerAuthInvalidationListener(clearPlayerStatsCache);
 
 export function prefetchPlayerStats(query: PlayerStatsQuery): Promise<void> {
   const queryKey = getPlayerStatsQueryKey(query);
@@ -125,6 +142,7 @@ export function usePlayerStats({
 
     let disposed = false;
     const requestId = ++requestIdRef.current;
+    const cacheGeneration = playerStatsCacheGeneration;
     const prefetchedRequest = shouldForceRefresh ? undefined : playerStatsPrefetches.get(queryKey);
     const controller = prefetchedRequest === undefined ? new AbortController() : null;
 
@@ -134,15 +152,25 @@ export function usePlayerStats({
 
     const request =
       prefetchedRequest ??
-      createPlayerStatsRequest({ limit, offset, sortParam }, controller?.signal).finally(() => {
+      createPlayerStatsRequest(
+        { limit, offset, sortParam },
+        controller?.signal,
+        cacheGeneration,
+      ).finally(() => {
         if (abortRef.current === controller) {
           abortRef.current = null;
         }
       });
 
     request
-      .then(({ items, total: nextTotal }) => {
-        if (disposed || requestId !== requestIdRef.current) return;
+      .then(({ items, total: nextTotal, cacheGeneration: responseCacheGeneration }) => {
+        if (
+          disposed ||
+          requestId !== requestIdRef.current ||
+          responseCacheGeneration !== playerStatsCacheGeneration
+        ) {
+          return;
+        }
 
         setStats(items);
         setTotal(nextTotal);
@@ -151,7 +179,10 @@ export function usePlayerStats({
       .catch((err: unknown) => {
         if (disposed || controller?.signal.aborted || requestId !== requestIdRef.current) return;
 
-        console.error("Failed to fetch player stats:", err);
+        clientLogger.error("statistics.player-stats.fetch.failed", {
+          context: { limit, offset, sortParam },
+          error: err,
+        });
         setError("Could not load player statistics");
         setLoading(false);
       });
