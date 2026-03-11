@@ -3,7 +3,7 @@ import { finishGame, resetGameStateVersion } from "@/shared/api/game";
 import { toUserErrorMessage } from "@/lib/error-to-user-message";
 import { ROUTES } from "@/lib/routes";
 import { unlockSounds } from "@/lib/soundPlayer";
-import { setLastFinishedGameId, setLastFinishedGameSummary } from "@/store";
+import { setLastFinishedGameSummary } from "@/store";
 import { clientLogger } from "@/shared/lib/clientLogger";
 import type { GameSummaryResponse, GameThrowsResponse } from "@/types";
 import { shouldAutoFinishGame, shouldNavigateToSummary } from "./gameLogic.helpers";
@@ -105,7 +105,6 @@ export function useAutoFinishGame({
         }
 
         resetGameStateVersion(gameId);
-        setLastFinishedGameId(gameId);
         setLastFinishedGameSummary({ gameId, summary });
         navigate(ROUTES.summary(gameId), {
           state: { finishedGameId: gameId, summary },
