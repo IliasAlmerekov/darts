@@ -1,4 +1,4 @@
-# AGENTS.md — Frontend (React 18 + TypeScript + Vite + FSD)
+# AGENTS.md — Frontend (React 18 + TypeScript + Vite – pages‑based architecture)
 
 ## 0) Quality bar (non-negotiable)
 
@@ -30,42 +30,24 @@
   - `qrcode.react`
   - `clsx`
 
-## 2) Project structure (Feature-Sliced Design)
+## 2) Project structure (pages-based)
 
-- High-level layers:
-  - `app/` — application bootstrap, providers, global styles
-  - `features/` — business features (main development unit)
-  - `components/` — shared UI components (no business logic)
-  - `stores/` — global Nanostores only
-  - `hooks/` — shared hooks
-  - `lib/` — shared utilities, API client
-  - `types/` — shared TypeScript types
-  - `utils/` — generic helpers
-- No cross-feature imports except through public APIs (`index.ts`).
+The codebase is organised around three primary folders under `src/`:
 
-### Feature boundaries (strict)
+- `app/` — application bootstrap, providers, router and global guards
+- `pages/` — route‑level components; each file or directory represents a page
+- `shared/` — reusable utilities, API client, hooks, types and UI components
 
-- A feature **MUST NOT** import internals of another feature.
-- Only allowed import from another feature:
-  - `features/<feature>/index.ts`
-- Shared logic belongs in `lib/`, `hooks/`, `components/`, or `stores`, not copied between features.
+All shared logic lives in `shared/`; pages import from `shared` or other pages via
+their public `index.ts` exports. Deep or reverse imports are forbidden.
 
-## 3) Feature structure (mandatory)
+### Dependency rule (strict)
 
-Each feature follows this shape:
+- `app` → `pages` → `shared`
+- reverse imports are **FORBIDDEN**
+- sibling pages may only interact through exported APIs (no internal imports)
 
-```text
-features/<feature>/
-├── index.ts        # public API (exports only)
-├── api/            # API calls
-├── components/     # UI components (feature-scoped)
-├── hooks/          # feature hooks
-├── lib/            # feature business logic
-└── routes/         # pages / router entries
-```
-
-- `index.ts` must explicitly export public parts.
-- No side-effects in `index.ts`.
+<!-- feature‑specific structure removed; we lean on pages and shared packages -->
 
 ## 4) React & TypeScript rules
 

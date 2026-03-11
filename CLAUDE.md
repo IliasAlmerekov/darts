@@ -23,12 +23,17 @@ src/
   shared/   # api client, utilities, hooks, types, shared UI kit
 ```
 
+This is a _pages-based_ layout rather than a full Feature‑Sliced Design; the
+authoritative folders are `app`, `pages` and `shared`. Other directories may
+exist (e.g. `stores`, `utils` inside `shared`), but routes and features are
+derived from `pages`.
+
 ### Dependency Rule (strict)
 
 `app → pages → shared`
 
 - Reverse imports: **FORBIDDEN**
-- Cross-imports between sibling slices: **FORBIDDEN** (only via `index.ts` public API)
+- Cross-imports between sibling pages: **FORBIDDEN** (only via `index.ts` public API)
 - Deep imports into another slice's internals: **FORBIDDEN**
 
 ## Critical Conventions
