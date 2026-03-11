@@ -86,21 +86,20 @@ export function setGameSettings(settings: GameSettingsResponse, expectedGameId?:
 export function setGameScoreboardDelta(
   scoreboardDelta: ScoreboardDelta,
   expectedGameId?: number,
-): GameThrowsResponse | null {
+): void {
   const currentGameData = $gameData.get();
   if (currentGameData === null) {
-    return null;
+    return;
   }
 
   if (typeof expectedGameId === "number" && currentGameData.id !== expectedGameId) {
-    return null;
+    return;
   }
 
   const nextGameData = applyGameScoreboardDelta(currentGameData, scoreboardDelta);
 
   $gameData.set(nextGameData);
   $error.set(null);
-  return nextGameData;
 }
 
 /**

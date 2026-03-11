@@ -1,6 +1,5 @@
 import { apiClient, API_BASE_URL } from "./client";
 import { ApiError, TimeoutError } from "./errors";
-import { invalidateAuthState } from "@/store/auth";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -132,9 +131,9 @@ export async function loginWithCredentials(credentials: LoginCredentials): Promi
 /**
  * Logs out the current user.
  */
-export async function logout(): Promise<void> {
+export async function logout(onSuccess?: () => void): Promise<void> {
   await apiClient.post(LOGOUT_ENDPOINT);
-  invalidateAuthState();
+  onSuccess?.();
 }
 
 /**
