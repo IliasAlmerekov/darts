@@ -3,8 +3,9 @@ import { beforeEach, describe, expect, it } from "vitest";
 import {
   $error,
   $gameData,
-  $gameSettingsByGameId,
+  $gameSettings,
   $isLoading,
+  getCachedGameSettings,
   setError,
   resetGameStore,
   setGameData,
@@ -82,8 +83,33 @@ describe("game-state store", () => {
       });
 
       expect($gameData.get()?.winnerId).toBe(1);
-      expect($gameSettingsByGameId.get()[1]).toEqual(mockGameData.settings);
+      expect($gameSettings.get()).toEqual(mockGameData.settings);
       expect($error.get()).toBeNull();
+    });
+
+    it("should trust the only active player flag when activePlayerId is stale", () => {
+      setGameData({
+        ...mockGameData,
+        activePlayerId: 1,
+        currentThrowCount: 0,
+        players: [
+          {
+            ...mockGameData.players[0]!,
+            isActive: false,
+            throwsInCurrentRound: 0,
+            currentRoundThrows: [],
+          },
+          {
+            ...mockGameData.players[1]!,
+            isActive: true,
+            position: null,
+          },
+        ],
+      });
+
+      expect($gameData.get()?.activePlayerId).toBe(2);
+      expect($gameData.get()?.players[0]?.isActive).toBe(false);
+      expect($gameData.get()?.players[1]?.isActive).toBe(true);
     });
 
     it("should handle null game data", () => {
@@ -115,7 +141,7 @@ describe("game-state store", () => {
           tripleOut: true,
         },
       });
-      expect($gameSettingsByGameId.get()[1]).toEqual({
+      expect($gameSettings.get()).toEqual({
         startScore: 301,
         doubleOut: false,
         tripleOut: true,
@@ -135,7 +161,8 @@ describe("game-state store", () => {
       );
 
       expect($gameData.get()).toEqual(mockGameData);
-      expect($gameSettingsByGameId.get()[99]).toEqual({
+      expect($gameData.get()?.settings).toEqual(mockGameData.settings);
+      expect(getCachedGameSettings(99)).toEqual({
         startScore: 301,
         doubleOut: false,
         tripleOut: true,
@@ -193,7 +220,33 @@ describe("game-state store", () => {
         1,
       );
 
-      expect($gameData.get()).toEqual(nextGameData);
+      expect(nextGameData).toBeUndefined();
+      expect($gameData.get()).toEqual({
+        ...mockGameData,
+        activePlayerId: 2,
+        currentRound: 6,
+        currentThrowCount: 0,
+        status: "started",
+        winnerId: null,
+        players: [
+          {
+            ...mockGameData.players[0]!,
+            score: 60,
+            isActive: false,
+            position: null,
+            isBust: false,
+            throwsInCurrentRound: 2,
+            currentRoundThrows: [{ value: 20 }, { value: 20 }],
+          },
+          {
+            ...mockGameData.players[1]!,
+            score: 101,
+            isActive: true,
+            position: 1,
+            isBust: false,
+          },
+        ],
+      });
       expect($error.get()).toBeNull();
     });
 
@@ -210,7 +263,7 @@ describe("game-state store", () => {
         99,
       );
 
-      expect(nextGameData).toBeNull();
+      expect(nextGameData).toBeUndefined();
       expect($gameData.get()).toEqual(mockGameData);
     });
   });
@@ -253,7 +306,7 @@ describe("game-state store", () => {
       expect($gameData.get()).toBeNull();
       expect($isLoading.get()).toBe(false);
       expect($error.get()).toBeNull();
-      expect($gameSettingsByGameId.get()).toEqual({});
+      expect(getCachedGameSettings(1)).toBeNull();
     });
   });
 });

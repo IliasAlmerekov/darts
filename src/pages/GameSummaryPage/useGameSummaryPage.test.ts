@@ -15,7 +15,6 @@ const setCurrentGameIdMock = vi.fn();
 const setGameDataMock = vi.fn();
 const setGameScoreboardDeltaMock = vi.fn();
 const setInvitationMock = vi.fn();
-const setLastFinishedGameIdMock = vi.fn();
 const setLastFinishedGameSummaryMock = vi.fn();
 const resetRoomStoreMock = vi.fn();
 
@@ -62,7 +61,6 @@ vi.mock("@/store", async (importOriginal) => {
     setGameData: (...args: unknown[]) => setGameDataMock(...args),
     setGameScoreboardDelta: (...args: unknown[]) => setGameScoreboardDeltaMock(...args),
     setInvitation: (...args: unknown[]) => setInvitationMock(...args),
-    setLastFinishedGameId: (...args: unknown[]) => setLastFinishedGameIdMock(...args),
     setLastFinishedGameSummary: (...args: unknown[]) => setLastFinishedGameSummaryMock(...args),
     resetRoomStore: (...args: unknown[]) => resetRoomStoreMock(...args),
   };
@@ -203,7 +201,6 @@ describe("useGameSummaryPage", () => {
     setGameScoreboardDeltaMock.mockReset();
     setCurrentGameIdMock.mockReset();
     setInvitationMock.mockReset();
-    setLastFinishedGameIdMock.mockReset();
     setLastFinishedGameSummaryMock.mockReset();
     resetRoomStoreMock.mockReset();
 
@@ -235,11 +232,10 @@ describe("useGameSummaryPage", () => {
     });
     setGameScoreboardDeltaMock.mockImplementation((scoreboardDelta: ScoreboardDelta) => {
       if (!currentGameState) {
-        return null;
+        return;
       }
 
       currentGameState = applyScoreboardDelta(currentGameState, scoreboardDelta);
-      return currentGameState;
     });
   });
 
@@ -604,7 +600,6 @@ describe("useGameSummaryPage", () => {
         },
       ],
     });
-    expect(setLastFinishedGameIdMock).toHaveBeenCalledWith(42);
   });
 
   it("uses summary from store without refetching finished game", () => {
@@ -634,7 +629,6 @@ describe("useGameSummaryPage", () => {
       }),
     ]);
     expect(setLastFinishedGameSummaryMock).not.toHaveBeenCalled();
-    expect(setLastFinishedGameIdMock).toHaveBeenCalledWith(42);
   });
 
   it("fetches summary from backend for direct URL entry when navigation state and cache are absent", async () => {

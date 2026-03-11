@@ -1,15 +1,11 @@
 import { atom, computed } from "nanostores";
 import type { GameSettingsResponse, GameThrowsResponse, ScoreboardDelta } from "@/types";
-import {
-  applyGameScoreboardDelta,
-  deriveWinnerId,
-  normalizeGameData,
-} from "../lib/gameStateNormalizer";
+import { applyGameScoreboardDelta, normalizeGameData } from "../lib/gameStateNormalizer";
 
 export const $gameData = atom<GameThrowsResponse | null>(null);
 export const $isLoading = atom<boolean>(false);
 export const $error = atom<Error | null>(null);
-export const $gameSettingsByGameId = atom<Record<number, GameSettingsResponse>>({});
+const $gameSettingsByGameId = atom<Record<number, GameSettingsResponse>>({});
 
 export const $gameSettings = computed($gameData, (gameData) => {
   return gameData?.settings ?? null;
@@ -33,7 +29,9 @@ function setCachedGameSettings(gameId: number, settings: GameSettingsResponse): 
   });
 }
 
-export { deriveWinnerId, normalizeGameData };
+export function getCachedGameSettings(gameId: number): GameSettingsResponse | null {
+  return $gameSettingsByGameId.get()[gameId] ?? null;
+}
 
 /**
  * Replaces the game data and clears any previous error.
@@ -86,21 +84,20 @@ export function setGameSettings(settings: GameSettingsResponse, expectedGameId?:
 export function setGameScoreboardDelta(
   scoreboardDelta: ScoreboardDelta,
   expectedGameId?: number,
-): GameThrowsResponse | null {
+): void {
   const currentGameData = $gameData.get();
   if (currentGameData === null) {
-    return null;
+    return;
   }
 
   if (typeof expectedGameId === "number" && currentGameData.id !== expectedGameId) {
-    return null;
+    return;
   }
 
   const nextGameData = applyGameScoreboardDelta(currentGameData, scoreboardDelta);
 
   $gameData.set(nextGameData);
   $error.set(null);
-  return nextGameData;
 }
 
 /**

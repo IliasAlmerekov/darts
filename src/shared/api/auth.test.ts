@@ -3,7 +3,6 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { getAuthenticatedUser, loginWithCredentials, logout, registerUser } from "./auth";
 import { apiClient } from "./client";
 import { TimeoutError } from "./errors";
-import { $authChecked, $user, setAuthenticatedUser } from "@/store/auth";
 
 function createMockResponse(body: unknown): Response {
   return {
@@ -219,19 +218,21 @@ describe("logout", () => {
     vi.restoreAllMocks();
   });
 
-  it("invalidates cached auth state after successful logout", async () => {
-    setAuthenticatedUser({
-      success: true,
-      roles: ["ROLE_ADMIN"],
-      id: 11,
-      redirect: "/start",
-    });
+  it("calls the success callback after successful logout", async () => {
+    const onSuccess = vi.fn();
     vi.spyOn(apiClient, "post").mockResolvedValueOnce(undefined);
 
-    await logout();
+    await logout(onSuccess);
 
     expect(apiClient.post).toHaveBeenCalledWith("/logout");
-    expect($user.get()).toBeNull();
-    expect($authChecked.get()).toBe(false);
+    expect(onSuccess).toHaveBeenCalledTimes(1);
+  });
+
+  it("does not call the success callback when logout fails", async () => {
+    const onSuccess = vi.fn();
+    vi.spyOn(apiClient, "post").mockRejectedValueOnce(new Error("Network error"));
+
+    await expect(logout(onSuccess)).rejects.toThrow("Network error");
+    expect(onSuccess).not.toHaveBeenCalled();
   });
 });

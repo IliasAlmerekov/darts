@@ -13,6 +13,40 @@ type ThrowQueueItem = {
   request: ThrowRequest;
 };
 
+interface TurnRollbackDetectionOptions {
+  confirmedBaseState: GameThrowsResponse;
+  latestGameState: GameThrowsResponse;
+  acknowledgedGameState: GameThrowsResponse;
+}
+
+function didServerRollbackCompletedTurn({
+  confirmedBaseState,
+  latestGameState,
+  acknowledgedGameState,
+}: TurnRollbackDetectionOptions): boolean {
+  if (latestGameState.status !== "started" || acknowledgedGameState.status !== "started") {
+    return false;
+  }
+
+  if (latestGameState.currentThrowCount !== 0) {
+    return false;
+  }
+
+  if (
+    latestGameState.activePlayerId === null ||
+    acknowledgedGameState.activePlayerId === null ||
+    confirmedBaseState.activePlayerId === null
+  ) {
+    return false;
+  }
+
+  return (
+    latestGameState.activePlayerId !== acknowledgedGameState.activePlayerId &&
+    latestGameState.activePlayerId !== confirmedBaseState.activePlayerId &&
+    acknowledgedGameState.activePlayerId === confirmedBaseState.activePlayerId
+  );
+}
+
 interface UseThrowQueueOptions {
   gameId: number | null;
   executeUndo: () => Promise<void>;
@@ -125,9 +159,37 @@ export function useThrowQueue({
           if (pendingQueueRef.current.length === 0) {
             const latestGameState = $gameData.get();
             if (latestGameState) {
-              setGameData(
-                applyScoreboardDeltaToGameState(latestGameState, throwAck.scoreboardDelta),
+              const acknowledgedGameState = applyScoreboardDeltaToGameState(
+                latestGameState,
+                throwAck.scoreboardDelta,
               );
+
+              if (
+                didServerRollbackCompletedTurn({
+                  confirmedBaseState,
+                  latestGameState,
+                  acknowledgedGameState,
+                })
+              ) {
+                clientLogger.warn("game.throw.queue-sync.turn-rollback-detected", {
+                  context: {
+                    acknowledgedActivePlayerId: acknowledgedGameState.activePlayerId,
+                    confirmedActivePlayerId: confirmedBaseState.activePlayerId,
+                    gameId,
+                    optimisticActivePlayerId: latestGameState.activePlayerId,
+                  },
+                });
+
+                isQueueSyncFailedRef.current = true;
+                await reconcileGameState(
+                  "Received inconsistent turn update from server. Refreshed latest game state.",
+                );
+                confirmedGameStateRef.current = $gameData.get();
+                playSound("error");
+                break;
+              }
+
+              setGameData(acknowledgedGameState);
             }
             continue;
           }

@@ -1,12 +1,16 @@
 import type { GameThrowsResponse, ScoreboardDelta } from "@/types";
 
 export function deriveActivePlayerId(data: GameThrowsResponse): number | null {
+  const activePlayers = data.players.filter((player) => player.isActive === true);
+  if (activePlayers.length === 1 && activePlayers[0]?.id !== data.activePlayerId) {
+    return activePlayers[0]?.id ?? null;
+  }
+
   const hasValidActivePlayerId = data.players.some((player) => player.id === data.activePlayerId);
   if (hasValidActivePlayerId) {
     return data.activePlayerId;
   }
 
-  const activePlayers = data.players.filter((player) => player.isActive === true);
   if (activePlayers.length === 1) {
     return activePlayers[0]?.id ?? null;
   }

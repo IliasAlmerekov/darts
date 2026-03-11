@@ -23,12 +23,17 @@ src/
   shared/   # api client, utilities, hooks, types, shared UI kit
 ```
 
+This is a _pages-based_ layout rather than a full Feature‑Sliced Design; the
+authoritative folders are `app`, `pages` and `shared`. Other directories may
+exist (e.g. `stores`, `utils` inside `shared`), but routes and features are
+derived from `pages`.
+
 ### Dependency Rule (strict)
 
 `app → pages → shared`
 
 - Reverse imports: **FORBIDDEN**
-- Cross-imports between sibling slices: **FORBIDDEN** (only via `index.ts` public API)
+- Cross-imports between sibling pages: **FORBIDDEN** (only via `index.ts` public API)
 - Deep imports into another slice's internals: **FORBIDDEN**
 
 ## Critical Conventions
@@ -79,13 +84,17 @@ src/
 
 ## Verification Commands
 
+The repository-level validation suite is enforced by the `pre-push` hook. Agents should keep changes compatible with these commands, but should not automatically run the full suite after every edit unless the user explicitly asks or troubleshooting requires it.
+
 ```bash
+npm run build
 npm run eslint
 npm run stylelint
+npm run prettier:check
 npm run test
 npm run typecheck
-npm run test:e2e   # required for critical flows and final phase
-npx prettier --check .
+npm run secrets:check
+npm run test:e2e
 ```
 
 ## Development Workflow — 4 Phases

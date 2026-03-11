@@ -20,6 +20,7 @@
     "dev": "vite",
     "build": "tsc && vite build",
     "preview": "vite preview",
+    "prettier:check": "prettier --check .",
     "eslint": "eslint ./src",
     "stylelint": "stylelint **/*.css",
     "stylelint:fix": "stylelint **/*.css --fix",
@@ -28,6 +29,7 @@
     "coverage": "vitest run --coverage",
     "test:e2e": "playwright test",
     "secrets:check": "node ./scripts/check-secrets.mjs",
+    "validate:push": "npm run build && npm run eslint && npm run stylelint && npm run prettier:check && npm run typecheck && npm run secrets:check && npm run test && npm run test:e2e",
     "prepare": "husky",
     "commitlint": "commitlint --edit",
     "knip": "knip"

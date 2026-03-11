@@ -3,7 +3,8 @@ import type { MutableRefObject } from "react";
 import { undoLastThrow } from "@/shared/api/game";
 import { playSound } from "@/lib/soundPlayer";
 import { clientLogger } from "@/shared/lib/clientLogger";
-import { $gameData, normalizeGameData, setGameData, setGameScoreboardDelta } from "@/store";
+import { normalizeGameData } from "@/shared/lib/gameStateNormalizer";
+import { $gameData, setGameData, setGameScoreboardDelta } from "@/store";
 import type { GameThrowsResponse, UndoAckResponse } from "@/types";
 import { applyOptimisticUndo } from "./throwStateService";
 
@@ -57,7 +58,17 @@ export function useUndoFlow({ gameId, reconcileGameState }: UseUndoFlowOptions):
 
       const undoResponse = await undoLastThrow(gameId);
       if (isUndoAckResponse(undoResponse)) {
-        const patchedGameState = setGameScoreboardDelta(undoResponse.scoreboardDelta, gameId);
+        const gameStateBeforePatch = $gameData.get();
+        setGameScoreboardDelta(undoResponse.scoreboardDelta, gameId);
+        const gameStateAfterPatch = $gameData.get();
+        const patchedGameState =
+          gameStateBeforePatch !== null &&
+          gameStateBeforePatch.id === gameId &&
+          gameStateAfterPatch !== null &&
+          gameStateAfterPatch.id === gameId
+            ? gameStateAfterPatch
+            : null;
+
         if (
           patchedGameState &&
           (patchedGameState.status !== "started" ||

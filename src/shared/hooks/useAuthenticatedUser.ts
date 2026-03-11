@@ -2,7 +2,7 @@ import { useEffect } from "react";
 import { useStore } from "@nanostores/react";
 import { getAuthenticatedUser, type AuthenticatedUser } from "@/shared/api/auth";
 import { TimeoutError } from "@/shared/api/errors";
-import { $authChecked, $authError, $user, setAuthenticatedUser, setAuthError } from "@/store/auth";
+import { $authChecked, $authError, $user, setAuthenticatedUser, setAuthFailed } from "@/store/auth";
 import { setCurrentGameId } from "@/store";
 
 const AUTHENTICATED_USER_TIMEOUT_MS = 5000;
@@ -65,9 +65,9 @@ export const useAuthenticatedUser = (): UseAuthenticatedUserResult => {
         }
 
         if (err instanceof Error) {
-          setAuthError(err.message);
+          setAuthFailed(err.message);
         } else {
-          setAuthError("Unknown error");
+          setAuthFailed("Unknown error");
         }
       }
     };
