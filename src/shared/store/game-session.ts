@@ -12,9 +12,9 @@ export interface FinishedGameSummarySnapshot {
   summary: GameSummaryResponse;
 }
 
-const STORAGE_KEY = "darts_current_game_id";
-const INVITATION_STORAGE_KEY = "darts_current_invitation";
-const PRE_CREATE_SETTINGS_STORAGE_KEY = "darts_pre_create_game_settings";
+export const GAME_ID_STORAGE_KEY = "darts_current_game_id";
+export const INVITATION_STORAGE_KEY = "darts_current_invitation";
+export const PRE_CREATE_SETTINGS_STORAGE_KEY = "darts_pre_create_game_settings";
 
 const DEFAULT_PRE_CREATE_GAME_SETTINGS: CreateGameSettingsPayload = {
   startScore: 301,
@@ -46,14 +46,14 @@ function getStoredGameId(): number | null {
   }
 
   try {
-    const stored = window.sessionStorage.getItem(STORAGE_KEY);
+    const stored = window.sessionStorage.getItem(GAME_ID_STORAGE_KEY);
     if (stored) {
       const parsed = Number(stored);
       return Number.isFinite(parsed) ? parsed : null;
     }
   } catch (error) {
     clientLogger.error("game-session.read-game-id.failed", {
-      context: { storageKey: STORAGE_KEY },
+      context: { storageKey: GAME_ID_STORAGE_KEY },
       error,
     });
   }
@@ -67,13 +67,13 @@ function setStoredGameId(gameId: number | null): void {
 
   try {
     if (gameId !== null) {
-      window.sessionStorage.setItem(STORAGE_KEY, String(gameId));
+      window.sessionStorage.setItem(GAME_ID_STORAGE_KEY, String(gameId));
     } else {
-      window.sessionStorage.removeItem(STORAGE_KEY);
+      window.sessionStorage.removeItem(GAME_ID_STORAGE_KEY);
     }
   } catch (error) {
     clientLogger.error("game-session.persist-game-id.failed", {
-      context: { gameId, storageKey: STORAGE_KEY },
+      context: { gameId, storageKey: GAME_ID_STORAGE_KEY },
       error,
     });
   }

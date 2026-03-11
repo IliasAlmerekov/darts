@@ -3,8 +3,9 @@ import { beforeEach, describe, expect, it } from "vitest";
 import {
   $error,
   $gameData,
-  $gameSettingsByGameId,
+  $gameSettings,
   $isLoading,
+  getCachedGameSettings,
   setError,
   resetGameStore,
   setGameData,
@@ -82,7 +83,7 @@ describe("game-state store", () => {
       });
 
       expect($gameData.get()?.winnerId).toBe(1);
-      expect($gameSettingsByGameId.get()[1]).toEqual(mockGameData.settings);
+      expect($gameSettings.get()).toEqual(mockGameData.settings);
       expect($error.get()).toBeNull();
     });
 
@@ -140,7 +141,7 @@ describe("game-state store", () => {
           tripleOut: true,
         },
       });
-      expect($gameSettingsByGameId.get()[1]).toEqual({
+      expect($gameSettings.get()).toEqual({
         startScore: 301,
         doubleOut: false,
         tripleOut: true,
@@ -160,7 +161,8 @@ describe("game-state store", () => {
       );
 
       expect($gameData.get()).toEqual(mockGameData);
-      expect($gameSettingsByGameId.get()[99]).toEqual({
+      expect($gameData.get()?.settings).toEqual(mockGameData.settings);
+      expect(getCachedGameSettings(99)).toEqual({
         startScore: 301,
         doubleOut: false,
         tripleOut: true,
@@ -304,7 +306,7 @@ describe("game-state store", () => {
       expect($gameData.get()).toBeNull();
       expect($isLoading.get()).toBe(false);
       expect($error.get()).toBeNull();
-      expect($gameSettingsByGameId.get()).toEqual({});
+      expect(getCachedGameSettings(1)).toBeNull();
     });
   });
 });

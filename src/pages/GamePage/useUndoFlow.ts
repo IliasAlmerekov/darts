@@ -3,7 +3,8 @@ import type { MutableRefObject } from "react";
 import { undoLastThrow } from "@/shared/api/game";
 import { playSound } from "@/lib/soundPlayer";
 import { clientLogger } from "@/shared/lib/clientLogger";
-import { $gameData, normalizeGameData, setGameData, setGameScoreboardDelta } from "@/store";
+import { normalizeGameData } from "@/shared/lib/gameStateNormalizer";
+import { $gameData, setGameData, setGameScoreboardDelta } from "@/store";
 import type { GameThrowsResponse, UndoAckResponse } from "@/types";
 import { applyOptimisticUndo } from "./throwStateService";
 
