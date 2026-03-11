@@ -20,12 +20,19 @@ export function setAuthenticatedUser(user: AuthenticatedUser | null): void {
 }
 
 /**
- * Stores an auth error and marks auth as checked to stop indefinite loading.
+ * Stores an auth failure, clears the cached user, and marks auth as checked.
  */
-export function setAuthError(error: string | null): void {
+export function setAuthFailed(error: string): void {
   $user.set(null);
   $authError.set(error);
   $authChecked.set(true);
+}
+
+/**
+ * Clears the cached auth error without mutating the authenticated user state.
+ */
+export function clearAuthError(): void {
+  $authError.set(null);
 }
 
 export function registerAuthInvalidationListener(listener: AuthInvalidationListener): () => void {
