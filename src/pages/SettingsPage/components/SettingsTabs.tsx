@@ -10,7 +10,7 @@ type SettingsTabOption = {
 type SettingsTabsProps = {
   title: string;
   options: readonly SettingsTabOption[];
-  selectedId: string | number;
+  selectedId: string | number | null;
   onChange: (id: string | number) => void;
   disabled?: boolean;
   mobileLayout?: "stack" | "grid";
@@ -24,23 +24,24 @@ function SettingsTabsComponent({
   disabled = false,
   mobileLayout = "stack",
 }: SettingsTabsProps): JSX.Element {
-  const activeIndex = Math.max(
-    0,
-    options.findIndex((option) => option.id === selectedId),
-  );
+  const activeIndex =
+    selectedId === null ? -1 : options.findIndex((option) => option.id === selectedId);
+  const hasActiveSelection = activeIndex >= 0;
 
   return (
     <section className={styles.group}>
       <h2 className={styles.title}>{title}</h2>
       <div className={clsx(styles.tabs, { [styles.tabsGrid ?? ""]: mobileLayout === "grid" })}>
-        <span
-          className={styles.slider}
-          style={{
-            width: `calc((100% - 8px) / ${options.length})`,
-            transform: `translateX(calc(${activeIndex} * 100%))`,
-          }}
-          aria-hidden="true"
-        />
+        {hasActiveSelection ? (
+          <span
+            className={styles.slider}
+            style={{
+              width: `calc((100% - 8px) / ${options.length})`,
+              transform: `translateX(calc(${activeIndex} * 100%))`,
+            }}
+            aria-hidden="true"
+          />
+        ) : null}
         {options.map((option) => {
           const isActive = option.id === selectedId;
 

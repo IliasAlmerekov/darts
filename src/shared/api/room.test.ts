@@ -61,4 +61,25 @@ describe("room/create-room api", () => {
       invitationLink: "/invite/520",
     });
   });
+
+  it("forwards pre-create settings when creating a room", async () => {
+    vi.mocked(apiClient.post).mockResolvedValueOnce({ gameId: 520 }).mockResolvedValueOnce({
+      gameId: 520,
+      invitationLink: "/invite/520",
+    });
+
+    await createRoom({
+      previousGameId: 77,
+      startScore: 501,
+      doubleOut: true,
+      tripleOut: false,
+    });
+
+    expect(apiClient.post).toHaveBeenNthCalledWith(1, "/room/create", {
+      previousGameId: 77,
+      startScore: 501,
+      doubleOut: true,
+      tripleOut: false,
+    });
+  });
 });

@@ -13,6 +13,7 @@ type UsePlayerThrowsDisplayParams = PlayerThrowsDisplayOptions;
  */
 export function usePlayerThrowsDisplay({
   isActive,
+  isBust,
   roundsCountLength,
   currentThrow1,
   currentThrow2,
@@ -31,6 +32,7 @@ export function usePlayerThrowsDisplay({
   return useMemo(() => {
     return getPlayerThrowsDisplay({
       isActive,
+      isBust,
       roundsCountLength,
       currentThrow1,
       currentThrow2,
@@ -48,6 +50,7 @@ export function usePlayerThrowsDisplay({
     });
   }, [
     isActive,
+    isBust,
     roundsCountLength,
     currentThrow1,
     currentThrow2,

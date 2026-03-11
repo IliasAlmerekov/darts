@@ -1,7 +1,7 @@
 import { useCallback, useRef, useState } from "react";
 import { recordThrow, setGameStateVersion } from "@/shared/api/game";
 import { clientLogger } from "@/shared/lib/clientLogger";
-import type { ThrowRequest } from "@/types";
+import type { GameThrowsResponse, ThrowRequest } from "@/types";
 import { playSound } from "@/lib/soundPlayer";
 import { $gameData, setGameData } from "@/store";
 import { applyScoreboardDeltaToGameState } from "./throwStateService";
@@ -24,6 +24,7 @@ interface UseThrowQueueReturn {
   isQueueFull: boolean;
   isQueueAtCapacity: () => boolean;
   hasPendingThrows: () => boolean;
+  captureConfirmedState: (state: GameThrowsResponse | null) => void;
   enqueueThrow: (request: ThrowRequest) => void;
   drainQueue: () => Promise<void>;
   requestUndoAfterSync: () => void;
@@ -39,6 +40,7 @@ export function useThrowQueue({
   const isDrainingRef = useRef(false);
   const isQueueSyncFailedRef = useRef(false);
   const pendingUndoRequestRef = useRef(false);
+  const confirmedGameStateRef = useRef<GameThrowsResponse | null>(null);
   const [pendingThrowCount, setPendingThrowCount] = useState(0);
 
   const syncPendingCount = useCallback((): void => {
@@ -56,6 +58,7 @@ export function useThrowQueue({
     isDrainingRef.current = false;
     isQueueSyncFailedRef.current = false;
     pendingUndoRequestRef.current = false;
+    confirmedGameStateRef.current = null;
     syncPendingCount();
   }, [syncPendingCount]);
 
@@ -65,6 +68,10 @@ export function useThrowQueue({
 
   const hasPendingThrows = useCallback((): boolean => {
     return pendingQueueRef.current.length > 0;
+  }, []);
+
+  const captureConfirmedState = useCallback((state: GameThrowsResponse | null): void => {
+    confirmedGameStateRef.current = state;
   }, []);
 
   const enqueueThrow = useCallback(
@@ -104,6 +111,17 @@ export function useThrowQueue({
           pendingQueueRef.current.shift();
           syncPendingCount();
 
+          const confirmedBaseState = confirmedGameStateRef.current ?? $gameData.get();
+          if (!confirmedBaseState) {
+            continue;
+          }
+
+          const confirmedGameState = applyScoreboardDeltaToGameState(
+            confirmedBaseState,
+            throwAck.scoreboardDelta,
+          );
+          confirmedGameStateRef.current = confirmedGameState;
+
           if (pendingQueueRef.current.length === 0) {
             const latestGameState = $gameData.get();
             if (latestGameState) {
@@ -111,6 +129,32 @@ export function useThrowQueue({
                 applyScoreboardDeltaToGameState(latestGameState, throwAck.scoreboardDelta),
               );
             }
+            continue;
+          }
+
+          const nextQueuedPlayerId = pendingQueueRef.current[0]?.request.playerId ?? null;
+          if (
+            nextQueuedPlayerId !== null &&
+            confirmedGameState.activePlayerId !== null &&
+            nextQueuedPlayerId !== confirmedGameState.activePlayerId
+          ) {
+            clientLogger.warn("game.throw.queue-sync.rebase-failed", {
+              context: {
+                confirmedActivePlayerId: confirmedGameState.activePlayerId,
+                gameId,
+                nextQueuedPlayerId,
+                pendingThrowCount: pendingQueueRef.current.length,
+              },
+            });
+
+            isQueueSyncFailedRef.current = true;
+            clearQueue();
+            await reconcileGameState(
+              "Game state changed while throws were syncing. Cleared queued throws and synced latest turn.",
+            );
+            confirmedGameStateRef.current = $gameData.get();
+            playSound("error");
+            break;
           }
         } catch (error) {
           clientLogger.error("game.throw.queue-sync.failed", {
@@ -128,6 +172,7 @@ export function useThrowQueue({
             await reconcileGameState("Could not sync throws. Refreshed game state from server.");
           }
 
+          confirmedGameStateRef.current = $gameData.get();
           playSound("error");
           break;
         }
@@ -151,6 +196,7 @@ export function useThrowQueue({
     isQueueFull: pendingThrowCount >= MAX_PENDING_THROWS,
     isQueueAtCapacity,
     hasPendingThrows,
+    captureConfirmedState,
     enqueueThrow,
     drainQueue,
     requestUndoAfterSync,

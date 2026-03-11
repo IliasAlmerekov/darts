@@ -43,6 +43,7 @@ function GamePlayerItem({
   throw2IsBust,
   throw3IsBust,
   className,
+  isBust,
   isPlaying,
   roundsCountLength,
   gamePlayerItemPrevThrow1,
@@ -57,6 +58,7 @@ function GamePlayerItem({
   // Business logic: calculate throw display values
   const displayThrows = usePlayerThrowsDisplay({
     isActive,
+    isBust,
     roundsCountLength,
     currentThrow1: gamePlayerItemThrow1,
     currentThrow2: gamePlayerItemThrow2,
@@ -154,6 +156,7 @@ function areEqual(
     previousProps.throw1IsBust === nextProps.throw1IsBust &&
     previousProps.throw2IsBust === nextProps.throw2IsBust &&
     previousProps.throw3IsBust === nextProps.throw3IsBust &&
+    previousProps.isBust === nextProps.isBust &&
     previousProps.isPlaying === nextProps.isPlaying &&
     previousProps.roundsCountLength === nextProps.roundsCountLength &&
     previousProps.gamePlayerItemPrevThrow1 === nextProps.gamePlayerItemPrevThrow1 &&

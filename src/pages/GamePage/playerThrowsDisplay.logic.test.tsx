@@ -172,4 +172,56 @@ describe("getPlayerThrowsDisplay", () => {
     expect(result.throw2).toBe(25);
     expect(result.throw3).toBe(25);
   });
+
+  it("should infer bust styling from player bust flag when backend omits throw bust flags", () => {
+    const result = getPlayerThrowsDisplay({
+      isActive: false,
+      isBust: true,
+      roundsCountLength: 2,
+      currentThrow1: 25,
+      currentThrow2: undefined,
+      currentThrow3: undefined,
+      prevThrow1: undefined,
+      prevThrow2: undefined,
+      prevThrow3: undefined,
+      throw1IsBust: undefined,
+      throw2IsBust: undefined,
+      throw3IsBust: undefined,
+      prevThrow1IsBust: undefined,
+      prevThrow2IsBust: undefined,
+      prevThrow3IsBust: undefined,
+      bustIcon,
+    });
+
+    expect(result.throw1).toBe(25);
+    expect(result.throw2).toEqual(bustIcon);
+    expect(result.throw3).toEqual(bustIcon);
+    expect(result.throw1IsBust).toBe(true);
+  });
+
+  it("should infer bust styling from previous round fallback when backend omits throw bust flags", () => {
+    const result = getPlayerThrowsDisplay({
+      isActive: false,
+      isBust: true,
+      roundsCountLength: 3,
+      currentThrow1: undefined,
+      currentThrow2: undefined,
+      currentThrow3: undefined,
+      prevThrow1: 25,
+      prevThrow2: undefined,
+      prevThrow3: undefined,
+      throw1IsBust: undefined,
+      throw2IsBust: undefined,
+      throw3IsBust: undefined,
+      prevThrow1IsBust: undefined,
+      prevThrow2IsBust: undefined,
+      prevThrow3IsBust: undefined,
+      bustIcon,
+    });
+
+    expect(result.throw1).toBe(25);
+    expect(result.throw2).toEqual(bustIcon);
+    expect(result.throw3).toEqual(bustIcon);
+    expect(result.throw1IsBust).toBe(true);
+  });
 });

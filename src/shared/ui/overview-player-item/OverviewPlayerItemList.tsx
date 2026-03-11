@@ -1,4 +1,5 @@
 import type { WinnerPlayerProps } from "@/types";
+import { formatRoundAverage, getCompletedRounds } from "@/shared/lib/roundAverage";
 import OverviewPlayerItem from "./OverviewPlayerItem";
 
 interface OverviewPlayerItemListProps {
@@ -14,14 +15,8 @@ function OverviewPlayerItemList({
   return (
     <>
       {userMap.map((item: WinnerPlayerProps, index: number) => {
-        const completedRounds =
-          item.roundCount ??
-          (item.rounds[item.rounds.length - 1]?.throw1 === undefined
-            ? item.rounds.length - 1
-            : item.rounds.length);
-
-        const averageScore =
-          item.scoreAverage ?? Math.round((startScore - item.score) / Math.max(completedRounds, 1));
+        const completedRounds = getCompletedRounds(item);
+        const averageScore = formatRoundAverage(item, startScore);
 
         return (
           <OverviewPlayerItem

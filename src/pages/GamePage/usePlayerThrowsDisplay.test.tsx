@@ -57,4 +57,32 @@ describe("usePlayerThrowsDisplay", () => {
     expect(result.current.throw2).toBe(19);
     expect(result.current.throw3).toBe(18);
   });
+
+  it("reacts to player bust flag even when throw bust flags are missing", () => {
+    const { result } = renderHook(() =>
+      usePlayerThrowsDisplay({
+        isActive: false,
+        isBust: true,
+        roundsCountLength: 2,
+        currentThrow1: 25,
+        currentThrow2: undefined,
+        currentThrow3: undefined,
+        prevThrow1: undefined,
+        prevThrow2: undefined,
+        prevThrow3: undefined,
+        throw1IsBust: undefined,
+        throw2IsBust: undefined,
+        throw3IsBust: undefined,
+        prevThrow1IsBust: undefined,
+        prevThrow2IsBust: undefined,
+        prevThrow3IsBust: undefined,
+        bustIcon,
+      }),
+    );
+
+    expect(result.current.throw1).toBe(25);
+    expect(result.current.throw2).toEqual(bustIcon);
+    expect(result.current.throw3).toEqual(bustIcon);
+    expect(result.current.throw1IsBust).toBe(true);
+  });
 });

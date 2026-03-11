@@ -4,6 +4,7 @@ export type ThrowDisplayValue = number | string | ReactElement | undefined;
 
 export interface PlayerThrowsDisplayOptions {
   isActive: boolean;
+  isBust?: boolean | undefined;
   roundsCountLength: number;
   currentThrow1?: ThrowDisplayValue | undefined;
   currentThrow2?: ThrowDisplayValue | undefined;
@@ -31,6 +32,7 @@ export interface PlayerThrowsDisplay {
 
 export function getPlayerThrowsDisplay({
   isActive,
+  isBust = false,
   currentThrow1,
   currentThrow2,
   currentThrow3,
@@ -65,29 +67,32 @@ export function getPlayerThrowsDisplay({
       ? undefined
       : prevThrow3;
 
-  const selectedThrow1IsBust =
+  let selectedThrow1IsBust =
     throw1IsBust !== undefined ? throw1IsBust : (prevThrow1IsBust ?? false);
-  const selectedThrow2IsBust =
+  let selectedThrow2IsBust =
     throw2IsBust !== undefined ? throw2IsBust : (prevThrow2IsBust ?? false);
-  const selectedThrow3IsBust =
+  let selectedThrow3IsBust =
     throw3IsBust !== undefined ? throw3IsBust : (prevThrow3IsBust ?? false);
+
+  if (isBust && !selectedThrow1IsBust && !selectedThrow2IsBust && !selectedThrow3IsBust) {
+    if (selectedThrow3 !== undefined) {
+      selectedThrow3IsBust = true;
+    } else if (selectedThrow2 !== undefined) {
+      selectedThrow2IsBust = true;
+    } else if (selectedThrow1 !== undefined) {
+      selectedThrow1IsBust = true;
+    }
+  }
 
   const displayThrow1 = selectedThrow1;
   let displayThrow2 = selectedThrow2;
   let displayThrow3 = selectedThrow3;
 
   if (!isActive) {
-    if (hasCurrentThrows) {
-      if (throw1IsBust) {
-        displayThrow2 = bustIcon;
-        displayThrow3 = bustIcon;
-      } else if (throw2IsBust) {
-        displayThrow3 = bustIcon;
-      }
-    } else if (prevThrow1IsBust) {
+    if (selectedThrow1IsBust) {
       displayThrow2 = bustIcon;
       displayThrow3 = bustIcon;
-    } else if (prevThrow2IsBust) {
+    } else if (selectedThrow2IsBust) {
       displayThrow3 = bustIcon;
     }
   }

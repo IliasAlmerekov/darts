@@ -4,6 +4,7 @@ import { REDACTED_VALUE } from "@/shared/lib/clientLogger";
 
 const GAME_ID_STORAGE_KEY = "darts_current_game_id";
 const INVITATION_STORAGE_KEY = "darts_current_invitation";
+const PRE_CREATE_SETTINGS_STORAGE_KEY = "darts_pre_create_game_settings";
 
 describe("game-session store", () => {
   beforeEach(() => {
@@ -78,6 +79,40 @@ describe("game-session store", () => {
 
     roomStore.setLastFinishedGameSummary(null);
     expect(roomStore.$lastFinishedGameSummary.get()).toBeNull();
+  });
+
+  it("hydrates pre-create settings from sessionStorage on module init", async () => {
+    window.sessionStorage.setItem(
+      PRE_CREATE_SETTINGS_STORAGE_KEY,
+      JSON.stringify({ startScore: 501, doubleOut: true, tripleOut: false }),
+    );
+
+    const roomStore = await import("./game-session");
+
+    expect(roomStore.$preCreateGameSettings.get()).toEqual({
+      startScore: 501,
+      doubleOut: true,
+      tripleOut: false,
+    });
+  });
+
+  it("persists pre-create settings updates", async () => {
+    const roomStore = await import("./game-session");
+
+    roomStore.setPreCreateGameSettings({
+      startScore: 401,
+      doubleOut: false,
+      tripleOut: true,
+    });
+
+    expect(roomStore.$preCreateGameSettings.get()).toEqual({
+      startScore: 401,
+      doubleOut: false,
+      tripleOut: true,
+    });
+    expect(window.sessionStorage.getItem(PRE_CREATE_SETTINGS_STORAGE_KEY)).toBe(
+      JSON.stringify({ startScore: 401, doubleOut: false, tripleOut: true }),
+    );
   });
 });
 

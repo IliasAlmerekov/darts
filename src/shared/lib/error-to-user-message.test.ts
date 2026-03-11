@@ -41,6 +41,17 @@ describe("toUserErrorMessage", () => {
     ).toBe("Round is locked.");
   });
 
+  it("maps known backend rule codes to explicit user messages", () => {
+    expect(
+      toUserErrorMessage(
+        new ApiError("Conflict", {
+          status: 409,
+          data: { error: "GAME_START_SCORE_CHANGE_NOT_ALLOWED" },
+        }),
+      ),
+    ).toBe("The start score cannot be changed for an existing game.");
+  });
+
   it("uses fallback for unknown errors", () => {
     expect(toUserErrorMessage({})).toBe("Something went wrong. Please try again.");
     expect(toUserErrorMessage({}, "Custom fallback")).toBe("Custom fallback");

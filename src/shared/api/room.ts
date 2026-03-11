@@ -1,6 +1,11 @@
 import { apiClient } from "./client";
 import { ApiError } from "./errors";
-import type { CreateRoomResponse, AddGuestPayload, GuestPlayer } from "@/types";
+import type {
+  CreateRoomResponse,
+  AddGuestPayload,
+  GuestPlayer,
+  CreateGameSettingsPayload,
+} from "@/types";
 
 // ---------------------------------------------------------------------------
 // Guards
@@ -40,9 +45,10 @@ const ADD_GUEST_ENDPOINT = (id: number) => `/room/${id}/guest`;
 // Room
 // ---------------------------------------------------------------------------
 
-export type CreateGamePayload = {
+export type CreateGamePayload = Partial<CreateGameSettingsPayload> & {
   previousGameId?: number | undefined;
   playerIds?: number[];
+  excludePlayerIds?: number[];
 };
 
 /**
@@ -67,10 +73,15 @@ export async function getInvitation(
  * Creates a new room and returns its invitation payload.
  */
 export async function createRoom(payload?: CreateGamePayload): Promise<CreateRoomResponse> {
-  const body =
-    payload && (payload.previousGameId || (payload.playerIds && payload.playerIds.length > 0))
-      ? payload
-      : {};
+  const hasPayload =
+    payload !== undefined &&
+    (typeof payload.previousGameId === "number" ||
+      (Array.isArray(payload.playerIds) && payload.playerIds.length > 0) ||
+      (Array.isArray(payload.excludePlayerIds) && payload.excludePlayerIds.length > 0) ||
+      typeof payload.startScore === "number" ||
+      typeof payload.doubleOut === "boolean" ||
+      typeof payload.tripleOut === "boolean");
+  const body = hasPayload && payload ? payload : {};
 
   const room: unknown = await apiClient.post(CREATE_ROOM_ENDPOINT, body);
   if (!isRecord(room) || typeof room.gameId !== "number") {
