@@ -12,7 +12,6 @@ const useGameSoundsMock = vi.fn();
 const useWakeLockMock = vi.fn();
 const finishGameMock = vi.fn();
 const resetGameStateVersionMock = vi.fn();
-const setLastFinishedGameIdMock = vi.fn();
 const setLastFinishedGameSummaryMock = vi.fn();
 const updateGameSettingsMock = vi.fn();
 const useGameSettingsFlowMock = vi.fn();
@@ -72,7 +71,6 @@ vi.mock("@/shared/api/game", () => ({
 vi.mock("@/store", () => ({
   setInvitation: vi.fn(),
   resetRoomStore: vi.fn(),
-  setLastFinishedGameId: (...args: unknown[]) => setLastFinishedGameIdMock(...args),
   setLastFinishedGameSummary: (...args: unknown[]) => setLastFinishedGameSummaryMock(...args),
 }));
 
@@ -202,7 +200,6 @@ describe("useGameLogic auto-finish abort handling", () => {
       });
     });
 
-    expect(setLastFinishedGameIdMock).toHaveBeenCalledWith(1);
     expect(setLastFinishedGameSummaryMock).toHaveBeenCalledWith({
       gameId: 1,
       summary: summaryPayload,
