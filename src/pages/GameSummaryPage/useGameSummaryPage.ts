@@ -201,10 +201,16 @@ export function useGameSummaryPage() {
       serverUndoApplied = true;
 
       if (isUndoAckResponse(undoResponse)) {
-        const patchedGameState = setGameScoreboardDelta(
-          undoResponse.scoreboardDelta,
-          finishedGameIdFromRoute,
-        );
+        const gameStateBeforePatch = $gameData.get();
+        setGameScoreboardDelta(undoResponse.scoreboardDelta, finishedGameIdFromRoute);
+        const gameStateAfterPatch = $gameData.get();
+        const patchedGameState =
+          gameStateBeforePatch !== null &&
+          gameStateBeforePatch.id === finishedGameIdFromRoute &&
+          gameStateAfterPatch !== null &&
+          gameStateAfterPatch.id === finishedGameIdFromRoute
+            ? gameStateAfterPatch
+            : null;
         const needsFullRefresh =
           optimisticUndoState === null ||
           patchedGameState === null ||

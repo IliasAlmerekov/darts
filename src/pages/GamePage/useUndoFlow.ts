@@ -57,7 +57,17 @@ export function useUndoFlow({ gameId, reconcileGameState }: UseUndoFlowOptions):
 
       const undoResponse = await undoLastThrow(gameId);
       if (isUndoAckResponse(undoResponse)) {
-        const patchedGameState = setGameScoreboardDelta(undoResponse.scoreboardDelta, gameId);
+        const gameStateBeforePatch = $gameData.get();
+        setGameScoreboardDelta(undoResponse.scoreboardDelta, gameId);
+        const gameStateAfterPatch = $gameData.get();
+        const patchedGameState =
+          gameStateBeforePatch !== null &&
+          gameStateBeforePatch.id === gameId &&
+          gameStateAfterPatch !== null &&
+          gameStateAfterPatch.id === gameId
+            ? gameStateAfterPatch
+            : null;
+
         if (
           patchedGameState &&
           (patchedGameState.status !== "started" ||

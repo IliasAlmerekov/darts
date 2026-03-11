@@ -235,11 +235,10 @@ describe("useGameSummaryPage", () => {
     });
     setGameScoreboardDeltaMock.mockImplementation((scoreboardDelta: ScoreboardDelta) => {
       if (!currentGameState) {
-        return null;
+        return;
       }
 
       currentGameState = applyScoreboardDelta(currentGameState, scoreboardDelta);
-      return currentGameState;
     });
   });
 

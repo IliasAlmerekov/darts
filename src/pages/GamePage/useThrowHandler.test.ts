@@ -213,7 +213,6 @@ describe("useThrowHandler", () => {
     });
     vi.mocked(setGameScoreboardDelta).mockImplementation((scoreboardDelta) => {
       currentGameState = applyScoreboardDelta(currentGameState, scoreboardDelta as ScoreboardDelta);
-      return currentGameState;
     });
   });
 

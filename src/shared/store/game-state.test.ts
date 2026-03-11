@@ -218,7 +218,33 @@ describe("game-state store", () => {
         1,
       );
 
-      expect($gameData.get()).toEqual(nextGameData);
+      expect(nextGameData).toBeUndefined();
+      expect($gameData.get()).toEqual({
+        ...mockGameData,
+        activePlayerId: 2,
+        currentRound: 6,
+        currentThrowCount: 0,
+        status: "started",
+        winnerId: null,
+        players: [
+          {
+            ...mockGameData.players[0]!,
+            score: 60,
+            isActive: false,
+            position: null,
+            isBust: false,
+            throwsInCurrentRound: 2,
+            currentRoundThrows: [{ value: 20 }, { value: 20 }],
+          },
+          {
+            ...mockGameData.players[1]!,
+            score: 101,
+            isActive: true,
+            position: 1,
+            isBust: false,
+          },
+        ],
+      });
       expect($error.get()).toBeNull();
     });
 
@@ -235,7 +261,7 @@ describe("game-state store", () => {
         99,
       );
 
-      expect(nextGameData).toBeNull();
+      expect(nextGameData).toBeUndefined();
       expect($gameData.get()).toEqual(mockGameData);
     });
   });
