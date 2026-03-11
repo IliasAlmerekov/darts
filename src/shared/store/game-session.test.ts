@@ -1,10 +1,11 @@
 // @vitest-environment jsdom
+import {
+  GAME_ID_STORAGE_KEY,
+  INVITATION_STORAGE_KEY,
+  PRE_CREATE_SETTINGS_STORAGE_KEY,
+} from "./game-session";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { REDACTED_VALUE } from "@/shared/lib/clientLogger";
-
-const GAME_ID_STORAGE_KEY = "darts_current_game_id";
-const INVITATION_STORAGE_KEY = "darts_current_invitation";
-const PRE_CREATE_SETTINGS_STORAGE_KEY = "darts_pre_create_game_settings";
 
 describe("game-session store", () => {
   beforeEach(() => {
