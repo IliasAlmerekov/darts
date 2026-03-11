@@ -12,6 +12,8 @@ import {
 import { $currentGameId, setCurrentGameId } from "@/store";
 import { getGameSettings, saveGameSettings } from "@/shared/api/game";
 import { clientLogger } from "@/shared/lib/clientLogger";
+import { toUserErrorMessage } from "@/lib/error-to-user-message";
+import { ErrorState } from "@/shared/ui/error-state";
 import type { CreateGameSettingsPayload, GameMode, GameSettingsResponse } from "@/types";
 import styles from "./Settings.module.css";
 import { SettingsTabs } from "./components/SettingsTabs";
@@ -67,6 +69,7 @@ function SettingsPage(): JSX.Element {
   const [selectedGameMode, setSelectedGameMode] = useState<GameMode>("single-out");
   const [selectedPoints, setSelectedPoints] = useState<number>(301);
   const [loadedSettings, setLoadedSettings] = useState<GameSettingsResponse | null>(null);
+  const [saveErrorMessage, setSaveErrorMessage] = useState<string | null>(null);
   const [hasHydratedSelection, setHasHydratedSelection] = useState(false);
   const selectedGameModeRef = useRef(selectedGameMode);
   const selectedPointsRef = useRef(selectedPoints);
@@ -93,6 +96,7 @@ function SettingsPage(): JSX.Element {
   useEffect(() => {
     setHasHydratedSelection(false);
     setLoadedSettings(null);
+    setSaveErrorMessage(null);
     if (routeGameId === null) {
       setSelectedGameMode(preCreateGameMode);
       setSelectedPoints(preCreateGameSettings.startScore);
@@ -229,6 +233,7 @@ function SettingsPage(): JSX.Element {
         return;
       }
 
+      setSaveErrorMessage(null);
       setIsSaving(true);
       setSavingScope("game-mode");
       isSavingRef.current = true;
@@ -236,7 +241,6 @@ function SettingsPage(): JSX.Element {
       try {
         const response = await saveGameSettings(
           {
-            startScore: selectedPointsRef.current,
             doubleOut: isDoubleOut,
             tripleOut: isTripleOut,
           },
@@ -244,9 +248,13 @@ function SettingsPage(): JSX.Element {
         );
         setLoadedSettings(response);
         setGameSettings(response, effectiveGameIdRef.current);
+        setSaveErrorMessage(null);
       } catch (error) {
         setSelectedGameMode(previousMode);
         selectedGameModeRef.current = previousMode;
+        setSaveErrorMessage(
+          toUserErrorMessage(error, "Could not update the game mode. Please try again."),
+        );
         clientLogger.error("settings.save-game-mode.failed", {
           context: {
             gameId: effectiveGameIdRef.current,
@@ -284,6 +292,7 @@ function SettingsPage(): JSX.Element {
         return;
       }
 
+      setSaveErrorMessage(null);
       setIsSaving(true);
       setSavingScope("points");
       isSavingRef.current = true;
@@ -299,9 +308,13 @@ function SettingsPage(): JSX.Element {
         );
         setLoadedSettings(response);
         setGameSettings(response, effectiveGameIdRef.current);
+        setSaveErrorMessage(null);
       } catch (error) {
         setSelectedPoints(previousPoints);
         selectedPointsRef.current = previousPoints;
+        setSaveErrorMessage(
+          toUserErrorMessage(error, "Could not update the points. Please try again."),
+        );
         clientLogger.error("settings.save-points.failed", {
           context: {
             gameId: effectiveGameIdRef.current,
@@ -322,6 +335,13 @@ function SettingsPage(): JSX.Element {
     <div className={styles.settings}>
       <h1>Settings</h1>
       <section className={styles.settingsSection}>
+        {saveErrorMessage ? (
+          <ErrorState
+            {...(styles.settingsError ? { className: styles.settingsError } : {})}
+            title="Could not update settings"
+            message={saveErrorMessage}
+          />
+        ) : null}
         <div className={styles.settingsBody}>
           <SettingsTabs
             title="Game Mode"

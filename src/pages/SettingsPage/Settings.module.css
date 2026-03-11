@@ -18,6 +18,10 @@
   gap: var(--space-sm);
 }
 
+.settingsError {
+  margin-bottom: var(--space-sm);
+}
+
 .settingsBody {
   display: flex;
   flex-direction: column;

@@ -3,6 +3,7 @@ import type { ReactNode } from "react";
 import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { ApiError } from "@/shared/api";
 import {
   $currentGameId,
   $gameData,
@@ -337,7 +338,6 @@ describe("SettingsPage", () => {
     await waitFor(() => {
       expect(saveGameSettingsMock).toHaveBeenCalledWith(
         {
-          startScore: 401,
           doubleOut: true,
           tripleOut: false,
         },
@@ -356,6 +356,112 @@ describe("SettingsPage", () => {
       expect(screen.getByRole("button", { name: "Double-out" }).getAttribute("aria-pressed")).toBe(
         "true",
       );
+    });
+  });
+
+  it("does not send startScore when changing only the game mode for an existing game", async () => {
+    getGameSettingsMock.mockResolvedValueOnce(
+      createSettingsResponse({
+        startScore: 501,
+        doubleOut: false,
+        tripleOut: true,
+      }),
+    );
+    saveGameSettingsMock.mockResolvedValueOnce({
+      startScore: 501,
+      doubleOut: true,
+      tripleOut: false,
+    });
+
+    renderSettingsPage("/settings/42");
+
+    await waitFor(() => {
+      expect(screen.getByRole("button", { name: "Triple-out" }).getAttribute("aria-pressed")).toBe(
+        "true",
+      );
+    });
+
+    fireEvent.click(screen.getByRole("button", { name: "Double-out" }));
+
+    await waitFor(() => {
+      expect(saveGameSettingsMock).toHaveBeenCalledWith(
+        {
+          doubleOut: true,
+          tripleOut: false,
+        },
+        42,
+      );
+    });
+  });
+
+  it("still sends the selected points when changing points for an existing game", async () => {
+    getGameSettingsMock.mockResolvedValueOnce(
+      createSettingsResponse({
+        startScore: 301,
+        doubleOut: true,
+        tripleOut: false,
+      }),
+    );
+    saveGameSettingsMock.mockResolvedValueOnce({
+      startScore: 501,
+      doubleOut: true,
+      tripleOut: false,
+    });
+
+    renderSettingsPage("/settings/42");
+
+    await waitFor(() => {
+      expect(screen.getByRole("button", { name: "Double-out" }).getAttribute("aria-pressed")).toBe(
+        "true",
+      );
+    });
+
+    fireEvent.click(screen.getByRole("button", { name: "501" }));
+
+    await waitFor(() => {
+      expect(saveGameSettingsMock).toHaveBeenCalledWith(
+        {
+          startScore: 501,
+          doubleOut: true,
+          tripleOut: false,
+        },
+        42,
+      );
+    });
+  });
+
+  it("shows an explicit inline error when the server forbids changing points for an existing game", async () => {
+    getGameSettingsMock.mockResolvedValueOnce(
+      createSettingsResponse({
+        startScore: 301,
+        doubleOut: true,
+        tripleOut: false,
+      }),
+    );
+    saveGameSettingsMock.mockRejectedValueOnce(
+      new ApiError("Conflict", {
+        status: 409,
+        data: { error: "GAME_START_SCORE_CHANGE_NOT_ALLOWED" },
+      }),
+    );
+
+    renderSettingsPage("/settings/42");
+
+    await waitFor(() => {
+      expect(screen.getByRole("button", { name: "Double-out" }).getAttribute("aria-pressed")).toBe(
+        "true",
+      );
+    });
+
+    fireEvent.click(screen.getByRole("button", { name: "501" }));
+
+    await waitFor(() => {
+      const alert = screen.getByRole("alert");
+      expect(alert.textContent).toContain("Could not update settings");
+      expect(alert.textContent).toContain(
+        "The start score cannot be changed for an existing game.",
+      );
+      expect(screen.getByRole("button", { name: "301" }).getAttribute("aria-pressed")).toBe("true");
     });
   });
 

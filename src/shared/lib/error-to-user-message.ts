@@ -36,6 +36,10 @@ function mapTextToMessage(rawText: string): string | null {
     return "The requested resource was not found.";
   }
 
+  if (text.includes("game start score change not allowed")) {
+    return "The start score cannot be changed for an existing game.";
+  }
+
   return null;
 }
 
