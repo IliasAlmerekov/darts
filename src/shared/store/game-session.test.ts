@@ -49,8 +49,14 @@ describe("game-session store", () => {
 
   it("preserves last finished game id when resetting room-scoped state", async () => {
     const roomStore = await import("./game-session");
+    const snapshot = {
+      gameId: 88,
+      summary: [
+        { playerId: 1, username: "Alice", position: 1, roundsPlayed: 5, roundAverage: 54.2 },
+      ],
+    };
 
-    roomStore.setLastFinishedGameId(88);
+    roomStore.setLastFinishedGameSummary(snapshot);
     roomStore.setInvitation({ gameId: 12, invitationLink: "/invite/12" });
 
     roomStore.resetRoomStore();
@@ -114,6 +120,76 @@ describe("game-session store", () => {
     expect(window.sessionStorage.getItem(PRE_CREATE_SETTINGS_STORAGE_KEY)).toBe(
       JSON.stringify({ startScore: 401, doubleOut: false, tripleOut: true }),
     );
+  });
+});
+
+// ─── Ticket 8 — $lastFinishedGameId is computed from $lastFinishedGameSummary ─
+
+describe("game-session store — Ticket 8: $lastFinishedGameId computed from $lastFinishedGameSummary", () => {
+  beforeEach(() => {
+    window.sessionStorage.clear();
+    vi.resetModules();
+  });
+
+  it("should be null when $lastFinishedGameSummary is null", async () => {
+    const roomStore = await import("./game-session");
+
+    expect(roomStore.$lastFinishedGameSummary.get()).toBeNull();
+    expect(roomStore.$lastFinishedGameId.get()).toBeNull();
+  });
+
+  it("should derive gameId from $lastFinishedGameSummary when summary is set", async () => {
+    const roomStore = await import("./game-session");
+    const snapshot = {
+      gameId: 42,
+      summary: [{ playerId: 1, username: "Bob", position: 1, roundsPlayed: 8, roundAverage: 61.0 }],
+    };
+
+    roomStore.setLastFinishedGameSummary(snapshot);
+
+    expect(roomStore.$lastFinishedGameId.get()).toBe(42);
+  });
+
+  it("should update reactively when summary changes to a different gameId", async () => {
+    const roomStore = await import("./game-session");
+    const first = {
+      gameId: 10,
+      summary: [
+        { playerId: 1, username: "Alice", position: 1, roundsPlayed: 3, roundAverage: 40.0 },
+      ],
+    };
+    const second = {
+      gameId: 20,
+      summary: [{ playerId: 2, username: "Bob", position: 1, roundsPlayed: 5, roundAverage: 55.0 }],
+    };
+
+    roomStore.setLastFinishedGameSummary(first);
+    expect(roomStore.$lastFinishedGameId.get()).toBe(10);
+
+    roomStore.setLastFinishedGameSummary(second);
+    expect(roomStore.$lastFinishedGameId.get()).toBe(20);
+  });
+
+  it("should return null when $lastFinishedGameSummary is cleared", async () => {
+    const roomStore = await import("./game-session");
+    const snapshot = {
+      gameId: 7,
+      summary: [
+        { playerId: 3, username: "Carol", position: 1, roundsPlayed: 6, roundAverage: 48.5 },
+      ],
+    };
+
+    roomStore.setLastFinishedGameSummary(snapshot);
+    expect(roomStore.$lastFinishedGameId.get()).toBe(7);
+
+    roomStore.setLastFinishedGameSummary(null);
+    expect(roomStore.$lastFinishedGameId.get()).toBeNull();
+  });
+
+  it("should not export setLastFinishedGameId — it is no longer needed", async () => {
+    const roomStore = await import("./game-session");
+
+    expect((roomStore as Record<string, unknown>)["setLastFinishedGameId"]).toBeUndefined();
   });
 });
 

@@ -20,7 +20,6 @@ import {
   setGameData,
   setGameScoreboardDelta,
   setInvitation,
-  setLastFinishedGameId,
   setLastFinishedGameSummary,
   resetRoomStore,
 } from "@/store";
@@ -110,7 +109,6 @@ export function useGameSummaryPage() {
       setError(null);
       const data = await getFinishedGame(finishedGameIdFromRoute);
       setServerFinished(data);
-      setLastFinishedGameId(finishedGameIdFromRoute);
       setLastFinishedGameSummary({ gameId: finishedGameIdFromRoute, summary: data });
     } catch (err: unknown) {
       clientLogger.error("game-summary.fetch.failed", {
@@ -128,7 +126,6 @@ export function useGameSummaryPage() {
 
     if (summaryFromNavigationState) {
       setError(null);
-      setLastFinishedGameId(finishedGameIdFromRoute);
       setLastFinishedGameSummary({
         gameId: finishedGameIdFromRoute,
         summary: summaryFromNavigationState,
@@ -138,7 +135,6 @@ export function useGameSummaryPage() {
 
     if (summaryFromStore) {
       setError(null);
-      setLastFinishedGameId(finishedGameIdFromRoute);
       return;
     }
 
@@ -281,7 +277,6 @@ export function useGameSummaryPage() {
   const handleBackToStart = useCallback(async (): Promise<void> => {
     if (!finishedGameIdFromRoute) return;
 
-    setLastFinishedGameId(finishedGameIdFromRoute);
     resetRoomStore();
 
     try {

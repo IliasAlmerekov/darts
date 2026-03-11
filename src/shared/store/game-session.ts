@@ -1,4 +1,4 @@
-import { atom } from "nanostores";
+import { atom, computed } from "nanostores";
 import { clientLogger } from "@/shared/lib/clientLogger";
 import type { CreateGameSettingsPayload, GameSummaryResponse } from "@/types";
 
@@ -174,8 +174,11 @@ function setStoredPreCreateGameSettings(settings: CreateGameSettingsPayload): vo
 
 export const $currentGameId = atom<number | null>(getStoredGameId());
 export const $invitation = atom<Invitation | null>(getStoredInvitation());
-export const $lastFinishedGameId = atom<number | null>(null);
 export const $lastFinishedGameSummary = atom<FinishedGameSummarySnapshot | null>(null);
+export const $lastFinishedGameId = computed(
+  $lastFinishedGameSummary,
+  (snapshot) => snapshot?.gameId ?? null,
+);
 export const $preCreateGameSettings = atom<CreateGameSettingsPayload>(
   getStoredPreCreateGameSettings(),
 );
@@ -209,13 +212,6 @@ export function setInvitation(invitation: Invitation | null): void {
   if (invitation?.gameId) {
     setCurrentGameId(invitation.gameId);
   }
-}
-
-/**
- * Stores the last finished game id for navigation/summary flows.
- */
-export function setLastFinishedGameId(gameId: number | null): void {
-  $lastFinishedGameId.set(gameId);
 }
 
 /**
