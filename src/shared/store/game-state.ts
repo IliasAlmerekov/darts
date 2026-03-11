@@ -9,7 +9,7 @@ import {
 export const $gameData = atom<GameThrowsResponse | null>(null);
 export const $isLoading = atom<boolean>(false);
 export const $error = atom<Error | null>(null);
-export const $gameSettingsByGameId = atom<Record<number, GameSettingsResponse>>({});
+const $gameSettingsByGameId = atom<Record<number, GameSettingsResponse>>({});
 
 export const $gameSettings = computed($gameData, (gameData) => {
   return gameData?.settings ?? null;
@@ -31,6 +31,10 @@ function setCachedGameSettings(gameId: number, settings: GameSettingsResponse): 
     ...currentCache,
     [gameId]: settings,
   });
+}
+
+export function getCachedGameSettings(gameId: number): GameSettingsResponse | null {
+  return $gameSettingsByGameId.get()[gameId] ?? null;
 }
 
 export { deriveWinnerId, normalizeGameData };

@@ -4,8 +4,8 @@ import { useStore } from "@nanostores/react";
 import {
   $gameData,
   $gameSettings,
-  $gameSettingsByGameId,
   $preCreateGameSettings,
+  getCachedGameSettings,
   setGameSettings,
   setPreCreateGameSettings,
 } from "@/store";
@@ -59,7 +59,6 @@ function SettingsPage(): JSX.Element {
   const { id: gameIdParam } = useParams<{ id?: string }>();
   const gameData = useStore($gameData);
   const gameSettings = useStore($gameSettings);
-  const gameSettingsByGameId = useStore($gameSettingsByGameId);
   const preCreateGameSettings = useStore($preCreateGameSettings);
   const currentGameIdFromStore = useStore($currentGameId);
 
@@ -75,8 +74,7 @@ function SettingsPage(): JSX.Element {
   const selectedPointsRef = useRef(selectedPoints);
   const effectiveGameIdRef = useRef<number | null>(null);
   const isSavingRef = useRef(false);
-  const cachedRouteGameSettings =
-    routeGameId !== null ? (gameSettingsByGameId[routeGameId] ?? null) : null;
+  const cachedRouteGameSettings = routeGameId !== null ? getCachedGameSettings(routeGameId) : null;
   const activeGameSettings =
     routeGameId !== null && gameData?.id === routeGameId
       ? gameSettings
