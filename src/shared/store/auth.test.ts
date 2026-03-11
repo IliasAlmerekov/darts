@@ -70,4 +70,16 @@ describe("auth store", () => {
     invalidateAuthState();
     expect(listener).toHaveBeenCalledTimes(1);
   });
+
+  it("should clear auth invalidation listeners when resetting the auth store", () => {
+    const listener = vi.fn();
+
+    registerAuthInvalidationListener(listener);
+
+    resetAuthStore();
+    expect(listener).toHaveBeenCalledTimes(1);
+
+    invalidateAuthState();
+    expect(listener).toHaveBeenCalledTimes(1);
+  });
 });

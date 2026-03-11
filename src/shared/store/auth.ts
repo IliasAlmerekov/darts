@@ -64,4 +64,5 @@ export function invalidateAuthState(): void {
  */
 export function resetAuthStore(): void {
   invalidateAuthState();
+  authInvalidationListeners.clear();
 }
