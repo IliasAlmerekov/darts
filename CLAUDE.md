@@ -84,13 +84,17 @@ derived from `pages`.
 
 ## Verification Commands
 
+The repository-level validation suite is enforced by the `pre-push` hook. Agents should keep changes compatible with these commands, but should not automatically run the full suite after every edit unless the user explicitly asks or troubleshooting requires it.
+
 ```bash
+npm run build
 npm run eslint
 npm run stylelint
+npm run prettier:check
 npm run test
 npm run typecheck
-npm run test:e2e   # required for critical flows and final phase
-npx prettier --check .
+npm run secrets:check
+npm run test:e2e
 ```
 
 ## Development Workflow — 4 Phases

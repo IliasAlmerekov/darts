@@ -124,13 +124,17 @@ their public `index.ts` exports. Deep or reverse imports are forbidden.
 
 ## 10) Quality gates (Definition of Done)
 
-Before declaring "done", run and report results of:
+The repository-level validation suite is enforced by the `pre-push` hook. Agents should keep changes compatible with these commands, but should not automatically run the full suite after every edit unless the user explicitly asks or troubleshooting requires it.
 
-- `npm run eslint`
-- `npm run stylelint`
-- `npm run test` (Vitest)
-- `npm run test:e2e` (Playwright)
-- `npm run typecheck`
+```bash
+npm run build
+npm run eslint
+npm run stylelint
+npm run prettier:check
+npm run test
+npm run typecheck
+npm run secrets:check
+npm run test:e2e
 
 If scripts differ, infer correct commands from `package.json`.
 
@@ -140,7 +144,7 @@ If scripts differ, infer correct commands from `package.json`.
   - `feat:`, `fix:`, `refactor:`, `test:`, `chore:`
 - Husky hooks must not be bypassed.
 - If commitlint fails, fix the commit message.
-- Before every `git push`, rerun the same validation suite and push only if all checks pass.
+- Before every `git push`, let the `pre-push` hook complete successfully; do not bypass it.
 
 ## 12) Response format (how you report work)
 
@@ -159,3 +163,4 @@ Always include:
 - Do not bypass Husky or Commitlint.
 - Do not break FSD boundaries.
 - Do not skip tests.
+```
