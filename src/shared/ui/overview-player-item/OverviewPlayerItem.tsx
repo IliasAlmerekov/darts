@@ -4,7 +4,7 @@ import styles from "./OverviewPlayerItem.module.css";
 type Props = {
   className?: string;
   rounds?: number;
-  averagePerRound?: number;
+  averagePerRound?: number | string;
   name?: string;
   placement?: number;
 };

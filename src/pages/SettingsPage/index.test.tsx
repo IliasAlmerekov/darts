@@ -3,9 +3,13 @@ import type { ReactNode } from "react";
 import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { ApiError } from "@/shared/api";
 import {
   $currentGameId,
   $gameData,
+  $preCreateGameSettings,
+  setPreCreateGameSettings,
+  setGameSettings,
   resetGameStore,
   resetRoomStore,
   setCurrentGameId,
@@ -87,6 +91,11 @@ describe("SettingsPage", () => {
     vi.clearAllMocks();
     resetGameStore();
     resetRoomStore();
+    setPreCreateGameSettings({
+      startScore: 301,
+      doubleOut: false,
+      tripleOut: false,
+    });
 
     getGameSettingsMock.mockResolvedValue(createSettingsResponse());
     saveGameSettingsMock.mockImplementation(() => new Promise(() => {}));
@@ -139,21 +148,115 @@ describe("SettingsPage", () => {
     });
   });
 
-  it("does not save settings from /settings when there is no active gameId", () => {
+  it("does not preselect fallback defaults while route settings are still loading", async () => {
+    const pendingLoad = createDeferred<GameSettingsResponse>();
+    getGameSettingsMock.mockImplementationOnce(() => pendingLoad.promise);
+
+    renderSettingsPage("/settings/42");
+
+    const singleOutButton = screen.getByRole("button", { name: "Single-out" });
+    const pointsButton = screen.getByRole("button", { name: "301" });
+
+    expect(singleOutButton.getAttribute("aria-pressed")).toBe("false");
+    expect(pointsButton.getAttribute("aria-pressed")).toBe("false");
+    expect(singleOutButton.getAttribute("disabled")).not.toBeNull();
+    expect(pointsButton.getAttribute("disabled")).not.toBeNull();
+
+    fireEvent.click(pointsButton);
+
+    expect(saveGameSettingsMock).not.toHaveBeenCalled();
+
+    pendingLoad.resolve(
+      createSettingsResponse({
+        startScore: 101,
+        doubleOut: false,
+        tripleOut: true,
+      }),
+    );
+
+    await waitFor(() => {
+      expect(screen.getByRole("button", { name: "Triple-out" }).getAttribute("aria-pressed")).toBe(
+        "true",
+      );
+      expect(screen.getByRole("button", { name: "101" }).getAttribute("aria-pressed")).toBe("true");
+    });
+  });
+
+  it("shows cached route settings immediately while canonical settings refresh in the background", async () => {
+    setGameSettings(
+      {
+        startScore: 101,
+        doubleOut: false,
+        tripleOut: true,
+      },
+      42,
+    );
+    const pendingLoad = createDeferred<GameSettingsResponse>();
+    getGameSettingsMock.mockImplementationOnce(() => pendingLoad.promise);
+
+    renderSettingsPage("/settings/42");
+
+    expect(screen.getByRole("button", { name: "Triple-out" }).getAttribute("aria-pressed")).toBe(
+      "true",
+    );
+    expect(screen.getByRole("button", { name: "101" }).getAttribute("aria-pressed")).toBe("true");
+    expect(screen.getByRole("button", { name: "101" }).getAttribute("disabled")).toBeNull();
+
+    await waitFor(() => {
+      expect(getGameSettingsMock).toHaveBeenCalledWith(42, expect.any(AbortSignal));
+    });
+
+    pendingLoad.resolve(
+      createSettingsResponse({
+        startScore: 101,
+        doubleOut: true,
+        tripleOut: false,
+      }),
+    );
+
+    await waitFor(() => {
+      expect(screen.getByRole("button", { name: "Double-out" }).getAttribute("aria-pressed")).toBe(
+        "true",
+      );
+    });
+  });
+
+  it("updates the pre-create draft from /settings when there is no active gameId", async () => {
     renderSettingsPage("/settings");
 
     fireEvent.click(screen.getByRole("button", { name: "Double-out" }));
+
+    await waitFor(() => {
+      expect(screen.getByRole("button", { name: "Double-out" }).getAttribute("aria-pressed")).toBe(
+        "true",
+      );
+      expect($preCreateGameSettings.get()).toEqual({
+        startScore: 301,
+        doubleOut: true,
+        tripleOut: false,
+      });
+    });
 
     expect(saveGameSettingsMock).not.toHaveBeenCalled();
     expect(getGameSettingsMock).not.toHaveBeenCalled();
   });
 
-  it("ignores currentGameId from store on /settings without a route param", () => {
+  it("uses the standalone pre-create draft on /settings even when store has currentGameId", async () => {
     setCurrentGameId(42);
+    setPreCreateGameSettings({
+      startScore: 401,
+      doubleOut: false,
+      tripleOut: true,
+    });
 
     renderSettingsPage("/settings");
 
-    fireEvent.click(screen.getByRole("button", { name: "Double-out" }));
+    await waitFor(() => {
+      expect(screen.getByRole("button", { name: "Triple-out" }).getAttribute("aria-pressed")).toBe(
+        "true",
+      );
+      expect(screen.getByRole("button", { name: "401" }).getAttribute("aria-pressed")).toBe("true");
+    });
 
     expect(saveGameSettingsMock).not.toHaveBeenCalled();
     expect(getGameSettingsMock).not.toHaveBeenCalled();
@@ -181,7 +284,7 @@ describe("SettingsPage", () => {
     renderSettingsPage("/settings/42");
 
     expect(screen.getByRole("button", { name: "Single-out" }).getAttribute("aria-pressed")).toBe(
-      "true",
+      "false",
     );
     expect(screen.getByRole("button", { name: "501" }).getAttribute("aria-pressed")).toBe("false");
 
@@ -235,7 +338,6 @@ describe("SettingsPage", () => {
     await waitFor(() => {
       expect(saveGameSettingsMock).toHaveBeenCalledWith(
         {
-          startScore: 401,
           doubleOut: true,
           tripleOut: false,
         },
@@ -254,6 +356,112 @@ describe("SettingsPage", () => {
       expect(screen.getByRole("button", { name: "Double-out" }).getAttribute("aria-pressed")).toBe(
         "true",
       );
+    });
+  });
+
+  it("does not send startScore when changing only the game mode for an existing game", async () => {
+    getGameSettingsMock.mockResolvedValueOnce(
+      createSettingsResponse({
+        startScore: 501,
+        doubleOut: false,
+        tripleOut: true,
+      }),
+    );
+    saveGameSettingsMock.mockResolvedValueOnce({
+      startScore: 501,
+      doubleOut: true,
+      tripleOut: false,
+    });
+
+    renderSettingsPage("/settings/42");
+
+    await waitFor(() => {
+      expect(screen.getByRole("button", { name: "Triple-out" }).getAttribute("aria-pressed")).toBe(
+        "true",
+      );
+    });
+
+    fireEvent.click(screen.getByRole("button", { name: "Double-out" }));
+
+    await waitFor(() => {
+      expect(saveGameSettingsMock).toHaveBeenCalledWith(
+        {
+          doubleOut: true,
+          tripleOut: false,
+        },
+        42,
+      );
+    });
+  });
+
+  it("still sends the selected points when changing points for an existing game", async () => {
+    getGameSettingsMock.mockResolvedValueOnce(
+      createSettingsResponse({
+        startScore: 301,
+        doubleOut: true,
+        tripleOut: false,
+      }),
+    );
+    saveGameSettingsMock.mockResolvedValueOnce({
+      startScore: 501,
+      doubleOut: true,
+      tripleOut: false,
+    });
+
+    renderSettingsPage("/settings/42");
+
+    await waitFor(() => {
+      expect(screen.getByRole("button", { name: "Double-out" }).getAttribute("aria-pressed")).toBe(
+        "true",
+      );
+    });
+
+    fireEvent.click(screen.getByRole("button", { name: "501" }));
+
+    await waitFor(() => {
+      expect(saveGameSettingsMock).toHaveBeenCalledWith(
+        {
+          startScore: 501,
+          doubleOut: true,
+          tripleOut: false,
+        },
+        42,
+      );
+    });
+  });
+
+  it("shows an explicit inline error when the server forbids changing points for an existing game", async () => {
+    getGameSettingsMock.mockResolvedValueOnce(
+      createSettingsResponse({
+        startScore: 301,
+        doubleOut: true,
+        tripleOut: false,
+      }),
+    );
+    saveGameSettingsMock.mockRejectedValueOnce(
+      new ApiError("Conflict", {
+        status: 409,
+        data: { error: "GAME_START_SCORE_CHANGE_NOT_ALLOWED" },
+      }),
+    );
+
+    renderSettingsPage("/settings/42");
+
+    await waitFor(() => {
+      expect(screen.getByRole("button", { name: "Double-out" }).getAttribute("aria-pressed")).toBe(
+        "true",
+      );
+    });
+
+    fireEvent.click(screen.getByRole("button", { name: "501" }));
+
+    await waitFor(() => {
+      const alert = screen.getByRole("alert");
+      expect(alert.textContent).toContain("Could not update settings");
+      expect(alert.textContent).toContain(
+        "The start score cannot be changed for an existing game.",
+      );
+      expect(screen.getByRole("button", { name: "301" }).getAttribute("aria-pressed")).toBe("true");
     });
   });
 

@@ -9,6 +9,7 @@ const useParamsMock = vi.fn(() => ({}));
 const setCurrentGameIdMock = vi.fn();
 const setInvitationMock = vi.fn();
 const setGameDataMock = vi.fn();
+const setGameSettingsMock = vi.fn();
 const resetGameStoreMock = vi.fn();
 const appendOptimisticPlayerMock = vi.fn();
 const removeOptimisticPlayerMock = vi.fn();
@@ -58,7 +59,9 @@ vi.mock("@/store", async (importOriginal) => {
   return {
     ...original,
     $gameSettings: { key: "gameSettings" },
+    $preCreateGameSettings: { key: "preCreateGameSettings" },
     setGameData: (...args: unknown[]) => setGameDataMock(...args),
+    setGameSettings: (...args: unknown[]) => setGameSettingsMock(...args),
     resetGameStore: (...args: unknown[]) => resetGameStoreMock(...args),
     $lastFinishedGameId: { key: "lastFinishedGameId" },
     $invitation: { key: "invitation" },
@@ -101,6 +104,11 @@ describe("useStartPage action guards", () => {
     vi.clearAllMocks();
     useParamsMock.mockReturnValue({});
     storeValues.set("gameSettings", null);
+    storeValues.set("preCreateGameSettings", {
+      startScore: 301,
+      doubleOut: false,
+      tripleOut: false,
+    });
     storeValues.set("lastFinishedGameId", null);
     storeValues.set("currentGameId", null);
     storeValues.set("invitation", null);
@@ -195,6 +203,11 @@ describe("useStartPage action guards", () => {
 
   it("prevents duplicate createRoom calls while first request is pending", async () => {
     storeValues.set("lastFinishedGameId", 77);
+    storeValues.set("preCreateGameSettings", {
+      startScore: 501,
+      doubleOut: true,
+      tripleOut: false,
+    });
     const pending = deferred<{ gameId: number; invitationLink: string }>();
     gameFlowMock.createRoom.mockReturnValueOnce(pending.promise);
 
@@ -208,7 +221,12 @@ describe("useStartPage action guards", () => {
     });
 
     expect(gameFlowMock.createRoom).toHaveBeenCalledTimes(1);
-    expect(gameFlowMock.createRoom).toHaveBeenCalledWith({ previousGameId: 77 });
+    expect(gameFlowMock.createRoom).toHaveBeenCalledWith({
+      previousGameId: 77,
+      startScore: 501,
+      doubleOut: true,
+      tripleOut: false,
+    });
 
     await act(async () => {
       pending.resolve({ gameId: 55, invitationLink: "/invite/55" });
@@ -220,6 +238,14 @@ describe("useStartPage action guards", () => {
       gameId: 55,
       invitationLink: "/invite/55",
     });
+    expect(setGameSettingsMock).toHaveBeenCalledWith(
+      {
+        startScore: 501,
+        doubleOut: true,
+        tripleOut: false,
+      },
+      55,
+    );
     expect(navigateMock).toHaveBeenCalledWith("/start/55");
   });
 

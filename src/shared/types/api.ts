@@ -68,6 +68,8 @@ export type CreateGameSettingsPayload = {
   tripleOut: boolean;
 };
 
+export type UpdateGameSettingsPayload = Partial<CreateGameSettingsPayload>;
+
 export interface GameSettingsResponse {
   startScore: number;
   doubleOut: boolean;

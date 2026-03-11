@@ -39,6 +39,7 @@ export function useThrowHandler({ gameId }: UseThrowHandlerOptions): UseThrowHan
     isQueueFull,
     isQueueAtCapacity,
     hasPendingThrows,
+    captureConfirmedState,
     enqueueThrow,
     drainQueue,
     requestUndoAfterSync,
@@ -98,6 +99,10 @@ export function useThrowHandler({ gameId }: UseThrowHandlerOptions): UseThrowHan
           return;
         }
 
+        if (!hasPendingThrows()) {
+          captureConfirmedState(currentGameData);
+        }
+
         const parsedThrow = parseThrowValue(value);
         const optimisticState = applyOptimisticThrow(currentGameData, parsedThrow, activePlayer.id);
         if (!optimisticState) {
@@ -129,9 +134,11 @@ export function useThrowHandler({ gameId }: UseThrowHandlerOptions): UseThrowHan
       }
     },
     [
+      captureConfirmedState,
       drainQueue,
       enqueueThrow,
       gameId,
+      hasPendingThrows,
       isQueueAtCapacity,
       isUndoInFlightRef,
       reconcileGameState,

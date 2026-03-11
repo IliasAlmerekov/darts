@@ -1,5 +1,6 @@
 import clsx from "clsx";
 import type { WinnerPlayerProps } from "@/types";
+import { formatRoundAverage, getCompletedRounds } from "@/shared/lib/roundAverage";
 import PodiumPlayerCard from "./PodiumPlayerCard";
 import styles from "./Podium.module.css";
 
@@ -18,17 +19,8 @@ function Podium({ userMap, list, startScore = 301 }: PodiumProps): JSX.Element {
   return (
     <div className={styles.podium}>
       {userMap.map((item: WinnerPlayerProps, index: number) => {
-        const completedRound =
-          item.roundCount ??
-          (item.rounds[item.rounds.length - 1]?.throw1 === undefined
-            ? item.rounds.length - 1
-            : item.rounds.length);
-
-        const averageScoreRaw =
-          completedRound > 0
-            ? (item.scoreAverage ?? (startScore - item.score) / completedRound)
-            : 0;
-        const averagePerRound = completedRound > 0 ? averageScoreRaw.toFixed(2) : (0).toFixed(2);
+        const completedRound = getCompletedRounds(item);
+        const averagePerRound = formatRoundAverage(item, startScore);
 
         return (
           <PodiumPlayerCard

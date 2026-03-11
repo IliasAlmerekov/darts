@@ -1,8 +1,15 @@
 import { useCallback, useRef, useState } from "react";
+import { useStore } from "@nanostores/react";
 import type { NavigateFunction } from "react-router-dom";
 import { createRoom } from "@/shared/api/room";
 import { getGameSettings, startGame } from "@/shared/api/game";
-import { resetGameStore, setCurrentGameId, setInvitation } from "@/store";
+import {
+  $preCreateGameSettings,
+  resetGameStore,
+  setCurrentGameId,
+  setGameSettings,
+  setInvitation,
+} from "@/store";
 import { toUserErrorMessage } from "@/lib/error-to-user-message";
 import { ROUTES } from "@/lib/routes";
 import type { SetStartPageError } from "./useStartPageError";
@@ -44,6 +51,7 @@ export function useCreateStartFlow({
   navigate,
   setPageError,
 }: UseCreateStartFlowParams): UseCreateStartFlowResult {
+  const preCreateGameSettings = useStore($preCreateGameSettings);
   const [creating, setCreating] = useState(false);
   const [starting, setStarting] = useState(false);
   const createRoomInFlightRef = useRef(false);
@@ -92,8 +100,12 @@ export function useCreateStartFlow({
     try {
       const response = await createRoom({
         previousGameId: lastFinishedGameId ?? undefined,
+        startScore: preCreateGameSettings.startScore,
+        doubleOut: preCreateGameSettings.doubleOut,
+        tripleOut: preCreateGameSettings.tripleOut,
       });
 
+      setGameSettings(preCreateGameSettings, response.gameId);
       setInvitation(response);
       setCurrentGameId(response.gameId);
       navigate(ROUTES.start(response.gameId));
@@ -103,7 +115,14 @@ export function useCreateStartFlow({
       createRoomInFlightRef.current = false;
       setCreating(false);
     }
-  }, [creating, invitationGameId, lastFinishedGameId, navigate, setPageError]);
+  }, [
+    creating,
+    invitationGameId,
+    lastFinishedGameId,
+    navigate,
+    preCreateGameSettings,
+    setPageError,
+  ]);
 
   return {
     creating,
