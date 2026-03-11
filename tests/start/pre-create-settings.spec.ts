@@ -1,7 +1,10 @@
 import { expect, test } from "@playwright/test";
+import { skipWhenAuthCredentialsMissing } from "../shared/auth-test-credentials";
 import { loginAsAdmin } from "../shared/start-page-helpers";
 
 test.describe("Pre-create game settings", () => {
+  skipWhenAuthCredentialsMissing();
+
   test("sends selected settings when creating a room after editing /settings", async ({ page }) => {
     let createRoomPayload: Record<string, unknown> | null = null;
 
