@@ -1,10 +1,6 @@
 import { atom, computed } from "nanostores";
 import type { GameSettingsResponse, GameThrowsResponse, ScoreboardDelta } from "@/types";
-import {
-  applyGameScoreboardDelta,
-  deriveWinnerId,
-  normalizeGameData,
-} from "../lib/gameStateNormalizer";
+import { applyGameScoreboardDelta, normalizeGameData } from "../lib/gameStateNormalizer";
 
 export const $gameData = atom<GameThrowsResponse | null>(null);
 export const $isLoading = atom<boolean>(false);
@@ -36,8 +32,6 @@ function setCachedGameSettings(gameId: number, settings: GameSettingsResponse): 
 export function getCachedGameSettings(gameId: number): GameSettingsResponse | null {
   return $gameSettingsByGameId.get()[gameId] ?? null;
 }
-
-export { deriveWinnerId, normalizeGameData };
 
 /**
  * Replaces the game data and clears any previous error.
