@@ -1,5 +1,5 @@
 // @vitest-environment node
-import { beforeEach, describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import {
   $error,
   $gameData,
@@ -13,7 +13,8 @@ import {
   setGameSettings,
   setLoading,
 } from "./game-state";
-import type { GameThrowsResponse } from "@/types";
+import * as gameStateNormalizer from "../lib/gameStateNormalizer";
+import type { GameSettingsResponse, GameThrowsResponse } from "@/types";
 
 const mockGameData: GameThrowsResponse = {
   id: 1,
@@ -52,6 +53,10 @@ const mockGameData: GameThrowsResponse = {
     },
   ],
 };
+
+function makeGameData(overrides?: Partial<GameThrowsResponse>): GameThrowsResponse {
+  return { ...mockGameData, ...overrides };
+}
 
 describe("game-state store", () => {
   beforeEach(() => {
@@ -307,6 +312,89 @@ describe("game-state store", () => {
       expect($isLoading.get()).toBe(false);
       expect($error.get()).toBeNull();
       expect(getCachedGameSettings(1)).toBeNull();
+    });
+  });
+
+  // --- TICKET-09 ---
+  describe("setGameSettings — TICKET-09 (normalizeGameData not called)", () => {
+    let normalizeSpy: ReturnType<typeof vi.spyOn>;
+
+    beforeEach(() => {
+      normalizeSpy = vi.spyOn(gameStateNormalizer, "normalizeGameData");
+    });
+
+    afterEach(() => {
+      vi.restoreAllMocks();
+    });
+
+    it("should update settings correctly when $gameData is set", () => {
+      setGameData(makeGameData());
+      normalizeSpy.mockClear();
+
+      const newSettings: GameSettingsResponse = {
+        startScore: 301,
+        doubleOut: false,
+        tripleOut: true,
+      };
+      setGameSettings(newSettings, 1);
+
+      expect($gameData.get()?.settings).toEqual(newSettings);
+    });
+
+    it("should not change players, activePlayerId and winnerId by reference", () => {
+      setGameData(makeGameData());
+      normalizeSpy.mockClear();
+
+      const before = $gameData.get()!;
+      setGameSettings({ startScore: 301, doubleOut: false, tripleOut: true }, before.id);
+      const after = $gameData.get()!;
+
+      expect(after.players).toBe(before.players);
+      expect(after.activePlayerId).toBe(before.activePlayerId);
+      expect(after.winnerId).toBe(before.winnerId);
+    });
+
+    it("should not call normalizeGameData when updating settings", () => {
+      setGameData(makeGameData());
+      normalizeSpy.mockClear();
+
+      setGameSettings({ startScore: 301, doubleOut: false, tripleOut: true }, 1);
+
+      expect(normalizeSpy).not.toHaveBeenCalled();
+    });
+
+    it("should do nothing when $gameData is null", () => {
+      normalizeSpy.mockClear();
+
+      setGameSettings({ startScore: 501, doubleOut: true, tripleOut: false });
+
+      expect($gameData.get()).toBeNull();
+      expect(normalizeSpy).not.toHaveBeenCalled();
+    });
+
+    it("should correctly apply multiple sequential settings updates without calling normalizeGameData", () => {
+      setGameData(makeGameData());
+      normalizeSpy.mockClear();
+
+      setGameSettings({ startScore: 501, doubleOut: true, tripleOut: false }, 1);
+      setGameSettings({ startScore: 301, doubleOut: false, tripleOut: true }, 1);
+
+      expect($gameData.get()?.settings).toEqual({
+        startScore: 301,
+        doubleOut: false,
+        tripleOut: true,
+      });
+      expect(normalizeSpy).not.toHaveBeenCalled();
+    });
+
+    it("should not call normalizeGameData when settings values are unchanged", () => {
+      const data = makeGameData();
+      setGameData(data);
+      normalizeSpy.mockClear();
+
+      setGameSettings(data.settings, data.id);
+
+      expect(normalizeSpy).not.toHaveBeenCalled();
     });
   });
 });

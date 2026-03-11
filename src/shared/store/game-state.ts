@@ -65,16 +65,14 @@ export function setGameSettings(settings: GameSettingsResponse, expectedGameId?:
     return;
   }
 
-  $gameData.set(
-    normalizeGameData({
-      ...currentGameData,
-      settings: {
-        startScore: settings.startScore,
-        doubleOut: settings.doubleOut,
-        tripleOut: settings.tripleOut,
-      },
-    }),
-  );
+  $gameData.set({
+    ...currentGameData,
+    settings: {
+      startScore: settings.startScore,
+      doubleOut: settings.doubleOut,
+      tripleOut: settings.tripleOut,
+    },
+  });
   $error.set(null);
 }
 
