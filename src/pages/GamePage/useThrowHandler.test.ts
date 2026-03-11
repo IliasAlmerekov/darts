@@ -401,6 +401,134 @@ describe("useThrowHandler", () => {
     expect(playerTwo?.throwsInCurrentRound).toBe(0);
   });
 
+  it("clears queued throws when server ack keeps the same player active", async () => {
+    currentGameState = buildGameData({
+      activePlayerId: 1,
+      currentRound: 4,
+      currentThrowCount: 2,
+      players: [
+        {
+          id: 1,
+          name: "P1",
+          score: 262,
+          isActive: true,
+          isBust: false,
+          position: null,
+          throwsInCurrentRound: 2,
+          currentRoundThrows: [
+            { value: 20, isDouble: false, isTriple: false, isBust: false },
+            { value: 19, isDouble: false, isTriple: false, isBust: false },
+          ],
+          roundHistory: [],
+        },
+        {
+          id: 2,
+          name: "P2",
+          score: 301,
+          isActive: false,
+          isBust: false,
+          position: null,
+          throwsInCurrentRound: 0,
+          currentRoundThrows: [],
+          roundHistory: [],
+        },
+      ],
+    });
+
+    const firstDeferred = createDeferred<ThrowAckResponse>();
+    vi.mocked(recordThrow).mockReturnValueOnce(firstDeferred.promise);
+    vi.mocked(getGameThrows).mockResolvedValueOnce(
+      buildGameData({
+        activePlayerId: 1,
+        currentRound: 4,
+        currentThrowCount: 1,
+        players: [
+          {
+            id: 1,
+            name: "P1",
+            score: 242,
+            isActive: true,
+            isBust: false,
+            position: null,
+            throwsInCurrentRound: 1,
+            currentRoundThrows: [{ value: 20, isDouble: false, isTriple: false, isBust: false }],
+            roundHistory: [],
+          },
+          {
+            id: 2,
+            name: "P2",
+            score: 301,
+            isActive: false,
+            isBust: false,
+            position: null,
+            throwsInCurrentRound: 0,
+            currentRoundThrows: [],
+            roundHistory: [],
+          },
+        ],
+      }),
+    );
+
+    const { result } = renderHook(() => useThrowHandler({ gameId: 1 }));
+
+    await act(async () => {
+      await result.current.handleThrow(20);
+    });
+
+    expect(currentGameState.activePlayerId).toBe(2);
+    expect(result.current.pendingThrowCount).toBe(1);
+
+    await act(async () => {
+      await result.current.handleThrow(19);
+    });
+
+    expect(result.current.pendingThrowCount).toBe(2);
+    expect(vi.mocked(recordThrow)).toHaveBeenCalledTimes(1);
+
+    await act(async () => {
+      firstDeferred.resolve(
+        buildThrowAck({
+          stateVersion: "v-stale-1",
+          scoreboardDelta: {
+            changedPlayers: [
+              {
+                playerId: 1,
+                name: "P1",
+                score: 242,
+                position: null,
+                isActive: true,
+                isGuest: false,
+                isBust: false,
+              },
+              {
+                playerId: 2,
+                name: "P2",
+                score: 301,
+                position: null,
+                isActive: false,
+                isGuest: false,
+                isBust: false,
+              },
+            ],
+            winnerId: null,
+            status: "started",
+            currentRound: 4,
+          },
+        }),
+      );
+      await firstDeferred.promise;
+    });
+
+    await waitFor(() => expect(result.current.pendingThrowCount).toBe(0));
+    await waitFor(() => expect(vi.mocked(getGameThrows)).toHaveBeenCalledWith(1));
+    expect(vi.mocked(recordThrow)).toHaveBeenCalledTimes(1);
+    expect(result.current.syncMessage).toBe(
+      "Game state changed while throws were syncing. Cleared queued throws and synced latest turn.",
+    );
+    expect(currentGameState.activePlayerId).toBe(1);
+    expect(currentGameState.players[1]?.score).toBe(301);
+  });
+
   it("does not duplicate stale throws on bust after returning from summary undo", async () => {
     currentGameState = buildGameData({
       activePlayerId: 1,

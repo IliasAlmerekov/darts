@@ -11,11 +11,11 @@ import type {
   StartGameRequest,
 } from "@/types";
 import type {
-  CreateGameSettingsPayload,
   GameSettingsResponse,
   RematchGameResponse,
   RematchResponse,
   StartRematchResponse,
+  UpdateGameSettingsPayload,
 } from "@/types";
 
 // ---------------------------------------------------------------------------
@@ -499,11 +499,6 @@ export async function startRematch(previousGameId: number): Promise<StartRematch
 // Game settings
 // ---------------------------------------------------------------------------
 
-type UpdateGameSettingsPayload = Partial<{
-  doubleOut: boolean;
-  tripleOut: boolean;
-}>;
-
 /**
  * Fetches the canonical settings for a game by its id.
  * Used to retrieve the original rules before starting a rematch.
@@ -541,7 +536,7 @@ export async function updateGameSettings(
  * Saves settings for an existing game and rejects when game id is missing.
  */
 export async function saveGameSettings(
-  payload: CreateGameSettingsPayload,
+  payload: UpdateGameSettingsPayload,
   gameId?: number | null,
 ): Promise<GameSettingsResponse> {
   if (typeof gameId !== "number" || !Number.isFinite(gameId)) {
