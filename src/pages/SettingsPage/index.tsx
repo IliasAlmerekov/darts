@@ -1,11 +1,18 @@
 import { useState, useMemo, useEffect, useCallback, useRef } from "react";
 import { useParams } from "react-router-dom";
 import { useStore } from "@nanostores/react";
-import { $gameData, $gameSettings, setGameSettings } from "@/store";
+import {
+  $gameData,
+  $gameSettings,
+  $gameSettingsByGameId,
+  $preCreateGameSettings,
+  setGameSettings,
+  setPreCreateGameSettings,
+} from "@/store";
 import { $currentGameId, setCurrentGameId } from "@/store";
 import { getGameSettings, saveGameSettings } from "@/shared/api/game";
 import { clientLogger } from "@/shared/lib/clientLogger";
-import type { GameMode, GameSettingsResponse } from "@/types";
+import type { CreateGameSettingsPayload, GameMode, GameSettingsResponse } from "@/types";
 import styles from "./Settings.module.css";
 import { SettingsTabs } from "./components/SettingsTabs";
 
@@ -50,6 +57,8 @@ function SettingsPage(): JSX.Element {
   const { id: gameIdParam } = useParams<{ id?: string }>();
   const gameData = useStore($gameData);
   const gameSettings = useStore($gameSettings);
+  const gameSettingsByGameId = useStore($gameSettingsByGameId);
+  const preCreateGameSettings = useStore($preCreateGameSettings);
   const currentGameIdFromStore = useStore($currentGameId);
 
   const routeGameId = useMemo(() => parseRouteGameId(gameIdParam), [gameIdParam]);
@@ -63,8 +72,16 @@ function SettingsPage(): JSX.Element {
   const selectedPointsRef = useRef(selectedPoints);
   const effectiveGameIdRef = useRef<number | null>(null);
   const isSavingRef = useRef(false);
+  const cachedRouteGameSettings =
+    routeGameId !== null ? (gameSettingsByGameId[routeGameId] ?? null) : null;
   const activeGameSettings =
-    routeGameId !== null && gameData?.id === routeGameId ? gameSettings : loadedSettings;
+    routeGameId !== null && gameData?.id === routeGameId
+      ? gameSettings
+      : (loadedSettings ?? cachedRouteGameSettings);
+  const preCreateGameMode = useMemo(
+    () => resolveGameMode(preCreateGameSettings.doubleOut, preCreateGameSettings.tripleOut),
+    [preCreateGameSettings.doubleOut, preCreateGameSettings.tripleOut],
+  );
 
   // Keep the session store aligned only with the canonical route id.
   useEffect(() => {
@@ -77,10 +94,11 @@ function SettingsPage(): JSX.Element {
     setHasHydratedSelection(false);
     setLoadedSettings(null);
     if (routeGameId === null) {
-      setSelectedGameMode("single-out");
-      setSelectedPoints(301);
+      setSelectedGameMode(preCreateGameMode);
+      setSelectedPoints(preCreateGameSettings.startScore);
+      setHasHydratedSelection(true);
     }
-  }, [routeGameId]);
+  }, [preCreateGameMode, preCreateGameSettings.startScore, routeGameId]);
 
   // Load settings only for the explicit route game id.
   useEffect(() => {
@@ -130,6 +148,20 @@ function SettingsPage(): JSX.Element {
 
   const currentPoints = activeGameSettings?.startScore ?? 301;
   const effectiveGameId = routeGameId;
+  const isHydratingRouteSettings =
+    routeGameId !== null && !hasHydratedSelection && activeGameSettings === null;
+  const selectedGameModeId =
+    hasHydratedSelection || routeGameId === null
+      ? selectedGameMode
+      : activeGameSettings
+        ? currentGameMode
+        : null;
+  const selectedPointsId =
+    hasHydratedSelection || routeGameId === null
+      ? selectedPoints
+      : activeGameSettings
+        ? currentPoints
+        : null;
 
   useEffect(() => {
     selectedGameModeRef.current = selectedGameMode;
@@ -148,7 +180,12 @@ function SettingsPage(): JSX.Element {
   }, [isSaving]);
 
   useEffect(() => {
-    if (hasHydratedSelection) {
+    if (routeGameId === null) {
+      return;
+    }
+
+    const shouldSyncFromCanonicalResponse = loadedSettings !== null;
+    if (hasHydratedSelection && !shouldSyncFromCanonicalResponse) {
       return;
     }
     if (!activeGameSettings) {
@@ -158,95 +195,128 @@ function SettingsPage(): JSX.Element {
     setSelectedGameMode(currentGameMode);
     setSelectedPoints(currentPoints);
     setHasHydratedSelection(true);
-  }, [activeGameSettings, currentGameMode, currentPoints, hasHydratedSelection]);
+  }, [
+    activeGameSettings,
+    currentGameMode,
+    currentPoints,
+    hasHydratedSelection,
+    loadedSettings,
+    routeGameId,
+  ]);
 
-  const handleGameModeClick = useCallback(async (id: string | number) => {
-    if (isSavingRef.current) return;
-    if (!isGameMode(id)) return;
-    if (!effectiveGameIdRef.current) return;
+  const updatePreCreateSettings = useCallback((settings: CreateGameSettingsPayload): void => {
+    setPreCreateGameSettings(settings);
+  }, []);
 
-    const mode = id;
-    const isDoubleOut = mode === "double-out";
-    const isTripleOut = mode === "triple-out";
-    const previousMode = selectedGameModeRef.current;
-    setSelectedGameMode(mode);
-    selectedGameModeRef.current = mode;
+  const handleGameModeClick = useCallback(
+    async (id: string | number) => {
+      if (isSavingRef.current) return;
+      if (!isGameMode(id)) return;
 
-    setIsSaving(true);
-    setSavingScope("game-mode");
-    isSavingRef.current = true;
+      const mode = id;
+      const isDoubleOut = mode === "double-out";
+      const isTripleOut = mode === "triple-out";
+      const previousMode = selectedGameModeRef.current;
+      setSelectedGameMode(mode);
+      selectedGameModeRef.current = mode;
 
-    try {
-      const response = await saveGameSettings(
-        {
+      if (!effectiveGameIdRef.current) {
+        updatePreCreateSettings({
           startScore: selectedPointsRef.current,
           doubleOut: isDoubleOut,
           tripleOut: isTripleOut,
-        },
-        effectiveGameIdRef.current,
-      );
-      setLoadedSettings(response);
-      setGameSettings(response, effectiveGameIdRef.current);
-    } catch (error) {
-      setSelectedGameMode(previousMode);
-      selectedGameModeRef.current = previousMode;
-      clientLogger.error("settings.save-game-mode.failed", {
-        context: {
-          gameId: effectiveGameIdRef.current,
-          requestedMode: mode,
-        },
-        error,
-      });
-    } finally {
-      setIsSaving(false);
-      setSavingScope(null);
-      isSavingRef.current = false;
-    }
-  }, []);
+        });
+        return;
+      }
 
-  const handlePointsClick = useCallback(async (id: string | number) => {
-    if (isSavingRef.current) return;
-    if (!effectiveGameIdRef.current) return;
+      setIsSaving(true);
+      setSavingScope("game-mode");
+      isSavingRef.current = true;
 
-    const points = Number(id);
-    const currentMode = selectedGameModeRef.current;
-    const isDoubleOut = currentMode === "double-out";
-    const isTripleOut = currentMode === "triple-out";
-    const previousPoints = selectedPointsRef.current;
-    setSelectedPoints(points);
-    selectedPointsRef.current = points;
+      try {
+        const response = await saveGameSettings(
+          {
+            startScore: selectedPointsRef.current,
+            doubleOut: isDoubleOut,
+            tripleOut: isTripleOut,
+          },
+          effectiveGameIdRef.current,
+        );
+        setLoadedSettings(response);
+        setGameSettings(response, effectiveGameIdRef.current);
+      } catch (error) {
+        setSelectedGameMode(previousMode);
+        selectedGameModeRef.current = previousMode;
+        clientLogger.error("settings.save-game-mode.failed", {
+          context: {
+            gameId: effectiveGameIdRef.current,
+            requestedMode: mode,
+          },
+          error,
+        });
+      } finally {
+        setIsSaving(false);
+        setSavingScope(null);
+        isSavingRef.current = false;
+      }
+    },
+    [updatePreCreateSettings],
+  );
 
-    setIsSaving(true);
-    setSavingScope("points");
-    isSavingRef.current = true;
+  const handlePointsClick = useCallback(
+    async (id: string | number) => {
+      if (isSavingRef.current) return;
 
-    try {
-      const response = await saveGameSettings(
-        {
+      const points = Number(id);
+      const currentMode = selectedGameModeRef.current;
+      const isDoubleOut = currentMode === "double-out";
+      const isTripleOut = currentMode === "triple-out";
+      const previousPoints = selectedPointsRef.current;
+      setSelectedPoints(points);
+      selectedPointsRef.current = points;
+
+      if (!effectiveGameIdRef.current) {
+        updatePreCreateSettings({
           startScore: points,
           doubleOut: isDoubleOut,
           tripleOut: isTripleOut,
-        },
-        effectiveGameIdRef.current,
-      );
-      setLoadedSettings(response);
-      setGameSettings(response, effectiveGameIdRef.current);
-    } catch (error) {
-      setSelectedPoints(previousPoints);
-      selectedPointsRef.current = previousPoints;
-      clientLogger.error("settings.save-points.failed", {
-        context: {
-          gameId: effectiveGameIdRef.current,
-          requestedPoints: points,
-        },
-        error,
-      });
-    } finally {
-      setIsSaving(false);
-      setSavingScope(null);
-      isSavingRef.current = false;
-    }
-  }, []);
+        });
+        return;
+      }
+
+      setIsSaving(true);
+      setSavingScope("points");
+      isSavingRef.current = true;
+
+      try {
+        const response = await saveGameSettings(
+          {
+            startScore: points,
+            doubleOut: isDoubleOut,
+            tripleOut: isTripleOut,
+          },
+          effectiveGameIdRef.current,
+        );
+        setLoadedSettings(response);
+        setGameSettings(response, effectiveGameIdRef.current);
+      } catch (error) {
+        setSelectedPoints(previousPoints);
+        selectedPointsRef.current = previousPoints;
+        clientLogger.error("settings.save-points.failed", {
+          context: {
+            gameId: effectiveGameIdRef.current,
+            requestedPoints: points,
+          },
+          error,
+        });
+      } finally {
+        setIsSaving(false);
+        setSavingScope(null);
+        isSavingRef.current = false;
+      }
+    },
+    [updatePreCreateSettings],
+  );
 
   return (
     <div className={styles.settings}>
@@ -256,16 +326,16 @@ function SettingsPage(): JSX.Element {
           <SettingsTabs
             title="Game Mode"
             options={GAME_MODE_OPTIONS}
-            selectedId={hasHydratedSelection ? selectedGameMode : currentGameMode}
+            selectedId={selectedGameModeId}
             onChange={handleGameModeClick}
-            disabled={isSaving && savingScope === "game-mode"}
+            disabled={isHydratingRouteSettings || (isSaving && savingScope === "game-mode")}
           />
           <SettingsTabs
             title="Points"
             options={POINTS_OPTIONS}
-            selectedId={hasHydratedSelection ? selectedPoints : currentPoints}
+            selectedId={selectedPointsId}
             onChange={handlePointsClick}
-            disabled={isSaving && savingScope === "points"}
+            disabled={isHydratingRouteSettings || (isSaving && savingScope === "points")}
             mobileLayout="grid"
           />
         </div>

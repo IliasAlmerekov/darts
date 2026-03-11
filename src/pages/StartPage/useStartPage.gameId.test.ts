@@ -52,6 +52,7 @@ vi.mock("@/store", async (importOriginal) => {
   return {
     ...original,
     $gameSettings: { key: "gameSettings" },
+    $preCreateGameSettings: { key: "preCreateGameSettings" },
     $lastFinishedGameId: { key: "lastFinishedGameId" },
     $invitation: { key: "invitation" },
     $currentGameId: { key: "currentGameId" },
@@ -86,6 +87,11 @@ vi.mock("@/shared/api/room", () => ({
 
 function defaultStoreState() {
   storeValues.set("gameSettings", null);
+  storeValues.set("preCreateGameSettings", {
+    startScore: 301,
+    doubleOut: false,
+    tripleOut: false,
+  });
   storeValues.set("lastFinishedGameId", null);
   storeValues.set("currentGameId", null);
   storeValues.set("invitation", null);
