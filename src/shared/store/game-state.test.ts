@@ -86,6 +86,31 @@ describe("game-state store", () => {
       expect($error.get()).toBeNull();
     });
 
+    it("should trust the only active player flag when activePlayerId is stale", () => {
+      setGameData({
+        ...mockGameData,
+        activePlayerId: 1,
+        currentThrowCount: 0,
+        players: [
+          {
+            ...mockGameData.players[0]!,
+            isActive: false,
+            throwsInCurrentRound: 0,
+            currentRoundThrows: [],
+          },
+          {
+            ...mockGameData.players[1]!,
+            isActive: true,
+            position: null,
+          },
+        ],
+      });
+
+      expect($gameData.get()?.activePlayerId).toBe(2);
+      expect($gameData.get()?.players[0]?.isActive).toBe(false);
+      expect($gameData.get()?.players[1]?.isActive).toBe(true);
+    });
+
     it("should handle null game data", () => {
       setGameData(mockGameData);
       setGameData(null);

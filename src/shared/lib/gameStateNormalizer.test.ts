@@ -52,6 +52,25 @@ describe("gameStateNormalizer", () => {
       expect(deriveActivePlayerId({ ...mockGameData, activePlayerId: null })).toBe(1);
     });
 
+    it("prefers the only active player flag when activePlayerId points to another player", () => {
+      const gameData: GameThrowsResponse = {
+        ...mockGameData,
+        activePlayerId: 1,
+        players: [
+          {
+            ...mockGameData.players[0]!,
+            isActive: false,
+          },
+          {
+            ...mockGameData.players[1]!,
+            isActive: true,
+          },
+        ],
+      };
+
+      expect(deriveActivePlayerId(gameData)).toBe(2);
+    });
+
     it("derives the player with current throws when all active flags are false", () => {
       const gameData: GameThrowsResponse = {
         ...mockGameData,
@@ -135,6 +154,29 @@ describe("gameStateNormalizer", () => {
       expect(normalized?.activePlayerId).toBe(1);
       expect(normalized?.players[0]?.isActive).toBe(true);
       expect(normalized?.players[1]?.isActive).toBe(false);
+    });
+
+    it("reconciles conflicting activePlayerId with the only active player flag", () => {
+      const gameData: GameThrowsResponse = {
+        ...mockGameData,
+        activePlayerId: 1,
+        players: [
+          {
+            ...mockGameData.players[0]!,
+            isActive: false,
+          },
+          {
+            ...mockGameData.players[1]!,
+            isActive: true,
+          },
+        ],
+      };
+
+      const normalized = normalizeGameData(gameData);
+
+      expect(normalized?.activePlayerId).toBe(2);
+      expect(normalized?.players[0]?.isActive).toBe(false);
+      expect(normalized?.players[1]?.isActive).toBe(true);
     });
 
     it("fills winnerId for finished game when derivable", () => {
