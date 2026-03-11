@@ -63,6 +63,8 @@ export function invalidateAuthState(): void {
  * Resets auth state for tests and explicit session teardown flows.
  */
 export function resetAuthStore(): void {
-  invalidateAuthState();
+  $user.set(null);
+  $authError.set(null);
+  $authChecked.set(false);
   authInvalidationListeners.clear();
 }
