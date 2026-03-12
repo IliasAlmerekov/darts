@@ -5,7 +5,6 @@ stages:
 variables:
   GET_SOURCES_ATTEMPTS: 3
   NPM_CONFIG_CACHE: .npm
-  PLAYWRIGHT_BROWSERS_PATH: /root/.cache/ms-playwright
 
 workflow:
   rules:
@@ -20,7 +19,6 @@ workflow:
         - package-lock.json
     paths:
       - .npm/
-      - /root/.cache/ms-playwright/
   before_script:
     - npm ci --cache .npm --prefer-offline
 
