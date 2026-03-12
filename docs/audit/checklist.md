@@ -316,10 +316,12 @@ Sources: `CLAUDE.md`, `eslint.config.mjs`, `tsconfig.json`, project conventions.
 
 ### 14.3 Mock Boundaries
 
-| #      | Criterion                                                | How to verify                      | Severity |
-| ------ | -------------------------------------------------------- | ---------------------------------- | -------- |
-| 14.3.1 | Only external boundaries mocked: API, browser APIs, time | manual review of `vi.mock()` calls | MAJOR    |
-| 14.3.2 | Internal business logic is never mocked                  | manual review                      | MAJOR    |
+| #      | Criterion                                                                                                                            | How to verify                                                                    | Severity |
+| ------ | ------------------------------------------------------------------------------------------------------------------------------------ | -------------------------------------------------------------------------------- | -------- |
+| 14.3.1 | Only external boundaries mocked: API, browser APIs, time                                                                             | manual review of `vi.mock()` calls                                               | MAJOR    |
+| 14.3.2 | Internal business logic is never mocked                                                                                              | manual review                                                                    | MAJOR    |
+| 14.3.3 | Nanostore atoms must not be spied on via `vi.spyOn(atom, "set")` — assert observable behavior (rendered output, store state) instead | `grep -rn "spyOn.*\.set\|spyOn.*atom" src/ --include="*.test.*"` — must be empty | MAJOR    |
+| 14.3.4 | Tests must assert observable behavior — not internal logger output format or third-party library internals                           | manual review of `expect()` assertions in test files                             | MAJOR    |
 
 ### 14.4 Coverage Thresholds
 
@@ -431,6 +433,9 @@ grep -rn "parseInt(" src/ --include="*.ts" --include="*.tsx" # must have radix 1
 grep -rn "new EventSource\|createSSEConnection" src/pages/   # duplicate SSE connections
 grep -rn "Record<string, string>" src/                        # role-keyed maps should use Record<Role,string>
 grep -rn "^export type .* = [A-Z]" src/ --include="*.ts"     # trivial type aliases
+grep -rn "\.set(" src/ --include="*.ts" --include="*.tsx"   # .set() outside store files
+grep -rn "\$error\.set(null)" src/                           # unconditional error atom clears
+grep -rn "spyOn.*\.set\|spyOn.*atom" src/ --include="*.test.*"  # vi.spyOn on atoms
 ```
 
 ### Manual review checklist
@@ -461,6 +466,14 @@ grep -rn "^export type .* = [A-Z]" src/ --include="*.ts"     # trivial type alia
 - [ ] `parseInt` calls include explicit radix 10
 - [ ] Type guards validate full response shape, not just `isRecord`
 - [ ] No trivial type export aliases (`export type X = Y` with no added semantics)
+- [ ] No truthy checks on `number` types — use `!== undefined` or `!== null`
+- [ ] Environment-capability checks catch the specific error mode (e.g. `SecurityError`)
+- [ ] `??` fallbacks on domain values use named constants; missing data surfaces error/loading state
+- [ ] No redundant `return;` at end of `void` function's `catch` block
+- [ ] No `.set()` on atoms outside their store file
+- [ ] Error atoms cleared only by the operation that caused them
+- [ ] Tests assert observable behavior, not internal logger format or library internals
+- [ ] No `vi.spyOn(atom, "set")` — assert rendered output or store state instead
 
 ---
 
