@@ -9,7 +9,17 @@ import { ROUTES } from "@/lib/routes";
 /**
  * Provides registration flow state and action.
  */
-export function useRegistration() {
+interface RegistrationReturn {
+  register: (
+    username: string,
+    email: string,
+    password: string,
+  ) => Promise<RegistrationResponse | null>;
+  loading: boolean;
+  error: string | null;
+}
+
+export function useRegistration(): RegistrationReturn {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const navigate = useNavigate();
