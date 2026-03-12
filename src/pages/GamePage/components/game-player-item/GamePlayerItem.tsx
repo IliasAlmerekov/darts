@@ -8,9 +8,9 @@ interface GamePlayerItemProps {
   name?: string;
   isActive?: boolean;
   value: number;
-  gamePlayerItemThrow1?: number | string | JSX.Element | undefined;
-  gamePlayerItemThrow2?: number | string | JSX.Element | undefined;
-  gamePlayerItemThrow3?: number | string | JSX.Element | undefined;
+  gamePlayerItemThrow1?: number | string | React.ReactNode | undefined;
+  gamePlayerItemThrow2?: number | string | React.ReactNode | undefined;
+  gamePlayerItemThrow3?: number | string | React.ReactNode | undefined;
   throw1IsBust?: boolean | undefined;
   throw2IsBust?: boolean | undefined;
   throw3IsBust?: boolean | undefined;
@@ -20,9 +20,9 @@ interface GamePlayerItemProps {
   throwCount?: number | undefined;
   isPlaying?: boolean | undefined;
   roundsCountLength: number;
-  gamePlayerItemPrevThrow1?: number | string | JSX.Element | undefined;
-  gamePlayerItemPrevThrow2?: number | string | JSX.Element | undefined;
-  gamePlayerItemPrevThrow3?: number | string | JSX.Element | undefined;
+  gamePlayerItemPrevThrow1?: number | string | React.ReactNode | undefined;
+  gamePlayerItemPrevThrow2?: number | string | React.ReactNode | undefined;
+  gamePlayerItemPrevThrow3?: number | string | React.ReactNode | undefined;
   prevThrow1IsBust?: boolean | undefined;
   prevThrow2IsBust?: boolean | undefined;
   prevThrow3IsBust?: boolean | undefined;

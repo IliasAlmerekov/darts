@@ -5,6 +5,7 @@ import { finishGame, undoLastThrow, updateGameSettings } from "./game";
 
 function createLegacyGameResponse() {
   return {
+    type: "full-state" as const,
     id: 42,
     status: "started" as const,
     currentRound: 2,
@@ -111,6 +112,7 @@ describe("game api contract adapters", () => {
 
   it("returns compact undo acknowledgement without refetching game state", async () => {
     const compactUndoAck = {
+      type: "ack" as const,
       success: true,
       gameId: 42,
       stateVersion: "v-undo-1",
@@ -136,7 +138,10 @@ describe("game api contract adapters", () => {
 
     const response = await undoLastThrow(42);
 
-    expect(deleteSpy).toHaveBeenCalledWith("/game/42/throw");
+    expect(deleteSpy).toHaveBeenCalledWith(
+      "/game/42/throw",
+      expect.objectContaining({ validate: expect.any(Function) }),
+    );
     expect(response).toEqual(compactUndoAck);
   });
 });

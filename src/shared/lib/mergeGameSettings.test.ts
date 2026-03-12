@@ -4,6 +4,7 @@ import { mergeGameSettings } from "./mergeGameSettings";
 
 function createGameData(): GameThrowsResponse {
   return {
+    type: "full-state",
     id: 42,
     status: "started",
     currentRound: 3,

@@ -17,6 +17,7 @@ type PlayerOverrides = Partial<GameThrowsResponse["players"][number]> & {
 
 function createGame(overrides: Partial<GameThrowsResponse> = {}): GameThrowsResponse {
   return {
+    type: "full-state",
     id: 1,
     status: "started",
     currentRound: 1,

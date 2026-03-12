@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import type { ReactNode } from "react";
-import { act, render, screen } from "@testing-library/react";
+import { act, render, screen, waitForElementToBeRemoved } from "@testing-library/react";
 import { Outlet } from "react-router-dom";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -113,6 +113,11 @@ describe("App routing", () => {
 
     if (!rendered) {
       throw new Error("Expected App to render");
+    }
+
+    const loadingPage = screen.queryByRole("status", { name: "Loading page" });
+    if (loadingPage) {
+      await waitForElementToBeRemoved(loadingPage, { timeout: 5000 });
     }
 
     return rendered;

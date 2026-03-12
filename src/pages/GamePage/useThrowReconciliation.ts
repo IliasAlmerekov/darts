@@ -1,13 +1,9 @@
 import { useCallback, useState } from "react";
 import { ApiError } from "@/shared/api";
 import { getGameThrows, resetGameStateVersion } from "@/shared/api/game";
+import { isRecord } from "@/shared/lib/guards";
 import { clientLogger } from "@/shared/lib/clientLogger";
 import { setGameData } from "@/shared/store";
-
-type ApiErrorPayload = {
-  error?: string;
-  message?: string;
-};
 
 interface UseThrowReconciliationOptions {
   gameId: number | null;
@@ -30,8 +26,8 @@ export function isThrowNotAllowedConflict(error: unknown): boolean {
     return false;
   }
 
-  const typedPayload = payload as ApiErrorPayload;
-  return typedPayload.error === "GAME_THROW_NOT_ALLOWED";
+  const typedPayload = isRecord(payload) ? payload : null;
+  return typedPayload?.error === "GAME_THROW_NOT_ALLOWED";
 }
 
 export function useThrowReconciliation({

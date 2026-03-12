@@ -26,7 +26,11 @@ describe("game/rematch api", () => {
     const response = await createRematchGame(520);
 
     expect(apiClient.post).toHaveBeenCalledTimes(1);
-    expect(apiClient.post).toHaveBeenCalledWith("/room/520/rematch");
+    expect(apiClient.post).toHaveBeenCalledWith(
+      "/room/520/rematch",
+      undefined,
+      expect.objectContaining({ validate: expect.any(Function) }),
+    );
     expect(response).toEqual({
       success: true,
       gameId: 777,
@@ -40,8 +44,18 @@ describe("game/rematch api", () => {
 
     const response = await createRematch(520);
 
-    expect(apiClient.post).toHaveBeenNthCalledWith(1, "/room/520/rematch");
-    expect(apiClient.post).toHaveBeenNthCalledWith(2, "/invite/create/777");
+    expect(apiClient.post).toHaveBeenNthCalledWith(
+      1,
+      "/room/520/rematch",
+      undefined,
+      expect.objectContaining({ validate: expect.any(Function) }),
+    );
+    expect(apiClient.post).toHaveBeenNthCalledWith(
+      2,
+      "/invite/create/777",
+      undefined,
+      expect.objectContaining({ validate: expect.any(Function) }),
+    );
     expect(response).toEqual({
       success: true,
       gameId: 777,
@@ -61,13 +75,26 @@ describe("game/rematch api", () => {
 
     const response = await startRematch(520);
 
-    expect(apiClient.get).toHaveBeenCalledWith("/game/520/settings", undefined);
-    expect(apiClient.post).toHaveBeenNthCalledWith(1, "/room/520/rematch");
-    expect(apiClient.post).toHaveBeenNthCalledWith(2, "/game/777/start", {
-      startscore: 501,
-      doubleout: true,
-      tripleout: false,
-    });
+    expect(apiClient.get).toHaveBeenCalledWith(
+      "/game/520/settings",
+      expect.objectContaining({ validate: expect.any(Function) }),
+    );
+    expect(apiClient.post).toHaveBeenNthCalledWith(
+      1,
+      "/room/520/rematch",
+      undefined,
+      expect.objectContaining({ validate: expect.any(Function) }),
+    );
+    expect(apiClient.post).toHaveBeenNthCalledWith(
+      2,
+      "/game/777/start",
+      {
+        startscore: 501,
+        doubleout: true,
+        tripleout: false,
+      },
+      expect.objectContaining({ validate: expect.any(Function) }),
+    );
     expect(response).toEqual({
       success: true,
       gameId: 777,

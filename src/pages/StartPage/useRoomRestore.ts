@@ -96,13 +96,15 @@ export function useRoomRestore({
         }
 
         if (currentGameId && currentGameId !== gameId) {
-          console.warn(`Redirecting from game ${gameId} to active game ${currentGameId}`);
+          clientLogger.warn("room.restore.redirect_to_active", {
+            context: { fromGameId: gameId, toGameId: currentGameId },
+          });
           navigate(ROUTES.start(currentGameId), { replace: true });
           return;
         }
 
         if (currentGameId === null) {
-          console.warn(`No active game, redirecting from game ${gameId} to /start`);
+          clientLogger.warn("room.restore.no_active_game", { context: { gameId } });
           setInvitation(null);
           navigate(ROUTES.start(), { replace: true });
           return;
@@ -114,7 +116,9 @@ export function useRoomRestore({
         }
 
         if (gameData.status !== "lobby") {
-          console.warn(`Access to game ${gameId} denied - status: ${gameData.status}`);
+          clientLogger.warn("room.restore.access_denied", {
+            context: { gameId, status: gameData.status },
+          });
           navigateToActiveStart(navigate, currentGameId);
           return;
         }
@@ -137,7 +141,7 @@ export function useRoomRestore({
             return;
           }
 
-          console.warn("Could not load invitation link:", error);
+          clientLogger.warn("room.restore.invitation_load_failed", { error });
           setCurrentGameId(gameId);
         }
       } catch (error) {

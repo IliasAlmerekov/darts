@@ -6,11 +6,22 @@ import { invalidateAuthState, setAuthenticatedUser } from "@/shared/store/auth";
 import { mapAuthErrorMessage } from "@/lib/auth-error-handling";
 import { ROUTES } from "@/lib/routes";
 import { resolveSafeLoginRedirect } from "./lib/safeRedirect";
+import { parseLocationState } from "@/shared/lib/locationState";
 
 /**
  * Provides login flow state and action.
  */
-export function useLogin() {
+interface LoginReturn {
+  login: (email: string, password: string) => Promise<void>;
+  loading: boolean;
+  error: string | null;
+}
+
+function isLoginLocationState(s: unknown): s is { from?: string } {
+  return typeof s === "object" && s !== null;
+}
+
+export function useLogin(): LoginReturn {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const navigate = useNavigate();
@@ -18,7 +29,7 @@ export function useLogin() {
 
   const from = ((): string => {
     return resolveSafeLoginRedirect(
-      (location.state as { from?: string } | null)?.from,
+      parseLocationState(location.state, isLoginLocationState)?.from,
       ROUTES.start(),
     );
   })();

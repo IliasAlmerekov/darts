@@ -9,11 +9,11 @@ test.describe("Cross-Browser and Responsive Tests", () => {
     await mockFailedLogin(page);
 
     await page.setViewportSize({ width: 768, height: 1024 });
-    await page.goto("http://localhost:5173/");
+    await page.goto("/");
 
     const signInHeading = page.getByRole("heading", { name: "Sign in" });
     const emailField = page.getByRole("textbox", { name: "Email *" });
-    const passwordField = page.getByRole("textbox", { name: "Password *" });
+    const passwordField = page.getByLabel("Password *");
     const signInButton = page.getByRole("button", { name: "Sign in" });
     const showPasswordButton = page.getByRole("button", { name: "Show password" });
     const rememberCheckbox = page.getByRole("checkbox", { name: "Remember me" });

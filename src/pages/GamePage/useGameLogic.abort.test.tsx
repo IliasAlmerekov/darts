@@ -101,6 +101,7 @@ function createAbortError(): DOMException {
 
 function buildAutoFinishGameData(): GameThrowsResponse {
   return {
+    type: "full-state",
     id: 1,
     status: "started",
     currentRound: 4,

@@ -15,6 +15,10 @@ if (existsSync(".env.local")) {
 }
 
 const baseURL = process.env.PLAYWRIGHT_BASE_URL ?? "http://localhost:5173";
+const ciWorkersRaw = process.env.PLAYWRIGHT_WORKERS;
+const ciWorkers = ciWorkersRaw === undefined ? 2 : Number.parseInt(ciWorkersRaw, 10);
+const workers =
+  process.env.CI && Number.isFinite(ciWorkers) && ciWorkers > 0 ? ciWorkers : undefined;
 
 export default defineConfig({
   testDir: "./tests",
@@ -27,7 +31,7 @@ export default defineConfig({
   fullyParallel: true,
   forbidOnly: !!process.env.CI,
   retries: process.env.CI ? 2 : 0,
-  ...(process.env.CI ? { workers: 1 } : {}),
+  ...(workers === undefined ? {} : { workers }),
   reporter: "html",
   use: {
     baseURL,

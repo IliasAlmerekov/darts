@@ -72,6 +72,7 @@ vi.mock("@/lib/soundPlayer", () => ({
 
 function buildFinishedGameState(): GameThrowsResponse {
   return {
+    type: "full-state",
     id: 42,
     status: "finished",
     currentRound: 7,
@@ -144,6 +145,7 @@ function buildStartedGameState(): GameThrowsResponse {
 
 function buildUndoAck(overrides: Partial<UndoAckResponse> = {}): UndoAckResponse {
   return {
+    type: "ack",
     success: true,
     gameId: 42,
     stateVersion: "undo-v1",

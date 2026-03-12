@@ -10,7 +10,13 @@ import { resolveSafeLoginRedirect } from "./lib/safeRedirect";
 /**
  * Orchestrates login page state, submission, and redirect logic.
  */
-export function useLoginPage() {
+interface LoginPageReturn {
+  error: string | null;
+  loading: boolean;
+  handleSubmit: (e: React.FormEvent<HTMLFormElement>) => Promise<void>;
+}
+
+export function useLoginPage(): LoginPageReturn {
   const [submitError, setSubmitError] = useState<string | null>(null);
   const { login, loading, error: loginError } = useLogin();
   const navigate = useNavigate();

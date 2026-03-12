@@ -3,13 +3,28 @@ import { useNavigate } from "react-router-dom";
 import { registerUser, type RegistrationResponse } from "@/shared/api/auth";
 import { mapAuthErrorMessage } from "@/lib/auth-error-handling";
 import { ApiError } from "@/shared/api";
+import { isRecord } from "@/shared/lib/guards";
 import { clientLogger } from "@/shared/lib/clientLogger";
 import { ROUTES } from "@/lib/routes";
 
 /**
  * Provides registration flow state and action.
  */
-export function useRegistration() {
+interface RegistrationReturn {
+  register: (
+    username: string,
+    email: string,
+    password: string,
+  ) => Promise<RegistrationResponse | null>;
+  loading: boolean;
+  error: string | null;
+}
+
+function hasErrorsRecord(data: unknown): data is { errors: Record<string, unknown> } {
+  return isRecord(data) && "errors" in data && isRecord(data.errors);
+}
+
+export function useRegistration(): RegistrationReturn {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const navigate = useNavigate();
@@ -30,12 +45,8 @@ export function useRegistration() {
         const isCsrfError =
           firstErr instanceof ApiError &&
           firstErr.status === 422 &&
-          typeof firstErr.data === "object" &&
-          firstErr.data !== null &&
-          "errors" in firstErr.data &&
-          typeof (firstErr.data as Record<string, unknown>).errors === "object" &&
-          "_csrf_token" in
-            ((firstErr.data as Record<string, unknown>).errors as Record<string, unknown>);
+          hasErrorsRecord(firstErr.data) &&
+          "_csrf_token" in firstErr.data.errors;
 
         if (!isCsrfError) throw firstErr;
 

@@ -32,6 +32,7 @@ vi.mock("@/shared/ui/admin-layout", () => ({
 
 function createGameResponse(): GameThrowsResponse {
   return {
+    type: "full-state",
     id: 42,
     status: "lobby",
     currentRound: 1,

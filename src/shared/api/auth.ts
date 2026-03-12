@@ -1,5 +1,5 @@
-import { apiClient, API_BASE_URL } from "./client";
-import { ApiError, TimeoutError } from "./errors";
+import { apiClient, ApiValidationError } from "./client";
+import { ApiError, UnauthorizedError } from "./errors";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -27,11 +27,17 @@ export interface RegistrationData {
   password: string;
 }
 
-export type UserRole = "ROLE_USER" | "ROLE_ADMIN" | "ROLE_PLAYER";
+interface CsrfTokensResponse {
+  success: boolean;
+  tokens: Record<string, string>;
+}
+
+export type Role = "ROLE_USER" | "ROLE_ADMIN" | "ROLE_PLAYER";
+export type UserRole = Role;
 
 export interface AuthenticatedUser {
   success: boolean;
-  roles: UserRole[];
+  roles: Role[];
   id: number;
   email?: string | null;
   username?: string | null;
@@ -89,6 +95,18 @@ function isRegistrationResponse(data: unknown): data is RegistrationResponse {
   return isRecord(data) && (data.redirect === undefined || typeof data.redirect === "string");
 }
 
+function isCsrfTokensResponse(data: unknown): data is CsrfTokensResponse {
+  if (!isRecord(data) || data.success !== true || !isRecord(data.tokens)) {
+    return false;
+  }
+
+  return Object.values(data.tokens).every((token) => typeof token === "string");
+}
+
+function isLogoutResponse(data: unknown): data is string {
+  return typeof data === "string";
+}
+
 function isAuthenticatedUser(data: unknown): data is AuthenticatedUser {
   return (
     isRecord(data) &&
@@ -123,6 +141,7 @@ export async function loginWithCredentials(credentials: LoginCredentials): Promi
   const response: unknown = await apiClient.post(LOGIN_ENDPOINT, payload.toString(), {
     headers: { "Content-Type": "application/x-www-form-urlencoded" },
     skipAuthRedirect: true,
+    validate: isLoginResponse,
   });
 
   if (!isLoginResponse(response)) {
@@ -136,7 +155,9 @@ export async function loginWithCredentials(credentials: LoginCredentials): Promi
  * Logs out the current user.
  */
 export async function logout(onSuccess?: () => void): Promise<void> {
-  await apiClient.post(LOGOUT_ENDPOINT);
+  await apiClient.post(LOGOUT_ENDPOINT, undefined, {
+    validate: isLogoutResponse,
+  });
   onSuccess?.();
 }
 
@@ -150,17 +171,26 @@ export async function registerUser(
 ): Promise<RegistrationResponse> {
   if (refreshCsrf) {
     try {
-      await apiClient.get(CSRF_ENDPOINT, { skipAuthRedirect: true });
+      await apiClient.get(CSRF_ENDPOINT, {
+        skipAuthRedirect: true,
+        validate: isCsrfTokensResponse,
+      });
     } catch {
       // Ignore prefetch errors; proceed with registration attempt
     }
   }
 
-  const response: unknown = await apiClient.post(REGISTER_ENDPOINT, {
-    username: data.username,
-    email: data.email,
-    plainPassword: data.password,
-  });
+  const response: unknown = await apiClient.post(
+    REGISTER_ENDPOINT,
+    {
+      username: data.username,
+      email: data.email,
+      plainPassword: data.password,
+    },
+    {
+      validate: isRegistrationResponse,
+    },
+  );
 
   if (!isRegistrationResponse(response)) {
     throw new ApiError("Unexpected response shape for registration", {
@@ -178,73 +208,50 @@ export async function registerUser(
 export async function getAuthenticatedUser(
   options: GetAuthenticatedUserOptions = {},
 ): Promise<AuthenticatedUser | null> {
-  const controller = new AbortController();
   const timeoutMs = options.timeoutMs ?? AUTH_CHECK_TIMEOUT_MS;
-  const forwardAbort = (): void => {
-    controller.abort(options.signal?.reason);
-  };
+  const isAuthenticatedUserResponse = (
+    data: unknown,
+  ): data is AuthenticatedUser | { success: true; user: AuthenticatedUser } | { success: false } =>
+    isAuthenticatedUserEnvelope(data) ||
+    isAuthenticatedUser(data) ||
+    isUnauthenticatedAuthResponse(data);
 
-  if (options.signal) {
-    if (options.signal.aborted) {
-      controller.abort(options.signal.reason);
-    } else {
-      options.signal.addEventListener("abort", forwardAbort, { once: true });
-    }
-  }
-
-  const timeoutId = window.setTimeout(() => controller.abort("timeout"), timeoutMs);
-
-  let response: Response;
   try {
-    response = await fetch(`${API_BASE_URL}/login/success`, {
-      method: "GET",
-      credentials: "include",
-      headers: {
-        Accept: "application/json",
-      },
-      signal: controller.signal,
+    const response: unknown = await apiClient.get("/login/success", {
+      signal: options.signal,
+      skipAuthRedirect: true,
+      timeoutMs,
+      validate: isAuthenticatedUserResponse,
     });
-  } catch (error) {
-    if (error instanceof DOMException && error.name === "AbortError") {
-      if (controller.signal.reason === "timeout") {
-        throw new TimeoutError(
-          `Request timed out after ${timeoutMs}ms`,
-          `${API_BASE_URL}/login/success`,
-        );
-      }
+
+    if (isAuthenticatedUserEnvelope(response)) {
+      return response.user;
     }
 
-    throw error;
-  } finally {
-    options.signal?.removeEventListener("abort", forwardAbort);
-    window.clearTimeout(timeoutId);
-  }
-
-  if (response.status === 401) {
-    return null;
-  }
-
-  if (response.ok) {
-    const data: unknown = await response.json().catch(() => null);
-
-    if (isAuthenticatedUserEnvelope(data)) {
-      return data.user;
+    if (isAuthenticatedUser(response)) {
+      return response;
     }
 
-    if (isAuthenticatedUser(data)) {
-      return data;
-    }
-
-    if (isUnauthenticatedAuthResponse(data)) {
+    if (isUnauthenticatedAuthResponse(response)) {
       return null;
     }
 
     throw new ApiError("Unexpected response shape for authenticated user", {
-      status: response.status,
-      data,
-      url: response.url,
+      status: 200,
+      data: response,
     });
-  }
+  } catch (error) {
+    if (error instanceof UnauthorizedError) {
+      return null;
+    }
 
-  return null;
+    if (error instanceof ApiValidationError) {
+      throw new ApiError("Unexpected response shape for authenticated user", {
+        status: 200,
+        data: error.raw,
+      });
+    }
+
+    throw error;
+  }
 }

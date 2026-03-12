@@ -4,7 +4,13 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { useAuthenticatedUser } from "./useAuthenticatedUser";
 import { TimeoutError } from "@/shared/api/errors";
 import type { AuthenticatedUser } from "@/shared/api/auth";
-import { $authChecked, $authError, $user, resetAuthStore } from "@/shared/store/auth";
+import {
+  $authChecked,
+  testOnlySetAuthChecked,
+  testOnlySetAuthError,
+  testOnlySetUser,
+  resetAuthStore,
+} from "@/shared/store/auth";
 
 const getAuthenticatedUserMock = vi.fn();
 const setCurrentGameIdMock = vi.fn();
@@ -113,9 +119,9 @@ describe("useAuthenticatedUser", () => {
       redirect: "/start",
       gameId: 13,
     };
-    $user.set(existingUser);
-    $authChecked.set(false);
-    $authError.set(null);
+    testOnlySetUser(existingUser);
+    testOnlySetAuthChecked(false);
+    testOnlySetAuthError(null);
 
     getAuthenticatedUserMock.mockRejectedValue(
       new TimeoutError("Request timed out after 5000ms", "/api/login/success"),

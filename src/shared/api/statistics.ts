@@ -152,6 +152,42 @@ function normalizePlayerStatsItem(data: unknown) {
   };
 }
 
+function isPlayerStatsItemResponse(data: unknown): data is {
+  playerId: number;
+  name: string;
+  gamesPlayed: number;
+  scoreAverage: number;
+} {
+  return (
+    isRecord(data) &&
+    isFiniteNumber(data.playerId) &&
+    typeof data.name === "string" &&
+    isFiniteNumber(data.gamesPlayed) &&
+    isFiniteNumber(data.scoreAverage)
+  );
+}
+
+function isPlayerStatsResponse(data: unknown): data is {
+  limit: number;
+  offset: number;
+  total: number;
+  items: Array<{
+    playerId: number;
+    name: string;
+    gamesPlayed: number;
+    scoreAverage: number;
+  }>;
+} {
+  return (
+    isRecord(data) &&
+    isFiniteNumber(data.limit) &&
+    isFiniteNumber(data.offset) &&
+    isFiniteNumber(data.total) &&
+    Array.isArray(data.items) &&
+    data.items.every(isPlayerStatsItemResponse)
+  );
+}
+
 function normalizeFinishedGameItem(data: unknown) {
   if (!isRecord(data)) {
     return null;
@@ -248,6 +284,51 @@ function normalizeGamesOverviewResponse(data: unknown): GameDataProps | null {
   return normalized;
 }
 
+function isGamesOverviewItemResponse(data: unknown): data is {
+  id: number;
+  date: string | null;
+  finishedAt: string | null;
+  playersCount: number;
+  winnerName: string | null;
+  winnerId: number | null;
+  winnerRounds: number;
+} {
+  return (
+    isRecord(data) &&
+    isFiniteNumber(data.id) &&
+    (data.date === null || typeof data.date === "string") &&
+    (data.finishedAt === null || typeof data.finishedAt === "string") &&
+    isFiniteNumber(data.playersCount) &&
+    (data.winnerName === null || typeof data.winnerName === "string") &&
+    (data.winnerId === null || isFiniteNumber(data.winnerId)) &&
+    isFiniteNumber(data.winnerRounds)
+  );
+}
+
+function isGamesOverviewResponse(data: unknown): data is {
+  limit: number;
+  offset: number;
+  total: number;
+  items: Array<{
+    id: number;
+    date: string | null;
+    finishedAt: string | null;
+    playersCount: number;
+    winnerName: string | null;
+    winnerId: number | null;
+    winnerRounds: number;
+  }>;
+} {
+  return (
+    isRecord(data) &&
+    isFiniteNumber(data.limit) &&
+    isFiniteNumber(data.offset) &&
+    isFiniteNumber(data.total) &&
+    Array.isArray(data.items) &&
+    data.items.every(isGamesOverviewItemResponse)
+  );
+}
+
 // ---------------------------------------------------------------------------
 // API
 // ---------------------------------------------------------------------------
@@ -270,6 +351,7 @@ export async function getPlayerStats(
   const data: unknown = await apiClient.get("/players/stats", {
     query,
     signal,
+    validate: isPlayerStatsResponse,
   });
   const normalized = normalizePlayerDataResponse(data);
   if (normalized === null) {
@@ -289,6 +371,7 @@ export async function getGamesOverview(
   const data: unknown = await apiClient.get("/games/overview", {
     query: { limit, offset },
     signal,
+    validate: isGamesOverviewResponse,
   });
   const normalized = normalizeGamesOverviewResponse(data);
   if (normalized === null) {

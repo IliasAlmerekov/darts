@@ -1,4 +1,6 @@
 import { atom, computed } from "nanostores";
+import type { ReadableAtom } from "nanostores";
+import { isRecord } from "@/shared/lib/guards";
 import { clientLogger } from "@/shared/lib/clientLogger";
 import type { CreateGameSettingsPayload, GameSummaryResponse } from "@/types";
 
@@ -27,16 +29,15 @@ function canUseSessionStorage(): boolean {
 }
 
 function isValidInvitation(value: unknown): value is Invitation {
-  if (null === value || "object" !== typeof value) {
+  if (!isRecord(value)) {
     return false;
   }
 
-  const typed = value as Partial<Invitation>;
   return (
-    "number" === typeof typed.gameId &&
-    Number.isFinite(typed.gameId) &&
-    "string" === typeof typed.invitationLink &&
-    typed.invitationLink.length > 0
+    "number" === typeof value.gameId &&
+    Number.isFinite(value.gameId) &&
+    "string" === typeof value.invitationLink &&
+    value.invitationLink.length > 0
   );
 }
 
@@ -122,16 +123,15 @@ function setStoredInvitation(invitation: Invitation | null): void {
 }
 
 function isValidPreCreateGameSettings(value: unknown): value is CreateGameSettingsPayload {
-  if (null === value || "object" !== typeof value) {
+  if (!isRecord(value)) {
     return false;
   }
 
-  const typed = value as Partial<CreateGameSettingsPayload>;
   return (
-    "number" === typeof typed.startScore &&
-    Number.isFinite(typed.startScore) &&
-    "boolean" === typeof typed.doubleOut &&
-    "boolean" === typeof typed.tripleOut
+    "number" === typeof value.startScore &&
+    Number.isFinite(value.startScore) &&
+    "boolean" === typeof value.doubleOut &&
+    "boolean" === typeof value.tripleOut
   );
 }
 
@@ -172,26 +172,33 @@ function setStoredPreCreateGameSettings(settings: CreateGameSettingsPayload): vo
   }
 }
 
-export const $currentGameId = atom<number | null>(getStoredGameId());
-export const $invitation = atom<Invitation | null>(getStoredInvitation());
-export const $lastFinishedGameSummary = atom<FinishedGameSummarySnapshot | null>(null);
+const currentGameIdAtom = atom<number | null>(getStoredGameId());
+const invitationAtom = atom<Invitation | null>(getStoredInvitation());
+const lastFinishedGameSummaryAtom = atom<FinishedGameSummarySnapshot | null>(null);
+const preCreateGameSettingsAtom = atom<CreateGameSettingsPayload>(getStoredPreCreateGameSettings());
+
+export const $currentGameId: ReadableAtom<number | null> = currentGameIdAtom;
+export const $invitation: ReadableAtom<Invitation | null> = invitationAtom;
+export const $lastFinishedGameSummary: ReadableAtom<FinishedGameSummarySnapshot | null> =
+  lastFinishedGameSummaryAtom;
 export const $lastFinishedGameId = computed(
-  $lastFinishedGameSummary,
+  lastFinishedGameSummaryAtom,
   (snapshot) => snapshot?.gameId ?? null,
 );
-export const $preCreateGameSettings = atom<CreateGameSettingsPayload>(
-  getStoredPreCreateGameSettings(),
-);
+export const $preCreateGameSettings: ReadableAtom<CreateGameSettingsPayload> =
+  preCreateGameSettingsAtom;
+
+export const testOnlyCurrentGameIdAtom = currentGameIdAtom;
 
 /**
  * Sets the current game id and persists it in session storage.
  */
 export function setCurrentGameId(gameId: number | null): void {
-  if ($currentGameId.get() === gameId) {
+  if (currentGameIdAtom.get() === gameId) {
     return;
   }
 
-  $currentGameId.set(gameId);
+  currentGameIdAtom.set(gameId);
   setStoredGameId(gameId);
 }
 
@@ -199,13 +206,13 @@ export function setCurrentGameId(gameId: number | null): void {
  * Stores the current invitation and updates the game id if provided.
  */
 export function setInvitation(invitation: Invitation | null): void {
-  const current = $invitation.get();
+  const current = invitationAtom.get();
   const invitationUnchanged =
     current?.gameId === invitation?.gameId &&
     current?.invitationLink === invitation?.invitationLink;
 
   if (!invitationUnchanged) {
-    $invitation.set(invitation);
+    invitationAtom.set(invitation);
     setStoredInvitation(invitation);
   }
 
@@ -218,14 +225,14 @@ export function setInvitation(invitation: Invitation | null): void {
  * Stores the latest finished game summary for the current SPA navigation flow.
  */
 export function setLastFinishedGameSummary(snapshot: FinishedGameSummarySnapshot | null): void {
-  $lastFinishedGameSummary.set(snapshot);
+  lastFinishedGameSummaryAtom.set(snapshot);
 }
 
 /**
  * Stores the draft settings used before a room exists.
  */
 export function setPreCreateGameSettings(settings: CreateGameSettingsPayload): void {
-  $preCreateGameSettings.set(settings);
+  preCreateGameSettingsAtom.set(settings);
   setStoredPreCreateGameSettings(settings);
 }
 
@@ -240,7 +247,7 @@ export function resetPreCreateGameSettings(): void {
  * Reads the currently active game id from the store.
  */
 export function getActiveGameId(): number | null {
-  return $currentGameId.get() ?? null;
+  return currentGameIdAtom.get();
 }
 
 /**

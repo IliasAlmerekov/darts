@@ -9,6 +9,7 @@ import {
 } from "./gameStateNormalizer";
 
 const mockGameData: GameThrowsResponse = {
+  type: "full-state",
   id: 1,
   activePlayerId: 1,
   currentRound: 3,
