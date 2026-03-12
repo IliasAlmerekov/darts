@@ -7,27 +7,10 @@ import {
   setUnauthorizedHandler,
 } from "./client";
 import { TimeoutError } from "./errors";
+import { createMockResponse } from "./test-utils";
 
-type MockResponseOptions = {
-  status: number;
-  body?: unknown;
-  headers?: Record<string, string>;
-  url?: string;
-};
-
-function createMockResponse(options: MockResponseOptions): Response {
-  const headers = new Headers(options.headers ?? {});
-
-  return {
-    status: options.status,
-    ok: options.status >= 200 && options.status < 300,
-    headers,
-    url: options.url ?? "http://localhost/api/protected",
-    json: vi.fn(async () => options.body),
-    text: vi.fn(async () =>
-      typeof options.body === "string" ? options.body : JSON.stringify(options.body ?? {}),
-    ),
-  } as unknown as Response;
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null;
 }
 
 function acceptUnknown(_data: unknown): _data is unknown {
@@ -35,12 +18,7 @@ function acceptUnknown(_data: unknown): _data is unknown {
 }
 
 function isOkResponse(data: unknown): data is { ok: boolean } {
-  return (
-    typeof data === "object" &&
-    data !== null &&
-    "ok" in data &&
-    typeof (data as { ok: unknown }).ok === "boolean"
-  );
+  return isRecord(data) && typeof data.ok === "boolean";
 }
 
 function isNullResponse(data: unknown): data is null {
@@ -63,9 +41,10 @@ describe("apiClient unauthorized handling", () => {
 
     vi.spyOn(globalThis, "fetch").mockResolvedValueOnce(
       createMockResponse({
-        status: 401,
         body: { message: "Unauthorized" },
-        headers: { "content-type": "application/json" },
+        status: 401,
+        headers: new Headers({ "content-type": "application/json" }),
+        url: "http://localhost/api/protected",
       }),
     );
 
@@ -82,9 +61,10 @@ describe("apiClient unauthorized handling", () => {
 
     vi.spyOn(globalThis, "fetch").mockResolvedValueOnce(
       createMockResponse({
-        status: 401,
         body: { message: "Unauthorized" },
-        headers: { "content-type": "application/json" },
+        status: 401,
+        headers: new Headers({ "content-type": "application/json" }),
+        url: "http://localhost/api/protected",
       }),
     );
 
@@ -130,9 +110,10 @@ describe("apiClient request timeout", () => {
   it("should not throw TimeoutError when request completes in time", async () => {
     vi.spyOn(globalThis, "fetch").mockResolvedValueOnce(
       createMockResponse({
-        status: 200,
         body: { ok: true },
-        headers: { "content-type": "application/json" },
+        status: 200,
+        headers: new Headers({ "content-type": "application/json" }),
+        url: "http://localhost/api/protected",
       }),
     );
 
@@ -197,9 +178,9 @@ describe("apiClient response passthrough", () => {
 
   it("returns parsed data together with the Response when returnResponse is enabled", async () => {
     const response = createMockResponse({
-      status: 200,
       body: { ok: true },
-      headers: { "content-type": "application/json" },
+      status: 200,
+      headers: new Headers({ "content-type": "application/json" }),
       url: "http://localhost/api/game/520",
     });
 
@@ -220,7 +201,7 @@ describe("apiClient response passthrough", () => {
   it("returns null for accepted 304 responses instead of throwing ApiError", async () => {
     const response = createMockResponse({
       status: 304,
-      headers: { ETag: "etag-v1" },
+      headers: new Headers({ ETag: "etag-v1" }),
       url: "http://localhost/api/game/520?since=etag-v1",
     });
 
@@ -242,9 +223,10 @@ describe("apiClient response passthrough", () => {
   it("throws ApiValidationError when a successful response fails validation", async () => {
     vi.spyOn(globalThis, "fetch").mockResolvedValueOnce(
       createMockResponse({
-        status: 200,
         body: { ok: "yes" },
-        headers: { "content-type": "application/json" },
+        status: 200,
+        headers: new Headers({ "content-type": "application/json" }),
+        url: "http://localhost/api/protected",
       }),
     );
 
