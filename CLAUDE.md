@@ -4,6 +4,16 @@
 
 PWA darts game: room creation, SSE real-time throw streaming, player statistics.
 
+## Documentation
+
+When unsure about the API or behaviour of any library in this project, **always fetch up-to-date docs via context7** before writing code:
+
+```
+mcp__context7__resolve-library-id → mcp__context7__query-docs
+```
+
+Do this for: React, React Router, Nanostores, Vitest, Testing Library, Playwright, Vite, TypeScript — any dependency where the correct API matters.
+
 ## Tech Stack
 
 - **Runtime/UI**: React 18 (functional components only — no class components)
@@ -214,3 +224,8 @@ docs/
 - E2E (Playwright): critical user journeys (auth, game flow, join/start/finish)
 - Mocking: only external boundaries (API layer, browser APIs, time) — NEVER mock internal business logic under test
 - Test names: `should <expected behavior> when <condition>`
+
+## Ticket-Driven Source Of Truth
+
+- When a ticket explicitly limits the source of truth to a specific file list, derive types, unions, and replacements only from those files
+- When a ticket requires literal-value inventory before implementation, do not infer missing members from the ticket text or other files
