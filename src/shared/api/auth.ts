@@ -1,4 +1,4 @@
-import { apiClient } from "./client";
+import { apiClient, ApiValidationError } from "./client";
 import { ApiError, UnauthorizedError } from "./errors";
 
 // ---------------------------------------------------------------------------
@@ -243,6 +243,13 @@ export async function getAuthenticatedUser(
   } catch (error) {
     if (error instanceof UnauthorizedError) {
       return null;
+    }
+
+    if (error instanceof ApiValidationError) {
+      throw new ApiError("Unexpected response shape for authenticated user", {
+        status: 200,
+        data: error.raw,
+      });
     }
 
     throw error;
