@@ -95,7 +95,9 @@ export interface UndoAckResponse {
 
 export type UndoThrowResponse = GameThrowsResponse | UndoAckResponse;
 
+export type RoomStreamEventType = "game-started" | "game-finished";
+
 export interface RoomStreamEvent<T = unknown> {
-  type: string;
+  type: RoomStreamEventType;
   data: T;
 }
