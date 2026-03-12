@@ -1,4 +1,5 @@
 import { ApiError, NetworkError } from "@/shared/api";
+import { isRecord } from "@/shared/lib/guards";
 
 const DEFAULT_ERROR_MESSAGE = "Something went wrong. Please try again.";
 
@@ -64,17 +65,16 @@ function mapApiStatusToMessage(error: ApiError): string | null {
 }
 
 function extractApiPayloadText(payload: unknown): string | null {
-  if (!payload || typeof payload !== "object") {
+  if (!isRecord(payload)) {
     return null;
   }
 
-  const candidate = payload as { error?: unknown; message?: unknown };
-  if (typeof candidate.error === "string" && candidate.error.trim()) {
-    return candidate.error.trim();
+  if (typeof payload.error === "string" && payload.error.trim()) {
+    return payload.error.trim();
   }
 
-  if (typeof candidate.message === "string" && candidate.message.trim()) {
-    return candidate.message.trim();
+  if (typeof payload.message === "string" && payload.message.trim()) {
+    return payload.message.trim();
   }
 
   return null;

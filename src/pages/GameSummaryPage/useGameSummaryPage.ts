@@ -9,7 +9,7 @@ import {
 } from "@/shared/api/game";
 import type {
   FinishedPlayerResponse,
-  GameThrowsResponse,
+  UndoThrowResponse,
   UndoAckResponse,
   WinnerPlayerProps,
 } from "@/types";
@@ -62,10 +62,8 @@ function isSummaryLocationState(s: unknown): s is SummaryLocationState {
   );
 }
 
-function isUndoAckResponse(
-  response: GameThrowsResponse | UndoAckResponse,
-): response is UndoAckResponse {
-  return "scoreboardDelta" in response;
+function isUndoAckResponse(response: UndoThrowResponse): response is UndoAckResponse {
+  return response.type === "ack";
 }
 
 /**

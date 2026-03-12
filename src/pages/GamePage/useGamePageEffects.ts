@@ -5,7 +5,7 @@ import { ROUTES } from "@/lib/routes";
 import { unlockSounds } from "@/lib/soundPlayer";
 import { setLastFinishedGameSummary } from "@/shared/store";
 import { clientLogger } from "@/shared/lib/clientLogger";
-import type { GameSummaryResponse, GameThrowsResponse } from "@/types";
+import type { GameSummaryResponse, GameThrowsResponse, RoomStreamEventType } from "@/types";
 import { shouldAutoFinishGame, shouldNavigateToSummary } from "./gameLogic.helpers";
 
 interface GameSummaryNavigationState {
@@ -20,9 +20,12 @@ interface UseGameSummaryNavigationOptions {
 }
 
 interface UseRoomEventRefetchOptions {
-  event: { type: string } | null;
+  event: { type: RoomStreamEventType } | null;
   refetch: () => Promise<void>;
 }
+
+const GAME_STARTED_EVENT_TYPE: RoomStreamEventType = "game-started";
+const GAME_FINISHED_EVENT_TYPE: RoomStreamEventType = "game-finished";
 
 interface UseAutoFinishGameOptions {
   gameData: GameThrowsResponse | null;
@@ -70,7 +73,7 @@ export function useRoomEventRefetch({ event, refetch }: UseRoomEventRefetchOptio
       return;
     }
 
-    if (event.type === "game-started" || event.type === "game-finished") {
+    if (event.type === GAME_STARTED_EVENT_TYPE || event.type === GAME_FINISHED_EVENT_TYPE) {
       void refetch();
     }
   }, [event, refetch]);

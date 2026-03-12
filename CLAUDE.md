@@ -4,6 +4,16 @@
 
 PWA darts game: room creation, SSE real-time throw streaming, player statistics.
 
+## Documentation
+
+When unsure about the API or behaviour of any library in this project, **always fetch up-to-date docs via context7** before writing code:
+
+```
+mcp__context7__resolve-library-id → mcp__context7__query-docs
+```
+
+Do this for: React, React Router, Nanostores, Vitest, Testing Library, Playwright, Vite, TypeScript — any dependency where the correct API matters.
+
 ## Tech Stack
 
 - **Runtime/UI**: React 18 (functional components only — no class components)
@@ -41,8 +51,21 @@ derived from `pages`.
 ### TypeScript
 
 - `any` — FORBIDDEN without explicit approval and documentation
+- `as` type casts — FORBIDDEN without a preceding type guard; use type narrowing instead
+- When a ticket is specifically about removing unsafe `as` casts, complete a cast audit before editing and classify each cast as `type guard needed`, `browser API requirement`, or `leave`
+- For `type guard needed`, prefer `isXxx(value) ? value : <safe fallback or throw>` and keep the guard in the same file unless the identical guard is reused in 2+ files
+- `BodyInit` casts required by the browser API may remain only with an inline comment: `// safe: BodyInit accepts any serializable value`
 - Exported functions/components — explicit return types required
 - Null/undefined — handle explicitly; no implicit fallbacks
+- Non-null assertion `!` — FORBIDDEN; use explicit null checks
+
+### Logging
+
+- `console.log` / `console.error` / `console.warn` / `console.info` — **FORBIDDEN** in application code
+- **ALWAYS** use `clientLogger` from `src/shared/lib/clientLogger.ts`
+- API: `clientLogger.warn(event, { context?, error? })` and `clientLogger.error(event, { context?, error? })`
+- `event` is a short snake_case string describing what happened (e.g. `"sse_connection_failed"`)
+- Sensitive fields (tokens, passwords, etc.) are auto-redacted by the logger — never pre-redact manually
 
 ### Naming
 
@@ -76,6 +99,63 @@ derived from `pages`.
 - Functional components only
 - Effects MUST clean up subscriptions/listeners/timers
 - Network requests MUST support cancellation (AbortController)
+
+### Testing
+
+- Test files are **co-located** with source files (`.test.ts` / `.test.tsx`) — no `__tests__` folders
+- Always declare vitest environment at the top of the file: `// @vitest-environment jsdom` (DOM) or `// @vitest-environment node` (pure logic)
+- Structure: `describe("<unit-name>") → it("should <behavior>")` — use `it()`, never `test()`
+- `vi.mock()` calls go before imports (hoisting requirement)
+- Use factory builder functions for test data: `buildPlayer()`, `buildGameThrowsResponse()` — never raw object literals inline
+- `beforeEach` for mock resets; `afterEach` only when cleanup is mandatory
+- Async: use `waitFor()` and `act()` from Testing Library; avoid arbitrary `setTimeout` delays
+- Test names: `"should <expected behavior> when <condition>"`
+
+### Imports
+
+Path aliases (configured in `vite.config.ts` and `tsconfig.json`):
+
+| Alias       | Resolves to                 |
+| ----------- | --------------------------- |
+| `@/app/`    | `src/app/`                  |
+| `@/pages/`  | `src/pages/`                |
+| `@/shared/` | `src/shared/`               |
+| `@/lib/`    | `src/shared/lib/`           |
+| `@/types`   | `src/shared/types/index.ts` |
+| `@/types/*` | `src/shared/types/*`        |
+| `@/*`       | `src/*`                     |
+
+- Prefer the most specific alias: `@/lib/clientLogger` over `@/shared/lib/clientLogger`
+- Shared types: import from `@/types` (barrel) — never from deep internal paths
+- Cross-page imports: **FORBIDDEN** (enforced by ESLint `no-restricted-imports`)
+
+### Components
+
+- Every component has a co-located CSS Module (`ComponentName.module.css`)
+- CSS class names: `camelCase` (e.g. `.btnPrimary`, `.gamePageHeader`) — no BEM, no kebab-case
+- Conditional classes: use `clsx()` — never string concatenation
+- `index.ts` barrel files: **only** for `src/shared/ui/<name>/` (UI kit) — pages and page sub-components do NOT have barrels
+- Component props: defined as `interface` inline in the same file — no separate `.types.ts` files for props
+
+### Types
+
+- Shared domain types live in `src/shared/types/`: `game.ts`, `api.ts`, `player.ts`; re-exported via `index.ts`
+- API response/request types: `src/shared/types/api.ts`
+- Interface naming: `PascalCase` — **no** `I` prefix (e.g. `GameState`, not `IGameState`)
+- `interface` for object shapes, `type` for unions/intersections/aliases
+
+### API Client
+
+- Use `apiClient<T>(endpoint, config)` from `src/shared/api/client.ts`
+- Every call **must** provide a `validate` type guard: `validate: isGameThrowsResponse`
+- Error types: `ApiError`, `NetworkError`, `UnauthorizedError`, `TimeoutError`, `ApiValidationError` — import from `@/shared/api`
+- Default timeout: 30 s (built into client) — do not add manual timeouts on top
+
+### Hooks
+
+- Page-level hooks: co-located inside the page folder (`src/pages/<Page>/use*.ts`)
+- Shared reusable hooks: `src/shared/hooks/`
+- Page hooks orchestrate local state + shared hooks + API calls; shared hooks isolate cross-cutting concerns (auth, SSE, subscriptions)
 
 ## Git Conventions
 
@@ -147,3 +227,8 @@ docs/
 - E2E (Playwright): critical user journeys (auth, game flow, join/start/finish)
 - Mocking: only external boundaries (API layer, browser APIs, time) — NEVER mock internal business logic under test
 - Test names: `should <expected behavior> when <condition>`
+
+## Ticket-Driven Source Of Truth
+
+- When a ticket explicitly limits the source of truth to a specific file list, derive types, unions, and replacements only from those files
+- When a ticket requires literal-value inventory before implementation, do not infer missing members from the ticket text or other files

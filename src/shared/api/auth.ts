@@ -1,5 +1,5 @@
-import { apiClient, API_BASE_URL } from "./client";
-import { ApiError, TimeoutError } from "./errors";
+import { apiClient, ApiValidationError } from "./client";
+import { ApiError, UnauthorizedError } from "./errors";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -32,11 +32,12 @@ interface CsrfTokensResponse {
   tokens: Record<string, string>;
 }
 
-export type UserRole = "ROLE_USER" | "ROLE_ADMIN" | "ROLE_PLAYER";
+export type Role = "ROLE_USER" | "ROLE_ADMIN" | "ROLE_PLAYER";
+export type UserRole = Role;
 
 export interface AuthenticatedUser {
   success: boolean;
-  roles: UserRole[];
+  roles: Role[];
   id: number;
   email?: string | null;
   username?: string | null;
@@ -207,73 +208,50 @@ export async function registerUser(
 export async function getAuthenticatedUser(
   options: GetAuthenticatedUserOptions = {},
 ): Promise<AuthenticatedUser | null> {
-  const controller = new AbortController();
   const timeoutMs = options.timeoutMs ?? AUTH_CHECK_TIMEOUT_MS;
-  const forwardAbort = (): void => {
-    controller.abort(options.signal?.reason);
-  };
+  const isAuthenticatedUserResponse = (
+    data: unknown,
+  ): data is AuthenticatedUser | { success: true; user: AuthenticatedUser } | { success: false } =>
+    isAuthenticatedUserEnvelope(data) ||
+    isAuthenticatedUser(data) ||
+    isUnauthenticatedAuthResponse(data);
 
-  if (options.signal) {
-    if (options.signal.aborted) {
-      controller.abort(options.signal.reason);
-    } else {
-      options.signal.addEventListener("abort", forwardAbort, { once: true });
-    }
-  }
-
-  const timeoutId = window.setTimeout(() => controller.abort("timeout"), timeoutMs);
-
-  let response: Response;
   try {
-    response = await fetch(`${API_BASE_URL}/login/success`, {
-      method: "GET",
-      credentials: "include",
-      headers: {
-        Accept: "application/json",
-      },
-      signal: controller.signal,
+    const response: unknown = await apiClient.get("/login/success", {
+      signal: options.signal,
+      skipAuthRedirect: true,
+      timeoutMs,
+      validate: isAuthenticatedUserResponse,
     });
-  } catch (error) {
-    if (error instanceof DOMException && error.name === "AbortError") {
-      if (controller.signal.reason === "timeout") {
-        throw new TimeoutError(
-          `Request timed out after ${timeoutMs}ms`,
-          `${API_BASE_URL}/login/success`,
-        );
-      }
+
+    if (isAuthenticatedUserEnvelope(response)) {
+      return response.user;
     }
 
-    throw error;
-  } finally {
-    options.signal?.removeEventListener("abort", forwardAbort);
-    window.clearTimeout(timeoutId);
-  }
-
-  if (response.status === 401) {
-    return null;
-  }
-
-  if (response.ok) {
-    const data: unknown = await response.json().catch(() => null);
-
-    if (isAuthenticatedUserEnvelope(data)) {
-      return data.user;
+    if (isAuthenticatedUser(response)) {
+      return response;
     }
 
-    if (isAuthenticatedUser(data)) {
-      return data;
-    }
-
-    if (isUnauthenticatedAuthResponse(data)) {
+    if (isUnauthenticatedAuthResponse(response)) {
       return null;
     }
 
     throw new ApiError("Unexpected response shape for authenticated user", {
-      status: response.status,
-      data,
-      url: response.url,
+      status: 200,
+      data: response,
     });
-  }
+  } catch (error) {
+    if (error instanceof UnauthorizedError) {
+      return null;
+    }
 
-  return null;
+    if (error instanceof ApiValidationError) {
+      throw new ApiError("Unexpected response shape for authenticated user", {
+        status: 200,
+        data: error.raw,
+      });
+    }
+
+    throw error;
+  }
 }

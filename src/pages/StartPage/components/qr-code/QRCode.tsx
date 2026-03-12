@@ -9,7 +9,7 @@ interface QRCodeProps {
   children?: React.ReactNode;
 }
 
-const QRCode: React.FC<QRCodeProps> = ({ invitationLink, gameId, isLobbyFull, children }) => {
+function QRCode({ invitationLink, gameId, isLobbyFull, children }: QRCodeProps): JSX.Element {
   const [copyFeedback, setCopyFeedback] = useState<"idle" | "copied" | "failed">("idle");
 
   const copyInvitationLink = useCallback(async (): Promise<void> => {
@@ -87,6 +87,6 @@ const QRCode: React.FC<QRCodeProps> = ({ invitationLink, gameId, isLobbyFull, ch
       </div>
     </div>
   );
-};
+}
 
 export default React.memo(QRCode);

@@ -11,6 +11,7 @@ import type { GameThrowsResponse } from "@/types";
 
 function buildGameData(overrides?: Partial<GameThrowsResponse>): GameThrowsResponse {
   return {
+    type: "full-state",
     id: 1,
     status: "started",
     currentRound: 1,

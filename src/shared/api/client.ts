@@ -1,5 +1,6 @@
 import { ApiError, ForbiddenError, NetworkError, TimeoutError, UnauthorizedError } from "./errors";
 import type { ApiRequestConfig, QueryParams } from "./types";
+import { isRecord } from "@/shared/lib/guards";
 
 const DEFAULT_TIMEOUT_MS = 30_000;
 
@@ -70,17 +71,16 @@ function isJsonBody(body: unknown): boolean {
 }
 
 function getErrorMessage(data: unknown, fallback: string): string {
-  if (typeof data !== "object" || data === null) {
+  if (!isRecord(data)) {
     return fallback;
   }
 
-  const errorPayload = data as { error?: unknown; message?: unknown };
-  if (typeof errorPayload.error === "string" && errorPayload.error) {
-    return errorPayload.error;
+  if (typeof data.error === "string" && data.error) {
+    return data.error;
   }
 
-  if (typeof errorPayload.message === "string" && errorPayload.message) {
-    return errorPayload.message;
+  if (typeof data.message === "string" && data.message) {
+    return data.message;
   }
 
   return fallback;
@@ -149,7 +149,7 @@ async function request<T>(
   };
 
   if (body != null && method !== "GET") {
-    fetchConfig.body = isJsonBody(body) ? JSON.stringify(body) : (body as BodyInit);
+    fetchConfig.body = isJsonBody(body) ? JSON.stringify(body) : (body as BodyInit); // safe: BodyInit accepts any serializable value
   }
 
   const url = buildUrl(endpoint, query);

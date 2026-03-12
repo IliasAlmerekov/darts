@@ -1,27 +1,32 @@
 import { Navigate, Outlet, useLocation } from "react-router-dom";
-import React from "react";
 import { StartPageSkeleton, LoginSuccessSkeleton, UniversalSkeleton } from "@/shared/ui/skeletons";
 import { useAuthenticatedUser } from "@/shared/hooks/useAuthenticatedUser";
 import { ROUTES } from "@/lib/routes";
-import type { UserRole } from "@/shared/api/auth";
+import type { Role } from "@/shared/api/auth";
 
 type ProtectedRoutesProps = {
-  allowedRoles?: UserRole[];
+  allowedRoles?: Role[];
 };
 
-function getFallbackRouteForAuthenticatedUser(roles: UserRole[] | undefined): string {
-  if (Array.isArray(roles) && roles.includes("ROLE_ADMIN")) {
+const ADMIN_ROLE: Role = "ROLE_ADMIN";
+const PLAYER_ROLE: Role = "ROLE_PLAYER";
+const DEFAULT_ALLOWED_ROLES: Role[] = [ADMIN_ROLE];
+
+function getFallbackRouteForAuthenticatedUser(roles: Role[] | undefined): string {
+  if (Array.isArray(roles) && roles.includes(ADMIN_ROLE)) {
     return ROUTES.start();
   }
 
-  if (Array.isArray(roles) && roles.includes("ROLE_PLAYER")) {
+  if (Array.isArray(roles) && roles.includes(PLAYER_ROLE)) {
     return ROUTES.joined;
   }
 
   return ROUTES.login;
 }
 
-const ProtectedRoutes: React.FC<ProtectedRoutesProps> = ({ allowedRoles = ["ROLE_ADMIN"] }) => {
+function ProtectedRoutes({
+  allowedRoles = DEFAULT_ALLOWED_ROLES,
+}: ProtectedRoutesProps): JSX.Element {
   const { user: loggedInUser, loading: checking } = useAuthenticatedUser();
   const { pathname } = useLocation();
 
@@ -47,6 +52,6 @@ const ProtectedRoutes: React.FC<ProtectedRoutesProps> = ({ allowedRoles = ["ROLE
   }
 
   return <Outlet />;
-};
+}
 
 export default ProtectedRoutes;

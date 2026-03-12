@@ -8,8 +8,8 @@ import {
   getCachedGameSettings,
   setGameSettings,
   setPreCreateGameSettings,
+  setCurrentGameId,
 } from "@/shared/store";
-import { $currentGameId, setCurrentGameId } from "@/shared/store";
 import { getGameSettings, saveGameSettings } from "@/shared/api/game";
 import { clientLogger } from "@/shared/lib/clientLogger";
 import { toUserErrorMessage } from "@/lib/error-to-user-message";
@@ -60,7 +60,6 @@ function SettingsPage(): JSX.Element {
   const gameData = useStore($gameData);
   const gameSettings = useStore($gameSettings);
   const preCreateGameSettings = useStore($preCreateGameSettings);
-  const currentGameIdFromStore = useStore($currentGameId);
 
   const routeGameId = useMemo(() => parseRouteGameId(gameIdParam), [gameIdParam]);
   const [isSaving, setIsSaving] = useState(false);
@@ -84,12 +83,11 @@ function SettingsPage(): JSX.Element {
     [preCreateGameSettings.doubleOut, preCreateGameSettings.tripleOut],
   );
 
-  // Keep the session store aligned only with the canonical route id.
   useEffect(() => {
-    if (routeGameId !== null && routeGameId !== currentGameIdFromStore) {
+    if (routeGameId !== null) {
       setCurrentGameId(routeGameId);
     }
-  }, [routeGameId, currentGameIdFromStore]);
+  }, [routeGameId]);
 
   useEffect(() => {
     setHasHydratedSelection(false);

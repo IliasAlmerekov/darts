@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useEventSource, type EventSourceListener } from "@/shared/hooks/useEventSource";
 import { getGameThrows } from "@/shared/api/game";
+import { clientLogger } from "@/shared/lib/clientLogger";
 import { $gameData } from "@/shared/store";
 
 interface RawPlayer {
@@ -58,6 +59,7 @@ export function useGamePlayers(gameId: number | null) {
 
   useEffect(() => {
     let isMounted = true;
+    const controller = new AbortController();
 
     if (!gameId) {
       setPlayers([]);
@@ -74,7 +76,7 @@ export function useGamePlayers(gameId: number | null) {
       setPlayers(sortPlayers(cachedPlayers));
     }
 
-    getGameThrows(gameId)
+    getGameThrows(gameId, controller.signal)
       .then((response) => {
         if (!isMounted) return;
         const sourcePlayers = response.players ?? [];
@@ -85,11 +87,15 @@ export function useGamePlayers(gameId: number | null) {
         }));
         setPlayers(sortPlayers(mappedPlayers));
       })
-      .catch(() => {
-        // Ignore transient room fetch errors; SSE can still populate players.
+      .catch((error) => {
+        clientLogger.error("room.players.fetch.failed", {
+          context: { gameId },
+          error,
+        });
       });
 
     return () => {
+      controller.abort();
       isMounted = false;
     };
   }, [gameId, sortPlayers]);
@@ -113,8 +119,11 @@ export function useGamePlayers(gameId: number | null) {
           }));
           setPlayers(sortPlayers(mappedPlayers));
         }
-      } catch {
-        // Ignore invalid SSE payloads.
+      } catch (error) {
+        clientLogger.error("room.players.sse-parse.failed", {
+          context: { raw: event.data },
+          error,
+        });
       }
     },
     [sortPlayers],

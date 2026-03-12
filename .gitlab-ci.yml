@@ -3,8 +3,8 @@ stages:
   - check
 
 variables:
+  GET_SOURCES_ATTEMPTS: 3
   NPM_CONFIG_CACHE: .npm
-  PLAYWRIGHT_BROWSERS_PATH: /root/.cache/ms-playwright
 
 workflow:
   rules:
@@ -19,7 +19,6 @@ workflow:
         - package-lock.json
     paths:
       - .npm/
-      - /root/.cache/ms-playwright/
   before_script:
     - npm ci --cache .npm --prefer-offline
 
@@ -71,9 +70,11 @@ unit_tests:
 
 e2e_tests:
   <<: *base_job
+  image: mcr.microsoft.com/playwright:v1.58.1-noble
   stage: check
+  variables:
+    PLAYWRIGHT_WORKERS: 2
   script:
-    - npx playwright install --with-deps chromium
     - npm run test:e2e
   artifacts:
     when: always

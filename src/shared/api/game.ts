@@ -1,5 +1,6 @@
 import { apiClient } from "./client";
 import { ApiError } from "./errors";
+import { createInviteEndpoint } from "./endpoints";
 import type {
   GameStatus,
   GameSummaryResponse,
@@ -29,7 +30,6 @@ const FINISHED_GAME_ENDPOINT = (id: number) => `/game/${id}/finished`;
 const REOPEN_GAME_ENDPOINT = (id: number) => `/game/${id}/reopen`;
 const ABORT_GAME_ENDPOINT = (id: number) => `/game/${id}/abort`;
 const REMATCH_ENDPOINT = (id: number) => `/room/${id}/rematch`;
-const CREATE_INVITE_ENDPOINT = (id: number) => `/invite/create/${id}`;
 const GAME_SETTINGS_ENDPOINT = (id: number) => `/game/${id}/settings`;
 const RECORD_THROW_ENDPOINT = (id: number) => `/game/${id}/throw/delta`;
 const UNDO_THROW_ENDPOINT = (id: number) => `/game/${id}/throw`;
@@ -39,8 +39,6 @@ const UNDO_THROW_ENDPOINT = (id: number) => `/game/${id}/throw`;
 // ---------------------------------------------------------------------------
 
 const gameStateVersionById = new Map<number, string>();
-
-type ParsedResponse = unknown;
 
 const GAME_STATUS_VALUES: readonly GameStatus[] = ["lobby", "started", "finished"];
 
@@ -393,7 +391,7 @@ export async function getGameThrowsIfChanged(
   signal?: AbortSignal,
 ): Promise<GameThrowsResponse | null> {
   const currentVersion = gameStateVersionById.get(gameId) ?? null;
-  const { data, response } = await apiClient.request<ParsedResponse>(GAME_ENDPOINT(gameId), {
+  const { data, response } = await apiClient.request<unknown>(GAME_ENDPOINT(gameId), {
     method: "GET",
     ...(currentVersion ? { query: { since: currentVersion } } : {}),
     ...(currentVersion ? { headers: { "If-None-Match": currentVersion } } : {}),
@@ -558,7 +556,7 @@ export async function createRematch(previousGameId: number): Promise<RematchResp
     };
   }
 
-  const invite: unknown = await apiClient.post(CREATE_INVITE_ENDPOINT(rematch.gameId), undefined, {
+  const invite: unknown = await apiClient.post(createInviteEndpoint(rematch.gameId), undefined, {
     validate: isInvitationPayloadResponse,
   });
   if (

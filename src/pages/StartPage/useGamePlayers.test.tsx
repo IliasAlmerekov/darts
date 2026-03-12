@@ -19,6 +19,12 @@ vi.mock("@/shared/api/game", () => ({
   getGameThrows: vi.fn(),
 }));
 
+vi.mock("@/shared/lib/clientLogger", () => ({
+  clientLogger: {
+    error: vi.fn(),
+  },
+}));
+
 vi.mock("@/shared/store", async (importOriginal) => {
   const original = await importOriginal<Record<string, unknown>>();
   return {
@@ -28,11 +34,13 @@ vi.mock("@/shared/store", async (importOriginal) => {
 });
 
 import { getGameThrows } from "@/shared/api/game";
+import { clientLogger } from "@/shared/lib/clientLogger";
 import type { GameThrowsResponse } from "@/types";
 
 const buildGameThrowsResponse = (
   overrides: Partial<GameThrowsResponse> = {},
 ): GameThrowsResponse => ({
+  type: "full-state",
   id: 1,
   status: "started",
   currentRound: 1,
@@ -57,6 +65,7 @@ describe("useGamePlayers", () => {
   beforeEach(() => {
     sseHandler = null;
     vi.mocked(getGameThrows).mockReset();
+    vi.mocked(clientLogger.error).mockReset();
   });
 
   it("clears players when SSE sends an empty list", async () => {
@@ -105,5 +114,56 @@ describe("useGamePlayers", () => {
     });
 
     expect(getGameThrows).not.toHaveBeenCalled();
+  });
+
+  it("logs fetch failures through clientLogger", async () => {
+    const error = new Error("fetch failed");
+    vi.mocked(getGameThrows).mockRejectedValue(error);
+
+    render(<HookConsumer gameId={42} />);
+
+    await waitFor(() => {
+      expect(clientLogger.error).toHaveBeenCalledWith("room.players.fetch.failed", {
+        context: { gameId: 42 },
+        error,
+      });
+    });
+  });
+
+  it("logs malformed SSE payloads through clientLogger without crashing the stream", async () => {
+    vi.mocked(getGameThrows).mockResolvedValue(buildGameThrowsResponse());
+
+    render(<HookConsumer gameId={7} />);
+
+    act(() => {
+      sseHandler?.(
+        new MessageEvent("players", {
+          data: "{invalid-json",
+        }),
+      );
+    });
+
+    await waitFor(() => {
+      expect(clientLogger.error).toHaveBeenCalledWith("room.players.sse-parse.failed", {
+        context: { raw: "{invalid-json" },
+        error: expect.objectContaining({
+          message: expect.any(String),
+        }),
+      });
+    });
+
+    act(() => {
+      sseHandler?.(
+        new MessageEvent("players", {
+          data: JSON.stringify({
+            players: [{ id: 1, username: "Player 1", position: 0 }],
+          }),
+        }),
+      );
+    });
+
+    await waitFor(() => {
+      expect(screen.getByTestId("count").textContent).toBe("1");
+    });
   });
 });

@@ -62,6 +62,7 @@ vi.mock("@/lib/soundPlayer", () => ({
 
 function buildGameData(status: GameThrowsResponse["status"]): GameThrowsResponse {
   return {
+    type: "full-state",
     id: 1,
     status,
     currentRound: 1,

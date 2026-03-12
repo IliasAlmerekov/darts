@@ -1,4 +1,8 @@
-import type { GameStatus, GameThrowsResponse, ScoreboardDelta } from "./game";
+import type {
+  GameStatus,
+  GameThrowsResponse as BaseGameThrowsResponse,
+  ScoreboardDelta,
+} from "./game";
 
 export interface CreateRoomResponse {
   gameId: number;
@@ -76,7 +80,12 @@ export interface GameSettingsResponse {
   tripleOut: boolean;
 }
 
+export type GameThrowsResponse = BaseGameThrowsResponse & {
+  type: "full-state";
+};
+
 export interface UndoAckResponse {
+  type: "ack";
   success: boolean;
   gameId: number;
   stateVersion: string;
@@ -86,7 +95,15 @@ export interface UndoAckResponse {
 
 export type UndoThrowResponse = GameThrowsResponse | UndoAckResponse;
 
+export type RoomStreamEventType =
+  | "player-joined"
+  | "player-left"
+  | "game-started"
+  | "throw"
+  | "throw-recorded"
+  | "game-finished";
+
 export interface RoomStreamEvent<T = unknown> {
-  type: string;
+  type: RoomStreamEventType;
   data: T;
 }
