@@ -39,7 +39,11 @@ describe("game/reopen api", () => {
 
     const result = await reopenGame(77);
 
-    expect(apiClient.patch).toHaveBeenCalledWith("/game/77/reopen");
+    expect(apiClient.patch).toHaveBeenCalledWith(
+      "/game/77/reopen",
+      undefined,
+      expect.objectContaining({ validate: expect.any(Function) }),
+    );
     expect(result).toEqual(response);
   });
 });

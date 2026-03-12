@@ -1,6 +1,11 @@
 // @vitest-environment jsdom
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { apiClient, clearUnauthorizedHandler, setUnauthorizedHandler } from "./client";
+import {
+  ApiValidationError,
+  apiClient,
+  clearUnauthorizedHandler,
+  setUnauthorizedHandler,
+} from "./client";
 import { TimeoutError } from "./errors";
 
 type MockResponseOptions = {
@@ -25,6 +30,23 @@ function createMockResponse(options: MockResponseOptions): Response {
   } as unknown as Response;
 }
 
+function acceptUnknown(_data: unknown): _data is unknown {
+  return true;
+}
+
+function isOkResponse(data: unknown): data is { ok: boolean } {
+  return (
+    typeof data === "object" &&
+    data !== null &&
+    "ok" in data &&
+    typeof (data as { ok: unknown }).ok === "boolean"
+  );
+}
+
+function isNullResponse(data: unknown): data is null {
+  return data === null;
+}
+
 describe("apiClient unauthorized handling", () => {
   beforeEach(() => {
     clearUnauthorizedHandler();
@@ -47,7 +69,7 @@ describe("apiClient unauthorized handling", () => {
       }),
     );
 
-    await expect(apiClient.get("/protected")).rejects.toMatchObject({
+    await expect(apiClient.get("/protected", { validate: acceptUnknown })).rejects.toMatchObject({
       name: "UnauthorizedError",
       status: 401,
     });
@@ -66,7 +88,9 @@ describe("apiClient unauthorized handling", () => {
       }),
     );
 
-    await expect(apiClient.get("/csrf", { skipAuthRedirect: true })).rejects.toMatchObject({
+    await expect(
+      apiClient.get("/csrf", { skipAuthRedirect: true, validate: acceptUnknown }),
+    ).rejects.toMatchObject({
       name: "UnauthorizedError",
       status: 401,
     });
@@ -94,7 +118,7 @@ describe("apiClient request timeout", () => {
         }),
     );
 
-    const requestPromise = apiClient.get("/slow", { timeoutMs: 5000 });
+    const requestPromise = apiClient.get("/slow", { timeoutMs: 5000, validate: acceptUnknown });
     vi.advanceTimersByTime(5000);
 
     await expect(requestPromise).rejects.toThrow(TimeoutError);
@@ -112,7 +136,10 @@ describe("apiClient request timeout", () => {
       }),
     );
 
-    const result = await apiClient.get("/fast", { timeoutMs: 5000 });
+    const result = await apiClient.get("/fast", {
+      timeoutMs: 5000,
+      validate: isOkResponse,
+    });
     expect(result).toEqual({ ok: true });
   });
 
@@ -126,7 +153,7 @@ describe("apiClient request timeout", () => {
         }),
     );
 
-    const requestPromise = apiClient.get("/slow");
+    const requestPromise = apiClient.get("/slow", { validate: acceptUnknown });
 
     vi.advanceTimersByTime(29_999);
     // Should still be pending
@@ -154,6 +181,7 @@ describe("apiClient request timeout", () => {
     const requestPromise = apiClient.get("/slow", {
       timeoutMs: 30_000,
       signal: externalController.signal,
+      validate: acceptUnknown,
     });
 
     externalController.abort();
@@ -180,6 +208,7 @@ describe("apiClient response passthrough", () => {
     const result = await apiClient.request<{ ok: boolean }>("/game/520", {
       method: "GET",
       returnResponse: true,
+      validate: isOkResponse,
     });
 
     expect(result).toEqual({
@@ -201,11 +230,29 @@ describe("apiClient response passthrough", () => {
       method: "GET",
       acceptedStatuses: [304],
       returnResponse: true,
+      validate: isNullResponse,
     });
 
     expect(result).toEqual({
       data: null,
       response,
     });
+  });
+
+  it("throws ApiValidationError when a successful response fails validation", async () => {
+    vi.spyOn(globalThis, "fetch").mockResolvedValueOnce(
+      createMockResponse({
+        status: 200,
+        body: { ok: "yes" },
+        headers: { "content-type": "application/json" },
+      }),
+    );
+
+    await expect(
+      apiClient.get<{ ok: boolean }>("/fast", {
+        timeoutMs: 5000,
+        validate: isOkResponse,
+      }),
+    ).rejects.toBeInstanceOf(ApiValidationError);
   });
 });
