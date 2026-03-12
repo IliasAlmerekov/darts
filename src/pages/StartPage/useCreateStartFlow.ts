@@ -9,7 +9,7 @@ import {
   setCurrentGameId,
   setGameSettings,
   setInvitation,
-} from "@/store";
+} from "@/shared/store";
 import { toUserErrorMessage } from "@/lib/error-to-user-message";
 import { ROUTES } from "@/lib/routes";
 import type { SetStartPageError } from "./useStartPageError";

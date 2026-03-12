@@ -5,7 +5,7 @@ import { abortGame, createRematch, updateGameSettings } from "@/shared/api/game"
 import { clientLogger } from "@/shared/lib/clientLogger";
 import { toUserErrorMessage } from "@/lib/error-to-user-message";
 import { ROUTES } from "@/lib/routes";
-import { resetRoomStore, setInvitation } from "@/store";
+import { resetRoomStore, setInvitation } from "@/shared/store";
 import type { GameSettingsResponse, GameThrowsResponse } from "@/types";
 
 interface GameSettingsFormValues {

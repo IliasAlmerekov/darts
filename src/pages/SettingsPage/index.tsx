@@ -8,8 +8,8 @@ import {
   getCachedGameSettings,
   setGameSettings,
   setPreCreateGameSettings,
-} from "@/store";
-import { $currentGameId, setCurrentGameId } from "@/store";
+} from "@/shared/store";
+import { $currentGameId, setCurrentGameId } from "@/shared/store";
 import { getGameSettings, saveGameSettings } from "@/shared/api/game";
 import { clientLogger } from "@/shared/lib/clientLogger";
 import { toUserErrorMessage } from "@/lib/error-to-user-message";
