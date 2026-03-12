@@ -219,7 +219,7 @@ describe("game-session store — Ticket 4: store is cache, not authority", () =>
     const roomStore = await import("./game-session");
     roomStore.setCurrentGameId(42);
 
-    const storeSpy = vi.spyOn(roomStore.$currentGameId, "set");
+    const storeSpy = vi.spyOn(roomStore.testOnlyCurrentGameIdAtom, "set");
     roomStore.setCurrentGameId(42);
 
     expect(storeSpy).not.toHaveBeenCalled();

@@ -136,7 +136,10 @@ describe("game api contract adapters", () => {
 
     const response = await undoLastThrow(42);
 
-    expect(deleteSpy).toHaveBeenCalledWith("/game/42/throw");
+    expect(deleteSpy).toHaveBeenCalledWith(
+      "/game/42/throw",
+      expect.objectContaining({ validate: expect.any(Function) }),
+    );
     expect(response).toEqual(compactUndoAck);
   });
 });

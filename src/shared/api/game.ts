@@ -105,6 +105,10 @@ function isGameSettingsResponse(data: unknown): data is GameSettingsResponse {
   );
 }
 
+function isStartGameResponse(data: unknown): data is Record<string, unknown> {
+  return isRecord(data);
+}
+
 function isGameStatus(value: unknown): value is GameStatus {
   return typeof value === "string" && GAME_STATUS_VALUES.includes(value as GameStatus);
 }
@@ -139,6 +143,59 @@ function isGameSummaryResponse(data: unknown): data is GameSummaryResponse {
         isFiniteNumber(item.roundsPlayed) &&
         isFiniteNumber(item.roundAverage),
     )
+  );
+}
+
+function isGameSummaryWinnerResponse(
+  data: unknown,
+): data is { id: number; username: string | null } {
+  return (
+    isRecord(data) &&
+    isFiniteNumber(data.id) &&
+    (data.username === null || typeof data.username === "string")
+  );
+}
+
+function isGameSummaryFinishedPlayerResponse(data: unknown): data is {
+  playerId: number | null;
+  username: string | null;
+  position: number | null;
+  roundsPlayed: number | null;
+  roundAverage: number;
+} {
+  return (
+    isRecord(data) &&
+    (data.playerId === null || isFiniteNumber(data.playerId)) &&
+    (data.username === null || typeof data.username === "string") &&
+    (data.position === null || isFiniteNumber(data.position)) &&
+    (data.roundsPlayed === null || isFiniteNumber(data.roundsPlayed)) &&
+    isFiniteNumber(data.roundAverage)
+  );
+}
+
+function isGameSummaryEnvelopeResponse(data: unknown): data is {
+  gameId: number;
+  finishedAt: string | null;
+  winner: { id: number; username: string | null } | null;
+  winnerRoundsPlayed: number;
+  winnerRoundAverage: number;
+  finishedPlayers: Array<{
+    playerId: number | null;
+    username: string | null;
+    position: number | null;
+    roundsPlayed: number | null;
+    roundAverage: number;
+  }>;
+} {
+  return (
+    isRecord(data) &&
+    isFiniteNumber(data.gameId) &&
+    (data.finishedAt === null || typeof data.finishedAt === "string") &&
+    (data.winner === null || isGameSummaryWinnerResponse(data.winner)) &&
+    isFiniteNumber(data.winnerRoundsPlayed) &&
+    isFiniteNumber(data.winnerRoundAverage) &&
+    Array.isArray(data.finishedPlayers) &&
+    data.finishedPlayers.every(isGameSummaryFinishedPlayerResponse)
   );
 }
 
@@ -264,6 +321,36 @@ function isMessageResponse(data: unknown): data is { message: string } {
   return isRecord(data) && typeof data.message === "string";
 }
 
+function isConditionalGameStateResponse(data: unknown): data is GameThrowsResponse | null {
+  return data === null || isGameThrowsResponse(data);
+}
+
+function isInvitationPayloadResponse(data: unknown): data is {
+  success: boolean;
+  status: number;
+  gameId: number | null;
+  invitationLink: string | null;
+  users?: Array<{ id: number | null; username: string | null }>;
+  message?: string | null;
+} {
+  return (
+    isRecord(data) &&
+    typeof data.success === "boolean" &&
+    isFiniteNumber(data.status) &&
+    (data.gameId === null || isFiniteNumber(data.gameId)) &&
+    (data.invitationLink === null || typeof data.invitationLink === "string") &&
+    (data.message === undefined || data.message === null || typeof data.message === "string") &&
+    (data.users === undefined ||
+      (Array.isArray(data.users) &&
+        data.users.every(
+          (user) =>
+            isRecord(user) &&
+            (user.id === null || isFiniteNumber(user.id)) &&
+            (user.username === null || typeof user.username === "string"),
+        )))
+  );
+}
+
 function extractGameSettingsResponse(data: unknown): GameSettingsResponse | null {
   if (isGameSettingsResponse(data)) {
     return data;
@@ -287,7 +374,10 @@ export async function getGameThrows(
   gameId: number,
   signal?: AbortSignal,
 ): Promise<GameThrowsResponse> {
-  const data: unknown = await apiClient.get(GAME_ENDPOINT(gameId), signal ? { signal } : undefined);
+  const data: unknown = await apiClient.get(GAME_ENDPOINT(gameId), {
+    ...(signal ? { signal } : {}),
+    validate: isGameThrowsResponse,
+  });
   if (!isGameThrowsResponse(data)) {
     throw new ApiError("Unexpected response shape", { status: 200, data });
   }
@@ -310,6 +400,7 @@ export async function getGameThrowsIfChanged(
     ...(signal ? { signal } : {}),
     acceptedStatuses: [304],
     returnResponse: true,
+    validate: isConditionalGameStateResponse,
   });
 
   if (response.status === 304) {
@@ -363,11 +454,17 @@ export function setGameStateVersion(gameId: number, stateVersion: string): void 
  * Starts a game with the provided settings.
  */
 export async function startGame(gameId: number, config: StartGameRequest): Promise<void> {
-  await apiClient.post(START_GAME_ENDPOINT(gameId), {
-    startscore: config.startScore,
-    doubleout: config.doubleOut,
-    tripleout: config.tripleOut,
-  });
+  await apiClient.post(
+    START_GAME_ENDPOINT(gameId),
+    {
+      startscore: config.startScore,
+      doubleout: config.doubleOut,
+      tripleout: config.tripleOut,
+    },
+    {
+      validate: isStartGameResponse,
+    },
+  );
 }
 
 /**
@@ -377,11 +474,10 @@ export async function finishGame(
   gameId: number,
   signal?: AbortSignal,
 ): Promise<GameSummaryResponse> {
-  const data: unknown = await apiClient.post(
-    FINISH_GAME_ENDPOINT(gameId),
-    undefined,
-    signal ? { signal } : undefined,
-  );
+  const data: unknown = await apiClient.post(FINISH_GAME_ENDPOINT(gameId), undefined, {
+    ...(signal ? { signal } : {}),
+    validate: isGameSummaryEnvelopeResponse,
+  });
   const summary = normalizeGameSummaryResponse(data);
   if (!summary) {
     throw new ApiError("Unexpected response shape for finish game", { status: 200, data });
@@ -393,7 +489,9 @@ export async function finishGame(
  * Fetches final standings for a finished game.
  */
 export async function getFinishedGame(gameId: number): Promise<GameSummaryResponse> {
-  const data: unknown = await apiClient.get(FINISHED_GAME_ENDPOINT(gameId));
+  const data: unknown = await apiClient.get(FINISHED_GAME_ENDPOINT(gameId), {
+    validate: isGameSummaryEnvelopeResponse,
+  });
   const summary = normalizeGameSummaryResponse(data);
   if (!summary) {
     throw new ApiError("Unexpected response shape for finished game", { status: 200, data });
@@ -405,7 +503,9 @@ export async function getFinishedGame(gameId: number): Promise<GameSummaryRespon
  * Reopens a finished game and returns the updated game state.
  */
 export async function reopenGame(gameId: number): Promise<GameThrowsResponse> {
-  const data: unknown = await apiClient.patch(REOPEN_GAME_ENDPOINT(gameId));
+  const data: unknown = await apiClient.patch(REOPEN_GAME_ENDPOINT(gameId), undefined, {
+    validate: isGameThrowsResponse,
+  });
   if (!isGameThrowsResponse(data)) {
     throw new ApiError("Unexpected response shape for reopen game", { status: 200, data });
   }
@@ -416,7 +516,9 @@ export async function reopenGame(gameId: number): Promise<GameThrowsResponse> {
  * Aborts the specified game on the server.
  */
 export async function abortGame(gameId: number): Promise<{ message: string }> {
-  const data: unknown = await apiClient.patch(ABORT_GAME_ENDPOINT(gameId));
+  const data: unknown = await apiClient.patch(ABORT_GAME_ENDPOINT(gameId), undefined, {
+    validate: isMessageResponse,
+  });
   if (!isMessageResponse(data)) {
     throw new ApiError("Unexpected response shape for abort game", { status: 200, data });
   }
@@ -429,7 +531,9 @@ export async function abortGame(gameId: number): Promise<{ message: string }> {
  * provided by the backend. This does not trigger the invite fallback call.
  */
 export async function createRematchGame(previousGameId: number): Promise<RematchGameResponse> {
-  const rematch: unknown = await apiClient.post(REMATCH_ENDPOINT(previousGameId));
+  const rematch: unknown = await apiClient.post(REMATCH_ENDPOINT(previousGameId), undefined, {
+    validate: isRematchLikeResponse,
+  });
   if (!isRematchLikeResponse(rematch)) {
     throw new ApiError("Unexpected response shape for rematch", { status: 200, data: rematch });
   }
@@ -454,7 +558,9 @@ export async function createRematch(previousGameId: number): Promise<RematchResp
     };
   }
 
-  const invite: unknown = await apiClient.post(CREATE_INVITE_ENDPOINT(rematch.gameId));
+  const invite: unknown = await apiClient.post(CREATE_INVITE_ENDPOINT(rematch.gameId), undefined, {
+    validate: isInvitationPayloadResponse,
+  });
   if (
     !isRecord(invite) ||
     typeof invite.gameId !== "number" ||
@@ -507,10 +613,10 @@ export async function getGameSettings(
   gameId: number,
   signal?: AbortSignal,
 ): Promise<GameSettingsResponse> {
-  const data: unknown = await apiClient.get(
-    GAME_SETTINGS_ENDPOINT(gameId),
-    signal ? { signal } : undefined,
-  );
+  const data: unknown = await apiClient.get(GAME_SETTINGS_ENDPOINT(gameId), {
+    ...(signal ? { signal } : {}),
+    validate: isGameSettingsResponse,
+  });
   if (!isGameSettingsResponse(data)) {
     throw new ApiError("Unexpected response shape for game settings", { status: 200, data });
   }
@@ -524,7 +630,10 @@ export async function updateGameSettings(
   gameId: number,
   payload: UpdateGameSettingsPayload,
 ): Promise<GameSettingsResponse> {
-  const data: unknown = await apiClient.patch(GAME_SETTINGS_ENDPOINT(gameId), payload);
+  const data: unknown = await apiClient.patch(GAME_SETTINGS_ENDPOINT(gameId), payload, {
+    validate: (data): data is GameSettingsResponse | GameThrowsResponse =>
+      isGameSettingsResponse(data) || isGameThrowsResponse(data),
+  });
   const settings = extractGameSettingsResponse(data);
   if (!settings) {
     throw new ApiError("Unexpected response shape for update game settings", { status: 200, data });
@@ -560,7 +669,9 @@ export async function recordThrow(
   gameId: number,
   payload: ThrowRequest,
 ): Promise<ThrowAckResponse> {
-  const data: unknown = await apiClient.post(RECORD_THROW_ENDPOINT(gameId), payload);
+  const data: unknown = await apiClient.post(RECORD_THROW_ENDPOINT(gameId), payload, {
+    validate: isThrowAckResponse,
+  });
   if (!isThrowAckResponse(data)) {
     throw new ApiError("Unexpected response shape for record throw", { status: 200, data });
   }
@@ -572,7 +683,10 @@ export async function recordThrow(
  * compact acknowledgement used by the targeted scoreboard update flow.
  */
 export async function undoLastThrow(gameId: number): Promise<UndoThrowResponse> {
-  const data: unknown = await apiClient.delete(UNDO_THROW_ENDPOINT(gameId));
+  const data: unknown = await apiClient.delete(UNDO_THROW_ENDPOINT(gameId), {
+    validate: (data): data is UndoThrowResponse =>
+      isGameThrowsResponse(data) || isUndoAckResponse(data),
+  });
   if (isGameThrowsResponse(data)) {
     return data;
   }

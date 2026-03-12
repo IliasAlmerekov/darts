@@ -1,13 +1,18 @@
 import { atom, computed } from "nanostores";
+import type { ReadableAtom } from "nanostores";
 import type { GameSettingsResponse, GameThrowsResponse, ScoreboardDelta } from "@/types";
 import { applyGameScoreboardDelta, normalizeGameData } from "../lib/gameStateNormalizer";
 
-export const $gameData = atom<GameThrowsResponse | null>(null);
-export const $isLoading = atom<boolean>(false);
-export const $error = atom<Error | null>(null);
+const gameDataAtom = atom<GameThrowsResponse | null>(null);
+const isLoadingAtom = atom<boolean>(false);
+const errorAtom = atom<Error | null>(null);
 const $gameSettingsByGameId = atom<{ gameId: number; settings: GameSettingsResponse } | null>(null);
 
-export const $gameSettings = computed($gameData, (gameData) => {
+export const $gameData: ReadableAtom<GameThrowsResponse | null> = gameDataAtom;
+export const $isLoading: ReadableAtom<boolean> = isLoadingAtom;
+export const $error: ReadableAtom<Error | null> = errorAtom;
+
+export const $gameSettings = computed(gameDataAtom, (gameData) => {
   return gameData?.settings ?? null;
 });
 
@@ -36,18 +41,18 @@ export function getCachedGameSettings(gameId: number): GameSettingsResponse | nu
  */
 export function setGameData(data: GameThrowsResponse | null): void {
   const normalizedData = normalizeGameData(data);
-  $gameData.set(normalizedData);
+  gameDataAtom.set(normalizedData);
   if (normalizedData !== null) {
     setCachedGameSettings(normalizedData.id, normalizedData.settings);
   }
-  $error.set(null);
+  errorAtom.set(null);
 }
 
 /**
  * Updates only the settings fragment for the current game state.
  */
 export function setGameSettings(settings: GameSettingsResponse, expectedGameId?: number): void {
-  const currentGameData = $gameData.get();
+  const currentGameData = gameDataAtom.get();
   const cacheTargetGameId =
     typeof expectedGameId === "number" ? expectedGameId : currentGameData?.id;
 
@@ -63,7 +68,7 @@ export function setGameSettings(settings: GameSettingsResponse, expectedGameId?:
     return;
   }
 
-  $gameData.set({
+  gameDataAtom.set({
     ...currentGameData,
     settings: {
       startScore: settings.startScore,
@@ -71,7 +76,7 @@ export function setGameSettings(settings: GameSettingsResponse, expectedGameId?:
       tripleOut: settings.tripleOut,
     },
   });
-  $error.set(null);
+  errorAtom.set(null);
 }
 
 /**
@@ -81,7 +86,7 @@ export function setGameScoreboardDelta(
   scoreboardDelta: ScoreboardDelta,
   expectedGameId?: number,
 ): void {
-  const currentGameData = $gameData.get();
+  const currentGameData = gameDataAtom.get();
   if (currentGameData === null) {
     return;
   }
@@ -92,30 +97,30 @@ export function setGameScoreboardDelta(
 
   const nextGameData = applyGameScoreboardDelta(currentGameData, scoreboardDelta);
 
-  $gameData.set(nextGameData);
-  $error.set(null);
+  gameDataAtom.set(nextGameData);
+  errorAtom.set(null);
 }
 
 /**
  * Sets the loading state for game data requests.
  */
 export function setLoading(loading: boolean): void {
-  $isLoading.set(loading);
+  isLoadingAtom.set(loading);
 }
 
 /**
  * Stores an error produced while fetching game data.
  */
 export function setError(error: Error | null): void {
-  $error.set(error);
+  errorAtom.set(error);
 }
 
 /**
  * Clears game data and resets loading/error flags.
  */
 export function resetGameStore(): void {
-  $gameData.set(null);
-  $isLoading.set(false);
-  $error.set(null);
+  gameDataAtom.set(null);
+  isLoadingAtom.set(false);
+  errorAtom.set(null);
   $gameSettingsByGameId.set(null);
 }
