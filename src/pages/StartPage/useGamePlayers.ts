@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useEventSource, type EventSourceListener } from "@/shared/hooks/useEventSource";
 import { getGameThrows } from "@/shared/api/game";
-import { $gameData } from "@/store";
+import { $gameData } from "@/shared/store";
 
 interface RawPlayer {
   id: number;

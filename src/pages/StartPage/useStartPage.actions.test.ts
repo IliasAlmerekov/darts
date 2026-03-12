@@ -54,7 +54,7 @@ vi.mock("@nanostores/react", () => ({
   useStore: (store: { key?: string }) => storeValues.get(store.key ?? ""),
 }));
 
-vi.mock("@/store", async (importOriginal) => {
+vi.mock("@/shared/store", async (importOriginal) => {
   const original = await importOriginal<Record<string, unknown>>();
   return {
     ...original,

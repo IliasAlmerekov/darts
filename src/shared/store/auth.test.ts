@@ -105,4 +105,45 @@ describe("auth store", () => {
     invalidateAuthState();
     expect(listener).not.toHaveBeenCalled();
   });
+
+  it("should set $user to null when setAuthFailed is called", () => {
+    setAuthFailed("some error");
+
+    expect($user.get()).toBeNull();
+  });
+
+  it("should call all registered listeners when invalidateAuthState fires", () => {
+    const listener1 = vi.fn();
+    const listener2 = vi.fn();
+    registerAuthInvalidationListener(listener1);
+    registerAuthInvalidationListener(listener2);
+
+    invalidateAuthState();
+
+    expect(listener1).toHaveBeenCalledTimes(1);
+    expect(listener2).toHaveBeenCalledTimes(1);
+  });
+
+  it("should execute remaining listeners when one throws", () => {
+    const throwing = vi.fn(() => {
+      throw new Error("boom");
+    });
+    const surviving = vi.fn();
+    registerAuthInvalidationListener(throwing);
+    registerAuthInvalidationListener(surviving);
+
+    invalidateAuthState();
+
+    expect(throwing).toHaveBeenCalledTimes(1);
+    expect(surviving).toHaveBeenCalledTimes(1);
+  });
+
+  it("should not call listener after resetAuthStore clears it", () => {
+    const listener = vi.fn();
+    registerAuthInvalidationListener(listener);
+
+    resetAuthStore();
+
+    expect(listener).not.toHaveBeenCalled();
+  });
 });

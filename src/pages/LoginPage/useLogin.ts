@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { loginWithCredentials, getAuthenticatedUser } from "@/shared/api/auth";
 import { clientLogger } from "@/shared/lib/clientLogger";
-import { invalidateAuthState, setAuthenticatedUser } from "@/store/auth";
+import { invalidateAuthState, setAuthenticatedUser } from "@/shared/store/auth";
 import { mapAuthErrorMessage } from "@/lib/auth-error-handling";
 import { ROUTES } from "@/lib/routes";
 import { resolveSafeLoginRedirect } from "./lib/safeRedirect";

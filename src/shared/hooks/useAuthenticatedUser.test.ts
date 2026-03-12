@@ -4,7 +4,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { useAuthenticatedUser } from "./useAuthenticatedUser";
 import { TimeoutError } from "@/shared/api/errors";
 import type { AuthenticatedUser } from "@/shared/api/auth";
-import { $authChecked, $authError, $user, resetAuthStore } from "@/store/auth";
+import { $authChecked, $authError, $user, resetAuthStore } from "@/shared/store/auth";
 
 const getAuthenticatedUserMock = vi.fn();
 const setCurrentGameIdMock = vi.fn();
@@ -13,7 +13,7 @@ vi.mock("@/shared/api/auth", () => ({
   getAuthenticatedUser: (...args: unknown[]) => getAuthenticatedUserMock(...args),
 }));
 
-vi.mock("@/store", () => ({
+vi.mock("@/shared/store", () => ({
   setCurrentGameId: (...args: unknown[]) => setCurrentGameIdMock(...args),
 }));
 

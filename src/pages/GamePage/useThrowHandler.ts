@@ -2,7 +2,7 @@ import { useCallback, useEffect } from "react";
 import { parseThrowValue } from "@/lib/parseThrowValue";
 import { playSound } from "@/lib/soundPlayer";
 import { clientLogger } from "@/shared/lib/clientLogger";
-import { $gameData, setGameData } from "@/store";
+import { $gameData, setGameData } from "@/shared/store";
 import { applyOptimisticThrow } from "./throwStateService";
 import { isThrowNotAllowedConflict, useThrowReconciliation } from "./useThrowReconciliation";
 import { useThrowQueue } from "./useThrowQueue";

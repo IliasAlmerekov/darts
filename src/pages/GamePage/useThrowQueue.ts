@@ -3,7 +3,7 @@ import { recordThrow, setGameStateVersion } from "@/shared/api/game";
 import { clientLogger } from "@/shared/lib/clientLogger";
 import type { GameThrowsResponse, ThrowRequest } from "@/types";
 import { playSound } from "@/lib/soundPlayer";
-import { $gameData, setGameData } from "@/store";
+import { $gameData, setGameData } from "@/shared/store";
 import { applyScoreboardDeltaToGameState } from "./throwStateService";
 import { isThrowNotAllowedConflict } from "./useThrowReconciliation";
 

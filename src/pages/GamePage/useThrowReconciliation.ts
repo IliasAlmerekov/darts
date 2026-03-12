@@ -2,7 +2,7 @@ import { useCallback, useState } from "react";
 import { ApiError } from "@/shared/api";
 import { getGameThrows, resetGameStateVersion } from "@/shared/api/game";
 import { clientLogger } from "@/shared/lib/clientLogger";
-import { setGameData } from "@/store";
+import { setGameData } from "@/shared/store";
 
 type ApiErrorPayload = {
   error?: string;

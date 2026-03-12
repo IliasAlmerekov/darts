@@ -19,7 +19,7 @@ vi.mock("@/shared/api/game", () => ({
   getGameThrows: vi.fn(),
 }));
 
-vi.mock("@/store", async (importOriginal) => {
+vi.mock("@/shared/store", async (importOriginal) => {
   const original = await importOriginal<Record<string, unknown>>();
   return {
     ...original,

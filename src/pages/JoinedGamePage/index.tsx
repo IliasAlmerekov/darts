@@ -1,7 +1,7 @@
 import React from "react";
 import { useStore } from "@nanostores/react";
-import { $user } from "@/store/auth";
-import { $currentGameId } from "@/store";
+import { $user } from "@/shared/store/auth";
+import { $currentGameId } from "@/shared/store";
 import styles from "./JoinedGamePage.module.css";
 
 function JoinedGamePage(): React.JSX.Element {

@@ -173,6 +173,43 @@ describe("game-state store", () => {
         tripleOut: true,
       });
     });
+
+    it("should update cache only when $gameData is null", () => {
+      const settings: GameSettingsResponse = {
+        startScore: 301,
+        doubleOut: false,
+        tripleOut: true,
+      };
+
+      setGameSettings(settings, 5);
+
+      expect($gameData.get()).toBeNull();
+      expect(getCachedGameSettings(5)).toEqual(settings);
+    });
+
+    it("should not write to cache a second time when called with identical settings", () => {
+      setGameData(mockGameData);
+
+      const settings1: GameSettingsResponse = {
+        startScore: 301,
+        doubleOut: false,
+        tripleOut: true,
+      };
+      const settings2: GameSettingsResponse = {
+        startScore: 301,
+        doubleOut: false,
+        tripleOut: true,
+      };
+
+      setGameSettings(settings1, 1);
+      const cachedAfterFirst = getCachedGameSettings(1);
+
+      setGameSettings(settings2, 1);
+      const cachedAfterSecond = getCachedGameSettings(1);
+
+      expect(cachedAfterFirst).toBe(settings1);
+      expect(cachedAfterSecond).toBe(settings1);
+    });
   });
 
   describe("setGameScoreboardDelta", () => {
@@ -270,6 +307,33 @@ describe("game-state store", () => {
 
       expect(nextGameData).toBeUndefined();
       expect($gameData.get()).toEqual(mockGameData);
+    });
+
+    it("should apply scoreboard delta to current game when no expectedGameId is provided", () => {
+      setGameData(mockGameData);
+
+      const result = setGameScoreboardDelta({
+        changedPlayers: [],
+        winnerId: null,
+        status: "started",
+        currentRound: 99,
+      });
+
+      expect(result).toBeUndefined();
+      expect($gameData.get()?.currentRound).toBe(99);
+      expect($error.get()).toBeNull();
+    });
+
+    it("should leave store unchanged when $gameData is null", () => {
+      const result = setGameScoreboardDelta({
+        changedPlayers: [],
+        winnerId: null,
+        status: "started",
+        currentRound: 1,
+      });
+
+      expect(result).toBeUndefined();
+      expect($gameData.get()).toBeNull();
     });
   });
 

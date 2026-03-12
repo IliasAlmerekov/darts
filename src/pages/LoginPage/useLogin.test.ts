@@ -26,7 +26,7 @@ vi.mock("@/shared/api/auth", () => ({
   getAuthenticatedUser: (...args: unknown[]) => getAuthenticatedUserMock(...args),
 }));
 
-vi.mock("@/store/auth", () => ({
+vi.mock("@/shared/store/auth", () => ({
   invalidateAuthState: (...args: unknown[]) => invalidateAuthStateMock(...args),
   setAuthenticatedUser: (...args: unknown[]) => setAuthenticatedUserMock(...args),
 }));

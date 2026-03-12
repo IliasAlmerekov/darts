@@ -14,7 +14,7 @@ import {
   resetRoomStore,
   setCurrentGameId,
   setGameData,
-} from "@/store";
+} from "@/shared/store";
 import type { GameSettingsResponse, GameThrowsResponse } from "@/types";
 import SettingsPage from ".";
 

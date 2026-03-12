@@ -35,8 +35,6 @@
       "@/assets/*": ["./src/assets/*"],
       "@/pages/*": ["./src/pages/*"],
       "@/shared/*": ["./src/shared/*"],
-      "@/store": ["./src/shared/store/index.ts"],
-      "@/store/*": ["./src/shared/store/*"],
       "@/lib/*": ["./src/shared/lib/*"],
       "@/types": ["./src/shared/types/index.ts"],
       "@/types/*": ["./src/shared/types/*"]

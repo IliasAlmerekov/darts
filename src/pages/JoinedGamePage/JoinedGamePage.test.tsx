@@ -10,11 +10,11 @@ vi.mock("@nanostores/react", () => ({
   useStore: (store: unknown) => mockUseStore(store),
 }));
 
-vi.mock("@/store/auth", () => ({
+vi.mock("@/shared/store/auth", () => ({
   $user: { key: "$user" },
 }));
 
-vi.mock("@/store", () => ({
+vi.mock("@/shared/store", () => ({
   $currentGameId: { key: "$currentGameId" },
 }));
 

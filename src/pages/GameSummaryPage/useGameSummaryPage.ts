@@ -22,7 +22,7 @@ import {
   setInvitation,
   setLastFinishedGameSummary,
   resetRoomStore,
-} from "@/store";
+} from "@/shared/store";
 import { playSound } from "@/lib/soundPlayer";
 import { toUserErrorMessage } from "@/lib/error-to-user-message";
 import { ROUTES } from "@/lib/routes";

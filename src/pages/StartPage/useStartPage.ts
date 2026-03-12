@@ -7,7 +7,7 @@ import { useGuestFlow } from "./useGuestFlow";
 import { persistPlayerOrder, usePlayerOrderPersistence } from "./usePlayerOrderPersistence";
 import { resolveGameId, shouldRedirectToCurrentGame, useRoomRestore } from "./useRoomRestore";
 import { useStartPageError } from "./useStartPageError";
-import { $currentGameId, $invitation, $lastFinishedGameId } from "@/store";
+import { $currentGameId, $invitation, $lastFinishedGameId } from "@/shared/store";
 import { leaveRoom } from "@/shared/api/room";
 import { toUserErrorMessage } from "@/lib/error-to-user-message";
 

@@ -15,7 +15,6 @@ export default defineConfig(({ mode }) => {
         "@/assets": path.resolve(__dirname, "./src/assets"),
         "@/pages": path.resolve(__dirname, "./src/pages"),
         "@/shared": path.resolve(__dirname, "./src/shared"),
-        "@/store": path.resolve(__dirname, "./src/shared/store"),
         "@/lib": path.resolve(__dirname, "./src/shared/lib"),
         "@/types": path.resolve(__dirname, "./src/shared/types"),
         "@": path.resolve(__dirname, "./src"),
