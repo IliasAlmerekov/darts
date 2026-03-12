@@ -15,6 +15,7 @@ import {
   useRoomEventRefetch,
 } from "./useGamePageEffects";
 import { useGamePlayersState } from "./useGamePlayersState";
+import { parseLocationState } from "@/shared/lib/locationState";
 
 export {
   areAllPlayersAtStartScore,
@@ -58,6 +59,10 @@ interface UseGameLogicResult {
   shouldShowFinishOverlay: boolean;
 }
 
+function isGameLocationState(s: unknown): s is { skipFinishOverlay?: boolean } {
+  return typeof s === "object" && s !== null;
+}
+
 /**
  * Orchestrates smaller page-specific hooks into the game page contract.
  */
@@ -73,7 +78,7 @@ export function useGameLogic(): UseGameLogicResult {
   const { event } = useRoomStream(gameId);
   const isGameActive = gameData?.status === "started";
   const skipFinishOverlay =
-    (location.state as { skipFinishOverlay?: boolean } | null)?.skipFinishOverlay === true;
+    parseLocationState(location.state, isGameLocationState)?.skipFinishOverlay === true;
 
   useGameSounds(gameData);
   useWakeLock(isGameActive);

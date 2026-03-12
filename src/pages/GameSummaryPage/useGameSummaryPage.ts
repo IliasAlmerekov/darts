@@ -28,6 +28,7 @@ import { toUserErrorMessage } from "@/lib/error-to-user-message";
 import { ROUTES } from "@/lib/routes";
 import { applyOptimisticUndo } from "@/shared/lib/applyOptimisticUndo";
 import { clientLogger } from "@/shared/lib/clientLogger";
+import { parseLocationState } from "@/shared/lib/locationState";
 
 interface SummaryLocationState {
   finishedGameId?: number;
@@ -50,6 +51,17 @@ function isFinishedPlayerResponseArray(value: unknown): value is FinishedPlayerR
   );
 }
 
+function isSummaryLocationState(s: unknown): s is SummaryLocationState {
+  return (
+    typeof s === "object" &&
+    s !== null &&
+    (!Object.prototype.hasOwnProperty.call(s, "finishedGameId") ||
+      typeof Reflect.get(s, "finishedGameId") === "number") &&
+    (!Object.prototype.hasOwnProperty.call(s, "summary") ||
+      isFinishedPlayerResponseArray(Reflect.get(s, "summary")))
+  );
+}
+
 function isUndoAckResponse(
   response: GameThrowsResponse | UndoAckResponse,
 ): response is UndoAckResponse {
@@ -69,7 +81,7 @@ export function useGameSummaryPage() {
   const startGameInFlightRef = useRef<boolean>(false);
 
   const finishedGameIdFromRoute = useMemo(() => {
-    const stateGameId = (location.state as SummaryLocationState | null)?.finishedGameId;
+    const stateGameId = parseLocationState(location.state, isSummaryLocationState)?.finishedGameId;
     if ("number" === typeof stateGameId) {
       return stateGameId;
     }
@@ -83,7 +95,7 @@ export function useGameSummaryPage() {
   }, [location.state, summaryGameIdParam]);
 
   const summaryFromNavigationState = useMemo(() => {
-    const locationState = location.state as SummaryLocationState | null;
+    const locationState = parseLocationState(location.state, isSummaryLocationState);
     if (!locationState || locationState.finishedGameId !== finishedGameIdFromRoute) {
       return null;
     }
