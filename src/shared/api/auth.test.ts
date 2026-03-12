@@ -1,6 +1,12 @@
 // @vitest-environment jsdom
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { getAuthenticatedUser, loginWithCredentials, logout, registerUser } from "./auth";
+import {
+  getAuthenticatedUser,
+  isRoleArray,
+  loginWithCredentials,
+  logout,
+  registerUser,
+} from "./auth";
 import { apiClient } from "./client";
 import { TimeoutError } from "./errors";
 
@@ -210,6 +216,27 @@ describe("registerUser", () => {
       message: "Unexpected response shape for registration",
       status: 200,
     });
+  });
+});
+
+describe("isRoleArray", () => {
+  it("should return true for valid role strings", () => {
+    expect(isRoleArray(["ROLE_USER"])).toBe(true);
+    expect(isRoleArray(["ROLE_ADMIN"])).toBe(true);
+    expect(isRoleArray(["ROLE_PLAYER"])).toBe(true);
+    expect(isRoleArray(["ROLE_USER", "ROLE_ADMIN"])).toBe(true);
+  });
+
+  it("should return false for unknown role strings", () => {
+    expect(isRoleArray(["INVALID"])).toBe(false);
+  });
+
+  it("should return false for non-string array elements", () => {
+    expect(isRoleArray([123])).toBe(false);
+  });
+
+  it("should return false for null", () => {
+    expect(isRoleArray(null)).toBe(false);
   });
 });
 

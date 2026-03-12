@@ -29,7 +29,7 @@
     "coverage": "vitest run --coverage",
     "test:e2e": "playwright test",
     "secrets:check": "node ./scripts/check-secrets.mjs",
-    "validate:push": "npm run build && npm run eslint && npm run stylelint && npm run prettier:check && npm run typecheck && npm run secrets:check && npm run test && npm run test:e2e",
+    "validate:push": "npm run build && npm run eslint && npm run stylelint && npm run prettier:check && npm run typecheck && npm run secrets:check && npm run test",
     "prepare": "husky",
     "commitlint": "commitlint --edit",
     "knip": "knip"

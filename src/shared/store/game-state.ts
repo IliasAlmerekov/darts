@@ -5,32 +5,30 @@ import { applyGameScoreboardDelta, normalizeGameData } from "../lib/gameStateNor
 export const $gameData = atom<GameThrowsResponse | null>(null);
 export const $isLoading = atom<boolean>(false);
 export const $error = atom<Error | null>(null);
-const $gameSettingsByGameId = atom<Record<number, GameSettingsResponse>>({});
+const $gameSettingsByGameId = atom<{ gameId: number; settings: GameSettingsResponse } | null>(null);
 
 export const $gameSettings = computed($gameData, (gameData) => {
   return gameData?.settings ?? null;
 });
 
 function setCachedGameSettings(gameId: number, settings: GameSettingsResponse): void {
-  const currentCache = $gameSettingsByGameId.get();
-  const cachedSettings = currentCache[gameId];
+  const current = $gameSettingsByGameId.get();
   const isUnchanged =
-    cachedSettings?.startScore === settings.startScore &&
-    cachedSettings?.doubleOut === settings.doubleOut &&
-    cachedSettings?.tripleOut === settings.tripleOut;
+    current?.gameId === gameId &&
+    current.settings.startScore === settings.startScore &&
+    current.settings.doubleOut === settings.doubleOut &&
+    current.settings.tripleOut === settings.tripleOut;
 
   if (isUnchanged) {
     return;
   }
 
-  $gameSettingsByGameId.set({
-    ...currentCache,
-    [gameId]: settings,
-  });
+  $gameSettingsByGameId.set({ gameId, settings });
 }
 
 export function getCachedGameSettings(gameId: number): GameSettingsResponse | null {
-  return $gameSettingsByGameId.get()[gameId] ?? null;
+  const current = $gameSettingsByGameId.get();
+  return current?.gameId === gameId ? current.settings : null;
 }
 
 /**
@@ -119,5 +117,5 @@ export function resetGameStore(): void {
   $gameData.set(null);
   $isLoading.set(false);
   $error.set(null);
-  $gameSettingsByGameId.set({});
+  $gameSettingsByGameId.set(null);
 }

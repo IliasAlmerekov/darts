@@ -27,9 +27,11 @@ export interface RegistrationData {
   password: string;
 }
 
+export type UserRole = "ROLE_USER" | "ROLE_ADMIN" | "ROLE_PLAYER";
+
 export interface AuthenticatedUser {
   success: boolean;
-  roles: string[];
+  roles: UserRole[];
   id: number;
   email?: string | null;
   username?: string | null;
@@ -60,8 +62,10 @@ function isNullableString(value: unknown): value is string | null {
   return typeof value === "string" || value === null;
 }
 
-function isStringArray(value: unknown): value is string[] {
-  return Array.isArray(value) && value.every((item) => typeof item === "string");
+const VALID_ROLES: ReadonlySet<string> = new Set(["ROLE_USER", "ROLE_ADMIN", "ROLE_PLAYER"]);
+
+export function isRoleArray(value: unknown): value is UserRole[] {
+  return Array.isArray(value) && value.every((r) => VALID_ROLES.has(r));
 }
 
 function isLoginResponse(data: unknown): data is LoginResponse {
@@ -89,7 +93,7 @@ function isAuthenticatedUser(data: unknown): data is AuthenticatedUser {
   return (
     isRecord(data) &&
     data.success === true &&
-    isStringArray(data.roles) &&
+    isRoleArray(data.roles) &&
     isFiniteNumber(data.id) &&
     typeof data.redirect === "string" &&
     (data.email === undefined || isNullableString(data.email)) &&

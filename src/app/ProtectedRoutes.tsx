@@ -3,12 +3,13 @@ import React from "react";
 import { StartPageSkeleton, LoginSuccessSkeleton, UniversalSkeleton } from "@/shared/ui/skeletons";
 import { useAuthenticatedUser } from "@/shared/hooks/useAuthenticatedUser";
 import { ROUTES } from "@/lib/routes";
+import type { UserRole } from "@/shared/api/auth";
 
 type ProtectedRoutesProps = {
-  allowedRoles?: string[];
+  allowedRoles?: UserRole[];
 };
 
-function getFallbackRouteForAuthenticatedUser(roles: string[] | undefined): string {
+function getFallbackRouteForAuthenticatedUser(roles: UserRole[] | undefined): string {
   if (Array.isArray(roles) && roles.includes("ROLE_ADMIN")) {
     return ROUTES.start();
   }
@@ -39,7 +40,7 @@ const ProtectedRoutes: React.FC<ProtectedRoutesProps> = ({ allowedRoles = ["ROLE
   }
 
   const roles = loggedInUser.roles;
-  const isAuthorized = Array.isArray(roles) && roles.some((r: string) => allowedRoles.includes(r));
+  const isAuthorized = Array.isArray(roles) && roles.some((r) => allowedRoles.includes(r));
 
   if (!isAuthorized) {
     return <Navigate to={getFallbackRouteForAuthenticatedUser(roles)} replace />;
