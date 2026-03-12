@@ -4,6 +4,10 @@
 
 PWA darts game: room creation, SSE real-time throw streaming, player statistics.
 
+## Checklist
+
+Before implementing any change, agents **must** read and follow the rules in [`docs/audit/checklist.md`](docs/audit/checklist.md).
+
 ## Documentation
 
 When unsure about the API or behaviour of any library in this project, **always fetch up-to-date docs via context7** before writing code:
@@ -65,6 +69,7 @@ derived from `pages`.
 - **ALWAYS** use `clientLogger` from `src/shared/lib/clientLogger.ts`
 - API: `clientLogger.warn(event, { context?, error? })` and `clientLogger.error(event, { context?, error? })`
 - `event` is a short snake_case string describing what happened (e.g. `"sse_connection_failed"`)
+- If a ticket explicitly requires a fixed human-readable log message, use that exact string instead of converting it to `snake_case`
 - Sensitive fields (tokens, passwords, etc.) are auto-redacted by the logger — never pre-redact manually
 
 ### Naming
