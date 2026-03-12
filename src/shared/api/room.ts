@@ -1,20 +1,13 @@
 import { apiClient } from "./client";
 import { ApiError } from "./errors";
 import { createInviteEndpoint } from "./endpoints";
+import { isRecord } from "@/shared/lib/guards";
 import type {
   CreateRoomResponse,
   AddGuestPayload,
   GuestPlayer,
   CreateGameSettingsPayload,
 } from "@/types";
-
-// ---------------------------------------------------------------------------
-// Guards
-// ---------------------------------------------------------------------------
-
-function isRecord(data: unknown): data is Record<string, unknown> {
-  return typeof data === "object" && data !== null;
-}
 
 function isCreateRoomResponse(data: unknown): data is CreateRoomResponse {
   return (
@@ -27,12 +20,14 @@ function isCreateRoomGameIdResponse(data: unknown): data is { gameId: number } {
 }
 
 function isGuestPlayerResponse(data: unknown): data is { success: true; player: GuestPlayer } {
+  const player = isRecord(data) && isRecord(data.player) ? data.player : null;
+
   return (
     isRecord(data) &&
     data.success === true &&
-    isRecord(data.player) &&
-    typeof (data.player as Record<string, unknown>).id === "number" &&
-    typeof (data.player as Record<string, unknown>).name === "string"
+    player !== null &&
+    typeof player.id === "number" &&
+    typeof player.name === "string"
   );
 }
 

@@ -52,6 +52,9 @@ derived from `pages`.
 
 - `any` — FORBIDDEN without explicit approval and documentation
 - `as` type casts — FORBIDDEN without a preceding type guard; use type narrowing instead
+- When a ticket is specifically about removing unsafe `as` casts, complete a cast audit before editing and classify each cast as `type guard needed`, `browser API requirement`, or `leave`
+- For `type guard needed`, prefer `isXxx(value) ? value : <safe fallback or throw>` and keep the guard in the same file unless the identical guard is reused in 2+ files
+- `BodyInit` casts required by the browser API may remain only with an inline comment: `// safe: BodyInit accepts any serializable value`
 - Exported functions/components — explicit return types required
 - Null/undefined — handle explicitly; no implicit fallbacks
 - Non-null assertion `!` — FORBIDDEN; use explicit null checks

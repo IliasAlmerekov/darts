@@ -2,14 +2,14 @@ import { useState, useMemo, useEffect, useCallback, useRef } from "react";
 import { useParams } from "react-router-dom";
 import { useStore } from "@nanostores/react";
 import {
-  $gameData,
   $gameSettings,
   $preCreateGameSettings,
   getCachedGameSettings,
   setGameSettings,
   setPreCreateGameSettings,
+  $currentGameId,
+  setCurrentGameId,
 } from "@/shared/store";
-import { $currentGameId, setCurrentGameId } from "@/shared/store";
 import { getGameSettings, saveGameSettings } from "@/shared/api/game";
 import { clientLogger } from "@/shared/lib/clientLogger";
 import { toUserErrorMessage } from "@/lib/error-to-user-message";
@@ -57,7 +57,6 @@ function isAbortError(error: unknown): boolean {
 
 function SettingsPage(): JSX.Element {
   const { id: gameIdParam } = useParams<{ id?: string }>();
-  const gameData = useStore($gameData);
   const gameSettings = useStore($gameSettings);
   const preCreateGameSettings = useStore($preCreateGameSettings);
   const currentGameIdFromStore = useStore($currentGameId);
@@ -76,7 +75,7 @@ function SettingsPage(): JSX.Element {
   const isSavingRef = useRef(false);
   const cachedRouteGameSettings = routeGameId !== null ? getCachedGameSettings(routeGameId) : null;
   const activeGameSettings =
-    routeGameId !== null && gameData?.id === routeGameId
+    routeGameId !== null && currentGameIdFromStore === routeGameId
       ? gameSettings
       : (loadedSettings ?? cachedRouteGameSettings);
   const preCreateGameMode = useMemo(
@@ -129,7 +128,7 @@ function SettingsPage(): JSX.Element {
       }
     };
 
-    const hasCurrentGameInStore = gameData?.id === routeGameId && gameSettings !== null;
+    const hasCurrentGameInStore = currentGameIdFromStore === routeGameId && gameSettings !== null;
     if (!hasCurrentGameInStore) {
       void loadGameSettings();
     }
@@ -137,7 +136,7 @@ function SettingsPage(): JSX.Element {
     return () => {
       controller.abort();
     };
-  }, [routeGameId, gameData?.id, gameSettings]);
+  }, [routeGameId, currentGameIdFromStore, gameSettings]);
 
   // Only hydrate the UI from canonical settings for the route game.
   const currentGameMode = useMemo(

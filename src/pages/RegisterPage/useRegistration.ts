@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { registerUser, type RegistrationResponse } from "@/shared/api/auth";
 import { mapAuthErrorMessage } from "@/lib/auth-error-handling";
 import { ApiError } from "@/shared/api";
+import { isRecord } from "@/shared/lib/guards";
 import { clientLogger } from "@/shared/lib/clientLogger";
 import { ROUTES } from "@/lib/routes";
 
@@ -20,13 +21,7 @@ interface RegistrationReturn {
 }
 
 function hasErrorsRecord(data: unknown): data is { errors: Record<string, unknown> } {
-  return (
-    typeof data === "object" &&
-    data !== null &&
-    "errors" in data &&
-    typeof (data as Record<string, unknown>).errors === "object" &&
-    (data as Record<string, unknown>).errors !== null
-  );
+  return isRecord(data) && "errors" in data && isRecord(data.errors);
 }
 
 export function useRegistration(): RegistrationReturn {

@@ -4,6 +4,8 @@
 import { test, expect, type Page } from "@playwright/test";
 
 async function mockAuthenticatedUser(page: Page, roles: string[]): Promise<void> {
+  await page.context().clearCookies();
+
   await page.route("**/api/login/success", async (route) => {
     await route.fulfill({
       status: 200,
@@ -24,9 +26,9 @@ test.describe("User Permissions and Security", () => {
   test("Admin role required for game creation", async ({ page }) => {
     await mockAuthenticatedUser(page, ["ROLE_ADMIN"]);
 
-    await page.goto("http://localhost:5173/start");
+    await page.goto("/start");
 
-    await expect(page).toHaveURL("http://localhost:5173/start");
+    await expect(page).toHaveURL(/\/start$/);
     await expect(page.getByRole("button", { name: /create game/i })).toBeVisible();
     await expect(page.getByRole("button", { name: /create game/i })).toBeEnabled();
     await expect(page.getByRole("heading", { name: "Selected Players" })).toBeVisible();
@@ -35,9 +37,9 @@ test.describe("User Permissions and Security", () => {
   test("Player role cannot access game creation", async ({ page }) => {
     await mockAuthenticatedUser(page, ["ROLE_PLAYER"]);
 
-    await page.goto("http://localhost:5173/start");
+    await page.goto("/start");
 
-    await expect(page).toHaveURL("http://localhost:5173/joined");
+    await expect(page).toHaveURL(/\/joined$/);
     await expect(page.getByRole("heading", { name: /spiel beigetreten/i })).toBeVisible();
     await expect(page.getByRole("button", { name: /create game/i })).not.toBeVisible();
   });

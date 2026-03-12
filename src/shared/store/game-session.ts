@@ -1,5 +1,6 @@
 import { atom, computed } from "nanostores";
 import type { ReadableAtom } from "nanostores";
+import { isRecord } from "@/shared/lib/guards";
 import { clientLogger } from "@/shared/lib/clientLogger";
 import type { CreateGameSettingsPayload, GameSummaryResponse } from "@/types";
 
@@ -28,16 +29,15 @@ function canUseSessionStorage(): boolean {
 }
 
 function isValidInvitation(value: unknown): value is Invitation {
-  if (null === value || "object" !== typeof value) {
+  if (!isRecord(value)) {
     return false;
   }
 
-  const typed = value as Partial<Invitation>;
   return (
-    "number" === typeof typed.gameId &&
-    Number.isFinite(typed.gameId) &&
-    "string" === typeof typed.invitationLink &&
-    typed.invitationLink.length > 0
+    "number" === typeof value.gameId &&
+    Number.isFinite(value.gameId) &&
+    "string" === typeof value.invitationLink &&
+    value.invitationLink.length > 0
   );
 }
 
@@ -123,16 +123,15 @@ function setStoredInvitation(invitation: Invitation | null): void {
 }
 
 function isValidPreCreateGameSettings(value: unknown): value is CreateGameSettingsPayload {
-  if (null === value || "object" !== typeof value) {
+  if (!isRecord(value)) {
     return false;
   }
 
-  const typed = value as Partial<CreateGameSettingsPayload>;
   return (
-    "number" === typeof typed.startScore &&
-    Number.isFinite(typed.startScore) &&
-    "boolean" === typeof typed.doubleOut &&
-    "boolean" === typeof typed.tripleOut
+    "number" === typeof value.startScore &&
+    Number.isFinite(value.startScore) &&
+    "boolean" === typeof value.doubleOut &&
+    "boolean" === typeof value.tripleOut
   );
 }
 
