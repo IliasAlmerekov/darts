@@ -1,4 +1,8 @@
-import type { GameStatus, GameThrowsResponse, ScoreboardDelta } from "./game";
+import type {
+  GameStatus,
+  GameThrowsResponse as BaseGameThrowsResponse,
+  ScoreboardDelta,
+} from "./game";
 
 export interface CreateRoomResponse {
   gameId: number;
@@ -76,7 +80,12 @@ export interface GameSettingsResponse {
   tripleOut: boolean;
 }
 
+export type GameThrowsResponse = BaseGameThrowsResponse & {
+  type: "full-state";
+};
+
 export interface UndoAckResponse {
+  type: "ack";
   success: boolean;
   gameId: number;
   stateVersion: string;
