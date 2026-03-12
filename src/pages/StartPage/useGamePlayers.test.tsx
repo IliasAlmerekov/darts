@@ -40,6 +40,7 @@ import type { GameThrowsResponse } from "@/types";
 const buildGameThrowsResponse = (
   overrides: Partial<GameThrowsResponse> = {},
 ): GameThrowsResponse => ({
+  type: "full-state",
   id: 1,
   status: "started",
   currentRound: 1,

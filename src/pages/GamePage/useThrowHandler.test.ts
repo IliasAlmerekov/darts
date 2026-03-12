@@ -61,6 +61,7 @@ function createDeferred<T>(): Deferred<T> {
 
 function buildGameData(overrides: Partial<GameThrowsResponse> = {}): GameThrowsResponse {
   return {
+    type: "full-state",
     id: 1,
     status: "started",
     currentRound: 1,
@@ -119,6 +120,7 @@ function buildThrowAck(overrides: Partial<ThrowAckResponse> = {}): ThrowAckRespo
 
 function buildUndoAck(overrides: Partial<UndoAckResponse> = {}): UndoAckResponse {
   return {
+    type: "ack",
     success: true,
     gameId: 1,
     stateVersion: "undo-v1",

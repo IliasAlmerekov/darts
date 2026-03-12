@@ -27,6 +27,7 @@ function createDeferred<T>(): Deferred<T> {
 
 function createGameData(gameId: number): GameThrowsResponse {
   return {
+    type: "full-state",
     id: gameId,
     status: "started",
     currentRound: 1,

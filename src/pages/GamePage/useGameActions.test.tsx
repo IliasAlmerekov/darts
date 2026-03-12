@@ -18,6 +18,7 @@ vi.mock("@/shared/api/game", () => ({
 
 function createGameData(): GameThrowsResponse {
   return {
+    type: "full-state",
     id: 42,
     status: "started",
     currentRound: 2,

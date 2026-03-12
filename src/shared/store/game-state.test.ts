@@ -17,6 +17,7 @@ import * as gameStateNormalizer from "../lib/gameStateNormalizer";
 import type { GameSettingsResponse, GameThrowsResponse } from "@/types";
 
 const mockGameData: GameThrowsResponse = {
+  type: "full-state",
   id: 1,
   activePlayerId: 1,
   currentRound: 3,
