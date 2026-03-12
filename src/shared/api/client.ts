@@ -3,12 +3,16 @@ import type { ApiRequestConfig, QueryParams } from "./types";
 
 const DEFAULT_TIMEOUT_MS = 30_000;
 
-const ENV_API_BASE_URL = import.meta.env.VITE_API_BASE_URL as string | undefined;
+const ENV_API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 export type AuthRedirectHandler = () => void;
 interface ApiResponse<T> {
   data: T;
   response: Response;
 }
+
+type ValidatedApiRequestConfig<T> = ApiRequestConfig & {
+  validate: (data: unknown) => data is T;
+};
 
 let onUnauthorized: AuthRedirectHandler | null = null;
 
@@ -22,6 +26,12 @@ function resolveApiBaseUrl(): string {
 }
 
 export const API_BASE_URL = resolveApiBaseUrl();
+
+export class ApiValidationError extends Error {
+  constructor(public readonly raw: unknown) {
+    super("API response failed validation");
+  }
+}
 
 export function setUnauthorizedHandler(handler: AuthRedirectHandler): void {
   onUnauthorized = handler;
@@ -92,12 +102,12 @@ function isAcceptedStatus(status: number, acceptedStatuses?: number[]): boolean 
 
 async function request<T>(
   endpoint: string,
-  config: ApiRequestConfig & { returnResponse: true },
+  config: ValidatedApiRequestConfig<T> & { returnResponse: true },
 ): Promise<ApiResponse<T>>;
-async function request<T>(endpoint: string, config?: ApiRequestConfig): Promise<T>;
+async function request<T>(endpoint: string, config: ValidatedApiRequestConfig<T>): Promise<T>;
 async function request<T>(
   endpoint: string,
-  config: ApiRequestConfig = {},
+  config: ValidatedApiRequestConfig<T>,
 ): Promise<T | ApiResponse<T>> {
   const {
     method = "GET",
@@ -108,6 +118,7 @@ async function request<T>(
     timeoutMs,
     acceptedStatuses,
     returnResponse,
+    validate,
     ...rest
   } = config;
 
@@ -180,33 +191,45 @@ async function request<T>(
     });
   }
 
+  const validatedData = validate(data)
+    ? data
+    : (() => {
+        throw new ApiValidationError(data);
+      })();
+
   if (returnResponse) {
     return {
-      data: data as T,
+      data: validatedData,
       response,
     };
   }
 
-  return data as T;
+  return validatedData;
 }
 
 export const apiClient = {
   request,
-  get: <T>(endpoint: string, config?: Omit<ApiRequestConfig, "method" | "body">) =>
+  get: <T>(endpoint: string, config: Omit<ValidatedApiRequestConfig<T>, "method" | "body">) =>
     request<T>(endpoint, { ...config, method: "GET" }),
 
-  post: <T>(endpoint: string, body?: unknown, config?: Omit<ApiRequestConfig, "method" | "body">) =>
-    request<T>(endpoint, { ...config, method: "POST", body }),
+  post: <T>(
+    endpoint: string,
+    body: unknown,
+    config: Omit<ValidatedApiRequestConfig<T>, "method" | "body">,
+  ) => request<T>(endpoint, { ...config, method: "POST", body }),
 
-  put: <T>(endpoint: string, body?: unknown, config?: Omit<ApiRequestConfig, "method" | "body">) =>
-    request<T>(endpoint, { ...config, method: "PUT", body }),
+  put: <T>(
+    endpoint: string,
+    body: unknown,
+    config: Omit<ValidatedApiRequestConfig<T>, "method" | "body">,
+  ) => request<T>(endpoint, { ...config, method: "PUT", body }),
 
   patch: <T>(
     endpoint: string,
-    body?: unknown,
-    config?: Omit<ApiRequestConfig, "method" | "body">,
+    body: unknown,
+    config: Omit<ValidatedApiRequestConfig<T>, "method" | "body">,
   ) => request<T>(endpoint, { ...config, method: "PATCH", body }),
 
-  delete: <T>(endpoint: string, config?: Omit<ApiRequestConfig, "method">) =>
+  delete: <T>(endpoint: string, config: Omit<ValidatedApiRequestConfig<T>, "method">) =>
     request<T>(endpoint, { ...config, method: "DELETE" }),
 };

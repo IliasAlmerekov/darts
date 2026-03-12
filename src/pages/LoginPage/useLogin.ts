@@ -10,7 +10,13 @@ import { resolveSafeLoginRedirect } from "./lib/safeRedirect";
 /**
  * Provides login flow state and action.
  */
-export function useLogin() {
+interface LoginReturn {
+  login: (email: string, password: string) => Promise<void>;
+  loading: boolean;
+  error: string | null;
+}
+
+export function useLogin(): LoginReturn {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const navigate = useNavigate();

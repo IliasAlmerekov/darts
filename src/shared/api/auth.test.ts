@@ -145,11 +145,15 @@ describe("registerUser", () => {
       password: "s3cr3t",
     });
 
-    expect(apiClient.post).toHaveBeenCalledWith("/register", {
-      username: "alice",
-      email: "alice@example.com",
-      plainPassword: "s3cr3t",
-    });
+    expect(apiClient.post).toHaveBeenCalledWith(
+      "/register",
+      {
+        username: "alice",
+        email: "alice@example.com",
+        plainPassword: "s3cr3t",
+      },
+      expect.objectContaining({ validate: expect.any(Function) }),
+    );
     expect(result).toEqual({ redirect: "/start" });
   });
 
@@ -173,7 +177,7 @@ describe("registerUser", () => {
 
     expect(getSpy).toHaveBeenCalledWith(
       "/csrf",
-      expect.objectContaining({ skipAuthRedirect: true }),
+      expect.objectContaining({ skipAuthRedirect: true, validate: expect.any(Function) }),
     );
   });
 
@@ -251,7 +255,11 @@ describe("logout", () => {
 
     await logout(onSuccess);
 
-    expect(apiClient.post).toHaveBeenCalledWith("/logout");
+    expect(apiClient.post).toHaveBeenCalledWith(
+      "/logout",
+      undefined,
+      expect.objectContaining({ validate: expect.any(Function) }),
+    );
     expect(onSuccess).toHaveBeenCalledTimes(1);
   });
 

@@ -5,7 +5,13 @@ import { mapAuthErrorMessage } from "@/lib/auth-error-handling";
 /**
  * Orchestrates registration page state and submission handling.
  */
-export function useRegistrationPage() {
+interface RegistrationPageReturn {
+  error: string | null;
+  loading: boolean;
+  handleSubmit: (e: React.FormEvent<HTMLFormElement>) => Promise<void>;
+}
+
+export function useRegistrationPage(): RegistrationPageReturn {
   const [submitError, setSubmitError] = useState<string | null>(null);
   const { register, loading, error: registrationError } = useRegistration();
 

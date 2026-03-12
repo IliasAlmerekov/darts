@@ -2,6 +2,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import {
   finishGame,
+  getFinishedGame,
   getGameSettings,
   getGameThrows,
   getGameThrowsIfChanged,
@@ -76,7 +77,10 @@ describe("getGameThrowsIfChanged", () => {
     const data = await getGameThrows(520);
 
     expect(data).toEqual(response);
-    expect(apiClient.get).toHaveBeenCalledWith("/game/520", undefined);
+    expect(apiClient.get).toHaveBeenCalledWith(
+      "/game/520",
+      expect.objectContaining({ validate: expect.any(Function) }),
+    );
   });
 
   it("forwards AbortSignal through getGameThrows", async () => {
@@ -88,6 +92,7 @@ describe("getGameThrowsIfChanged", () => {
 
     expect(apiClient.get).toHaveBeenCalledWith("/game/520", {
       signal: controller.signal,
+      validate: expect.any(Function),
     });
   });
 
@@ -103,6 +108,7 @@ describe("getGameThrowsIfChanged", () => {
 
     expect(apiClient.get).toHaveBeenCalledWith("/game/520/settings", {
       signal: controller.signal,
+      validate: expect.any(Function),
     });
   });
 
@@ -163,7 +169,51 @@ describe("getGameThrowsIfChanged", () => {
 
     expect(apiClient.post).toHaveBeenCalledWith("/game/520/finish", undefined, {
       signal: controller.signal,
+      validate: expect.any(Function),
     });
+  });
+
+  it("normalizes nullable summary envelope fields from getFinishedGame", async () => {
+    vi.spyOn(apiClient, "get").mockResolvedValueOnce({
+      gameId: 520,
+      finishedAt: "2026-03-10T12:00:00+00:00",
+      winner: { id: 1, username: "Winner" },
+      winnerRoundsPlayed: 4,
+      winnerRoundAverage: 62.5,
+      finishedPlayers: [
+        {
+          playerId: 1,
+          username: "Winner",
+          position: 1,
+          roundsPlayed: 4,
+          roundAverage: 62.5,
+        },
+        {
+          playerId: null,
+          username: null,
+          position: null,
+          roundsPlayed: null,
+          roundAverage: 0,
+        },
+      ],
+    });
+
+    await expect(getFinishedGame(520)).resolves.toEqual([
+      {
+        playerId: 1,
+        username: "Winner",
+        position: 1,
+        roundsPlayed: 4,
+        roundAverage: 62.5,
+      },
+      {
+        playerId: 2,
+        username: "Player 2",
+        position: 2,
+        roundsPlayed: 0,
+        roundAverage: 0,
+      },
+    ]);
   });
 
   it("routes conditional game fetches through apiClient.request and forwards AbortSignal", async () => {
@@ -190,6 +240,7 @@ describe("getGameThrowsIfChanged", () => {
       expect.objectContaining({
         method: "GET",
         signal: controller.signal,
+        validate: expect.any(Function),
       }),
     );
     expect(fetchTrap).not.toHaveBeenCalled();
@@ -235,6 +286,7 @@ describe("getGameThrowsIfChanged", () => {
         headers: expect.objectContaining({
           "If-None-Match": "etag-v1",
         }),
+        validate: expect.any(Function),
       }),
     );
     expect(fetchTrap).not.toHaveBeenCalled();
