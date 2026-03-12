@@ -42,12 +42,16 @@ function includesAny(text: string, patterns: readonly string[]): boolean {
   return patterns.some((pattern) => text.includes(pattern));
 }
 
+function isApiErrorPayload(value: unknown): value is ApiErrorPayload {
+  return isRecord(value);
+}
+
 function toApiErrorPayload(error: unknown): ApiErrorPayload | null {
   if (!(error instanceof ApiError) || !isRecord(error.data)) {
     return null;
   }
 
-  return error.data as ApiErrorPayload;
+  return isApiErrorPayload(error.data) ? error.data : null;
 }
 
 function collectStringValues(value: unknown): string[] {

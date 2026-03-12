@@ -40,8 +40,6 @@ const UNDO_THROW_ENDPOINT = (id: number) => `/game/${id}/throw`;
 
 const gameStateVersionById = new Map<number, string>();
 
-type ParsedResponse = unknown;
-
 const GAME_STATUS_VALUES: readonly GameStatus[] = ["lobby", "started", "finished"];
 
 function isRecord(data: unknown): data is Record<string, unknown> {
@@ -393,7 +391,7 @@ export async function getGameThrowsIfChanged(
   signal?: AbortSignal,
 ): Promise<GameThrowsResponse | null> {
   const currentVersion = gameStateVersionById.get(gameId) ?? null;
-  const { data, response } = await apiClient.request<ParsedResponse>(GAME_ENDPOINT(gameId), {
+  const { data, response } = await apiClient.request<unknown>(GAME_ENDPOINT(gameId), {
     method: "GET",
     ...(currentVersion ? { query: { since: currentVersion } } : {}),
     ...(currentVersion ? { headers: { "If-None-Match": currentVersion } } : {}),
