@@ -248,7 +248,7 @@ export function resetPreCreateGameSettings(): void {
  * Reads the currently active game id from the store.
  */
 export function getActiveGameId(): number | null {
-  return currentGameIdAtom.get() ?? null;
+  return currentGameIdAtom.get();
 }
 
 /**

@@ -1,5 +1,6 @@
 import { apiClient } from "./client";
 import { ApiError } from "./errors";
+import { createInviteEndpoint } from "./endpoints";
 import type {
   CreateRoomResponse,
   AddGuestPayload,
@@ -48,7 +49,6 @@ function isSuccessResponse(data: unknown): data is { success: boolean } {
 // ---------------------------------------------------------------------------
 
 const CREATE_ROOM_ENDPOINT = "/room/create";
-const CREATE_INVITE_ENDPOINT = (id: number) => `/invite/create/${id}`;
 const ROOM_ENDPOINT = (id: number) => `/room/${id}`;
 const UPDATE_PLAYER_ORDER_ENDPOINT = (id: number) => `/room/${id}/positions`;
 const ADD_GUEST_ENDPOINT = (id: number) => `/room/${id}/guest`;
@@ -70,7 +70,7 @@ export async function getInvitation(
   gameId: number,
   signal?: AbortSignal,
 ): Promise<CreateRoomResponse> {
-  const data: unknown = await apiClient.post(CREATE_INVITE_ENDPOINT(gameId), undefined, {
+  const data: unknown = await apiClient.post(createInviteEndpoint(gameId), undefined, {
     ...(signal ? { signal } : {}),
     validate: isCreateRoomResponse,
   });
@@ -100,7 +100,7 @@ export async function createRoom(payload?: CreateGamePayload): Promise<CreateRoo
   if (!isCreateRoomGameIdResponse(room)) {
     throw new ApiError("Unexpected response shape for create room", { status: 200, data: room });
   }
-  const invite: unknown = await apiClient.post(CREATE_INVITE_ENDPOINT(room.gameId), undefined, {
+  const invite: unknown = await apiClient.post(createInviteEndpoint(room.gameId), undefined, {
     validate: isCreateRoomResponse,
   });
   if (!isCreateRoomResponse(invite)) {

@@ -1,5 +1,4 @@
 import { Navigate, Outlet, useLocation } from "react-router-dom";
-import React from "react";
 import { StartPageSkeleton, LoginSuccessSkeleton, UniversalSkeleton } from "@/shared/ui/skeletons";
 import { useAuthenticatedUser } from "@/shared/hooks/useAuthenticatedUser";
 import { ROUTES } from "@/lib/routes";
@@ -25,9 +24,9 @@ function getFallbackRouteForAuthenticatedUser(roles: Role[] | undefined): string
   return ROUTES.login;
 }
 
-const ProtectedRoutes: React.FC<ProtectedRoutesProps> = ({
+function ProtectedRoutes({
   allowedRoles = DEFAULT_ALLOWED_ROLES,
-}) => {
+}: ProtectedRoutesProps): JSX.Element {
   const { user: loggedInUser, loading: checking } = useAuthenticatedUser();
   const { pathname } = useLocation();
 
@@ -53,6 +52,6 @@ const ProtectedRoutes: React.FC<ProtectedRoutesProps> = ({
   }
 
   return <Outlet />;
-};
+}
 
 export default ProtectedRoutes;
