@@ -3,7 +3,7 @@ import type { ApiRequestConfig, QueryParams } from "./types";
 
 const DEFAULT_TIMEOUT_MS = 30_000;
 
-const ENV_API_BASE_URL = import.meta.env.VITE_API_BASE_URL as string | undefined;
+const ENV_API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 export type AuthRedirectHandler = () => void;
 interface ApiResponse<T> {
   data: T;
