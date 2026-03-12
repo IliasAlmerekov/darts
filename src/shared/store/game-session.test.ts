@@ -325,3 +325,44 @@ describe("game-session store — Ticket 4: store is cache, not authority", () =>
     consoleErrorSpy.mockRestore();
   });
 });
+
+// ─── TICKET-11 — resetPreCreateGameSettings ───────────────────────────────────
+
+describe("game-session store — resetPreCreateGameSettings", () => {
+  beforeEach(() => {
+    window.sessionStorage.clear();
+    vi.resetModules();
+  });
+
+  it("should reset $preCreateGameSettings to default values", async () => {
+    const roomStore = await import("./game-session");
+    roomStore.setPreCreateGameSettings({
+      startScore: 501,
+      doubleOut: true,
+      tripleOut: true,
+    });
+
+    roomStore.resetPreCreateGameSettings();
+
+    expect(roomStore.$preCreateGameSettings.get()).toEqual({
+      startScore: 301,
+      doubleOut: false,
+      tripleOut: false,
+    });
+  });
+
+  it("should update sessionStorage when resetting pre-create settings", async () => {
+    const roomStore = await import("./game-session");
+    roomStore.setPreCreateGameSettings({
+      startScore: 501,
+      doubleOut: true,
+      tripleOut: true,
+    });
+
+    roomStore.resetPreCreateGameSettings();
+
+    expect(window.sessionStorage.getItem(PRE_CREATE_SETTINGS_STORAGE_KEY)).toBe(
+      JSON.stringify({ startScore: 301, doubleOut: false, tripleOut: false }),
+    );
+  });
+});
