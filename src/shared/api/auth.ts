@@ -32,11 +32,12 @@ interface CsrfTokensResponse {
   tokens: Record<string, string>;
 }
 
-export type UserRole = "ROLE_USER" | "ROLE_ADMIN" | "ROLE_PLAYER";
+export type Role = "ROLE_USER" | "ROLE_ADMIN" | "ROLE_PLAYER";
+export type UserRole = Role;
 
 export interface AuthenticatedUser {
   success: boolean;
-  roles: UserRole[];
+  roles: Role[];
   id: number;
   email?: string | null;
   username?: string | null;
