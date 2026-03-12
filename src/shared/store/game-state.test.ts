@@ -379,6 +379,56 @@ describe("game-state store", () => {
     });
   });
 
+  // --- TICKET-12 ---
+  describe("getCachedGameSettings — TICKET-12 (N=1 cache)", () => {
+    it("should store gameId and settings when setCachedGameSettings is called via setGameSettings", () => {
+      const settings: GameSettingsResponse = { startScore: 501, doubleOut: true, tripleOut: false };
+
+      setGameSettings(settings, 7);
+
+      expect(getCachedGameSettings(7)).toEqual(settings);
+    });
+
+    it("should return settings when queried with matching gameId", () => {
+      setGameData(mockGameData);
+
+      expect(getCachedGameSettings(mockGameData.id)).toEqual(mockGameData.settings);
+    });
+
+    it("should return null when queried with a different gameId", () => {
+      setGameData(mockGameData);
+
+      expect(getCachedGameSettings(mockGameData.id + 1)).toBeNull();
+    });
+
+    it("should retain only the last entry when setCachedGameSettings is called twice with different gameIds", () => {
+      const settings1: GameSettingsResponse = {
+        startScore: 501,
+        doubleOut: true,
+        tripleOut: false,
+      };
+      const settings2: GameSettingsResponse = {
+        startScore: 301,
+        doubleOut: false,
+        tripleOut: true,
+      };
+
+      setGameSettings(settings1, 10);
+      setGameSettings(settings2, 20);
+
+      expect(getCachedGameSettings(10)).toBeNull();
+      expect(getCachedGameSettings(20)).toEqual(settings2);
+    });
+
+    it("should return null after resetGameStore", () => {
+      setGameSettings({ startScore: 501, doubleOut: true, tripleOut: false }, 3);
+
+      resetGameStore();
+
+      expect(getCachedGameSettings(3)).toBeNull();
+    });
+  });
+
   // --- TICKET-09 ---
   describe("setGameSettings — TICKET-09 (normalizeGameData not called)", () => {
     let normalizeSpy: ReturnType<typeof vi.spyOn>;
