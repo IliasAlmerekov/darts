@@ -26,7 +26,7 @@ vi.mock("@/shared/hooks/useAuthenticatedUser", () => ({
   useAuthenticatedUser: () => useAuthenticatedUserMock(),
 }));
 
-vi.mock("@/store", () => ({
+vi.mock("@/shared/store", () => ({
   getActiveGameId: () => getActiveGameIdMock(),
 }));
 

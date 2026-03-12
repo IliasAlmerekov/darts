@@ -8,7 +8,7 @@ import type {
   UndoAckResponse,
 } from "@/types";
 import { ApiError } from "@/shared/api";
-import { $gameData, setGameData, setGameScoreboardDelta } from "@/store";
+import { $gameData, setGameData, setGameScoreboardDelta } from "@/shared/store";
 import {
   getGameThrows,
   recordThrow,
@@ -26,7 +26,7 @@ vi.mock("@/shared/api/game", () => ({
   undoLastThrow: vi.fn(),
 }));
 
-vi.mock("@/store", async (importOriginal) => {
+vi.mock("@/shared/store", async (importOriginal) => {
   const original = await importOriginal<Record<string, unknown>>();
   return {
     ...original,

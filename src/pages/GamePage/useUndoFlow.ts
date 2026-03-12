@@ -4,7 +4,7 @@ import { undoLastThrow } from "@/shared/api/game";
 import { playSound } from "@/lib/soundPlayer";
 import { clientLogger } from "@/shared/lib/clientLogger";
 import { normalizeGameData } from "@/shared/lib/gameStateNormalizer";
-import { $gameData, setGameData, setGameScoreboardDelta } from "@/store";
+import { $gameData, setGameData, setGameScoreboardDelta } from "@/shared/store";
 import type { GameThrowsResponse, UndoAckResponse } from "@/types";
 import { applyOptimisticUndo } from "./throwStateService";
 

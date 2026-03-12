@@ -3,7 +3,7 @@ import type { NavigateFunction } from "react-router-dom";
 import { getGameThrows } from "@/shared/api/game";
 import { getInvitation } from "@/shared/api/room";
 import { clientLogger } from "@/shared/lib/clientLogger";
-import { setCurrentGameId, setGameData, setInvitation } from "@/store";
+import { setCurrentGameId, setGameData, setInvitation } from "@/shared/store";
 import { ROUTES } from "@/lib/routes";
 
 type UseRoomRestoreParams = {

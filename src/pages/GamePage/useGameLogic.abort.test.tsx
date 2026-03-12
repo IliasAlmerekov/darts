@@ -68,7 +68,7 @@ vi.mock("@/shared/api/game", () => ({
   resetGameStateVersion: (...args: unknown[]) => resetGameStateVersionMock(...args),
 }));
 
-vi.mock("@/store", () => ({
+vi.mock("@/shared/store", () => ({
   setInvitation: vi.fn(),
   resetRoomStore: vi.fn(),
   setLastFinishedGameSummary: (...args: unknown[]) => setLastFinishedGameSummaryMock(...args),

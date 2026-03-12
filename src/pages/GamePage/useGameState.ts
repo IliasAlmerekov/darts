@@ -12,7 +12,7 @@ import {
   setGameSettings,
   setLoading,
   setError,
-} from "@/store";
+} from "@/shared/store";
 
 interface UseGameStateOptions {
   gameId: number | null;

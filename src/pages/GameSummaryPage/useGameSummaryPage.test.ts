@@ -47,7 +47,7 @@ vi.mock("@/shared/api/game", () => ({
   undoLastThrow: (...args: unknown[]) => undoLastThrowMock(...args),
 }));
 
-vi.mock("@/store", async (importOriginal) => {
+vi.mock("@/shared/store", async (importOriginal) => {
   const original = await importOriginal<Record<string, unknown>>();
   return {
     ...original,

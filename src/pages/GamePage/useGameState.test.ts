@@ -3,7 +3,7 @@ import { act, renderHook, waitFor } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { useGameState } from "./useGameState";
 import type { GameThrowsResponse } from "@/types";
-import * as gameStore from "@/store";
+import * as gameStore from "@/shared/store";
 
 const getGameThrowsIfChangedMock = vi.fn();
 const resetGameStateVersionMock = vi.fn();
