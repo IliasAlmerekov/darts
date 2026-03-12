@@ -19,6 +19,16 @@ interface RegistrationReturn {
   error: string | null;
 }
 
+function hasErrorsRecord(data: unknown): data is { errors: Record<string, unknown> } {
+  return (
+    typeof data === "object" &&
+    data !== null &&
+    "errors" in data &&
+    typeof (data as Record<string, unknown>).errors === "object" &&
+    (data as Record<string, unknown>).errors !== null
+  );
+}
+
 export function useRegistration(): RegistrationReturn {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -40,12 +50,8 @@ export function useRegistration(): RegistrationReturn {
         const isCsrfError =
           firstErr instanceof ApiError &&
           firstErr.status === 422 &&
-          typeof firstErr.data === "object" &&
-          firstErr.data !== null &&
-          "errors" in firstErr.data &&
-          typeof (firstErr.data as Record<string, unknown>).errors === "object" &&
-          "_csrf_token" in
-            ((firstErr.data as Record<string, unknown>).errors as Record<string, unknown>);
+          hasErrorsRecord(firstErr.data) &&
+          "_csrf_token" in firstErr.data.errors;
 
         if (!isCsrfError) throw firstErr;
 
