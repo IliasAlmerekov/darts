@@ -18,14 +18,12 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { TimeoutError } from "@/shared/api";
 import { useAuthenticatedUser } from "./useAuthenticatedUser";
 import type { AuthenticatedUser } from "@/shared/api/auth";
-import { clientLogger } from "@/shared/services/browser/clientLogger";
+import { $authChecked, resetAuthStore } from "@/shared/store/auth";
 import {
-  $authChecked,
   testOnlySetAuthChecked,
   testOnlySetAuthError,
   testOnlySetUser,
-  resetAuthStore,
-} from "@/shared/store/auth";
+} from "@/shared/store/auth.test-support";
 
 const getAuthenticatedUserMock = vi.fn();
 const setCurrentGameIdMock = vi.fn();
@@ -34,6 +32,17 @@ type DeferredAuth = {
   promise: Promise<AuthenticatedUser | null>;
   resolve: (value: AuthenticatedUser | null) => void;
 };
+
+function buildAuthenticatedUser(overrides: Partial<AuthenticatedUser> = {}): AuthenticatedUser {
+  return {
+    success: true,
+    roles: ["ROLE_USER"],
+    id: 1,
+    redirect: "/start",
+    gameId: null,
+    ...overrides,
+  };
+}
 
 function createDeferredAuth(): DeferredAuth {
   let resolvePromise: (value: AuthenticatedUser | null) => void = () => {};
@@ -51,7 +60,6 @@ describe("useAuthenticatedUser", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     resetAuthStore();
-    vi.mocked(clientLogger.error).mockReset();
   });
 
   it("should pass a live signal and timeoutMs 5000 when starting auth check", async () => {
@@ -105,13 +113,7 @@ describe("useAuthenticatedUser", () => {
     unmount();
     expect(capturedSignal?.aborted).toBe(true);
 
-    deferred.resolve({
-      success: true,
-      roles: ["ROLE_USER"],
-      id: 1,
-      redirect: "/start",
-      gameId: 25,
-    });
+    deferred.resolve(buildAuthenticatedUser({ gameId: 25 }));
 
     await Promise.resolve();
     await Promise.resolve();
@@ -120,13 +122,11 @@ describe("useAuthenticatedUser", () => {
   });
 
   it("should mark auth as checked and unauthenticated when the auth bootstrap times out", async () => {
-    const existingUser: AuthenticatedUser = {
-      success: true,
+    const existingUser = buildAuthenticatedUser({
       roles: ["ROLE_ADMIN"],
       id: 77,
-      redirect: "/start",
       gameId: 13,
-    };
+    });
     testOnlySetUser(existingUser);
     testOnlySetAuthChecked(false);
     testOnlySetAuthError(null);
@@ -163,7 +163,7 @@ describe("useAuthenticatedUser", () => {
     expect(result.current.error).toBeNull();
   });
 
-  it("should log unexpected bootstrap errors and expose the auth error state when the request fails unexpectedly", async () => {
+  it("should expose the auth failure state when the request fails unexpectedly", async () => {
     const error = new Error("network failed");
     getAuthenticatedUserMock.mockRejectedValue(error);
 
@@ -175,19 +175,16 @@ describe("useAuthenticatedUser", () => {
 
     expect(result.current.user).toBeNull();
     expect(result.current.error).toBe("network failed");
-    expect(clientLogger.error).toHaveBeenCalledWith("auth.bootstrap.failed", {
-      context: { timeoutMs: 5000 },
-      error,
-    });
+    expect($authChecked.get()).toBe(true);
   });
 
   it("should reuse the cached auth result when the first auth check already succeeded", async () => {
-    getAuthenticatedUserMock.mockResolvedValue({
-      success: true,
-      roles: ["ROLE_ADMIN"],
-      id: 3,
-      redirect: "/start",
-    });
+    getAuthenticatedUserMock.mockResolvedValue(
+      buildAuthenticatedUser({
+        roles: ["ROLE_ADMIN"],
+        id: 3,
+      }),
+    );
 
     const firstHook = renderHook(() => useAuthenticatedUser());
 

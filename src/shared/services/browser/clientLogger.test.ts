@@ -60,6 +60,7 @@ describe("createClientLogger", () => {
     const logger = createClientLogger({ warn, error });
 
     logger.warn("room_stream_invalid_payload", {
+      raw: "not-json",
       context: {
         type: "throw",
         invitationLink: "https://example.com/invite/7",
@@ -76,6 +77,7 @@ describe("createClientLogger", () => {
     });
 
     expect(warn).toHaveBeenCalledWith("[client:warn] room_stream_invalid_payload", {
+      raw: "not-json",
       context: {
         type: "throw",
         invitationLink: REDACTED_VALUE,

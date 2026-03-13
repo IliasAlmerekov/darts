@@ -49,28 +49,28 @@ export interface StartRematchResponse extends RematchGameResponse {
   settings: GameSettingsResponse;
 }
 
-export type AddGuestPayload = {
+export interface AddGuestPayload {
   username: string;
-};
+}
 
-export type GuestPlayer = {
+export interface GuestPlayer {
   id: number;
   name: string;
   position?: number | null;
-};
+}
 
-export type AddGuestErrorResponse = {
+export interface AddGuestErrorResponse {
   success: false;
   error: "USERNAME_TAKEN";
   message: string;
   suggestions?: string[];
-};
+}
 
-export type CreateGameSettingsPayload = {
+export interface CreateGameSettingsPayload {
   startScore: number;
   doubleOut: boolean;
   tripleOut: boolean;
-};
+}
 
 export type UpdateGameSettingsPayload = Partial<CreateGameSettingsPayload>;
 

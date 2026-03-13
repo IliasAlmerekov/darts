@@ -4,19 +4,19 @@ export type GameMode = "single-out" | "double-out" | "triple-out";
 
 // --- Game throws (merged from game-throws.ts) ---
 
-export type PlayerThrow = {
+export interface PlayerThrow {
   value: number;
   isDouble?: boolean;
   isTriple?: boolean;
   isBust?: boolean;
-};
+}
 
-export type RoundHistory = {
+export interface RoundHistory {
   round?: number;
   throws: PlayerThrow[];
-};
+}
 
-export type GameThrowsResponse = {
+export interface GameThrowsResponse {
   id: number;
   status: GameStatus;
   currentRound: number;
@@ -39,9 +39,9 @@ export type GameThrowsResponse = {
     doubleOut: boolean;
     tripleOut: boolean;
   };
-};
+}
 
-export type ThrowDelta = {
+export interface ThrowDelta {
   id: number;
   playerId: number;
   playerName: string;
@@ -52,9 +52,9 @@ export type ThrowDelta = {
   score: number;
   roundNumber: number;
   timestamp: string;
-};
+}
 
-export type ScoreboardPlayerDelta = {
+export interface ScoreboardPlayerDelta {
   playerId: number;
   name: string;
   score: number;
@@ -62,27 +62,27 @@ export type ScoreboardPlayerDelta = {
   isActive: boolean;
   isGuest: boolean;
   isBust: boolean | null;
-};
+}
 
-export type ScoreboardDelta = {
+export interface ScoreboardDelta {
   changedPlayers: ScoreboardPlayerDelta[];
   winnerId: number | null;
   status: GameStatus;
   currentRound: number;
-};
+}
 
-export type ThrowAckResponse = {
+export interface ThrowAckResponse {
   success: boolean;
   gameId: number;
   stateVersion: string;
   throw: ThrowDelta | null;
   scoreboardDelta: ScoreboardDelta;
   serverTs: string;
-};
+}
 
 // --- Game UI props (merged from ui-props.ts) ---
 
-export type Round = {
+export interface Round {
   throw1?: number | string | undefined;
   throw2?: number | string | undefined;
   throw3?: number | string | undefined;
@@ -90,9 +90,9 @@ export type Round = {
   throw2IsBust?: boolean | undefined;
   throw3IsBust?: boolean | undefined;
   isRoundBust?: boolean | undefined;
-};
+}
 
-export type WinnerPlayerProps = {
+export interface WinnerPlayerProps {
   id: number;
   name: string;
   score: number;
@@ -104,17 +104,17 @@ export type WinnerPlayerProps = {
   throwCount?: number;
   scoreAverage?: number;
   roundCount?: number;
-};
+}
 
-export type FinishedGameProps = {
+export interface FinishedGameProps {
   id: number;
   winnerRounds: number;
   winnerName: string | null;
   playersCount: number;
   date: string | null;
-};
+}
 
-export type GameDataProps = {
+export interface GameDataProps {
   items: FinishedGameProps[];
   total: number;
-};
+}
