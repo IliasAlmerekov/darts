@@ -56,12 +56,12 @@ afterEach(() => {
 });
 
 describe("parseRoomStreamEventData (room feature)", () => {
-  it("parses valid json payload", () => {
+  it("should parse payload when JSON is valid", () => {
     const parsed = parseRoomStreamEventData('{"type":"throw","value":20}');
     expect(parsed).toEqual({ type: "throw", value: 20 });
   });
 
-  it("returns null for invalid json payload", () => {
+  it("should return null when JSON is invalid", () => {
     const parsed = parseRoomStreamEventData("not-json");
     expect(parsed).toBeNull();
   });
@@ -187,7 +187,7 @@ describe("useRoomStream — event delivery", () => {
       data: { score: 20 },
     });
     expect(warnSpy).toHaveBeenCalledOnce();
-    expect(warnSpy).toHaveBeenCalledWith("room-stream.invalid-payload", {
+    expect(warnSpy).toHaveBeenCalledWith("room_stream_invalid_payload", {
       context: { type: "throw", raw: "not-json" },
       error: expect.any(SyntaxError),
     });
