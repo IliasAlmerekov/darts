@@ -76,7 +76,6 @@ export function setGameSettings(settings: GameSettingsResponse, expectedGameId?:
       tripleOut: settings.tripleOut,
     },
   });
-  errorAtom.set(null);
 }
 
 /**
@@ -98,7 +97,6 @@ export function setGameScoreboardDelta(
   const nextGameData = applyGameScoreboardDelta(currentGameData, scoreboardDelta);
 
   gameDataAtom.set(nextGameData);
-  errorAtom.set(null);
 }
 
 /**

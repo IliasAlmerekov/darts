@@ -24,8 +24,28 @@ const DEFAULT_PRE_CREATE_GAME_SETTINGS: CreateGameSettingsPayload = {
   tripleOut: false,
 };
 
+function isSessionStorageSecurityError(error: unknown): boolean {
+  return error instanceof DOMException && error.name === "SecurityError";
+}
+
 function canUseSessionStorage(): boolean {
-  return typeof window !== "undefined" && typeof window.sessionStorage !== "undefined";
+  if (typeof window === "undefined") {
+    return false;
+  }
+
+  try {
+    void window.sessionStorage;
+    return true;
+  } catch (error) {
+    if (isSessionStorageSecurityError(error)) {
+      return false;
+    }
+
+    clientLogger.error("game_session_check_session_storage_failed", {
+      error,
+    });
+    return false;
+  }
 }
 
 function isValidInvitation(value: unknown): value is Invitation {
@@ -53,7 +73,7 @@ function getStoredGameId(): number | null {
       return Number.isFinite(parsed) ? parsed : null;
     }
   } catch (error) {
-    clientLogger.error("game-session.read-game-id.failed", {
+    clientLogger.error("game_session_read_game_id_failed", {
       context: { storageKey: GAME_ID_STORAGE_KEY },
       error,
     });
@@ -73,7 +93,7 @@ function setStoredGameId(gameId: number | null): void {
       window.sessionStorage.removeItem(GAME_ID_STORAGE_KEY);
     }
   } catch (error) {
-    clientLogger.error("game-session.persist-game-id.failed", {
+    clientLogger.error("game_session_persist_game_id_failed", {
       context: { gameId, storageKey: GAME_ID_STORAGE_KEY },
       error,
     });
@@ -94,7 +114,7 @@ function getStoredInvitation(): Invitation | null {
     const parsed: unknown = JSON.parse(stored);
     return isValidInvitation(parsed) ? parsed : null;
   } catch (error) {
-    clientLogger.error("game-session.read-invitation.failed", {
+    clientLogger.error("game_session_read_invitation_failed", {
       context: { storageKey: INVITATION_STORAGE_KEY },
       error,
     });
@@ -114,11 +134,10 @@ function setStoredInvitation(invitation: Invitation | null): void {
       window.sessionStorage.removeItem(INVITATION_STORAGE_KEY);
     }
   } catch (error) {
-    clientLogger.error("game-session.persist-invitation.failed", {
+    clientLogger.error("game_session_persist_invitation_failed", {
       context: { storageKey: INVITATION_STORAGE_KEY, invitation },
       error,
     });
-    return;
   }
 }
 
@@ -149,7 +168,7 @@ function getStoredPreCreateGameSettings(): CreateGameSettingsPayload {
     const parsed: unknown = JSON.parse(stored);
     return isValidPreCreateGameSettings(parsed) ? parsed : DEFAULT_PRE_CREATE_GAME_SETTINGS;
   } catch (error) {
-    clientLogger.error("game-session.read-pre-create-settings.failed", {
+    clientLogger.error("game_session_read_pre_create_settings_failed", {
       context: { storageKey: PRE_CREATE_SETTINGS_STORAGE_KEY },
       error,
     });
@@ -165,7 +184,7 @@ function setStoredPreCreateGameSettings(settings: CreateGameSettingsPayload): vo
   try {
     window.sessionStorage.setItem(PRE_CREATE_SETTINGS_STORAGE_KEY, JSON.stringify(settings));
   } catch (error) {
-    clientLogger.error("game-session.persist-pre-create-settings.failed", {
+    clientLogger.error("game_session_persist_pre_create_settings_failed", {
       context: { storageKey: PRE_CREATE_SETTINGS_STORAGE_KEY, settings },
       error,
     });
@@ -188,8 +207,6 @@ export const $lastFinishedGameId = computed(
 export const $preCreateGameSettings: ReadableAtom<CreateGameSettingsPayload> =
   preCreateGameSettingsAtom;
 
-export const testOnlyCurrentGameIdAtom = currentGameIdAtom;
-
 /**
  * Sets the current game id and persists it in session storage.
  */
@@ -210,14 +227,15 @@ export function setInvitation(invitation: Invitation | null): void {
   const invitationUnchanged =
     current?.gameId === invitation?.gameId &&
     current?.invitationLink === invitation?.invitationLink;
+  const invitationGameId = invitation?.gameId;
 
   if (!invitationUnchanged) {
     invitationAtom.set(invitation);
     setStoredInvitation(invitation);
   }
 
-  if (invitation?.gameId) {
-    setCurrentGameId(invitation.gameId);
+  if (invitationGameId !== undefined) {
+    setCurrentGameId(invitationGameId);
   }
 }
 

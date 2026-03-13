@@ -52,14 +52,14 @@ export function useRoomStream(gameId: number | null): UseRoomStreamResult {
     // They do not capture `gameId`; reconnects are driven by the URL memo below.
     return ROOM_STREAM_EVENT_TYPES.map((type) => ({
       event: type,
-      handler: (streamEvent: MessageEvent<string>) => {
+      handler: (streamEvent: MessageEvent<string>): void => {
         const { data: parsedData, error: parseError } = parseRoomStreamEventPayload(
           streamEvent.data,
         );
 
         if (parsedData === null || parseError !== null) {
           clientLogger.warn("room_stream_invalid_payload", {
-            context: { type, raw: streamEvent.data },
+            raw: streamEvent.data,
             error: parseError,
           });
           return;

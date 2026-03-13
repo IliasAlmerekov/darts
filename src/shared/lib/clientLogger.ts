@@ -1,1 +1,1 @@
-export { REDACTED_VALUE, clientLogger } from "../services/browser/clientLogger";
+export { REDACTED_VALUE, clientLogger, type ClientLogger } from "../services/browser/clientLogger";

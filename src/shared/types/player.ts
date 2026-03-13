@@ -30,20 +30,20 @@ export interface UIPlayer {
 
 // --- Player props (merged from ui-props.ts) ---
 
-export type PlayerProps = {
+export interface PlayerProps {
   gamesPlayed?: number;
   scoreAverage?: number;
   id: number;
   name: string;
   playerId?: number;
-};
+}
 
-export type PlayerDataProps = {
+export interface PlayerDataProps {
   items: PlayerProps[];
   total: number;
-};
+}
 
-export type UserProps = {
+export interface UserProps {
   id: number;
   name: string;
-};
+}

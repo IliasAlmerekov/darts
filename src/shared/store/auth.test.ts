@@ -1,5 +1,6 @@
 // @vitest-environment node
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import type { AuthenticatedUser } from "@/shared/api/auth";
 import {
   $authChecked,
   $authError,
@@ -12,18 +13,23 @@ import {
   setAuthFailed,
 } from "./auth";
 
+function buildAuthenticatedUser(overrides: Partial<AuthenticatedUser> = {}): AuthenticatedUser {
+  return {
+    success: true,
+    roles: ["ROLE_USER"],
+    id: 5,
+    redirect: "/start",
+    ...overrides,
+  };
+}
+
 describe("auth store", () => {
   beforeEach(() => {
     resetAuthStore();
   });
 
-  it("should cache authenticated user and mark auth as checked", () => {
-    setAuthenticatedUser({
-      success: true,
-      roles: ["ROLE_USER"],
-      id: 5,
-      redirect: "/start",
-    });
+  it("should cache authenticated user and mark auth as checked when authentication succeeds", () => {
+    setAuthenticatedUser(buildAuthenticatedUser());
 
     expect($user.get()).toMatchObject({ id: 5 });
     expect($authChecked.get()).toBe(true);
@@ -31,12 +37,7 @@ describe("auth store", () => {
   });
 
   it("should clear the cached user when auth fails", () => {
-    setAuthenticatedUser({
-      success: true,
-      roles: ["ROLE_USER"],
-      id: 5,
-      redirect: "/start",
-    });
+    setAuthenticatedUser(buildAuthenticatedUser());
 
     setAuthFailed("Network request failed");
 
@@ -45,20 +46,10 @@ describe("auth store", () => {
     expect($authError.get()).toBe("Network request failed");
   });
 
-  it("should clear auth error without logging out the current user", () => {
-    setAuthenticatedUser({
-      success: true,
-      roles: ["ROLE_USER"],
-      id: 9,
-      redirect: "/start",
-    });
+  it("should clear auth error without logging out the current user when a user is already cached", () => {
+    setAuthenticatedUser(buildAuthenticatedUser({ id: 9 }));
     setAuthFailed("Network request failed");
-    setAuthenticatedUser({
-      success: true,
-      roles: ["ROLE_USER"],
-      id: 9,
-      redirect: "/start",
-    });
+    setAuthenticatedUser(buildAuthenticatedUser({ id: 9 }));
 
     clearAuthError();
 
@@ -67,13 +58,8 @@ describe("auth store", () => {
     expect($authChecked.get()).toBe(true);
   });
 
-  it("should invalidate cached auth state", () => {
-    setAuthenticatedUser({
-      success: true,
-      roles: ["ROLE_USER"],
-      id: 5,
-      redirect: "/start",
-    });
+  it("should invalidate cached auth state when auth invalidation is requested", () => {
+    setAuthenticatedUser(buildAuthenticatedUser());
 
     invalidateAuthState();
 
@@ -82,7 +68,7 @@ describe("auth store", () => {
     expect($authError.get()).toBeNull();
   });
 
-  it("should notify auth invalidation listeners and allow unsubscribe", () => {
+  it("should notify auth invalidation listeners and allow unsubscribe when invalidation fires multiple times", () => {
     const listener = vi.fn();
     const unsubscribe = registerAuthInvalidationListener(listener);
 
@@ -138,7 +124,7 @@ describe("auth store", () => {
     expect(surviving).toHaveBeenCalledTimes(1);
   });
 
-  it("should not call listener after resetAuthStore clears it", () => {
+  it("should not call listener when resetAuthStore clears it before any invalidation", () => {
     const listener = vi.fn();
     registerAuthInvalidationListener(listener);
 

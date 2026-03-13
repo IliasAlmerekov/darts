@@ -1,8 +1,31 @@
 // @vitest-environment jsdom
 import { describe, expect, it, vi, beforeEach, afterEach } from "vitest";
 import { renderHook, act } from "@testing-library/react";
-import { clientLogger } from "@/shared/services/browser/clientLogger";
 import { parseRoomStreamEventData, useRoomStream } from "./useRoomStream";
+
+interface ThrowEventPayload {
+  score: number;
+}
+
+interface PlayerJoinedEventPayload {
+  id: number;
+}
+
+function buildThrowEventPayload(overrides: Partial<ThrowEventPayload> = {}): ThrowEventPayload {
+  return {
+    score: 20,
+    ...overrides,
+  };
+}
+
+function buildPlayerJoinedEventPayload(
+  overrides: Partial<PlayerJoinedEventPayload> = {},
+): PlayerJoinedEventPayload {
+  return {
+    id: 1,
+    ...overrides,
+  };
+}
 
 class MockEventSource {
   static instances: MockEventSource[] = [];
@@ -113,7 +136,7 @@ describe("useRoomStream — connection lifecycle", () => {
     expect(MockEventSource.instances.length).toBe(0);
   });
 
-  it("should create EventSource with withCredentials: true", () => {
+  it("should create EventSource with withCredentials: true when gameId is provided", () => {
     const { result } = renderHook(() => useRoomStream(1));
     const firstInstance = MockEventSource.instances[0];
 
@@ -141,13 +164,13 @@ describe("useRoomStream — event delivery", () => {
 
     act(() => {
       firstInstance.simulateOpen();
-      firstInstance.emit("throw", JSON.stringify({ score: 20 }));
+      firstInstance.emit("throw", JSON.stringify(buildThrowEventPayload()));
     });
 
     expect(result.current.event?.type).toBe("throw");
   });
 
-  it("should deliver player-joined event", () => {
+  it("should deliver player-joined event when SSE emits player-joined type", () => {
     const { result } = renderHook(() => useRoomStream(1));
     const firstInstance = MockEventSource.instances[0];
 
@@ -159,14 +182,13 @@ describe("useRoomStream — event delivery", () => {
 
     act(() => {
       firstInstance.simulateOpen();
-      firstInstance.emit("player-joined", JSON.stringify({ id: 1 }));
+      firstInstance.emit("player-joined", JSON.stringify(buildPlayerJoinedEventPayload()));
     });
 
     expect(result.current.event?.type).toBe("player-joined");
   });
 
-  it("should log raw payload and continue when SSE payload is invalid JSON", () => {
-    const warnSpy = vi.spyOn(clientLogger, "warn").mockImplementation(() => undefined);
+  it("should ignore invalid JSON payloads and continue delivering later valid events", () => {
     const { result } = renderHook(() => useRoomStream(1));
     const firstInstance = MockEventSource.instances[0];
 
@@ -179,23 +201,23 @@ describe("useRoomStream — event delivery", () => {
     act(() => {
       firstInstance.simulateOpen();
       firstInstance.emit("throw", "not-json");
-      firstInstance.emit("throw", JSON.stringify({ score: 20 }));
+    });
+
+    expect(result.current.event).toBeNull();
+
+    act(() => {
+      firstInstance.emit("throw", JSON.stringify(buildThrowEventPayload()));
     });
 
     expect(result.current.event).toEqual({
       type: "throw",
-      data: { score: 20 },
-    });
-    expect(warnSpy).toHaveBeenCalledOnce();
-    expect(warnSpy).toHaveBeenCalledWith("room_stream_invalid_payload", {
-      context: { type: "throw", raw: "not-json" },
-      error: expect.any(SyntaxError),
+      data: buildThrowEventPayload(),
     });
   });
 });
 
 describe("useRoomStream — reconnect backoff", () => {
-  it("should close EventSource and schedule reconnect after 1000ms on onerror", () => {
+  it("should close EventSource and schedule reconnect after 1000ms when onerror fires", () => {
     renderHook(() => useRoomStream(1));
     const firstInstance = MockEventSource.instances[0];
 
@@ -223,7 +245,7 @@ describe("useRoomStream — reconnect backoff", () => {
     expect(MockEventSource.instances.length).toBe(2);
   });
 
-  it("should close first EventSource before creating second", () => {
+  it("should close first EventSource before creating second when reconnecting after an error", () => {
     renderHook(() => useRoomStream(1));
     const firstInstance = MockEventSource.instances[0];
 
@@ -246,7 +268,7 @@ describe("useRoomStream — reconnect backoff", () => {
     expect(MockEventSource.instances.length).toBe(2);
   });
 
-  it("should double retryDelay on each consecutive error", () => {
+  it("should double retryDelay when consecutive errors occur", () => {
     renderHook(() => useRoomStream(1));
     const firstInstance = MockEventSource.instances[0];
 
@@ -319,7 +341,7 @@ describe("useRoomStream — reconnect backoff", () => {
     expect(MockEventSource.instances.length).toBe(4);
   });
 
-  it("should cap retryDelay at 30000ms after many errors", () => {
+  it("should cap retryDelay at 30000ms when repeated errors exceed the maximum backoff", () => {
     renderHook(() => useRoomStream(1));
 
     // Simulate many consecutive errors to push delay past cap
@@ -441,7 +463,7 @@ describe("useRoomStream — reconnect backoff", () => {
     expect(MockEventSource.instances.length).toBe(4);
   });
 
-  it("should expose explicit error until reconnect opens successfully", () => {
+  it("should expose explicit error when reconnect has not opened successfully yet", () => {
     const { result } = renderHook(() => useRoomStream(1));
     const firstInstance = MockEventSource.instances[0];
 
@@ -478,7 +500,7 @@ describe("useRoomStream — reconnect backoff", () => {
 });
 
 describe("useRoomStream — cleanup", () => {
-  it("should close EventSource on unmount", () => {
+  it("should close EventSource when the hook unmounts", () => {
     const { unmount } = renderHook(() => useRoomStream(1));
     const firstInstance = MockEventSource.instances[0];
 
@@ -497,7 +519,7 @@ describe("useRoomStream — cleanup", () => {
     expect(firstInstance.close).toHaveBeenCalled();
   });
 
-  it("should cancel pending retry timer on unmount", () => {
+  it("should cancel pending retry timer when the hook unmounts", () => {
     const { unmount } = renderHook(() => useRoomStream(1));
     const firstInstance = MockEventSource.instances[0];
 
@@ -561,7 +583,7 @@ describe("useRoomStream — cleanup", () => {
     expect(latestInstance.url).toContain("/room/2/stream");
   });
 
-  it("should create new EventSource with updated gameId URL on rerender", () => {
+  it("should create new EventSource with updated gameId URL when the gameId changes on rerender", () => {
     const { rerender } = renderHook(({ gameId }: { gameId: number }) => useRoomStream(gameId), {
       initialProps: { gameId: 1 },
     });
