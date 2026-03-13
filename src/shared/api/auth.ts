@@ -1,5 +1,6 @@
 import { apiClient, ApiValidationError } from "./client";
 import { ApiError, UnauthorizedError } from "./errors";
+import { isFiniteNumber, isRecord } from "@/shared/lib/guards";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -33,7 +34,6 @@ interface CsrfTokensResponse {
 }
 
 export type Role = "ROLE_USER" | "ROLE_ADMIN" | "ROLE_PLAYER";
-export type UserRole = Role;
 
 export interface AuthenticatedUser {
   success: boolean;
@@ -51,17 +51,9 @@ const REGISTER_ENDPOINT = "/register";
 const CSRF_ENDPOINT = "/csrf";
 const AUTH_CHECK_TIMEOUT_MS = 8000;
 
-type GetAuthenticatedUserOptions = {
+interface GetAuthenticatedUserOptions {
   signal?: AbortSignal;
   timeoutMs?: number;
-};
-
-function isRecord(data: unknown): data is Record<string, unknown> {
-  return typeof data === "object" && data !== null;
-}
-
-function isFiniteNumber(value: unknown): value is number {
-  return typeof value === "number" && Number.isFinite(value);
 }
 
 function isNullableString(value: unknown): value is string | null {
@@ -70,7 +62,7 @@ function isNullableString(value: unknown): value is string | null {
 
 const VALID_ROLES: ReadonlySet<string> = new Set(["ROLE_USER", "ROLE_ADMIN", "ROLE_PLAYER"]);
 
-export function isRoleArray(value: unknown): value is UserRole[] {
+export function isRoleArray(value: unknown): value is Role[] {
   return Array.isArray(value) && value.every((r) => VALID_ROLES.has(r));
 }
 
