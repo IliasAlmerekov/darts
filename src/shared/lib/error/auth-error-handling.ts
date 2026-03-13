@@ -1,4 +1,5 @@
 import { ApiError, NetworkError, UnauthorizedError } from "@/shared/api";
+import { isRecord } from "@/lib/guards/guards";
 
 type AuthFlow = "login" | "registration";
 
@@ -18,20 +19,16 @@ const AUTH_ERROR_MESSAGES = {
   network: "Network error. Please check your connection and try again.",
 } as const;
 
-type ApiErrorPayload = {
+interface ApiErrorPayload {
   error?: unknown;
   message?: unknown;
   errors?: unknown;
-};
+}
 
-type AuthErrorInput = {
+interface AuthErrorInput {
   flow: AuthFlow;
   error?: unknown;
   rawMessage?: string | null | undefined;
-};
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === "object" && value !== null;
 }
 
 function normalizeText(value: string): string {
@@ -43,7 +40,15 @@ function includesAny(text: string, patterns: readonly string[]): boolean {
 }
 
 function isApiErrorPayload(value: unknown): value is ApiErrorPayload {
-  return isRecord(value);
+  if (!isRecord(value)) {
+    return false;
+  }
+
+  return (
+    ("error" in value && value.error !== undefined) ||
+    ("message" in value && value.message !== undefined) ||
+    ("errors" in value && value.errors !== undefined)
+  );
 }
 
 function toApiErrorPayload(error: unknown): ApiErrorPayload | null {

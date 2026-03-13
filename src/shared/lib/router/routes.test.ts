@@ -19,6 +19,10 @@ describe("ROUTES", () => {
     expect(ROUTES.start(42)).toBe("/start/42");
   });
 
+  it("should return start path with zero id", () => {
+    expect(ROUTES.start(0)).toBe("/start/0");
+  });
+
   it("should return game path with id", () => {
     expect(ROUTES.game(10)).toBe("/game/10");
   });
@@ -41,6 +45,10 @@ describe("ROUTES", () => {
 
   it("should return settings path with id", () => {
     expect(ROUTES.settings(5)).toBe("/settings/5");
+  });
+
+  it("should return settings path with zero id", () => {
+    expect(ROUTES.settings(0)).toBe("/settings/0");
   });
 
   it("should return statistics path", () => {

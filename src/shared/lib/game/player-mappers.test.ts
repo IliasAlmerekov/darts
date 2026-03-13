@@ -21,7 +21,7 @@ function buildPlayer(
 }
 
 describe("player-mappers", () => {
-  it("maps backend players to UI rounds including current round", () => {
+  it("should map backend players to UI rounds including current round when round data is present", () => {
     const players = [
       buildPlayer({
         id: 10,
@@ -58,7 +58,7 @@ describe("player-mappers", () => {
     });
   });
 
-  it("returns finished players sorted by position with null positions at the end", () => {
+  it("should return finished players sorted by position with null positions at the end when positions are mixed", () => {
     const mappedPlayers = mapPlayersToUI([
       buildPlayer({ id: 1, score: 0, position: 3 }),
       buildPlayer({ id: 2, score: 0, position: null }),
@@ -71,7 +71,7 @@ describe("player-mappers", () => {
     expect(finished.map((p) => p.id)).toEqual([3, 1, 2]);
   });
 
-  it("uses backend round numbers to align throw display for current round", () => {
+  it("should use backend round numbers to align throw display for current round when rounds are sparse", () => {
     const players = [
       buildPlayer({
         id: 22,

@@ -54,7 +54,7 @@ describe("useAuthenticatedUser", () => {
     vi.mocked(clientLogger.error).mockReset();
   });
 
-  it("passes a live signal and timeoutMs 5000 when starting auth check", async () => {
+  it("should pass a live signal and timeoutMs 5000 when starting auth check", async () => {
     getAuthenticatedUserMock.mockResolvedValue(null);
     const setTimeoutSpy = vi.spyOn(window, "setTimeout");
     const { result } = renderHook(() => useAuthenticatedUser());
@@ -82,7 +82,7 @@ describe("useAuthenticatedUser", () => {
     });
   });
 
-  it("aborts request on unmount and skips late store updates", async () => {
+  it("should abort the request and skip late store updates when the hook unmounts", async () => {
     const deferred = createDeferredAuth();
     let capturedSignal: AbortSignal | undefined;
 
@@ -119,7 +119,7 @@ describe("useAuthenticatedUser", () => {
     expect(setCurrentGameIdMock).not.toHaveBeenCalled();
   });
 
-  it("marks auth as checked and unauthenticated when the auth bootstrap times out", async () => {
+  it("should mark auth as checked and unauthenticated when the auth bootstrap times out", async () => {
     const existingUser: AuthenticatedUser = {
       success: true,
       roles: ["ROLE_ADMIN"],
@@ -150,7 +150,7 @@ describe("useAuthenticatedUser", () => {
     expect($authChecked.get()).toBe(true);
   });
 
-  it("marks auth as unauthenticated when the auth API resolves null", async () => {
+  it("should mark auth as unauthenticated when the auth API resolves null", async () => {
     getAuthenticatedUserMock.mockResolvedValue(null);
 
     const { result } = renderHook(() => useAuthenticatedUser());
@@ -163,7 +163,7 @@ describe("useAuthenticatedUser", () => {
     expect(result.current.error).toBeNull();
   });
 
-  it("logs unexpected bootstrap errors and exposes the auth error state", async () => {
+  it("should log unexpected bootstrap errors and expose the auth error state when the request fails unexpectedly", async () => {
     const error = new Error("network failed");
     getAuthenticatedUserMock.mockRejectedValue(error);
 
@@ -181,7 +181,7 @@ describe("useAuthenticatedUser", () => {
     });
   });
 
-  it("reuses cached auth result after the first successful check", async () => {
+  it("should reuse the cached auth result when the first auth check already succeeded", async () => {
     getAuthenticatedUserMock.mockResolvedValue({
       success: true,
       roles: ["ROLE_ADMIN"],

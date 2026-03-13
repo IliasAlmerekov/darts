@@ -56,7 +56,7 @@ describe("useEventSource", () => {
     vi.useRealTimers();
   });
 
-  it("does not create EventSource when url is null", () => {
+  it("should not create EventSource when url is null", () => {
     const listeners = [{ event: "message", handler: vi.fn() }] as const;
     const { result } = renderHook(() => useEventSource(null, listeners));
 
@@ -64,7 +64,7 @@ describe("useEventSource", () => {
     expect(result.current).toEqual({ error: null, isConnected: false });
   });
 
-  it("subscribes with default credentials and forwards matching events", () => {
+  it("should subscribe with default credentials and forward matching events when initialized", () => {
     const handler = vi.fn();
     const listeners = [{ event: "throw", handler }] as const;
     renderHook(() => useEventSource("/stream", listeners));
@@ -77,7 +77,7 @@ describe("useEventSource", () => {
     expect(handler).toHaveBeenCalledTimes(1);
   });
 
-  it("exposes explicit connection error and reconnects after 1000ms", () => {
+  it("should expose an explicit connection error and reconnect after 1000ms when the stream fails", () => {
     const listeners = [{ event: "throw", handler: vi.fn() }] as const;
     const { result } = renderHook(() =>
       useEventSource("/stream", listeners, { withCredentials: true }),
@@ -110,7 +110,7 @@ describe("useEventSource", () => {
     expect(MockEventSource.instances).toHaveLength(2);
   });
 
-  it("resets the explicit error after a successful reconnect", () => {
+  it("should reset the explicit error when reconnect succeeds", () => {
     const listeners = [{ event: "throw", handler: vi.fn() }] as const;
     const { result } = renderHook(() => useEventSource("/stream", listeners));
 
@@ -128,7 +128,7 @@ describe("useEventSource", () => {
     expect(result.current).toEqual({ error: null, isConnected: true });
   });
 
-  it("uses explicit credentials option and cleans up listeners on unmount", () => {
+  it("should use the explicit credentials option and clean up listeners when unmounted", () => {
     const handler = vi.fn();
     const listeners = [{ event: "player-joined", handler }] as const;
     const { unmount } = renderHook(() =>
@@ -142,7 +142,7 @@ describe("useEventSource", () => {
     expect(MockEventSource.instances[0]?.close).toHaveBeenCalledTimes(1);
   });
 
-  it("cancels pending reconnect on unmount", () => {
+  it("should cancel a pending reconnect when unmounted", () => {
     const listeners = [{ event: "throw", handler: vi.fn() }] as const;
     const { unmount } = renderHook(() => useEventSource("/stream", listeners));
 

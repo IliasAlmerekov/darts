@@ -1,7 +1,7 @@
 export const ROUTES = {
   login: "/",
   register: "/register",
-  start: (id?: number) => (id ? `/start/${id}` : "/start"),
+  start: (id?: number) => (id !== undefined ? `/start/${id}` : "/start"),
   game: (id: number) => `/game/${id}`,
   gamePattern: "/game/:id",
   summary: (id: number) => `/summary/${id}`,
@@ -9,7 +9,7 @@ export const ROUTES = {
   details: (id: number) => `/details/${id}`,
   detailsPattern: "/details/:id",
   gamesOverview: "/gamesoverview",
-  settings: (id?: number) => (id ? `/settings/${id}` : "/settings"),
+  settings: (id?: number) => (id !== undefined ? `/settings/${id}` : "/settings"),
   statistics: "/statistics",
   joined: "/joined",
   playerProfile: "/playerprofile",

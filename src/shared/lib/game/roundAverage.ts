@@ -1,5 +1,7 @@
 import type { WinnerPlayerProps } from "@/types";
 
+export const DEFAULT_ROUND_AVERAGE_START_SCORE = 301;
+
 export function getCompletedRounds(player: WinnerPlayerProps): number {
   if (typeof player.roundCount === "number") {
     return Math.max(player.roundCount, 0);
@@ -15,7 +17,10 @@ export function getCompletedRounds(player: WinnerPlayerProps): number {
     : player.rounds.length;
 }
 
-export function formatRoundAverage(player: WinnerPlayerProps, startScore = 301): string {
+export function formatRoundAverage(
+  player: WinnerPlayerProps,
+  startScore = DEFAULT_ROUND_AVERAGE_START_SCORE,
+): string {
   const completedRounds = getCompletedRounds(player);
 
   if (completedRounds === 0) {

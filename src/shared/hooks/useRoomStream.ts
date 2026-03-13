@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import { API_BASE_URL } from "@/shared/api";
-import { clientLogger } from "@/shared/services/browser/clientLogger";
+import { clientLogger } from "@/lib/clientLogger";
 import type { RoomStreamEvent } from "@/types";
 import { useEventSource, type EventSourceListener } from "./useEventSource";
 
@@ -21,7 +21,7 @@ interface UseRoomStreamResult {
 }
 
 interface ParsedRoomStreamEventDataResult {
-  data: unknown | null;
+  data: unknown;
   error: Error | null;
 }
 
@@ -36,7 +36,7 @@ function parseRoomStreamEventPayload(rawData: string): ParsedRoomStreamEventData
   }
 }
 
-export function parseRoomStreamEventData(rawData: string): unknown | null {
+export function parseRoomStreamEventData(rawData: string): unknown {
   return parseRoomStreamEventPayload(rawData).data;
 }
 
@@ -58,7 +58,7 @@ export function useRoomStream(gameId: number | null): UseRoomStreamResult {
         );
 
         if (parsedData === null || parseError !== null) {
-          clientLogger.warn("room-stream.invalid-payload", {
+          clientLogger.warn("room_stream_invalid_payload", {
             context: { type, raw: streamEvent.data },
             error: parseError,
           });
