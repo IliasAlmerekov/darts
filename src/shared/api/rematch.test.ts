@@ -1,7 +1,4 @@
 // @vitest-environment node
-import { beforeEach, describe, expect, it, vi } from "vitest";
-import { createRematch, createRematchGame, startRematch } from "./game";
-
 vi.mock("@/shared/api/client", () => ({
   apiClient: {
     get: vi.fn(),
@@ -12,6 +9,9 @@ vi.mock("@/shared/api/client", () => ({
     request: vi.fn(),
   },
 }));
+
+import { beforeEach, describe, expect, it, vi } from "vitest";
+import { createRematch, createRematchGame, startRematch } from "./game";
 
 import { apiClient } from "./client";
 

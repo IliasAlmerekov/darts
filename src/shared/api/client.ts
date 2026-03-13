@@ -35,6 +35,10 @@ export class ApiValidationError extends Error {
 }
 
 export function setUnauthorizedHandler(handler: AuthRedirectHandler): void {
+  if (onUnauthorized !== null) {
+    throw new Error("Unauthorized handler is already registered");
+  }
+
   onUnauthorized = handler;
 }
 

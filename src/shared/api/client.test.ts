@@ -55,6 +55,14 @@ describe("apiClient unauthorized handling", () => {
     expect(unauthorizedHandler).toHaveBeenCalledTimes(1);
   });
 
+  it("should throw when registering the unauthorized handler twice without clearing", () => {
+    setUnauthorizedHandler(vi.fn());
+
+    expect(() => setUnauthorizedHandler(vi.fn())).toThrowError(
+      "Unauthorized handler is already registered",
+    );
+  });
+
   it("skips unauthorized handler when skipAuthRedirect is enabled", async () => {
     const unauthorizedHandler = vi.fn();
     setUnauthorizedHandler(unauthorizedHandler);
