@@ -5,10 +5,14 @@ type ClientLogLevel = "warn" | "error";
 
 type ClientLogSink = Pick<Console, ClientLogLevel>;
 
-type ClientLogDetails = {
-  context?: unknown;
+type ClientLogDetails = Record<string, unknown> & {
   error?: unknown;
 };
+
+export interface ClientLogger {
+  warn(event: string, details?: ClientLogDetails): void;
+  error(event: string, details?: ClientLogDetails): void;
+}
 
 type SerializedClientLogError = {
   name: string;
@@ -74,11 +78,11 @@ function emitClientLog(
   event: string,
   details?: ClientLogDetails,
 ): void {
+  const { error, ...metadata } = details ?? {};
+  const sanitizedMetadata = sanitizeClientLogPayload(metadata);
   const payload = {
-    ...(details?.context !== undefined
-      ? { context: sanitizeClientLogPayload(details.context) }
-      : {}),
-    ...(details?.error !== undefined ? { error: serializeClientLogError(details.error) } : {}),
+    ...(isRecord(sanitizedMetadata) ? sanitizedMetadata : {}),
+    ...(error !== undefined ? { error: serializeClientLogError(error) } : {}),
   };
 
   if (Object.keys(payload).length === 0) {
@@ -89,7 +93,7 @@ function emitClientLog(
   sink[level](`[client:${level}] ${event}`, payload);
 }
 
-export function createClientLogger(sink: ClientLogSink = console) {
+export function createClientLogger(sink: ClientLogSink = console): ClientLogger {
   return {
     warn: (event: string, details?: ClientLogDetails): void => {
       emitClientLog(sink, "warn", event, details);

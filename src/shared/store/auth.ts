@@ -1,11 +1,7 @@
-import { atom } from "nanostores";
 import type { ReadableAtom } from "nanostores";
 import type { AuthenticatedUser } from "@/shared/api/auth";
 import { clientLogger } from "@/shared/services/browser/clientLogger";
-
-const userAtom = atom<AuthenticatedUser | null>(null);
-const authCheckedAtom = atom<boolean>(false);
-const authErrorAtom = atom<string | null>(null);
+import { authCheckedAtom, authErrorAtom, userAtom } from "./auth.state";
 
 export const $user: ReadableAtom<AuthenticatedUser | null> = userAtom;
 export const $authChecked: ReadableAtom<boolean> = authCheckedAtom;
@@ -80,7 +76,3 @@ export function resetAuthStore(): void {
   authCheckedAtom.set(false);
   authInvalidationListeners.clear();
 }
-
-export const testOnlySetUser = (v: AuthenticatedUser | null): void => userAtom.set(v);
-export const testOnlySetAuthChecked = (v: boolean): void => authCheckedAtom.set(v);
-export const testOnlySetAuthError = (v: string | null): void => authErrorAtom.set(v);

@@ -16,47 +16,76 @@ import {
 import * as gameStateNormalizer from "../lib/game/gameStateNormalizer";
 import type { GameSettingsResponse, GameThrowsResponse } from "@/types";
 
-const mockGameData: GameThrowsResponse = {
-  type: "full-state",
-  id: 1,
-  activePlayerId: 1,
-  currentRound: 3,
-  currentThrowCount: 2,
-  status: "started",
-  winnerId: null,
-  settings: {
-    startScore: 501,
-    doubleOut: true,
-    tripleOut: false,
-  },
-  players: [
-    {
-      id: 1,
-      name: "Alice",
-      score: 301,
-      isActive: true,
-      position: 0,
-      isBust: false,
-      throwsInCurrentRound: 2,
-      roundHistory: [],
-      currentRoundThrows: [],
+function buildGamePlayer(
+  overrides: Partial<GameThrowsResponse["players"][number]> = {},
+): GameThrowsResponse["players"][number] {
+  return {
+    id: 1,
+    name: "Alice",
+    score: 301,
+    isActive: true,
+    position: 0,
+    isBust: false,
+    throwsInCurrentRound: 2,
+    roundHistory: [],
+    currentRoundThrows: [],
+    ...overrides,
+  };
+}
+
+function buildGameData(overrides: Partial<GameThrowsResponse> = {}): GameThrowsResponse {
+  return {
+    type: "full-state",
+    id: 1,
+    activePlayerId: 1,
+    currentRound: 3,
+    currentThrowCount: 2,
+    status: "started",
+    winnerId: null,
+    settings: {
+      startScore: 501,
+      doubleOut: true,
+      tripleOut: false,
     },
-    {
-      id: 2,
-      name: "Bob",
-      score: 401,
-      isActive: false,
-      position: 1,
-      isBust: false,
-      throwsInCurrentRound: 0,
-      roundHistory: [],
-      currentRoundThrows: [],
-    },
-  ],
-};
+    players: [
+      buildGamePlayer(),
+      buildGamePlayer({
+        id: 2,
+        name: "Bob",
+        score: 401,
+        isActive: false,
+        position: 1,
+        throwsInCurrentRound: 0,
+      }),
+    ],
+    ...overrides,
+  };
+}
+
+const mockGameData = buildGameData();
 
 function makeGameData(overrides?: Partial<GameThrowsResponse>): GameThrowsResponse {
-  return { ...mockGameData, ...overrides };
+  return buildGameData(overrides);
+}
+
+function getMockPlayer(index: number): GameThrowsResponse["players"][number] {
+  const player = mockGameData.players[index];
+
+  if (player === undefined) {
+    throw new Error(`Expected mock player at index ${index}`);
+  }
+
+  return player;
+}
+
+function getCurrentGameData(): GameThrowsResponse {
+  const gameData = $gameData.get();
+
+  if (gameData === null) {
+    throw new Error("Expected game data to be available in test");
+  }
+
+  return gameData;
 }
 
 describe("game-state store", () => {
@@ -74,13 +103,13 @@ describe("game-state store", () => {
         winnerId: null,
         players: [
           {
-            ...mockGameData.players[0]!,
+            ...getMockPlayer(0),
             score: 26,
             isActive: true,
             position: 0,
           },
           {
-            ...mockGameData.players[1]!,
+            ...getMockPlayer(1),
             score: 0,
             isActive: false,
             position: 1,
@@ -100,13 +129,13 @@ describe("game-state store", () => {
         currentThrowCount: 0,
         players: [
           {
-            ...mockGameData.players[0]!,
+            ...getMockPlayer(0),
             isActive: false,
             throwsInCurrentRound: 0,
             currentRoundThrows: [],
           },
           {
-            ...mockGameData.players[1]!,
+            ...getMockPlayer(1),
             isActive: true,
             position: null,
           },
@@ -221,13 +250,13 @@ describe("game-state store", () => {
         currentThrowCount: 2,
         players: [
           {
-            ...mockGameData.players[0]!,
+            ...getMockPlayer(0),
             score: 40,
             throwsInCurrentRound: 2,
             currentRoundThrows: [{ value: 20 }, { value: 20 }],
           },
           {
-            ...mockGameData.players[1]!,
+            ...getMockPlayer(1),
             score: 101,
             isActive: false,
           },
@@ -273,7 +302,7 @@ describe("game-state store", () => {
         winnerId: null,
         players: [
           {
-            ...mockGameData.players[0]!,
+            ...getMockPlayer(0),
             score: 60,
             isActive: false,
             position: null,
@@ -282,7 +311,7 @@ describe("game-state store", () => {
             currentRoundThrows: [{ value: 20 }, { value: 20 }],
           },
           {
-            ...mockGameData.players[1]!,
+            ...getMockPlayer(1),
             score: 101,
             isActive: true,
             position: 1,
@@ -460,9 +489,9 @@ describe("game-state store", () => {
       setGameData(makeGameData());
       normalizeSpy.mockClear();
 
-      const before = $gameData.get()!;
+      const before = getCurrentGameData();
       setGameSettings({ startScore: 301, doubleOut: false, tripleOut: true }, before.id);
-      const after = $gameData.get()!;
+      const after = getCurrentGameData();
 
       expect(after.players).toBe(before.players);
       expect(after.activePlayerId).toBe(before.activePlayerId);

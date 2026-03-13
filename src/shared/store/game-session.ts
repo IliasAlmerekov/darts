@@ -24,8 +24,28 @@ const DEFAULT_PRE_CREATE_GAME_SETTINGS: CreateGameSettingsPayload = {
   tripleOut: false,
 };
 
+function isSessionStorageSecurityError(error: unknown): boolean {
+  return error instanceof DOMException && error.name === "SecurityError";
+}
+
 function canUseSessionStorage(): boolean {
-  return typeof window !== "undefined" && typeof window.sessionStorage !== "undefined";
+  if (typeof window === "undefined") {
+    return false;
+  }
+
+  try {
+    void window.sessionStorage;
+    return true;
+  } catch (error) {
+    if (isSessionStorageSecurityError(error)) {
+      return false;
+    }
+
+    clientLogger.error("game-session.check-session-storage.failed", {
+      error,
+    });
+    return false;
+  }
 }
 
 function isValidInvitation(value: unknown): value is Invitation {
@@ -187,8 +207,6 @@ export const $lastFinishedGameId = computed(
 );
 export const $preCreateGameSettings: ReadableAtom<CreateGameSettingsPayload> =
   preCreateGameSettingsAtom;
-
-export const testOnlyCurrentGameIdAtom = currentGameIdAtom;
 
 /**
  * Sets the current game id and persists it in session storage.

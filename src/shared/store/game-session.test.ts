@@ -1,11 +1,47 @@
 // @vitest-environment jsdom
 import {
+  type FinishedGameSummarySnapshot,
   GAME_ID_STORAGE_KEY,
   INVITATION_STORAGE_KEY,
   PRE_CREATE_SETTINGS_STORAGE_KEY,
+  type Invitation,
 } from "./game-session";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { REDACTED_VALUE } from "@/shared/services/browser/clientLogger";
+
+function buildInvitation(overrides: Partial<Invitation> = {}): Invitation {
+  return {
+    gameId: 12,
+    invitationLink: "/invite/12",
+    ...overrides,
+  };
+}
+
+function buildFinishedGameSummaryEntry(
+  overrides: Partial<FinishedGameSummarySnapshot["summary"][number]> = {},
+): FinishedGameSummarySnapshot["summary"][number] {
+  return {
+    playerId: 1,
+    username: "Alice",
+    position: 1,
+    roundsPlayed: 5,
+    roundAverage: 54.2,
+    ...overrides,
+  };
+}
+
+function buildFinishedGameSummarySnapshot(
+  overrides: Partial<FinishedGameSummarySnapshot> = {},
+): FinishedGameSummarySnapshot {
+  return {
+    gameId: 88,
+    summary: [buildFinishedGameSummaryEntry()],
+    ...overrides,
+  };
+}
+
+function createSecurityError(): DOMException {
+  return new DOMException("Access is denied for this document.", "SecurityError");
+}
 
 describe("game-session store", () => {
   beforeEach(() => {
@@ -14,29 +50,24 @@ describe("game-session store", () => {
   });
 
   it("hydrates invitation from sessionStorage on module init", async () => {
-    window.sessionStorage.setItem(
-      INVITATION_STORAGE_KEY,
-      JSON.stringify({ gameId: 77, invitationLink: "/invite/77" }),
-    );
+    const invitation = buildInvitation({ gameId: 77, invitationLink: "/invite/77" });
+
+    window.sessionStorage.setItem(INVITATION_STORAGE_KEY, JSON.stringify(invitation));
     window.sessionStorage.setItem(GAME_ID_STORAGE_KEY, "77");
 
     const roomStore = await import("./game-session");
 
-    expect(roomStore.$invitation.get()).toEqual({
-      gameId: 77,
-      invitationLink: "/invite/77",
-    });
+    expect(roomStore.$invitation.get()).toEqual(invitation);
     expect(roomStore.$currentGameId.get()).toBe(77);
   });
 
   it("persists invitation and clears it on reset", async () => {
     const roomStore = await import("./game-session");
+    const invitation = buildInvitation();
 
-    roomStore.setInvitation({ gameId: 12, invitationLink: "/invite/12" });
+    roomStore.setInvitation(invitation);
 
-    expect(window.sessionStorage.getItem(INVITATION_STORAGE_KEY)).toBe(
-      JSON.stringify({ gameId: 12, invitationLink: "/invite/12" }),
-    );
+    expect(window.sessionStorage.getItem(INVITATION_STORAGE_KEY)).toBe(JSON.stringify(invitation));
     expect(window.sessionStorage.getItem(GAME_ID_STORAGE_KEY)).toBe("12");
 
     roomStore.resetRoomStore();
@@ -49,15 +80,10 @@ describe("game-session store", () => {
 
   it("preserves last finished game id when resetting room-scoped state", async () => {
     const roomStore = await import("./game-session");
-    const snapshot = {
-      gameId: 88,
-      summary: [
-        { playerId: 1, username: "Alice", position: 1, roundsPlayed: 5, roundAverage: 54.2 },
-      ],
-    };
+    const snapshot = buildFinishedGameSummarySnapshot();
 
     roomStore.setLastFinishedGameSummary(snapshot);
-    roomStore.setInvitation({ gameId: 12, invitationLink: "/invite/12" });
+    roomStore.setInvitation(buildInvitation());
 
     roomStore.resetRoomStore();
 
@@ -68,18 +94,7 @@ describe("game-session store", () => {
 
   it("stores and clears the last finished game summary snapshot", async () => {
     const roomStore = await import("./game-session");
-    const snapshot = {
-      gameId: 88,
-      summary: [
-        {
-          playerId: 1,
-          username: "Alice",
-          position: 1,
-          roundsPlayed: 5,
-          roundAverage: 54.2,
-        },
-      ],
-    };
+    const snapshot = buildFinishedGameSummarySnapshot();
 
     roomStore.setLastFinishedGameSummary(snapshot);
     expect(roomStore.$lastFinishedGameSummary.get()).toEqual(snapshot);
@@ -140,10 +155,12 @@ describe("game-session store — Ticket 8: $lastFinishedGameId computed from $la
 
   it("should derive gameId from $lastFinishedGameSummary when summary is set", async () => {
     const roomStore = await import("./game-session");
-    const snapshot = {
+    const snapshot = buildFinishedGameSummarySnapshot({
       gameId: 42,
-      summary: [{ playerId: 1, username: "Bob", position: 1, roundsPlayed: 8, roundAverage: 61.0 }],
-    };
+      summary: [
+        buildFinishedGameSummaryEntry({ username: "Bob", roundsPlayed: 8, roundAverage: 61.0 }),
+      ],
+    });
 
     roomStore.setLastFinishedGameSummary(snapshot);
 
@@ -152,16 +169,16 @@ describe("game-session store — Ticket 8: $lastFinishedGameId computed from $la
 
   it("should update reactively when summary changes to a different gameId", async () => {
     const roomStore = await import("./game-session");
-    const first = {
+    const first = buildFinishedGameSummarySnapshot({
       gameId: 10,
-      summary: [
-        { playerId: 1, username: "Alice", position: 1, roundsPlayed: 3, roundAverage: 40.0 },
-      ],
-    };
-    const second = {
+      summary: [buildFinishedGameSummaryEntry({ roundsPlayed: 3, roundAverage: 40.0 })],
+    });
+    const second = buildFinishedGameSummarySnapshot({
       gameId: 20,
-      summary: [{ playerId: 2, username: "Bob", position: 1, roundsPlayed: 5, roundAverage: 55.0 }],
-    };
+      summary: [
+        buildFinishedGameSummaryEntry({ playerId: 2, username: "Bob", roundAverage: 55.0 }),
+      ],
+    });
 
     roomStore.setLastFinishedGameSummary(first);
     expect(roomStore.$lastFinishedGameId.get()).toBe(10);
@@ -172,12 +189,17 @@ describe("game-session store — Ticket 8: $lastFinishedGameId computed from $la
 
   it("should return null when $lastFinishedGameSummary is cleared", async () => {
     const roomStore = await import("./game-session");
-    const snapshot = {
+    const snapshot = buildFinishedGameSummarySnapshot({
       gameId: 7,
       summary: [
-        { playerId: 3, username: "Carol", position: 1, roundsPlayed: 6, roundAverage: 48.5 },
+        buildFinishedGameSummaryEntry({
+          playerId: 3,
+          username: "Carol",
+          roundsPlayed: 6,
+          roundAverage: 48.5,
+        }),
       ],
-    };
+    });
 
     roomStore.setLastFinishedGameSummary(snapshot);
     expect(roomStore.$lastFinishedGameId.get()).toBe(7);
@@ -189,7 +211,7 @@ describe("game-session store — Ticket 8: $lastFinishedGameId computed from $la
   it("should not export setLastFinishedGameId — it is no longer needed", async () => {
     const roomStore = await import("./game-session");
 
-    expect((roomStore as Record<string, unknown>)["setLastFinishedGameId"]).toBeUndefined();
+    expect("setLastFinishedGameId" in roomStore).toBe(false);
   });
 });
 
@@ -219,10 +241,14 @@ describe("game-session store — Ticket 4: store is cache, not authority", () =>
     const roomStore = await import("./game-session");
     roomStore.setCurrentGameId(42);
 
-    const storeSpy = vi.spyOn(roomStore.testOnlyCurrentGameIdAtom, "set");
+    const setItemSpy = vi.spyOn(Storage.prototype, "setItem");
     roomStore.setCurrentGameId(42);
 
-    expect(storeSpy).not.toHaveBeenCalled();
+    expect(roomStore.$currentGameId.get()).toBe(42);
+    expect(window.sessionStorage.getItem(GAME_ID_STORAGE_KEY)).toBe("42");
+    expect(setItemSpy).not.toHaveBeenCalled();
+
+    setItemSpy.mockRestore();
   });
 
   it("should persist to sessionStorage when setCurrentGameId receives a new value", async () => {
@@ -275,51 +301,84 @@ describe("game-session store — Ticket 4: store is cache, not authority", () =>
     expect(roomStore.$invitation.get()).toBeNull();
   });
 
+  it("should treat sessionStorage SecurityError as unavailable storage", async () => {
+    const originalSessionStorageDescriptor = Object.getOwnPropertyDescriptor(
+      window,
+      "sessionStorage",
+    );
+
+    if (originalSessionStorageDescriptor === undefined) {
+      throw new Error("Expected window.sessionStorage descriptor to exist");
+    }
+
+    Object.defineProperty(window, "sessionStorage", {
+      configurable: true,
+      get() {
+        throw createSecurityError();
+      },
+    });
+
+    try {
+      const roomStore = await import("./game-session");
+
+      expect(roomStore.$currentGameId.get()).toBeNull();
+      expect(roomStore.$invitation.get()).toBeNull();
+      expect(roomStore.$preCreateGameSettings.get()).toEqual({
+        startScore: 301,
+        doubleOut: false,
+        tripleOut: false,
+      });
+
+      expect(() => {
+        roomStore.setCurrentGameId(123);
+        roomStore.setInvitation(buildInvitation({ gameId: 123, invitationLink: "/invite/123" }));
+      }).not.toThrow();
+    } finally {
+      Object.defineProperty(window, "sessionStorage", originalSessionStorageDescriptor);
+    }
+  });
+
   it("should set invitation and update currentGameId atomically via setInvitation", async () => {
     const roomStore = await import("./game-session");
-    roomStore.setInvitation({ gameId: 8, invitationLink: "/invite/8" });
+    const invitation = buildInvitation({ gameId: 8, invitationLink: "/invite/8" });
 
-    expect(roomStore.$invitation.get()).toEqual({ gameId: 8, invitationLink: "/invite/8" });
+    roomStore.setInvitation(invitation);
+
+    expect(roomStore.$invitation.get()).toEqual(invitation);
     expect(roomStore.$currentGameId.get()).toBe(8);
   });
 
   it("should clear invitation store and sessionStorage when setInvitation receives null", async () => {
     const roomStore = await import("./game-session");
-    roomStore.setInvitation({ gameId: 8, invitationLink: "/invite/8" });
+    roomStore.setInvitation(buildInvitation({ gameId: 8, invitationLink: "/invite/8" }));
     roomStore.setInvitation(null);
 
     expect(roomStore.$invitation.get()).toBeNull();
     expect(window.sessionStorage.getItem(INVITATION_STORAGE_KEY)).toBeNull();
   });
 
-  it("should redact invitationLink when sessionStorage persistence fails", async () => {
+  it("should not leak invitationLink when sessionStorage persistence fails", async () => {
     const consoleErrorSpy = vi.spyOn(console, "error").mockImplementation(() => undefined);
     const setItemSpy = vi.spyOn(Storage.prototype, "setItem").mockImplementation(() => {
       throw new Error("quota exceeded");
     });
     const roomStore = await import("./game-session");
-
-    roomStore.setInvitation({
+    const invitationLink = "https://example.com/invite/8?token=secret";
+    const invitation = buildInvitation({
       gameId: 8,
-      invitationLink: "https://example.com/invite/8?token=secret",
+      invitationLink,
     });
 
-    expect(consoleErrorSpy).toHaveBeenCalledWith(
-      "[client:error] game-session.persist-invitation.failed",
-      {
-        context: {
-          storageKey: INVITATION_STORAGE_KEY,
-          invitation: {
-            gameId: 8,
-            invitationLink: REDACTED_VALUE,
-          },
-        },
-        error: expect.objectContaining({
-          message: "quota exceeded",
-          name: "Error",
-        }),
-      },
-    );
+    expect(() => {
+      roomStore.setInvitation(invitation);
+    }).not.toThrow();
+
+    expect(roomStore.$invitation.get()).toEqual(invitation);
+    expect(roomStore.$currentGameId.get()).toBe(8);
+
+    const serializedConsoleErrors = JSON.stringify(consoleErrorSpy.mock.calls);
+    expect(serializedConsoleErrors).not.toContain(invitationLink);
+    expect(serializedConsoleErrors).not.toContain("token=secret");
 
     setItemSpy.mockRestore();
     consoleErrorSpy.mockRestore();

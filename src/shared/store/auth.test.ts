@@ -1,5 +1,6 @@
 // @vitest-environment node
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import type { AuthenticatedUser } from "@/shared/api/auth";
 import {
   $authChecked,
   $authError,
@@ -12,18 +13,23 @@ import {
   setAuthFailed,
 } from "./auth";
 
+function buildAuthenticatedUser(overrides: Partial<AuthenticatedUser> = {}): AuthenticatedUser {
+  return {
+    success: true,
+    roles: ["ROLE_USER"],
+    id: 5,
+    redirect: "/start",
+    ...overrides,
+  };
+}
+
 describe("auth store", () => {
   beforeEach(() => {
     resetAuthStore();
   });
 
   it("should cache authenticated user and mark auth as checked", () => {
-    setAuthenticatedUser({
-      success: true,
-      roles: ["ROLE_USER"],
-      id: 5,
-      redirect: "/start",
-    });
+    setAuthenticatedUser(buildAuthenticatedUser());
 
     expect($user.get()).toMatchObject({ id: 5 });
     expect($authChecked.get()).toBe(true);
@@ -31,12 +37,7 @@ describe("auth store", () => {
   });
 
   it("should clear the cached user when auth fails", () => {
-    setAuthenticatedUser({
-      success: true,
-      roles: ["ROLE_USER"],
-      id: 5,
-      redirect: "/start",
-    });
+    setAuthenticatedUser(buildAuthenticatedUser());
 
     setAuthFailed("Network request failed");
 
@@ -46,19 +47,9 @@ describe("auth store", () => {
   });
 
   it("should clear auth error without logging out the current user", () => {
-    setAuthenticatedUser({
-      success: true,
-      roles: ["ROLE_USER"],
-      id: 9,
-      redirect: "/start",
-    });
+    setAuthenticatedUser(buildAuthenticatedUser({ id: 9 }));
     setAuthFailed("Network request failed");
-    setAuthenticatedUser({
-      success: true,
-      roles: ["ROLE_USER"],
-      id: 9,
-      redirect: "/start",
-    });
+    setAuthenticatedUser(buildAuthenticatedUser({ id: 9 }));
 
     clearAuthError();
 
@@ -68,12 +59,7 @@ describe("auth store", () => {
   });
 
   it("should invalidate cached auth state", () => {
-    setAuthenticatedUser({
-      success: true,
-      roles: ["ROLE_USER"],
-      id: 5,
-      redirect: "/start",
-    });
+    setAuthenticatedUser(buildAuthenticatedUser());
 
     invalidateAuthState();
 
