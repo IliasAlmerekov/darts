@@ -9,16 +9,7 @@ import {
 } from "./auth";
 import { apiClient } from "./client";
 import { TimeoutError } from "./errors";
-
-function createMockResponse(body: unknown): Response {
-  return {
-    ok: true,
-    status: 200,
-    headers: new Headers({ "content-type": "application/json" }),
-    url: "/api/login/success",
-    json: vi.fn(async () => body),
-  } as unknown as Response;
-}
+import { createMockResponse } from "./test-utils";
 
 describe("getAuthenticatedUser", () => {
   beforeEach(() => {
@@ -33,14 +24,19 @@ describe("getAuthenticatedUser", () => {
   it("returns authenticated user for successful response", async () => {
     vi.spyOn(globalThis, "fetch").mockResolvedValueOnce(
       createMockResponse({
-        success: true,
-        user: {
+        body: {
           success: true,
-          roles: ["ROLE_USER"],
-          id: 7,
-          redirect: "/start",
-          gameId: 42,
+          user: {
+            success: true,
+            roles: ["ROLE_USER"],
+            id: 7,
+            redirect: "/start",
+            gameId: 42,
+          },
         },
+        status: 200,
+        headers: new Headers({ "content-type": "application/json" }),
+        url: "/api/login/success",
       }),
     );
 
@@ -51,13 +47,14 @@ describe("getAuthenticatedUser", () => {
   });
 
   it("returns null for a 401 auth-check response", async () => {
-    vi.spyOn(globalThis, "fetch").mockResolvedValueOnce({
-      ok: false,
-      status: 401,
-      headers: new Headers({ "content-type": "application/json" }),
-      url: "/api/login/success",
-      json: vi.fn(async () => ({ message: "Unauthorized" })),
-    } as unknown as Response);
+    vi.spyOn(globalThis, "fetch").mockResolvedValueOnce(
+      createMockResponse({
+        body: { message: "Unauthorized" },
+        status: 401,
+        headers: new Headers({ "content-type": "application/json" }),
+        url: "/api/login/success",
+      }),
+    );
 
     await expect(getAuthenticatedUser()).resolves.toBeNull();
   });
@@ -89,13 +86,18 @@ describe("getAuthenticatedUser", () => {
   it("throws ApiError when auth-check returns malformed authenticated user payload", async () => {
     vi.spyOn(globalThis, "fetch").mockResolvedValueOnce(
       createMockResponse({
-        success: true,
-        user: {
+        body: {
           success: true,
-          roles: ["ROLE_USER"],
-          id: "7",
-          redirect: "/start",
+          user: {
+            success: true,
+            roles: ["ROLE_USER"],
+            id: "7",
+            redirect: "/start",
+          },
         },
+        status: 200,
+        headers: new Headers({ "content-type": "application/json" }),
+        url: "/api/login/success",
       }),
     );
 
@@ -107,7 +109,14 @@ describe("getAuthenticatedUser", () => {
   });
 
   it("returns null for explicit unauthenticated auth-check payload", async () => {
-    vi.spyOn(globalThis, "fetch").mockResolvedValueOnce(createMockResponse({ success: false }));
+    vi.spyOn(globalThis, "fetch").mockResolvedValueOnce(
+      createMockResponse({
+        body: { success: false },
+        status: 200,
+        headers: new Headers({ "content-type": "application/json" }),
+        url: "/api/login/success",
+      }),
+    );
 
     await expect(getAuthenticatedUser()).resolves.toBeNull();
   });

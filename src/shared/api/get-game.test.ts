@@ -10,13 +10,7 @@ import {
 } from "./game";
 import { apiClient, clearUnauthorizedHandler, setUnauthorizedHandler } from "./client";
 import { TimeoutError } from "./errors";
-
-type MockResponseOptions = {
-  status: number;
-  body?: unknown;
-  headers?: Record<string, string>;
-  url?: string;
-};
+import { createMockResponse } from "./test-utils";
 
 function createValidGameResponse(overrides: Partial<Record<string, unknown>> = {}) {
   return {
@@ -46,21 +40,6 @@ function createValidGameResponse(overrides: Partial<Record<string, unknown>> = {
     },
     ...overrides,
   };
-}
-
-function createMockResponse(options: MockResponseOptions): Response {
-  const headers = new Headers(options.headers ?? {});
-
-  return {
-    status: options.status,
-    ok: options.status >= 200 && options.status < 300,
-    headers,
-    url: options.url ?? "/api/game/1",
-    json: vi.fn(async () => options.body),
-    text: vi.fn(async () =>
-      typeof options.body === "string" ? options.body : JSON.stringify(options.body ?? {}),
-    ),
-  } as unknown as Response;
 }
 
 describe("getGameThrowsIfChanged", () => {
@@ -222,9 +201,9 @@ describe("getGameThrowsIfChanged", () => {
     const requestSpy = vi.spyOn(apiClient, "request").mockResolvedValueOnce({
       data: responseBody,
       response: createMockResponse({
-        status: 200,
         body: responseBody,
-        headers: { "content-type": "application/json", "X-Game-State-Version": "v1" },
+        status: 200,
+        headers: new Headers({ "content-type": "application/json", "X-Game-State-Version": "v1" }),
         url: "http://localhost/api/game/520",
       }),
     });
@@ -254,9 +233,9 @@ describe("getGameThrowsIfChanged", () => {
       .mockResolvedValueOnce({
         data: responseBody,
         response: createMockResponse({
-          status: 200,
           body: responseBody,
-          headers: { "content-type": "application/json", ETag: "etag-v1" },
+          status: 200,
+          headers: new Headers({ "content-type": "application/json", ETag: "etag-v1" }),
           url: "http://localhost/api/game/520",
         }),
       })
@@ -264,7 +243,7 @@ describe("getGameThrowsIfChanged", () => {
         data: null,
         response: createMockResponse({
           status: 304,
-          headers: { ETag: "etag-v1" },
+          headers: new Headers({ ETag: "etag-v1" }),
           url: "http://localhost/api/game/520?since=etag-v1",
         }),
       });
@@ -310,9 +289,9 @@ describe("getGameThrowsIfChanged", () => {
     vi.spyOn(apiClient, "request").mockResolvedValueOnce({
       data: { id: 520, players: [] },
       response: createMockResponse({
-        status: 200,
         body: { id: 520, players: [] },
-        headers: { "content-type": "application/json", ETag: "etag-v1" },
+        status: 200,
+        headers: new Headers({ "content-type": "application/json", ETag: "etag-v1" }),
         url: "http://localhost/api/game/520",
       }),
     });

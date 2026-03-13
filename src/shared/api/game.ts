@@ -108,7 +108,7 @@ function isStartGameResponse(data: unknown): data is Record<string, unknown> {
 }
 
 function isGameStatus(value: unknown): value is GameStatus {
-  return typeof value === "string" && GAME_STATUS_VALUES.includes(value as GameStatus);
+  return typeof value === "string" && GAME_STATUS_VALUES.some((status) => status === value);
 }
 
 function isGameThrowsResponse(data: unknown): data is GameThrowsResponse {

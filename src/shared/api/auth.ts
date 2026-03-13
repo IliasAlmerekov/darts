@@ -175,8 +175,9 @@ export async function registerUser(
         skipAuthRedirect: true,
         validate: isCsrfTokensResponse,
       });
-    } catch {
-      // Ignore prefetch errors; proceed with registration attempt
+    } catch (error) {
+      const { clientLogger } = await import("@/lib/clientLogger");
+      clientLogger.warn("[auth] CSRF prefetch failed — proceeding with registration", { error });
     }
   }
 

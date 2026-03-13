@@ -118,7 +118,13 @@ function parseAliasedOptionalFiniteNumber(
   return undefined;
 }
 
-function normalizePlayerStatsItem(data: unknown) {
+function normalizePlayerStatsItem(data: unknown): {
+  id: number;
+  name: string;
+  playerId: number;
+  gamesPlayed?: number;
+  scoreAverage?: number;
+} | null {
   if (!isRecord(data)) {
     return null;
   }
@@ -188,7 +194,13 @@ function isPlayerStatsResponse(data: unknown): data is {
   );
 }
 
-function normalizeFinishedGameItem(data: unknown) {
+function normalizeFinishedGameItem(data: unknown): {
+  id: number;
+  winnerRounds: number;
+  winnerName: string | null;
+  playersCount: number;
+  date: string | null;
+} | null {
   if (!isRecord(data)) {
     return null;
   }
