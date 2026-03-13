@@ -2,7 +2,7 @@ import React, { useEffect, useRef, useState, useCallback } from "react";
 import clsx from "clsx";
 import styles from "./ViewToogleBtn.module.css";
 import { useLocation, useNavigate } from "react-router-dom";
-import { ROUTES } from "@/lib/routes";
+import { ROUTES } from "@/lib/router/routes";
 
 function ViewToogleButton() {
   const location = useLocation();

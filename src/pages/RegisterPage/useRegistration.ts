@@ -1,11 +1,11 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { registerUser, type RegistrationResponse } from "@/shared/api/auth";
-import { mapAuthErrorMessage } from "@/lib/auth-error-handling";
+import { mapAuthErrorMessage } from "@/lib/error/auth-error-handling";
 import { ApiError } from "@/shared/api";
-import { isRecord } from "@/shared/lib/guards";
-import { clientLogger } from "@/shared/lib/clientLogger";
-import { ROUTES } from "@/lib/routes";
+import { isRecord } from "@/lib/guards/guards";
+import { clientLogger } from "@/shared/services/browser/clientLogger";
+import { ROUTES } from "@/lib/router/routes";
 
 /**
  * Provides registration flow state and action.

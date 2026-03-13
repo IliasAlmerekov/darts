@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { DragEndEvent } from "@dnd-kit/core";
 import { arrayMove } from "@dnd-kit/sortable";
 import { updatePlayerOrder } from "@/shared/api/room";
-import { toUserErrorMessage } from "@/lib/error-to-user-message";
+import { toUserErrorMessage } from "@/lib/error/error-to-user-message";
 import type { SetStartPageError } from "./useStartPageError";
 
 type UpdatePlayerOrderFn = (

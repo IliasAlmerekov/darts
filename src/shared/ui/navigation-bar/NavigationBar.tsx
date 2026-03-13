@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { matchPath, useNavigate, useLocation } from "react-router-dom";
-import { ROUTES } from "@/lib/routes";
+import { ROUTES } from "@/lib/router/routes";
 import settingsCogInactive from "@/assets/icons/settings-inactive.svg";
 import settingsCog from "@/assets/icons/settings.svg";
 import dartIcon from "@/assets/icons/dart.svg";

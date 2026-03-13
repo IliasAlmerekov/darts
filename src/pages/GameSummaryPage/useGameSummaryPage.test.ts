@@ -2,7 +2,7 @@
 import { act, renderHook, waitFor } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { useGameSummaryPage } from "./useGameSummaryPage";
-import { playSound } from "@/lib/soundPlayer";
+import { playSound } from "@/shared/services/browser/soundPlayer";
 import type { GameThrowsResponse, ScoreboardDelta, UndoAckResponse } from "@/types";
 
 const navigateMock = vi.fn();
@@ -66,7 +66,7 @@ vi.mock("@/shared/store", async (importOriginal) => {
   };
 });
 
-vi.mock("@/lib/soundPlayer", () => ({
+vi.mock("@/shared/services/browser/soundPlayer", () => ({
   playSound: vi.fn(),
 }));
 

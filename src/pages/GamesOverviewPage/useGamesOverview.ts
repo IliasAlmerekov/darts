@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { getGamesOverview } from "@/shared/api/statistics";
-import { clientLogger } from "@/shared/lib/clientLogger";
+import { clientLogger } from "@/shared/services/browser/clientLogger";
 import type { FinishedGameProps } from "@/types";
 
 type UseGamesOverviewParams = {

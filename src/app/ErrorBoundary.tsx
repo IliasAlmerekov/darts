@@ -1,5 +1,5 @@
 import React from "react";
-import { clientLogger } from "@/shared/lib/clientLogger";
+import { clientLogger } from "@/shared/services/browser/clientLogger";
 
 type ErrorBoundaryProps = {
   children: React.ReactNode;

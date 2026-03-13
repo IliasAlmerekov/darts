@@ -8,7 +8,7 @@ import NotFoundPage from "@/app/routes/NotFoundPage";
 import ProtectedRoutes from "@/app/ProtectedRoutes";
 import { scheduleSelectiveRouteWarmUp, scheduleStatisticsPrefetch } from "@/app/routeWarmup";
 import { clearUnauthorizedHandler, setUnauthorizedHandler } from "@/shared/api";
-import { ROUTES } from "@/lib/routes";
+import { ROUTES } from "@/lib/router/routes";
 import { invalidateAuthState } from "@/shared/store/auth";
 import { resetRoomStore } from "@/shared/store/game-session";
 import { resetGameStore } from "@/shared/store/game-state";

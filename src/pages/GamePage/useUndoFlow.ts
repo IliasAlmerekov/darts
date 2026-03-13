@@ -1,9 +1,9 @@
 import { useCallback, useRef, useState } from "react";
 import type { MutableRefObject } from "react";
 import { undoLastThrow } from "@/shared/api/game";
-import { playSound } from "@/lib/soundPlayer";
-import { clientLogger } from "@/shared/lib/clientLogger";
-import { normalizeGameData } from "@/shared/lib/gameStateNormalizer";
+import { playSound } from "@/shared/services/browser/soundPlayer";
+import { clientLogger } from "@/shared/services/browser/clientLogger";
+import { normalizeGameData } from "@/lib/game/gameStateNormalizer";
 import { $gameData, setGameData, setGameScoreboardDelta } from "@/shared/store";
 import type { GameThrowsResponse, UndoAckResponse } from "@/types";
 import { applyOptimisticUndo } from "./throwStateService";

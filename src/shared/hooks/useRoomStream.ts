@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import { API_BASE_URL } from "@/shared/api";
-import { clientLogger } from "@/shared/lib/clientLogger";
+import { clientLogger } from "@/shared/services/browser/clientLogger";
 import type { RoomStreamEvent } from "@/types";
 import { useEventSource, type EventSourceListener } from "./useEventSource";
 
@@ -20,12 +20,24 @@ interface UseRoomStreamResult {
   isConnected: boolean;
 }
 
-export function parseRoomStreamEventData(rawData: string): unknown | null {
+interface ParsedRoomStreamEventDataResult {
+  data: unknown | null;
+  error: Error | null;
+}
+
+function parseRoomStreamEventPayload(rawData: string): ParsedRoomStreamEventDataResult {
   try {
-    return JSON.parse(rawData);
-  } catch {
-    return null;
+    return { data: JSON.parse(rawData), error: null };
+  } catch (error: unknown) {
+    return {
+      data: null,
+      error: error instanceof Error ? error : new Error(String(error)),
+    };
   }
+}
+
+export function parseRoomStreamEventData(rawData: string): unknown | null {
+  return parseRoomStreamEventPayload(rawData).data;
 }
 
 /**
@@ -41,10 +53,14 @@ export function useRoomStream(gameId: number | null): UseRoomStreamResult {
     return ROOM_STREAM_EVENT_TYPES.map((type) => ({
       event: type,
       handler: (streamEvent: MessageEvent<string>) => {
-        const parsedData = parseRoomStreamEventData(streamEvent.data);
-        if (parsedData === null) {
+        const { data: parsedData, error: parseError } = parseRoomStreamEventPayload(
+          streamEvent.data,
+        );
+
+        if (parsedData === null || parseError !== null) {
           clientLogger.warn("room-stream.invalid-payload", {
-            context: { type },
+            context: { type, raw: streamEvent.data },
+            error: parseError,
           });
           return;
         }
@@ -55,7 +71,7 @@ export function useRoomStream(gameId: number | null): UseRoomStreamResult {
   }, []);
 
   const url = useMemo(() => {
-    return gameId ? `${API_BASE_URL}${SSE_STREAM_ENDPOINT(gameId)}` : null;
+    return gameId !== null ? `${API_BASE_URL}${SSE_STREAM_ENDPOINT(gameId)}` : null;
   }, [gameId]);
 
   const { error, isConnected } = useEventSource(url, listeners, {

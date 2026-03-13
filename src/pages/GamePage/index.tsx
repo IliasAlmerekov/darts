@@ -11,8 +11,8 @@ import Back from "@/assets/icons/back.svg";
 import deleteIcon from "@/assets/icons/delete.svg";
 import Undo from "@/assets/icons/undo-copy.svg";
 import settingsIcon from "@/assets/icons/settings-inactive.svg";
-import { toUserErrorMessage } from "@/lib/error-to-user-message";
-import { ROUTES } from "@/lib/routes";
+import { toUserErrorMessage } from "@/lib/error/error-to-user-message";
+import { ROUTES } from "@/lib/router/routes";
 
 import styles from "./Game.module.css";
 import SettingsOverlay from "./components/SettingsOverlay";

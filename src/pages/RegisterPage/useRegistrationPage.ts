@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useRegistration } from "./useRegistration";
-import { mapAuthErrorMessage } from "@/lib/auth-error-handling";
+import { mapAuthErrorMessage } from "@/lib/error/auth-error-handling";
 
 /**
  * Orchestrates registration page state and submission handling.
