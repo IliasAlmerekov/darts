@@ -49,7 +49,7 @@ describe("game-session store", () => {
     vi.resetModules();
   });
 
-  it("hydrates invitation from sessionStorage on module init", async () => {
+  it("should hydrate invitation from sessionStorage when the module initializes", async () => {
     const invitation = buildInvitation({ gameId: 77, invitationLink: "/invite/77" });
 
     window.sessionStorage.setItem(INVITATION_STORAGE_KEY, JSON.stringify(invitation));
@@ -61,7 +61,7 @@ describe("game-session store", () => {
     expect(roomStore.$currentGameId.get()).toBe(77);
   });
 
-  it("persists invitation and clears it on reset", async () => {
+  it("should persist invitation and clear it when the room store resets", async () => {
     const roomStore = await import("./game-session");
     const invitation = buildInvitation();
 
@@ -78,7 +78,7 @@ describe("game-session store", () => {
     expect(window.sessionStorage.getItem(GAME_ID_STORAGE_KEY)).toBeNull();
   });
 
-  it("preserves last finished game id when resetting room-scoped state", async () => {
+  it("should preserve the last finished game id when resetting room-scoped state", async () => {
     const roomStore = await import("./game-session");
     const snapshot = buildFinishedGameSummarySnapshot();
 
@@ -92,7 +92,7 @@ describe("game-session store", () => {
     expect(roomStore.$currentGameId.get()).toBeNull();
   });
 
-  it("stores and clears the last finished game summary snapshot", async () => {
+  it("should store and clear the last finished game summary snapshot when updates are applied", async () => {
     const roomStore = await import("./game-session");
     const snapshot = buildFinishedGameSummarySnapshot();
 
@@ -103,7 +103,7 @@ describe("game-session store", () => {
     expect(roomStore.$lastFinishedGameSummary.get()).toBeNull();
   });
 
-  it("hydrates pre-create settings from sessionStorage on module init", async () => {
+  it("should hydrate pre-create settings from sessionStorage when the module initializes", async () => {
     window.sessionStorage.setItem(
       PRE_CREATE_SETTINGS_STORAGE_KEY,
       JSON.stringify({ startScore: 501, doubleOut: true, tripleOut: false }),
@@ -118,7 +118,7 @@ describe("game-session store", () => {
     });
   });
 
-  it("persists pre-create settings updates", async () => {
+  it("should persist pre-create settings when they are updated", async () => {
     const roomStore = await import("./game-session");
 
     roomStore.setPreCreateGameSettings({
@@ -167,7 +167,7 @@ describe("game-session store — Ticket 8: $lastFinishedGameId computed from $la
     expect(roomStore.$lastFinishedGameId.get()).toBe(42);
   });
 
-  it("should update reactively when summary changes to a different gameId", async () => {
+  it("should update reactively when the summary changes to a different gameId", async () => {
     const roomStore = await import("./game-session");
     const first = buildFinishedGameSummarySnapshot({
       gameId: 10,
@@ -208,7 +208,7 @@ describe("game-session store — Ticket 8: $lastFinishedGameId computed from $la
     expect(roomStore.$lastFinishedGameId.get()).toBeNull();
   });
 
-  it("should not export setLastFinishedGameId — it is no longer needed", async () => {
+  it("should not export setLastFinishedGameId when the public store API is loaded", async () => {
     const roomStore = await import("./game-session");
 
     expect("setLastFinishedGameId" in roomStore).toBe(false);
@@ -230,7 +230,7 @@ describe("game-session store — Ticket 4: store is cache, not authority", () =>
     expect(roomStore.$currentGameId.get()).toBeNull();
   });
 
-  it("should initialise $currentGameId from sessionStorage (preload for navigation)", async () => {
+  it("should initialise $currentGameId from sessionStorage when preload data exists for navigation", async () => {
     // The store acts as a preload hint — URL param overrides it once the page mounts
     window.sessionStorage.setItem(GAME_ID_STORAGE_KEY, "55");
     const roomStore = await import("./game-session");
@@ -273,7 +273,7 @@ describe("game-session store — Ticket 4: store is cache, not authority", () =>
     expect(roomStore.getActiveGameId()).toBeNull();
   });
 
-  it("should return the stored gameId from getActiveGameId", async () => {
+  it("should return the stored gameId from getActiveGameId when a game is cached", async () => {
     const roomStore = await import("./game-session");
     roomStore.setCurrentGameId(7);
     expect(roomStore.getActiveGameId()).toBe(7);
@@ -301,7 +301,7 @@ describe("game-session store — Ticket 4: store is cache, not authority", () =>
     expect(roomStore.$invitation.get()).toBeNull();
   });
 
-  it("should treat sessionStorage SecurityError as unavailable storage", async () => {
+  it("should treat sessionStorage SecurityError as unavailable storage when storage access throws", async () => {
     const originalSessionStorageDescriptor = Object.getOwnPropertyDescriptor(
       window,
       "sessionStorage",
@@ -338,7 +338,7 @@ describe("game-session store — Ticket 4: store is cache, not authority", () =>
     }
   });
 
-  it("should set invitation and update currentGameId atomically via setInvitation", async () => {
+  it("should set invitation and update currentGameId atomically when setInvitation receives a value", async () => {
     const roomStore = await import("./game-session");
     const invitation = buildInvitation({ gameId: 8, invitationLink: "/invite/8" });
 
@@ -346,6 +346,17 @@ describe("game-session store — Ticket 4: store is cache, not authority", () =>
 
     expect(roomStore.$invitation.get()).toEqual(invitation);
     expect(roomStore.$currentGameId.get()).toBe(8);
+  });
+
+  it("should persist invitation when gameId is 0", async () => {
+    const roomStore = await import("./game-session");
+    const invitation = buildInvitation({ gameId: 0, invitationLink: "/invite/0" });
+
+    roomStore.setInvitation(invitation);
+
+    expect(roomStore.$invitation.get()).toEqual(invitation);
+    expect(roomStore.$currentGameId.get()).toBe(0);
+    expect(window.sessionStorage.getItem(GAME_ID_STORAGE_KEY)).toBe("0");
   });
 
   it("should clear invitation store and sessionStorage when setInvitation receives null", async () => {
@@ -393,7 +404,7 @@ describe("game-session store — resetPreCreateGameSettings", () => {
     vi.resetModules();
   });
 
-  it("should reset $preCreateGameSettings to default values", async () => {
+  it("should reset $preCreateGameSettings to default values when resetPreCreateGameSettings is called", async () => {
     const roomStore = await import("./game-session");
     roomStore.setPreCreateGameSettings({
       startScore: 501,
@@ -410,7 +421,7 @@ describe("game-session store — resetPreCreateGameSettings", () => {
     });
   });
 
-  it("should update sessionStorage when resetting pre-create settings", async () => {
+  it("should update sessionStorage when resetPreCreateGameSettings is called", async () => {
     const roomStore = await import("./game-session");
     roomStore.setPreCreateGameSettings({
       startScore: 501,

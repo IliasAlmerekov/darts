@@ -49,7 +49,7 @@ function notifyAuthInvalidationListeners(): void {
     try {
       listener();
     } catch (error: unknown) {
-      clientLogger.error("auth.invalidation-listener.failed", {
+      clientLogger.error("auth_invalidation_listener_failed", {
         context: { listenerCount: authInvalidationListeners.size },
         error,
       });

@@ -94,7 +94,7 @@ describe("game-state store", () => {
   });
 
   describe("setGameData", () => {
-    it("should set normalized game data and clear error", () => {
+    it("should set normalized game data and clear error when fresh game data arrives", () => {
       setError(new Error("previous error"));
 
       setGameData({
@@ -147,7 +147,7 @@ describe("game-state store", () => {
       expect($gameData.get()?.players[1]?.isActive).toBe(true);
     });
 
-    it("should handle null game data", () => {
+    it("should handle null game data when the store is cleared", () => {
       setGameData(mockGameData);
       setGameData(null);
 
@@ -156,7 +156,7 @@ describe("game-state store", () => {
   });
 
   describe("setGameSettings", () => {
-    it("should update only the settings fragment for the active game", () => {
+    it("should update only the settings fragment when the active game matches the expected id", () => {
       setGameData(mockGameData);
 
       setGameSettings(
@@ -183,7 +183,7 @@ describe("game-state store", () => {
       });
     });
 
-    it("should ignore settings updates for a different game id", () => {
+    it("should ignore settings updates when a different game id is provided", () => {
       setGameData(mockGameData);
 
       setGameSettings(
@@ -204,7 +204,7 @@ describe("game-state store", () => {
       });
     });
 
-    it("should update cache only when $gameData is null", () => {
+    it("should update cache only when $gameData is null and settings are received", () => {
       const settings: GameSettingsResponse = {
         startScore: 301,
         doubleOut: false,
@@ -217,7 +217,7 @@ describe("game-state store", () => {
       expect(getCachedGameSettings(5)).toEqual(settings);
     });
 
-    it("should not write to cache a second time when called with identical settings", () => {
+    it("should not write to cache a second time when called with identical settings for the same game", () => {
       setGameData(mockGameData);
 
       const settings1: GameSettingsResponse = {
@@ -240,10 +240,27 @@ describe("game-state store", () => {
       expect(cachedAfterFirst).toBe(settings1);
       expect(cachedAfterSecond).toBe(settings1);
     });
+
+    it("should preserve an existing error when settings updates are not the error source", () => {
+      setGameData(mockGameData);
+      const error = new Error("existing error");
+      setError(error);
+
+      setGameSettings(
+        {
+          startScore: 301,
+          doubleOut: false,
+          tripleOut: true,
+        },
+        1,
+      );
+
+      expect($error.get()).toBe(error);
+    });
   });
 
   describe("setGameScoreboardDelta", () => {
-    it("should store the patched scoreboard state for the active game", () => {
+    it("should store the patched scoreboard state when the active game matches the expected id", () => {
       setGameData({
         ...mockGameData,
         currentRound: 5,
@@ -322,7 +339,7 @@ describe("game-state store", () => {
       expect($error.get()).toBeNull();
     });
 
-    it("should ignore scoreboard updates for a different game id", () => {
+    it("should ignore scoreboard updates when a different game id is provided", () => {
       setGameData(mockGameData);
 
       const nextGameData = setGameScoreboardDelta(
@@ -339,7 +356,7 @@ describe("game-state store", () => {
       expect($gameData.get()).toEqual(mockGameData);
     });
 
-    it("should apply scoreboard delta to current game when no expectedGameId is provided", () => {
+    it("should apply scoreboard delta to the current game when no expectedGameId is provided", () => {
       setGameData(mockGameData);
 
       const result = setGameScoreboardDelta({
@@ -354,7 +371,7 @@ describe("game-state store", () => {
       expect($error.get()).toBeNull();
     });
 
-    it("should leave store unchanged when $gameData is null", () => {
+    it("should leave the store unchanged when $gameData is null", () => {
       const result = setGameScoreboardDelta({
         changedPlayers: [],
         winnerId: null,
@@ -365,15 +382,33 @@ describe("game-state store", () => {
       expect(result).toBeUndefined();
       expect($gameData.get()).toBeNull();
     });
+
+    it("should preserve an existing error when scoreboard updates are not the error source", () => {
+      setGameData(mockGameData);
+      const error = new Error("existing error");
+      setError(error);
+
+      setGameScoreboardDelta(
+        {
+          changedPlayers: [],
+          winnerId: null,
+          status: "started",
+          currentRound: 4,
+        },
+        1,
+      );
+
+      expect($error.get()).toBe(error);
+    });
   });
 
   describe("setLoading", () => {
-    it("should set loading state to true", () => {
+    it("should set loading state to true when loading starts", () => {
       setLoading(true);
       expect($isLoading.get()).toBe(true);
     });
 
-    it("should set loading state to false", () => {
+    it("should set loading state to false when loading finishes", () => {
       setLoading(true);
       setLoading(false);
       expect($isLoading.get()).toBe(false);
@@ -381,7 +416,7 @@ describe("game-state store", () => {
   });
 
   describe("setError", () => {
-    it("should set error", () => {
+    it("should set error when an error is provided", () => {
       const error = new Error("test error");
       setError(error);
       expect($error.get()).toBe(error);
@@ -395,7 +430,7 @@ describe("game-state store", () => {
   });
 
   describe("resetGameStore", () => {
-    it("should reset all state to initial values", () => {
+    it("should reset all state to initial values when resetGameStore is called", () => {
       setGameData(mockGameData);
       setLoading(true);
       setError(new Error("error"));
@@ -419,7 +454,7 @@ describe("game-state store", () => {
       expect(getCachedGameSettings(7)).toEqual(settings);
     });
 
-    it("should return settings when queried with matching gameId", () => {
+    it("should return settings when queried with a matching gameId", () => {
       setGameData(mockGameData);
 
       expect(getCachedGameSettings(mockGameData.id)).toEqual(mockGameData.settings);
@@ -450,7 +485,7 @@ describe("game-state store", () => {
       expect(getCachedGameSettings(20)).toEqual(settings2);
     });
 
-    it("should return null after resetGameStore", () => {
+    it("should return null when resetGameStore clears the cache", () => {
       setGameSettings({ startScore: 501, doubleOut: true, tripleOut: false }, 3);
 
       resetGameStore();
@@ -485,7 +520,7 @@ describe("game-state store", () => {
       expect($gameData.get()?.settings).toEqual(newSettings);
     });
 
-    it("should not change players, activePlayerId and winnerId by reference", () => {
+    it("should not change players, activePlayerId and winnerId by reference when settings are updated", () => {
       setGameData(makeGameData());
       normalizeSpy.mockClear();
 
@@ -516,7 +551,7 @@ describe("game-state store", () => {
       expect(normalizeSpy).not.toHaveBeenCalled();
     });
 
-    it("should correctly apply multiple sequential settings updates without calling normalizeGameData", () => {
+    it("should correctly apply multiple sequential settings updates when normalizeGameData is not called", () => {
       setGameData(makeGameData());
       normalizeSpy.mockClear();
 

@@ -28,7 +28,7 @@ describe("auth store", () => {
     resetAuthStore();
   });
 
-  it("should cache authenticated user and mark auth as checked", () => {
+  it("should cache authenticated user and mark auth as checked when authentication succeeds", () => {
     setAuthenticatedUser(buildAuthenticatedUser());
 
     expect($user.get()).toMatchObject({ id: 5 });
@@ -46,7 +46,7 @@ describe("auth store", () => {
     expect($authError.get()).toBe("Network request failed");
   });
 
-  it("should clear auth error without logging out the current user", () => {
+  it("should clear auth error without logging out the current user when a user is already cached", () => {
     setAuthenticatedUser(buildAuthenticatedUser({ id: 9 }));
     setAuthFailed("Network request failed");
     setAuthenticatedUser(buildAuthenticatedUser({ id: 9 }));
@@ -58,7 +58,7 @@ describe("auth store", () => {
     expect($authChecked.get()).toBe(true);
   });
 
-  it("should invalidate cached auth state", () => {
+  it("should invalidate cached auth state when auth invalidation is requested", () => {
     setAuthenticatedUser(buildAuthenticatedUser());
 
     invalidateAuthState();
@@ -68,7 +68,7 @@ describe("auth store", () => {
     expect($authError.get()).toBeNull();
   });
 
-  it("should notify auth invalidation listeners and allow unsubscribe", () => {
+  it("should notify auth invalidation listeners and allow unsubscribe when invalidation fires multiple times", () => {
     const listener = vi.fn();
     const unsubscribe = registerAuthInvalidationListener(listener);
 
@@ -124,7 +124,7 @@ describe("auth store", () => {
     expect(surviving).toHaveBeenCalledTimes(1);
   });
 
-  it("should not call listener after resetAuthStore clears it", () => {
+  it("should not call listener when resetAuthStore clears it before any invalidation", () => {
     const listener = vi.fn();
     registerAuthInvalidationListener(listener);
 
