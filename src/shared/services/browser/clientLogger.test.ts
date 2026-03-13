@@ -59,7 +59,7 @@ describe("createClientLogger", () => {
     const error = vi.fn();
     const logger = createClientLogger({ warn, error });
 
-    logger.warn("room-stream.invalid-payload", {
+    logger.warn("room_stream_invalid_payload", {
       context: {
         type: "throw",
         invitationLink: "https://example.com/invite/7",
@@ -75,7 +75,7 @@ describe("createClientLogger", () => {
       error: new Error("quota exceeded"),
     });
 
-    expect(warn).toHaveBeenCalledWith("[client:warn] room-stream.invalid-payload", {
+    expect(warn).toHaveBeenCalledWith("[client:warn] room_stream_invalid_payload", {
       context: {
         type: "throw",
         invitationLink: REDACTED_VALUE,

@@ -4,7 +4,7 @@ import { ApiError, NetworkError, UnauthorizedError } from "@/shared/api";
 import { isCsrfRelatedAuthError, mapAuthErrorMessage } from "./auth-error-handling";
 
 describe("mapAuthErrorMessage", () => {
-  it("maps invalid password message for login", () => {
+  it("should map invalid password message when login password is incorrect", () => {
     const result = mapAuthErrorMessage({
       flow: "login",
       rawMessage: "Invalid password",
@@ -13,7 +13,7 @@ describe("mapAuthErrorMessage", () => {
     expect(result).toBe("Incorrect password.");
   });
 
-  it("maps invalid email message for login", () => {
+  it("should map invalid email message when login email is incorrect", () => {
     const result = mapAuthErrorMessage({
       flow: "login",
       rawMessage: "Invalid email",
@@ -22,7 +22,7 @@ describe("mapAuthErrorMessage", () => {
     expect(result).toBe("Incorrect email address.");
   });
 
-  it("maps server errors for login", () => {
+  it("should map server error message when login request fails with server error", () => {
     const result = mapAuthErrorMessage({
       flow: "login",
       error: new ApiError("Internal Server Error", {
@@ -33,7 +33,7 @@ describe("mapAuthErrorMessage", () => {
     expect(result).toBe("Server error. Please try again later.");
   });
 
-  it("maps network errors for registration", () => {
+  it("should map network error message when registration request fails without connection", () => {
     const result = mapAuthErrorMessage({
       flow: "registration",
       error: new NetworkError(),
@@ -42,7 +42,7 @@ describe("mapAuthErrorMessage", () => {
     expect(result).toBe("Network error. Please check your connection and try again.");
   });
 
-  it("maps registration validation payload fields", () => {
+  it("should map validation payload fields when registration returns field errors", () => {
     const result = mapAuthErrorMessage({
       flow: "registration",
       error: new ApiError("Validation failed", {
@@ -59,7 +59,7 @@ describe("mapAuthErrorMessage", () => {
     expect(result).toBe("Please enter a valid email address.\nPassword is invalid.");
   });
 
-  it("maps username conflicts in registration", () => {
+  it("should map username conflict message when registration returns existing username error", () => {
     const result = mapAuthErrorMessage({
       flow: "registration",
       error: new ApiError("Conflict", {
@@ -75,7 +75,7 @@ describe("mapAuthErrorMessage", () => {
     expect(result).toBe("Username is already taken.");
   });
 
-  it("maps unauthorized login to credentials message", () => {
+  it("should map credentials error message when login request is unauthorized", () => {
     const result = mapAuthErrorMessage({
       flow: "login",
       error: new UnauthorizedError(),
@@ -86,11 +86,11 @@ describe("mapAuthErrorMessage", () => {
 });
 
 describe("isCsrfRelatedAuthError", () => {
-  it("detects csrf errors from raw login message", () => {
+  it("should detect csrf-related auth error when login raw message contains csrf token failure", () => {
     expect(isCsrfRelatedAuthError(undefined, "Invalid CSRF token")).toBe(true);
   });
 
-  it("detects csrf errors from api payload", () => {
+  it("should detect csrf-related auth error when api payload contains csrf token validation error", () => {
     const error = new ApiError("Validation failed", {
       status: 422,
       data: {

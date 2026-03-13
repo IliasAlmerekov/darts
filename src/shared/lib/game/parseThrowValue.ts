@@ -1,3 +1,5 @@
+import { ApiError } from "@/shared/api";
+
 export interface ParsedThrow {
   value: number;
   isDouble: boolean;
@@ -17,10 +19,13 @@ export function parseThrowValue(input: string | number): ParsedThrow {
   }
 
   const modifier = input.charAt(0);
-  const numericValue = parseInt(input.slice(1));
+  const numericValue = parseInt(input.slice(1), 10);
 
   if (isNaN(numericValue)) {
-    throw new Error(`Invalid throw value: ${input}`);
+    throw new ApiError(`Invalid throw value: ${input}`, {
+      status: 400,
+      data: { input },
+    });
   }
 
   return {

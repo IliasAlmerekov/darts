@@ -1,3 +1,5 @@
+// @vitest-environment node
+
 import { describe, expect, it } from "vitest";
 import type { GameThrowsResponse } from "@/types";
 import { mergeGameSettings } from "./mergeGameSettings";
@@ -33,7 +35,7 @@ function createGameData(): GameThrowsResponse {
 }
 
 describe("mergeGameSettings", () => {
-  it("replaces only game settings and preserves the rest of the game state", () => {
+  it("should replace only game settings and preserve the rest of the game state when settings change", () => {
     const gameData = createGameData();
 
     const result = mergeGameSettings(gameData, {
@@ -52,7 +54,7 @@ describe("mergeGameSettings", () => {
     });
   });
 
-  it("returns null when there is no active game state to merge into", () => {
+  it("should return null when there is no active game state to merge into", () => {
     const result = mergeGameSettings(null, {
       startScore: 501,
       doubleOut: true,
@@ -62,7 +64,7 @@ describe("mergeGameSettings", () => {
     expect(result).toBeNull();
   });
 
-  it("returns null when the current store game does not match the expected route game", () => {
+  it("should return null when the current store game does not match the expected route game", () => {
     const result = mergeGameSettings(
       createGameData(),
       {
