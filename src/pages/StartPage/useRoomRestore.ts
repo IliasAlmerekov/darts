@@ -2,9 +2,9 @@ import { useEffect, useMemo, useState } from "react";
 import type { NavigateFunction } from "react-router-dom";
 import { getGameThrows } from "@/shared/api/game";
 import { getInvitation } from "@/shared/api/room";
-import { clientLogger } from "@/shared/lib/clientLogger";
+import { clientLogger } from "@/shared/services/browser/clientLogger";
 import { setCurrentGameId, setGameData, setInvitation } from "@/shared/store";
-import { ROUTES } from "@/lib/routes";
+import { ROUTES } from "@/lib/router/routes";
 
 type UseRoomRestoreParams = {
   gameIdParam: string | undefined;

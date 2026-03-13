@@ -18,6 +18,7 @@ import type {
   StartRematchResponse,
   UpdateGameSettingsPayload,
 } from "@/types";
+import { isFiniteNumber, isRecord } from "@/lib/guards/guards";
 
 // ---------------------------------------------------------------------------
 // Endpoints
@@ -41,14 +42,6 @@ const UNDO_THROW_ENDPOINT = (id: number) => `/game/${id}/throw`;
 const gameStateVersionById = new Map<number, string>();
 
 const GAME_STATUS_VALUES: readonly GameStatus[] = ["lobby", "started", "finished"];
-
-function isRecord(data: unknown): data is Record<string, unknown> {
-  return typeof data === "object" && data !== null;
-}
-
-function isFiniteNumber(value: unknown): value is number {
-  return typeof value === "number" && Number.isFinite(value);
-}
 
 function isPositiveFiniteNumber(value: unknown): value is number {
   return isFiniteNumber(value) && value > 0;

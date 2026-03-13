@@ -13,7 +13,7 @@ import {
   setGameSettings,
   setLoading,
 } from "./game-state";
-import * as gameStateNormalizer from "../lib/gameStateNormalizer";
+import * as gameStateNormalizer from "../lib/game/gameStateNormalizer";
 import type { GameSettingsResponse, GameThrowsResponse } from "@/types";
 
 const mockGameData: GameThrowsResponse = {

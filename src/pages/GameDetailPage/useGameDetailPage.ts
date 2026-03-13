@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useParams } from "react-router-dom";
 import { getFinishedGame } from "@/shared/api/game";
-import { clientLogger } from "@/shared/lib/clientLogger";
+import { clientLogger } from "@/shared/services/browser/clientLogger";
 import type { FinishedPlayerResponse, WinnerPlayerProps } from "@/types";
 
 type UseGameDetailPageResult = {

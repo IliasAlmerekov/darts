@@ -1,8 +1,8 @@
 import { useCallback, useState } from "react";
 import { ApiError } from "@/shared/api";
 import { getGameThrows, resetGameStateVersion } from "@/shared/api/game";
-import { isRecord } from "@/shared/lib/guards";
-import { clientLogger } from "@/shared/lib/clientLogger";
+import { isRecord } from "@/lib/guards/guards";
+import { clientLogger } from "@/shared/services/browser/clientLogger";
 import { setGameData } from "@/shared/store";
 
 interface UseThrowReconciliationOptions {

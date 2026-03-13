@@ -1,6 +1,7 @@
 import { apiClient } from "./client";
 import { ApiError } from "./errors";
 import type { PlayerDataProps, GameDataProps } from "@/types";
+import { isFiniteNumber, isRecord } from "@/lib/guards/guards";
 
 type NormalizedPaginatedResponse<TItem> = {
   items: TItem[];
@@ -10,14 +11,6 @@ type NormalizedPaginatedResponse<TItem> = {
 // ---------------------------------------------------------------------------
 // Guards
 // ---------------------------------------------------------------------------
-
-function isRecord(data: unknown): data is Record<string, unknown> {
-  return typeof data === "object" && data !== null;
-}
-
-function isFiniteNumber(value: unknown): value is number {
-  return typeof value === "number" && Number.isFinite(value);
-}
 
 function parseFiniteNumber(value: unknown): number | null {
   if (isFiniteNumber(value)) {

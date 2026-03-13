@@ -1,7 +1,7 @@
 import React from "react";
 import { ErrorState } from "@/shared/ui/error-state";
 import styles from "./NotFoundPage.module.css";
-import { ROUTES } from "@/lib/routes";
+import { ROUTES } from "@/lib/router/routes";
 
 function NotFoundPage(): React.JSX.Element {
   return (

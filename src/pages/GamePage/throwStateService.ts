@@ -1,6 +1,6 @@
-import type { ParsedThrow } from "@/lib/parseThrowValue";
+import type { ParsedThrow } from "@/lib/game/parseThrowValue";
 import type { GameThrowsResponse, PlayerThrow, ScoreboardDelta } from "@/types";
-export { applyOptimisticUndo } from "@/shared/lib/applyOptimisticUndo";
+export { applyOptimisticUndo } from "@/lib/game/applyOptimisticUndo";
 
 function getThrowPoints(throwData: ParsedThrow): number {
   const multiplier = throwData.isTriple ? 3 : throwData.isDouble ? 2 : 1;

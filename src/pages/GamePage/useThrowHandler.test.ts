@@ -38,7 +38,7 @@ vi.mock("@/shared/store", async (importOriginal) => {
   };
 });
 
-vi.mock("@/lib/soundPlayer", () => ({
+vi.mock("@/shared/services/browser/soundPlayer", () => ({
   playSound: vi.fn(),
 }));
 

@@ -1,9 +1,24 @@
 // @vitest-environment jsdom
+vi.mock("@/shared/api/auth", () => ({
+  getAuthenticatedUser: (...args: unknown[]) => getAuthenticatedUserMock(...args),
+}));
+
+vi.mock("@/shared/store", () => ({
+  setCurrentGameId: (...args: unknown[]) => setCurrentGameIdMock(...args),
+}));
+
+vi.mock("@/shared/services/browser/clientLogger", () => ({
+  clientLogger: {
+    error: vi.fn(),
+  },
+}));
+
 import { renderHook, waitFor } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { TimeoutError } from "@/shared/api";
 import { useAuthenticatedUser } from "./useAuthenticatedUser";
-import { TimeoutError } from "@/shared/api/errors";
 import type { AuthenticatedUser } from "@/shared/api/auth";
+import { clientLogger } from "@/shared/services/browser/clientLogger";
 import {
   $authChecked,
   testOnlySetAuthChecked,
@@ -14,14 +29,6 @@ import {
 
 const getAuthenticatedUserMock = vi.fn();
 const setCurrentGameIdMock = vi.fn();
-
-vi.mock("@/shared/api/auth", () => ({
-  getAuthenticatedUser: (...args: unknown[]) => getAuthenticatedUserMock(...args),
-}));
-
-vi.mock("@/shared/store", () => ({
-  setCurrentGameId: (...args: unknown[]) => setCurrentGameIdMock(...args),
-}));
 
 type DeferredAuth = {
   promise: Promise<AuthenticatedUser | null>;
@@ -44,6 +51,7 @@ describe("useAuthenticatedUser", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     resetAuthStore();
+    vi.mocked(clientLogger.error).mockReset();
   });
 
   it("passes a live signal and timeoutMs 5000 when starting auth check", async () => {
@@ -153,6 +161,24 @@ describe("useAuthenticatedUser", () => {
 
     expect(result.current.user).toBeNull();
     expect(result.current.error).toBeNull();
+  });
+
+  it("logs unexpected bootstrap errors and exposes the auth error state", async () => {
+    const error = new Error("network failed");
+    getAuthenticatedUserMock.mockRejectedValue(error);
+
+    const { result } = renderHook(() => useAuthenticatedUser());
+
+    await waitFor(() => {
+      expect(result.current.loading).toBe(false);
+    });
+
+    expect(result.current.user).toBeNull();
+    expect(result.current.error).toBe("network failed");
+    expect(clientLogger.error).toHaveBeenCalledWith("auth.bootstrap.failed", {
+      context: { timeoutMs: 5000 },
+      error,
+    });
   });
 
   it("reuses cached auth result after the first successful check", async () => {

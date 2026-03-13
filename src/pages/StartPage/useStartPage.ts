@@ -9,7 +9,7 @@ import { resolveGameId, shouldRedirectToCurrentGame, useRoomRestore } from "./us
 import { useStartPageError } from "./useStartPageError";
 import { $currentGameId, $invitation, $lastFinishedGameId } from "@/shared/store";
 import { leaveRoom } from "@/shared/api/room";
-import { toUserErrorMessage } from "@/lib/error-to-user-message";
+import { toUserErrorMessage } from "@/lib/error/error-to-user-message";
 
 type GamePlayersResult = ReturnType<typeof useGamePlayers>;
 

@@ -1,7 +1,8 @@
 import { useEffect } from "react";
 import { useStore } from "@nanostores/react";
+import { TimeoutError } from "@/shared/api";
 import { getAuthenticatedUser, type AuthenticatedUser } from "@/shared/api/auth";
-import { TimeoutError } from "@/shared/api/errors";
+import { clientLogger } from "@/shared/services/browser/clientLogger";
 import {
   $authChecked,
   $authError,
@@ -71,6 +72,10 @@ export const useAuthenticatedUser = (): UseAuthenticatedUserResult => {
         }
 
         if (err instanceof Error) {
+          clientLogger.error("auth.bootstrap.failed", {
+            context: { timeoutMs: AUTHENTICATED_USER_TIMEOUT_MS },
+            error: err,
+          });
           setAuthFailed(err.message);
         } else {
           setAuthFailed("Unknown error");

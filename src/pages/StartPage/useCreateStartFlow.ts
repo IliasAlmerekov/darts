@@ -10,8 +10,8 @@ import {
   setGameSettings,
   setInvitation,
 } from "@/shared/store";
-import { toUserErrorMessage } from "@/lib/error-to-user-message";
-import { ROUTES } from "@/lib/routes";
+import { toUserErrorMessage } from "@/lib/error/error-to-user-message";
+import { ROUTES } from "@/lib/router/routes";
 import type { SetStartPageError } from "./useStartPageError";
 
 const START_SOUND_PATH = "/sounds/start-round-sound.mp3";

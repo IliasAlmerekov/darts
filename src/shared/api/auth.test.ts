@@ -21,7 +21,7 @@ describe("getAuthenticatedUser", () => {
     vi.useRealTimers();
   });
 
-  it("returns authenticated user for successful response", async () => {
+  it("should return authenticated user when the response is successful", async () => {
     vi.spyOn(globalThis, "fetch").mockResolvedValueOnce(
       createMockResponse({
         body: {
@@ -46,7 +46,7 @@ describe("getAuthenticatedUser", () => {
     });
   });
 
-  it("returns null for a 401 auth-check response", async () => {
+  it("should return null when the auth-check response is 401", async () => {
     vi.spyOn(globalThis, "fetch").mockResolvedValueOnce(
       createMockResponse({
         body: { message: "Unauthorized" },
@@ -59,7 +59,7 @@ describe("getAuthenticatedUser", () => {
     await expect(getAuthenticatedUser()).resolves.toBeNull();
   });
 
-  it("throws TimeoutError after timeout instead of treating the request as logged out", async () => {
+  it("should throw TimeoutError instead of treating the request as logged out when the auth-check request times out", async () => {
     vi.useFakeTimers();
 
     vi.spyOn(globalThis, "fetch").mockImplementation((_input, init) => {
@@ -83,7 +83,7 @@ describe("getAuthenticatedUser", () => {
     expect(error).toBeInstanceOf(TimeoutError);
   });
 
-  it("throws ApiError when auth-check returns malformed authenticated user payload", async () => {
+  it("should throw ApiError when the auth-check returns a malformed authenticated user payload", async () => {
     vi.spyOn(globalThis, "fetch").mockResolvedValueOnce(
       createMockResponse({
         body: {
@@ -108,7 +108,7 @@ describe("getAuthenticatedUser", () => {
     });
   });
 
-  it("returns null for explicit unauthenticated auth-check payload", async () => {
+  it("should return null when the auth-check payload is explicitly unauthenticated", async () => {
     vi.spyOn(globalThis, "fetch").mockResolvedValueOnce(
       createMockResponse({
         body: { success: false },
@@ -127,7 +127,7 @@ describe("loginWithCredentials", () => {
     vi.restoreAllMocks();
   });
 
-  it("throws ApiError when login returns malformed response shape", async () => {
+  it("should throw ApiError when login returns a malformed response shape", async () => {
     vi.spyOn(apiClient, "post").mockResolvedValueOnce({ redirect: 42 });
 
     await expect(
@@ -219,7 +219,7 @@ describe("registerUser", () => {
     expect(result).toEqual({ redirect: "/start" });
   });
 
-  it("throws ApiError when registration returns malformed response shape", async () => {
+  it("should throw ApiError when registration returns a malformed response shape", async () => {
     vi.spyOn(apiClient, "post").mockResolvedValueOnce({ redirect: 42 });
 
     await expect(
@@ -258,7 +258,7 @@ describe("logout", () => {
     vi.restoreAllMocks();
   });
 
-  it("calls the success callback after successful logout", async () => {
+  it("should call the success callback when logout succeeds", async () => {
     const onSuccess = vi.fn();
     vi.spyOn(apiClient, "post").mockResolvedValueOnce(undefined);
 
@@ -272,7 +272,7 @@ describe("logout", () => {
     expect(onSuccess).toHaveBeenCalledTimes(1);
   });
 
-  it("does not call the success callback when logout fails", async () => {
+  it("should not call the success callback when logout fails", async () => {
     const onSuccess = vi.fn();
     vi.spyOn(apiClient, "post").mockRejectedValueOnce(new Error("Network error"));
 

@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { getPlayerStats } from "@/shared/api/statistics";
-import { clientLogger } from "@/shared/lib/clientLogger";
+import { clientLogger } from "@/shared/services/browser/clientLogger";
 import { registerAuthInvalidationListener } from "@/shared/store/auth";
 import type { PlayerProps } from "@/types";
 

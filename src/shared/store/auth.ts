@@ -1,7 +1,7 @@
 import { atom } from "nanostores";
 import type { ReadableAtom } from "nanostores";
 import type { AuthenticatedUser } from "@/shared/api/auth";
-import { clientLogger } from "@/shared/lib/clientLogger";
+import { clientLogger } from "@/shared/services/browser/clientLogger";
 
 const userAtom = atom<AuthenticatedUser | null>(null);
 const authCheckedAtom = atom<boolean>(false);

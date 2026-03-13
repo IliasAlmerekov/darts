@@ -1,6 +1,6 @@
 import { ApiError, ForbiddenError, NetworkError, TimeoutError, UnauthorizedError } from "./errors";
 import type { ApiRequestConfig, QueryParams } from "./types";
-import { isRecord } from "@/shared/lib/guards";
+import { isRecord } from "@/lib/guards/guards";
 
 const DEFAULT_TIMEOUT_MS = 30_000;
 

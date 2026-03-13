@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import { Link } from "react-router-dom";
 import { Mail, Lock, Eye, EyeOff, User } from "lucide-react";
 import styles from "@/shared/ui/auth-form/AuthForm.module.css";
-import { ROUTES } from "@/lib/routes";
+import { ROUTES } from "@/lib/router/routes";
 
 interface RegistrationFormProps {
   error: string | null;

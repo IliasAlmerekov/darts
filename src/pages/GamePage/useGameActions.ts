@@ -2,9 +2,9 @@ import { useCallback, useState } from "react";
 import type { Dispatch, SetStateAction } from "react";
 import { useNavigate } from "react-router-dom";
 import { abortGame, createRematch, updateGameSettings } from "@/shared/api/game";
-import { clientLogger } from "@/shared/lib/clientLogger";
-import { toUserErrorMessage } from "@/lib/error-to-user-message";
-import { ROUTES } from "@/lib/routes";
+import { clientLogger } from "@/shared/services/browser/clientLogger";
+import { toUserErrorMessage } from "@/lib/error/error-to-user-message";
+import { ROUTES } from "@/lib/router/routes";
 import { resetRoomStore, setInvitation } from "@/shared/store";
 import type { GameSettingsResponse, GameThrowsResponse } from "@/types";
 

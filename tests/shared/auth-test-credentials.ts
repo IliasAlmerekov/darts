@@ -2,7 +2,7 @@ import { test } from "@playwright/test";
 import {
   resolvePlaywrightAuthTestCredentials,
   type PlaywrightAuthTestCredentials,
-} from "../../src/shared/lib/playwrightAuthCredentials";
+} from "../../src/test/playwright/playwrightAuthCredentials";
 
 const resolvedAuthTestCredentials = resolvePlaywrightAuthTestCredentials();
 const shouldSkipAuthDependentTests = !resolvedAuthTestCredentials.isConfigured;

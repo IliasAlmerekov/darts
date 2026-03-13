@@ -56,7 +56,7 @@ vi.mock("./useGameActions", () => ({
   useGameExitFlow: (options: unknown) => useGameExitFlowMock(options),
 }));
 
-vi.mock("@/lib/soundPlayer", () => ({
+vi.mock("@/shared/services/browser/soundPlayer", () => ({
   unlockSounds: vi.fn(),
 }));
 

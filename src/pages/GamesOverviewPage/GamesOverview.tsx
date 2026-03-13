@@ -1,7 +1,7 @@
 import React, { useCallback, useState } from "react";
 import styles from "./GamesOverview.module.css";
 import { Link } from "react-router-dom";
-import { ROUTES } from "@/lib/routes";
+import { ROUTES } from "@/lib/router/routes";
 import Button from "@/shared/ui/button/Button";
 import {
   Pagination,

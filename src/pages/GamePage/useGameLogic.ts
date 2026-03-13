@@ -15,7 +15,7 @@ import {
   useRoomEventRefetch,
 } from "./useGamePageEffects";
 import { useGamePlayersState } from "./useGamePlayersState";
-import { parseLocationState } from "@/shared/lib/locationState";
+import { parseLocationState } from "@/lib/router/locationState";
 
 export {
   areAllPlayersAtStartScore,

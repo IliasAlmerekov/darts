@@ -1,12 +1,12 @@
 import { useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { loginWithCredentials, getAuthenticatedUser } from "@/shared/api/auth";
-import { clientLogger } from "@/shared/lib/clientLogger";
+import { clientLogger } from "@/shared/services/browser/clientLogger";
 import { invalidateAuthState, setAuthenticatedUser } from "@/shared/store/auth";
-import { mapAuthErrorMessage } from "@/lib/auth-error-handling";
-import { ROUTES } from "@/lib/routes";
+import { mapAuthErrorMessage } from "@/lib/error/auth-error-handling";
+import { ROUTES } from "@/lib/router/routes";
 import { resolveSafeLoginRedirect } from "./lib/safeRedirect";
-import { parseLocationState } from "@/shared/lib/locationState";
+import { parseLocationState } from "@/lib/router/locationState";
 
 /**
  * Provides login flow state and action.

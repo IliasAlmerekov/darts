@@ -1,6 +1,6 @@
 import { useEffect, useRef } from "react";
 import type { GameThrowsResponse } from "@/types";
-import { playSound } from "@/lib/soundPlayer";
+import { playSound } from "@/shared/services/browser/soundPlayer";
 
 type ThrowLike = {
   value: number;

@@ -11,8 +11,8 @@ import {
   setCurrentGameId,
 } from "@/shared/store";
 import { getGameSettings, saveGameSettings } from "@/shared/api/game";
-import { clientLogger } from "@/shared/lib/clientLogger";
-import { toUserErrorMessage } from "@/lib/error-to-user-message";
+import { clientLogger } from "@/shared/services/browser/clientLogger";
+import { toUserErrorMessage } from "@/lib/error/error-to-user-message";
 import { ErrorState } from "@/shared/ui/error-state";
 import type { CreateGameSettingsPayload, GameMode, GameSettingsResponse } from "@/types";
 import styles from "./Settings.module.css";

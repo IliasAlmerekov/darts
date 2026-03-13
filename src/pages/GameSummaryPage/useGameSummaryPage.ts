@@ -23,12 +23,12 @@ import {
   setLastFinishedGameSummary,
   resetRoomStore,
 } from "@/shared/store";
-import { playSound } from "@/lib/soundPlayer";
-import { toUserErrorMessage } from "@/lib/error-to-user-message";
-import { ROUTES } from "@/lib/routes";
-import { applyOptimisticUndo } from "@/shared/lib/applyOptimisticUndo";
-import { clientLogger } from "@/shared/lib/clientLogger";
-import { parseLocationState } from "@/shared/lib/locationState";
+import { playSound } from "@/shared/services/browser/soundPlayer";
+import { toUserErrorMessage } from "@/lib/error/error-to-user-message";
+import { ROUTES } from "@/lib/router/routes";
+import { applyOptimisticUndo } from "@/lib/game/applyOptimisticUndo";
+import { clientLogger } from "@/shared/services/browser/clientLogger";
+import { parseLocationState } from "@/lib/router/locationState";
 
 interface SummaryLocationState {
   finishedGameId?: number;

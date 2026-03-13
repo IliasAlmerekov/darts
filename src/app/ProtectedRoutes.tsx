@@ -1,7 +1,7 @@
 import { Navigate, Outlet, useLocation } from "react-router-dom";
 import { StartPageSkeleton, LoginSuccessSkeleton, UniversalSkeleton } from "@/shared/ui/skeletons";
 import { useAuthenticatedUser } from "@/shared/hooks/useAuthenticatedUser";
-import { ROUTES } from "@/lib/routes";
+import { ROUTES } from "@/lib/router/routes";
 import type { Role } from "@/shared/api/auth";
 
 type ProtectedRoutesProps = {

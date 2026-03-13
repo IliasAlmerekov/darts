@@ -6,7 +6,7 @@ import type { GameThrowsResponse, PlayerThrow } from "@/types";
 
 const playSoundMock = vi.fn();
 
-vi.mock("@/lib/soundPlayer", () => ({
+vi.mock("@/shared/services/browser/soundPlayer", () => ({
   playSound: (sound: string) => playSoundMock(sound),
 }));
 

@@ -1,7 +1,7 @@
 import { memo, useState } from "react";
 import styles from "./Keyboard.module.css";
 import { NumberButton } from "./NumberButton";
-import { unlockSounds } from "@/lib/soundPlayer";
+import { unlockSounds } from "@/shared/services/browser/soundPlayer";
 
 interface KeyboardProps {
   onThrow: (value: string | number) => void;

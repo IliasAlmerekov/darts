@@ -1,7 +1,7 @@
 import { atom, computed } from "nanostores";
 import type { ReadableAtom } from "nanostores";
-import { isRecord } from "@/shared/lib/guards";
-import { clientLogger } from "@/shared/lib/clientLogger";
+import { isRecord } from "@/lib/guards/guards";
+import { clientLogger } from "@/shared/services/browser/clientLogger";
 import type { CreateGameSettingsPayload, GameSummaryResponse } from "@/types";
 
 export interface Invitation {

@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef } from "react";
 import { useStore } from "@nanostores/react";
 import { getGameThrowsIfChanged, resetGameStateVersion } from "@/shared/api/game";
-import { clientLogger } from "@/shared/lib/clientLogger";
+import { clientLogger } from "@/shared/services/browser/clientLogger";
 import type { GameSettingsResponse, GameThrowsResponse } from "@/types";
 import {
   $gameData,

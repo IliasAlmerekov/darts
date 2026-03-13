@@ -1,5 +1,5 @@
 import { ApiError, NetworkError } from "@/shared/api";
-import { isRecord } from "@/shared/lib/guards";
+import { isRecord } from "@/lib/guards/guards";
 
 const DEFAULT_ERROR_MESSAGE = "Something went wrong. Please try again.";
 
