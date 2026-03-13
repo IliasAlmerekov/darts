@@ -1,5 +1,6 @@
 // @vitest-environment node
 import { describe, it, expect } from "vitest";
+import { ApiError } from "@/shared/api";
 import { parseThrowValue, type ParsedThrow } from "./parseThrowValue";
 
 describe("parseThrowValue", () => {
@@ -65,6 +66,16 @@ describe("parseThrowValue", () => {
         isTriple: false,
       });
     });
+
+    it("should parse D08 as decimal 8 when value has a leading zero", () => {
+      const result = parseThrowValue("D08");
+
+      expect(result).toEqual<ParsedThrow>({
+        value: 8,
+        isDouble: true,
+        isTriple: false,
+      });
+    });
   });
 
   describe("when input is a triple string", () => {
@@ -101,15 +112,42 @@ describe("parseThrowValue", () => {
 
   describe("error handling", () => {
     it("should throw error for invalid input", () => {
+      expect(() => parseThrowValue("Xabc")).toThrowError(ApiError);
       expect(() => parseThrowValue("Xabc")).toThrow("Invalid throw value: Xabc");
     });
 
     it("should throw error for empty string after modifier", () => {
+      expect(() => parseThrowValue("D")).toThrowError(ApiError);
       expect(() => parseThrowValue("D")).toThrow("Invalid throw value: D");
     });
 
     it("should throw error for non-numeric value after modifier", () => {
+      expect(() => parseThrowValue("Tabc")).toThrowError(ApiError);
       expect(() => parseThrowValue("Tabc")).toThrow("Invalid throw value: Tabc");
+    });
+
+    it("should attach the invalid input payload to ApiError", () => {
+      const capturedError = (() => {
+        try {
+          parseThrowValue("Tabc");
+          return null;
+        } catch (error) {
+          return error;
+        }
+      })();
+
+      expect(capturedError).toBeInstanceOf(ApiError);
+      expect(capturedError).not.toBeNull();
+
+      if (capturedError === null) {
+        throw new Error("Expected parseThrowValue to throw ApiError for invalid input");
+      }
+
+      expect(capturedError).toMatchObject({
+        message: "Invalid throw value: Tabc",
+        status: 400,
+        data: { input: "Tabc" },
+      });
     });
   });
 });

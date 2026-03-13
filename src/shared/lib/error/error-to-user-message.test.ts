@@ -4,13 +4,13 @@ import { ApiError, NetworkError } from "@/shared/api";
 import { toUserErrorMessage } from "./error-to-user-message";
 
 describe("toUserErrorMessage", () => {
-  it("maps network errors", () => {
+  it("should map network error message when request fails without connection", () => {
     expect(toUserErrorMessage(new NetworkError())).toBe(
       "Network error. Please check your connection and try again.",
     );
   });
 
-  it("maps api 500 errors", () => {
+  it("should map server error message when api responds with 500 status", () => {
     expect(
       toUserErrorMessage(
         new ApiError("Internal Server Error", {
@@ -20,7 +20,7 @@ describe("toUserErrorMessage", () => {
     ).toBe("Server error. Please try again later.");
   });
 
-  it("maps api 404 errors", () => {
+  it("should map not found message when api responds with 404 status", () => {
     expect(
       toUserErrorMessage(
         new ApiError("Not found", {
@@ -30,7 +30,7 @@ describe("toUserErrorMessage", () => {
     ).toBe("The requested resource was not found.");
   });
 
-  it("uses payload message if no known mapping exists", () => {
+  it("should use payload message when api error has no known mapping", () => {
     expect(
       toUserErrorMessage(
         new ApiError("Validation failed", {
@@ -41,7 +41,7 @@ describe("toUserErrorMessage", () => {
     ).toBe("Round is locked.");
   });
 
-  it("maps known backend rule codes to explicit user messages", () => {
+  it("should map explicit user message when backend returns known rule code", () => {
     expect(
       toUserErrorMessage(
         new ApiError("Conflict", {
@@ -52,7 +52,7 @@ describe("toUserErrorMessage", () => {
     ).toBe("The start score cannot be changed for an existing game.");
   });
 
-  it("uses fallback for unknown errors", () => {
+  it("should use fallback message when error is unknown", () => {
     expect(toUserErrorMessage({})).toBe("Something went wrong. Please try again.");
     expect(toUserErrorMessage({}, "Custom fallback")).toBe("Custom fallback");
   });
