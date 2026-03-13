@@ -74,7 +74,7 @@ vi.mock("@/shared/store", () => ({
   setLastFinishedGameSummary: (...args: unknown[]) => setLastFinishedGameSummaryMock(...args),
 }));
 
-vi.mock("@/lib/soundPlayer", () => ({
+vi.mock("@/shared/services/browser/soundPlayer", () => ({
   unlockSounds: vi.fn(),
 }));
 

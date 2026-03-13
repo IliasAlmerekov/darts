@@ -1,4 +1,12 @@
 // @vitest-environment jsdom
+vi.mock("@/shared/api/auth", () => ({
+  getAuthenticatedUser: (...args: unknown[]) => getAuthenticatedUserMock(...args),
+}));
+
+vi.mock("@/shared/store", () => ({
+  setCurrentGameId: (...args: unknown[]) => setCurrentGameIdMock(...args),
+}));
+
 import { renderHook, waitFor } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { useAuthenticatedUser } from "./useAuthenticatedUser";
@@ -14,14 +22,6 @@ import {
 
 const getAuthenticatedUserMock = vi.fn();
 const setCurrentGameIdMock = vi.fn();
-
-vi.mock("@/shared/api/auth", () => ({
-  getAuthenticatedUser: (...args: unknown[]) => getAuthenticatedUserMock(...args),
-}));
-
-vi.mock("@/shared/store", () => ({
-  setCurrentGameId: (...args: unknown[]) => setCurrentGameIdMock(...args),
-}));
 
 type DeferredAuth = {
   promise: Promise<AuthenticatedUser | null>;

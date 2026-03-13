@@ -1,7 +1,7 @@
 import { apiClient } from "./client";
 import { ApiError } from "./errors";
 import type { PlayerDataProps, GameDataProps } from "@/types";
-import { isFiniteNumber, isRecord } from "@/shared/lib/guards";
+import { isFiniteNumber, isRecord } from "@/lib/guards/guards";
 
 type NormalizedPaginatedResponse<TItem> = {
   items: TItem[];

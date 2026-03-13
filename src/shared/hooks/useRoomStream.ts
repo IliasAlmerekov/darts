@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import { API_BASE_URL } from "@/shared/api";
-import { clientLogger } from "@/shared/lib/clientLogger";
+import { clientLogger } from "@/shared/services/browser/clientLogger";
 import type { RoomStreamEvent } from "@/types";
 import { useEventSource, type EventSourceListener } from "./useEventSource";
 

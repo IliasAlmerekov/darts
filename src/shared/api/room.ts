@@ -1,7 +1,7 @@
 import { apiClient } from "./client";
 import { ApiError } from "./errors";
 import { createInviteEndpoint } from "./endpoints";
-import { isRecord } from "@/shared/lib/guards";
+import { isRecord } from "@/lib/guards/guards";
 import type {
   CreateRoomResponse,
   AddGuestPayload,

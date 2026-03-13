@@ -3,8 +3,8 @@ import { useNavigate } from "react-router-dom";
 import { useAuthenticatedUser } from "@/shared/hooks/useAuthenticatedUser";
 import { useLogin } from "./useLogin";
 import { getActiveGameId } from "@/shared/store";
-import { mapAuthErrorMessage } from "@/lib/auth-error-handling";
-import { ROUTES } from "@/lib/routes";
+import { mapAuthErrorMessage } from "@/lib/error/auth-error-handling";
+import { ROUTES } from "@/lib/router/routes";
 import { resolveSafeLoginRedirect } from "./lib/safeRedirect";
 
 /**

@@ -5,7 +5,7 @@ import {
   PRE_CREATE_SETTINGS_STORAGE_KEY,
 } from "./game-session";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { REDACTED_VALUE } from "@/shared/lib/clientLogger";
+import { REDACTED_VALUE } from "@/shared/services/browser/clientLogger";
 
 describe("game-session store", () => {
   beforeEach(() => {

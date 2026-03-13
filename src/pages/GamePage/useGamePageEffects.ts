@@ -1,10 +1,10 @@
 import { useEffect, useRef } from "react";
 import { finishGame, resetGameStateVersion } from "@/shared/api/game";
-import { toUserErrorMessage } from "@/lib/error-to-user-message";
-import { ROUTES } from "@/lib/routes";
-import { unlockSounds } from "@/lib/soundPlayer";
+import { toUserErrorMessage } from "@/lib/error/error-to-user-message";
+import { ROUTES } from "@/lib/router/routes";
+import { unlockSounds } from "@/shared/services/browser/soundPlayer";
 import { setLastFinishedGameSummary } from "@/shared/store";
-import { clientLogger } from "@/shared/lib/clientLogger";
+import { clientLogger } from "@/shared/services/browser/clientLogger";
 import type { GameSummaryResponse, GameThrowsResponse, RoomStreamEventType } from "@/types";
 import { shouldAutoFinishGame, shouldNavigateToSummary } from "./gameLogic.helpers";
 

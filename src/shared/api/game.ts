@@ -18,7 +18,7 @@ import type {
   StartRematchResponse,
   UpdateGameSettingsPayload,
 } from "@/types";
-import { isFiniteNumber, isRecord } from "@/shared/lib/guards";
+import { isFiniteNumber, isRecord } from "@/lib/guards/guards";
 
 // ---------------------------------------------------------------------------
 // Endpoints

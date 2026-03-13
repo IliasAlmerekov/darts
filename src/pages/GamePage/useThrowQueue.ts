@@ -1,8 +1,8 @@
 import { useCallback, useRef, useState } from "react";
 import { recordThrow, setGameStateVersion } from "@/shared/api/game";
-import { clientLogger } from "@/shared/lib/clientLogger";
+import { clientLogger } from "@/shared/services/browser/clientLogger";
 import type { GameThrowsResponse, ThrowRequest } from "@/types";
-import { playSound } from "@/lib/soundPlayer";
+import { playSound } from "@/shared/services/browser/soundPlayer";
 import { $gameData, setGameData } from "@/shared/store";
 import { applyScoreboardDeltaToGameState } from "./throwStateService";
 import { isThrowNotAllowedConflict } from "./useThrowReconciliation";

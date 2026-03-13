@@ -19,7 +19,7 @@ vi.mock("@/shared/api/game", () => ({
   getGameThrows: vi.fn(),
 }));
 
-vi.mock("@/shared/lib/clientLogger", () => ({
+vi.mock("@/shared/services/browser/clientLogger", () => ({
   clientLogger: {
     error: vi.fn(),
   },
@@ -34,7 +34,7 @@ vi.mock("@/shared/store", async (importOriginal) => {
 });
 
 import { getGameThrows } from "@/shared/api/game";
-import { clientLogger } from "@/shared/lib/clientLogger";
+import { clientLogger } from "@/shared/services/browser/clientLogger";
 import type { GameThrowsResponse } from "@/types";
 
 const buildGameThrowsResponse = (

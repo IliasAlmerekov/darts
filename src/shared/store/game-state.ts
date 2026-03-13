@@ -1,7 +1,7 @@
 import { atom, computed } from "nanostores";
 import type { ReadableAtom } from "nanostores";
 import type { GameSettingsResponse, GameThrowsResponse, ScoreboardDelta } from "@/types";
-import { applyGameScoreboardDelta, normalizeGameData } from "../lib/gameStateNormalizer";
+import { applyGameScoreboardDelta, normalizeGameData } from "../lib/game/gameStateNormalizer";
 
 const gameDataAtom = atom<GameThrowsResponse | null>(null);
 const isLoadingAtom = atom<boolean>(false);

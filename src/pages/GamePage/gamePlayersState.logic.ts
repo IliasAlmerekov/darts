@@ -1,4 +1,4 @@
-import { getFinishedPlayers, mapPlayersToUI } from "@/lib/player-mappers";
+import { getFinishedPlayers, mapPlayersToUI } from "@/lib/game/player-mappers";
 import type { GameThrowsResponse, UIPlayer } from "@/types";
 import {
   areAllPlayersAtStartScore,

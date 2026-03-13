@@ -34,7 +34,7 @@ vi.mock("@/shared/ui/pagination", () => ({
   ),
 }));
 
-vi.mock("@/lib/routes", () => ({
+vi.mock("@/lib/router/routes", () => ({
   ROUTES: { details: (id: number) => `/games/${id}` },
 }));
 

@@ -1,6 +1,6 @@
 import { apiClient, ApiValidationError } from "./client";
 import { ApiError, UnauthorizedError } from "./errors";
-import { isFiniteNumber, isRecord } from "@/shared/lib/guards";
+import { isFiniteNumber, isRecord } from "@/lib/guards/guards";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -168,7 +168,7 @@ export async function registerUser(
         validate: isCsrfTokensResponse,
       });
     } catch (error) {
-      const { clientLogger } = await import("@/lib/clientLogger");
+      const { clientLogger } = await import("@/shared/services/browser/clientLogger");
       clientLogger.warn("[auth] CSRF prefetch failed — proceeding with registration", { error });
     }
   }

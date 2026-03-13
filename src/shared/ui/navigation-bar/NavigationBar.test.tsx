@@ -2,7 +2,7 @@
 import { render, screen } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import { describe, expect, it } from "vitest";
-import { ROUTES } from "@/lib/routes";
+import { ROUTES } from "@/lib/router/routes";
 import NavigationBar from "./NavigationBar";
 import styles from "./NavigationBar.module.css";
 

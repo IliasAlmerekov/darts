@@ -1,6 +1,6 @@
 import clsx from "clsx";
 import type { WinnerPlayerProps } from "@/types";
-import { formatRoundAverage, getCompletedRounds } from "@/shared/lib/roundAverage";
+import { formatRoundAverage, getCompletedRounds } from "@/lib/game/roundAverage";
 import PodiumPlayerCard from "./PodiumPlayerCard";
 import styles from "./Podium.module.css";
 

@@ -1,5 +1,5 @@
 import type { WinnerPlayerProps } from "@/types";
-import { formatRoundAverage, getCompletedRounds } from "@/shared/lib/roundAverage";
+import { formatRoundAverage, getCompletedRounds } from "@/lib/game/roundAverage";
 import OverviewPlayerItem from "./OverviewPlayerItem";
 
 interface OverviewPlayerItemListProps {

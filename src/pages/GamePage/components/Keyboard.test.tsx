@@ -5,7 +5,7 @@ import { Keyboard } from "./Keyboard";
 
 const unlockSoundsMock = vi.fn();
 
-vi.mock("@/lib/soundPlayer", () => ({
+vi.mock("@/shared/services/browser/soundPlayer", () => ({
   unlockSounds: () => unlockSoundsMock(),
 }));
 
