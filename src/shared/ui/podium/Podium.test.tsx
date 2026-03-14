@@ -23,7 +23,7 @@ const buildPlayer = (
 });
 
 describe("Podium", () => {
-  it("marks first place as winner with badge and blue border", () => {
+  it("should mark first place as winner when the podium is rendered", () => {
     render(
       <Podium
         userMap={[
@@ -51,7 +51,7 @@ describe("Podium", () => {
     expect(winnerBadge.closest(`.${styles.winnerCard}`)).toBeTruthy();
   });
 
-  it("preserves player cards when podium order changes", () => {
+  it("should preserve player cards when the podium order changes", () => {
     const players = [
       buildPlayer(1, "Alice", 0, 10, 45.5),
       buildPlayer(2, "Bob", 0, 11, 40.2),
