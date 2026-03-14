@@ -19,7 +19,7 @@ function LinkButton({
   className,
   disabled,
 }: Props): React.JSX.Element {
-  const handleLinkClick = (e: React.MouseEvent<HTMLAnchorElement>) => {
+  const handleLinkClick = (e: React.MouseEvent<HTMLAnchorElement>): void => {
     if (disabled) {
       e.preventDefault();
       return;
