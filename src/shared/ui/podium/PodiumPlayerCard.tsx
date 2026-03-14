@@ -2,14 +2,14 @@ import clsx from "clsx";
 import styles from "./PodiumPlayerCard.module.css";
 import React from "react";
 
-type Props = {
+interface Props {
   name?: string;
   placement?: number | string;
   className?: string;
   rounds?: number | string;
   averagePerRound?: number | string;
   isWinner?: boolean;
-};
+}
 
 function PodiumPlayerCard({ ...props }: Props): React.JSX.Element {
   return (

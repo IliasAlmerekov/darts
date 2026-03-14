@@ -2,10 +2,10 @@ import type { ReactNode } from "react";
 import { NavigationBar } from "@/shared/ui/navigation-bar";
 import styles from "./AdminLayout.module.css";
 
-type AdminLayoutProps = {
+interface AdminLayoutProps {
   children: ReactNode;
   currentGameId?: number | null;
-};
+}
 
 export default function AdminLayout({
   children,

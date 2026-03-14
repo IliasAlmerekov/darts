@@ -2,14 +2,14 @@ import clsx from "clsx";
 import type { ReactNode } from "react";
 import styles from "./LinkButton.module.css";
 
-type Props = {
+interface Props {
   href?: string;
   icon?: string;
   label?: ReactNode;
   handleClick?: () => void;
   className?: string | undefined;
   disabled?: boolean;
-};
+}
 
 function LinkButton({
   href,
