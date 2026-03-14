@@ -6,13 +6,13 @@ export type BackendPlayer = GameThrowsResponse["players"][number];
 export type BackendRoundHistory = BackendPlayer["roundHistory"][number];
 
 export interface UIRound {
-  throw1?: number | undefined;
-  throw2?: number | undefined;
-  throw3?: number | undefined;
-  throw1IsBust?: boolean | undefined;
-  throw2IsBust?: boolean | undefined;
-  throw3IsBust?: boolean | undefined;
-  isRoundBust?: boolean | undefined;
+  throw1?: number;
+  throw2?: number;
+  throw3?: number;
+  throw1IsBust?: boolean;
+  throw2IsBust?: boolean;
+  throw3IsBust?: boolean;
+  isRoundBust?: boolean;
 }
 
 export interface UIPlayer {

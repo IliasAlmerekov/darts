@@ -11,6 +11,10 @@ type UseGameDetailPageResult = {
   leaderBoardList: WinnerPlayerProps[];
 };
 
+function createEmptyRound(): WinnerPlayerProps["rounds"][number] {
+  return {};
+}
+
 /**
  * Loads finished game details by route id and builds data for podium/leaderboard.
  */
@@ -57,11 +61,7 @@ export function useGameDetailPage(): UseGameDetailPageResult {
         score: 0,
         isActive: false,
         index: player.position - 1,
-        rounds: Array.from({ length: roundsPlayed }).map(() => ({
-          throw1: undefined,
-          throw2: undefined,
-          throw3: undefined,
-        })),
+        rounds: Array.from({ length: roundsPlayed }, () => createEmptyRound()),
         scoreAverage: player.roundAverage,
         roundCount: player.roundsPlayed,
       };
@@ -79,7 +79,7 @@ export function useGameDetailPage(): UseGameDetailPageResult {
       score: 0,
       isActive: false,
       index: 0,
-      rounds: [{ throw1: undefined, throw2: undefined, throw3: undefined }],
+      rounds: [createEmptyRound()],
     });
   }
 

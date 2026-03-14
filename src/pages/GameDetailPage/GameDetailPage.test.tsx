@@ -37,7 +37,7 @@ describe("GameDetailPage", () => {
           score: 0,
           isActive: false,
           index: 0,
-          rounds: [{ throw1: undefined, throw2: undefined, throw3: undefined }],
+          rounds: [{}],
         },
       ],
       newList: [
@@ -47,7 +47,7 @@ describe("GameDetailPage", () => {
           score: 0,
           isActive: false,
           index: 0,
-          rounds: [{ throw1: undefined, throw2: undefined, throw3: undefined }],
+          rounds: [{}],
         },
       ],
       leaderBoardList: [],
