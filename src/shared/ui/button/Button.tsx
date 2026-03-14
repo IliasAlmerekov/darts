@@ -28,7 +28,7 @@ function Button({
   link,
   alt,
   disabled,
-}: ButtonProps) {
+}: ButtonProps): React.JSX.Element {
   const buttonType = type || "primary";
 
   const buttonClasses = clsx(className, styles.btn, styles.h4, {

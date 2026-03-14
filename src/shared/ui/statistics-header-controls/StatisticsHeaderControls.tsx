@@ -15,7 +15,7 @@ function StatisticsHeaderControlsComponent({
   sortValue,
   onSortChange,
   sortDisabled = false,
-}: StatisticsHeaderControlsProps): JSX.Element {
+}: StatisticsHeaderControlsProps): React.JSX.Element {
   return (
     <div className={styles.root}>
       <h1 className={styles.title}>{title}</h1>

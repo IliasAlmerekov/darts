@@ -1,3 +1,4 @@
+import type React from "react";
 import clsx from "clsx";
 import type { WinnerPlayerProps } from "@/types";
 import { formatRoundAverage, getCompletedRounds } from "@/lib/game/roundAverage";
@@ -11,7 +12,7 @@ interface PodiumProps {
   startScore?: number;
 }
 
-function Podium({ userMap, list, startScore = 301 }: PodiumProps): JSX.Element {
+function Podium({ userMap, list, startScore = 301 }: PodiumProps): React.JSX.Element {
   if (!userMap || userMap.length === 0) {
     return <div className={styles.podium} />;
   }

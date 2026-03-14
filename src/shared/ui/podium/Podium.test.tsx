@@ -41,7 +41,14 @@ describe("Podium", () => {
 
     const winnerBadges = screen.getAllByText("WINNER");
     expect(winnerBadges).toHaveLength(1);
-    expect(winnerBadges[0]!.closest(`.${styles.winnerCard}`)).toBeTruthy();
+    const winnerBadge = winnerBadges[0];
+    expect(winnerBadge).toBeDefined();
+
+    if (winnerBadge === undefined) {
+      throw new Error("Expected a winner badge to be rendered.");
+    }
+
+    expect(winnerBadge.closest(`.${styles.winnerCard}`)).toBeTruthy();
   });
 
   it("preserves player cards when podium order changes", () => {
@@ -55,7 +62,16 @@ describe("Podium", () => {
     const aliceCardBeforeReorder = screen.getByText("Alice").closest(`.${styles.playerName}`);
     expect(aliceCardBeforeReorder).toBeTruthy();
 
-    const reorderedPlayers = [players[2]!, players[1]!, players[0]!];
+    const [firstPlayer, secondPlayer, thirdPlayer] = players;
+    expect(firstPlayer).toBeDefined();
+    expect(secondPlayer).toBeDefined();
+    expect(thirdPlayer).toBeDefined();
+
+    if (firstPlayer === undefined || secondPlayer === undefined || thirdPlayer === undefined) {
+      throw new Error("Expected the players fixture to contain exactly three players.");
+    }
+
+    const reorderedPlayers = [thirdPlayer, secondPlayer, firstPlayer];
     rerender(<Podium userMap={reorderedPlayers} list={reorderedPlayers} />);
 
     const aliceCardAfterReorder = screen.getByText("Alice").closest(`.${styles.playerName}`);

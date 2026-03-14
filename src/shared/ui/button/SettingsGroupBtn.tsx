@@ -13,7 +13,12 @@ type SettingsGroupProps = {
   onClick?: (id: string | number) => void;
 };
 
-const SettingsGroupBtn = ({ title, options, selectedId, onClick }: SettingsGroupProps) => {
+const SettingsGroupBtn = ({
+  title,
+  options,
+  selectedId,
+  onClick,
+}: SettingsGroupProps): React.JSX.Element => {
   const activeIndex = Math.max(
     0,
     options.findIndex((option) => option.id === selectedId),

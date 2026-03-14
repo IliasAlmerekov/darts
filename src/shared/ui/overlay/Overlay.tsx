@@ -24,7 +24,7 @@ function Overlay({
   children,
   ariaLabel,
   ariaLabelledBy,
-}: OverlayProps) {
+}: OverlayProps): React.JSX.Element {
   const containerClass = className ?? styles.overlayBox ?? "";
   const backgroundClass = backdropClassName ?? styles.overlayBackground ?? "";
 
