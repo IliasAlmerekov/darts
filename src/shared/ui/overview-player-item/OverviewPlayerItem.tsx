@@ -9,7 +9,7 @@ type Props = {
   placement?: number;
 };
 
-function OverviewPlayerItem({ ...props }: Props) {
+function OverviewPlayerItem({ ...props }: Props): React.JSX.Element {
   return (
     <div className={clsx(styles.overviewPlayerItem, props.className)}>
       <div className={styles.playerInfos}>

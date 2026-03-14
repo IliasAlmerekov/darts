@@ -1,3 +1,4 @@
+import type React from "react";
 import type { WinnerPlayerProps } from "@/types";
 import { formatRoundAverage, getCompletedRounds } from "@/lib/game/roundAverage";
 import OverviewPlayerItem from "./OverviewPlayerItem";
@@ -11,7 +12,7 @@ interface OverviewPlayerItemListProps {
 function OverviewPlayerItemList({
   userMap,
   startScore = 301,
-}: OverviewPlayerItemListProps): JSX.Element {
+}: OverviewPlayerItemListProps): React.JSX.Element {
   return (
     <>
       {userMap.map((item: WinnerPlayerProps, index: number) => {

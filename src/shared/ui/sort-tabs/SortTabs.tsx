@@ -16,7 +16,7 @@ function SortTabsComponent({
   onChange,
   disabled = false,
   className,
-}: SortTabsProps): JSX.Element {
+}: SortTabsProps): React.JSX.Element {
   const handleChange = useCallback(
     (method: SortMethod): void => {
       if (disabled || !onChange || method === value) {

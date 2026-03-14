@@ -11,7 +11,14 @@ type Props = {
   disabled?: boolean;
 };
 
-function LinkButton({ href, icon, label, handleClick, className, disabled }: Props) {
+function LinkButton({
+  href,
+  icon,
+  label,
+  handleClick,
+  className,
+  disabled,
+}: Props): React.JSX.Element {
   const handleLinkClick = (e: React.MouseEvent<HTMLAnchorElement>) => {
     if (disabled) {
       e.preventDefault();

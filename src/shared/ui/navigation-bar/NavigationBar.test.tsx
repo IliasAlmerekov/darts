@@ -16,7 +16,12 @@ describe("NavigationBar", () => {
 
     const statisticsButton = screen.getByRole("button", { name: /Statistics/i });
     const gameButton = screen.getByRole("button", { name: /Game/i });
-    const statisticsIcon = screen.getByAltText("Statistics") as HTMLImageElement;
+    const statisticsIcon = screen.getByAltText("Statistics");
+    expect(statisticsIcon).toBeInstanceOf(HTMLImageElement);
+
+    if (statisticsIcon instanceof HTMLImageElement === false) {
+      throw new Error("Expected Statistics icon to be an image element.");
+    }
 
     expect(statisticsButton.classList.contains(styles.active ?? "")).toBe(true);
     expect(gameButton.classList.contains(styles.inactive ?? "")).toBe(true);
