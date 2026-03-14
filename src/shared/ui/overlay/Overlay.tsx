@@ -5,12 +5,10 @@ import styles from "./Overlay.module.css";
 type OverlayProps = {
   isOpen?: boolean | undefined;
   onClose?: (() => void) | undefined;
-  handleClick?: () => void;
   className?: string | undefined;
   backdropClassName?: string | undefined;
   src?: string;
   children: React.ReactNode;
-  activeOverlay?: "" | "deletePlayer" | "createPlayer" | "Settings";
   ariaLabel?: string | undefined;
   ariaLabelledBy?: string | undefined;
 };

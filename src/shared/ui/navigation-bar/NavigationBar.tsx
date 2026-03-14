@@ -85,7 +85,7 @@ function NavigationBar({ className, currentGameId = null }: NavigationBarProps):
     };
   }, []);
 
-  const handleTabClick = (path: string, itemId: string) => {
+  const handleTabClick = (path: string, itemId: string): void => {
     if (itemId === activeTabId) {
       return;
     }

@@ -4,7 +4,6 @@ import { formatRoundAverage, getCompletedRounds } from "@/lib/game/roundAverage"
 import OverviewPlayerItem from "./OverviewPlayerItem";
 
 interface OverviewPlayerItemListProps {
-  name?: string;
   userMap: WinnerPlayerProps[];
   startScore?: number;
 }

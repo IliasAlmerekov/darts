@@ -6,7 +6,6 @@ import PodiumPlayerCard from "./PodiumPlayerCard";
 import styles from "./Podium.module.css";
 
 interface PodiumProps {
-  name?: string;
   userMap?: WinnerPlayerProps[];
   list?: WinnerPlayerProps[];
   startScore?: number;
