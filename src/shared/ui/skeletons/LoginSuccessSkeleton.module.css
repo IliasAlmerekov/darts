@@ -1,3 +1,40 @@
+.loginContainer {
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  background-color: var(--lightgrey);
+}
+
+.loginRow {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--padding-sm);
+}
+
+.loginCol {
+  width: 100%;
+  max-width: 448px;
+}
+
+.loginCard {
+  background: var(--white);
+  border: 1px solid rgb(226 232 240);
+  border-radius: var(--radius-md);
+  box-shadow: 0 10px 15px -3px rgb(0 0 0 / 10%);
+}
+
+.loginCardBody {
+  padding: var(--padding-md);
+}
+
+.formFooter {
+  display: flex;
+  justify-content: center;
+  margin-top: 20px;
+}
+
 .skeleton {
   background: linear-gradient(90deg, #e0e0e0 0%, #f0f0f0 50%, #e0e0e0 100%);
   background-size: 200% 100%;
@@ -46,7 +83,7 @@
   border-radius: 4px;
 }
 
-.skeletonText.short {
+.short {
   width: 70%;
 }
 
@@ -102,4 +139,19 @@
   font-size: 14px;
   color: #666;
   margin: 0;
+}
+
+@media (width <= 600px) {
+  .loginRow {
+    padding: var(--padding-sm);
+  }
+
+  .loginCol {
+    max-width: 360px;
+    padding: var(--padding-sm);
+  }
+
+  .loginCardBody {
+    padding: var(--padding-sm);
+  }
 }
