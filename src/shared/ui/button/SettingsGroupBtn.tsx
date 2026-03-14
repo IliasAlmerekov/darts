@@ -1,17 +1,17 @@
 import clsx from "clsx";
 import styles from "./SettingsGroupBtn.module.css";
 
-type ButtonOption = {
+interface ButtonOption {
   label: string;
   id: string | number;
-};
+}
 
-type SettingsGroupProps = {
+interface SettingsGroupProps {
   title: string;
   options: readonly ButtonOption[];
   selectedId?: string | number;
   onClick?: (id: string | number) => void;
-};
+}
 
 const SettingsGroupBtn = ({
   title,

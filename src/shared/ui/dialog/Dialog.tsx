@@ -17,7 +17,7 @@ function getFocusableElements(container: HTMLElement): HTMLElement[] {
   );
 }
 
-type DialogProps = {
+interface DialogProps {
   isOpen?: boolean | undefined;
   onClose?: (() => void) | undefined;
   className: string;
@@ -27,7 +27,7 @@ type DialogProps = {
   ariaLabel?: string | undefined;
   ariaLabelledBy?: string | undefined;
   children: React.ReactNode;
-};
+}
 
 function Dialog({
   isOpen = false,

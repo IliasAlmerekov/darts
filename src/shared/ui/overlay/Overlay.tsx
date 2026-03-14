@@ -2,7 +2,7 @@ import React from "react";
 import { Dialog } from "@/shared/ui/dialog";
 import styles from "./Overlay.module.css";
 
-type OverlayProps = {
+interface OverlayProps {
   isOpen?: boolean | undefined;
   onClose?: (() => void) | undefined;
   className?: string | undefined;
@@ -11,7 +11,7 @@ type OverlayProps = {
   children: React.ReactNode;
   ariaLabel?: string | undefined;
   ariaLabelledBy?: string | undefined;
-};
+}
 
 function Overlay({
   isOpen,

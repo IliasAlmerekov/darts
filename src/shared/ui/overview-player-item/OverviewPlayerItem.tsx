@@ -1,13 +1,13 @@
 import clsx from "clsx";
 import styles from "./OverviewPlayerItem.module.css";
 
-type Props = {
+interface Props {
   className?: string;
   rounds?: number;
   averagePerRound?: number | string;
   name?: string;
   placement?: number;
-};
+}
 
 function OverviewPlayerItem({ ...props }: Props): React.JSX.Element {
   return (
