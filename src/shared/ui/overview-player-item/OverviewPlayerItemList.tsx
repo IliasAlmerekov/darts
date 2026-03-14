@@ -1,7 +1,13 @@
 import type React from "react";
 import type { WinnerPlayerProps } from "@/types";
-import { formatRoundAverage, getCompletedRounds } from "@/lib/game/roundAverage";
+import {
+  DEFAULT_ROUND_AVERAGE_START_SCORE,
+  formatRoundAverage,
+  getCompletedRounds,
+} from "@/lib/game/roundAverage";
 import OverviewPlayerItem from "./OverviewPlayerItem";
+
+const OVERVIEW_PLACEMENT_START = 4;
 
 interface OverviewPlayerItemListProps {
   userMap: WinnerPlayerProps[];
@@ -10,7 +16,7 @@ interface OverviewPlayerItemListProps {
 
 function OverviewPlayerItemList({
   userMap,
-  startScore = 301,
+  startScore = DEFAULT_ROUND_AVERAGE_START_SCORE,
 }: OverviewPlayerItemListProps): React.JSX.Element {
   return (
     <>
@@ -22,7 +28,7 @@ function OverviewPlayerItemList({
           <OverviewPlayerItem
             key={item.id}
             name={item.name}
-            placement={index + 4}
+            placement={index + OVERVIEW_PLACEMENT_START}
             rounds={completedRounds}
             averagePerRound={averageScore}
           />

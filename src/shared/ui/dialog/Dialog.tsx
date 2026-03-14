@@ -44,7 +44,7 @@ function Dialog({
   const previousActiveElementRef = React.useRef<HTMLElement | null>(null);
 
   const handleDocumentKeyDown = React.useCallback(
-    (event: KeyboardEvent) => {
+    (event: KeyboardEvent): void => {
       if (!isOpen) {
         return;
       }
