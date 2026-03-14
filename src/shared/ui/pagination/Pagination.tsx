@@ -5,7 +5,7 @@ import styles from "./Pagination.module.css";
 type Size = "icon" | "default";
 type Variant = "ghost" | "outline";
 
-function cx(...parts: Array<string | undefined | false>): string {
+function buildClassName(...parts: Array<string | undefined | false>): string {
   return parts.filter(Boolean).join(" ");
 }
 
@@ -22,7 +22,7 @@ export function Pagination({
       role="navigation"
       aria-label="pagination"
       data-slot="pagination"
-      className={cx(styles.pagination, className)}
+      className={buildClassName(styles.pagination, className)}
       {...props}
     />
   );
@@ -36,7 +36,7 @@ export const PaginationContent = React.forwardRef<
     <ul
       ref={ref}
       data-slot="pagination-content"
-      className={cx(styles.content, className)}
+      className={buildClassName(styles.content, className)}
       {...props}
     />
   );
@@ -46,7 +46,12 @@ PaginationContent.displayName = "PaginationContent";
 export const PaginationItem = React.forwardRef<HTMLLIElement, React.ComponentPropsWithoutRef<"li">>(
   ({ className, ...props }, ref) => {
     return (
-      <li ref={ref} data-slot="pagination-item" className={cx(styles.item, className)} {...props} />
+      <li
+        ref={ref}
+        data-slot="pagination-item"
+        className={buildClassName(styles.item, className)}
+        {...props}
+      />
     );
   },
 );
@@ -82,7 +87,7 @@ export function PaginationLink({
       aria-current={isActive ? "page" : ariaCurrent}
       aria-disabled={disabled ? "true" : undefined}
       tabIndex={disabled ? -1 : props.tabIndex}
-      className={cx(
+      className={buildClassName(
         styles.link,
         size === "icon" ? styles.linkIcon : styles.linkDefault,
         resolvedVariant === "ghost" ? styles.ghost : styles.outline,
@@ -120,7 +125,7 @@ export function PaginationPrevious({
     <PaginationLink
       aria-label="Go to previous page"
       size="default"
-      className={cx(styles.prevNext, className)}
+      className={buildClassName(styles.prevNext, className)}
       {...props}
     >
       <ChevronLeftIcon className={styles.icon} aria-hidden="true" />
@@ -140,7 +145,7 @@ export function PaginationNext({
     <PaginationLink
       aria-label="Go to next page"
       size="default"
-      className={cx(styles.prevNext, className)}
+      className={buildClassName(styles.prevNext, className)}
       {...props}
     >
       <span className={styles.prevNextText}>{text}</span>
@@ -157,7 +162,7 @@ export function PaginationEllipsis({
     <span
       aria-hidden="true"
       data-slot="pagination-ellipsis"
-      className={cx(styles.ellipsis, className)}
+      className={buildClassName(styles.ellipsis, className)}
       {...props}
     >
       <MoreHorizontalIcon className={styles.icon} aria-hidden="true" />
