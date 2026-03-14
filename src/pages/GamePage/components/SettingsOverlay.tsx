@@ -46,6 +46,14 @@ function SettingsOverlay({
   const [gameMode, setGameMode] = useState<GameMode>(
     resolveGameMode(initialDoubleOut, initialTripleOut),
   );
+  const overlayProps = {
+    ...(styles.settingsOverlayBackground !== undefined
+      ? { backdropClassName: styles.settingsOverlayBackground }
+      : {}),
+  };
+  const saveButtonProps = {
+    ...(styles.settingsOverlayBtn !== undefined ? { className: styles.settingsOverlayBtn } : {}),
+  };
 
   useEffect(() => {
     setGameMode(resolveGameMode(initialDoubleOut, initialTripleOut));
@@ -60,11 +68,11 @@ function SettingsOverlay({
   return (
     <Overlay
       className={`${styles.overlayBox} ${styles.centeredOverlayBox}`}
-      backdropClassName={styles.settingsOverlayBackground}
       isOpen={isOpen}
       src={deleteIcon}
       onClose={onClose}
       ariaLabelledBy={titleId}
+      {...overlayProps}
     >
       <div className={styles.settingsOverlay}>
         <h3 className={styles.overlayHeadline} id={titleId}>
@@ -83,12 +91,12 @@ function SettingsOverlay({
           />
         </div>
         <Button
-          className={styles.settingsOverlayBtn}
           type="primary"
           label={isSaving ? "Saving..." : "Save"}
           handleClick={handleSave}
           link={""}
           disabled={isSaving}
+          {...saveButtonProps}
         />
         {error ? <p className={styles.errorText}>{error}</p> : null}
       </div>

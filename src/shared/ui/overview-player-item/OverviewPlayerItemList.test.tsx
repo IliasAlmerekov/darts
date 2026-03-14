@@ -26,7 +26,7 @@ describe("OverviewPlayerItemList", () => {
     expect(screen.queryByText("48.34343435465")).toBeNull();
   });
 
-  it("should start leaderboard placements from fourth place after the podium", () => {
+  it("should start leaderboard placements from fourth place when the list continues after the podium", () => {
     render(
       <OverviewPlayerItemList
         userMap={[

@@ -9,8 +9,8 @@ interface ButtonProps {
   handleClick?: () => void;
   label?: string;
   type?: "primary" | "secondary";
-  className?: string | undefined;
-  iconStyling?: string | undefined;
+  className?: string;
+  iconStyling?: string;
   link?: To;
   alt?: string;
   disabled?: boolean;

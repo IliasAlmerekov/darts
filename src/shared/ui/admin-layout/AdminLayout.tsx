@@ -11,10 +11,15 @@ export default function AdminLayout({
   children,
   currentGameId,
 }: AdminLayoutProps): React.JSX.Element {
+  const navigationBarProps = {
+    ...(styles.navigation !== undefined ? { className: styles.navigation } : {}),
+    ...(currentGameId !== undefined ? { currentGameId } : {}),
+  };
+
   return (
     <div className={styles.page}>
       <div className={styles.navRow}>
-        <NavigationBar className={styles.navigation} currentGameId={currentGameId} />
+        <NavigationBar {...navigationBarProps} />
       </div>
       <div className={styles.content}>{children}</div>
     </div>

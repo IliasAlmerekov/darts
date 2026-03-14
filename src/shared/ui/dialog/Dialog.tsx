@@ -18,14 +18,14 @@ function getFocusableElements(container: HTMLElement): HTMLElement[] {
 }
 
 interface DialogProps {
-  isOpen?: boolean | undefined;
-  onClose?: (() => void) | undefined;
+  isOpen?: boolean;
+  onClose?: () => void;
   className: string;
   backdropClassName: string;
   closeButtonLabel?: string;
-  closeIconSrc?: string | undefined;
-  ariaLabel?: string | undefined;
-  ariaLabelledBy?: string | undefined;
+  closeIconSrc?: string;
+  ariaLabel?: string;
+  ariaLabelledBy?: string;
   children: React.ReactNode;
 }
 

@@ -6,9 +6,9 @@ export type SortMethod = "alphabetically" | "score";
 
 interface SortTabsProps {
   value: SortMethod;
-  onChange?: ((method: SortMethod) => void) | undefined;
+  onChange?: (method: SortMethod) => void;
   disabled?: boolean;
-  className?: string | undefined;
+  className?: string;
 }
 
 function SortTabsComponent({

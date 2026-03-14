@@ -16,11 +16,15 @@ function StatisticsHeaderControlsComponent({
   onSortChange,
   sortDisabled = false,
 }: StatisticsHeaderControlsProps): React.JSX.Element {
+  const sortTabsProps = {
+    ...(onSortChange !== undefined ? { onChange: onSortChange } : {}),
+  };
+
   return (
     <div className={styles.root}>
       <h1 className={styles.title}>{title}</h1>
       <div className={styles.controlsRow}>
-        <SortTabs value={sortValue} onChange={onSortChange} disabled={sortDisabled} />
+        <SortTabs value={sortValue} disabled={sortDisabled} {...sortTabsProps} />
         <div className={styles.viewTabs}>
           <ViewToogleButton />
         </div>
