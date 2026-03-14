@@ -25,4 +25,18 @@ describe("OverviewPlayerItemList", () => {
     expect(screen.getByText("48.34")).toBeTruthy();
     expect(screen.queryByText("48.34343435465")).toBeNull();
   });
+
+  it("should start leaderboard placements from fourth place after the podium", () => {
+    render(
+      <OverviewPlayerItemList
+        userMap={[
+          buildPlayer({ id: 4, name: "Dylan", index: 3 }),
+          buildPlayer({ id: 5, name: "Eve", index: 4 }),
+        ]}
+      />,
+    );
+
+    expect(screen.getByRole("heading", { level: 4, name: "4" })).toBeTruthy();
+    expect(screen.getByRole("heading", { level: 4, name: "5" })).toBeTruthy();
+  });
 });

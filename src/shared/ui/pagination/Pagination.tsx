@@ -31,7 +31,7 @@ export function Pagination({
 export const PaginationContent = React.forwardRef<
   HTMLUListElement,
   React.ComponentPropsWithoutRef<"ul">
->(({ className, ...props }, ref) => {
+>(({ className, ...props }, ref): React.JSX.Element => {
   return (
     <ul
       ref={ref}
@@ -44,7 +44,7 @@ export const PaginationContent = React.forwardRef<
 PaginationContent.displayName = "PaginationContent";
 
 export const PaginationItem = React.forwardRef<HTMLLIElement, React.ComponentPropsWithoutRef<"li">>(
-  ({ className, ...props }, ref) => {
+  ({ className, ...props }, ref): React.JSX.Element => {
     return (
       <li
         ref={ref}
