@@ -7,7 +7,7 @@ import NavigationBar from "./NavigationBar";
 import styles from "./NavigationBar.module.css";
 
 describe("NavigationBar", () => {
-  it("marks Statistics as active on details route", () => {
+  it("should mark Statistics as active when the current route is details", () => {
     render(
       <MemoryRouter initialEntries={[ROUTES.details(551)]}>
         <NavigationBar />

@@ -5,7 +5,7 @@ import { describe, expect, it, vi } from "vitest";
 import { ErrorState } from "./ErrorState";
 
 describe("ErrorState", () => {
-  it("renders alert title and message", () => {
+  it("should render the alert title and message when content is provided", () => {
     render(<ErrorState title="Could not load game" message="Please try again." />);
 
     const alert = screen.getByRole("alert");
@@ -14,7 +14,7 @@ describe("ErrorState", () => {
     expect(screen.getByText("Please try again.")).toBeTruthy();
   });
 
-  it("renders button and link actions", () => {
+  it("should render button and link actions when both actions are provided", () => {
     const onRetry = vi.fn();
 
     render(

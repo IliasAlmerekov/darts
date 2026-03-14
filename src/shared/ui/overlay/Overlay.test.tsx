@@ -4,7 +4,7 @@ import { describe, expect, it, vi } from "vitest";
 import Overlay from "./Overlay";
 
 describe("Overlay", () => {
-  it("renders as a modal dialog and closes on Escape", () => {
+  it("should render as a modal dialog and close when Escape is pressed", () => {
     const onClose = vi.fn();
 
     render(
@@ -22,7 +22,7 @@ describe("Overlay", () => {
     expect(onClose).toHaveBeenCalledTimes(1);
   });
 
-  it("moves focus into the dialog and traps keyboard navigation", () => {
+  it("should move focus into the dialog and trap keyboard navigation when opened", () => {
     render(
       <>
         <button type="button">Open overlay</button>

@@ -4,7 +4,7 @@ import { describe, expect, it, vi } from "vitest";
 import { SortTabs } from "./SortTabs";
 
 describe("SortTabs", () => {
-  it("calls onChange when another tab is clicked", () => {
+  it("should call onChange when another tab is clicked", () => {
     const onChange = vi.fn();
 
     render(<SortTabs value="alphabetically" onChange={onChange} />);
@@ -15,7 +15,7 @@ describe("SortTabs", () => {
     expect(onChange).toHaveBeenCalledWith("score");
   });
 
-  it("does not call onChange when disabled", () => {
+  it("should not call onChange when the tabs are disabled", () => {
     const onChange = vi.fn();
 
     render(<SortTabs value="alphabetically" onChange={onChange} disabled />);

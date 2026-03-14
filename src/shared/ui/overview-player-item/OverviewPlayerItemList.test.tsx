@@ -19,7 +19,7 @@ function buildPlayer(overrides: Partial<WinnerPlayerProps> = {}): WinnerPlayerPr
 }
 
 describe("OverviewPlayerItemList", () => {
-  it("formats average per round with two decimal places like the podium", () => {
+  it("should format the average per round with two decimal places when rendering the list", () => {
     render(<OverviewPlayerItemList userMap={[buildPlayer()]} />);
 
     expect(screen.getByText("48.34")).toBeTruthy();
