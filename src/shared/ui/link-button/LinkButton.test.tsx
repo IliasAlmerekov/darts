@@ -4,7 +4,7 @@ import { describe, expect, it, vi } from "vitest";
 import LinkButton from "./LinkButton";
 
 describe("LinkButton", () => {
-  it("renders icon only when provided", () => {
+  it("should render the icon only when the icon prop is provided", () => {
     const { container, rerender } = render(<LinkButton label="Open" />);
 
     expect(container.querySelector("img")).toBeNull();
@@ -14,7 +14,7 @@ describe("LinkButton", () => {
     expect(container.querySelector("img")).toBeTruthy();
   });
 
-  it("does not call click handler and applies disabled link semantics", () => {
+  it("should not call the click handler and apply disabled link semantics when disabled", () => {
     const handleClick = vi.fn();
     render(<LinkButton href="/start" label="Create" handleClick={handleClick} disabled />);
 
@@ -31,7 +31,7 @@ describe("LinkButton", () => {
     expect(link.getAttribute("aria-disabled")).toBe("true");
   });
 
-  it("calls click handler for button variant when enabled", () => {
+  it("should call the click handler when the button variant is enabled", () => {
     const handleClick = vi.fn();
     render(<LinkButton label="Create" handleClick={handleClick} />);
 
@@ -45,7 +45,7 @@ describe("LinkButton", () => {
     expect(handleClick).toHaveBeenCalledTimes(1);
   });
 
-  it("keeps href and enabled semantics for link variant", () => {
+  it("should keep href and enabled link semantics when the link variant is enabled", () => {
     render(<LinkButton href="/start" label="Create" />);
 
     const link = screen.getByText("Create").closest("a");

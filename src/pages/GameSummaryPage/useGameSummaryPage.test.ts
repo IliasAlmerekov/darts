@@ -590,6 +590,7 @@ describe("useGameSummaryPage", () => {
         roundCount: 5,
       }),
     ]);
+    expect(result.current.newList[0]?.rounds[0]).toEqual({});
     expect(setLastFinishedGameSummaryMock).toHaveBeenCalledWith({
       gameId: 42,
       summary: [

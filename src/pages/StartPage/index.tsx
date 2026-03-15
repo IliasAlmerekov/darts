@@ -86,26 +86,30 @@ function StartPage(): React.JSX.Element {
 
   const createGameButton = (
     <Button
-      className={styles.createNewPlayerButton}
       label={invitation ? "Created" : "Create Game"}
       iconSrc={Plus}
-      iconStyling={styles.createGameIcon}
       type="primary"
       handleClick={handleCreateRoom}
       disabled={!!invitation || creating}
+      {...(styles.createNewPlayerButton !== undefined
+        ? { className: styles.createNewPlayerButton }
+        : {})}
+      {...(styles.createGameIcon !== undefined ? { iconStyling: styles.createGameIcon } : {})}
     />
   );
 
   const mobileCreateGameButton = invitation ? null : (
     <div className={styles.mobileActionCreate}>
       <Button
-        className={styles.createNewPlayerButton}
         label="Create Game"
         iconSrc={Plus}
-        iconStyling={styles.createGameIcon}
         type="primary"
         handleClick={handleCreateRoom}
         disabled={creating}
+        {...(styles.createNewPlayerButton !== undefined
+          ? { className: styles.createNewPlayerButton }
+          : {})}
+        {...(styles.createGameIcon !== undefined ? { iconStyling: styles.createGameIcon } : {})}
       />
     </div>
   );
@@ -117,8 +121,8 @@ function StartPage(): React.JSX.Element {
           label="Start"
           disabled={starting || playerCount < 2 || !gameId}
           type="secondary"
-          className={styles.startButton}
           handleClick={handleStartGame}
+          {...(styles.startButton !== undefined ? { className: styles.startButton } : {})}
         />
       </div>
       {invitation && (

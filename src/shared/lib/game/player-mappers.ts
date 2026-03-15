@@ -1,5 +1,37 @@
 import type { BackendPlayer, BackendRoundHistory, UIPlayer, UIRound } from "@/types";
 
+function mapThrowsToRound(throws: BackendRoundHistory["throws"]): UIRound {
+  const round: UIRound = {};
+  const [throw1, throw2, throw3] = throws;
+
+  if (throw1) {
+    round.throw1 = throw1.value;
+    if (throw1.isBust !== undefined) {
+      round.throw1IsBust = throw1.isBust;
+    }
+  }
+
+  if (throw2) {
+    round.throw2 = throw2.value;
+    if (throw2.isBust !== undefined) {
+      round.throw2IsBust = throw2.isBust;
+    }
+  }
+
+  if (throw3) {
+    round.throw3 = throw3.value;
+    if (throw3.isBust !== undefined) {
+      round.throw3IsBust = throw3.isBust;
+    }
+  }
+
+  if (throws.length > 0) {
+    round.isRoundBust = throws.some((throwData) => throwData.isBust === true);
+  }
+
+  return round;
+}
+
 function mapRoundHistory(roundHistory: BackendRoundHistory[]): UIRound[] {
   if (!Array.isArray(roundHistory)) {
     return [];
@@ -9,15 +41,7 @@ function mapRoundHistory(roundHistory: BackendRoundHistory[]): UIRound[] {
 
   roundHistory.forEach((roundData, index) => {
     const throws = roundData.throws || [];
-    const mappedRound: UIRound = {
-      throw1: throws[0]?.value,
-      throw2: throws[1]?.value,
-      throw3: throws[2]?.value,
-      throw1IsBust: throws[0]?.isBust,
-      throw2IsBust: throws[1]?.isBust,
-      throw3IsBust: throws[2]?.isBust,
-      isRoundBust: throws.some((t) => t.isBust),
-    };
+    const mappedRound = mapThrowsToRound(throws);
 
     const roundNumber =
       "number" === typeof roundData.round && roundData.round > 0 ? roundData.round : index + 1;
@@ -32,15 +56,7 @@ function mapCurrentRound(currentRoundThrows: BackendPlayer["currentRoundThrows"]
     return {};
   }
 
-  return {
-    throw1: currentRoundThrows[0]?.value,
-    throw2: currentRoundThrows[1]?.value,
-    throw3: currentRoundThrows[2]?.value,
-    throw1IsBust: currentRoundThrows[0]?.isBust,
-    throw2IsBust: currentRoundThrows[1]?.isBust,
-    throw3IsBust: currentRoundThrows[2]?.isBust,
-    isRoundBust: currentRoundThrows.some((t) => t.isBust),
-  };
+  return mapThrowsToRound(currentRoundThrows);
 }
 
 function hasAnyThrow(round: UIRound): boolean {

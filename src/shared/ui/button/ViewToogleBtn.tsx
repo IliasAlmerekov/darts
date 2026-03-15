@@ -4,7 +4,7 @@ import styles from "./ViewToogleBtn.module.css";
 import { useLocation, useNavigate } from "react-router-dom";
 import { ROUTES } from "@/lib/router/routes";
 
-function ViewToogleButton() {
+function ViewToogleButton(): React.JSX.Element {
   const location = useLocation();
   const navigate = useNavigate();
 

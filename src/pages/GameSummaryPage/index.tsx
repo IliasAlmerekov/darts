@@ -24,6 +24,9 @@ function GameSummaryPage(): React.JSX.Element {
 
   const gameSettings = useStore($gameSettings);
   const startScore = gameSettings?.startScore ?? 301;
+  const summaryActionButtonProps = {
+    ...(styles.summaryActionButton !== undefined ? { className: styles.summaryActionButton } : {}),
+  };
 
   return (
     <div className={styles.summary}>
@@ -63,17 +66,17 @@ function GameSummaryPage(): React.JSX.Element {
             label="Play Again"
             type="primary"
             isInverted
-            className={styles.summaryActionButton}
             disabled={starting}
             handleClick={handlePlayAgain}
+            {...summaryActionButtonProps}
           />
         </div>
         <div className={styles.backToStartWrap}>
           <Button
             label="Back To Start"
             type="primary"
-            className={styles.summaryActionButton}
             handleClick={handleBackToStart}
+            {...summaryActionButtonProps}
           />
         </div>
       </div>

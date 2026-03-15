@@ -46,6 +46,7 @@ describe("useGameDetailPage", () => {
       expect(result.current.newList).toHaveLength(2);
       expect(result.current.podiumData).toHaveLength(3);
     });
+    expect(result.current.newList[0]?.rounds[0]).toEqual({});
   });
 
   it("returns an error and skips loading when route id is invalid", async () => {

@@ -1,17 +1,31 @@
+import type React from "react";
 import clsx from "clsx";
 import type { WinnerPlayerProps } from "@/types";
-import { formatRoundAverage, getCompletedRounds } from "@/lib/game/roundAverage";
+import {
+  DEFAULT_ROUND_AVERAGE_START_SCORE,
+  formatRoundAverage,
+  getCompletedRounds,
+} from "@/lib/game/roundAverage";
 import PodiumPlayerCard from "./PodiumPlayerCard";
 import styles from "./Podium.module.css";
 
+const PODIUM_FIRST_PLACE_INDEX = 0;
+const PODIUM_SECOND_PLACE_INDEX = 1;
+const PODIUM_THIRD_PLACE_INDEX = 2;
+const PODIUM_PLACEMENT_OFFSET = 1;
+const PODIUM_TWO_PLAYER_COUNT = 2;
+
 interface PodiumProps {
-  name?: string;
   userMap?: WinnerPlayerProps[];
   list?: WinnerPlayerProps[];
   startScore?: number;
 }
 
-function Podium({ userMap, list, startScore = 301 }: PodiumProps): JSX.Element {
+function Podium({
+  userMap,
+  list,
+  startScore = DEFAULT_ROUND_AVERAGE_START_SCORE,
+}: PodiumProps): React.JSX.Element {
   if (!userMap || userMap.length === 0) {
     return <div className={styles.podium} />;
   }
@@ -26,16 +40,17 @@ function Podium({ userMap, list, startScore = 301 }: PodiumProps): JSX.Element {
           <PodiumPlayerCard
             key={item.id}
             className={clsx(styles.podiumPlayerCard, {
-              [styles.first ?? ""]: index === 0,
-              [styles.second ?? ""]: index === 1,
-              [styles.third ?? ""]: index === 2,
-              [styles.hide ?? ""]: list?.length === 2 && index === 2,
+              [styles.first ?? ""]: index === PODIUM_FIRST_PLACE_INDEX,
+              [styles.second ?? ""]: index === PODIUM_SECOND_PLACE_INDEX,
+              [styles.third ?? ""]: index === PODIUM_THIRD_PLACE_INDEX,
+              [styles.hide ?? ""]:
+                list?.length === PODIUM_TWO_PLAYER_COUNT && index === PODIUM_THIRD_PLACE_INDEX,
             })}
             rounds={completedRound}
             name={item.name}
-            placement={index + 1 + "."}
+            placement={index + PODIUM_PLACEMENT_OFFSET + "."}
             averagePerRound={averagePerRound}
-            isWinner={index === 0}
+            isWinner={index === PODIUM_FIRST_PLACE_INDEX}
           />
         );
       })}

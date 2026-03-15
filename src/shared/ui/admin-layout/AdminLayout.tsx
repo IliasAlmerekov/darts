@@ -2,19 +2,24 @@ import type { ReactNode } from "react";
 import { NavigationBar } from "@/shared/ui/navigation-bar";
 import styles from "./AdminLayout.module.css";
 
-type AdminLayoutProps = {
+interface AdminLayoutProps {
   children: ReactNode;
   currentGameId?: number | null;
-};
+}
 
 export default function AdminLayout({
   children,
   currentGameId,
 }: AdminLayoutProps): React.JSX.Element {
+  const navigationBarProps = {
+    ...(styles.navigation !== undefined ? { className: styles.navigation } : {}),
+    ...(currentGameId !== undefined ? { currentGameId } : {}),
+  };
+
   return (
     <div className={styles.page}>
       <div className={styles.navRow}>
-        <NavigationBar className={styles.navigation} currentGameId={currentGameId} />
+        <NavigationBar {...navigationBarProps} />
       </div>
       <div className={styles.content}>{children}</div>
     </div>

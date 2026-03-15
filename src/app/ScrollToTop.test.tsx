@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import { fireEvent, render, screen } from "@testing-library/react";
 import { Link, MemoryRouter, Route, Routes } from "react-router-dom";
-import { describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import ScrollToTop from "./ScrollToTop";
 
 function TestShell(): JSX.Element {
@@ -21,7 +21,31 @@ function TestShell(): JSX.Element {
 }
 
 describe("ScrollToTop", () => {
-  it("scrolls to the top on initial render and route changes", () => {
+  beforeEach(() => {
+    document.documentElement.scrollTop = 0;
+    document.body.scrollTop = 0;
+  });
+
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  it("should call window.scrollTo on initial render and route changes when the browser API is available", () => {
+    const scrollToSpy = vi.spyOn(window, "scrollTo").mockImplementation(() => {});
+
+    render(<TestShell />);
+
+    fireEvent.click(screen.getByRole("link", { name: "Game" }));
+
+    expect(scrollToSpy).toHaveBeenNthCalledWith(1, 0, 0);
+    expect(scrollToSpy).toHaveBeenNthCalledWith(2, 0, 0);
+  });
+
+  it("should reset document scroll positions when window.scrollTo throws", () => {
+    vi.spyOn(window, "scrollTo").mockImplementation(() => {
+      throw new Error("scroll failed");
+    });
+
     document.documentElement.scrollTop = 120;
     document.body.scrollTop = 80;
 

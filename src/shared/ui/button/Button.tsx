@@ -9,8 +9,8 @@ interface ButtonProps {
   handleClick?: () => void;
   label?: string;
   type?: "primary" | "secondary";
-  className?: string | undefined;
-  iconStyling?: string | undefined;
+  className?: string;
+  iconStyling?: string;
   link?: To;
   alt?: string;
   disabled?: boolean;
@@ -28,7 +28,7 @@ function Button({
   link,
   alt,
   disabled,
-}: ButtonProps) {
+}: ButtonProps): React.JSX.Element {
   const buttonType = type || "primary";
 
   const buttonClasses = clsx(className, styles.btn, styles.h4, {

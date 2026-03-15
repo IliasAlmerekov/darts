@@ -2,17 +2,24 @@ import clsx from "clsx";
 import type { ReactNode } from "react";
 import styles from "./LinkButton.module.css";
 
-type Props = {
+interface Props {
   href?: string;
   icon?: string;
   label?: ReactNode;
   handleClick?: () => void;
-  className?: string | undefined;
+  className?: string;
   disabled?: boolean;
-};
+}
 
-function LinkButton({ href, icon, label, handleClick, className, disabled }: Props) {
-  const handleLinkClick = (e: React.MouseEvent<HTMLAnchorElement>) => {
+function LinkButton({
+  href,
+  icon,
+  label,
+  handleClick,
+  className,
+  disabled,
+}: Props): React.JSX.Element {
+  const handleLinkClick = (e: React.MouseEvent<HTMLAnchorElement>): void => {
     if (disabled) {
       e.preventDefault();
       return;

@@ -51,11 +51,14 @@ describe("player-mappers", () => {
       throw2IsBust: true,
       isRoundBust: true,
     });
+    expect(mapped[0]?.rounds[0]).not.toHaveProperty("throw1IsBust");
+    expect(mapped[0]?.rounds[0]).not.toHaveProperty("throw3");
     expect(mapped[0]?.rounds[1]).toMatchObject({
       throw1: 10,
       throw2: 15,
       throw3: 5,
     });
+    expect(mapped[0]?.rounds[1]).not.toHaveProperty("throw1IsBust");
   });
 
   it("should return finished players sorted by position with null positions at the end when positions are mixed", () => {

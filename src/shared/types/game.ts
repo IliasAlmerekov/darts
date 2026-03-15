@@ -83,13 +83,13 @@ export interface ThrowAckResponse {
 // --- Game UI props (merged from ui-props.ts) ---
 
 export interface Round {
-  throw1?: number | string | undefined;
-  throw2?: number | string | undefined;
-  throw3?: number | string | undefined;
-  throw1IsBust?: boolean | undefined;
-  throw2IsBust?: boolean | undefined;
-  throw3IsBust?: boolean | undefined;
-  isRoundBust?: boolean | undefined;
+  throw1?: number | string;
+  throw2?: number | string;
+  throw3?: number | string;
+  throw1IsBust?: boolean;
+  throw2IsBust?: boolean;
+  throw3IsBust?: boolean;
+  isRoundBust?: boolean;
 }
 
 export interface WinnerPlayerProps {

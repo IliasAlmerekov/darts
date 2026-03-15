@@ -5,7 +5,7 @@ import { describe, expect, it, vi } from "vitest";
 import Button from "./Button";
 
 describe("Button", () => {
-  it("renders a link when isLink is true and avoids nested button", () => {
+  it("should render a link and avoid a nested button when isLink is true", () => {
     const { container } = render(
       <MemoryRouter>
         <Button isLink label="Go" link="/next" />
@@ -16,7 +16,7 @@ describe("Button", () => {
     expect(container.querySelector("button")).toBeNull();
   });
 
-  it("prevents click and disables focus for disabled links", () => {
+  it("should prevent clicks and disable focus when the link variant is disabled", () => {
     const handleClick = vi.fn();
     render(
       <MemoryRouter>
@@ -32,7 +32,7 @@ describe("Button", () => {
     expect(link.getAttribute("tabindex")).toBe("-1");
   });
 
-  it("renders a button when isLink is false and calls handleClick", () => {
+  it("should render a button and call handleClick when isLink is false", () => {
     const handleClick = vi.fn();
     render(<Button label="Action" handleClick={handleClick} />);
 
@@ -42,7 +42,7 @@ describe("Button", () => {
     expect(handleClick).toHaveBeenCalledTimes(1);
   });
 
-  it("respects disabled state for regular buttons", () => {
+  it("should respect the disabled state when rendering a regular button", () => {
     const handleClick = vi.fn();
     render(<Button label="Disabled action" disabled handleClick={handleClick} />);
 

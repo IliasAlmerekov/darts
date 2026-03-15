@@ -53,15 +53,23 @@ const OverlaysSection = React.memo(function OverlaysSection({
 }: OverlaysSectionProps): JSX.Element {
   const finishOverlayTitleId = React.useId();
   const exitOverlayTitleId = React.useId();
+  const finishOverlayProps = {
+    ...(styles.centeredOverlayBackground !== undefined
+      ? { backdropClassName: styles.centeredOverlayBackground }
+      : {}),
+  };
+  const exitOverlayProps = {
+    ...(styles.overlayBox !== undefined ? { className: styles.overlayBox } : {}),
+  };
 
   return (
     <>
       <Overlay
         className={`${styles.overlayBox} ${styles.centeredOverlayBox}`}
-        backdropClassName={styles.centeredOverlayBackground}
         isOpen={shouldShowFinishOverlay}
         src={deleteIcon}
         ariaLabelledBy={finishOverlayTitleId}
+        {...finishOverlayProps}
       >
         <div className={styles.finishGameOverlay}>
           <p className={styles.overlayHeading} id={finishOverlayTitleId}>
@@ -73,18 +81,18 @@ const OverlaysSection = React.memo(function OverlaysSection({
               icon={Undo}
               label="Undo Throw"
               handleClick={handleUndoFromOverlay}
-              className={styles.undoThrow}
+              {...(styles.undoThrow !== undefined ? { className: styles.undoThrow } : {})}
             />
           </div>
         </div>
       </Overlay>
 
       <Overlay
-        className={styles.overlayBox}
         isOpen={isExitOverlayOpen}
         onClose={handleCloseExitOverlay}
         src={deleteIcon}
         ariaLabelledBy={exitOverlayTitleId}
+        {...exitOverlayProps}
       >
         <div className={styles.finishGameOverlay}>
           <p className={styles.overlayHeading} id={exitOverlayTitleId}>
@@ -127,9 +135,9 @@ const HeaderSection = React.memo(function HeaderSection({
         <img src={Back} alt="Back to Home" />
       </button>
       <LinkButton
-        className={styles.settingsBtn}
         label={<img src={settingsIcon} alt="Settings" />}
         handleClick={handleOpenSettings}
+        {...(styles.settingsBtn !== undefined ? { className: styles.settingsBtn } : {})}
       />
     </header>
   );

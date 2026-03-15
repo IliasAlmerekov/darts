@@ -2,18 +2,16 @@ import React from "react";
 import { Dialog } from "@/shared/ui/dialog";
 import styles from "./Overlay.module.css";
 
-type OverlayProps = {
-  isOpen?: boolean | undefined;
-  onClose?: (() => void) | undefined;
-  handleClick?: () => void;
-  className?: string | undefined;
-  backdropClassName?: string | undefined;
+interface OverlayProps {
+  isOpen?: boolean;
+  onClose?: () => void;
+  className?: string;
+  backdropClassName?: string;
   src?: string;
   children: React.ReactNode;
-  activeOverlay?: "" | "deletePlayer" | "createPlayer" | "Settings";
-  ariaLabel?: string | undefined;
-  ariaLabelledBy?: string | undefined;
-};
+  ariaLabel?: string;
+  ariaLabelledBy?: string;
+}
 
 function Overlay({
   isOpen,
@@ -24,20 +22,19 @@ function Overlay({
   children,
   ariaLabel,
   ariaLabelledBy,
-}: OverlayProps) {
+}: OverlayProps): React.JSX.Element {
   const containerClass = className ?? styles.overlayBox ?? "";
   const backgroundClass = backdropClassName ?? styles.overlayBackground ?? "";
+  const optionalDialogProps = {
+    ...(isOpen !== undefined ? { isOpen } : {}),
+    ...(onClose !== undefined ? { onClose } : {}),
+    ...(src !== undefined ? { closeIconSrc: src } : {}),
+    ...(ariaLabel !== undefined ? { ariaLabel } : {}),
+    ...(ariaLabelledBy !== undefined ? { ariaLabelledBy } : {}),
+  };
 
   return (
-    <Dialog
-      isOpen={isOpen}
-      onClose={onClose}
-      className={containerClass}
-      backdropClassName={backgroundClass}
-      closeIconSrc={src}
-      ariaLabel={ariaLabel}
-      ariaLabelledBy={ariaLabelledBy}
-    >
+    <Dialog className={containerClass} backdropClassName={backgroundClass} {...optionalDialogProps}>
       {children}
     </Dialog>
   );

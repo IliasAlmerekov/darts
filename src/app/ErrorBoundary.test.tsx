@@ -28,7 +28,7 @@ describe("ErrorBoundary", () => {
     errorHandler = null;
   });
 
-  it("renders fallback UI when child throws", () => {
+  it("should render fallback UI when a child throws", () => {
     render(
       <ErrorBoundary fallbackTitle="Oops" fallbackMessage="Try again">
         <ThrowingChild />
@@ -40,7 +40,7 @@ describe("ErrorBoundary", () => {
     expect(screen.getByText("Try again")).toBeTruthy();
   });
 
-  it("logs crashes through the client logging policy", () => {
+  it("should log crashes through the client logging policy when no custom handler is provided", () => {
     render(
       <ErrorBoundary fallbackTitle="Oops" fallbackMessage="Try again">
         <ThrowingChild />
@@ -63,5 +63,30 @@ describe("ErrorBoundary", () => {
         ],
       ]),
     );
+  });
+
+  it("should call the custom onError handler when one is provided", () => {
+    const onError = vi.fn();
+
+    render(
+      <ErrorBoundary fallbackTitle="Oops" fallbackMessage="Try again" onError={onError}>
+        <ThrowingChild />
+      </ErrorBoundary>,
+    );
+
+    expect(onError).toHaveBeenCalledTimes(1);
+    expect(onError).toHaveBeenCalledWith(
+      expect.objectContaining({
+        message: "Crash",
+        name: "Error",
+      }),
+      expect.objectContaining({
+        componentStack: expect.any(String),
+      }),
+    );
+    expect(consoleErrorSpy.mock.calls).not.toContainEqual([
+      "[client:error] ui.error-boundary.crash",
+      expect.anything(),
+    ]);
   });
 });

@@ -6,9 +6,9 @@ export type SortMethod = "alphabetically" | "score";
 
 interface SortTabsProps {
   value: SortMethod;
-  onChange?: ((method: SortMethod) => void) | undefined;
+  onChange?: (method: SortMethod) => void;
   disabled?: boolean;
-  className?: string | undefined;
+  className?: string;
 }
 
 function SortTabsComponent({
@@ -16,7 +16,7 @@ function SortTabsComponent({
   onChange,
   disabled = false,
   className,
-}: SortTabsProps): JSX.Element {
+}: SortTabsProps): React.JSX.Element {
   const handleChange = useCallback(
     (method: SortMethod): void => {
       if (disabled || !onChange || method === value) {

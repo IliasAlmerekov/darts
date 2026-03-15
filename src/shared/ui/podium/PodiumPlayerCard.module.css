@@ -11,6 +11,14 @@
   border-radius: 8px;
 }
 
+.copylarge {
+  font-size: var(--font-size-20);
+  font-weight: 400;
+  line-height: var(--line-height-24);
+  text-align: left;
+  width: 7em;
+}
+
 .winnerCard {
   border: 2px solid var(--blue);
   box-shadow:

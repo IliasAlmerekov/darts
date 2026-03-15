@@ -35,6 +35,10 @@ interface SummaryLocationState {
   summary?: FinishedPlayerResponse[];
 }
 
+function createEmptyRound(): WinnerPlayerProps["rounds"][number] {
+  return {};
+}
+
 function isFinishedPlayerResponseArray(value: unknown): value is FinishedPlayerResponse[] {
   return (
     Array.isArray(value) &&
@@ -161,11 +165,7 @@ export function useGameSummaryPage() {
           score: 0,
           isActive: false,
           index: player.position - 1,
-          rounds: Array.from({ length: roundsPlayed }).map(() => ({
-            throw1: undefined,
-            throw2: undefined,
-            throw3: undefined,
-          })),
+          rounds: Array.from({ length: roundsPlayed }, () => createEmptyRound()),
           scoreAverage: player.roundAverage,
           roundCount: player.roundsPlayed,
         };
@@ -183,7 +183,7 @@ export function useGameSummaryPage() {
     score: 0,
     isActive: false,
     index: 0,
-    rounds: [{ throw1: undefined, throw2: undefined, throw3: undefined }],
+    rounds: [createEmptyRound()],
   });
   const podiumData = podiumList.length === 2 ? podiumListWithPlaceholder : podiumList;
 

@@ -1,13 +1,10 @@
 import * as React from "react";
+import clsx from "clsx";
 import { ChevronLeftIcon, ChevronRightIcon, MoreHorizontalIcon } from "lucide-react";
 import styles from "./Pagination.module.css";
 
 type Size = "icon" | "default";
 type Variant = "ghost" | "outline";
-
-function cx(...parts: Array<string | undefined | false>): string {
-  return parts.filter(Boolean).join(" ");
-}
 
 function isModifiedEvent(e: React.MouseEvent<HTMLElement>): boolean {
   return e.metaKey || e.altKey || e.ctrlKey || e.shiftKey;
@@ -22,7 +19,7 @@ export function Pagination({
       role="navigation"
       aria-label="pagination"
       data-slot="pagination"
-      className={cx(styles.pagination, className)}
+      className={clsx(styles.pagination, className)}
       {...props}
     />
   );
@@ -31,12 +28,12 @@ export function Pagination({
 export const PaginationContent = React.forwardRef<
   HTMLUListElement,
   React.ComponentPropsWithoutRef<"ul">
->(({ className, ...props }, ref) => {
+>(({ className, ...props }, ref): React.JSX.Element => {
   return (
     <ul
       ref={ref}
       data-slot="pagination-content"
-      className={cx(styles.content, className)}
+      className={clsx(styles.content, className)}
       {...props}
     />
   );
@@ -44,9 +41,14 @@ export const PaginationContent = React.forwardRef<
 PaginationContent.displayName = "PaginationContent";
 
 export const PaginationItem = React.forwardRef<HTMLLIElement, React.ComponentPropsWithoutRef<"li">>(
-  ({ className, ...props }, ref) => {
+  ({ className, ...props }, ref): React.JSX.Element => {
     return (
-      <li ref={ref} data-slot="pagination-item" className={cx(styles.item, className)} {...props} />
+      <li
+        ref={ref}
+        data-slot="pagination-item"
+        className={clsx(styles.item, className)}
+        {...props}
+      />
     );
   },
 );
@@ -82,7 +84,7 @@ export function PaginationLink({
       aria-current={isActive ? "page" : ariaCurrent}
       aria-disabled={disabled ? "true" : undefined}
       tabIndex={disabled ? -1 : props.tabIndex}
-      className={cx(
+      className={clsx(
         styles.link,
         size === "icon" ? styles.linkIcon : styles.linkDefault,
         resolvedVariant === "ghost" ? styles.ghost : styles.outline,
@@ -120,7 +122,7 @@ export function PaginationPrevious({
     <PaginationLink
       aria-label="Go to previous page"
       size="default"
-      className={cx(styles.prevNext, className)}
+      className={clsx(styles.prevNext, className)}
       {...props}
     >
       <ChevronLeftIcon className={styles.icon} aria-hidden="true" />
@@ -140,7 +142,7 @@ export function PaginationNext({
     <PaginationLink
       aria-label="Go to next page"
       size="default"
-      className={cx(styles.prevNext, className)}
+      className={clsx(styles.prevNext, className)}
       {...props}
     >
       <span className={styles.prevNextText}>{text}</span>
@@ -157,7 +159,7 @@ export function PaginationEllipsis({
     <span
       aria-hidden="true"
       data-slot="pagination-ellipsis"
-      className={cx(styles.ellipsis, className)}
+      className={clsx(styles.ellipsis, className)}
       {...props}
     >
       <MoreHorizontalIcon className={styles.icon} aria-hidden="true" />

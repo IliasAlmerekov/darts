@@ -1,19 +1,15 @@
 import { useEffect } from "react";
 import { useLocation } from "react-router-dom";
+import { clientLogger } from "@/shared/lib/clientLogger";
 
 export default function ScrollToTop(): null {
   const location = useLocation();
 
   useEffect(() => {
-    if (navigator.userAgent.includes("jsdom")) {
-      document.documentElement.scrollTop = 0;
-      document.body.scrollTop = 0;
-      return;
-    }
-
     try {
       window.scrollTo(0, 0);
-    } catch {
+    } catch (error) {
+      clientLogger.warn("scroll_to_top_fallback", { error });
       document.documentElement.scrollTop = 0;
       document.body.scrollTop = 0;
     }

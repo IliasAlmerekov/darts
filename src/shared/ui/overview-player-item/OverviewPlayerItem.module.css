@@ -5,6 +5,14 @@
   align-items: center;
 }
 
+.copylarge {
+  font-size: var(--font-size-20);
+  font-weight: 400;
+  line-height: var(--line-height-24);
+  text-align: left;
+  width: 7em;
+}
+
 .playerInfos {
   display: flex;
   align-items: center;

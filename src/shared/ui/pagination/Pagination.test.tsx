@@ -11,7 +11,7 @@ import {
 } from "./Pagination";
 
 describe("Pagination", () => {
-  it("renders previous and next controls", () => {
+  it("should render previous and next controls when pagination actions are provided", () => {
     render(
       <Pagination>
         <PaginationContent>
@@ -30,7 +30,7 @@ describe("Pagination", () => {
     expect(screen.getByLabelText("Go to next page")).toBeDefined();
   });
 
-  it("respects disabled state", () => {
+  it("should respect the disabled state when previous and next actions are disabled", () => {
     render(
       <Pagination>
         <PaginationContent>
@@ -48,7 +48,7 @@ describe("Pagination", () => {
     expect(screen.getByLabelText("Go to next page").getAttribute("aria-disabled")).toBe("true");
   });
 
-  it("calls click handlers", () => {
+  it("should call click handlers when pagination actions are clicked", () => {
     const onPrev = vi.fn();
     const onNext = vi.fn();
 
@@ -72,7 +72,7 @@ describe("Pagination", () => {
     expect(onNext).toHaveBeenCalledTimes(1);
   });
 
-  it("renders ellipsis", () => {
+  it("should render an ellipsis when the ellipsis item is used", () => {
     render(
       <Pagination>
         <PaginationContent>

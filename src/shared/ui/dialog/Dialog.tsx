@@ -17,17 +17,17 @@ function getFocusableElements(container: HTMLElement): HTMLElement[] {
   );
 }
 
-type DialogProps = {
-  isOpen?: boolean | undefined;
-  onClose?: (() => void) | undefined;
+interface DialogProps {
+  isOpen?: boolean;
+  onClose?: () => void;
   className: string;
   backdropClassName: string;
   closeButtonLabel?: string;
-  closeIconSrc?: string | undefined;
-  ariaLabel?: string | undefined;
-  ariaLabelledBy?: string | undefined;
+  closeIconSrc?: string;
+  ariaLabel?: string;
+  ariaLabelledBy?: string;
   children: React.ReactNode;
-};
+}
 
 function Dialog({
   isOpen = false,
@@ -39,12 +39,12 @@ function Dialog({
   ariaLabel,
   ariaLabelledBy,
   children,
-}: DialogProps): React.JSX.Element | null {
+}: DialogProps): React.ReactNode {
   const dialogRef = React.useRef<HTMLDivElement | null>(null);
   const previousActiveElementRef = React.useRef<HTMLElement | null>(null);
 
   const handleDocumentKeyDown = React.useCallback(
-    (event: KeyboardEvent) => {
+    (event: KeyboardEvent): void => {
       if (!isOpen) {
         return;
       }

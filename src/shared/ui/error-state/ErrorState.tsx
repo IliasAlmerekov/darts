@@ -3,11 +3,11 @@ import { Link, type To } from "react-router-dom";
 import clsx from "clsx";
 import styles from "./ErrorState.module.css";
 
-type ErrorAction = {
+interface ErrorAction {
   label: string;
   onClick?: () => void;
   to?: To;
-};
+}
 
 interface ErrorStateProps {
   title: string;

@@ -11,10 +11,10 @@ import styles from "./NavigationBar.module.css";
 import Madebydeepblue from "@/assets/icons/madeByDeepblue.svg";
 import clsx from "clsx";
 
-type NavigationBarProps = {
-  className?: string | undefined;
-  currentGameId?: number | null | undefined;
-};
+interface NavigationBarProps {
+  className?: string;
+  currentGameId?: number | null;
+}
 
 function NavigationBar({ className, currentGameId = null }: NavigationBarProps): React.JSX.Element {
   const navigate = useNavigate();
@@ -85,7 +85,7 @@ function NavigationBar({ className, currentGameId = null }: NavigationBarProps):
     };
   }, []);
 
-  const handleTabClick = (path: string, itemId: string) => {
+  const handleTabClick = (path: string, itemId: string): void => {
     if (itemId === activeTabId) {
       return;
     }
