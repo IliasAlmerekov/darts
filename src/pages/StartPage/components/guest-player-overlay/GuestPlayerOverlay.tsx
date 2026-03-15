@@ -58,14 +58,17 @@ function GuestPlayerOverlay({
   const isAddDisabled = isAdding || trimmedUsername.length === 0;
   const errorId = error ? "guest-username-error" : undefined;
   const hasSuggestions = suggestions.length > 0;
+  const overlayProps = {
+    ...(styles.guestOverlayBox !== undefined ? { className: styles.guestOverlayBox } : {}),
+  };
 
   return (
     <Overlay
       isOpen={isOpen}
       onClose={onClose}
       src={deleteIcon}
-      className={styles.guestOverlayBox}
       ariaLabelledBy={titleId}
+      {...overlayProps}
     >
       <div className={styles.overlayContent}>
         <h3 className={styles.heading} id={titleId}>

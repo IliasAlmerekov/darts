@@ -7,7 +7,7 @@ interface Props {
   icon?: string;
   label?: ReactNode;
   handleClick?: () => void;
-  className?: string | undefined;
+  className?: string;
   disabled?: boolean;
 }
 
