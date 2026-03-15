@@ -39,7 +39,7 @@ function Dialog({
   ariaLabel,
   ariaLabelledBy,
   children,
-}: DialogProps): React.JSX.Element | null {
+}: DialogProps): React.ReactNode {
   const dialogRef = React.useRef<HTMLDivElement | null>(null);
   const previousActiveElementRef = React.useRef<HTMLElement | null>(null);
 
