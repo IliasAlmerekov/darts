@@ -84,60 +84,6 @@
   height: 100%;
 }
 
-.app {
-  flex: 1;
-}
-
-.app-error {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-sm);
-  align-items: flex-start;
-  justify-content: center;
-  min-height: 100%;
-  padding: var(--space-lg);
-  background: var(--color-bg);
-  color: var(--color-text);
-}
-
-.app-error__title {
-  margin: 0;
-  font-size: var(--font-size-28);
-  font-weight: var(--font-weight-bold);
-  line-height: var(--line-height-33);
-  letter-spacing: var(--letter-spacing-tight);
-}
-
-.app-error__message {
-  margin: 0;
-  font-size: var(--font-size-16);
-  line-height: var(--line-height-19);
-  color: var(--color-text-muted);
-}
-
-.app-error__button {
-  padding: var(--space-sm) var(--space-md);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-sm);
-  background: var(--color-surface);
-  color: var(--color-text);
-  font-weight: var(--font-weight-bold);
-  cursor: pointer;
-  transition:
-    background var(--transition-base),
-    border-color var(--transition-base);
-}
-
-.app-error__button:focus-visible {
-  outline: 2px solid var(--color-primary);
-  outline-offset: 2px;
-}
-
-.app-error__button:hover {
-  border-color: var(--color-primary);
-  background: var(--color-bg);
-}
-
 body,
 html {
   height: 100%;

@@ -1,5 +1,13 @@
-import React, { Suspense, lazy, useEffect } from "react";
-import { BrowserRouter, Route, Routes, useNavigate } from "react-router-dom";
+import React, { Suspense, lazy, useEffect, useState } from "react";
+import {
+  Outlet,
+  Route,
+  RouterProvider,
+  createBrowserRouter,
+  createRoutesFromElements,
+  useNavigate,
+} from "react-router-dom";
+import styles from "@/app/App.module.css";
 import "@/app/styles/index.css";
 import ErrorBoundary from "@/app/ErrorBoundary";
 import ScrollToTop from "@/app/ScrollToTop";
@@ -26,6 +34,20 @@ const Statistics = lazy(() => import("@/pages/StatisticsPage"));
 const JoinedGamePage = lazy(() => import("@/pages/JoinedGamePage"));
 const PlayerProfile = lazy(() => import("@/pages/PlayerProfilePage"));
 
+function withSuspense(element: React.ReactNode): React.JSX.Element {
+  return <Suspense fallback={<UniversalSkeleton />}>{element}</Suspense>;
+}
+
+function AppShell(): React.JSX.Element {
+  return (
+    <>
+      <UnauthorizedNavigationBridge />
+      <ScrollToTop />
+      <Outlet />
+    </>
+  );
+}
+
 function UnauthorizedNavigationBridge(): null {
   const navigate = useNavigate();
 
@@ -45,7 +67,94 @@ function UnauthorizedNavigationBridge(): null {
   return null;
 }
 
+function createAppRouter(): ReturnType<typeof createBrowserRouter> {
+  return createBrowserRouter(
+    createRoutesFromElements(
+      <Route element={<AppShell />} errorElement={<ErrorBoundary />}>
+        <Route
+          path={ROUTES.login}
+          element={withSuspense(<LoginPage />)}
+          errorElement={<ErrorBoundary />}
+        />
+        <Route
+          path={ROUTES.register}
+          element={withSuspense(<RegisterPage />)}
+          errorElement={<ErrorBoundary />}
+        />
+
+        <Route
+          element={<ProtectedRoutes allowedRoles={["ROLE_ADMIN"]} />}
+          errorElement={<ErrorBoundary />}
+        >
+          <Route
+            path={ROUTES.gamePattern}
+            element={withSuspense(<GamePage />)}
+            errorElement={<ErrorBoundary />}
+          />
+          <Route
+            path={ROUTES.summaryPattern}
+            element={withSuspense(<GameSummaryPage />)}
+            errorElement={<ErrorBoundary />}
+          />
+          <Route element={<AdminLayoutRoute />} errorElement={<ErrorBoundary />}>
+            <Route
+              path={`${ROUTES.start()}/:id?`}
+              element={withSuspense(<StartPage />)}
+              errorElement={<ErrorBoundary />}
+            />
+            <Route
+              path={ROUTES.detailsPattern}
+              element={withSuspense(<GameDetailPage />)}
+              errorElement={<ErrorBoundary />}
+            />
+            <Route
+              path={ROUTES.gamesOverview}
+              element={withSuspense(<GamesOverview />)}
+              errorElement={<ErrorBoundary />}
+            />
+            <Route
+              path={`${ROUTES.settings()}/:id?`}
+              element={withSuspense(<SettingsPage />)}
+              errorElement={<ErrorBoundary />}
+            />
+            <Route
+              path={ROUTES.statistics}
+              element={withSuspense(<Statistics />)}
+              errorElement={<ErrorBoundary />}
+            />
+          </Route>
+        </Route>
+
+        <Route
+          element={<ProtectedRoutes allowedRoles={["ROLE_PLAYER"]} />}
+          errorElement={<ErrorBoundary />}
+        >
+          <Route
+            path={ROUTES.joined}
+            element={withSuspense(<JoinedGamePage />)}
+            errorElement={<ErrorBoundary />}
+          />
+          <Route
+            path={ROUTES.playerProfile}
+            element={withSuspense(<PlayerProfile />)}
+            errorElement={<ErrorBoundary />}
+          />
+        </Route>
+
+        <Route path="*" element={<NotFoundPage />} errorElement={<ErrorBoundary />} />
+      </Route>,
+    ),
+    {
+      future: {
+        v7_relativeSplatPath: true,
+      },
+    },
+  );
+}
+
 function App(): React.JSX.Element {
+  const [router] = useState(createAppRouter);
+
   useEffect(() => {
     const stopRouteWarmUp = scheduleSelectiveRouteWarmUp();
     const stopStatisticsPrefetch = scheduleStatisticsPrefetch();
@@ -57,39 +166,8 @@ function App(): React.JSX.Element {
   }, []);
 
   return (
-    <div className="app">
-      <ErrorBoundary>
-        <BrowserRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
-          <UnauthorizedNavigationBridge />
-          <ScrollToTop />
-          <Suspense fallback={<UniversalSkeleton />}>
-            <Routes>
-              <Route path={ROUTES.login} element={<LoginPage />} />
-              <Route path={ROUTES.register} element={<RegisterPage />} />
-
-              <Route element={<ProtectedRoutes allowedRoles={["ROLE_ADMIN"]} />}>
-                <Route path={ROUTES.gamePattern} element={<GamePage />} />
-                <Route path={ROUTES.summaryPattern} element={<GameSummaryPage />} />
-                <Route element={<AdminLayoutRoute />}>
-                  <Route path={`${ROUTES.start()}/:id?`} element={<StartPage />} />
-                  <Route path={ROUTES.detailsPattern} element={<GameDetailPage />} />
-                  <Route path={ROUTES.gamesOverview} element={<GamesOverview />} />
-                  <Route path={ROUTES.settings()} element={<SettingsPage />} />
-                  <Route path={`${ROUTES.settings()}/:id`} element={<SettingsPage />} />
-                  <Route path={ROUTES.statistics} element={<Statistics />} />
-                </Route>
-              </Route>
-
-              <Route element={<ProtectedRoutes allowedRoles={["ROLE_PLAYER"]} />}>
-                <Route path={ROUTES.joined} element={<JoinedGamePage />} />
-                <Route path={ROUTES.playerProfile} element={<PlayerProfile />} />
-              </Route>
-
-              <Route path="*" element={<NotFoundPage />} />
-            </Routes>
-          </Suspense>
-        </BrowserRouter>
-      </ErrorBoundary>
+    <div className={styles.root}>
+      <RouterProvider router={router} future={{ v7_startTransition: true }} />
     </div>
   );
 }

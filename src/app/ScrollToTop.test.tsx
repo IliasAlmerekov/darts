@@ -41,7 +41,7 @@ describe("ScrollToTop", () => {
     expect(scrollToSpy).toHaveBeenNthCalledWith(2, 0, 0);
   });
 
-  it("should reset document scroll positions when window.scrollTo throws", () => {
+  it("should reset document scroll positions when window.scrollTo throws during navigation", () => {
     vi.spyOn(window, "scrollTo").mockImplementation(() => {
       throw new Error("scroll failed");
     });
