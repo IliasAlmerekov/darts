@@ -3,11 +3,11 @@ import { Keyboard } from "./components/Keyboard";
 import { NumberButton } from "./components/NumberButton";
 import GamePlayerItemList from "./components/game-player-item/GamePlayerItemList";
 import { Overlay } from "@/shared/ui/overlay";
+import { BackButton } from "@/shared/ui/back-button";
 import { Button } from "@/shared/ui/button";
 import { ErrorState } from "@/shared/ui/error-state";
 import FinishedGamePlayerItemList from "./components/game-player-item/FinishedGamePlayerItemList";
 import { LinkButton } from "@/shared/ui/link-button";
-import Back from "@/assets/icons/back.svg";
 import deleteIcon from "@/assets/icons/delete.svg";
 import Undo from "@/assets/icons/undo-copy.svg";
 import settingsIcon from "@/assets/icons/settings-inactive.svg";
@@ -131,9 +131,7 @@ const HeaderSection = React.memo(function HeaderSection({
 }: HeaderSectionProps): JSX.Element {
   return (
     <header className={styles.gameHeader}>
-      <button onClick={handleOpenExitOverlay} className={styles.top}>
-        <img src={Back} alt="Back to Home" />
-      </button>
+      <BackButton onClick={handleOpenExitOverlay} ariaLabel="Back to Home" />
       <LinkButton
         label={<img src={settingsIcon} alt="Settings" />}
         handleClick={handleOpenSettings}

@@ -6,6 +6,15 @@
   margin: var(--space-xl) 0 0;
 }
 
+.podiumCard {
+  display: flex;
+  flex-direction: column;
+}
+
+.playerboardList {
+  margin-top: var(--space-xl);
+}
+
 .dateInfo h1 {
   margin-bottom: 0;
 }

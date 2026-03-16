@@ -6,13 +6,6 @@
   gap: var(--space-sm);
 }
 
-.top {
-  border: none;
-  background: none;
-  padding: 0;
-  cursor: pointer;
-}
-
 .finishGameOverlay {
   width: 100%;
   padding: clamp(10px, 2.2vw, 24px) 0;

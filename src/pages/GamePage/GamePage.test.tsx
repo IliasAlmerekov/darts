@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { render, screen } from "@testing-library/react";
+import { fireEvent, render, screen } from "@testing-library/react";
 import type { ReactNode } from "react";
 import { MemoryRouter } from "react-router-dom";
 import { describe, expect, it, vi } from "vitest";
@@ -136,5 +136,34 @@ describe("Game route errors", () => {
     expect(screen.getByText("Game action failed")).toBeTruthy();
     screen.getByRole("button", { name: "Dismiss" }).click();
     expect(clearPageError).toHaveBeenCalledTimes(1);
+  });
+
+  it("renders the shared back button and opens the exit overlay when clicked", () => {
+    const handleOpenExitOverlay = vi.fn();
+    useGameLogicMock.mockReturnValue(
+      buildGameLogicResult({
+        gameData: {
+          id: 2,
+          status: "started",
+          currentRound: 1,
+          activePlayerId: 1,
+          currentThrowCount: 0,
+          winnerId: null,
+          settings: { startScore: 301, doubleOut: false, tripleOut: false },
+          players: [],
+        },
+        handleOpenExitOverlay,
+      }),
+    );
+
+    render(
+      <MemoryRouter>
+        <Game />
+      </MemoryRouter>,
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "Back to Home" }));
+
+    expect(handleOpenExitOverlay).toHaveBeenCalledTimes(1);
   });
 });
