@@ -4,7 +4,7 @@ import {
   appendDismissedPlayerIds,
   buildGamePlayersDerivedState,
   filterDismissedPlayerIds,
-} from "./gamePlayersState.logic";
+} from "./lib/gamePlayersState.logic";
 
 interface UseGamePlayersStateOptions {
   error: Error | null;

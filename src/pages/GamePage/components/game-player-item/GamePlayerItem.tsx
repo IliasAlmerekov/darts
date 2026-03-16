@@ -2,7 +2,7 @@ import React from "react";
 import styles from "./GamePlayerItem.module.css";
 import bustIconX from "@/assets/icons/delete-grey.svg";
 import clsx from "clsx";
-import { usePlayerThrowsDisplay } from "../../usePlayerThrowsDisplay";
+import { usePlayerThrowsDisplay } from "../../throws/usePlayerThrowsDisplay";
 
 interface GamePlayerItemProps {
   name?: string;

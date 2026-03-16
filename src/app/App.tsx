@@ -15,6 +15,7 @@ import AdminLayoutRoute from "@/app/routes/AdminLayoutRoute";
 import NotFoundPage from "@/app/routes/NotFoundPage";
 import ProtectedRoutes from "@/app/ProtectedRoutes";
 import { scheduleSelectiveRouteWarmUp, scheduleStatisticsPrefetch } from "@/app/routeWarmup";
+import { gameDetailLoader } from "@/pages/GameDetailPage/useGameDetailPage";
 import { clearUnauthorizedHandler, setUnauthorizedHandler } from "@/shared/api";
 import { ROUTES } from "@/lib/router/routes";
 import { invalidateAuthState } from "@/shared/store/auth";
@@ -105,6 +106,7 @@ function createAppRouter(): ReturnType<typeof createBrowserRouter> {
             <Route
               path={ROUTES.detailsPattern}
               element={withSuspense(<GameDetailPage />)}
+              loader={gameDetailLoader}
               errorElement={<ErrorBoundary />}
             />
             <Route
