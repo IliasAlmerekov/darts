@@ -6,7 +6,7 @@ import {
   shouldNavigateToSummary,
   parseGameIdParam,
 } from "./useGameLogic";
-import { calculateShouldShowFinishOverlay } from "./gameLogic.helpers";
+import { calculateShouldShowFinishOverlay } from "./lib/gameLogic.helpers";
 import type { GameThrowsResponse } from "@/types";
 
 function buildGameData(overrides?: Partial<GameThrowsResponse>): GameThrowsResponse {

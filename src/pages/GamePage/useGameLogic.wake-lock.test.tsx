@@ -32,7 +32,7 @@ vi.mock("./useGameState", () => ({
   useGameState: (options: { gameId: number | null }) => useGameStateMock(options),
 }));
 
-vi.mock("./useThrowHandler", () => ({
+vi.mock("./throws/useThrowHandler", () => ({
   useThrowHandler: (options: { gameId: number | null }) => useThrowHandlerMock(options),
 }));
 
