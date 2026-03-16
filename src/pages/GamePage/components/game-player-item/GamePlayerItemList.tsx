@@ -71,7 +71,6 @@ function GamePlayerItemListComponent({ userMap, round }: GamePlayerItemListProps
             throw2IsBust={currentRound?.throw2IsBust}
             throw3IsBust={currentRound?.throw3IsBust}
             isBust={item.isBust}
-            throwCount={item.throwCount}
             isPlaying={item.isPlaying}
             roundsCountLength={item.rounds.length}
             gamePlayerItemPrevThrow1={previousRound?.throw1}

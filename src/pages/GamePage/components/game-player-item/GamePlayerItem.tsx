@@ -8,21 +8,19 @@ interface GamePlayerItemProps {
   name?: string;
   isActive?: boolean;
   value: number;
-  gamePlayerItemThrow1?: number | string | React.ReactNode | undefined;
-  gamePlayerItemThrow2?: number | string | React.ReactNode | undefined;
-  gamePlayerItemThrow3?: number | string | React.ReactNode | undefined;
+  gamePlayerItemThrow1?: React.ReactNode;
+  gamePlayerItemThrow2?: React.ReactNode;
+  gamePlayerItemThrow3?: React.ReactNode;
   throw1IsBust?: boolean | undefined;
   throw2IsBust?: boolean | undefined;
   throw3IsBust?: boolean | undefined;
   className: string;
-  src?: string;
   isBust?: boolean | undefined;
-  throwCount?: number | undefined;
   isPlaying?: boolean | undefined;
   roundsCountLength: number;
-  gamePlayerItemPrevThrow1?: number | string | React.ReactNode | undefined;
-  gamePlayerItemPrevThrow2?: number | string | React.ReactNode | undefined;
-  gamePlayerItemPrevThrow3?: number | string | React.ReactNode | undefined;
+  gamePlayerItemPrevThrow1?: React.ReactNode;
+  gamePlayerItemPrevThrow2?: React.ReactNode;
+  gamePlayerItemPrevThrow3?: React.ReactNode;
   prevThrow1IsBust?: boolean | undefined;
   prevThrow2IsBust?: boolean | undefined;
   prevThrow3IsBust?: boolean | undefined;
@@ -30,7 +28,7 @@ interface GamePlayerItemProps {
   itemRef?: React.Ref<HTMLDivElement>;
 }
 
-const bustIcon = <img src={bustIconX} alt="Bust icon" />;
+const BUST_ICON = <img src={bustIconX} alt="Bust icon" />;
 
 function GamePlayerItem({
   name,
@@ -54,7 +52,7 @@ function GamePlayerItem({
   prevThrow3IsBust,
   id,
   itemRef,
-}: GamePlayerItemProps): JSX.Element {
+}: GamePlayerItemProps): React.JSX.Element {
   // Business logic: calculate throw display values
   const displayThrows = usePlayerThrowsDisplay({
     isActive,
@@ -72,7 +70,7 @@ function GamePlayerItem({
     prevThrow1IsBust,
     prevThrow2IsBust,
     prevThrow3IsBust,
-    bustIcon,
+    bustIcon: BUST_ICON,
   });
 
   return (
@@ -99,11 +97,11 @@ function GamePlayerItem({
       <div className={styles.throws}>
         <div
           className={clsx(styles.throwDisplay, {
-            hidden: isPlaying === false,
+            [styles.hidden ?? ""]: isPlaying === false,
           })}
         >
           <div
-            className={clsx(styles.divDisplay, "copylarge", {
+            className={clsx(styles.divDisplay, styles.copyLarge, {
               [styles.handleBust ?? ""]: displayThrows.throw1IsBust && !isActive,
             })}
           >
@@ -111,7 +109,7 @@ function GamePlayerItem({
           </div>
 
           <div
-            className={clsx(styles.divDisplay, "copylarge", {
+            className={clsx(styles.divDisplay, styles.copyLarge, {
               [styles.handleBust ?? ""]: displayThrows.throw2IsBust && !isActive,
             })}
           >
@@ -119,7 +117,7 @@ function GamePlayerItem({
           </div>
 
           <div
-            className={clsx(styles.divDisplay, "copylarge", {
+            className={clsx(styles.divDisplay, styles.copyLarge, {
               [styles.handleBust ?? ""]: displayThrows.throw3IsBust && !isActive,
             })}
           >
@@ -130,7 +128,7 @@ function GamePlayerItem({
         <div className={styles.pointer}>
           <div
             className={clsx(styles.scoreDisplay, {
-              hidden: isPlaying === false,
+              [styles.hidden ?? ""]: isPlaying === false,
             })}
           >
             Score
