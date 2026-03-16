@@ -60,7 +60,12 @@ interface UseGameLogicResult {
 }
 
 function isGameLocationState(s: unknown): s is { skipFinishOverlay?: boolean } {
-  return typeof s === "object" && s !== null;
+  return (
+    typeof s === "object" &&
+    s !== null &&
+    (!("skipFinishOverlay" in s) ||
+      typeof (s as Record<string, unknown>).skipFinishOverlay === "boolean")
+  );
 }
 
 /**

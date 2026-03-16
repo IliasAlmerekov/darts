@@ -1,21 +1,16 @@
 // @vitest-environment jsdom
-import { act, renderHook, waitFor } from "@testing-library/react";
-import { beforeEach, describe, expect, it, vi } from "vitest";
-import type { GameThrowsResponse } from "@/types";
-import { useGameLogic } from "./useGameLogic";
 
-const navigateMock = vi.fn();
-const useGameStateMock = vi.fn();
-const useThrowHandlerMock = vi.fn();
-const useRoomStreamMock = vi.fn();
-const useGameSoundsMock = vi.fn();
-const useWakeLockMock = vi.fn();
-const finishGameMock = vi.fn();
-const resetGameStateVersionMock = vi.fn();
-const setLastFinishedGameSummaryMock = vi.fn();
-const updateGameSettingsMock = vi.fn();
-const useGameSettingsFlowMock = vi.fn();
-const useGameExitFlowMock = vi.fn();
+const navigateMock = vi.hoisted(() => vi.fn());
+const useGameStateMock = vi.hoisted(() => vi.fn());
+const useThrowHandlerMock = vi.hoisted(() => vi.fn());
+const useRoomStreamMock = vi.hoisted(() => vi.fn());
+const useGameSoundsMock = vi.hoisted(() => vi.fn());
+const useWakeLockMock = vi.hoisted(() => vi.fn());
+const finishGameMock = vi.hoisted(() => vi.fn());
+const resetGameStateVersionMock = vi.hoisted(() => vi.fn());
+const setLastFinishedGameSummaryMock = vi.hoisted(() => vi.fn());
+const useGameSettingsFlowMock = vi.hoisted(() => vi.fn());
+const useGameExitFlowMock = vi.hoisted(() => vi.fn());
 
 vi.mock("react-router-dom", () => ({
   useNavigate: () => navigateMock,
@@ -77,6 +72,13 @@ vi.mock("@/shared/store", () => ({
 vi.mock("@/shared/services/browser/soundPlayer", () => ({
   unlockSounds: vi.fn(),
 }));
+
+import { act, renderHook, waitFor } from "@testing-library/react";
+import { beforeEach, describe, expect, it, vi } from "vitest";
+import type { GameThrowsResponse } from "@/types";
+import { useGameLogic } from "./useGameLogic";
+
+const updateGameSettingsMock = vi.fn();
 
 type Deferred<T> = {
   promise: Promise<T>;
@@ -176,7 +178,7 @@ describe("useGameLogic auto-finish abort handling", () => {
     vi.clearAllMocks();
   });
 
-  it("navigates to summary with finish payload and caches it after auto-finish", async () => {
+  it("should navigate to summary and cache the finish payload when auto-finish completes", async () => {
     const summaryPayload = [
       {
         playerId: 2,
@@ -208,7 +210,7 @@ describe("useGameLogic auto-finish abort handling", () => {
     expect(resetGameStateVersionMock).toHaveBeenCalledWith(1);
   });
 
-  it("passes AbortSignal to finishGame and aborts it on unmount", async () => {
+  it("should pass AbortSignal to finishGame and abort it when unmounted", async () => {
     setDefaultMocks(buildAutoFinishGameData());
     finishGameMock.mockImplementation(() => new Promise(() => {}));
 
@@ -226,7 +228,7 @@ describe("useGameLogic auto-finish abort handling", () => {
     expect(finishSignal?.aborted).toBe(true);
   });
 
-  it("ignores AbortError from auto-finish requests after cleanup", async () => {
+  it("should ignore AbortError from auto-finish when the component has unmounted", async () => {
     const consoleErrorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
     const pendingFinish = deferred<never>();
 
@@ -252,7 +254,7 @@ describe("useGameLogic auto-finish abort handling", () => {
     expect(resetGameStateVersionMock).not.toHaveBeenCalled();
   });
 
-  it("does not navigate to summary from a local optimistic finished status while auto-finish is pending", async () => {
+  it("should not navigate to summary when auto-finish is still pending", async () => {
     const pendingFinish = deferred<never>();
 
     setDefaultMocks(buildAutoFinishGameData());

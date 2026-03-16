@@ -1,14 +1,15 @@
 // @vitest-environment jsdom
-import { renderHook } from "@testing-library/react";
-import { beforeEach, describe, expect, it, vi } from "vitest";
-import { useGameSounds } from "./useGameSounds";
-import type { GameThrowsResponse, PlayerThrow } from "@/types";
 
-const playSoundMock = vi.fn();
+const playSoundMock = vi.hoisted(() => vi.fn());
 
 vi.mock("@/shared/services/browser/soundPlayer", () => ({
   playSound: (sound: string) => playSoundMock(sound),
 }));
+
+import { renderHook } from "@testing-library/react";
+import { beforeEach, describe, expect, it, vi } from "vitest";
+import { useGameSounds } from "./useGameSounds";
+import type { GameThrowsResponse, PlayerThrow } from "@/types";
 
 type PlayerOverrides = Partial<GameThrowsResponse["players"][number]> & {
   throws?: PlayerThrow[];
@@ -62,7 +63,7 @@ describe("useGameSounds", () => {
     playSoundMock.mockReset();
   });
 
-  it("does not play a sound on first snapshot or when data becomes null", () => {
+  it("should not play a sound when it is the first snapshot or data becomes null", () => {
     const initialGame = createGame();
     const { rerender } = renderHook(
       ({ game }: { game: GameThrowsResponse | null }) => useGameSounds(game),
@@ -78,7 +79,7 @@ describe("useGameSounds", () => {
     expect(playSoundMock).not.toHaveBeenCalled();
   });
 
-  it("plays win sound once when the game gets a winner", () => {
+  it("should play win sound once when the game gets a winner", () => {
     const initialGame = createGame();
     const finishedGame = createGame({
       status: "finished",
@@ -103,7 +104,7 @@ describe("useGameSounds", () => {
     expect(playSoundMock).toHaveBeenCalledWith("win");
   });
 
-  it("plays error sound when a player transitions into bust state", () => {
+  it("should play error sound when a player transitions into bust state", () => {
     const initialGame = createGame({
       players: [
         createPlayer({ id: 1, name: "Alice", isActive: true }),
@@ -129,7 +130,7 @@ describe("useGameSounds", () => {
     expect(playSoundMock).toHaveBeenCalledWith("error");
   });
 
-  it("plays throw sound when throw history increases", () => {
+  it("should play throw sound when throw history increases", () => {
     const initialGame = createGame({
       currentThrowCount: 1,
       players: [
@@ -162,7 +163,7 @@ describe("useGameSounds", () => {
     expect(playSoundMock).toHaveBeenCalledWith("throw");
   });
 
-  it("uses the fallback detector when backend only changes counters and active player", () => {
+  it("should use the fallback detector when backend only changes counters and active player", () => {
     const initialGame = createGame({
       currentThrowCount: 2,
       activePlayerId: 1,
@@ -194,7 +195,7 @@ describe("useGameSounds", () => {
     expect(playSoundMock).toHaveBeenCalledWith("throw");
   });
 
-  it("does not play a sound on undo-like corrections when total throws do not increase", () => {
+  it("should not play a sound when undo-like corrections do not increase total throws", () => {
     const initialGame = createGame({
       currentThrowCount: 2,
       activePlayerId: 1,

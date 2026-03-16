@@ -1,22 +1,13 @@
 // @vitest-environment jsdom
-import { renderHook } from "@testing-library/react";
-import { beforeEach, describe, expect, it, vi } from "vitest";
-import type { GameThrowsResponse } from "@/types";
-import { useGameLogic } from "./useGameLogic";
 
-const navigateMock = vi.fn();
-const useGameStateMock = vi.fn();
-const useThrowHandlerMock = vi.fn();
-const useRoomStreamMock = vi.fn();
-const useGameSoundsMock = vi.fn();
-const useWakeLockMock = vi.fn();
-const useGameSettingsFlowMock = vi.fn();
-const useGameExitFlowMock = vi.fn();
-
-const handleThrowMock = vi.fn();
-const handleUndoMock = vi.fn();
-const refetchMock = vi.fn();
-const updateGameSettingsMock = vi.fn();
+const navigateMock = vi.hoisted(() => vi.fn());
+const useGameStateMock = vi.hoisted(() => vi.fn());
+const useThrowHandlerMock = vi.hoisted(() => vi.fn());
+const useRoomStreamMock = vi.hoisted(() => vi.fn());
+const useGameSoundsMock = vi.hoisted(() => vi.fn());
+const useWakeLockMock = vi.hoisted(() => vi.fn());
+const useGameSettingsFlowMock = vi.hoisted(() => vi.fn());
+const useGameExitFlowMock = vi.hoisted(() => vi.fn());
 
 vi.mock("react-router-dom", () => ({
   useNavigate: () => navigateMock,
@@ -59,6 +50,16 @@ vi.mock("./useGameActions", () => ({
 vi.mock("@/shared/services/browser/soundPlayer", () => ({
   unlockSounds: vi.fn(),
 }));
+
+import { renderHook } from "@testing-library/react";
+import { beforeEach, describe, expect, it, vi } from "vitest";
+import type { GameThrowsResponse } from "@/types";
+import { useGameLogic } from "./useGameLogic";
+
+const handleThrowMock = vi.fn();
+const handleUndoMock = vi.fn();
+const refetchMock = vi.fn();
+const updateGameSettingsMock = vi.fn();
 
 function buildGameData(status: GameThrowsResponse["status"]): GameThrowsResponse {
   return {
@@ -116,7 +117,7 @@ describe("useGameLogic wake-lock wiring", () => {
     vi.clearAllMocks();
   });
 
-  it("calls useWakeLock(true) when game status is started", () => {
+  it("should call useWakeLock(true) when game status is started", () => {
     setDefaultMocks(buildGameData("started"));
 
     renderHook(() => useGameLogic());
@@ -130,7 +131,7 @@ describe("useGameLogic wake-lock wiring", () => {
     ["missing game data", null],
     ["lobby status", buildGameData("lobby")],
     ["finished status", buildGameData("finished")],
-  ] as const)("calls useWakeLock(false) for %s", (_label, gameData) => {
+  ] as const)("should call useWakeLock(false) for %s", (_label, gameData) => {
     setDefaultMocks(gameData);
 
     renderHook(() => useGameLogic());
@@ -139,7 +140,7 @@ describe("useGameLogic wake-lock wiring", () => {
     expect(useWakeLockMock).toHaveBeenLastCalledWith(false);
   });
 
-  it("updates wake-lock from true to false when started game becomes finished", () => {
+  it("should update wake-lock from true to false when the game transitions from started to finished", () => {
     const state = {
       gameData: buildGameData("started") as GameThrowsResponse | null,
     };
@@ -190,7 +191,7 @@ describe("useGameLogic wake-lock wiring", () => {
     expect(useWakeLockMock).toHaveBeenLastCalledWith(false);
   });
 
-  it("updates wake-lock from false to true when lobby game becomes started", () => {
+  it("should update wake-lock from false to true when the game transitions from lobby to started", () => {
     const state = {
       gameData: buildGameData("lobby") as GameThrowsResponse | null,
     };
@@ -241,7 +242,7 @@ describe("useGameLogic wake-lock wiring", () => {
     expect(useWakeLockMock).toHaveBeenLastCalledWith(true);
   });
 
-  it("keeps the useGameLogic return contract after wake-lock wiring", () => {
+  it("should keep the useGameLogic return contract when wake-lock is wired", () => {
     setDefaultMocks(buildGameData("started"));
 
     const { result } = renderHook(() => useGameLogic());

@@ -6,7 +6,7 @@ import { usePlayerThrowsDisplay } from "./usePlayerThrowsDisplay";
 const bustIcon = <span data-testid="bust-icon">X</span>;
 
 describe("usePlayerThrowsDisplay", () => {
-  it("does not backfill throw2/throw3 from previous round when current round already has throws", () => {
+  it("should not backfill throw2 and throw3 when the current round already has throws", () => {
     const { result } = renderHook(() =>
       usePlayerThrowsDisplay({
         isActive: false,
@@ -32,7 +32,7 @@ describe("usePlayerThrowsDisplay", () => {
     expect(result.current.throw3).toEqual(bustIcon);
   });
 
-  it("falls back to previous round only when current round has no throws", () => {
+  it("should fall back to previous round when the current round has no throws", () => {
     const { result } = renderHook(() =>
       usePlayerThrowsDisplay({
         isActive: false,
@@ -58,7 +58,7 @@ describe("usePlayerThrowsDisplay", () => {
     expect(result.current.throw3).toBe(18);
   });
 
-  it("reacts to player bust flag even when throw bust flags are missing", () => {
+  it("should react to player bust flag when individual throw bust flags are missing", () => {
     const { result } = renderHook(() =>
       usePlayerThrowsDisplay({
         isActive: false,
