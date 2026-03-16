@@ -12,7 +12,6 @@ const createPlayer = (id: number, name: string, isActive: boolean): WinnerPlayer
   index: id - 1,
   isBust: false,
   isPlaying: true,
-  position: id,
   throwCount: 0,
   rounds: [],
 });

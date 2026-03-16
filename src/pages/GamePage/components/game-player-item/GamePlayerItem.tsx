@@ -11,19 +11,19 @@ interface GamePlayerItemProps {
   gamePlayerItemThrow1?: React.ReactNode;
   gamePlayerItemThrow2?: React.ReactNode;
   gamePlayerItemThrow3?: React.ReactNode;
-  throw1IsBust?: boolean;
-  throw2IsBust?: boolean;
-  throw3IsBust?: boolean;
+  throw1IsBust?: boolean | undefined;
+  throw2IsBust?: boolean | undefined;
+  throw3IsBust?: boolean | undefined;
   className: string;
-  isBust?: boolean;
-  isPlaying?: boolean;
+  isBust?: boolean | undefined;
+  isPlaying?: boolean | undefined;
   roundsCountLength: number;
   gamePlayerItemPrevThrow1?: React.ReactNode;
   gamePlayerItemPrevThrow2?: React.ReactNode;
   gamePlayerItemPrevThrow3?: React.ReactNode;
-  prevThrow1IsBust?: boolean;
-  prevThrow2IsBust?: boolean;
-  prevThrow3IsBust?: boolean;
+  prevThrow1IsBust?: boolean | undefined;
+  prevThrow2IsBust?: boolean | undefined;
+  prevThrow3IsBust?: boolean | undefined;
   id: string;
   itemRef?: React.Ref<HTMLDivElement>;
 }
