@@ -26,7 +26,7 @@ interface DialogProps {
   closeIconSrc?: string;
   ariaLabel?: string;
   ariaLabelledBy?: string;
-  children: React.JSX.Element | React.JSX.Element[];
+  children: React.ReactNode;
 }
 
 function Dialog({

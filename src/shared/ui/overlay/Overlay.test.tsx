@@ -1,4 +1,5 @@
 // @vitest-environment jsdom
+import type { ReactNode } from "react";
 import { fireEvent, render, screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 import Overlay from "./Overlay";
@@ -53,5 +54,18 @@ describe("Overlay", () => {
     expect(document.activeElement).toBe(secondActionButton);
 
     expect(document.activeElement).not.toBe(openButton);
+  });
+
+  it("should render when children resolve to undefined", () => {
+    const children: ReactNode = undefined;
+
+    render(
+      <Overlay isOpen onClose={() => {}}>
+        {children}
+      </Overlay>,
+    );
+
+    expect(screen.getByRole("dialog").getAttribute("aria-modal")).toBe("true");
+    expect(screen.getByRole("button", { name: "Close overlay" })).toBeTruthy();
   });
 });

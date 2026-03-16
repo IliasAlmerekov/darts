@@ -8,7 +8,7 @@ interface OverlayProps {
   className?: string;
   backdropClassName?: string;
   src?: string;
-  children: React.JSX.Element | React.JSX.Element[];
+  children: React.ReactNode;
   ariaLabel?: string;
   ariaLabelledBy?: string;
 }
