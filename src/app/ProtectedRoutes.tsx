@@ -26,7 +26,7 @@ function getFallbackRouteForAuthenticatedUser(roles: Role[] | undefined): string
 
 function ProtectedRoutes({
   allowedRoles = DEFAULT_ALLOWED_ROLES,
-}: ProtectedRoutesProps): JSX.Element {
+}: ProtectedRoutesProps): React.JSX.Element {
   const { user: loggedInUser, loading: checking } = useAuthenticatedUser();
   const { pathname } = useLocation();
 

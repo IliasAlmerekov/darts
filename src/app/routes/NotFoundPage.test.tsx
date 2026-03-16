@@ -5,7 +5,7 @@ import { describe, expect, it } from "vitest";
 import NotFoundPage from "./NotFoundPage";
 
 describe("NotFoundPage", () => {
-  it("renders title and navigation actions", () => {
+  it("should render the title and navigation actions when the page is not found", () => {
     render(
       <MemoryRouter>
         <NotFoundPage />

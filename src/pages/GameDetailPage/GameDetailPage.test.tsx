@@ -1,10 +1,4 @@
 // @vitest-environment jsdom
-import { render, screen } from "@testing-library/react";
-import { MemoryRouter } from "react-router-dom";
-import { beforeEach, describe, expect, it, vi } from "vitest";
-import GameDetailPage from "./GameDetailPage";
-
-const useGameDetailPageMock = vi.fn();
 
 vi.mock("./useGameDetailPage", () => ({
   useGameDetailPage: () => useGameDetailPageMock(),
@@ -22,34 +16,38 @@ vi.mock("@/shared/ui/overview-player-item", () => ({
   OverviewPlayerItemList: () => <div data-testid="leaderboard" />,
 }));
 
+import { render, screen } from "@testing-library/react";
+import { MemoryRouter } from "react-router-dom";
+import { beforeEach, describe, expect, it, vi } from "vitest";
+import { ROUTES } from "@/lib/router/routes";
+import GameDetailPage from "./GameDetailPage";
+import styles from "./GameDetailPage.module.css";
+import type { WinnerPlayerProps } from "@/types";
+
+const useGameDetailPageMock = vi.fn();
+
+function buildPlayer(overrides: Partial<WinnerPlayerProps> = {}): WinnerPlayerProps {
+  return {
+    id: 1,
+    name: "Alice",
+    score: 0,
+    isActive: false,
+    index: 0,
+    rounds: [{}],
+    ...overrides,
+  };
+}
+
 describe("GameDetailPage", () => {
   beforeEach(() => {
     useGameDetailPageMock.mockReset();
   });
 
-  it("renders finished game details from hook data", () => {
+  it("should render styled game details when hook returns data", () => {
     useGameDetailPageMock.mockReturnValue({
       error: null,
-      podiumData: [
-        {
-          id: 1,
-          name: "Alice",
-          score: 0,
-          isActive: false,
-          index: 0,
-          rounds: [{}],
-        },
-      ],
-      newList: [
-        {
-          id: 1,
-          name: "Alice",
-          score: 0,
-          isActive: false,
-          index: 0,
-          rounds: [{}],
-        },
-      ],
+      podiumData: [buildPlayer()],
+      newList: [buildPlayer()],
       leaderBoardList: [],
     });
 
@@ -59,12 +57,17 @@ describe("GameDetailPage", () => {
       </MemoryRouter>,
     );
 
+    const backLink = screen.getByRole("link", { name: "Back" });
+    const leaderboard = screen.getByTestId("leaderboard");
+
     expect(screen.getByRole("heading", { name: "Game details" })).toBeTruthy();
+    expect(backLink.getAttribute("href")).toBe(ROUTES.gamesOverview);
     expect(screen.queryByTestId("podium")).not.toBeNull();
-    expect(screen.queryByTestId("leaderboard")).not.toBeNull();
+    expect(leaderboard).not.toBeNull();
+    expect(leaderboard.parentElement?.className).toContain(styles.playerboardList);
   });
 
-  it("renders error message when hook reports failure", () => {
+  it("should render an error message when hook reports failure", () => {
     useGameDetailPageMock.mockReturnValue({
       error: "Could not load finished game data",
       podiumData: [],

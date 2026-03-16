@@ -1,86 +1,67 @@
-import type { ErrorInfo, ReactNode } from "react";
-import { ErrorBoundary as ReactErrorBoundary } from "react-error-boundary";
-import type { FallbackProps } from "react-error-boundary";
+import React, { useEffect } from "react";
+import { isRouteErrorResponse, useRouteError } from "react-router-dom";
 import styles from "@/app/ErrorBoundary.module.css";
 import { clientLogger } from "@/shared/services/browser/clientLogger";
-
-interface ErrorBoundaryProps {
-  children: ReactNode;
-  fallbackMessage?: string;
-  fallbackTitle?: string;
-  onError?: (error: Error, info: ErrorInfo) => void;
-}
-
-interface ErrorFallbackProps {
-  message: string;
-  resetErrorBoundary: () => void;
-  title: string;
-}
 
 const DEFAULT_TITLE = "Something went wrong";
 const DEFAULT_MESSAGE = "Please try refreshing the page.";
 
-function toError(error: unknown): Error {
-  if (error instanceof Error) {
-    return error;
-  }
-
-  return new Error(typeof error === "string" ? error : "Unknown error");
+interface RouteErrorMetadata {
+  data?: unknown;
+  status: number;
+  statusText: string;
 }
 
-function ErrorFallback({
-  message,
-  resetErrorBoundary,
-  title,
-}: ErrorFallbackProps): React.JSX.Element {
+interface NormalizedRouteError {
+  error: Error;
+  routeError: RouteErrorMetadata | null;
+}
+
+function normalizeRouteError(error: unknown): NormalizedRouteError {
+  if (isRouteErrorResponse(error)) {
+    return {
+      error: new Error(error.statusText || `Route request failed with status ${error.status}`),
+      routeError: {
+        data: error.data,
+        status: error.status,
+        statusText: error.statusText,
+      },
+    };
+  }
+
+  if (error instanceof Error) {
+    return { error, routeError: null };
+  }
+
+  return {
+    error: new Error(typeof error === "string" ? error : "Unknown route error"),
+    routeError: null,
+  };
+}
+
+export default function ErrorBoundary(): React.JSX.Element {
+  const routeError = useRouteError();
+
+  useEffect(() => {
+    const normalized = normalizeRouteError(routeError);
+
+    clientLogger.error("route_error_boundary_crash", {
+      context: normalized.routeError ?? undefined,
+      error: normalized.error,
+    });
+  }, [routeError]);
+
   const handleReload = (): void => {
-    resetErrorBoundary();
     window.location.reload();
   };
 
   return (
     <main className={styles.root} role="alert">
-      <h1 className={styles.title}>{title}</h1>
-      <p className={styles.message}>{message}</p>
+      <h1 className={styles.title}>{DEFAULT_TITLE}</h1>
+      <p className={styles.message}>{DEFAULT_MESSAGE}</p>
       <button className={styles.button} type="button" onClick={handleReload}>
         Reload
       </button>
     </main>
   );
 }
-
-function ErrorBoundary({
-  children,
-  fallbackMessage,
-  fallbackTitle,
-  onError,
-}: ErrorBoundaryProps): React.JSX.Element {
-  const title = fallbackTitle ?? DEFAULT_TITLE;
-  const message = fallbackMessage ?? DEFAULT_MESSAGE;
-
-  const handleError = (error: unknown, info: ErrorInfo): void => {
-    const normalizedError = toError(error);
-
-    if (onError) {
-      onError(normalizedError, info);
-      return;
-    }
-
-    clientLogger.error("ui.error-boundary.crash", {
-      context: { componentStack: info.componentStack },
-      error: normalizedError,
-    });
-  };
-
-  const renderFallback = ({ resetErrorBoundary }: FallbackProps): React.JSX.Element => (
-    <ErrorFallback message={message} resetErrorBoundary={resetErrorBoundary} title={title} />
-  );
-
-  return (
-    <ReactErrorBoundary fallbackRender={renderFallback} onError={handleError}>
-      {children}
-    </ReactErrorBoundary>
-  );
-}
-
-export default ErrorBoundary;
