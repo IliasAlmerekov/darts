@@ -1,22 +1,4 @@
 // @vitest-environment jsdom
-import { act, renderHook, waitFor } from "@testing-library/react";
-import { beforeEach, describe, expect, it, vi } from "vitest";
-import type {
-  GameThrowsResponse,
-  ScoreboardDelta,
-  ThrowAckResponse,
-  UndoAckResponse,
-} from "@/types";
-import { ApiError } from "@/shared/api";
-import { $gameData, setGameData, setGameScoreboardDelta } from "@/shared/store";
-import {
-  getGameThrows,
-  recordThrow,
-  resetGameStateVersion,
-  setGameStateVersion,
-  undoLastThrow,
-} from "@/shared/api/game";
-import { isThrowNotAllowedConflict, useThrowHandler } from "./useThrowHandler";
 
 vi.mock("@/shared/api/game", () => ({
   getGameThrows: vi.fn(),
@@ -41,6 +23,25 @@ vi.mock("@/shared/store", async (importOriginal) => {
 vi.mock("@/shared/services/browser/soundPlayer", () => ({
   playSound: vi.fn(),
 }));
+
+import { act, renderHook, waitFor } from "@testing-library/react";
+import { beforeEach, describe, expect, it, vi } from "vitest";
+import type {
+  GameThrowsResponse,
+  ScoreboardDelta,
+  ThrowAckResponse,
+  UndoAckResponse,
+} from "@/types";
+import { ApiError } from "@/shared/api";
+import { $gameData, setGameData, setGameScoreboardDelta } from "@/shared/store";
+import {
+  getGameThrows,
+  recordThrow,
+  resetGameStateVersion,
+  setGameStateVersion,
+  undoLastThrow,
+} from "@/shared/api/game";
+import { isThrowNotAllowedConflict, useThrowHandler } from "./useThrowHandler";
 
 type Deferred<T> = {
   promise: Promise<T>;
@@ -175,7 +176,7 @@ function applyScoreboardDelta(
 }
 
 describe("isThrowNotAllowedConflict", () => {
-  it("returns true for 409 GAME_THROW_NOT_ALLOWED", () => {
+  it("should return true when error is 409 GAME_THROW_NOT_ALLOWED", () => {
     const error = new ApiError("Request failed", {
       status: 409,
       data: {
@@ -187,7 +188,7 @@ describe("isThrowNotAllowedConflict", () => {
     expect(isThrowNotAllowedConflict(error)).toBe(true);
   });
 
-  it("returns false for other api error codes", () => {
+  it("should return false when error code is not GAME_THROW_NOT_ALLOWED", () => {
     const error = new ApiError("Request failed", {
       status: 409,
       data: {
@@ -198,7 +199,7 @@ describe("isThrowNotAllowedConflict", () => {
     expect(isThrowNotAllowedConflict(error)).toBe(false);
   });
 
-  it("returns false for non-ApiError values", () => {
+  it("should return false when the value is not an ApiError", () => {
     expect(isThrowNotAllowedConflict(new Error("boom"))).toBe(false);
   });
 });
@@ -218,7 +219,7 @@ describe("useThrowHandler", () => {
     });
   });
 
-  it("keeps pending optimistic throws visible while previous server ack is applied", async () => {
+  it("should keep pending optimistic throws visible when a previous server ack is being applied", async () => {
     const firstDeferred = createDeferred<ThrowAckResponse>();
     const secondDeferred = createDeferred<ThrowAckResponse>();
     vi.mocked(recordThrow).mockReturnValueOnce(firstDeferred.promise);
@@ -305,7 +306,7 @@ describe("useThrowHandler", () => {
     expect(vi.mocked(setGameStateVersion)).toHaveBeenCalledWith(1, "v2");
   });
 
-  it("clears current throw display after 3rd throw when turn switches", async () => {
+  it("should clear current throw display when the turn switches after the 3rd throw", async () => {
     vi.mocked(recordThrow)
       .mockResolvedValueOnce(
         buildThrowAck({
@@ -402,7 +403,7 @@ describe("useThrowHandler", () => {
     expect(playerTwo?.throwsInCurrentRound).toBe(0);
   });
 
-  it("refetches full game state when the final ack rolls turn ownership back", async () => {
+  it("should refetch full game state when the final ack unexpectedly keeps the same active player", async () => {
     currentGameState = buildGameData({
       activePlayerId: 1,
       currentRound: 4,
@@ -526,7 +527,7 @@ describe("useThrowHandler", () => {
     expect(currentGameState.players[1]?.isActive).toBe(true);
   });
 
-  it("clears queued throws when server ack keeps the same player active", async () => {
+  it("should clear queued throws when the server ack unexpectedly keeps the same player active", async () => {
     currentGameState = buildGameData({
       activePlayerId: 1,
       currentRound: 4,
@@ -654,7 +655,7 @@ describe("useThrowHandler", () => {
     expect(currentGameState.players[1]?.score).toBe(301);
   });
 
-  it("does not duplicate stale throws on bust after returning from summary undo", async () => {
+  it("should not duplicate stale throws when a bust occurs after returning from summary undo", async () => {
     currentGameState = buildGameData({
       activePlayerId: 1,
       currentRound: 7,
@@ -745,7 +746,7 @@ describe("useThrowHandler", () => {
     expect(playerTwo?.isActive).toBe(true);
   });
 
-  it("caps throw queue to three pending throws", async () => {
+  it("should cap the throw queue to three pending throws when a fourth throw is attempted", async () => {
     const deferred = createDeferred<ThrowAckResponse>();
     vi.mocked(recordThrow).mockReturnValue(deferred.promise);
 
@@ -766,7 +767,7 @@ describe("useThrowHandler", () => {
     expect(vi.mocked(recordThrow)).toHaveBeenCalledTimes(1);
   });
 
-  it("queues undo while pending throws are synchronizing", async () => {
+  it("should queue undo when pending throws are still synchronizing", async () => {
     const deferred = createDeferred<ThrowAckResponse>();
     vi.mocked(recordThrow).mockReturnValueOnce(deferred.promise);
     vi.mocked(undoLastThrow).mockResolvedValueOnce(buildGameData());
@@ -789,7 +790,7 @@ describe("useThrowHandler", () => {
     await waitFor(() => expect(vi.mocked(undoLastThrow)).toHaveBeenCalledWith(1));
   });
 
-  it("reconciles state after throw conflict and clears pending queue", async () => {
+  it("should reconcile state and clear the pending queue when a throw conflict is received", async () => {
     vi.mocked(recordThrow).mockRejectedValueOnce(
       new ApiError("Request failed", {
         status: 409,
@@ -816,7 +817,7 @@ describe("useThrowHandler", () => {
     expect(vi.mocked(setGameData)).toHaveBeenCalled();
   });
 
-  it("reconciles game state when the local active player is missing before a throw", async () => {
+  it("should reconcile game state when the local active player is missing before a throw", async () => {
     const consoleErrorSpy = vi.spyOn(console, "error").mockImplementation(() => undefined);
     currentGameState = buildGameData({
       activePlayerId: null,
@@ -871,7 +872,7 @@ describe("useThrowHandler", () => {
     consoleErrorSpy.mockRestore();
   });
 
-  it("applies optimistic undo immediately while waiting for server response", async () => {
+  it("should apply optimistic undo immediately when waiting for a server response", async () => {
     currentGameState = buildGameData({
       activePlayerId: 1,
       currentRound: 3,
@@ -933,7 +934,7 @@ describe("useThrowHandler", () => {
     expect(vi.mocked(undoLastThrow)).toHaveBeenCalledWith(1);
   });
 
-  it("applies compact undo acknowledgement through targeted scoreboard updates", async () => {
+  it("should apply compact undo acknowledgement through targeted scoreboard updates when the server responds with a delta", async () => {
     currentGameState = buildGameData({
       activePlayerId: 1,
       currentRound: 3,
@@ -1005,7 +1006,7 @@ describe("useThrowHandler", () => {
     expect(currentGameState.currentThrowCount).toBe(1);
   });
 
-  it("should return isUndoPending: false initially", () => {
+  it("should return isUndoPending false when the hook is first mounted", () => {
     const { result } = renderHook(() => useThrowHandler({ gameId: 1 }));
     expect(result.current.isUndoPending).toBe(false);
   });
@@ -1058,7 +1059,7 @@ describe("useThrowHandler", () => {
     await waitFor(() => expect(result.current.isUndoPending).toBe(false));
   });
 
-  it("should set isUndoPending: false after undo completes", async () => {
+  it("should set isUndoPending to false when undo completes successfully", async () => {
     vi.mocked(undoLastThrow).mockResolvedValueOnce(buildGameData());
 
     currentGameState = buildGameData({
@@ -1208,7 +1209,7 @@ describe("useThrowHandler", () => {
     expect(vi.mocked(setGameData)).not.toHaveBeenCalledWith(invalidResponse);
   });
 
-  it("accepts undo response with null activePlayerId when a single active player can be derived", async () => {
+  it("should accept undo response with null activePlayerId when a single active player can be derived", async () => {
     const undoResponse = buildGameData({
       activePlayerId: null as unknown as number,
       players: [
@@ -1321,7 +1322,7 @@ describe("useThrowHandler", () => {
     await waitFor(() => expect(vi.mocked(getGameThrows)).toHaveBeenCalledWith(1));
   });
 
-  it("should not call undoLastThrow twice on rapid undo clicks", async () => {
+  it("should not call undoLastThrow twice when undo is clicked rapidly", async () => {
     const pendingUndo = createDeferred<GameThrowsResponse>();
     vi.mocked(undoLastThrow).mockReturnValueOnce(pendingUndo.promise);
 

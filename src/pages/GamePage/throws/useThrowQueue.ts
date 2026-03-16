@@ -5,6 +5,7 @@ import type { GameThrowsResponse, ThrowRequest } from "@/types";
 import { playSound } from "@/shared/services/browser/soundPlayer";
 import { $gameData, setGameData } from "@/shared/store";
 import { applyScoreboardDeltaToGameState } from "./throwStateService";
+import { ThrowRejectedError } from "./throwErrors";
 import { isThrowNotAllowedConflict } from "./useThrowReconciliation";
 
 const MAX_PENDING_THROWS = 3;
@@ -138,7 +139,7 @@ export function useThrowQueue({
         try {
           const throwAck = await recordThrow(gameId, nextThrow.request);
           if (!throwAck.success) {
-            throw new Error("Throw request was not accepted by server");
+            throw new ThrowRejectedError();
           }
 
           setGameStateVersion(gameId, throwAck.stateVersion);

@@ -1,5 +1,4 @@
 import { useCallback, useState } from "react";
-import type { Dispatch, SetStateAction } from "react";
 import { useNavigate } from "react-router-dom";
 import { abortGame, createRematch, updateGameSettings } from "@/shared/api/game";
 import { clientLogger } from "@/lib/clientLogger";
@@ -31,7 +30,7 @@ interface UseGameSettingsFlowResult {
 interface UseGameExitFlowOptions {
   gameId: number | null;
   navigate: ReturnType<typeof useNavigate>;
-  setPageError: Dispatch<SetStateAction<string | null>>;
+  setPageError: (error: string | null) => void;
 }
 
 interface UseGameExitFlowResult {
