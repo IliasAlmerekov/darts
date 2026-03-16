@@ -4,19 +4,18 @@ import { describe, expect, it, vi, beforeEach, afterEach } from "vitest";
 import type { WinnerPlayerProps } from "@/types";
 import GamePlayerItemList from "./GamePlayerItemList";
 
-const createPlayer = (id: number, name: string, isActive: boolean): WinnerPlayerProps =>
-  ({
-    id,
-    name,
-    score: 301,
-    isActive,
-    index: id - 1,
-    isBust: false,
-    isPlaying: true,
-    position: id,
-    throwCount: 0,
-    rounds: [],
-  }) as WinnerPlayerProps;
+const createPlayer = (id: number, name: string, isActive: boolean): WinnerPlayerProps => ({
+  id,
+  name,
+  score: 301,
+  isActive,
+  index: id - 1,
+  isBust: false,
+  isPlaying: true,
+  position: id,
+  throwCount: 0,
+  rounds: [],
+});
 
 describe("GamePlayerItemList", () => {
   const scrollIntoViewMock = vi.fn();
@@ -34,7 +33,7 @@ describe("GamePlayerItemList", () => {
     vi.unstubAllGlobals();
   });
 
-  it("scrolls to active player", () => {
+  it("should scroll to active player when active player is present", () => {
     vi.useFakeTimers();
 
     render(
@@ -59,7 +58,7 @@ describe("GamePlayerItemList", () => {
     vi.useRealTimers();
   });
 
-  it("does not scroll when there is no active player", () => {
+  it("should not scroll when there is no active player", () => {
     render(
       <GamePlayerItemList
         userMap={[createPlayer(1, "Player 1", false), createPlayer(2, "Player 2", false)]}
@@ -70,7 +69,7 @@ describe("GamePlayerItemList", () => {
     expect(scrollIntoViewMock).not.toHaveBeenCalled();
   });
 
-  it("focuses the active player inside the rendered list instead of a matching document node", () => {
+  it("should focus the active player inside the rendered list when a matching node exists outside", () => {
     vi.useFakeTimers();
 
     render(
@@ -94,7 +93,7 @@ describe("GamePlayerItemList", () => {
     expect(scrollIntoViewMock.mock.instances[0]).toBe(activePlayer);
   });
 
-  it("does not scroll again when active player id stays the same", () => {
+  it("should not scroll again when active player id stays the same across rerenders", () => {
     vi.useFakeTimers();
 
     const { rerender } = render(
