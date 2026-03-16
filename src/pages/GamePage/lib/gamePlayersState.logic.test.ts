@@ -50,13 +50,13 @@ function buildGameData(overrides?: Partial<GameThrowsResponse>): GameThrowsRespo
 }
 
 describe("appendDismissedPlayerIds", () => {
-  it("should deduplicate existing and new dismissed ids", () => {
+  it("should deduplicate existing and new dismissed ids when merging two id lists", () => {
     expect(appendDismissedPlayerIds([2], [2, 3])).toEqual([2, 3]);
   });
 });
 
 describe("filterDismissedPlayerIds", () => {
-  it("should keep only ids that still belong to zero-score players", () => {
+  it("should keep only ids that still belong to zero-score players when filtering stale dismissals", () => {
     expect(filterDismissedPlayerIds([2, 3], [3, 4])).toEqual([3]);
   });
 
@@ -68,7 +68,7 @@ describe("filterDismissedPlayerIds", () => {
 });
 
 describe("buildGamePlayersDerivedState", () => {
-  it("should derive active and finished players plus overlay visibility", () => {
+  it("should derive active and finished players plus overlay visibility when game has a finished player", () => {
     const gameData = buildGameData({
       currentRound: 4,
       players: [

@@ -58,12 +58,12 @@ describe("useWakeLock", () => {
     restoreNavigatorWakeLock();
   });
 
-  it("does not request wake lock when API is unsupported", () => {
+  it("should not request wake lock when the API is unsupported", () => {
     expect("wakeLock" in navigator).toBe(false);
     expect(() => renderHook(() => useWakeLock(true))).not.toThrow();
   });
 
-  it("requests a screen wake lock when enabled", async () => {
+  it("should request a screen wake lock when enabled", async () => {
     const releaseMock = vi.fn().mockResolvedValue(undefined);
     const sentinel = { release: releaseMock } as unknown as WakeLockSentinel;
     const requestMock = vi.fn().mockResolvedValue(sentinel);
@@ -77,7 +77,7 @@ describe("useWakeLock", () => {
     });
   });
 
-  it("does not request wake lock when disabled in a supported browser", async () => {
+  it("should not request wake lock when disabled in a supported browser", async () => {
     const requestMock = vi.fn().mockResolvedValue({} as WakeLockSentinel);
 
     setNavigatorWakeLock(requestMock);
@@ -87,7 +87,7 @@ describe("useWakeLock", () => {
     expect(requestMock).not.toHaveBeenCalled();
   });
 
-  it("releases the sentinel when disabled after acquisition", async () => {
+  it("should release the sentinel when disabled after acquisition", async () => {
     const releaseMock = vi.fn().mockResolvedValue(undefined);
     const sentinel = { release: releaseMock } as unknown as WakeLockSentinel;
     const requestMock = vi.fn().mockResolvedValue(sentinel);
@@ -112,7 +112,7 @@ describe("useWakeLock", () => {
     });
   });
 
-  it("releases the sentinel on unmount", async () => {
+  it("should release the sentinel when unmounted", async () => {
     const releaseMock = vi.fn().mockResolvedValue(undefined);
     const sentinel = { release: releaseMock } as unknown as WakeLockSentinel;
     const requestMock = vi.fn().mockResolvedValue(sentinel);
@@ -131,7 +131,7 @@ describe("useWakeLock", () => {
     });
   });
 
-  it("swallows wake-lock request rejection", async () => {
+  it("should swallow wake-lock request rejection when the request is rejected", async () => {
     const requestMock = vi.fn().mockRejectedValue(new Error("denied"));
 
     setNavigatorWakeLock(requestMock);
@@ -150,7 +150,7 @@ describe("useWakeLock", () => {
     expect(() => rerender({ isEnabled: false })).not.toThrow();
   });
 
-  it("releases a late sentinel when unmounted before pending request resolves", async () => {
+  it("should release a late sentinel when unmounted before the pending request resolves", async () => {
     const releaseMock = vi.fn().mockResolvedValue(undefined);
     const sentinel = { release: releaseMock } as unknown as WakeLockSentinel;
     const requestDeferred = createDeferred<WakeLockSentinel>();
@@ -174,7 +174,7 @@ describe("useWakeLock", () => {
     });
   });
 
-  it("releases a late sentinel when toggled off before pending request resolves", async () => {
+  it("should release a late sentinel when toggled off before the pending request resolves", async () => {
     const releaseMock = vi.fn().mockResolvedValue(undefined);
     const sentinel = { release: releaseMock } as unknown as WakeLockSentinel;
     const requestDeferred = createDeferred<WakeLockSentinel>();
@@ -202,7 +202,7 @@ describe("useWakeLock", () => {
     });
   });
 
-  it("swallows release rejection on disable cleanup", async () => {
+  it("should swallow release rejection when disabled after a successful lock", async () => {
     const releaseMock = vi.fn().mockRejectedValue(new Error("release failed"));
     const sentinel = { release: releaseMock } as unknown as WakeLockSentinel;
     const requestMock = vi.fn().mockResolvedValue(sentinel);
@@ -227,7 +227,7 @@ describe("useWakeLock", () => {
     });
   });
 
-  it("swallows release rejection on unmount cleanup", async () => {
+  it("should swallow release rejection when unmounted after a successful lock", async () => {
     const releaseMock = vi.fn().mockRejectedValue(new Error("release failed"));
     const sentinel = { release: releaseMock } as unknown as WakeLockSentinel;
     const requestMock = vi.fn().mockResolvedValue(sentinel);

@@ -1,3 +1,4 @@
+import React from "react";
 import clsx from "clsx";
 import styles from "./Keyboard.module.css";
 import Undo from "@/assets/icons/undo.svg";
@@ -14,7 +15,7 @@ export function NumberButton({
   handleClick,
   isActive,
   disabled,
-}: NumberButtonProps): JSX.Element {
+}: NumberButtonProps): React.JSX.Element {
   const isToggle = value === "Double" || value === "Triple";
 
   return (

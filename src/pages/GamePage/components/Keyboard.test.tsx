@@ -1,20 +1,21 @@
 // @vitest-environment jsdom
-import { fireEvent, render, screen } from "@testing-library/react";
-import { beforeEach, describe, expect, it, vi } from "vitest";
-import { Keyboard } from "./Keyboard";
 
-const unlockSoundsMock = vi.fn();
+const unlockSoundsMock = vi.hoisted(() => vi.fn());
 
 vi.mock("@/shared/services/browser/soundPlayer", () => ({
   unlockSounds: () => unlockSoundsMock(),
 }));
+
+import { fireEvent, render, screen } from "@testing-library/react";
+import { beforeEach, describe, expect, it, vi } from "vitest";
+import { Keyboard } from "./Keyboard";
 
 describe("Keyboard", () => {
   beforeEach(() => {
     unlockSoundsMock.mockReset();
   });
 
-  it("sends a doubled score and resets the toggle", () => {
+  it("should send a doubled score and reset the toggle when double mode is active", () => {
     const onThrow = vi.fn();
     render(<Keyboard onThrow={onThrow} />);
 
@@ -28,7 +29,7 @@ describe("Keyboard", () => {
     expect(unlockSoundsMock).toHaveBeenCalledTimes(2);
   });
 
-  it("switches from double to triple mode and disables unsupported targets", () => {
+  it("should switch to triple mode and disable unsupported targets when triple is toggled after double", () => {
     const onThrow = vi.fn();
     render(<Keyboard onThrow={onThrow} />);
 
@@ -49,7 +50,7 @@ describe("Keyboard", () => {
     expect(onThrow).toHaveBeenCalledWith("T19");
   });
 
-  it("sends a plain number when no multiplier is active", () => {
+  it("should send a plain number when no multiplier is active", () => {
     const onThrow = vi.fn();
     render(<Keyboard onThrow={onThrow} />);
 
@@ -59,7 +60,7 @@ describe("Keyboard", () => {
     expect(unlockSoundsMock).toHaveBeenCalledTimes(1);
   });
 
-  it("does nothing when the keyboard is disabled", () => {
+  it("should do nothing when the keyboard is disabled", () => {
     const onThrow = vi.fn();
     render(<Keyboard onThrow={onThrow} disabled />);
 

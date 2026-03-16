@@ -1,10 +1,6 @@
 // @vitest-environment jsdom
-import { act, renderHook, waitFor } from "@testing-library/react";
-import { beforeEach, describe, expect, it, vi } from "vitest";
-import type { GameSettingsResponse, GameThrowsResponse } from "@/types";
-import { useGameSettingsFlow } from "./useGameActions";
 
-const updateGameSettingsMock = vi.fn();
+const updateGameSettingsMock = vi.hoisted(() => vi.fn());
 
 vi.mock("react-router-dom", () => ({
   useNavigate: () => vi.fn(),
@@ -15,6 +11,11 @@ vi.mock("@/shared/api/game", () => ({
   createRematch: vi.fn(),
   updateGameSettings: (...args: unknown[]) => updateGameSettingsMock(...args),
 }));
+
+import { act, renderHook, waitFor } from "@testing-library/react";
+import { beforeEach, describe, expect, it, vi } from "vitest";
+import type { GameSettingsResponse, GameThrowsResponse } from "@/types";
+import { useGameSettingsFlow } from "./useGameActions";
 
 function createGameData(): GameThrowsResponse {
   return {
@@ -51,7 +52,7 @@ describe("useGameSettingsFlow", () => {
     vi.clearAllMocks();
   });
 
-  it("merges compact settings responses into the existing game state", async () => {
+  it("should merge compact settings response into game state when settings are saved", async () => {
     const updateGameSettingsStore = vi.fn();
     const updatedSettings: GameSettingsResponse = {
       startScore: 501,

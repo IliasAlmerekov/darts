@@ -1,3 +1,4 @@
+// @vitest-environment node
 import { describe, expect, it } from "vitest";
 import type { GameThrowsResponse } from "@/types";
 import {
@@ -49,7 +50,7 @@ function buildGameData(overrides: Partial<GameThrowsResponse> = {}): GameThrowsR
 }
 
 describe("throwStateService", () => {
-  it("applies optimistic undo by restoring the removed throw score", () => {
+  it("should apply optimistic undo by restoring the removed throw score when the active player has throws in the current round", () => {
     const gameState = buildGameData({
       currentThrowCount: 2,
       players: [
@@ -91,7 +92,7 @@ describe("throwStateService", () => {
     ]);
   });
 
-  it("restores the previous player after undoing a completed winning throw", () => {
+  it("should restore the previous player when undoing a completed winning throw", () => {
     const gameState = buildGameData({
       status: "started",
       currentRound: 3,
@@ -142,7 +143,7 @@ describe("throwStateService", () => {
     expect(nextState?.players[0]?.roundHistory).toEqual([]);
   });
 
-  it("restores a completed bust turn to the in-progress throws before the bust", () => {
+  it("should restore a completed bust turn to in-progress throws when undoing the bust throw", () => {
     const gameState = buildGameData({
       currentRound: 7,
       currentThrowCount: 0,
@@ -197,7 +198,7 @@ describe("throwStateService", () => {
     expect(nextState?.players[0]?.roundHistory).toEqual([]);
   });
 
-  it("optimistically finishes a turn on the third throw and activates the next player", () => {
+  it("should optimistically finish a turn and activate the next player when the third throw is applied", () => {
     const gameState = buildGameData({
       currentThrowCount: 2,
       players: [
@@ -243,7 +244,7 @@ describe("throwStateService", () => {
     expect(nextState?.players[1]?.isActive).toBe(true);
   });
 
-  it("reconciles scoreboard delta by finalizing the previous active player turn", () => {
+  it("should reconcile scoreboard delta by finalizing the previous active player turn when a turn change is received", () => {
     const gameState = buildGameData({
       currentRound: 7,
       currentThrowCount: 1,

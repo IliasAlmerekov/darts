@@ -1,17 +1,18 @@
 import { useCallback, useRef, useState } from "react";
 import { recordThrow, setGameStateVersion } from "@/shared/api/game";
-import { clientLogger } from "@/shared/services/browser/clientLogger";
+import { clientLogger } from "@/lib/clientLogger";
 import type { GameThrowsResponse, ThrowRequest } from "@/types";
 import { playSound } from "@/shared/services/browser/soundPlayer";
 import { $gameData, setGameData } from "@/shared/store";
 import { applyScoreboardDeltaToGameState } from "./throwStateService";
+import { ThrowRejectedError } from "./throwErrors";
 import { isThrowNotAllowedConflict } from "./useThrowReconciliation";
 
 const MAX_PENDING_THROWS = 3;
 
-type ThrowQueueItem = {
+interface ThrowQueueItem {
   request: ThrowRequest;
-};
+}
 
 interface TurnRollbackDetectionOptions {
   confirmedBaseState: GameThrowsResponse;
@@ -121,7 +122,7 @@ export function useThrowQueue({
   }, []);
 
   const drainQueue = useCallback(async (): Promise<void> => {
-    if (!gameId || isDrainingRef.current) {
+    if (gameId === null || isDrainingRef.current) {
       return;
     }
 
@@ -138,7 +139,7 @@ export function useThrowQueue({
         try {
           const throwAck = await recordThrow(gameId, nextThrow.request);
           if (!throwAck.success) {
-            throw new Error("Throw request was not accepted by server");
+            throw new ThrowRejectedError();
           }
 
           setGameStateVersion(gameId, throwAck.stateVersion);

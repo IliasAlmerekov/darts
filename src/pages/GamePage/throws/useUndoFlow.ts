@@ -2,7 +2,7 @@ import { useCallback, useRef, useState } from "react";
 import type { MutableRefObject } from "react";
 import { undoLastThrow } from "@/shared/api/game";
 import { playSound } from "@/shared/services/browser/soundPlayer";
-import { clientLogger } from "@/shared/services/browser/clientLogger";
+import { clientLogger } from "@/lib/clientLogger";
 import { normalizeGameData } from "@/lib/game/gameStateNormalizer";
 import { $gameData, setGameData, setGameScoreboardDelta } from "@/shared/store";
 import type { GameThrowsResponse, UndoAckResponse } from "@/types";
@@ -43,7 +43,7 @@ export function useUndoFlow({ gameId, reconcileGameState }: UseUndoFlowOptions):
     isUndoInFlightRef.current = true;
     setIsUndoPending(true);
 
-    if (!gameId) {
+    if (gameId === null) {
       isUndoInFlightRef.current = false;
       setIsUndoPending(false);
       return;

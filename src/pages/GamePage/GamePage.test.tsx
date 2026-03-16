@@ -1,11 +1,6 @@
 // @vitest-environment jsdom
-import { fireEvent, render, screen } from "@testing-library/react";
-import type { ReactNode } from "react";
-import { MemoryRouter } from "react-router-dom";
-import { describe, expect, it, vi } from "vitest";
-import Game from ".";
 
-const useGameLogicMock = vi.fn();
+const useGameLogicMock = vi.hoisted(() => vi.fn());
 
 vi.mock("./useGameLogic", () => ({
   useGameLogic: () => useGameLogicMock(),
@@ -31,13 +26,10 @@ vi.mock("./components/SettingsOverlay", () => ({
   default: () => null,
 }));
 
-vi.mock("@/shared/ui/link-button", () => ({
-  LinkButton: () => null,
-}));
-
-vi.mock("@/shared/ui/overlay", () => ({
-  Overlay: ({ children }: { children?: ReactNode }) => <>{children}</>,
-}));
+import { fireEvent, render, screen } from "@testing-library/react";
+import { MemoryRouter } from "react-router-dom";
+import { describe, expect, it, vi } from "vitest";
+import Game from ".";
 
 function buildGameLogicResult(overrides: Record<string, unknown> = {}): Record<string, unknown> {
   return {
@@ -73,7 +65,7 @@ function buildGameLogicResult(overrides: Record<string, unknown> = {}): Record<s
 }
 
 describe("Game route errors", () => {
-  it("renders missing game identifier error state", () => {
+  it("should render the missing game identifier error when gameId is null", () => {
     useGameLogicMock.mockReturnValue(buildGameLogicResult({ gameId: null }));
 
     render(
@@ -87,7 +79,7 @@ describe("Game route errors", () => {
     expect(screen.getByRole("link", { name: "Back to start" }).getAttribute("href")).toBe("/start");
   });
 
-  it("renders load error state and retries on click", () => {
+  it("should render load error and allow retry when an error is present", () => {
     const refetch = vi.fn();
     useGameLogicMock.mockReturnValue(
       buildGameLogicResult({
@@ -108,7 +100,7 @@ describe("Game route errors", () => {
     expect(refetch).toHaveBeenCalledTimes(1);
   });
 
-  it("shows dismissible page error for failed game actions", () => {
+  it("should show a dismissible page error when a game action fails", () => {
     const clearPageError = vi.fn();
     useGameLogicMock.mockReturnValue(
       buildGameLogicResult({
@@ -138,7 +130,7 @@ describe("Game route errors", () => {
     expect(clearPageError).toHaveBeenCalledTimes(1);
   });
 
-  it("renders the shared back button and opens the exit overlay when clicked", () => {
+  it("should open the exit overlay when the back button is clicked", () => {
     const handleOpenExitOverlay = vi.fn();
     useGameLogicMock.mockReturnValue(
       buildGameLogicResult({

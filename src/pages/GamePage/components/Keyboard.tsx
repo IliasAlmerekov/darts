@@ -1,4 +1,4 @@
-import { memo, useState } from "react";
+import React, { memo, useState } from "react";
 import styles from "./Keyboard.module.css";
 import { NumberButton } from "./NumberButton";
 import { unlockSounds } from "@/shared/services/browser/soundPlayer";
@@ -8,7 +8,7 @@ interface KeyboardProps {
   disabled?: boolean;
 }
 
-function KeyboardComponent({ onThrow, disabled }: KeyboardProps): JSX.Element {
+function KeyboardComponent({ onThrow, disabled }: KeyboardProps): React.JSX.Element {
   const [doubleNext, setDoubleNext] = useState(false);
   const [tripleNext, setTripleNext] = useState(false);
 

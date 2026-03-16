@@ -1,7 +1,7 @@
 import { useCallback, useEffect } from "react";
 import { parseThrowValue } from "@/lib/game/parseThrowValue";
 import { playSound } from "@/shared/services/browser/soundPlayer";
-import { clientLogger } from "@/shared/services/browser/clientLogger";
+import { clientLogger } from "@/lib/clientLogger";
 import { $gameData, setGameData } from "@/shared/store";
 import { applyOptimisticThrow } from "./throwStateService";
 import { isThrowNotAllowedConflict, useThrowReconciliation } from "./useThrowReconciliation";
@@ -67,7 +67,7 @@ export function useThrowHandler({ gameId }: UseThrowHandlerOptions): UseThrowHan
         updateSyncMessage(null);
         const currentGameData = $gameData.get();
 
-        if (!gameId || !currentGameData) {
+        if (gameId === null || !currentGameData) {
           clientLogger.warn("game.throw.blocked.missing-context", {
             context: {
               hasGameData: currentGameData !== null,
@@ -158,7 +158,7 @@ export function useThrowHandler({ gameId }: UseThrowHandlerOptions): UseThrowHan
       return;
     }
 
-    if (!gameId) {
+    if (gameId === null) {
       clientLogger.warn("game.undo.blocked.missing-game-id");
       return;
     }

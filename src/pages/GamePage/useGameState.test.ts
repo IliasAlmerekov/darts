@@ -1,12 +1,18 @@
 // @vitest-environment jsdom
+
+const getGameThrowsIfChangedMock = vi.hoisted(() => vi.fn());
+const resetGameStateVersionMock = vi.hoisted(() => vi.fn());
+
+vi.mock("@/shared/api/game", () => ({
+  getGameThrowsIfChanged: (...args: unknown[]) => getGameThrowsIfChangedMock(...args),
+  resetGameStateVersion: (...args: unknown[]) => resetGameStateVersionMock(...args),
+}));
+
 import { act, renderHook, waitFor } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { useGameState } from "./useGameState";
 import type { GameThrowsResponse } from "@/types";
 import * as gameStore from "@/shared/store";
-
-const getGameThrowsIfChangedMock = vi.fn();
-const resetGameStateVersionMock = vi.fn();
 
 type Deferred<T> = {
   promise: Promise<T>;
@@ -43,18 +49,13 @@ function createGameData(gameId: number): GameThrowsResponse {
   };
 }
 
-vi.mock("@/shared/api/game", () => ({
-  getGameThrowsIfChanged: (...args: unknown[]) => getGameThrowsIfChangedMock(...args),
-  resetGameStateVersion: (...args: unknown[]) => resetGameStateVersionMock(...args),
-}));
-
 describe("useGameState", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     gameStore.resetGameStore();
   });
 
-  it("resets the shared store on gameId change and ignores stale response", async () => {
+  it("should reset the shared store and ignore stale responses when gameId changes", async () => {
     const firstRequest = createDeferred<GameThrowsResponse | null>();
     const secondRequest = createDeferred<GameThrowsResponse | null>();
     const calls: Array<{ gameId: number; signal?: AbortSignal | undefined }> = [];
@@ -109,7 +110,7 @@ describe("useGameState", () => {
     expect(staleWriteCalls).toHaveLength(0);
   });
 
-  it("invalidates in-flight manual refetch when gameId is cleared", async () => {
+  it("should invalidate in-flight manual refetch when gameId is cleared", async () => {
     const manualRefetch = createDeferred<GameThrowsResponse | null>();
     const setGameDataSpy = vi.spyOn(gameStore, "setGameData");
 
@@ -153,7 +154,7 @@ describe("useGameState", () => {
     expect(setGameDataSpy).toHaveBeenCalledTimes(setGameDataCallCountBeforeResolve);
   });
 
-  it("keeps refetch stable between rerenders for the same game", async () => {
+  it("should keep refetch stable when the same gameId is rerendered", async () => {
     getGameThrowsIfChangedMock.mockResolvedValue(createGameData(1));
 
     const { result, rerender } = renderHook(

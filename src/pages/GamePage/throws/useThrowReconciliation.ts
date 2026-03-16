@@ -2,7 +2,7 @@ import { useCallback, useState } from "react";
 import { ApiError } from "@/shared/api";
 import { getGameThrows, resetGameStateVersion } from "@/shared/api/game";
 import { isRecord } from "@/lib/guards/guards";
-import { clientLogger } from "@/shared/services/browser/clientLogger";
+import { clientLogger } from "@/lib/clientLogger";
 import { setGameData } from "@/shared/store";
 
 interface UseThrowReconciliationOptions {
@@ -45,7 +45,7 @@ export function useThrowReconciliation({
 
   const reconcileGameState = useCallback(
     async (message: string): Promise<void> => {
-      if (!gameId) {
+      if (gameId === null) {
         setSyncMessage(message);
         return;
       }

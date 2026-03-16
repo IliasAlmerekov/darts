@@ -1,8 +1,7 @@
 import { useCallback, useState } from "react";
-import type { Dispatch, SetStateAction } from "react";
 import { useNavigate } from "react-router-dom";
 import { abortGame, createRematch, updateGameSettings } from "@/shared/api/game";
-import { clientLogger } from "@/shared/services/browser/clientLogger";
+import { clientLogger } from "@/lib/clientLogger";
 import { toUserErrorMessage } from "@/lib/error/error-to-user-message";
 import { ROUTES } from "@/lib/router/routes";
 import { resetRoomStore, setInvitation } from "@/shared/store";
@@ -31,7 +30,7 @@ interface UseGameSettingsFlowResult {
 interface UseGameExitFlowOptions {
   gameId: number | null;
   navigate: ReturnType<typeof useNavigate>;
-  setPageError: Dispatch<SetStateAction<string | null>>;
+  setPageError: (error: string | null) => void;
 }
 
 interface UseGameExitFlowResult {
@@ -59,8 +58,8 @@ export function useGameSettingsFlow({
   }, []);
 
   const handleSaveSettings = useCallback(
-    async (settings: GameSettingsFormValues) => {
-      if (!gameData || !gameId) {
+    async (settings: GameSettingsFormValues): Promise<void> => {
+      if (!gameData || gameId === null) {
         return;
       }
 
@@ -105,8 +104,8 @@ export function useGameExitFlow({
     setIsExitOverlayOpen(false);
   }, []);
 
-  const handleExitGame = useCallback(async () => {
-    if (!gameId) {
+  const handleExitGame = useCallback(async (): Promise<void> => {
+    if (gameId === null) {
       return;
     }
 

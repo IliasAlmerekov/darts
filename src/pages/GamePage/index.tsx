@@ -1,4 +1,5 @@
 import React from "react";
+import clsx from "clsx";
 import { Keyboard } from "./components/Keyboard";
 import { NumberButton } from "./components/NumberButton";
 import GamePlayerItemList from "./components/game-player-item/GamePlayerItemList";
@@ -15,10 +16,12 @@ import { toUserErrorMessage } from "@/lib/error/error-to-user-message";
 import { ROUTES } from "@/lib/router/routes";
 
 import styles from "./Game.module.css";
+
+const DEFAULT_START_SCORE = 301;
 import SettingsOverlay from "./components/SettingsOverlay";
 import { useGameLogic } from "./useGameLogic";
 
-type OverlaysSectionProps = {
+interface OverlaysSectionProps {
   shouldShowFinishOverlay: boolean;
   isExitOverlayOpen: boolean;
   isSettingsOpen: boolean;
@@ -33,7 +36,7 @@ type OverlaysSectionProps = {
   handleExitGame: () => Promise<void>;
   handleCloseSettings: () => void;
   handleSaveSettings: (settings: { doubleOut: boolean; tripleOut: boolean }) => Promise<void>;
-};
+}
 
 const OverlaysSection = React.memo(function OverlaysSection({
   shouldShowFinishOverlay,
@@ -50,7 +53,7 @@ const OverlaysSection = React.memo(function OverlaysSection({
   handleExitGame,
   handleCloseSettings,
   handleSaveSettings,
-}: OverlaysSectionProps): JSX.Element {
+}: OverlaysSectionProps): React.JSX.Element {
   const finishOverlayTitleId = React.useId();
   const exitOverlayTitleId = React.useId();
   const finishOverlayProps = {
@@ -65,7 +68,7 @@ const OverlaysSection = React.memo(function OverlaysSection({
   return (
     <>
       <Overlay
-        className={`${styles.overlayBox} ${styles.centeredOverlayBox}`}
+        className={clsx(styles.overlayBox, styles.centeredOverlayBox)}
         isOpen={shouldShowFinishOverlay}
         src={deleteIcon}
         ariaLabelledBy={finishOverlayTitleId}
@@ -120,15 +123,15 @@ const OverlaysSection = React.memo(function OverlaysSection({
   );
 });
 
-type HeaderSectionProps = {
+interface HeaderSectionProps {
   handleOpenExitOverlay: () => void;
   handleOpenSettings: () => void;
-};
+}
 
 const HeaderSection = React.memo(function HeaderSection({
   handleOpenExitOverlay,
   handleOpenSettings,
-}: HeaderSectionProps): JSX.Element {
+}: HeaderSectionProps): React.JSX.Element {
   return (
     <header className={styles.gameHeader}>
       <BackButton onClick={handleOpenExitOverlay} ariaLabel="Back to Home" />
@@ -141,19 +144,19 @@ const HeaderSection = React.memo(function HeaderSection({
   );
 });
 
-type KeyboardSectionProps = {
+interface KeyboardSectionProps {
   onUndo: () => Promise<void>;
   onThrow: (value: string | number) => Promise<void>;
   isUndoDisabled: boolean;
   isInteractionDisabled: boolean;
-};
+}
 
 const KeyboardSection = React.memo(function KeyboardSection({
   onUndo,
   onThrow,
   isUndoDisabled,
   isInteractionDisabled,
-}: KeyboardSectionProps): JSX.Element {
+}: KeyboardSectionProps): React.JSX.Element {
   return (
     <div className={styles.keyboardAndUndo}>
       <NumberButton value="Undo" handleClick={onUndo} disabled={isUndoDisabled} />
@@ -162,7 +165,7 @@ const KeyboardSection = React.memo(function KeyboardSection({
   );
 });
 
-function GamePage() {
+function GamePage(): React.JSX.Element {
   const {
     gameId,
     gameData,
@@ -191,7 +194,7 @@ function GamePage() {
     refetch,
   } = useGameLogic();
 
-  if (!gameId) {
+  if (gameId === null) {
     return (
       <div className={styles.gamePageHeader}>
         <ErrorState
@@ -227,7 +230,7 @@ function GamePage() {
         isSettingsOpen={isSettingsOpen}
         settingsError={settingsError}
         isSavingSettings={isSavingSettings}
-        initialStartScore={gameData?.settings.startScore ?? 301}
+        initialStartScore={gameData?.settings.startScore ?? DEFAULT_START_SCORE}
         initialDoubleOut={gameData?.settings.doubleOut ?? false}
         initialTripleOut={gameData?.settings.tripleOut ?? false}
         handleContinueGame={handleContinueGame}

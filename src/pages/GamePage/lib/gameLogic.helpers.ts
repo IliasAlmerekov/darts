@@ -46,7 +46,7 @@ export function parseGameIdParam(gameIdParam: string | undefined): number | null
   }
 
   const parsed = Number(gameIdParam);
-  return Number.isFinite(parsed) ? parsed : null;
+  return Number.isFinite(parsed) && parsed > 0 ? parsed : null;
 }
 
 export function getZeroScorePlayerIds(players: UIPlayer[]): number[] {

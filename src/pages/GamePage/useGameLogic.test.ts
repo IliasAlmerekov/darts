@@ -52,16 +52,16 @@ function buildGameData(overrides?: Partial<GameThrowsResponse>): GameThrowsRespo
 }
 
 describe("areAllPlayersAtStartScore", () => {
-  it("returns true when game data is missing", () => {
+  it("should return true when game data is missing", () => {
     expect(areAllPlayersAtStartScore(null)).toBe(true);
   });
 
-  it("returns true when all players are on start score", () => {
+  it("should return true when all players are on start score", () => {
     const data = buildGameData();
     expect(areAllPlayersAtStartScore(data)).toBe(true);
   });
 
-  it("returns false when at least one player has changed score", () => {
+  it("should return false when at least one player has changed score", () => {
     const data = buildGameData({
       players: [
         {
@@ -94,11 +94,11 @@ describe("areAllPlayersAtStartScore", () => {
 });
 
 describe("shouldAutoFinishGame", () => {
-  it("returns false when game data is missing", () => {
+  it("should return false when game data is missing", () => {
     expect(shouldAutoFinishGame(null, false)).toBe(false);
   });
 
-  it("returns false when finish overlay is visible", () => {
+  it("should return false when the finish overlay is visible", () => {
     const data = buildGameData({
       currentRound: 3,
       players: [
@@ -130,7 +130,7 @@ describe("shouldAutoFinishGame", () => {
     expect(shouldAutoFinishGame(data, true)).toBe(false);
   });
 
-  it("returns true when exactly one active player remains in progressed started game", () => {
+  it("should return true when exactly one active player remains in a progressed started game", () => {
     const data = buildGameData({
       currentRound: 4,
       players: [
@@ -162,7 +162,7 @@ describe("shouldAutoFinishGame", () => {
     expect(shouldAutoFinishGame(data, false)).toBe(true);
   });
 
-  it("returns false when no players have finished yet", () => {
+  it("should return false when no players have finished yet", () => {
     const data = buildGameData({
       players: [
         {
@@ -193,7 +193,7 @@ describe("shouldAutoFinishGame", () => {
     expect(shouldAutoFinishGame(data, false)).toBe(false);
   });
 
-  it("returns true when the game is not finished and only one active player remains", () => {
+  it("should return true when the game is not finished and only one active player remains", () => {
     const data = buildGameData({
       status: "lobby",
       players: [
@@ -227,7 +227,7 @@ describe("shouldAutoFinishGame", () => {
 });
 
 describe("shouldNavigateToSummary", () => {
-  it("returns true for finished game even when winnerId is null", () => {
+  it("should return true for a finished game when winnerId is null", () => {
     const data = buildGameData({
       id: 559,
       status: "finished",
@@ -238,7 +238,7 @@ describe("shouldNavigateToSummary", () => {
     expect(shouldNavigateToSummary(data, 559)).toBe(true);
   });
 
-  it("returns false when game id does not match route id", () => {
+  it("should return false when the game id does not match the route id", () => {
     const data = buildGameData({
       id: 560,
       status: "finished",
@@ -247,7 +247,7 @@ describe("shouldNavigateToSummary", () => {
     expect(shouldNavigateToSummary(data, 559)).toBe(false);
   });
 
-  it("returns false when game is not finished", () => {
+  it("should return false when the game is not finished", () => {
     const data = buildGameData({
       id: 559,
       status: "started",
@@ -258,7 +258,7 @@ describe("shouldNavigateToSummary", () => {
 });
 
 describe("calculateShouldShowFinishOverlay", () => {
-  it("returns true when a player finished and more than one active player remains", () => {
+  it("should return true when a player finished and more than one active player remains", () => {
     const data = buildGameData({
       currentRound: 4,
       players: [
@@ -308,7 +308,7 @@ describe("calculateShouldShowFinishOverlay", () => {
     ).toBe(true);
   });
 
-  it("returns false when the finished players were already dismissed", () => {
+  it("should return false when the finished players were already dismissed", () => {
     const data = buildGameData({
       currentRound: 4,
       players: [
@@ -358,7 +358,7 @@ describe("calculateShouldShowFinishOverlay", () => {
     ).toBe(false);
   });
 
-  it("returns false when the game should auto-finish instead", () => {
+  it("should return false when the game should auto-finish instead", () => {
     const data = buildGameData({
       currentRound: 4,
       players: [
