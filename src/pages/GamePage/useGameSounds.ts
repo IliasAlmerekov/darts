@@ -2,12 +2,12 @@ import { useEffect, useRef } from "react";
 import type { GameThrowsResponse } from "@/types";
 import { playSound } from "@/shared/services/browser/soundPlayer";
 
-type ThrowLike = {
+interface ThrowLike {
   value: number;
   isDouble?: boolean;
   isTriple?: boolean;
   isBust?: boolean;
-};
+}
 
 function getPlayerThrowCount(player: GameThrowsResponse["players"][number]): number {
   const historyCount = (player.roundHistory ?? []).reduce((sum, round) => {

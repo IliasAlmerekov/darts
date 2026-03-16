@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef } from "react";
 import { useStore } from "@nanostores/react";
 import { getGameThrowsIfChanged, resetGameStateVersion } from "@/shared/api/game";
-import { clientLogger } from "@/shared/services/browser/clientLogger";
+import { clientLogger } from "@/lib/clientLogger";
 import type { GameSettingsResponse, GameThrowsResponse } from "@/types";
 import {
   $gameData,
@@ -42,7 +42,7 @@ export function useGameState({ gameId }: UseGameStateOptions): UseGameStateRetur
   useEffect(() => {
     requestIdRef.current += 1;
 
-    if (!gameId) {
+    if (gameId === null) {
       resetGameStore();
       return;
     }
@@ -58,7 +58,7 @@ export function useGameState({ gameId }: UseGameStateOptions): UseGameStateRetur
 
   const fetchGameData = useCallback(
     async (signal?: AbortSignal) => {
-      if (!gameId || signal?.aborted) {
+      if (gameId === null || signal?.aborted) {
         return;
       }
 
@@ -107,7 +107,7 @@ export function useGameState({ gameId }: UseGameStateOptions): UseGameStateRetur
 
   const updateGameSettings = useCallback(
     (settings: GameSettingsResponse) => {
-      if (!gameId) {
+      if (gameId === null) {
         return;
       }
 

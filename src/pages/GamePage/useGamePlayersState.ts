@@ -75,7 +75,7 @@ export function useGamePlayersState({
     );
   }, [zeroScorePlayerIds]);
 
-  const handleUndoFromOverlay = useCallback(async () => {
+  const handleUndoFromOverlay = useCallback(async (): Promise<void> => {
     await handleUndo();
     setDismissedZeroScorePlayerIds((previousIds) =>
       appendDismissedPlayerIds(previousIds, zeroScorePlayerIds),

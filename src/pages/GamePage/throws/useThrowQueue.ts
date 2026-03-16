@@ -1,6 +1,6 @@
 import { useCallback, useRef, useState } from "react";
 import { recordThrow, setGameStateVersion } from "@/shared/api/game";
-import { clientLogger } from "@/shared/services/browser/clientLogger";
+import { clientLogger } from "@/lib/clientLogger";
 import type { GameThrowsResponse, ThrowRequest } from "@/types";
 import { playSound } from "@/shared/services/browser/soundPlayer";
 import { $gameData, setGameData } from "@/shared/store";
@@ -9,9 +9,9 @@ import { isThrowNotAllowedConflict } from "./useThrowReconciliation";
 
 const MAX_PENDING_THROWS = 3;
 
-type ThrowQueueItem = {
+interface ThrowQueueItem {
   request: ThrowRequest;
-};
+}
 
 interface TurnRollbackDetectionOptions {
   confirmedBaseState: GameThrowsResponse;
@@ -121,7 +121,7 @@ export function useThrowQueue({
   }, []);
 
   const drainQueue = useCallback(async (): Promise<void> => {
-    if (!gameId || isDrainingRef.current) {
+    if (gameId === null || isDrainingRef.current) {
       return;
     }
 

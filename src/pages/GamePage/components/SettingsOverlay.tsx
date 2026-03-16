@@ -1,11 +1,12 @@
-import { useEffect, useId, useState } from "react";
+import React, { useEffect, useId, useState } from "react";
+import clsx from "clsx";
 import { Overlay } from "@/shared/ui/overlay";
 import { SettingsGroupBtn, Button } from "@/shared/ui/button";
 import type { GameMode } from "@/types";
 import styles from "./SettingsOverlay.module.css";
 import deleteIcon from "@/assets/icons/delete.svg";
 
-type SettingsOverlayProps = {
+interface SettingsOverlayProps {
   isOpen: boolean;
   onClose: () => void;
   onSave: (payload: { doubleOut: boolean; tripleOut: boolean }) => void;
@@ -14,7 +15,7 @@ type SettingsOverlayProps = {
   initialTripleOut: boolean;
   isSaving?: boolean;
   error?: string | null;
-};
+}
 
 const GAME_MODE_OPTIONS = [
   { label: "Single-out", id: "single-out" },
@@ -41,7 +42,7 @@ function SettingsOverlay({
   initialTripleOut,
   isSaving = false,
   error = null,
-}: SettingsOverlayProps) {
+}: SettingsOverlayProps): React.JSX.Element {
   const titleId = useId();
   const [gameMode, setGameMode] = useState<GameMode>(
     resolveGameMode(initialDoubleOut, initialTripleOut),
@@ -59,7 +60,7 @@ function SettingsOverlay({
     setGameMode(resolveGameMode(initialDoubleOut, initialTripleOut));
   }, [initialDoubleOut, initialTripleOut, initialStartScore]);
 
-  const handleSave = () => {
+  const handleSave = (): void => {
     const doubleOut = gameMode === "double-out";
     const tripleOut = gameMode === "triple-out";
     onSave({ doubleOut, tripleOut });
@@ -67,7 +68,7 @@ function SettingsOverlay({
 
   return (
     <Overlay
-      className={`${styles.overlayBox} ${styles.centeredOverlayBox}`}
+      className={clsx(styles.overlayBox, styles.centeredOverlayBox)}
       isOpen={isOpen}
       src={deleteIcon}
       onClose={onClose}
