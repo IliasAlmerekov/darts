@@ -24,7 +24,7 @@ interface GamePlayerItemProps {
   prevThrow1IsBust?: boolean | undefined;
   prevThrow2IsBust?: boolean | undefined;
   prevThrow3IsBust?: boolean | undefined;
-  id: string;
+  id?: string;
   itemRef?: React.Ref<HTMLDivElement>;
 }
 

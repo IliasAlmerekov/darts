@@ -1,6 +1,7 @@
-import React, { useLayoutEffect, useRef } from "react";
+import React, { useRef } from "react";
 import clsx from "clsx";
 import type { WinnerPlayerProps } from "@/types";
+import useIsomorphicLayoutEffect from "@/shared/lib/useIsomorphicLayoutEffect";
 import GamePlayerItem from "./GamePlayerItem";
 import styles from "./GamePlayerItem.module.css";
 
@@ -9,13 +10,16 @@ interface GamePlayerItemListProps {
   round: number;
 }
 
-function GamePlayerItemListComponent({ userMap, round }: GamePlayerItemListProps): JSX.Element {
+function GamePlayerItemListComponent({
+  userMap,
+  round,
+}: GamePlayerItemListProps): React.JSX.Element {
   const activePlayerId = userMap.find((item) => item.isActive)?.id ?? null;
   const previousActivePlayerIdRef = useRef<number | null>(null);
   const activePlayerElementRef = useRef<HTMLDivElement | null>(null);
 
-  useLayoutEffect(() => {
-    if (!activePlayerId || typeof window === "undefined") {
+  useIsomorphicLayoutEffect(() => {
+    if (activePlayerId === null) {
       previousActivePlayerIdRef.current = activePlayerId;
       return;
     }
@@ -58,7 +62,7 @@ function GamePlayerItemListComponent({ userMap, round }: GamePlayerItemListProps
           <GamePlayerItem
             className={clsx(styles.gamePlayerItem, {
               [styles.activePlayer ?? ""]: item.isActive === true,
-              winner: item.isPlaying === false,
+              [styles.finished ?? ""]: item.isPlaying === false,
             })}
             key={item.id}
             name={item.name}
@@ -79,8 +83,7 @@ function GamePlayerItemListComponent({ userMap, round }: GamePlayerItemListProps
             prevThrow1IsBust={previousRound?.throw1IsBust}
             prevThrow2IsBust={previousRound?.throw2IsBust}
             prevThrow3IsBust={previousRound?.throw3IsBust}
-            id={item.isActive ? "playerid" : ""}
-            {...(item.isActive ? { itemRef: activePlayerElementRef } : {})}
+            {...(item.isActive ? { id: "playerid", itemRef: activePlayerElementRef } : {})}
           />
         );
       })}

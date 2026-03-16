@@ -4,7 +4,7 @@ import { toUserErrorMessage } from "@/lib/error/error-to-user-message";
 import { ROUTES } from "@/lib/router/routes";
 import { unlockSounds } from "@/shared/services/browser/soundPlayer";
 import { setLastFinishedGameSummary } from "@/shared/store";
-import { clientLogger } from "@/shared/services/browser/clientLogger";
+import { clientLogger } from "@/lib/clientLogger";
 import type { GameSummaryResponse, GameThrowsResponse, RoomStreamEventType } from "@/types";
 import { shouldAutoFinishGame, shouldNavigateToSummary } from "./lib/gameLogic.helpers";
 
@@ -89,7 +89,7 @@ export function useAutoFinishGame({
   const isAutoFinishingRef = useRef(false);
 
   useEffect(() => {
-    if (!gameId || !shouldAutoFinishGame(gameData, shouldShowFinishOverlay)) {
+    if (gameId === null || !shouldAutoFinishGame(gameData, shouldShowFinishOverlay)) {
       return;
     }
 
@@ -102,7 +102,7 @@ export function useAutoFinishGame({
     const { signal } = controller;
 
     finishGame(gameId, signal)
-      .then((summary) => {
+      .then((summary): void => {
         if (signal.aborted) {
           return;
         }
@@ -113,7 +113,7 @@ export function useAutoFinishGame({
           state: { finishedGameId: gameId, summary },
         });
       })
-      .catch((error: unknown) => {
+      .catch((error: unknown): void => {
         if (isAbortError(error) || signal.aborted) {
           return;
         }
@@ -124,7 +124,7 @@ export function useAutoFinishGame({
         });
         setPageError(toUserErrorMessage(error, "Could not finish the game automatically."));
       })
-      .finally(() => {
+      .finally((): void => {
         isAutoFinishingRef.current = false;
       });
 
