@@ -26,7 +26,7 @@ interface DialogProps {
   closeIconSrc?: string;
   ariaLabel?: string;
   ariaLabelledBy?: string;
-  children: React.ReactNode;
+  children: React.JSX.Element | React.JSX.Element[];
 }
 
 function Dialog({
@@ -39,7 +39,7 @@ function Dialog({
   ariaLabel,
   ariaLabelledBy,
   children,
-}: DialogProps): React.ReactNode {
+}: DialogProps): React.JSX.Element | null {
   const dialogRef = React.useRef<HTMLDivElement | null>(null);
   const previousActiveElementRef = React.useRef<HTMLElement | null>(null);
 

@@ -43,9 +43,8 @@ describe("GameDetailPage", () => {
     useGameDetailPageMock.mockReset();
   });
 
-  it("should render styled game details when hook returns data", () => {
+  it("should render game details when hook returns data", () => {
     useGameDetailPageMock.mockReturnValue({
-      error: null,
       podiumData: [buildPlayer()],
       newList: [buildPlayer()],
       leaderBoardList: [],
@@ -65,23 +64,5 @@ describe("GameDetailPage", () => {
     expect(screen.queryByTestId("podium")).not.toBeNull();
     expect(leaderboard).not.toBeNull();
     expect(leaderboard.parentElement?.className).toContain(styles.playerboardList);
-  });
-
-  it("should render an error message when hook reports failure", () => {
-    useGameDetailPageMock.mockReturnValue({
-      error: "Could not load finished game data",
-      podiumData: [],
-      newList: [],
-      leaderBoardList: [],
-    });
-
-    render(
-      <MemoryRouter>
-        <GameDetailPage />
-      </MemoryRouter>,
-    );
-
-    expect(screen.getByText("Could not load finished game data")).toBeTruthy();
-    expect(screen.queryByTestId("podium")).toBeNull();
   });
 });

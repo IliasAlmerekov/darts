@@ -479,8 +479,12 @@ export async function finishGame(
 /**
  * Fetches final standings for a finished game.
  */
-export async function getFinishedGame(gameId: number): Promise<GameSummaryResponse> {
+export async function getFinishedGame(
+  gameId: number,
+  signal?: AbortSignal,
+): Promise<GameSummaryResponse> {
   const data: unknown = await apiClient.get(FINISHED_GAME_ENDPOINT(gameId), {
+    ...(signal ? { signal } : {}),
     validate: isGameSummaryEnvelopeResponse,
   });
   const summary = normalizeGameSummaryResponse(data);
