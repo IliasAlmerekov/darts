@@ -1,10 +1,4 @@
 // @vitest-environment jsdom
-import type { ReactNode } from "react";
-import { render, screen } from "@testing-library/react";
-import { MemoryRouter, Route, Routes } from "react-router-dom";
-import { describe, expect, it, vi } from "vitest";
-import AdminLayoutRoute from "./AdminLayoutRoute";
-
 const useStoreMock = vi.fn();
 
 vi.mock("@nanostores/react", () => ({
@@ -25,8 +19,14 @@ vi.mock("@/shared/ui/admin-layout", () => ({
   ),
 }));
 
+import type { ReactNode } from "react";
+import { render, screen } from "@testing-library/react";
+import { MemoryRouter, Route, Routes } from "react-router-dom";
+import { describe, expect, it, vi } from "vitest";
+import AdminLayoutRoute from "./AdminLayoutRoute";
+
 describe("AdminLayoutRoute", () => {
-  it("renders the admin shell around the outlet content with the current game id from store", () => {
+  it("should render the admin shell around the outlet content when the store provides the current game id", () => {
     useStoreMock.mockReturnValue(42);
 
     render(

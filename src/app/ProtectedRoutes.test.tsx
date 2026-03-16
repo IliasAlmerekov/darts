@@ -1,9 +1,4 @@
 // @vitest-environment jsdom
-import { render, screen } from "@testing-library/react";
-import { MemoryRouter, Route, Routes } from "react-router-dom";
-import { beforeEach, describe, expect, it, vi } from "vitest";
-import ProtectedRoutes from "./ProtectedRoutes";
-
 vi.mock("@/shared/hooks/useAuthenticatedUser");
 vi.mock("@/shared/ui/skeletons", () => ({
   StartPageSkeleton: () => <div data-testid="start-page-skeleton" />,
@@ -11,9 +6,25 @@ vi.mock("@/shared/ui/skeletons", () => ({
   UniversalSkeleton: () => <div data-testid="universal-skeleton" />,
 }));
 
+import { render, screen } from "@testing-library/react";
+import { MemoryRouter, Route, Routes } from "react-router-dom";
+import { beforeEach, describe, expect, it, vi } from "vitest";
+import type { AuthenticatedUser } from "@/shared/api/auth";
 import { useAuthenticatedUser } from "@/shared/hooks/useAuthenticatedUser";
+import ProtectedRoutes from "./ProtectedRoutes";
 
 const mockUseAuthenticatedUser = vi.mocked(useAuthenticatedUser);
+
+function buildAuthenticatedUser(overrides: Partial<AuthenticatedUser> = {}): AuthenticatedUser {
+  return {
+    success: true,
+    roles: ["ROLE_USER"],
+    id: 1,
+    redirect: "/start",
+    gameId: null,
+    ...overrides,
+  };
+}
 
 function renderProtectedRoutes(initialPath: string): ReturnType<typeof render> {
   return render(
@@ -74,12 +85,7 @@ describe("ProtectedRoutes", () => {
 
   it("should redirect player users to /joined when they lack admin permissions", () => {
     mockUseAuthenticatedUser.mockReturnValue({
-      user: {
-        success: true,
-        roles: ["ROLE_PLAYER"],
-        id: 1,
-        redirect: "/start",
-      },
+      user: buildAuthenticatedUser({ roles: ["ROLE_PLAYER"] }),
       loading: false,
       error: null,
     });
@@ -104,12 +110,7 @@ describe("ProtectedRoutes", () => {
 
   it("should redirect admin users to /start when they lack player permissions", () => {
     mockUseAuthenticatedUser.mockReturnValue({
-      user: {
-        success: true,
-        roles: ["ROLE_ADMIN"],
-        id: 1,
-        redirect: "/start",
-      },
+      user: buildAuthenticatedUser({ roles: ["ROLE_ADMIN"] }),
       loading: false,
       error: null,
     });
@@ -134,12 +135,7 @@ describe("ProtectedRoutes", () => {
 
   it("should render Outlet when user has the required role", () => {
     mockUseAuthenticatedUser.mockReturnValue({
-      user: {
-        success: true,
-        roles: ["ROLE_ADMIN"],
-        id: 1,
-        redirect: "/start",
-      },
+      user: buildAuthenticatedUser({ roles: ["ROLE_ADMIN"] }),
       loading: false,
       error: null,
     });

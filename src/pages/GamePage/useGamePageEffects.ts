@@ -6,7 +6,7 @@ import { unlockSounds } from "@/shared/services/browser/soundPlayer";
 import { setLastFinishedGameSummary } from "@/shared/store";
 import { clientLogger } from "@/shared/services/browser/clientLogger";
 import type { GameSummaryResponse, GameThrowsResponse, RoomStreamEventType } from "@/types";
-import { shouldAutoFinishGame, shouldNavigateToSummary } from "./gameLogic.helpers";
+import { shouldAutoFinishGame, shouldNavigateToSummary } from "./lib/gameLogic.helpers";
 
 interface GameSummaryNavigationState {
   finishedGameId: number;

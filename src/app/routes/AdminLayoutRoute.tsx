@@ -3,7 +3,7 @@ import { Outlet } from "react-router-dom";
 import { AdminLayout } from "@/shared/ui/admin-layout";
 import { $currentGameId } from "@/shared/store";
 
-export default function AdminLayoutRoute(): JSX.Element {
+export default function AdminLayoutRoute(): React.JSX.Element {
   const currentGameId = useStore($currentGameId);
 
   return (

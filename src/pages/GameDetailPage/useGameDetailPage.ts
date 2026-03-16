@@ -1,60 +1,66 @@
-import { useEffect, useMemo, useState } from "react";
-import { useParams } from "react-router-dom";
+import { useMemo } from "react";
+import { LoaderFunctionArgs, useLoaderData } from "react-router-dom";
 import { getFinishedGame } from "@/shared/api/game";
-import { clientLogger } from "@/shared/services/browser/clientLogger";
+import { clientLogger } from "@/lib/clientLogger";
 import type { FinishedPlayerResponse, WinnerPlayerProps } from "@/types";
 
 type UseGameDetailPageResult = {
-  error: string | null;
   podiumData: WinnerPlayerProps[];
   newList: WinnerPlayerProps[];
   leaderBoardList: WinnerPlayerProps[];
 };
+
+type GameDetailLoaderData = FinishedPlayerResponse[];
+
+function isGameDetailLoaderData(value: unknown): value is GameDetailLoaderData {
+  return Array.isArray(value);
+}
 
 function createEmptyRound(): WinnerPlayerProps["rounds"][number] {
   return {};
 }
 
 /**
+ * React Router 6 loader
+ * Registers the route: loader: gameDetailLoader
+ */
+export async function gameDetailLoader({
+  params,
+}: LoaderFunctionArgs): Promise<GameDetailLoaderData> {
+  const parseId = Number(params.id);
+
+  if (!Number.isFinite(parseId) || parseId <= 0) {
+    throw new Response("Invalid game id", { status: 400 });
+  }
+
+  return getFinishedGame(parseId);
+}
+
+/**
  * Loads finished game details by route id and builds data for podium/leaderboard.
  */
 export function useGameDetailPage(): UseGameDetailPageResult {
-  const { id: gameIdParam } = useParams<{ id?: string }>();
-  const [serverFinished, setServerFinished] = useState<FinishedPlayerResponse[]>([]);
-  const [error, setError] = useState<string | null>(null);
+  const rawLoaderData = useLoaderData();
 
-  const finishedGameIdFromRoute = useMemo(() => {
-    if (!gameIdParam) {
-      return null;
-    }
+  if (!isGameDetailLoaderData(rawLoaderData)) {
+    throw new Error("Unexpected loader data format for GameDetailPage");
+  }
 
-    const parsedParam = Number(gameIdParam);
-    return Number.isFinite(parsedParam) ? parsedParam : null;
-  }, [gameIdParam]);
+  const serverFinished: GameDetailLoaderData = rawLoaderData;
 
-  useEffect(() => {
-    if (!finishedGameIdFromRoute) {
-      setError("Invalid game id");
-      return;
-    }
-
-    getFinishedGame(finishedGameIdFromRoute)
-      .then((data) => {
-        setServerFinished(data);
-        setError(null);
-      })
-      .catch((err: unknown) => {
-        clientLogger.error("game-detail.finished-game.fetch.failed", {
-          context: { finishedGameId: finishedGameIdFromRoute },
-          error: err,
-        });
-        setError("Could not load finished game data");
-      });
-  }, [finishedGameIdFromRoute]);
+  const MIN_ROUNDS_PLAYED = 1;
 
   const newList: WinnerPlayerProps[] = useMemo(() => {
     return serverFinished.map((player) => {
-      const roundsPlayed = Math.max(player.roundsPlayed ?? 0, 1);
+      if (player.roundsPlayed === null) {
+        clientLogger.error("game-detail.player.rounds-played.missing", {
+          context: { playerId: player.playerId },
+          error: new Error("roundsPlayed absent in finished game response"),
+        });
+      }
+
+      const roundsPlayed = Math.max(player.roundsPlayed ?? MIN_ROUNDS_PLAYED, MIN_ROUNDS_PLAYED);
+
       return {
         id: player.playerId,
         name: player.username,
@@ -86,7 +92,6 @@ export function useGameDetailPage(): UseGameDetailPageResult {
   const podiumData = podiumList.length === 2 ? podiumListWithPlaceholder : podiumList;
 
   return {
-    error,
     podiumData,
     newList,
     leaderBoardList,

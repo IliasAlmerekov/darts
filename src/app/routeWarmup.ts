@@ -1,14 +1,14 @@
-export type RouteWarmUpTarget = {
+export interface RouteWarmUpTarget {
   id: "start" | "joined";
   load: () => Promise<unknown>;
-};
+}
 
-type WarmUpScheduler = {
+interface WarmUpScheduler {
   requestIdleCallback?: (callback: IdleRequestCallback) => number;
   cancelIdleCallback?: (handle: number) => void;
   setTimeout: (handler: () => void, timeout?: number) => number;
   clearTimeout: (handle: number) => void;
-};
+}
 
 // Warm up only the most common post-auth landing routes.
 export const selectiveRouteWarmUpTargets: readonly RouteWarmUpTarget[] = [

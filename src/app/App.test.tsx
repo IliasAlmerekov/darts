@@ -1,13 +1,4 @@
 // @vitest-environment jsdom
-import type { ReactNode } from "react";
-import { act, render, screen, waitForElementToBeRemoved } from "@testing-library/react";
-import { Outlet } from "react-router-dom";
-import { beforeEach, describe, expect, it, vi } from "vitest";
-
-vi.mock("@/app/ErrorBoundary", () => ({
-  default: ({ children }: { children: ReactNode }) => <>{children}</>,
-}));
-
 vi.mock("@/app/ScrollToTop", () => ({
   default: () => null,
 }));
@@ -33,6 +24,14 @@ vi.mock("@/shared/api", () => ({
   setUnauthorizedHandler: vi.fn(),
 }));
 
+vi.mock("@/shared/services/browser/clientLogger", () => ({
+  clientLogger: {
+    error: vi.fn(),
+    info: vi.fn(),
+    warn: vi.fn(),
+  },
+}));
+
 vi.mock("@/shared/store/auth", () => ({
   invalidateAuthState: vi.fn(),
 }));
@@ -48,6 +47,10 @@ vi.mock("@/shared/store/game-state", () => ({
 vi.mock("@/app/routeWarmup", () => ({
   scheduleSelectiveRouteWarmUp: vi.fn(() => vi.fn()),
   scheduleStatisticsPrefetch: vi.fn(() => vi.fn()),
+}));
+
+vi.mock("@/shared/ui/skeletons", () => ({
+  UniversalSkeleton: () => <div data-testid="universal-skeleton">Loading page</div>,
 }));
 
 vi.mock("@/pages/LoginPage", () => ({
@@ -94,6 +97,9 @@ vi.mock("@/pages/PlayerProfilePage", () => ({
   default: () => <div>Player Profile</div>,
 }));
 
+import { act, render, screen } from "@testing-library/react";
+import { Outlet } from "react-router-dom";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import { clearUnauthorizedHandler, setUnauthorizedHandler } from "@/shared/api";
 import { scheduleSelectiveRouteWarmUp, scheduleStatisticsPrefetch } from "@/app/routeWarmup";
 import { invalidateAuthState } from "@/shared/store/auth";
@@ -113,11 +119,6 @@ describe("App routing", () => {
 
     if (!rendered) {
       throw new Error("Expected App to render");
-    }
-
-    const loadingPage = screen.queryByRole("status", { name: "Loading page" });
-    if (loadingPage) {
-      await waitForElementToBeRemoved(loadingPage, { timeout: 5000 });
     }
 
     return rendered;
@@ -141,7 +142,7 @@ describe("App routing", () => {
     ({ default: App } = await import("./App"));
   });
 
-  it("renders login page for root route", async () => {
+  it("should render the login page when the current route is /", async () => {
     await renderApp();
 
     expect(
@@ -149,7 +150,7 @@ describe("App routing", () => {
     ).toBeTruthy();
   });
 
-  it("renders register page for /register route", async () => {
+  it("should render the register page when the current route is /register", async () => {
     window.history.pushState({}, "", "/register");
 
     await renderApp();
@@ -157,7 +158,7 @@ describe("App routing", () => {
     expect(await screen.findByRole("heading", { name: "Create an account" })).toBeTruthy();
   });
 
-  it("renders start page for /start route", async () => {
+  it("should render the start page when the current route is /start", async () => {
     window.history.pushState({}, "", "/start");
 
     await renderApp();
@@ -165,7 +166,7 @@ describe("App routing", () => {
     expect(await screen.findByText("Start Page")).toBeTruthy();
   });
 
-  it("renders start page for /start/:id route", async () => {
+  it("should render the start page when the current route is /start/:id", async () => {
     window.history.pushState({}, "", "/start/game-42");
 
     await renderApp();
@@ -173,7 +174,7 @@ describe("App routing", () => {
     expect(await screen.findByText("Start Page")).toBeTruthy();
   });
 
-  it("renders admin layout route for admin shell pages", async () => {
+  it("should render the admin layout route when the current route is an admin shell page", async () => {
     window.history.pushState({}, "", "/statistics");
 
     await renderApp();
@@ -182,7 +183,71 @@ describe("App routing", () => {
     expect(await screen.findByText("Statistics Page")).toBeTruthy();
   });
 
-  it("does not render admin layout route for active game pages", async () => {
+  it("should render the settings page when the current route is /settings", async () => {
+    window.history.pushState({}, "", "/settings");
+
+    await renderApp();
+
+    expect(await screen.findByTestId("admin-layout-route")).toBeTruthy();
+    expect(await screen.findByText("Settings Page")).toBeTruthy();
+  });
+
+  it("should render the settings page when the current route is /settings/:id", async () => {
+    window.history.pushState({}, "", "/settings/42");
+
+    await renderApp();
+
+    expect(await screen.findByTestId("admin-layout-route")).toBeTruthy();
+    expect(await screen.findByText("Settings Page")).toBeTruthy();
+  });
+
+  it("should keep the admin layout visible when a nested lazy route suspends", async () => {
+    const pendingStatisticsPage = new Promise<void>(() => undefined);
+
+    window.history.pushState({}, "", "/statistics");
+    vi.clearAllMocks();
+    vi.resetModules();
+    vi.doMock("@/pages/StatisticsPage", () => ({
+      default: function StatisticsPage(): never {
+        throw pendingStatisticsPage;
+      },
+    }));
+
+    const { default: SuspenseApp } = await import("./App");
+
+    await act(async () => {
+      render(<SuspenseApp />);
+      await vi.dynamicImportSettled();
+    });
+
+    expect(screen.getByTestId("admin-layout-route")).toBeTruthy();
+    expect(screen.getByTestId("universal-skeleton")).toBeTruthy();
+  });
+
+  it("should render the route error boundary when a nested admin route throws", async () => {
+    window.history.pushState({}, "", "/statistics");
+    vi.clearAllMocks();
+    vi.resetModules();
+    vi.doMock("@/pages/StatisticsPage", () => ({
+      default: function StatisticsPage(): never {
+        throw new Error("Crash");
+      },
+    }));
+
+    const { default: ErrorApp } = await import("./App");
+
+    await act(async () => {
+      render(<ErrorApp />);
+      await vi.dynamicImportSettled();
+    });
+
+    expect(screen.getByTestId("admin-layout-route")).toBeTruthy();
+    expect(screen.getByRole("alert")).toBeTruthy();
+    expect(screen.getByText("Something went wrong")).toBeTruthy();
+    expect(screen.getByText("Please try refreshing the page.")).toBeTruthy();
+  });
+
+  it("should not render the admin layout route when the current route is an active game page", async () => {
     window.history.pushState({}, "", "/game/42");
 
     await renderApp();
@@ -191,7 +256,7 @@ describe("App routing", () => {
     expect(screen.queryByTestId("admin-layout-route")).toBeNull();
   });
 
-  it("registers unauthorized navigation and clears it on unmount", async () => {
+  it("should register unauthorized navigation and clear it when the app unmounts", async () => {
     window.history.pushState({}, "", "/register");
 
     const { unmount } = await renderApp();
@@ -216,7 +281,7 @@ describe("App routing", () => {
     );
   });
 
-  it("schedules selective route warm-up on mount and runs cleanup on unmount", async () => {
+  it("should schedule selective route warm-up and run cleanup when the app unmounts", async () => {
     const stopWarmup = vi.fn();
     vi.mocked(scheduleSelectiveRouteWarmUp).mockReturnValueOnce(stopWarmup);
     const stopStatisticsPrefetch = vi.fn();
@@ -266,7 +331,7 @@ describe("App routing", () => {
     expect(window.location.pathname).toBe("/");
   });
 
-  it("renders 404 page for unknown route", async () => {
+  it("should render the 404 page when the current route is unknown", async () => {
     window.history.pushState({}, "", "/unknown-route");
 
     await renderApp();

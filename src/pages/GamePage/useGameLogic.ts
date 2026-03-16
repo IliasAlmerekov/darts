@@ -2,11 +2,11 @@ import { useCallback, useMemo, useState } from "react";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
 import { useRoomStream } from "@/shared/hooks/useRoomStream";
 import { useGameState } from "./useGameState";
-import { useThrowHandler } from "./useThrowHandler";
+import { useThrowHandler } from "./throws/useThrowHandler";
 import { useGameSounds } from "./useGameSounds";
 import { useWakeLock } from "./useWakeLock";
 import type { GameThrowsResponse, UIPlayer } from "@/types";
-import { parseGameIdParam } from "./gameLogic.helpers";
+import { parseGameIdParam } from "./lib/gameLogic.helpers";
 import { useGameExitFlow, useGameSettingsFlow } from "./useGameActions";
 import {
   useAutoFinishGame,
@@ -22,7 +22,7 @@ export {
   parseGameIdParam,
   shouldAutoFinishGame,
   shouldNavigateToSummary,
-} from "./gameLogic.helpers";
+} from "./lib/gameLogic.helpers";
 
 interface GameSettingsFormValues {
   doubleOut: boolean;

@@ -1,3 +1,5 @@
+// @vitest-environment node
+
 import { describe, expect, it, vi } from "vitest";
 import {
   scheduleStatisticsPrefetch,
@@ -7,6 +9,8 @@ import {
   type RouteWarmUpTarget,
 } from "./routeWarmup";
 
+const EXPECTED_IDLE_FALLBACK_DELAY_MS = 300;
+
 function createTarget(id: RouteWarmUpTarget["id"]): RouteWarmUpTarget {
   return {
     id,
@@ -15,11 +19,11 @@ function createTarget(id: RouteWarmUpTarget["id"]): RouteWarmUpTarget {
 }
 
 describe("routeWarmup", () => {
-  it("defines a narrow selective warm-up set", () => {
+  it("should define a narrow selective warm-up set when reading the configured route targets", () => {
     expect(selectiveRouteWarmUpTargets.map((target) => target.id)).toEqual(["start", "joined"]);
   });
 
-  it("warms up only the configured selective routes", () => {
+  it("should warm up only the configured selective routes when warm-up is triggered", () => {
     const startTarget = createTarget("start");
     const joinedTarget = createTarget("joined");
 
@@ -29,7 +33,7 @@ describe("routeWarmup", () => {
     expect(joinedTarget.load).toHaveBeenCalledTimes(1);
   });
 
-  it("uses requestIdleCallback when available and cancels it on cleanup", () => {
+  it("should use requestIdleCallback and cancel it on cleanup when the browser API is available", () => {
     const warmUp = vi.fn();
     const setTimeout = vi.fn();
     const clearTimeout = vi.fn();
@@ -64,17 +68,19 @@ describe("routeWarmup", () => {
     expect(clearTimeout).not.toHaveBeenCalled();
   });
 
-  it("falls back to timeout scheduling when requestIdleCallback is unavailable", () => {
+  it("should fall back to timeout scheduling when requestIdleCallback is unavailable", () => {
     const warmUp = vi.fn();
     const clearTimeout = vi.fn();
+    const setTimeout = vi.fn((callback: () => void, delay?: number) => {
+      expect(delay).toBe(EXPECTED_IDLE_FALLBACK_DELAY_MS);
+      scheduledCallback = callback;
+      return 11;
+    });
     let scheduledCallback: (() => void) | undefined;
 
     const cleanup = scheduleSelectiveRouteWarmUp(
       {
-        setTimeout: vi.fn((callback: () => void) => {
-          scheduledCallback = callback;
-          return 11;
-        }),
+        setTimeout,
         clearTimeout,
       },
       warmUp,
@@ -85,23 +91,26 @@ describe("routeWarmup", () => {
     scheduledCallback?.();
 
     expect(warmUp).toHaveBeenCalledTimes(1);
+    expect(setTimeout).toHaveBeenCalledTimes(1);
 
     cleanup();
 
     expect(clearTimeout).toHaveBeenCalledWith(11);
   });
 
-  it("schedules statistics prefetch with the same idle fallback strategy", () => {
+  it("should schedule statistics prefetch when the same idle fallback strategy is used", () => {
     const prefetch = vi.fn();
     const clearTimeout = vi.fn();
+    const setTimeout = vi.fn((callback: () => void, delay?: number) => {
+      expect(delay).toBe(EXPECTED_IDLE_FALLBACK_DELAY_MS);
+      scheduledCallback = callback;
+      return 17;
+    });
     let scheduledCallback: (() => void) | undefined;
 
     const cleanup = scheduleStatisticsPrefetch(
       {
-        setTimeout: vi.fn((callback: () => void) => {
-          scheduledCallback = callback;
-          return 17;
-        }),
+        setTimeout,
         clearTimeout,
       },
       prefetch,
@@ -112,6 +121,7 @@ describe("routeWarmup", () => {
     scheduledCallback?.();
 
     expect(prefetch).toHaveBeenCalledTimes(1);
+    expect(setTimeout).toHaveBeenCalledTimes(1);
 
     cleanup();
 

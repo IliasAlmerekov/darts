@@ -1,0 +1,36 @@
+.backButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 10px;
+  min-inline-size: 88px;
+  block-size: 53px;
+  padding: 0;
+  border: none;
+  background: none;
+  color: var(--blue);
+  font-size: var(--font-size-24);
+  text-decoration: none;
+  font-weight: var(--font-weight-bold);
+}
+
+.backIcon {
+  flex-shrink: 0;
+}
+
+.backLabel {
+  display: inline-flex;
+  align-items: center;
+}
+
+@media (width <= 600px) {
+  .backButton {
+    font-size: var(--font-size-20);
+    gap: 5px;
+  }
+
+  .backIcon {
+    width: 20px;
+    height: 20px;
+  }
+}

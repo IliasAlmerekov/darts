@@ -3,11 +3,22 @@ import { render, screen } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 import FinishedGamePlayerItemList from "./FinishedGamePlayerItemList";
 
+function buildUserMapItem(overrides?: Partial<{ name: string }>): { name: string } {
+  return {
+    name: "Player",
+    ...overrides,
+  };
+}
+
 describe("FinishedGamePlayerItemList", () => {
-  it("renders finished players inside a scrollable list container", () => {
+  it("should render finished players when userMap contains items", () => {
     render(
       <FinishedGamePlayerItemList
-        userMap={[{ name: "Alice" }, { name: "Bob" }, { name: "Charlie" }]}
+        userMap={[
+          buildUserMapItem({ name: "Alice" }),
+          buildUserMapItem({ name: "Bob" }),
+          buildUserMapItem({ name: "Charlie" }),
+        ]}
       />,
     );
 
@@ -16,7 +27,7 @@ describe("FinishedGamePlayerItemList", () => {
     expect(screen.getAllByRole("listitem")).toHaveLength(3);
   });
 
-  it("does not render when there are no finished players", () => {
+  it("should not render when userMap is empty", () => {
     const { container } = render(<FinishedGamePlayerItemList userMap={[]} />);
     expect(container.childElementCount).toBe(0);
   });
