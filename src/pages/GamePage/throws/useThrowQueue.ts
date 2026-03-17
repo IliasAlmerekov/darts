@@ -17,15 +17,15 @@ interface ThrowQueueItem {
 interface TurnRollbackDetectionOptions {
   confirmedBaseState: GameThrowsResponse;
   latestGameState: GameThrowsResponse;
-  acknowledgedGameState: GameThrowsResponse;
+  confirmedGameState: GameThrowsResponse;
 }
 
 function didServerRollbackCompletedTurn({
   confirmedBaseState,
   latestGameState,
-  acknowledgedGameState,
+  confirmedGameState,
 }: TurnRollbackDetectionOptions): boolean {
-  if (latestGameState.status !== "started" || acknowledgedGameState.status !== "started") {
+  if (latestGameState.status !== "started" || confirmedGameState.status !== "started") {
     return false;
   }
 
@@ -35,16 +35,15 @@ function didServerRollbackCompletedTurn({
 
   if (
     latestGameState.activePlayerId === null ||
-    acknowledgedGameState.activePlayerId === null ||
+    confirmedGameState.activePlayerId === null ||
     confirmedBaseState.activePlayerId === null
   ) {
     return false;
   }
 
   return (
-    latestGameState.activePlayerId !== acknowledgedGameState.activePlayerId &&
     latestGameState.activePlayerId !== confirmedBaseState.activePlayerId &&
-    acknowledgedGameState.activePlayerId === confirmedBaseState.activePlayerId
+    confirmedGameState.activePlayerId === confirmedBaseState.activePlayerId
   );
 }
 
@@ -169,15 +168,15 @@ export function useThrowQueue({
                 didServerRollbackCompletedTurn({
                   confirmedBaseState,
                   latestGameState,
-                  acknowledgedGameState,
+                  confirmedGameState,
                 })
               ) {
                 clientLogger.warn("game.throw.queue-sync.turn-rollback-detected", {
                   context: {
-                    acknowledgedActivePlayerId: acknowledgedGameState.activePlayerId,
                     confirmedActivePlayerId: confirmedBaseState.activePlayerId,
                     gameId,
-                    optimisticActivePlayerId: latestGameState.activePlayerId,
+                    latestActivePlayerId: latestGameState.activePlayerId,
+                    serverActivePlayerId: confirmedGameState.activePlayerId,
                   },
                 });
 

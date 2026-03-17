@@ -88,13 +88,6 @@ export default function StatisticsPage(): JSX.Element {
           sortValue={sortMethod}
           onSortChange={handleSortChange}
         />
-
-        {loading && (
-          <div role="status" className={styles.statusMessage}>
-            Loading…
-          </div>
-        )}
-
         {!loading && error !== null && (
           <div className={styles.statusMessage}>
             <p>{error}</p>
