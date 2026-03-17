@@ -16,20 +16,20 @@ import type { SetStartPageError } from "./useStartPageError";
 
 const START_SOUND_PATH = "/sounds/start-round-sound.mp3";
 
-type UseCreateStartFlowParams = {
+interface UseCreateStartFlowParams {
   gameId: number | null;
   invitationGameId?: number | null | undefined;
   lastFinishedGameId: number | null;
   navigate: NavigateFunction;
   setPageError: SetStartPageError;
-};
+}
 
-export type UseCreateStartFlowResult = {
+export interface UseCreateStartFlowResult {
   creating: boolean;
   starting: boolean;
   handleCreateRoom: () => Promise<void>;
   handleStartGame: () => Promise<void>;
-};
+}
 
 function playStartSound(): void {
   const audio = new Audio(START_SOUND_PATH);
@@ -58,7 +58,7 @@ export function useCreateStartFlow({
   const startGameInFlightRef = useRef(false);
 
   const handleStartGame = useCallback(async (): Promise<void> => {
-    if (!gameId || starting || startGameInFlightRef.current) {
+    if (gameId === null || starting || startGameInFlightRef.current) {
       return;
     }
 

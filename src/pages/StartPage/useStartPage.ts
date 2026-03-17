@@ -13,15 +13,15 @@ import { toUserErrorMessage } from "@/lib/error/error-to-user-message";
 
 type GamePlayersResult = ReturnType<typeof useGamePlayers>;
 
-type StartPageLatestState = {
+interface StartPageLatestState {
   players: GamePlayersResult["players"];
   appendOptimisticPlayer: GamePlayersResult["appendOptimisticPlayer"];
   removeOptimisticPlayer: GamePlayersResult["removeOptimisticPlayer"];
-};
+}
 
 export { persistPlayerOrder, resolveGameId, shouldRedirectToCurrentGame };
 
-export type UseStartPageResult = {
+export interface UseStartPageResult {
   invitation: ReturnType<typeof useStore<typeof $invitation>>;
   gameId: number | null;
   lastFinishedGameId: ReturnType<typeof useStore<typeof $lastFinishedGameId>>;
@@ -31,7 +31,6 @@ export type UseStartPageResult = {
   playerOrder: number[];
   creating: boolean;
   starting: boolean;
-  isRestoring: boolean;
   pageError: string | null;
   isGuestOverlayOpen: boolean;
   guestUsername: string;
@@ -48,7 +47,7 @@ export type UseStartPageResult = {
   setGuestUsername: (value: string) => void;
   handleGuestSuggestion: (suggestion: string) => void;
   handleAddGuest: () => Promise<void>;
-};
+}
 
 /**
  * Composes room restore, order persistence, create/start, guest, and error flows for StartPage.
@@ -70,9 +69,8 @@ export function useStartPage(): UseStartPageResult {
   } = useGamePlayers(gameId);
 
   const { pageError, setPageError, clearPageError } = useStartPageError();
-  const { isRestoring } = useRoomRestore({
+  useRoomRestore({
     gameIdParam,
-    gameId,
     invitationGameId: invitation?.gameId,
     currentGameId,
     navigate,
@@ -147,7 +145,6 @@ export function useStartPage(): UseStartPageResult {
     playerOrder,
     creating,
     starting,
-    isRestoring,
     pageError,
     isGuestOverlayOpen,
     guestUsername,

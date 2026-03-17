@@ -17,7 +17,7 @@ import {
 import { restrictToVerticalAxis } from "@dnd-kit/modifiers";
 import Plus from "@/assets/icons/plus.svg";
 import UserAddIcon from "@/assets/icons/user-add.svg";
-import Button from "@/shared/ui/button/Button";
+import { Button } from "@/shared/ui/button";
 import { ErrorState } from "@/shared/ui/error-state";
 import QRCode from "./components/qr-code/QRCode";
 import { LivePlayersList } from "./components/live-players-list/LivePlayersList";
@@ -75,7 +75,7 @@ function StartPage(): React.JSX.Element {
 
   const handleRemovePlayerFromList = React.useCallback(
     (playerId: number): void => {
-      if (!gameId) {
+      if (gameId === null) {
         return;
       }
 
@@ -119,7 +119,7 @@ function StartPage(): React.JSX.Element {
       <div className={styles.mobileActionStart}>
         <Button
           label="Start"
-          disabled={starting || playerCount < 2 || !gameId}
+          disabled={starting || playerCount < 2 || gameId === null}
           type="secondary"
           handleClick={handleStartGame}
           {...(styles.startButton !== undefined ? { className: styles.startButton } : {})}
@@ -131,7 +131,7 @@ function StartPage(): React.JSX.Element {
             type="button"
             className={styles.guestButtonMobile}
             onClick={openGuestOverlay}
-            disabled={!gameId || isLobbyFull}
+            disabled={gameId === null || isLobbyFull}
             aria-label="Play as a guest"
             title={isLobbyFull ? "The lobby is full. Remove a player to add another." : undefined}
           >
