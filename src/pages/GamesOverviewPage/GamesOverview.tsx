@@ -1,8 +1,8 @@
-import React, { useCallback, useState } from "react";
+import React, { useCallback } from "react";
 import styles from "./GamesOverview.module.css";
-import { Link } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 import { ROUTES } from "@/lib/router/routes";
-import Button from "@/shared/ui/button/Button";
+import { Button } from "@/shared/ui/button";
 import {
   Pagination,
   PaginationContent,
@@ -11,17 +11,38 @@ import {
   PaginationPrevious,
 } from "@/shared/ui/pagination";
 import { StatisticsHeaderControls } from "@/shared/ui/statistics-header-controls";
+import type { FinishedGameProps } from "@/types";
 import { useGamesOverview } from "./useGamesOverview";
 
 const LIMIT = 9;
+const DEFAULT_SORT_VALUE = "alphabetically" as const;
+const GAMES_OVERVIEW_ERROR_MESSAGE = "Could not load games overview";
 
-type GamesPaginationProps = {
+type RenderableFinishedGame = FinishedGameProps & {
+  winnerName: string;
+  date: string;
+};
+
+function isRenderableFinishedGame(game: FinishedGameProps): game is RenderableFinishedGame {
+  if (typeof game.winnerName !== "string" || game.winnerName.trim().length === 0) {
+    return false;
+  }
+
+  if (typeof game.date !== "string") {
+    return false;
+  }
+
+  const parsedDate = new Date(game.date);
+  return !Number.isNaN(parsedDate.getTime());
+}
+
+interface GamesPaginationProps {
   offset: number;
   total: number;
   limit: number;
   onPrevious: () => void;
   onNext: () => void;
-};
+}
 
 const GamesPagination = React.memo(function GamesPagination({
   offset,
@@ -29,7 +50,7 @@ const GamesPagination = React.memo(function GamesPagination({
   limit,
   onPrevious,
   onNext,
-}: GamesPaginationProps): JSX.Element {
+}: GamesPaginationProps): React.JSX.Element {
   return (
     <Pagination className={styles.paginationControls}>
       <PaginationContent>
@@ -49,29 +70,36 @@ const GamesPagination = React.memo(function GamesPagination({
   );
 });
 
-export default function GamesOverviewPage(): JSX.Element {
-  const [offset, setOffset] = useState(0);
+export default function GamesOverviewPage(): React.JSX.Element {
+  const [searchParams, setSearchParams] = useSearchParams();
+  const offset = Number(searchParams.get("offset") ?? "0");
 
-  const { games, total, loading, error, retry } = useGamesOverview({ limit: LIMIT, offset });
+  const { games, total, loading, error, retry } = useGamesOverview();
+  const renderableGames = games.filter(isRenderableFinishedGame);
+  const hasInvalidGameData = renderableGames.length !== games.length;
+  const resolvedError = error ?? (hasInvalidGameData ? GAMES_OVERVIEW_ERROR_MESSAGE : null);
 
   const handlePreviousPage = useCallback(() => {
-    setOffset((prev) => Math.max(0, prev - LIMIT));
-  }, []);
+    setSearchParams((prev) => {
+      const newOffset = Math.max(0, Number(prev.get("offset") ?? "0") - LIMIT);
+      if (newOffset === 0) {
+        prev.delete("offset");
+      } else {
+        prev.set("offset", String(newOffset));
+      }
+      return prev;
+    });
+  }, [setSearchParams]);
 
   const handleNextPage = useCallback(() => {
-    setOffset((prev) => prev + LIMIT);
-  }, []);
+    setSearchParams((prev) => {
+      prev.set("offset", String(Number(prev.get("offset") ?? "0") + LIMIT));
+      return prev;
+    });
+  }, [setSearchParams]);
 
-  const formatGameDate = useCallback((value: string | null): string => {
-    if (!value) {
-      return "Unknown date";
-    }
-
+  const formatGameDate = useCallback((value: string): string => {
     const parsedDate = new Date(value);
-    if (Number.isNaN(parsedDate.getTime())) {
-      return "Unknown date";
-    }
-
     return parsedDate.toLocaleDateString("de-De", {
       day: "2-digit",
       month: "2-digit",
@@ -81,7 +109,11 @@ export default function GamesOverviewPage(): JSX.Element {
 
   return (
     <div className={styles.gameOverview}>
-      <StatisticsHeaderControls title="Games Overview" sortValue="alphabetically" sortDisabled />
+      <StatisticsHeaderControls
+        title="Games Overview"
+        sortValue={DEFAULT_SORT_VALUE}
+        sortDisabled
+      />
 
       {loading && (
         <div role="status" className={styles.statusMessage}>
@@ -89,38 +121,38 @@ export default function GamesOverviewPage(): JSX.Element {
         </div>
       )}
 
-      {!loading && error !== null && (
+      {!loading && resolvedError !== null && (
         <div className={styles.statusMessage}>
-          <p>{error}</p>
+          <p>{resolvedError}</p>
           <div className={styles.retryAction}>
             <Button label="Retry" handleClick={retry} type="primary" />
           </div>
         </div>
       )}
 
-      {!loading && error === null && games.length === 0 && (
+      {!loading && resolvedError === null && renderableGames.length === 0 && (
         <div className={styles.statusMessage}>No games found.</div>
       )}
 
-      {!loading && error === null && games.length > 0 && (
+      {!loading && resolvedError === null && renderableGames.length > 0 && (
         <div className={styles.overview}>
-          {games.map((game) => (
+          {renderableGames.map((game) => (
             <div key={game.id} className={styles.gameContainer}>
               <div className={styles.gameCard}>
                 <h4>{formatGameDate(game.date)}</h4>
                 <p>
-                  <span className="stat-label">
-                    Players <span className="stat-value">{game.playersCount}</span>
+                  <span className={styles.statLabel}>
+                    Players <span className={styles.statValue}>{game.playersCount}</span>
                   </span>
                 </p>
                 <p>
-                  <span className="stat-label">
-                    Player Won: <span className="stat-value">{game.winnerName ?? "Unknown"}</span>
+                  <span className={styles.statLabel}>
+                    Player Won: <span className={styles.statValue}>{game.winnerName}</span>
                   </span>
                 </p>
                 <p>
-                  <span className="stat-label">
-                    Rounds: <span className="stat-value">{game.winnerRounds}</span>
+                  <span className={styles.statLabel}>
+                    Rounds: <span className={styles.statValue}>{game.winnerRounds}</span>
                   </span>
                 </p>
               </div>

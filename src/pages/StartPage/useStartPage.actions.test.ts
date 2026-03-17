@@ -91,7 +91,9 @@ type Deferred<T> = {
 };
 
 function deferred<T>(): Deferred<T> {
-  let resolve!: (value: T) => void;
+  let resolve: (value: T) => void = () => {
+    throw new Error("Attempted to resolve promise before it was initialized");
+  };
   const promise = new Promise<T>((res) => {
     resolve = res;
   });
