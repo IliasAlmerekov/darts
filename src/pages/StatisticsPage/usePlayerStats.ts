@@ -20,13 +20,9 @@ type UsePlayerStatsResult = {
 
 type PlayerStatsQuery = UsePlayerStatsParams;
 
-type PlayerStatsCacheEntry = {
+type PlayerStatsRequestResult = {
   items: PlayerProps[];
   total: number;
-};
-
-type PlayerStatsRequestResult = PlayerStatsCacheEntry & {
-  cacheGeneration: number;
 };
 
 export const INITIAL_PLAYER_STATS_QUERY: Readonly<PlayerStatsQuery> = {
@@ -35,41 +31,23 @@ export const INITIAL_PLAYER_STATS_QUERY: Readonly<PlayerStatsQuery> = {
   sortParam: undefined,
 };
 
-const playerStatsCache = new Map<string, PlayerStatsCacheEntry>();
 const playerStatsPrefetches = new Map<string, Promise<PlayerStatsRequestResult>>();
-let playerStatsCacheGeneration = 0;
 
 function getPlayerStatsQueryKey({ limit, offset, sortParam }: PlayerStatsQuery): string {
   return `${limit}:${offset}:${sortParam ?? ""}`;
 }
 
-function cachePlayerStats(queryKey: string, entry: PlayerStatsCacheEntry): PlayerStatsCacheEntry {
-  playerStatsCache.set(queryKey, entry);
-  return entry;
-}
-
 function createPlayerStatsRequest(
   { limit, offset, sortParam }: PlayerStatsQuery,
   signal?: AbortSignal,
-  cacheGeneration = playerStatsCacheGeneration,
 ): Promise<PlayerStatsRequestResult> {
-  return getPlayerStats(limit, offset, sortParam, signal).then(({ items, total }) => {
-    const entry = { items, total };
-
-    if (cacheGeneration === playerStatsCacheGeneration) {
-      cachePlayerStats(getPlayerStatsQueryKey({ limit, offset, sortParam }), entry);
-    }
-
-    return {
-      ...entry,
-      cacheGeneration,
-    };
-  });
+  return getPlayerStats(limit, offset, sortParam, signal).then(({ items, total }) => ({
+    items,
+    total,
+  }));
 }
 
 export function clearPlayerStatsCache(): void {
-  playerStatsCacheGeneration += 1;
-  playerStatsCache.clear();
   playerStatsPrefetches.clear();
 }
 
@@ -77,11 +55,6 @@ registerAuthInvalidationListener(clearPlayerStatsCache);
 
 export function prefetchPlayerStats(query: PlayerStatsQuery): Promise<void> {
   const queryKey = getPlayerStatsQueryKey(query);
-  const cachedEntry = playerStatsCache.get(queryKey);
-
-  if (cachedEntry !== undefined) {
-    return Promise.resolve();
-  }
 
   const existingPrefetch = playerStatsPrefetches.get(queryKey);
   if (existingPrefetch !== undefined) {
@@ -108,10 +81,9 @@ export function usePlayerStats({
   sortParam,
 }: UsePlayerStatsParams): UsePlayerStatsResult {
   const queryKey = getPlayerStatsQueryKey({ limit, offset, sortParam });
-  const initialCachedEntry = playerStatsCache.get(queryKey);
-  const [stats, setStats] = useState<PlayerProps[]>(() => initialCachedEntry?.items ?? []);
-  const [total, setTotal] = useState(() => initialCachedEntry?.total ?? 0);
-  const [loading, setLoading] = useState(() => initialCachedEntry === undefined);
+  const [stats, setStats] = useState<PlayerProps[]>([]);
+  const [total, setTotal] = useState(0);
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [retryState, setRetryState] = useState<{ key: string; count: number }>({
     key: "",
@@ -125,24 +97,12 @@ export function usePlayerStats({
     abortRef.current?.abort();
     abortRef.current = null;
 
-    const shouldForceRefresh = retryState.key === queryKey && retryState.count > 0;
-    const cachedEntry = shouldForceRefresh ? undefined : playerStatsCache.get(queryKey);
-
-    if (cachedEntry !== undefined) {
-      setStats(cachedEntry.items);
-      setTotal(cachedEntry.total);
-      setError(null);
-      setLoading(false);
-
-      return () => undefined;
-    }
-
     setLoading(true);
     setError(null);
 
     let disposed = false;
     const requestId = ++requestIdRef.current;
-    const cacheGeneration = playerStatsCacheGeneration;
+    const shouldForceRefresh = retryState.key === queryKey && retryState.count > 0;
     const prefetchedRequest = shouldForceRefresh ? undefined : playerStatsPrefetches.get(queryKey);
     const controller = prefetchedRequest === undefined ? new AbortController() : null;
 
@@ -152,23 +112,15 @@ export function usePlayerStats({
 
     const request =
       prefetchedRequest ??
-      createPlayerStatsRequest(
-        { limit, offset, sortParam },
-        controller?.signal,
-        cacheGeneration,
-      ).finally(() => {
+      createPlayerStatsRequest({ limit, offset, sortParam }, controller?.signal).finally(() => {
         if (abortRef.current === controller) {
           abortRef.current = null;
         }
       });
 
     request
-      .then(({ items, total: nextTotal, cacheGeneration: responseCacheGeneration }) => {
-        if (
-          disposed ||
-          requestId !== requestIdRef.current ||
-          responseCacheGeneration !== playerStatsCacheGeneration
-        ) {
+      .then(({ items, total: nextTotal }) => {
+        if (disposed || requestId !== requestIdRef.current) {
           return;
         }
 
