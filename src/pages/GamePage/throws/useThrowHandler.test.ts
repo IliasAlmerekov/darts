@@ -33,6 +33,7 @@ import type {
   UndoAckResponse,
 } from "@/types";
 import { ApiError } from "@/shared/api";
+import { playSound } from "@/shared/services/browser/soundPlayer";
 import { $gameData, setGameData, setGameScoreboardDelta } from "@/shared/store";
 import {
   getGameThrows,
@@ -50,8 +51,12 @@ type Deferred<T> = {
 };
 
 function createDeferred<T>(): Deferred<T> {
-  let resolve!: (value: T) => void;
-  let reject!: (reason?: unknown) => void;
+  let resolve: (value: T) => void = () => {
+    throw new Error("Attempted to resolve promise before it was initialized");
+  };
+  let reject: (reason?: unknown) => void = () => {
+    throw new Error("Attempted to reject promise before it was initialized");
+  };
   const promise = new Promise<T>((res, rej) => {
     resolve = res;
     reject = rej;
@@ -818,7 +823,6 @@ describe("useThrowHandler", () => {
   });
 
   it("should reconcile game state when the local active player is missing before a throw", async () => {
-    const consoleErrorSpy = vi.spyOn(console, "error").mockImplementation(() => undefined);
     currentGameState = buildGameData({
       activePlayerId: null,
       players: [
@@ -859,17 +863,7 @@ describe("useThrowHandler", () => {
     expect(result.current.syncMessage).toBe(
       "Game state was out of sync. Refreshed latest game state.",
     );
-    expect(consoleErrorSpy).toHaveBeenCalledWith(
-      "[client:error] game.throw.missing-active-player",
-      {
-        context: {
-          activePlayerId: null,
-          gameId: 1,
-          playerCount: 2,
-        },
-      },
-    );
-    consoleErrorSpy.mockRestore();
+    expect(vi.mocked(playSound)).toHaveBeenCalledWith("error");
   });
 
   it("should apply optimistic undo immediately when waiting for a server response", async () => {
@@ -1142,7 +1136,7 @@ describe("useThrowHandler", () => {
 
   it("should call reconcileGameState when server returns null activePlayerId", async () => {
     const invalidResponse = buildGameData({
-      activePlayerId: null as unknown as number,
+      activePlayerId: null,
       players: [
         {
           id: 1,
@@ -1211,7 +1205,7 @@ describe("useThrowHandler", () => {
 
   it("should accept undo response with null activePlayerId when a single active player can be derived", async () => {
     const undoResponse = buildGameData({
-      activePlayerId: null as unknown as number,
+      activePlayerId: null,
       players: [
         {
           id: 1,

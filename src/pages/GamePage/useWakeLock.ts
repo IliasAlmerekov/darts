@@ -1,3 +1,4 @@
+import { clientLogger } from "@/lib/clientLogger";
 import { useEffect, useRef } from "react";
 
 export function useWakeLock(isEnabled: boolean): void {
@@ -16,7 +17,8 @@ export function useWakeLock(isEnabled: boolean): void {
 
       try {
         await sentinel.release();
-      } catch {
+      } catch (error) {
+        clientLogger.warn("wake_lock_release_failed", { error });
         // Wake lock release failure is intentionally non-blocking for UX.
       }
     };
@@ -37,14 +39,16 @@ export function useWakeLock(isEnabled: boolean): void {
         if (isDisposed) {
           try {
             await sentinel.release();
-          } catch {
+          } catch (error) {
+            clientLogger.warn("wake_lock_release_failed", { error });
             // Wake lock release failure is intentionally non-blocking for UX.
           }
           return;
         }
 
         sentinelRef.current = sentinel;
-      } catch {
+      } catch (error) {
+        clientLogger.warn("wake_lock_release_failed", { error });
         // Unsupported/rejected wake-lock requests are intentionally ignored.
       }
     };

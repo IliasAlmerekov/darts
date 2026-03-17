@@ -16,6 +16,7 @@ import NotFoundPage from "@/app/routes/NotFoundPage";
 import ProtectedRoutes from "@/app/ProtectedRoutes";
 import { scheduleSelectiveRouteWarmUp, scheduleStatisticsPrefetch } from "@/app/routeWarmup";
 import { gameDetailLoader } from "@/pages/GameDetailPage/useGameDetailPage";
+import { gamesOverviewLoader } from "@/pages/GamesOverviewPage/useGamesOverview";
 import { clearUnauthorizedHandler, setUnauthorizedHandler } from "@/shared/api";
 import { ROUTES } from "@/lib/router/routes";
 import { invalidateAuthState } from "@/shared/store/auth";
@@ -29,7 +30,7 @@ const StartPage = lazy(() => import("@/pages/StartPage"));
 const GamePage = lazy(() => import("@/pages/GamePage"));
 const GameSummaryPage = lazy(() => import("@/pages/GameSummaryPage"));
 const GameDetailPage = lazy(() => import("@/pages/GameDetailPage"));
-const GamesOverview = lazy(() => import("@/pages/GamesOverviewPage"));
+const GamesOverview = lazy(() => import("@/pages/GamesOverviewPage/GamesOverview"));
 const SettingsPage = lazy(() => import("@/pages/SettingsPage"));
 const Statistics = lazy(() => import("@/pages/StatisticsPage"));
 const JoinedGamePage = lazy(() => import("@/pages/JoinedGamePage"));
@@ -112,6 +113,7 @@ function createAppRouter(): ReturnType<typeof createBrowserRouter> {
             <Route
               path={ROUTES.gamesOverview}
               element={withSuspense(<GamesOverview />)}
+              loader={gamesOverviewLoader}
               errorElement={<ErrorBoundary />}
             />
             <Route

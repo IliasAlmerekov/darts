@@ -1,67 +1,113 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback } from "react";
+import {
+  type LoaderFunctionArgs,
+  useLoaderData,
+  useNavigate,
+  useNavigation,
+} from "react-router-dom";
 import { getGamesOverview } from "@/shared/api/statistics";
 import { clientLogger } from "@/shared/services/browser/clientLogger";
 import type { FinishedGameProps } from "@/types";
 
-type UseGamesOverviewParams = {
-  limit: number;
-  offset: number;
-};
+const LIMIT = 9;
 
-type UseGamesOverviewResult = {
+const GAMES_OVERVIEW_ERROR_MESSAGE = "Could not load games overview";
+
+interface UseGamesOverviewResult {
   games: FinishedGameProps[];
   total: number;
   loading: boolean;
   error: string | null;
   retry: () => void;
+}
+
+type GamesOverviewLoaderData = {
+  games: FinishedGameProps[];
+  total: number;
+  error: string | null;
 };
 
-export function useGamesOverview({
-  limit,
-  offset,
-}: UseGamesOverviewParams): UseGamesOverviewResult {
-  const [games, setGames] = useState<FinishedGameProps[]>([]);
-  const [total, setTotal] = useState(0);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [retryCount, setRetryCount] = useState(0);
+function isCompleteFinishedGame(game: FinishedGameProps): boolean {
+  if (typeof game.winnerName !== "string" || game.winnerName.trim().length === 0) {
+    return false;
+  }
 
-  const abortRef = useRef<AbortController | null>(null);
+  if (typeof game.date !== "string") {
+    return false;
+  }
 
-  useEffect(() => {
-    abortRef.current?.abort();
-    const controller = new AbortController();
-    abortRef.current = controller;
+  const parsedDate = new Date(game.date);
+  return !Number.isNaN(parsedDate.getTime());
+}
 
-    setLoading(true);
-    setError(null);
+function isGamesOverviewLoaderData(value: unknown): value is GamesOverviewLoaderData {
+  return (
+    typeof value === "object" &&
+    value !== null &&
+    "games" in value &&
+    "total" in value &&
+    "error" in value
+  );
+}
 
-    getGamesOverview(limit, offset, controller.signal)
-      .then(({ items, total }) => {
-        if (controller.signal.aborted) return;
+/**
+ * React Router 6 loader for the GamesOverview route.
+ * Reads `offset` from URL search params and fetches the corresponding page.
+ * Register as: loader={gamesOverviewLoader}
+ */
+export async function gamesOverviewLoader({
+  request,
+}: LoaderFunctionArgs): Promise<GamesOverviewLoaderData> {
+  const url = new URL(request.url);
+  const offset = Number(url.searchParams.get("offset") ?? "0");
 
-        setGames(items);
-        setTotal(total);
-        setLoading(false);
-      })
-      .catch((err: unknown) => {
-        if (controller.signal.aborted) return;
-        clientLogger.error("statistics.games-overview.fetch.failed", {
-          context: { limit, offset },
-          error: err,
-        });
-        setError("Could not load games overview");
-        setLoading(false);
+  try {
+    const { items, total } = await getGamesOverview(LIMIT, offset, request.signal);
+
+    const invalidGames = items.filter((game) => !isCompleteFinishedGame(game));
+    if (invalidGames.length > 0) {
+      clientLogger.error("statistics.games-overview.invalid-data", {
+        context: {
+          limit: LIMIT,
+          offset,
+          invalidGameIds: invalidGames.map((game) => game.id),
+        },
       });
+      return { games: [], total: 0, error: GAMES_OVERVIEW_ERROR_MESSAGE };
+    }
 
-    return () => {
-      controller.abort();
-    };
-  }, [limit, offset, retryCount]);
+    return { games: items, total, error: null };
+  } catch (err: unknown) {
+    clientLogger.error("statistics.games-overview.fetch.failed", {
+      context: { limit: LIMIT, offset },
+      error: err,
+    });
+    return { games: [], total: 0, error: GAMES_OVERVIEW_ERROR_MESSAGE };
+  }
+}
 
-  const retry = useCallback(() => {
-    setRetryCount((c) => c + 1);
-  }, []);
+/**
+ * Reads the pre-fetched games overview data provided by the React Router loader.
+ */
+export function useGamesOverview(): UseGamesOverviewResult {
+  const rawLoaderData = useLoaderData();
 
-  return { games, total, loading, error, retry };
+  if (!isGamesOverviewLoaderData(rawLoaderData)) {
+    throw new Error("Unexpected loader data format for GamesOverviewPage");
+  }
+
+  const navigation = useNavigation();
+  const navigate = useNavigate();
+
+  const retry = useCallback((): void => {
+    navigate(0);
+  }, [navigate]);
+
+  return {
+    games: rawLoaderData.games,
+    total: rawLoaderData.total,
+    loading: navigation.state === "loading",
+    error: rawLoaderData.error,
+    retry,
+  };
 }

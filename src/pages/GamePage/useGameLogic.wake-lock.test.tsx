@@ -1,72 +1,98 @@
 // @vitest-environment jsdom
 
 const navigateMock = vi.hoisted(() => vi.fn());
-const useGameStateMock = vi.hoisted(() => vi.fn());
-const useThrowHandlerMock = vi.hoisted(() => vi.fn());
-const useRoomStreamMock = vi.hoisted(() => vi.fn());
-const useGameSoundsMock = vi.hoisted(() => vi.fn());
-const useWakeLockMock = vi.hoisted(() => vi.fn());
-const useGameSettingsFlowMock = vi.hoisted(() => vi.fn());
-const useGameExitFlowMock = vi.hoisted(() => vi.fn());
+const getGameThrowsIfChangedMock = vi.hoisted(() => vi.fn());
+const resetGameStateVersionMock = vi.hoisted(() => vi.fn());
+const finishGameMock = vi.hoisted(() => vi.fn());
+const abortGameMock = vi.hoisted(() => vi.fn());
+const createRematchMock = vi.hoisted(() => vi.fn());
+const updateGameSettingsMock = vi.hoisted(() => vi.fn());
 
-vi.mock("react-router-dom", () => ({
-  useNavigate: () => navigateMock,
-  useLocation: () => ({ state: null }),
-  useParams: () => ({ id: "1" }),
-}));
+vi.mock("react-router-dom", async () => {
+  const actual = await vi.importActual<typeof import("react-router-dom")>("react-router-dom");
 
-vi.mock("@/shared/hooks/useRoomStream", () => ({
-  useRoomStream: (gameId: number | null) => useRoomStreamMock(gameId),
-}));
+  return {
+    ...actual,
+    useLocation: () => ({ state: null }),
+    useNavigate: () => navigateMock,
+    useParams: () => ({ id: "1" }),
+  };
+});
 
-vi.mock("./useGameState", () => ({
-  useGameState: (options: { gameId: number | null }) => useGameStateMock(options),
-}));
-
-vi.mock("./throws/useThrowHandler", () => ({
-  useThrowHandler: (options: { gameId: number | null }) => useThrowHandlerMock(options),
-}));
-
-vi.mock("./useGameSounds", () => ({
-  useGameSounds: (gameData: GameThrowsResponse | null) => useGameSoundsMock(gameData),
-}));
-
-vi.mock("./useWakeLock", () => ({
-  useWakeLock: (isEnabled: boolean) => useWakeLockMock(isEnabled),
-}));
-
-vi.mock("./useGamePageEffects", () => ({
-  useAutoFinishGame: vi.fn(),
-  useGameSummaryNavigation: vi.fn(),
-  useInteractionSoundUnlock: vi.fn(),
-  useRoomEventRefetch: vi.fn(),
-}));
-
-vi.mock("./useGameActions", () => ({
-  useGameSettingsFlow: (options: unknown) => useGameSettingsFlowMock(options),
-  useGameExitFlow: (options: unknown) => useGameExitFlowMock(options),
+vi.mock("@/shared/api/game", () => ({
+  abortGame: (...args: unknown[]) => abortGameMock(...args),
+  createRematch: (...args: unknown[]) => createRematchMock(...args),
+  finishGame: (...args: unknown[]) => finishGameMock(...args),
+  getGameThrows: vi.fn(),
+  getGameThrowsIfChanged: (...args: unknown[]) => getGameThrowsIfChangedMock(...args),
+  recordThrow: vi.fn(),
+  resetGameStateVersion: (...args: unknown[]) => resetGameStateVersionMock(...args),
+  setGameStateVersion: vi.fn(),
+  undoLastThrow: vi.fn(),
+  updateGameSettings: (...args: unknown[]) => updateGameSettingsMock(...args),
 }));
 
 vi.mock("@/shared/services/browser/soundPlayer", () => ({
+  playSound: vi.fn(),
   unlockSounds: vi.fn(),
 }));
 
-import { renderHook } from "@testing-library/react";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { act, renderHook, waitFor } from "@testing-library/react";
+import { beforeAll, beforeEach, afterAll, describe, expect, it, vi } from "vitest";
 import type { GameThrowsResponse } from "@/types";
+import * as gameStore from "@/shared/store/game-state";
+import * as roomStore from "@/shared/store/game-session";
 import { useGameLogic } from "./useGameLogic";
 
-const handleThrowMock = vi.fn();
-const handleUndoMock = vi.fn();
-const refetchMock = vi.fn();
-const updateGameSettingsMock = vi.fn();
+class MockEventSource implements EventSource {
+  static CONNECTING = 0 as const;
+  static OPEN = 1 as const;
+  static CLOSED = 2 as const;
+
+  readonly CONNECTING = 0 as const;
+  readonly OPEN = 1 as const;
+  readonly CLOSED = 2 as const;
+
+  onerror: ((this: EventSource, event: Event) => unknown) | null = null;
+  onmessage: ((this: EventSource, event: MessageEvent<string>) => unknown) | null = null;
+  onopen: ((this: EventSource, event: Event) => unknown) | null = null;
+  readyState: 0 | 1 | 2 = MockEventSource.CONNECTING;
+  url: string;
+  withCredentials: boolean;
+
+  constructor(url: string | URL, eventSourceInitDict?: EventSourceInit) {
+    this.url = String(url);
+    this.withCredentials = eventSourceInitDict?.withCredentials ?? false;
+  }
+
+  addEventListener(): void {}
+
+  close(): void {
+    this.readyState = MockEventSource.CLOSED;
+  }
+
+  dispatchEvent(): boolean {
+    return true;
+  }
+
+  removeEventListener(): void {}
+}
+
+function setNavigatorWakeLock(request: (type?: WakeLockType) => Promise<WakeLockSentinel>): void {
+  Object.defineProperty(navigator, "wakeLock", {
+    configurable: true,
+    value: {
+      request,
+    } satisfies Pick<WakeLock, "request">,
+  });
+}
 
 function buildGameData(status: GameThrowsResponse["status"]): GameThrowsResponse {
   return {
     type: "full-state",
     id: 1,
     status,
-    currentRound: 1,
+    currentRound: status === "started" ? 2 : 1,
     activePlayerId: 1,
     currentThrowCount: 0,
     winnerId: null,
@@ -75,215 +101,199 @@ function buildGameData(status: GameThrowsResponse["status"]): GameThrowsResponse
       doubleOut: false,
       tripleOut: false,
     },
-    players: [],
+    players: [
+      {
+        id: 1,
+        name: "Alice",
+        score: 301,
+        isActive: true,
+        isBust: false,
+        position: null,
+        throwsInCurrentRound: 0,
+        currentRoundThrows: [],
+        roundHistory: status === "started" ? [{ throws: [{ value: 20 }] }] : [],
+      },
+      {
+        id: 2,
+        name: "Bob",
+        score: status === "finished" ? 0 : 281,
+        isActive: false,
+        isBust: false,
+        position: status === "finished" ? 1 : null,
+        throwsInCurrentRound: 0,
+        currentRoundThrows: [],
+        roundHistory: status === "started" ? [{ throws: [{ value: 20 }] }] : [],
+      },
+    ],
   };
 }
 
-function setDefaultMocks(gameData: GameThrowsResponse | null): void {
-  useGameStateMock.mockReturnValue({
-    gameData,
-    isLoading: false,
-    error: null,
-    refetch: refetchMock,
-    updateGameSettings: updateGameSettingsMock,
-  });
-
-  useThrowHandlerMock.mockReturnValue({
-    handleThrow: handleThrowMock,
-    handleUndo: handleUndoMock,
-  });
-
-  useRoomStreamMock.mockReturnValue({ event: null });
-  useGameSoundsMock.mockReturnValue(undefined);
-  useWakeLockMock.mockReturnValue(undefined);
-  useGameSettingsFlowMock.mockReturnValue({
-    handleCloseSettings: vi.fn(),
-    handleOpenSettings: vi.fn(),
-    handleSaveSettings: vi.fn(),
-    isSavingSettings: false,
-    isSettingsOpen: false,
-    settingsError: null,
-  });
-  useGameExitFlowMock.mockReturnValue({
-    handleCloseExitOverlay: vi.fn(),
-    handleExitGame: vi.fn(),
-    handleOpenExitOverlay: vi.fn(),
-    isExitOverlayOpen: false,
-  });
+async function flushMicrotasks(): Promise<void> {
+  await Promise.resolve();
+  await Promise.resolve();
 }
+
+let initialWakeLockDescriptor: PropertyDescriptor | undefined;
+let hasOwnWakeLockDescriptor = false;
+let originalEventSource: typeof globalThis.EventSource | undefined;
+
+function restoreNavigatorWakeLock(): void {
+  if (hasOwnWakeLockDescriptor && initialWakeLockDescriptor) {
+    Object.defineProperty(navigator, "wakeLock", initialWakeLockDescriptor);
+    return;
+  }
+
+  Reflect.deleteProperty(navigator, "wakeLock");
+}
+
+beforeAll(() => {
+  originalEventSource = globalThis.EventSource;
+  vi.stubGlobal("EventSource", MockEventSource);
+});
+
+afterAll(() => {
+  restoreNavigatorWakeLock();
+
+  if (originalEventSource !== undefined) {
+    vi.stubGlobal("EventSource", originalEventSource);
+    return;
+  }
+
+  Reflect.deleteProperty(globalThis, "EventSource");
+});
 
 describe("useGameLogic wake-lock wiring", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    window.sessionStorage.clear();
+    gameStore.resetGameStore();
+    roomStore.resetRoomStore();
+    roomStore.setLastFinishedGameSummary(null);
+    getGameThrowsIfChangedMock.mockResolvedValue(null);
+    createRematchMock.mockResolvedValue({
+      success: true,
+      gameId: 4,
+      invitationLink: "/invite/4",
+    });
+    finishGameMock.mockResolvedValue([]);
+    updateGameSettingsMock.mockResolvedValue({
+      startScore: 301,
+      doubleOut: false,
+      tripleOut: false,
+    });
+    hasOwnWakeLockDescriptor = Object.prototype.hasOwnProperty.call(navigator, "wakeLock");
+    initialWakeLockDescriptor = Object.getOwnPropertyDescriptor(navigator, "wakeLock");
+    restoreNavigatorWakeLock();
   });
 
-  it("should call useWakeLock(true) when game status is started", () => {
-    setDefaultMocks(buildGameData("started"));
+  it("should acquire a screen wake lock when the fetched game is started", async () => {
+    const releaseMock = vi.fn().mockResolvedValue(undefined);
+    const requestMock = vi
+      .fn()
+      .mockResolvedValue({ release: releaseMock } as unknown as WakeLockSentinel);
 
-    renderHook(() => useGameLogic());
+    setNavigatorWakeLock(requestMock);
+    getGameThrowsIfChangedMock.mockResolvedValue(buildGameData("started"));
 
-    expect(useGameStateMock).toHaveBeenCalledWith({ gameId: 1 });
-    expect(useWakeLockMock.mock.calls.length).toBeGreaterThan(0);
-    expect(useWakeLockMock).toHaveBeenLastCalledWith(true);
+    const { result } = renderHook(() => useGameLogic());
+
+    await waitFor(() => {
+      expect(requestMock).toHaveBeenCalledWith("screen");
+    });
+
+    expect(result.current.gameId).toBe(1);
+    expect(result.current.handleThrow).toBeTypeOf("function");
+    expect(result.current.handleUndo).toBeTypeOf("function");
+    expect(result.current.refetch).toBeTypeOf("function");
   });
 
   it.each([
     ["missing game data", null],
     ["lobby status", buildGameData("lobby")],
     ["finished status", buildGameData("finished")],
-  ] as const)("should call useWakeLock(false) for %s", (_label, gameData) => {
-    setDefaultMocks(gameData);
+  ] as const)("should not acquire a wake lock for %s", async (_label, gameData) => {
+    const requestMock = vi.fn().mockResolvedValue({} as WakeLockSentinel);
+
+    setNavigatorWakeLock(requestMock);
+    getGameThrowsIfChangedMock.mockResolvedValue(gameData);
+
+    renderHook(() => useGameLogic());
+    await act(async () => {
+      await flushMicrotasks();
+    });
+
+    expect(requestMock).not.toHaveBeenCalled();
+  });
+
+  it("should release the wake lock when the game transitions from started to finished", async () => {
+    const releaseMock = vi.fn().mockResolvedValue(undefined);
+    const requestMock = vi
+      .fn()
+      .mockResolvedValue({ release: releaseMock } as unknown as WakeLockSentinel);
+
+    setNavigatorWakeLock(requestMock);
+    getGameThrowsIfChangedMock.mockResolvedValue(buildGameData("started"));
 
     renderHook(() => useGameLogic());
 
-    expect(useWakeLockMock.mock.calls.length).toBeGreaterThan(0);
-    expect(useWakeLockMock).toHaveBeenLastCalledWith(false);
+    await waitFor(() => {
+      expect(requestMock).toHaveBeenCalledWith("screen");
+    });
+
+    act(() => {
+      gameStore.setGameData(buildGameData("finished"));
+    });
+
+    await waitFor(() => {
+      expect(releaseMock).toHaveBeenCalledTimes(1);
+    });
   });
 
-  it("should update wake-lock from true to false when the game transitions from started to finished", () => {
-    const state = {
-      gameData: buildGameData("started") as GameThrowsResponse | null,
-    };
+  it("should acquire the wake lock when the game transitions from lobby to started", async () => {
+    const releaseMock = vi.fn().mockResolvedValue(undefined);
+    const requestMock = vi
+      .fn()
+      .mockResolvedValue({ release: releaseMock } as unknown as WakeLockSentinel);
 
-    useGameStateMock.mockImplementation(() => ({
-      gameData: state.gameData,
-      isLoading: false,
-      error: null,
-      refetch: refetchMock,
-      updateGameSettings: updateGameSettingsMock,
-    }));
-    useThrowHandlerMock.mockReturnValue({
-      handleThrow: handleThrowMock,
-      handleUndo: handleUndoMock,
-    });
-    useRoomStreamMock.mockReturnValue({ event: null });
-    useGameSoundsMock.mockReturnValue(undefined);
-    useWakeLockMock.mockReturnValue(undefined);
-    useGameSettingsFlowMock.mockReturnValue({
-      handleCloseSettings: vi.fn(),
-      handleOpenSettings: vi.fn(),
-      handleSaveSettings: vi.fn(),
-      isSavingSettings: false,
-      isSettingsOpen: false,
-      settingsError: null,
-    });
-    useGameExitFlowMock.mockReturnValue({
-      handleCloseExitOverlay: vi.fn(),
-      handleExitGame: vi.fn(),
-      handleOpenExitOverlay: vi.fn(),
-      isExitOverlayOpen: false,
+    setNavigatorWakeLock(requestMock);
+    getGameThrowsIfChangedMock.mockResolvedValue(buildGameData("lobby"));
+
+    renderHook(() => useGameLogic());
+
+    await waitFor(() => {
+      expect(gameStore.$gameData.get()?.status).toBe("lobby");
     });
 
-    const { rerender } = renderHook(() => useGameLogic());
+    expect(requestMock).not.toHaveBeenCalled();
 
-    expect(useWakeLockMock.mock.calls.length).toBeGreaterThan(0);
-    expect(useWakeLockMock).toHaveBeenLastCalledWith(true);
-    const callsBeforeTransition = useWakeLockMock.mock.calls.length;
+    act(() => {
+      gameStore.setGameData(buildGameData("started"));
+    });
 
-    state.gameData = buildGameData("finished");
-    rerender();
-
-    const callsAfterTransition = useWakeLockMock.mock.calls.length;
-    expect(callsAfterTransition).toBeGreaterThan(callsBeforeTransition);
-    const transitionCalls = useWakeLockMock.mock.calls.slice(callsBeforeTransition);
-    expect(transitionCalls.length).toBeGreaterThan(0);
-    expect(transitionCalls.at(-1)).toEqual([false]);
-    expect(useWakeLockMock).toHaveBeenLastCalledWith(false);
+    await waitFor(() => {
+      expect(requestMock).toHaveBeenCalledWith("screen");
+    });
   });
 
-  it("should update wake-lock from false to true when the game transitions from lobby to started", () => {
-    const state = {
-      gameData: buildGameData("lobby") as GameThrowsResponse | null,
-    };
+  it("should release the wake lock when the hook unmounts", async () => {
+    const releaseMock = vi.fn().mockResolvedValue(undefined);
+    const requestMock = vi
+      .fn()
+      .mockResolvedValue({ release: releaseMock } as unknown as WakeLockSentinel);
 
-    useGameStateMock.mockImplementation(() => ({
-      gameData: state.gameData,
-      isLoading: false,
-      error: null,
-      refetch: refetchMock,
-      updateGameSettings: updateGameSettingsMock,
-    }));
-    useThrowHandlerMock.mockReturnValue({
-      handleThrow: handleThrowMock,
-      handleUndo: handleUndoMock,
-    });
-    useRoomStreamMock.mockReturnValue({ event: null });
-    useGameSoundsMock.mockReturnValue(undefined);
-    useWakeLockMock.mockReturnValue(undefined);
-    useGameSettingsFlowMock.mockReturnValue({
-      handleCloseSettings: vi.fn(),
-      handleOpenSettings: vi.fn(),
-      handleSaveSettings: vi.fn(),
-      isSavingSettings: false,
-      isSettingsOpen: false,
-      settingsError: null,
-    });
-    useGameExitFlowMock.mockReturnValue({
-      handleCloseExitOverlay: vi.fn(),
-      handleExitGame: vi.fn(),
-      handleOpenExitOverlay: vi.fn(),
-      isExitOverlayOpen: false,
+    setNavigatorWakeLock(requestMock);
+    getGameThrowsIfChangedMock.mockResolvedValue(buildGameData("started"));
+
+    const { unmount } = renderHook(() => useGameLogic());
+
+    await waitFor(() => {
+      expect(requestMock).toHaveBeenCalledWith("screen");
     });
 
-    const { rerender } = renderHook(() => useGameLogic());
+    unmount();
 
-    expect(useWakeLockMock.mock.calls.length).toBeGreaterThan(0);
-    expect(useWakeLockMock).toHaveBeenLastCalledWith(false);
-    const callsBeforeTransition = useWakeLockMock.mock.calls.length;
-
-    state.gameData = buildGameData("started");
-    rerender();
-
-    const callsAfterTransition = useWakeLockMock.mock.calls.length;
-    expect(callsAfterTransition).toBeGreaterThan(callsBeforeTransition);
-    const transitionCalls = useWakeLockMock.mock.calls.slice(callsBeforeTransition);
-    expect(transitionCalls.length).toBeGreaterThan(0);
-    expect(transitionCalls.at(-1)).toEqual([true]);
-    expect(useWakeLockMock).toHaveBeenLastCalledWith(true);
-  });
-
-  it("should keep the useGameLogic return contract when wake-lock is wired", () => {
-    setDefaultMocks(buildGameData("started"));
-
-    const { result } = renderHook(() => useGameLogic());
-
-    const expectedKeys = [
-      "gameId",
-      "gameData",
-      "isLoading",
-      "error",
-      "activePlayers",
-      "finishedPlayers",
-      "activePlayer",
-      "shouldShowFinishOverlay",
-      "isInteractionDisabled",
-      "isUndoDisabled",
-      "isSettingsOpen",
-      "isSavingSettings",
-      "settingsError",
-      "pageError",
-      "isExitOverlayOpen",
-      "handleThrow",
-      "handleUndo",
-      "handleContinueGame",
-      "handleUndoFromOverlay",
-      "handleOpenSettings",
-      "handleCloseSettings",
-      "handleSaveSettings",
-      "handleOpenExitOverlay",
-      "handleCloseExitOverlay",
-      "clearPageError",
-      "handleExitGame",
-      "refetch",
-    ] as const;
-
-    expectedKeys.forEach((key) => {
-      expect(result.current).toHaveProperty(key);
+    await waitFor(() => {
+      expect(releaseMock).toHaveBeenCalledTimes(1);
     });
-
-    expect(result.current.gameId).toBe(1);
-    expect(result.current.handleThrow).toBe(handleThrowMock);
-    expect(result.current.handleUndo).toBe(handleUndoMock);
-    expect(result.current.refetch).toBe(refetchMock);
   });
 });

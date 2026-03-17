@@ -37,6 +37,28 @@ async function flushMicrotasks(): Promise<void> {
   await Promise.resolve();
 }
 
+function createWakeLockSentinel(release: () => Promise<void> = async () => {}): WakeLockSentinel {
+  const eventTarget = new EventTarget();
+  let released = false;
+
+  return {
+    onrelease: null,
+    get released() {
+      return released;
+    },
+    get type(): WakeLockType {
+      return "screen";
+    },
+    async release() {
+      await release();
+      released = true;
+    },
+    addEventListener: eventTarget.addEventListener.bind(eventTarget),
+    removeEventListener: eventTarget.removeEventListener.bind(eventTarget),
+    dispatchEvent: eventTarget.dispatchEvent.bind(eventTarget),
+  } satisfies WakeLockSentinel;
+}
+
 function restoreNavigatorWakeLock(): void {
   if (hasOwnWakeLockDescriptor && initialWakeLockDescriptor) {
     Object.defineProperty(navigator, "wakeLock", initialWakeLockDescriptor);
@@ -65,7 +87,7 @@ describe("useWakeLock", () => {
 
   it("should request a screen wake lock when enabled", async () => {
     const releaseMock = vi.fn().mockResolvedValue(undefined);
-    const sentinel = { release: releaseMock } as unknown as WakeLockSentinel;
+    const sentinel = createWakeLockSentinel(releaseMock);
     const requestMock = vi.fn().mockResolvedValue(sentinel);
 
     setNavigatorWakeLock(requestMock);
@@ -78,7 +100,7 @@ describe("useWakeLock", () => {
   });
 
   it("should not request wake lock when disabled in a supported browser", async () => {
-    const requestMock = vi.fn().mockResolvedValue({} as WakeLockSentinel);
+    const requestMock = vi.fn().mockResolvedValue(createWakeLockSentinel());
 
     setNavigatorWakeLock(requestMock);
     renderHook(() => useWakeLock(false));
@@ -89,7 +111,7 @@ describe("useWakeLock", () => {
 
   it("should release the sentinel when disabled after acquisition", async () => {
     const releaseMock = vi.fn().mockResolvedValue(undefined);
-    const sentinel = { release: releaseMock } as unknown as WakeLockSentinel;
+    const sentinel = createWakeLockSentinel(releaseMock);
     const requestMock = vi.fn().mockResolvedValue(sentinel);
 
     setNavigatorWakeLock(requestMock);
@@ -114,7 +136,7 @@ describe("useWakeLock", () => {
 
   it("should release the sentinel when unmounted", async () => {
     const releaseMock = vi.fn().mockResolvedValue(undefined);
-    const sentinel = { release: releaseMock } as unknown as WakeLockSentinel;
+    const sentinel = createWakeLockSentinel(releaseMock);
     const requestMock = vi.fn().mockResolvedValue(sentinel);
 
     setNavigatorWakeLock(requestMock);
@@ -152,7 +174,7 @@ describe("useWakeLock", () => {
 
   it("should release a late sentinel when unmounted before the pending request resolves", async () => {
     const releaseMock = vi.fn().mockResolvedValue(undefined);
-    const sentinel = { release: releaseMock } as unknown as WakeLockSentinel;
+    const sentinel = createWakeLockSentinel(releaseMock);
     const requestDeferred = createDeferred<WakeLockSentinel>();
     const requestMock = vi.fn().mockReturnValue(requestDeferred.promise);
 
@@ -176,7 +198,7 @@ describe("useWakeLock", () => {
 
   it("should release a late sentinel when toggled off before the pending request resolves", async () => {
     const releaseMock = vi.fn().mockResolvedValue(undefined);
-    const sentinel = { release: releaseMock } as unknown as WakeLockSentinel;
+    const sentinel = createWakeLockSentinel(releaseMock);
     const requestDeferred = createDeferred<WakeLockSentinel>();
     const requestMock = vi.fn().mockReturnValue(requestDeferred.promise);
 
@@ -204,7 +226,7 @@ describe("useWakeLock", () => {
 
   it("should swallow release rejection when disabled after a successful lock", async () => {
     const releaseMock = vi.fn().mockRejectedValue(new Error("release failed"));
-    const sentinel = { release: releaseMock } as unknown as WakeLockSentinel;
+    const sentinel = createWakeLockSentinel(releaseMock);
     const requestMock = vi.fn().mockResolvedValue(sentinel);
 
     setNavigatorWakeLock(requestMock);
@@ -229,7 +251,7 @@ describe("useWakeLock", () => {
 
   it("should swallow release rejection when unmounted after a successful lock", async () => {
     const releaseMock = vi.fn().mockRejectedValue(new Error("release failed"));
-    const sentinel = { release: releaseMock } as unknown as WakeLockSentinel;
+    const sentinel = createWakeLockSentinel(releaseMock);
     const requestMock = vi.fn().mockResolvedValue(sentinel);
 
     setNavigatorWakeLock(requestMock);
