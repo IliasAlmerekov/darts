@@ -16,6 +16,7 @@ import NotFoundPage from "@/app/routes/NotFoundPage";
 import ProtectedRoutes from "@/app/ProtectedRoutes";
 import { scheduleSelectiveRouteWarmUp, scheduleStatisticsPrefetch } from "@/app/routeWarmup";
 import { gameDetailLoader } from "@/pages/GameDetailPage/useGameDetailPage";
+import { startPageLoader } from "@/pages/StartPage/useRoomRestore";
 import { gamesOverviewLoader } from "@/pages/GamesOverviewPage/useGamesOverview";
 import { clearUnauthorizedHandler, setUnauthorizedHandler } from "@/shared/api";
 import { ROUTES } from "@/lib/router/routes";
@@ -26,7 +27,7 @@ import { UniversalSkeleton } from "@/shared/ui/skeletons";
 
 const LoginPage = lazy(() => import("@/pages/LoginPage"));
 const RegisterPage = lazy(() => import("@/pages/RegisterPage"));
-const StartPage = lazy(() => import("@/pages/StartPage"));
+const StartPage = lazy(() => import("@/pages/StartPage/StartPage"));
 const GamePage = lazy(() => import("@/pages/GamePage"));
 const GameSummaryPage = lazy(() => import("@/pages/GameSummaryPage"));
 const GameDetailPage = lazy(() => import("@/pages/GameDetailPage"));
@@ -102,6 +103,7 @@ function createAppRouter(): ReturnType<typeof createBrowserRouter> {
             <Route
               path={`${ROUTES.start()}/:id?`}
               element={withSuspense(<StartPage />)}
+              loader={startPageLoader}
               errorElement={<ErrorBoundary />}
             />
             <Route

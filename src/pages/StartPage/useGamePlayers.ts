@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { useStore } from "@nanostores/react";
 import { useEventSource, type EventSourceListener } from "@/shared/hooks/useEventSource";
 import { getGameThrows } from "@/shared/api/game";
 import { clientLogger } from "@/shared/services/browser/clientLogger";
@@ -28,25 +29,65 @@ type PlayersEventPayload = {
   items?: RawPlayer[];
 };
 
-export function useGamePlayers(gameId: number | null) {
+function isRawPlayer(value: unknown): value is RawPlayer {
+  return (
+    typeof value === "object" &&
+    value !== null &&
+    typeof (value as Record<string, unknown>).id === "number"
+  );
+}
+
+function isPlayersEventPayload(value: unknown): value is PlayersEventPayload {
+  if (typeof value !== "object" || value === null) {
+    return false;
+  }
+  const obj = value as Record<string, unknown>;
+  if ("players" in obj && !Array.isArray(obj.players)) {
+    return false;
+  }
+  if ("items" in obj && !Array.isArray(obj.items)) {
+    return false;
+  }
+  const list = Array.isArray(obj.items)
+    ? obj.items
+    : Array.isArray(obj.players)
+      ? obj.players
+      : null;
+  return list === null || list.every(isRawPlayer);
+}
+
+export interface UseGamePlayersResult {
+  players: Player[];
+  count: number;
+  appendOptimisticPlayer: (player: OptimisticPlayer) => void;
+  removeOptimisticPlayer: (playerId: number) => void;
+}
+
+export function useGamePlayers(gameId: number | null): UseGamePlayersResult {
+  const gameData = useStore($gameData);
+
+  const mapStorePlayers = useCallback((sourcePlayers: RawPlayer[]) => {
+    return sourcePlayers
+      .map((player) => ({
+        id: player.id,
+        name: player.name ?? "",
+        position: player.position ?? null,
+      }))
+      .sort(
+        (a, b) => (a.position ?? Number.MAX_SAFE_INTEGER) - (b.position ?? Number.MAX_SAFE_INTEGER),
+      );
+  }, []);
+
   const [players, setPlayers] = useState<Player[]>(() => {
-    if (!gameId) {
+    if (gameId === null) {
       return [];
     }
 
-    const cachedGameData = $gameData.get();
-    if (!cachedGameData || cachedGameData.id !== gameId) {
+    if (!gameData || gameData.id !== gameId) {
       return [];
     }
 
-    const cachedPlayers = cachedGameData.players.map((player) => ({
-      id: player.id,
-      name: player.name ?? "",
-      position: player.position ?? null,
-    }));
-    return cachedPlayers.sort(
-      (a, b) => (a.position ?? Number.MAX_SAFE_INTEGER) - (b.position ?? Number.MAX_SAFE_INTEGER),
-    );
+    return mapStorePlayers(gameData.players);
   });
 
   const sortPlayers = useCallback((list: Player[]): Player[] => {
@@ -55,25 +96,28 @@ export function useGamePlayers(gameId: number | null) {
     );
   }, []);
 
-  const url = useMemo(() => (gameId ? `/api/room/${gameId}/stream` : null), [gameId]);
+  const url = useMemo(() => (gameId !== null ? `/api/room/${gameId}/stream` : null), [gameId]);
+
+  useEffect(() => {
+    if (gameId === null) {
+      setPlayers([]);
+      return;
+    }
+
+    if (!gameData || gameData.id !== gameId) {
+      return;
+    }
+
+    setPlayers(mapStorePlayers(gameData.players));
+  }, [gameId, gameData, mapStorePlayers]);
 
   useEffect(() => {
     let isMounted = true;
     const controller = new AbortController();
 
-    if (!gameId) {
+    if (gameId === null) {
       setPlayers([]);
       return;
-    }
-
-    const cachedGameData = $gameData.get();
-    if (cachedGameData && cachedGameData.id === gameId) {
-      const cachedPlayers = cachedGameData.players.map((player) => ({
-        id: player.id,
-        name: player.name ?? "",
-        position: player.position ?? null,
-      }));
-      setPlayers(sortPlayers(cachedPlayers));
     }
 
     getGameThrows(gameId, controller.signal)
@@ -103,7 +147,14 @@ export function useGamePlayers(gameId: number | null) {
   const handlePlayers = useCallback(
     (event: MessageEvent<string>) => {
       try {
-        const payload = JSON.parse(event.data) as PlayersEventPayload;
+        const parsed: unknown = JSON.parse(event.data);
+        if (!isPlayersEventPayload(parsed)) {
+          clientLogger.error("room.players.sse-invalid-payload", {
+            context: { raw: event.data },
+          });
+          return;
+        }
+        const payload = parsed;
         const list = payload.items ?? payload.players;
 
         if (Array.isArray(list)) {

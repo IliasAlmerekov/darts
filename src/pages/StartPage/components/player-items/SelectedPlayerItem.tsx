@@ -6,14 +6,13 @@ import { CSS } from "@dnd-kit/utilities";
 import React from "react";
 import type { UserProps } from "@/types";
 
-type Props = {
+interface Props {
   name: string;
-  isAdded?: boolean;
   user: UserProps;
   handleClick: () => void;
   alt?: string;
   dragEnd?: boolean | undefined;
-};
+}
 
 function SelectedPlayerItem({ ...props }: Props): React.JSX.Element {
   const {

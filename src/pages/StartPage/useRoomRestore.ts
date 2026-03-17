@@ -1,22 +1,24 @@
-import { useEffect, useMemo, useState } from "react";
-import type { NavigateFunction } from "react-router-dom";
+import { useEffect, useMemo } from "react";
+import type { LoaderFunctionArgs, NavigateFunction } from "react-router-dom";
+import { redirect } from "react-router-dom";
 import { getGameThrows } from "@/shared/api/game";
 import { getInvitation } from "@/shared/api/room";
 import { clientLogger } from "@/shared/services/browser/clientLogger";
-import { setCurrentGameId, setGameData, setInvitation } from "@/shared/store";
-import { ROUTES } from "@/lib/router/routes";
+import {
+  $currentGameId,
+  $invitation,
+  setCurrentGameId,
+  setGameData,
+  setInvitation,
+} from "@/shared/store";
+import { ROUTES } from "@/shared/lib/router/routes";
 
-type UseRoomRestoreParams = {
+interface UseRoomRestoreParams {
   gameIdParam: string | undefined;
-  gameId: number | null;
   invitationGameId?: number | null | undefined;
   currentGameId: number | null;
   navigate: NavigateFunction;
-};
-
-export type UseRoomRestoreResult = {
-  isRestoring: boolean;
-};
+}
 
 /**
  * Parses the raw URL route param into a valid game ID.
@@ -38,34 +40,100 @@ export function shouldRedirectToCurrentGame(
   invitationGameId?: number | null,
   currentGameId?: number | null,
 ): boolean {
-  return !gameIdParam && !invitationGameId && typeof currentGameId === "number";
+  return (
+    !gameIdParam &&
+    (invitationGameId === null || invitationGameId === undefined) &&
+    typeof currentGameId === "number"
+  );
 }
 
 function isAbortError(error: unknown): boolean {
   return error instanceof Error && error.name === "AbortError";
 }
 
-function navigateToActiveStart(navigate: NavigateFunction, currentGameId: number | null): void {
-  if (currentGameId) {
-    navigate(ROUTES.start(currentGameId), { replace: true });
-    return;
+/**
+ * React Router 6 loader for the StartPage route.
+ * Fetches game throws and invitation data before the page renders,
+ * and populates the game-session stores.
+ * Register as: loader={startPageLoader}
+ */
+export async function startPageLoader({
+  params,
+  request,
+}: LoaderFunctionArgs): Promise<Response | null> {
+  const gameId = resolveGameId(params.id);
+
+  if (gameId === null) {
+    return null;
   }
 
-  navigate(ROUTES.start(), { replace: true });
+  const currentGameId = $currentGameId.get();
+  const invitation = $invitation.get();
+
+  if (invitation?.gameId === gameId) {
+    return null;
+  }
+
+  if (currentGameId !== null && currentGameId !== gameId) {
+    clientLogger.warn("room.restore.redirect_to_active", {
+      context: { fromGameId: gameId, toGameId: currentGameId },
+    });
+    return redirect(ROUTES.start(currentGameId));
+  }
+
+  if (currentGameId === null) {
+    clientLogger.warn("room.restore.no_active_game", { context: { gameId } });
+    setInvitation(null);
+    return redirect(ROUTES.start());
+  }
+
+  let gameData;
+  try {
+    gameData = await getGameThrows(gameId, request.signal);
+  } catch (error) {
+    if (isAbortError(error)) throw error;
+    clientLogger.error("room.restore.failed", {
+      context: { currentGameId, gameId },
+      error,
+    });
+    return redirect(ROUTES.start(currentGameId));
+  }
+
+  if (gameData.status !== "lobby") {
+    clientLogger.warn("room.restore.access_denied", {
+      context: { gameId, status: gameData.status },
+    });
+    return redirect(ROUTES.start(currentGameId));
+  }
+
+  setGameData(gameData);
+
+  try {
+    const invitationData = await getInvitation(gameId, request.signal);
+    setInvitation({
+      gameId: invitationData.gameId,
+      invitationLink: invitationData.invitationLink,
+    });
+    setCurrentGameId(invitationData.gameId);
+  } catch (error) {
+    if (isAbortError(error)) throw error;
+    clientLogger.warn("room.restore.invitation_load_failed", { error });
+    setCurrentGameId(gameId);
+  }
+
+  return null;
 }
 
 /**
- * Restores lobby state from the route game id and synchronizes invitation/session stores.
+ * Handles client-side redirect logic for StartPage lobby.
+ * Data fetching is handled by startPageLoader.
  */
 export function useRoomRestore({
   gameIdParam,
-  gameId,
   invitationGameId,
   currentGameId,
   navigate,
-}: UseRoomRestoreParams): UseRoomRestoreResult {
-  const [isRestoring, setIsRestoring] = useState(false);
-
+}: UseRoomRestoreParams): void {
   const shouldRedirect = useMemo(
     () => shouldRedirectToCurrentGame(gameIdParam, invitationGameId, currentGameId),
     [currentGameId, gameIdParam, invitationGameId],
@@ -80,101 +148,8 @@ export function useRoomRestore({
   }, [currentGameId, navigate, shouldRedirect]);
 
   useEffect(() => {
-    if (!gameId || invitationGameId === gameId) {
-      return;
-    }
-
-    const controller = new AbortController();
-    const { signal } = controller;
-
-    const restoreData = async (): Promise<void> => {
-      setIsRestoring(true);
-
-      try {
-        if (signal.aborted) {
-          return;
-        }
-
-        if (currentGameId && currentGameId !== gameId) {
-          clientLogger.warn("room.restore.redirect_to_active", {
-            context: { fromGameId: gameId, toGameId: currentGameId },
-          });
-          navigate(ROUTES.start(currentGameId), { replace: true });
-          return;
-        }
-
-        if (currentGameId === null) {
-          clientLogger.warn("room.restore.no_active_game", { context: { gameId } });
-          setInvitation(null);
-          navigate(ROUTES.start(), { replace: true });
-          return;
-        }
-
-        const gameData = await getGameThrows(gameId, signal);
-        if (signal.aborted) {
-          return;
-        }
-
-        if (gameData.status !== "lobby") {
-          clientLogger.warn("room.restore.access_denied", {
-            context: { gameId, status: gameData.status },
-          });
-          navigateToActiveStart(navigate, currentGameId);
-          return;
-        }
-
-        setGameData(gameData);
-
-        try {
-          const invitation = await getInvitation(gameId, signal);
-          if (signal.aborted) {
-            return;
-          }
-
-          setInvitation({
-            gameId: invitation.gameId,
-            invitationLink: invitation.invitationLink,
-          });
-          setCurrentGameId(invitation.gameId);
-        } catch (error) {
-          if (isAbortError(error) || signal.aborted) {
-            return;
-          }
-
-          clientLogger.warn("room.restore.invitation_load_failed", { error });
-          setCurrentGameId(gameId);
-        }
-      } catch (error) {
-        if (isAbortError(error) || signal.aborted) {
-          return;
-        }
-
-        clientLogger.error("room.restore.failed", {
-          context: { currentGameId, gameId, invitationGameId },
-          error,
-        });
-        navigateToActiveStart(navigate, currentGameId);
-      } finally {
-        if (!signal.aborted) {
-          setIsRestoring(false);
-        }
-      }
-    };
-
-    void restoreData();
-
-    return () => {
-      controller.abort();
-    };
-  }, [currentGameId, gameId, invitationGameId, navigate]);
-
-  useEffect(() => {
-    if (invitationGameId) {
+    if (invitationGameId !== undefined && invitationGameId !== null) {
       setCurrentGameId(invitationGameId);
     }
   }, [invitationGameId]);
-
-  return {
-    isRestoring,
-  };
 }

@@ -61,7 +61,7 @@ vi.mock("@/pages/RegisterPage", () => ({
   default: () => <h1>Create an account</h1>,
 }));
 
-vi.mock("@/pages/StartPage", () => ({
+vi.mock("@/pages/StartPage/StartPage", () => ({
   default: () => <div>Start Page</div>,
 }));
 

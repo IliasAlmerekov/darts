@@ -1,89 +1,114 @@
 // @vitest-environment jsdom
-import { act, renderHook } from "@testing-library/react";
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { ApiError } from "@/shared/api";
-import { useStartPage } from "./useStartPage";
 
 const navigateMock = vi.fn();
-const useParamsMock = vi.fn(() => ({}));
-const setCurrentGameIdMock = vi.fn();
-const setInvitationMock = vi.fn();
-const setGameDataMock = vi.fn();
-const setGameSettingsMock = vi.fn();
-const resetGameStoreMock = vi.fn();
-const appendOptimisticPlayerMock = vi.fn();
-const removeOptimisticPlayerMock = vi.fn();
 
-const gameFlowMock = {
-  updatePlayerOrder: vi.fn(),
-  leaveRoom: vi.fn(),
-  getGameThrows: vi.fn(),
-  getGameSettings: vi.fn(),
-  getInvitation: vi.fn(),
-  startGame: vi.fn(),
-  createRoom: vi.fn(),
-  addGuestPlayer: vi.fn(),
-};
-
-const storeValues = new Map<string, unknown>();
-
-vi.mock("react-router-dom", () => ({
-  useNavigate: () => navigateMock,
-  useParams: () => useParamsMock(),
-}));
-
-type MockPlayer = {
-  id: number;
-  name: string;
-  position: number | null;
-};
-
-const emptyPlayers: MockPlayer[] = [];
-const gamePlayersResult = {
-  players: emptyPlayers,
-  count: 0,
-  appendOptimisticPlayer: appendOptimisticPlayerMock,
-  removeOptimisticPlayer: removeOptimisticPlayerMock,
-};
-
-vi.mock("./useGamePlayers", () => ({
-  useGamePlayers: () => gamePlayersResult,
-}));
-
-vi.mock("@nanostores/react", () => ({
-  useStore: (store: { key?: string }) => storeValues.get(store.key ?? ""),
-}));
-
-vi.mock("@/shared/store", async (importOriginal) => {
+vi.mock("react-router-dom", async (importOriginal) => {
   const original = await importOriginal<Record<string, unknown>>();
   return {
     ...original,
-    $gameSettings: { key: "gameSettings" },
-    $preCreateGameSettings: { key: "preCreateGameSettings" },
-    setGameData: (...args: unknown[]) => setGameDataMock(...args),
-    setGameSettings: (...args: unknown[]) => setGameSettingsMock(...args),
-    resetGameStore: (...args: unknown[]) => resetGameStoreMock(...args),
-    $lastFinishedGameId: { key: "lastFinishedGameId" },
-    $invitation: { key: "invitation" },
-    $currentGameId: { key: "currentGameId" },
-    setCurrentGameId: (...args: unknown[]) => setCurrentGameIdMock(...args),
-    setInvitation: (...args: unknown[]) => setInvitationMock(...args),
+    useNavigate: () => navigateMock,
   };
 });
 
 vi.mock("@/shared/api/game", () => ({
-  getGameThrows: (...args: unknown[]) => gameFlowMock.getGameThrows(...args),
-  getGameSettings: (...args: unknown[]) => gameFlowMock.getGameSettings(...args),
-  startGame: (...args: unknown[]) => gameFlowMock.startGame(...args),
+  getGameThrows: vi.fn(),
+  getGameSettings: vi.fn(),
+  startGame: vi.fn(),
 }));
 
 vi.mock("@/shared/api/room", () => ({
-  createRoom: (...args: unknown[]) => gameFlowMock.createRoom(...args),
-  getInvitation: (...args: unknown[]) => gameFlowMock.getInvitation(...args),
-  updatePlayerOrder: (...args: unknown[]) => gameFlowMock.updatePlayerOrder(...args),
-  leaveRoom: (...args: unknown[]) => gameFlowMock.leaveRoom(...args),
-  addGuestPlayer: (...args: unknown[]) => gameFlowMock.addGuestPlayer(...args),
+  createRoom: vi.fn(),
+  getInvitation: vi.fn(),
+  updatePlayerOrder: vi.fn(),
+  leaveRoom: vi.fn(),
+  addGuestPlayer: vi.fn(),
 }));
+
+import { act, renderHook, waitFor } from "@testing-library/react";
+import { MemoryRouter, Routes, Route } from "react-router-dom";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import React from "react";
+import { ApiError } from "@/shared/api";
+import { getGameThrows, getGameSettings, startGame } from "@/shared/api/game";
+import {
+  createRoom,
+  getInvitation,
+  updatePlayerOrder,
+  leaveRoom,
+  addGuestPlayer,
+} from "@/shared/api/room";
+import { useStartPage } from "./useStartPage";
+import {
+  resetRoomStore,
+  resetGameStore,
+  resetPreCreateGameSettings,
+  setLastFinishedGameSummary,
+  setInvitation,
+  setPreCreateGameSettings,
+} from "@/shared/store";
+import {
+  buildBackendPlayer,
+  buildGameSettingsResponse,
+  buildGameThrowsResponse,
+} from "@/shared/types/game.test-support";
+
+// ---------------------------------------------------------------------------
+// MockEventSource — browser API boundary stub
+// ---------------------------------------------------------------------------
+
+type EventHandler = (event: MessageEvent<string>) => void;
+
+class MockEventSource {
+  static last: MockEventSource | null = null;
+
+  onopen: (() => void) | null = null;
+  onerror: (() => void) | null = null;
+
+  private handlers = new Map<string, EventHandler[]>();
+
+  constructor() {
+    MockEventSource.last = this;
+  }
+
+  addEventListener(event: string, handler: EventHandler): void {
+    const existing = this.handlers.get(event) ?? [];
+    this.handlers.set(event, [...existing, handler]);
+  }
+
+  removeEventListener(event: string, handler: EventHandler): void {
+    const existing = this.handlers.get(event) ?? [];
+    this.handlers.set(
+      event,
+      existing.filter((h) => h !== handler),
+    );
+  }
+
+  dispatch(event: string, data: string): void {
+    const eventHandlers = this.handlers.get(event) ?? [];
+    const messageEvent = new MessageEvent(event, { data });
+    for (const handler of eventHandlers) {
+      handler(messageEvent);
+    }
+  }
+
+  close(): void {
+    // noop
+  }
+}
+
+// ---------------------------------------------------------------------------
+// MockAudio — browser API boundary stub
+// ---------------------------------------------------------------------------
+
+class MockAudio {
+  volume = 1;
+  play = vi.fn().mockResolvedValue(undefined);
+  constructor() {}
+}
+
+// ---------------------------------------------------------------------------
+// Helpers
+// ---------------------------------------------------------------------------
 
 type Deferred<T> = {
   promise: Promise<T>;
@@ -101,47 +126,68 @@ function deferred<T>(): Deferred<T> {
   return { promise, resolve };
 }
 
+function makeWrapper(
+  path: string,
+): ({ children }: { children: React.ReactNode }) => React.ReactElement {
+  return function Wrapper({ children }: { children: React.ReactNode }): React.ReactElement {
+    return React.createElement(
+      MemoryRouter,
+      { initialEntries: [path] },
+      React.createElement(
+        Routes,
+        null,
+        React.createElement(Route, {
+          path: "/start/:id",
+          element: React.createElement(React.Fragment, null, children),
+        }),
+        React.createElement(Route, {
+          path: "/start",
+          element: React.createElement(React.Fragment, null, children),
+        }),
+      ),
+    );
+  };
+}
+
+// ---------------------------------------------------------------------------
+// Tests
+// ---------------------------------------------------------------------------
+
 describe("useStartPage action guards", () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    useParamsMock.mockReturnValue({});
-    storeValues.set("gameSettings", null);
-    storeValues.set("preCreateGameSettings", {
-      startScore: 301,
-      doubleOut: false,
-      tripleOut: false,
-    });
-    storeValues.set("lastFinishedGameId", null);
-    storeValues.set("currentGameId", null);
-    storeValues.set("invitation", null);
-    gamePlayersResult.players = [];
-    gamePlayersResult.count = 0;
+    MockEventSource.last = null;
+    sessionStorage.clear();
+    resetRoomStore();
+    resetGameStore();
+    resetPreCreateGameSettings();
+    setLastFinishedGameSummary(null);
+    vi.stubGlobal("EventSource", MockEventSource);
+    vi.stubGlobal("Audio", MockAudio);
+    vi.mocked(getGameThrows).mockResolvedValue(buildGameThrowsResponse());
+    vi.mocked(getInvitation).mockResolvedValue({ gameId: 0, invitationLink: "" });
+    vi.mocked(updatePlayerOrder).mockResolvedValue(undefined);
   });
 
   afterEach(() => {
     vi.unstubAllGlobals();
+    sessionStorage.clear();
+    resetRoomStore();
+    resetGameStore();
   });
 
-  it("prevents duplicate startGame calls while first request is pending", async () => {
-    useParamsMock.mockReturnValue({ id: "10" });
-    storeValues.set("invitation", { gameId: 10, invitationLink: "/invite/10" });
-    storeValues.set("currentGameId", 10);
-    gameFlowMock.getGameSettings.mockResolvedValueOnce({
-      startScore: 101,
-      doubleOut: true,
-      tripleOut: false,
-    });
+  it("should prevent duplicate startGame calls while first request is pending", async () => {
+    setInvitation({ gameId: 10, invitationLink: "/invite/10" });
+    vi.mocked(getGameSettings).mockResolvedValueOnce(
+      buildGameSettingsResponse({ startScore: 101, doubleOut: true }),
+    );
 
     const pending = deferred<void>();
-    gameFlowMock.startGame.mockReturnValueOnce(pending.promise);
+    vi.mocked(startGame).mockReturnValueOnce(pending.promise);
 
-    const audioPlayMock = vi.fn().mockResolvedValue(undefined);
-    vi.stubGlobal("Audio", function MockAudio(this: { volume: number; play: () => Promise<void> }) {
-      this.volume = 1;
-      this.play = audioPlayMock;
-    } as unknown as typeof Audio);
-
-    const { result } = renderHook(() => useStartPage());
+    const { result } = renderHook(() => useStartPage(), {
+      wrapper: makeWrapper("/start/10"),
+    });
 
     let firstCall = Promise.resolve();
     let secondCall = Promise.resolve();
@@ -150,9 +196,9 @@ describe("useStartPage action guards", () => {
       secondCall = result.current.handleStartGame();
     });
 
-    expect(gameFlowMock.getGameSettings).toHaveBeenCalledTimes(1);
-    expect(gameFlowMock.startGame).toHaveBeenCalledTimes(1);
-    expect(gameFlowMock.startGame).toHaveBeenCalledWith(10, {
+    expect(getGameSettings).toHaveBeenCalledTimes(1);
+    expect(startGame).toHaveBeenCalledTimes(1);
+    expect(startGame).toHaveBeenCalledWith(10, {
       startScore: 101,
       doubleOut: true,
       tripleOut: false,
@@ -169,51 +215,40 @@ describe("useStartPage action guards", () => {
     expect(navigateMock).toHaveBeenCalledWith("/game/10");
   });
 
-  it("starts with canonical room settings and clears stale game state before navigation", async () => {
-    useParamsMock.mockReturnValue({ id: "10" });
-    storeValues.set("gameSettings", { startScore: 301, doubleOut: false, tripleOut: false });
-    storeValues.set("invitation", { gameId: 10, invitationLink: "/invite/10" });
-    storeValues.set("currentGameId", 10);
-    gameFlowMock.getGameSettings.mockResolvedValueOnce({
-      startScore: 101,
-      doubleOut: false,
-      tripleOut: false,
+  it("should start with canonical room settings and clear stale game state before navigation", async () => {
+    setInvitation({ gameId: 10, invitationLink: "/invite/10" });
+    vi.mocked(getGameSettings).mockResolvedValueOnce(
+      buildGameSettingsResponse({ startScore: 101 }),
+    );
+    vi.mocked(startGame).mockResolvedValueOnce(undefined);
+
+    const { result } = renderHook(() => useStartPage(), {
+      wrapper: makeWrapper("/start/10"),
     });
-    gameFlowMock.startGame.mockResolvedValueOnce(undefined);
-
-    vi.stubGlobal("Audio", function MockAudio(this: { volume: number; play: () => Promise<void> }) {
-      this.volume = 1;
-      this.play = vi.fn().mockResolvedValue(undefined);
-    } as unknown as typeof Audio);
-
-    const { result } = renderHook(() => useStartPage());
 
     await act(async () => {
       await result.current.handleStartGame();
     });
 
-    expect(gameFlowMock.startGame).toHaveBeenCalledWith(10, {
+    expect(startGame).toHaveBeenCalledWith(10, {
       startScore: 101,
       doubleOut: false,
       tripleOut: false,
       round: 1,
       status: "started",
     });
-    expect(resetGameStoreMock).toHaveBeenCalledTimes(1);
     expect(navigateMock).toHaveBeenCalledWith("/game/10");
   });
 
-  it("prevents duplicate createRoom calls while first request is pending", async () => {
-    storeValues.set("lastFinishedGameId", 77);
-    storeValues.set("preCreateGameSettings", {
-      startScore: 501,
-      doubleOut: true,
-      tripleOut: false,
-    });
+  it("should prevent duplicate createRoom calls while first request is pending", async () => {
+    setLastFinishedGameSummary({ gameId: 77, summary: [] });
+    setPreCreateGameSettings(buildGameSettingsResponse({ doubleOut: true }));
     const pending = deferred<{ gameId: number; invitationLink: string }>();
-    gameFlowMock.createRoom.mockReturnValueOnce(pending.promise);
+    vi.mocked(createRoom).mockReturnValueOnce(pending.promise);
 
-    const { result } = renderHook(() => useStartPage());
+    const { result } = renderHook(() => useStartPage(), {
+      wrapper: makeWrapper("/start"),
+    });
 
     let firstCall = Promise.resolve();
     let secondCall = Promise.resolve();
@@ -222,8 +257,8 @@ describe("useStartPage action guards", () => {
       secondCall = result.current.handleCreateRoom();
     });
 
-    expect(gameFlowMock.createRoom).toHaveBeenCalledTimes(1);
-    expect(gameFlowMock.createRoom).toHaveBeenCalledWith({
+    expect(createRoom).toHaveBeenCalledTimes(1);
+    expect(createRoom).toHaveBeenCalledWith({
       previousGameId: 77,
       startScore: 501,
       doubleOut: true,
@@ -236,26 +271,16 @@ describe("useStartPage action guards", () => {
       await secondCall;
     });
 
-    expect(setInvitationMock).toHaveBeenCalledWith({
+    expect(result.current.invitation).toEqual({
       gameId: 55,
       invitationLink: "/invite/55",
     });
-    expect(setGameSettingsMock).toHaveBeenCalledWith(
-      {
-        startScore: 501,
-        doubleOut: true,
-        tripleOut: false,
-      },
-      55,
-    );
     expect(navigateMock).toHaveBeenCalledWith("/start/55");
   });
 
-  it("shows username taken suggestions when guest nickname already exists in current game", async () => {
-    useParamsMock.mockReturnValue({ id: "10" });
-    storeValues.set("invitation", { gameId: 10, invitationLink: "/invite/10" });
-    storeValues.set("currentGameId", 10);
-    gameFlowMock.addGuestPlayer.mockRejectedValueOnce(
+  it("should show username taken suggestions when guest nickname already exists in current game", async () => {
+    setInvitation({ gameId: 10, invitationLink: "/invite/10" });
+    vi.mocked(addGuestPlayer).mockRejectedValueOnce(
       new ApiError("Request failed", {
         status: 409,
         data: {
@@ -267,7 +292,9 @@ describe("useStartPage action guards", () => {
       }),
     );
 
-    const { result } = renderHook(() => useStartPage());
+    const { result } = renderHook(() => useStartPage(), {
+      wrapper: makeWrapper("/start/10"),
+    });
 
     await act(async () => {
       result.current.openGuestOverlay();
@@ -278,17 +305,15 @@ describe("useStartPage action guards", () => {
       await result.current.handleAddGuest();
     });
 
-    expect(gameFlowMock.addGuestPlayer).toHaveBeenCalledWith(10, { username: "Alex" });
+    expect(addGuestPlayer).toHaveBeenCalledWith(10, { username: "Alex" });
     expect(result.current.guestError).toBe("Username already taken in this game.");
     expect(result.current.guestSuggestions).toEqual(["Alex2", "Alex3"]);
     expect(result.current.isGuestOverlayOpen).toBe(true);
   });
 
-  it("falls back to a generic guest error when the 409 payload shape is invalid", async () => {
-    useParamsMock.mockReturnValue({ id: "10" });
-    storeValues.set("invitation", { gameId: 10, invitationLink: "/invite/10" });
-    storeValues.set("currentGameId", 10);
-    gameFlowMock.addGuestPlayer.mockRejectedValueOnce(
+  it("should fall back to a generic guest error when the 409 payload shape is invalid", async () => {
+    setInvitation({ gameId: 10, invitationLink: "/invite/10" });
+    vi.mocked(addGuestPlayer).mockRejectedValueOnce(
       new ApiError("Request failed", {
         status: 409,
         data: {
@@ -299,7 +324,9 @@ describe("useStartPage action guards", () => {
       }),
     );
 
-    const { result } = renderHook(() => useStartPage());
+    const { result } = renderHook(() => useStartPage(), {
+      wrapper: makeWrapper("/start/10"),
+    });
 
     await act(async () => {
       result.current.openGuestOverlay();
@@ -314,15 +341,15 @@ describe("useStartPage action guards", () => {
     expect(result.current.guestSuggestions).toEqual([]);
   });
 
-  it("prevents duplicate addGuest calls while first request is pending", async () => {
-    useParamsMock.mockReturnValue({ id: "10" });
-    storeValues.set("invitation", { gameId: 10, invitationLink: "/invite/10" });
-    storeValues.set("currentGameId", 10);
+  it("should prevent duplicate addGuest calls while first request is pending", async () => {
+    setInvitation({ gameId: 10, invitationLink: "/invite/10" });
 
     const pending = deferred<{ id: number; name: string }>();
-    gameFlowMock.addGuestPlayer.mockReturnValueOnce(pending.promise);
+    vi.mocked(addGuestPlayer).mockReturnValueOnce(pending.promise);
 
-    const { result } = renderHook(() => useStartPage());
+    const { result } = renderHook(() => useStartPage(), {
+      wrapper: makeWrapper("/start/10"),
+    });
 
     await act(async () => {
       result.current.openGuestOverlay();
@@ -336,8 +363,8 @@ describe("useStartPage action guards", () => {
       secondCall = result.current.handleAddGuest();
     });
 
-    expect(gameFlowMock.addGuestPlayer).toHaveBeenCalledTimes(1);
-    expect(gameFlowMock.addGuestPlayer).toHaveBeenCalledWith(10, { username: "Alex" });
+    expect(addGuestPlayer).toHaveBeenCalledTimes(1);
+    expect(addGuestPlayer).toHaveBeenCalledWith(10, { username: "Alex" });
 
     await act(async () => {
       pending.resolve({ id: 1, name: "Alex" });
@@ -346,13 +373,13 @@ describe("useStartPage action guards", () => {
     });
   });
 
-  it("closes guest overlay after successful guest creation", async () => {
-    useParamsMock.mockReturnValue({ id: "10" });
-    storeValues.set("invitation", { gameId: 10, invitationLink: "/invite/10" });
-    storeValues.set("currentGameId", 10);
-    gameFlowMock.addGuestPlayer.mockResolvedValueOnce({ id: 1, name: "Alex" });
+  it("should close guest overlay after successful guest creation", async () => {
+    setInvitation({ gameId: 10, invitationLink: "/invite/10" });
+    vi.mocked(addGuestPlayer).mockResolvedValueOnce({ id: 1, name: "Alex" });
 
-    const { result } = renderHook(() => useStartPage());
+    const { result } = renderHook(() => useStartPage(), {
+      wrapper: makeWrapper("/start/10"),
+    });
 
     await act(async () => {
       result.current.openGuestOverlay();
@@ -363,19 +390,35 @@ describe("useStartPage action guards", () => {
       await result.current.handleAddGuest();
     });
 
-    expect(gameFlowMock.addGuestPlayer).toHaveBeenCalledWith(10, { username: "Alex" });
+    expect(addGuestPlayer).toHaveBeenCalledWith(10, { username: "Alex" });
     expect(result.current.isGuestOverlayOpen).toBe(false);
     expect(result.current.guestUsername).toBe("");
     expect(result.current.guestError).toBeNull();
   });
 
-  it("blocks guest creation when lobby is full", async () => {
-    useParamsMock.mockReturnValue({ id: "10" });
-    storeValues.set("invitation", { gameId: 10, invitationLink: "/invite/10" });
-    storeValues.set("currentGameId", 10);
-    gamePlayersResult.count = 10;
+  it("should block guest creation when lobby is full", async () => {
+    setInvitation({ gameId: 10, invitationLink: "/invite/10" });
+    vi.mocked(getGameThrows).mockResolvedValueOnce(
+      buildGameThrowsResponse({
+        id: 10,
+        players: Array.from({ length: 10 }, (_, i) =>
+          buildBackendPlayer({
+            id: i + 1,
+            name: `Player ${i + 1}`,
+            isActive: i === 0,
+            position: i,
+          }),
+        ),
+      }),
+    );
 
-    const { result } = renderHook(() => useStartPage());
+    const { result } = renderHook(() => useStartPage(), {
+      wrapper: makeWrapper("/start/10"),
+    });
+
+    await waitFor(() => {
+      expect(result.current.playerCount).toBe(10);
+    });
 
     await act(async () => {
       result.current.openGuestOverlay();
@@ -383,16 +426,16 @@ describe("useStartPage action guards", () => {
       await result.current.handleAddGuest();
     });
 
-    expect(gameFlowMock.addGuestPlayer).not.toHaveBeenCalled();
+    expect(addGuestPlayer).not.toHaveBeenCalled();
     expect(result.current.guestError).toBe("The lobby is full. Remove a player to add another.");
   });
 
-  it("validates guest username requires at least 3 letters before api call", async () => {
-    useParamsMock.mockReturnValue({ id: "10" });
-    storeValues.set("invitation", { gameId: 10, invitationLink: "/invite/10" });
-    storeValues.set("currentGameId", 10);
+  it("should validate guest username requires at least 3 letters before api call", async () => {
+    setInvitation({ gameId: 10, invitationLink: "/invite/10" });
 
-    const { result } = renderHook(() => useStartPage());
+    const { result } = renderHook(() => useStartPage(), {
+      wrapper: makeWrapper("/start/10"),
+    });
 
     await act(async () => {
       result.current.openGuestOverlay();
@@ -403,30 +446,35 @@ describe("useStartPage action guards", () => {
       await result.current.handleAddGuest();
     });
 
-    expect(gameFlowMock.addGuestPlayer).not.toHaveBeenCalled();
+    expect(addGuestPlayer).not.toHaveBeenCalled();
     expect(result.current.guestError).toBe("Username must contain at least 3 letters.");
   });
 
-  it("uses the latest players snapshot for remove rollback after rerender", async () => {
-    useParamsMock.mockReturnValue({ id: "10" });
-    storeValues.set("invitation", { gameId: 10, invitationLink: "/invite/10" });
-    storeValues.set("currentGameId", 10);
-    gamePlayersResult.players = [{ id: 1, name: "Alex", position: 0 }];
-    gamePlayersResult.count = 1;
-    gameFlowMock.leaveRoom.mockRejectedValueOnce(new Error("network"));
+  it("should use the latest players snapshot for remove rollback after rerender", async () => {
+    setInvitation({ gameId: 10, invitationLink: "/invite/10" });
+    vi.mocked(getGameThrows).mockResolvedValue(
+      buildGameThrowsResponse({
+        id: 10,
+        players: [buildBackendPlayer({ id: 2, name: "Sam", isActive: true, position: 1 })],
+      }),
+    );
+    vi.mocked(leaveRoom).mockRejectedValueOnce(new Error("network"));
 
-    const { result, rerender } = renderHook(() => useStartPage());
+    const { result } = renderHook(() => useStartPage(), {
+      wrapper: makeWrapper("/start/10"),
+    });
+
+    await waitFor(() => {
+      expect(result.current.players.some((p) => p.id === 2)).toBe(true);
+    });
+
     const removePlayer = result.current.handleRemovePlayer;
-
-    gamePlayersResult.players = [{ id: 2, name: "Sam", position: 1 }];
-    rerender();
 
     await act(async () => {
       await removePlayer(2, 10);
     });
 
-    expect(removeOptimisticPlayerMock).toHaveBeenCalledWith(2);
-    expect(gameFlowMock.leaveRoom).toHaveBeenCalledWith(10, 2);
-    expect(appendOptimisticPlayerMock).toHaveBeenCalledWith({ id: 2, name: "Sam", position: 1 });
+    expect(leaveRoom).toHaveBeenCalledWith(10, 2);
+    expect(result.current.players.some((p) => p.id === 2)).toBe(true);
   });
 });

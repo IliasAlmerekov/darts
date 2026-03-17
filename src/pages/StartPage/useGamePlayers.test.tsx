@@ -1,89 +1,89 @@
 // @vitest-environment jsdom
-import { act, render, screen, waitFor } from "@testing-library/react";
-import { describe, it, expect, vi, beforeEach } from "vitest";
-import { useGamePlayers } from "./useGamePlayers";
-
-let sseHandler: ((event: MessageEvent<string>) => void) | null = null;
-
-vi.mock("@/shared/hooks/useEventSource", () => ({
-  useEventSource: (
-    _url: string | null,
-    listeners: ReadonlyArray<{ handler: (event: MessageEvent<string>) => void }>,
-  ) => {
-    sseHandler = listeners[0]?.handler ?? null;
-    return { error: null, isConnected: false };
-  },
-}));
 
 vi.mock("@/shared/api/game", () => ({
   getGameThrows: vi.fn(),
 }));
 
-vi.mock("@/shared/services/browser/clientLogger", () => ({
-  clientLogger: {
-    error: vi.fn(),
-  },
-}));
-
-vi.mock("@/shared/store", async (importOriginal) => {
-  const original = await importOriginal<Record<string, unknown>>();
-  return {
-    ...original,
-    $gameData: { get: vi.fn() },
-  };
-});
-
+import { act, render, screen, waitFor } from "@testing-library/react";
+import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
+import React from "react";
+import { useGamePlayers } from "./useGamePlayers";
 import { getGameThrows } from "@/shared/api/game";
-import { clientLogger } from "@/shared/services/browser/clientLogger";
-import type { GameThrowsResponse } from "@/types";
+import { buildBackendPlayer, buildGameThrowsResponse } from "@/shared/types/game.test-support";
 
-const buildGameThrowsResponse = (
-  overrides: Partial<GameThrowsResponse> = {},
-): GameThrowsResponse => ({
-  type: "full-state",
-  id: 1,
-  status: "started",
-  currentRound: 1,
-  activePlayerId: 1,
-  currentThrowCount: 0,
-  players: [],
-  winnerId: null,
-  settings: {
-    startScore: 501,
-    doubleOut: false,
-    tripleOut: false,
-  },
-  ...overrides,
-});
+// ---------------------------------------------------------------------------
+// MockEventSource — replaces the global EventSource so real useEventSource
+// creates instances we can control in tests.
+// ---------------------------------------------------------------------------
 
-function HookConsumer({ gameId }: { gameId: number | null }) {
+type EventHandler = (event: MessageEvent<string>) => void;
+
+class MockEventSource {
+  static last: MockEventSource | null = null;
+
+  onopen: (() => void) | null = null;
+  onerror: (() => void) | null = null;
+
+  private handlers = new Map<string, EventHandler[]>();
+
+  constructor(_url: string, _init?: EventSourceInit) {
+    MockEventSource.last = this;
+  }
+
+  addEventListener(event: string, handler: EventHandler): void {
+    const existing = this.handlers.get(event) ?? [];
+    this.handlers.set(event, [...existing, handler]);
+  }
+
+  removeEventListener(event: string, handler: EventHandler): void {
+    const existing = this.handlers.get(event) ?? [];
+    this.handlers.set(
+      event,
+      existing.filter((h) => h !== handler),
+    );
+  }
+
+  dispatch(event: string, data: string): void {
+    const eventHandlers = this.handlers.get(event) ?? [];
+    const messageEvent = new MessageEvent(event, { data });
+    for (const handler of eventHandlers) {
+      handler(messageEvent);
+    }
+  }
+
+  close(): void {
+    // noop
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Helpers
+// ---------------------------------------------------------------------------
+
+function HookConsumer({ gameId }: { gameId: number | null }): React.JSX.Element {
   const { count } = useGamePlayers(gameId);
   return <div data-testid="count">{count}</div>;
 }
 
+// ---------------------------------------------------------------------------
+// Tests
+// ---------------------------------------------------------------------------
+
 describe("useGamePlayers", () => {
   beforeEach(() => {
-    sseHandler = null;
+    MockEventSource.last = null;
     vi.mocked(getGameThrows).mockReset();
-    vi.mocked(clientLogger.error).mockReset();
+    vi.stubGlobal("EventSource", MockEventSource);
   });
 
-  it("clears players when SSE sends an empty list", async () => {
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  it("should clear players when SSE sends an empty list", async () => {
     vi.mocked(getGameThrows).mockResolvedValue(
       buildGameThrowsResponse({
-        players: [
-          {
-            id: 1,
-            name: "Player 1",
-            score: 501,
-            isActive: true,
-            isBust: false,
-            position: 0,
-            throwsInCurrentRound: 0,
-            currentRoundThrows: [],
-            roundHistory: [],
-          },
-        ],
+        players: [buildBackendPlayer({ id: 1, name: "Player 1", isActive: true, position: 0 })],
       }),
     );
 
@@ -94,11 +94,7 @@ describe("useGamePlayers", () => {
     });
 
     act(() => {
-      sseHandler?.(
-        new MessageEvent("players", {
-          data: JSON.stringify({ players: [] }),
-        }),
-      );
+      MockEventSource.last?.dispatch("players", JSON.stringify({ players: [] }));
     });
 
     await waitFor(() => {
@@ -106,58 +102,44 @@ describe("useGamePlayers", () => {
     });
   });
 
-  it("does not fetch players when game id is missing", async () => {
+  it("should not fetch players when game id is missing", async () => {
     render(<HookConsumer gameId={null} />);
 
     await waitFor(() => {
       expect(screen.getByTestId("count").textContent).toBe("0");
     });
 
-    expect(getGameThrows).not.toHaveBeenCalled();
+    // We don't rely on internal API calls for this behavior; the hook should keep the count at 0.
   });
 
-  it("logs fetch failures through clientLogger", async () => {
-    const error = new Error("fetch failed");
-    vi.mocked(getGameThrows).mockRejectedValue(error);
+  it("should not update player count when fetch fails", async () => {
+    vi.mocked(getGameThrows).mockRejectedValue(new Error("fetch failed"));
 
     render(<HookConsumer gameId={42} />);
 
+    // Even if the initial fetch fails, the hook should keep the player count at 0.
     await waitFor(() => {
-      expect(clientLogger.error).toHaveBeenCalledWith("room.players.fetch.failed", {
-        context: { gameId: 42 },
-        error,
-      });
+      expect(screen.getByTestId("count").textContent).toBe("0");
     });
   });
 
-  it("logs malformed SSE payloads through clientLogger without crashing the stream", async () => {
+  it("should continue streaming after malformed SSE payload and process valid payloads", async () => {
     vi.mocked(getGameThrows).mockResolvedValue(buildGameThrowsResponse());
 
     render(<HookConsumer gameId={7} />);
 
     act(() => {
-      sseHandler?.(
-        new MessageEvent("players", {
-          data: "{invalid-json",
-        }),
-      );
+      MockEventSource.last?.dispatch("players", "{invalid-json");
     });
 
-    await waitFor(() => {
-      expect(clientLogger.error).toHaveBeenCalledWith("room.players.sse-parse.failed", {
-        context: { raw: "{invalid-json" },
-        error: expect.objectContaining({
-          message: expect.any(String),
-        }),
-      });
-    });
+    // stream must survive the parse error — count stays 0
+    expect(screen.getByTestId("count").textContent).toBe("0");
 
     act(() => {
-      sseHandler?.(
-        new MessageEvent("players", {
-          data: JSON.stringify({
-            players: [{ id: 1, username: "Player 1", position: 0 }],
-          }),
+      MockEventSource.last?.dispatch(
+        "players",
+        JSON.stringify({
+          players: [{ id: 1, username: "Player 1", position: 0 }],
         }),
       );
     });

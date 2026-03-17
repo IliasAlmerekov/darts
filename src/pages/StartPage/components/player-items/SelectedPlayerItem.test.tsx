@@ -1,7 +1,4 @@
 // @vitest-environment jsdom
-import { render, screen } from "@testing-library/react";
-import { beforeEach, describe, expect, it, vi } from "vitest";
-import SelectedPlayerItem from "./SelectedPlayerItem";
 
 const useSortableMock = vi.fn();
 const setNodeRefMock = vi.fn();
@@ -10,6 +7,11 @@ const setActivatorNodeRefMock = vi.fn();
 vi.mock("@dnd-kit/sortable", () => ({
   useSortable: () => useSortableMock(),
 }));
+
+import { render, screen } from "@testing-library/react";
+import { beforeEach, describe, expect, it, vi } from "vitest";
+import { buildUserProps } from "@/shared/types/player.test-support";
+import SelectedPlayerItem from "./SelectedPlayerItem";
 
 describe("SelectedPlayerItem", () => {
   beforeEach(() => {
@@ -30,7 +32,7 @@ describe("SelectedPlayerItem", () => {
     render(
       <SelectedPlayerItem
         name="Alice"
-        user={{ id: 1, name: "Alice" }}
+        user={buildUserProps({ id: 1, name: "Alice" })}
         handleClick={() => {}}
         dragEnd={false}
       />,

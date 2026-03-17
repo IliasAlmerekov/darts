@@ -4,11 +4,11 @@ import { Button } from "@/shared/ui/button";
 import deleteIcon from "@/assets/icons/delete.svg";
 import styles from "./GuestPlayerOverlay.module.css";
 
-type AddGuestButtonProps = {
+interface AddGuestButtonProps {
   isAddDisabled: boolean;
   isAdding: boolean;
   onAdd: () => void;
-};
+}
 
 const AddGuestButton = React.memo(function AddGuestButton({
   isAddDisabled,
@@ -30,7 +30,7 @@ const AddGuestButton = React.memo(function AddGuestButton({
   );
 });
 
-type GuestPlayerOverlayProps = {
+interface GuestPlayerOverlayProps {
   isOpen: boolean;
   username: string;
   onUsernameChange: (value: string) => void;
@@ -40,7 +40,7 @@ type GuestPlayerOverlayProps = {
   error?: string | null;
   suggestions?: string[];
   onSuggestionClick?: (value: string) => void;
-};
+}
 
 function GuestPlayerOverlay({
   isOpen,

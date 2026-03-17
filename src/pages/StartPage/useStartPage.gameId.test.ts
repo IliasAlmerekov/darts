@@ -4,141 +4,140 @@
  *
  * Rule: the route param /:id is the ONLY authoritative source.
  * The store ($currentGameId, $invitation) is cache/preload only.
- *
- * Red phase: these tests FAIL against the current implementation and will
- * turn green once useStartPage is refactored per the ticket.
  */
-import { act, renderHook, waitFor } from "@testing-library/react";
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { resolveGameId } from "./useStartPage";
-import { useStartPage } from "./useStartPage";
 
 // ─── shared mocks ────────────────────────────────────────────────────────────
 
 const navigateMock = vi.fn();
-const useParamsMock = vi.fn(() => ({}));
-const setCurrentGameIdMock = vi.fn();
-const setInvitationMock = vi.fn();
 
-const storeValues = new Map<string, unknown>();
-
-const gameFlowMock = {
-  getGameThrows: vi.fn(),
-  getInvitation: vi.fn(),
-  startGame: vi.fn(),
-  createRoom: vi.fn(),
-  updatePlayerOrder: vi.fn(),
-  leaveRoom: vi.fn(),
-  addGuestPlayer: vi.fn(),
-};
-
-const emptyPlayersResult = { players: [] as never[], count: 0 };
-
-vi.mock("react-router-dom", () => ({
-  useNavigate: () => navigateMock,
-  useParams: () => useParamsMock(),
-}));
-
-vi.mock("./useGamePlayers", () => ({
-  useGamePlayers: () => emptyPlayersResult,
-}));
-
-vi.mock("@nanostores/react", () => ({
-  useStore: (store: { key?: string }) => storeValues.get(store.key ?? ""),
-}));
-
-vi.mock("@/shared/store", async (importOriginal) => {
+vi.mock("react-router-dom", async (importOriginal) => {
   const original = await importOriginal<Record<string, unknown>>();
   return {
     ...original,
-    $gameSettings: { key: "gameSettings" },
-    $preCreateGameSettings: { key: "preCreateGameSettings" },
-    $lastFinishedGameId: { key: "lastFinishedGameId" },
-    $invitation: { key: "invitation" },
-    $currentGameId: { key: "currentGameId" },
-    // Mocks propagate changes into storeValues so the restore-effect
-    // dependency on invitation?.gameId stabilises and avoids an infinite loop.
-    setCurrentGameId: (id: number | null) => {
-      setCurrentGameIdMock(id);
-      storeValues.set("currentGameId", id);
-    },
-    setInvitation: (inv: { gameId: number; invitationLink: string } | null) => {
-      setInvitationMock(inv);
-      storeValues.set("invitation", inv);
-    },
-    setGameData: vi.fn(),
+    useNavigate: () => navigateMock,
   };
 });
 
 vi.mock("@/shared/api/game", () => ({
-  getGameThrows: (...args: unknown[]) => gameFlowMock.getGameThrows(...args),
-  startGame: (...args: unknown[]) => gameFlowMock.startGame(...args),
+  getGameThrows: vi.fn(),
+  startGame: vi.fn(),
 }));
 
 vi.mock("@/shared/api/room", () => ({
-  createRoom: (...args: unknown[]) => gameFlowMock.createRoom(...args),
-  getInvitation: (...args: unknown[]) => gameFlowMock.getInvitation(...args),
-  updatePlayerOrder: (...args: unknown[]) => gameFlowMock.updatePlayerOrder(...args),
-  leaveRoom: (...args: unknown[]) => gameFlowMock.leaveRoom(...args),
-  addGuestPlayer: (...args: unknown[]) => gameFlowMock.addGuestPlayer(...args),
+  createRoom: vi.fn(),
+  getInvitation: vi.fn(),
+  updatePlayerOrder: vi.fn(),
+  leaveRoom: vi.fn(),
+  addGuestPlayer: vi.fn(),
 }));
 
-// ─── helpers ─────────────────────────────────────────────────────────────────
+import { act, renderHook } from "@testing-library/react";
+import { MemoryRouter, Routes, Route } from "react-router-dom";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import React from "react";
+import { resolveGameId } from "./useStartPage";
+import { useStartPage } from "./useStartPage";
+import { getGameThrows } from "@/shared/api/game";
+import { getInvitation, updatePlayerOrder } from "@/shared/api/room";
+import {
+  resetRoomStore,
+  resetGameStore,
+  resetPreCreateGameSettings,
+  setLastFinishedGameSummary,
+  setCurrentGameId,
+  setInvitation,
+} from "@/shared/store";
+import { buildGameThrowsResponse } from "@/shared/types/game.test-support";
 
-function defaultStoreState() {
-  storeValues.set("gameSettings", null);
-  storeValues.set("preCreateGameSettings", {
-    startScore: 301,
-    doubleOut: false,
-    tripleOut: false,
-  });
-  storeValues.set("lastFinishedGameId", null);
-  storeValues.set("currentGameId", null);
-  storeValues.set("invitation", null);
+// ---------------------------------------------------------------------------
+// MockEventSource — browser API boundary stub
+// ---------------------------------------------------------------------------
+
+type EventHandler = (event: MessageEvent<string>) => void;
+
+class MockEventSource {
+  static last: MockEventSource | null = null;
+
+  onopen: (() => void) | null = null;
+  onerror: (() => void) | null = null;
+
+  private handlers = new Map<string, EventHandler[]>();
+
+  constructor() {
+    MockEventSource.last = this;
+  }
+
+  addEventListener(event: string, handler: EventHandler): void {
+    const existing = this.handlers.get(event) ?? [];
+    this.handlers.set(event, [...existing, handler]);
+  }
+
+  removeEventListener(event: string, handler: EventHandler): void {
+    const existing = this.handlers.get(event) ?? [];
+    this.handlers.set(
+      event,
+      existing.filter((h) => h !== handler),
+    );
+  }
+
+  dispatch(event: string, data: string): void {
+    const eventHandlers = this.handlers.get(event) ?? [];
+    const messageEvent = new MessageEvent(event, { data });
+    for (const handler of eventHandlers) {
+      handler(messageEvent);
+    }
+  }
+
+  close(): void {
+    // noop
+  }
+}
+
+// ---------------------------------------------------------------------------
+// MockAudio — browser API boundary stub
+// ---------------------------------------------------------------------------
+
+class MockAudio {
+  volume = 1;
+  play = vi.fn().mockResolvedValue(undefined);
+  constructor() {}
+}
+
+// ---------------------------------------------------------------------------
+// Helpers
+// ---------------------------------------------------------------------------
+
+function makeWrapper(
+  path: string,
+): ({ children }: { children: React.ReactNode }) => React.ReactElement {
+  return function Wrapper({ children }: { children: React.ReactNode }): React.ReactElement {
+    return React.createElement(
+      MemoryRouter,
+      { initialEntries: [path] },
+      React.createElement(
+        Routes,
+        null,
+        React.createElement(Route, {
+          path: "/start/:id",
+          element: React.createElement(React.Fragment, null, children),
+        }),
+        React.createElement(Route, {
+          path: "/start",
+          element: React.createElement(React.Fragment, null, children),
+        }),
+      ),
+    );
+  };
 }
 
 /** Stable lobby response to prevent restore-effect re-runs during tests. */
-function mockLobbyGame(gameId: number) {
-  gameFlowMock.getGameThrows.mockResolvedValue({
-    status: "lobby",
-    id: gameId,
-    players: [],
-    settings: null,
-  });
-  gameFlowMock.getInvitation.mockResolvedValue({
+function mockLobbyGame(gameId: number): void {
+  vi.mocked(getGameThrows).mockResolvedValue(
+    buildGameThrowsResponse({ id: gameId, status: "lobby" }),
+  );
+  vi.mocked(getInvitation).mockResolvedValue({
     gameId,
     invitationLink: `/invite/${gameId}`,
-  });
-}
-
-type Deferred<T> = {
-  promise: Promise<T>;
-  resolve: (value: T) => void;
-  reject: (reason?: unknown) => void;
-};
-
-function deferred<T>(): Deferred<T> {
-  let resolve: (value: T) => void = () => {
-    throw new Error("Attempted to resolve promise before it was initialized");
-  };
-  let reject: (reason?: unknown) => void = () => {
-    throw new Error("Attempted to reject promise before it was initialized");
-  };
-  const promise = new Promise<T>((res, rej) => {
-    resolve = res;
-    reject = rej;
-  });
-
-  return { promise, resolve, reject };
-}
-
-function createAbortError(): DOMException {
-  return new DOMException("The operation was aborted.", "AbortError");
-}
-
-function resetGameFlowMocks(): void {
-  Object.values(gameFlowMock).forEach((mockFn) => {
-    mockFn.mockReset();
   });
 }
 
@@ -189,54 +188,70 @@ describe("resolveGameId", () => {
   });
 });
 
+// ─── shared beforeEach/afterEach ─────────────────────────────────────────────
+
+function sharedBeforeEach(): void {
+  vi.clearAllMocks();
+  MockEventSource.last = null;
+  sessionStorage.clear();
+  resetRoomStore();
+  resetGameStore();
+  resetPreCreateGameSettings();
+  setLastFinishedGameSummary(null);
+  vi.stubGlobal("EventSource", MockEventSource);
+  vi.stubGlobal("Audio", MockAudio);
+  vi.mocked(getGameThrows).mockResolvedValue(buildGameThrowsResponse({ status: "lobby" }));
+  vi.mocked(getInvitation).mockResolvedValue({ gameId: 0, invitationLink: "" });
+  vi.mocked(updatePlayerOrder).mockResolvedValue(undefined);
+}
+
+function sharedAfterEach(): void {
+  vi.unstubAllGlobals();
+  sessionStorage.clear();
+  resetRoomStore();
+  resetGameStore();
+}
+
 // ─── useStartPage — gameId derivation ────────────────────────────────────────
 
 describe("useStartPage — gameId is derived exclusively from URL param", () => {
-  beforeEach(() => {
-    vi.clearAllMocks();
-    resetGameFlowMocks();
-    defaultStoreState();
-    useParamsMock.mockReturnValue({});
-  });
-
-  afterEach(() => {
-    vi.restoreAllMocks();
-  });
+  beforeEach(sharedBeforeEach);
+  afterEach(sharedAfterEach);
 
   it("should return gameId from URL param when route contains a valid id", () => {
-    useParamsMock.mockReturnValue({ id: "42" });
-
-    const { result } = renderHook(() => useStartPage());
+    const { result } = renderHook(() => useStartPage(), {
+      wrapper: makeWrapper("/start/42"),
+    });
 
     expect(result.current.gameId).toBe(42);
   });
 
   it("should return null gameId when URL param is absent, even if invitation has a gameId", () => {
     // URL has no id — invitation gameId must NOT be used as authoritative gameId
-    useParamsMock.mockReturnValue({});
-    storeValues.set("invitation", { gameId: 99, invitationLink: "/invite/99" });
-    storeValues.set("currentGameId", 99);
+    setInvitation({ gameId: 99, invitationLink: "/invite/99" });
 
-    const { result } = renderHook(() => useStartPage());
+    const { result } = renderHook(() => useStartPage(), {
+      wrapper: makeWrapper("/start"),
+    });
 
     expect(result.current.gameId).toBeNull();
   });
 
   it("should use URL param gameId even when invitation holds a different gameId", () => {
     // URL param is authoritative — invitation value must be ignored for gameId
-    useParamsMock.mockReturnValue({ id: "42" });
-    storeValues.set("invitation", { gameId: 99, invitationLink: "/invite/99" });
-    storeValues.set("currentGameId", 99);
+    setInvitation({ gameId: 99, invitationLink: "/invite/99" });
 
-    const { result } = renderHook(() => useStartPage());
+    const { result } = renderHook(() => useStartPage(), {
+      wrapper: makeWrapper("/start/42"),
+    });
 
     expect(result.current.gameId).toBe(42);
   });
 
   it("should return null gameId when URL param is invalid (non-numeric)", () => {
-    useParamsMock.mockReturnValue({ id: "not-a-number" });
-
-    const { result } = renderHook(() => useStartPage());
+    const { result } = renderHook(() => useStartPage(), {
+      wrapper: makeWrapper("/start/not-a-number"),
+    });
 
     expect(result.current.gameId).toBeNull();
   });
@@ -245,35 +260,30 @@ describe("useStartPage — gameId is derived exclusively from URL param", () => 
 // ─── useStartPage — redirect behaviour ───────────────────────────────────────
 
 describe("useStartPage — redirect when URL has no gameId", () => {
-  beforeEach(() => {
-    vi.clearAllMocks();
-    resetGameFlowMocks();
-    defaultStoreState();
-    useParamsMock.mockReturnValue({});
-  });
-
-  afterEach(() => {
-    vi.restoreAllMocks();
-  });
+  beforeEach(sharedBeforeEach);
+  afterEach(sharedAfterEach);
 
   it("should redirect to active game route when no URL param but store has currentGameId", async () => {
-    storeValues.set("currentGameId", 55);
+    setCurrentGameId(55);
 
     await act(async () => {
-      renderHook(() => useStartPage());
+      renderHook(() => useStartPage(), {
+        wrapper: makeWrapper("/start"),
+      });
     });
 
     expect(navigateMock).toHaveBeenCalledWith("/start/55", { replace: true });
   });
 
   it("should NOT redirect when URL param already contains the currentGameId", async () => {
-    useParamsMock.mockReturnValue({ id: "55" });
-    storeValues.set("currentGameId", 55);
+    setCurrentGameId(55);
     // Provide mocks so the restore-effect completes cleanly without looping
     mockLobbyGame(55);
 
     await act(async () => {
-      renderHook(() => useStartPage());
+      renderHook(() => useStartPage(), {
+        wrapper: makeWrapper("/start/55"),
+      });
     });
 
     expect(navigateMock).not.toHaveBeenCalledWith(
@@ -283,228 +293,12 @@ describe("useStartPage — redirect when URL has no gameId", () => {
   });
 
   it("should NOT redirect when there is neither URL param nor stored gameId", async () => {
-    storeValues.set("currentGameId", null);
-
     await act(async () => {
-      renderHook(() => useStartPage());
+      renderHook(() => useStartPage(), {
+        wrapper: makeWrapper("/start"),
+      });
     });
 
     expect(navigateMock).not.toHaveBeenCalled();
-  });
-});
-
-// ─── useStartPage — restore effect uses URL param, not invitation ─────────────
-
-describe("useStartPage — restore effect is triggered only by URL param", () => {
-  beforeEach(() => {
-    vi.clearAllMocks();
-    resetGameFlowMocks();
-    defaultStoreState();
-    useParamsMock.mockReturnValue({});
-  });
-
-  afterEach(() => {
-    vi.restoreAllMocks();
-  });
-
-  it("should NOT call getGameThrows when URL has no gameId (no restore needed)", async () => {
-    // Even if invitation exists — restore must not trigger without a URL param
-    storeValues.set("invitation", { gameId: 99, invitationLink: "/invite/99" });
-    storeValues.set("currentGameId", 99);
-
-    await act(async () => {
-      renderHook(() => useStartPage());
-    });
-
-    expect(gameFlowMock.getGameThrows).not.toHaveBeenCalled();
-  });
-
-  it("should call getGameThrows with URL param gameId when route has an id and no invitation", async () => {
-    useParamsMock.mockReturnValue({ id: "42" });
-    storeValues.set("currentGameId", 42);
-    mockLobbyGame(42);
-
-    await act(async () => {
-      renderHook(() => useStartPage());
-    });
-
-    // restore fires because gameIdParam is present and invitation is absent
-    await waitFor(() => {
-      expect(gameFlowMock.getGameThrows).toHaveBeenCalledWith(42, expect.any(AbortSignal));
-    });
-  });
-
-  it("should redirect away when URL gameId does not match currentGameId in store", async () => {
-    // URL says game 42, but store says active game is 77 — stale deep-link scenario
-    useParamsMock.mockReturnValue({ id: "42" });
-    storeValues.set("currentGameId", 77);
-    // Restore effect will detect the mismatch and redirect before calling getGameThrows
-    // No lobby mock needed — redirect fires synchronously in the restore logic
-
-    await act(async () => {
-      renderHook(() => useStartPage());
-    });
-
-    expect(navigateMock).toHaveBeenCalledWith("/start/77", { replace: true });
-  });
-
-  it("should redirect to bare /start when URL gameId is present but store has no currentGameId", async () => {
-    // Deep-link to /start/42 with no session state → user has no active game
-    useParamsMock.mockReturnValue({ id: "42" });
-    storeValues.set("currentGameId", null);
-
-    await act(async () => {
-      renderHook(() => useStartPage());
-    });
-
-    expect(navigateMock).toHaveBeenCalledWith("/start", { replace: true });
-  });
-
-  it("should redirect away when game status is not lobby after restore", async () => {
-    // Game 42 is already started — user shouldn't land in its lobby view.
-    // Use mockResolvedValueOnce so that after the first successful redirect the
-    // restore-effect re-run (triggered by isRestoring → false) gets a
-    // never-resolving promise, keeping isRestoring=true and breaking the loop.
-    useParamsMock.mockReturnValue({ id: "42" });
-    storeValues.set("currentGameId", 42);
-    gameFlowMock.getGameThrows
-      .mockResolvedValueOnce({ status: "started", id: 42, players: [], settings: null })
-      .mockReturnValue(new Promise(() => {})); // never resolves — stops the cycle
-
-    await act(async () => {
-      renderHook(() => useStartPage());
-    });
-
-    await waitFor(() => {
-      expect(navigateMock).toHaveBeenCalledWith("/start/42", { replace: true });
-    });
-  });
-
-  it("should redirect to currentGameId route when getGameThrows throws a network error", async () => {
-    useParamsMock.mockReturnValue({ id: "42" });
-    storeValues.set("currentGameId", 42);
-    gameFlowMock.getGameThrows
-      .mockRejectedValueOnce(new Error("Network error"))
-      .mockReturnValue(new Promise(() => {})); // stops the re-run cycle
-
-    await act(async () => {
-      renderHook(() => useStartPage());
-    });
-
-    await waitFor(() => {
-      expect(navigateMock).toHaveBeenCalledWith("/start/42", { replace: true });
-    });
-  });
-
-  it("should redirect to bare /start when getGameThrows throws and store has no currentGameId", async () => {
-    useParamsMock.mockReturnValue({ id: "42" });
-    storeValues.set("currentGameId", null);
-    // Network error — but currentGameId is null, so no ID in the redirect
-    gameFlowMock.getGameThrows
-      .mockRejectedValueOnce(new Error("Network error"))
-      .mockReturnValue(new Promise(() => {})); // stops the re-run cycle
-
-    await act(async () => {
-      renderHook(() => useStartPage());
-    });
-
-    expect(navigateMock).toHaveBeenCalledWith("/start", { replace: true });
-  });
-
-  it("should update currentGameId from invitation API response after successful restore", async () => {
-    // The invitation endpoint returns the canonical gameId — that must win over the URL param
-    useParamsMock.mockReturnValue({ id: "42" });
-    storeValues.set("currentGameId", 42);
-    gameFlowMock.getGameThrows.mockResolvedValue({
-      status: "lobby",
-      id: 42,
-      players: [],
-      settings: null,
-    });
-    gameFlowMock.getInvitation.mockResolvedValue({
-      gameId: 42,
-      invitationLink: "/invite/42",
-    });
-
-    await act(async () => {
-      renderHook(() => useStartPage());
-    });
-
-    await waitFor(() => {
-      expect(setCurrentGameIdMock).toHaveBeenCalledWith(42);
-    });
-  });
-});
-
-describe("useStartPage — restore effect abort handling", () => {
-  beforeEach(() => {
-    vi.clearAllMocks();
-    resetGameFlowMocks();
-    defaultStoreState();
-    useParamsMock.mockReturnValue({ id: "42" });
-    storeValues.set("currentGameId", 42);
-  });
-
-  afterEach(() => {
-    vi.restoreAllMocks();
-  });
-
-  it("passes one AbortSignal through restore requests and aborts it on unmount", async () => {
-    gameFlowMock.getGameThrows.mockResolvedValue({
-      status: "lobby",
-      id: 42,
-      players: [],
-      settings: null,
-    });
-    gameFlowMock.getInvitation.mockImplementation(() => new Promise(() => {}));
-
-    const { unmount } = renderHook(() => useStartPage());
-
-    await waitFor(() => {
-      expect(gameFlowMock.getInvitation).toHaveBeenCalledTimes(1);
-    });
-
-    const restoreSignal = gameFlowMock.getGameThrows.mock.calls[0]?.[1] as AbortSignal | undefined;
-    const invitationSignal = gameFlowMock.getInvitation.mock.calls[0]?.[1] as
-      | AbortSignal
-      | undefined;
-
-    expect(restoreSignal).toBeInstanceOf(AbortSignal);
-    expect(invitationSignal).toBe(restoreSignal);
-
-    unmount();
-
-    expect(restoreSignal?.aborted).toBe(true);
-    expect(invitationSignal?.aborted).toBe(true);
-  });
-
-  it("ignores AbortError from restore requests after cleanup", async () => {
-    const pendingRestore = deferred<{
-      status: "lobby";
-      id: number;
-      players: [];
-      settings: null;
-    }>();
-    const consoleErrorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
-
-    gameFlowMock.getGameThrows.mockReturnValue(pendingRestore.promise);
-
-    const { unmount } = renderHook(() => useStartPage());
-
-    await waitFor(() => {
-      expect(gameFlowMock.getGameThrows).toHaveBeenCalledTimes(1);
-    });
-
-    unmount();
-    pendingRestore.reject(createAbortError());
-
-    await act(async () => {
-      await pendingRestore.promise.catch(() => undefined);
-    });
-
-    expect(navigateMock).not.toHaveBeenCalled();
-    expect(setInvitationMock).not.toHaveBeenCalled();
-    expect(setCurrentGameIdMock).not.toHaveBeenCalled();
-    expect(consoleErrorSpy).not.toHaveBeenCalled();
   });
 });

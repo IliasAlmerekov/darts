@@ -6,19 +6,19 @@ import type { AddGuestErrorResponse } from "@/types";
 
 const MAX_LOBBY_PLAYERS = 10;
 
-type OptimisticGuestPlayer = {
+interface OptimisticGuestPlayer {
   id: number;
   name: string;
   position?: number | null;
-};
+}
 
-type UseGuestFlowParams = {
+interface UseGuestFlowParams {
   gameId: number | null;
   playerCount: number;
   appendOptimisticPlayer: (player: OptimisticGuestPlayer) => void;
-};
+}
 
-export type UseGuestFlowResult = {
+export interface UseGuestFlowResult {
   isLobbyFull: boolean;
   isGuestOverlayOpen: boolean;
   guestUsername: string;
@@ -30,7 +30,7 @@ export type UseGuestFlowResult = {
   setGuestUsername: (value: string) => void;
   handleGuestSuggestion: (suggestion: string) => void;
   handleAddGuest: () => Promise<void>;
-};
+}
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null;
@@ -114,7 +114,7 @@ export function useGuestFlow({
   }, []);
 
   const handleAddGuest = useCallback(async (): Promise<void> => {
-    if (!gameId) {
+    if (gameId === null) {
       setGuestError("Please create a game first.");
       return;
     }
