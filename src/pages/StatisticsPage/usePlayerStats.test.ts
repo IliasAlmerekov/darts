@@ -189,7 +189,7 @@ describe("usePlayerStats", () => {
     expect(getPlayerStatsMock).toHaveBeenCalledTimes(2);
   });
 
-  it("keeps previous data while the next uncached page is loading", async () => {
+  it("keeps previous data while the next page is loading", async () => {
     let resolveNextPage: ((value: { items: PlayerProps[]; total: number }) => void) | undefined;
 
     getPlayerStatsMock.mockResolvedValueOnce({ items: PLAYERS, total: 20 });
@@ -227,11 +227,14 @@ describe("usePlayerStats", () => {
     ]);
   });
 
-  it("reuses cached data when returning to a previously loaded query", async () => {
-    getPlayerStatsMock.mockResolvedValueOnce({ items: PLAYERS, total: 20 }).mockResolvedValueOnce({
-      items: [{ id: 3, playerId: 3, name: "Carol", scoreAverage: 62.1, gamesPlayed: 8 }],
-      total: 20,
-    });
+  it("re-fetches when returning to a previously loaded query", async () => {
+    getPlayerStatsMock
+      .mockResolvedValueOnce({ items: PLAYERS, total: 20 })
+      .mockResolvedValueOnce({
+        items: [{ id: 3, playerId: 3, name: "Carol", scoreAverage: 62.1, gamesPlayed: 8 }],
+        total: 20,
+      })
+      .mockResolvedValueOnce({ items: PLAYERS, total: 20 });
 
     const { result, rerender } = renderHook(
       ({ offset }: { offset: number }) =>
@@ -250,24 +253,41 @@ describe("usePlayerStats", () => {
 
     await waitFor(() => expect(result.current.loading).toBe(false));
     expect(result.current.stats).toEqual(PLAYERS);
-    expect(getPlayerStatsMock).toHaveBeenCalledTimes(2);
+    expect(getPlayerStatsMock).toHaveBeenCalledTimes(3);
   });
 
-  it("uses prefetched initial statistics without issuing a second request on mount", async () => {
-    getPlayerStatsMock.mockResolvedValue({ items: PLAYERS, total: 2 });
+  it("reuses in-flight prefetch when hook mounts before prefetch completes", async () => {
+    let resolvePrefetch: ((value: { items: PlayerProps[]; total: number }) => void) | undefined;
 
-    await prefetchInitialPlayerStats();
+    getPlayerStatsMock.mockImplementationOnce(
+      () =>
+        new Promise<{ items: PlayerProps[]; total: number }>((resolve) => {
+          resolvePrefetch = resolve;
+        }),
+    );
+
+    const prefetchPromise = prefetchInitialPlayerStats();
 
     const { result } = renderHook(() =>
       usePlayerStats({ limit: 10, offset: 0, sortParam: undefined }),
     );
 
-    expect(result.current.loading).toBe(false);
+    expect(result.current.loading).toBe(true);
+
+    act(() => {
+      resolvePrefetch?.({ items: PLAYERS, total: 2 });
+    });
+
+    await act(async () => {
+      await prefetchPromise;
+    });
+
+    await waitFor(() => expect(result.current.loading).toBe(false));
     expect(result.current.stats).toEqual(PLAYERS);
     expect(getPlayerStatsMock).toHaveBeenCalledTimes(1);
   });
 
-  it("clears cached statistics when auth state is invalidated", async () => {
+  it("clears in-flight prefetches when auth state is invalidated", async () => {
     getPlayerStatsMock.mockResolvedValueOnce({ items: PLAYERS, total: 2 }).mockResolvedValueOnce({
       items: [{ id: 3, playerId: 3, name: "Carol", scoreAverage: 62.1, gamesPlayed: 8 }],
       total: 1,
@@ -296,7 +316,7 @@ describe("usePlayerStats", () => {
     expect(getPlayerStatsMock).toHaveBeenCalledTimes(2);
   });
 
-  it("does not repopulate cache from requests started before auth invalidation", async () => {
+  it("does not reuse pre-invalidation in-flight prefetch after auth invalidation", async () => {
     let resolvePrefetch: ((value: { items: PlayerProps[]; total: number }) => void) | undefined;
 
     getPlayerStatsMock

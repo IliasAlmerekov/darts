@@ -132,6 +132,9 @@ export function useGamePlayers(gameId: number | null): UseGamePlayersResult {
         setPlayers(sortPlayers(mappedPlayers));
       })
       .catch((error) => {
+        if (error instanceof Error && error.name === "AbortError") {
+          return;
+        }
         clientLogger.error("room.players.fetch.failed", {
           context: { gameId },
           error,

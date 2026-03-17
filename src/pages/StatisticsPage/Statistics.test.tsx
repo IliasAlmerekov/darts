@@ -70,7 +70,7 @@ describe("StatisticsPage", () => {
     usePlayerStatsMock.mockReset();
   });
 
-  it("should render loading indicator while data is being fetched", () => {
+  it("should render empty page without error when data is being fetched", () => {
     usePlayerStatsMock.mockReturnValue({
       loading: true,
       error: null,
@@ -81,7 +81,8 @@ describe("StatisticsPage", () => {
 
     renderPage();
 
-    expect(screen.getByRole("status")).toBeTruthy();
+    expect(screen.queryByRole("status")).toBeNull();
+    expect(screen.queryByText(/no player statistics/i)).toBeNull();
   });
 
   it("should render player list when data loads successfully", () => {
@@ -110,7 +111,7 @@ describe("StatisticsPage", () => {
 
     renderPage();
 
-    expect(screen.getByRole("status")).toBeTruthy();
+    expect(screen.queryByRole("status")).toBeNull();
     expect(screen.getByText("Alice")).toBeTruthy();
     expect(screen.getByText("Bob")).toBeTruthy();
   });
