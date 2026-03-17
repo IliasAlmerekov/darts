@@ -58,6 +58,17 @@
   color: var(--darkgrey);
 }
 
+.statLabel {
+  font-size: var(--font-size-16);
+  color: var(--darkgrey);
+}
+
+.statValue {
+  font-weight: 700;
+  font-size: var(--font-size-20);
+  color: var(--darkblue);
+}
+
 .retryAction {
   width: min(100%, 220px);
 }

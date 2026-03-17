@@ -346,7 +346,9 @@ describe("usePlayerStats", () => {
   });
 
   it("should not update state after unmount (no AbortController leak)", async () => {
-    let resolve!: (value: unknown) => void;
+    let resolve: (value: unknown) => void = () => {
+      throw new Error("Attempted to resolve promise before it was initialized");
+    };
     getPlayerStatsMock.mockReturnValue(new Promise((res) => (resolve = res)));
 
     const { result, unmount } = renderHook(() =>

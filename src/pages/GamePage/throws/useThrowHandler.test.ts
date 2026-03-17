@@ -51,8 +51,12 @@ type Deferred<T> = {
 };
 
 function createDeferred<T>(): Deferred<T> {
-  let resolve!: (value: T) => void;
-  let reject!: (reason?: unknown) => void;
+  let resolve: (value: T) => void = () => {
+    throw new Error("Attempted to resolve promise before it was initialized");
+  };
+  let reject: (reason?: unknown) => void = () => {
+    throw new Error("Attempted to reject promise before it was initialized");
+  };
   const promise = new Promise<T>((res, rej) => {
     resolve = res;
     reject = rej;
