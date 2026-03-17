@@ -1,4 +1,5 @@
 import React, { useCallback, useState } from "react";
+import clsx from "clsx";
 import { QRCodeSVG } from "qrcode.react";
 import styles from "./QRCode.module.css";
 
@@ -9,7 +10,7 @@ interface QRCodeProps {
   children?: React.ReactNode;
 }
 
-function QRCode({ invitationLink, gameId, isLobbyFull, children }: QRCodeProps): JSX.Element {
+function QRCode({ invitationLink, gameId, isLobbyFull, children }: QRCodeProps): React.JSX.Element {
   const [copyFeedback, setCopyFeedback] = useState<"idle" | "copied" | "failed">("idle");
 
   const copyInvitationLink = useCallback(async (): Promise<void> => {
@@ -42,16 +43,14 @@ function QRCode({ invitationLink, gameId, isLobbyFull, children }: QRCodeProps):
 
   return (
     <div className={styles.qrCodeOverlay}>
-      <div className={`${styles.qrCodeContainer} ${isLobbyFull ? styles.qrCodeContainerFull : ""}`}>
+      <div className={clsx(styles.qrCodeContainer, isLobbyFull && styles.qrCodeContainerFull)}>
         <h4 className={styles.qrCodeHeading}>{heading}</h4>
         <p className={styles.qrCodeStatus} aria-live="polite">
           {statusText}
         </p>
 
         <div className={styles.qrCodeStage}>
-          <div
-            className={`${styles.qrCodeWrapper} ${isLobbyFull ? styles.qrCodeWrapperBlurred : ""}`}
-          >
+          <div className={clsx(styles.qrCodeWrapper, isLobbyFull && styles.qrCodeWrapperBlurred)}>
             <QRCodeSVG
               value={invitationLink}
               size={200}

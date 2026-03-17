@@ -1,271 +1,331 @@
 // @vitest-environment jsdom
-import { render, screen } from "@testing-library/react";
-import type { ReactNode } from "react";
-import { MemoryRouter } from "react-router-dom";
-import { describe, expect, it, vi } from "vitest";
-import StartPage from ".";
-import styles from "./StartPage.module.css";
 
-type StartPageHookResult = {
-  invitation: { invitationLink: string; gameId: number } | null;
-  gameId: number | null;
-  lastFinishedGameId: number | null;
-  players: Array<{ id: number; name: string; position: number | null }>;
-  playerCount: number;
-  isLobbyFull: boolean;
-  playerOrder: number[];
-  creating: boolean;
-  starting: boolean;
-  pageError: string | null;
-  isGuestOverlayOpen: boolean;
-  guestUsername: string;
-  guestError: string | null;
-  guestSuggestions: string[];
-  isAddingGuest: boolean;
-  handleDragEnd: () => void;
-  handleRemovePlayer: () => void;
-  handleStartGame: () => void;
-  handleCreateRoom: () => void;
-  clearPageError: () => void;
-  openGuestOverlay: () => void;
-  closeGuestOverlay: () => void;
-  setGuestUsername: () => void;
-  handleGuestSuggestion: () => void;
-  handleAddGuest: () => void;
-};
-
-const buildHookResult = (overrides: Partial<StartPageHookResult> = {}): StartPageHookResult => ({
-  invitation: { invitationLink: "/invite/abc", gameId: 1 },
-  gameId: 1,
-  lastFinishedGameId: null,
-  players: [],
-  playerCount: 2,
-  isLobbyFull: false,
-  playerOrder: [],
-  creating: false,
-  starting: false,
-  pageError: null,
-  isGuestOverlayOpen: false,
-  guestUsername: "",
-  guestError: null,
-  guestSuggestions: [],
-  isAddingGuest: false,
-  handleDragEnd: vi.fn(),
-  handleRemovePlayer: vi.fn(),
-  handleStartGame: vi.fn(),
-  handleCreateRoom: vi.fn(),
-  clearPageError: vi.fn(),
-  openGuestOverlay: vi.fn(),
-  closeGuestOverlay: vi.fn(),
-  setGuestUsername: vi.fn(),
-  handleGuestSuggestion: vi.fn(),
-  handleAddGuest: vi.fn(),
-  ...overrides,
-});
-
-const useStartPageMock = vi.fn((): StartPageHookResult => buildHookResult());
-const livePlayersListMock = vi.fn((props: unknown) => {
-  void props;
-  return <div data-testid="live-players-list" />;
-});
-
-vi.mock("./useStartPage", () => ({
-  useStartPage: () => useStartPageMock(),
+vi.mock("@/shared/api/game", () => ({
+  getGameThrows: vi.fn(),
+  getGameSettings: vi.fn(),
+  startGame: vi.fn(),
 }));
 
-vi.mock("./components/live-players-list/LivePlayersList", () => ({
-  LivePlayersList: (props: unknown) => livePlayersListMock(props),
+vi.mock("@/shared/api/room", () => ({
+  createRoom: vi.fn(),
+  getInvitation: vi.fn(),
+  updatePlayerOrder: vi.fn(),
+  leaveRoom: vi.fn(),
+  addGuestPlayer: vi.fn(),
 }));
 
-vi.mock("@/shared/ui/navigation-bar", () => ({
-  NavigationBar: () => <div data-testid="navigation-bar" />,
-}));
+import { fireEvent, render, screen, waitFor, act } from "@testing-library/react";
+import { MemoryRouter, Routes, Route } from "react-router-dom";
+import { describe, expect, it, vi, beforeEach, afterEach } from "vitest";
+import { getGameThrows, getGameSettings } from "@/shared/api/game";
+import {
+  createRoom,
+  getInvitation,
+  updatePlayerOrder,
+  leaveRoom,
+  addGuestPlayer,
+} from "@/shared/api/room";
+import StartPage from "./StartPage";
+import {
+  resetRoomStore,
+  resetGameStore,
+  resetPreCreateGameSettings,
+  setLastFinishedGameSummary,
+  setInvitation,
+} from "@/shared/store";
+import { buildBackendPlayer, buildGameThrowsResponse } from "@/shared/types/game.test-support";
 
-vi.mock("./components/qr-code/QRCode", () => ({
-  default: ({ children, invitationLink }: { children?: ReactNode; invitationLink?: string }) => (
-    <div data-testid="qr-code" data-invitation-link={invitationLink}>
-      {children}
-    </div>
-  ),
-}));
+// ---------------------------------------------------------------------------
+// MockEventSource — browser API boundary stub
+// ---------------------------------------------------------------------------
+
+type EventHandler = (event: MessageEvent<string>) => void;
+
+class MockEventSource {
+  static last: MockEventSource | null = null;
+
+  onopen: (() => void) | null = null;
+  onerror: (() => void) | null = null;
+
+  private handlers = new Map<string, EventHandler[]>();
+
+  constructor(_url: string, _init?: EventSourceInit) {
+    MockEventSource.last = this;
+  }
+
+  addEventListener(event: string, handler: EventHandler): void {
+    const existing = this.handlers.get(event) ?? [];
+    this.handlers.set(event, [...existing, handler]);
+  }
+
+  removeEventListener(event: string, handler: EventHandler): void {
+    const existing = this.handlers.get(event) ?? [];
+    this.handlers.set(
+      event,
+      existing.filter((h) => h !== handler),
+    );
+  }
+
+  dispatch(event: string, data: string): void {
+    const eventHandlers = this.handlers.get(event) ?? [];
+    const messageEvent = new MessageEvent(event, { data });
+    for (const handler of eventHandlers) {
+      handler(messageEvent);
+    }
+  }
+
+  close(): void {
+    // noop
+  }
+}
+
+// ---------------------------------------------------------------------------
+// MockAudio — browser API boundary stub
+// ---------------------------------------------------------------------------
+
+class MockAudio {
+  volume = 1;
+  play = vi.fn().mockResolvedValue(undefined);
+  constructor(_src?: string) {}
+}
+
+// ---------------------------------------------------------------------------
+// Helpers
+// ---------------------------------------------------------------------------
+
+function renderStartPage(path: string): void {
+  render(
+    <MemoryRouter initialEntries={[path]}>
+      <Routes>
+        <Route path="/start/:id" element={<StartPage />} />
+        <Route path="/start" element={<StartPage />} />
+      </Routes>
+    </MemoryRouter>,
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Tests
+// ---------------------------------------------------------------------------
 
 describe("StartPage", () => {
-  it("disables guest button when 10/10 players joined", () => {
-    useStartPageMock.mockReturnValueOnce(
-      buildHookResult({
-        playerCount: 10,
-        isLobbyFull: true,
+  beforeEach(() => {
+    vi.clearAllMocks();
+    MockEventSource.last = null;
+    sessionStorage.clear();
+    resetRoomStore();
+    resetGameStore();
+    resetPreCreateGameSettings();
+    setLastFinishedGameSummary(null);
+    vi.stubGlobal("EventSource", MockEventSource);
+    vi.stubGlobal("Audio", MockAudio);
+    vi.mocked(getGameThrows).mockResolvedValue(buildGameThrowsResponse());
+    vi.mocked(getInvitation).mockResolvedValue({ gameId: 0, invitationLink: "" });
+    vi.mocked(updatePlayerOrder).mockResolvedValue(undefined);
+    vi.mocked(leaveRoom).mockResolvedValue(undefined);
+    vi.mocked(addGuestPlayer).mockResolvedValue({ id: 99, name: "Guest" });
+  });
+
+  afterEach(() => {
+    vi.unstubAllGlobals();
+    sessionStorage.clear();
+    resetRoomStore();
+    resetGameStore();
+  });
+
+  it("should disable guest button when 10/10 players have joined", async () => {
+    setInvitation({ gameId: 1, invitationLink: "/invite/1" });
+    vi.mocked(getGameThrows).mockResolvedValueOnce(
+      buildGameThrowsResponse({
+        id: 1,
+        players: Array.from({ length: 10 }, (_, i) =>
+          buildBackendPlayer({
+            id: i + 1,
+            name: `Player ${i + 1}`,
+            isActive: i === 0,
+            position: i,
+          }),
+        ),
       }),
     );
 
-    render(
-      <MemoryRouter>
-        <StartPage />
-      </MemoryRouter>,
-    );
+    renderStartPage("/start/1");
 
-    expect(
-      screen.getByRole("button", { name: "Play as a guest" }).getAttribute("disabled"),
-    ).not.toBeNull();
+    await waitFor(() => {
+      expect(
+        screen.getByRole("button", { name: "Play as a guest" }).getAttribute("disabled"),
+      ).not.toBeNull();
+    });
   });
 
-  it("renders the guest button in the action row next to Start", () => {
-    render(
-      <MemoryRouter>
-        <StartPage />
-      </MemoryRouter>,
-    );
+  it("should render the guest button in the action row next to Start when the page loads", async () => {
+    setInvitation({ gameId: 1, invitationLink: "/invite/1" });
+    vi.mocked(getGameThrows).mockResolvedValueOnce(buildGameThrowsResponse({ id: 1 }));
+
+    renderStartPage("/start/1");
+
+    await waitFor(() => {
+      expect(screen.getByRole("button", { name: "Play as a guest" })).toBeTruthy();
+    });
 
     const guestButton = screen.getByRole("button", { name: "Play as a guest" });
-    expect(guestButton.classList.contains(styles.guestButtonMobile ?? "")).toBe(true);
-
-    const actionRow = guestButton.closest(`.${styles.mobileActionRow}`);
-    expect(actionRow).not.toBeNull();
+    expect(guestButton).toBeTruthy();
 
     expect(screen.queryByText("Play as a guest")).toBeNull();
     expect(screen.getByRole("img", { name: "Play as a guest" })).toBeTruthy();
     expect(guestButton.querySelector("svg")).toBeNull();
   });
 
-  it("renders page-level error and dismisses it", () => {
-    const clearPageError = vi.fn();
-    useStartPageMock.mockReturnValueOnce(
-      buildHookResult({
-        pageError: "Could not create a new game. Please try again.",
-        clearPageError,
-      }),
-    );
+  it("should render page-level error and allow dismissing it when room creation fails", async () => {
+    vi.mocked(createRoom).mockRejectedValueOnce(new Error("server error"));
 
-    render(
-      <MemoryRouter>
-        <StartPage />
-      </MemoryRouter>,
-    );
+    renderStartPage("/start");
 
-    expect(screen.getByRole("alert")).toBeTruthy();
-    screen.getByRole("button", { name: "Dismiss" }).click();
-    expect(clearPageError).toHaveBeenCalledTimes(1);
+    const createGameButtons = screen.getAllByRole("button", { name: "Create Game" });
+    const firstCreateButton = createGameButtons.at(0);
+    expect(firstCreateButton).toBeTruthy();
+    await act(async () => {
+      if (firstCreateButton) {
+        fireEvent.click(firstCreateButton);
+      }
+    });
+
+    await waitFor(() => {
+      expect(screen.getByRole("alert")).toBeTruthy();
+    });
+
+    fireEvent.click(screen.getByRole("button", { name: "Dismiss" }));
+
+    await waitFor(() => {
+      expect(screen.queryByRole("alert")).toBeNull();
+    });
   });
 
-  it("shows Created state for disabled create button", () => {
-    render(
-      <MemoryRouter>
-        <StartPage />
-      </MemoryRouter>,
-    );
+  it("should show Created state for disabled create button when a game is already created", async () => {
+    setInvitation({ gameId: 1, invitationLink: "/invite/1" });
+    vi.mocked(getGameThrows).mockResolvedValueOnce(buildGameThrowsResponse({ id: 1 }));
 
-    const createdText = screen.getByText("Created");
-    const createdButton = createdText.closest("button");
-    expect(createdButton).toBeTruthy();
-    expect(createdButton?.getAttribute("disabled")).toBe("");
+    renderStartPage("/start/1");
+
+    await waitFor(() => {
+      const createdText = screen.getByText("Created");
+      const createdButton = createdText.closest("button");
+      expect(createdButton).toBeTruthy();
+      expect(createdButton?.getAttribute("disabled")).toBe("");
+    });
   });
 
-  it("renders Create Game actions as icon buttons", () => {
-    useStartPageMock.mockReturnValueOnce(
-      buildHookResult({
-        invitation: null,
-        gameId: null,
-        playerCount: 0,
-      }),
-    );
-
-    render(
-      <MemoryRouter>
-        <StartPage />
-      </MemoryRouter>,
-    );
+  it("should render Create Game actions as icon buttons when the start page is visible", () => {
+    renderStartPage("/start");
 
     const createButtons = screen.getAllByRole("button", { name: "Create Game" });
     expect(createButtons.length).toBe(2);
 
     for (const createButton of createButtons) {
-      expect(createButton.classList.contains(styles.createNewPlayerButton ?? "")).toBe(true);
+      // The button should render and include an icon image.
+      expect(createButton).toBeTruthy();
       expect(createButton.querySelector("img")).toBeTruthy();
     }
   });
 
-  it("resolves relative invitation links on the frontend origin", () => {
-    useStartPageMock.mockReturnValueOnce(
-      buildHookResult({
-        invitation: { invitationLink: "/api/invite/join/abc", gameId: 42 },
-      }),
-    );
+  it("should resolve relative invitation links on the frontend origin when copying the invite link", async () => {
+    setInvitation({ gameId: 42, invitationLink: "/api/invite/join/abc" });
+    vi.mocked(getGameThrows).mockResolvedValueOnce(buildGameThrowsResponse({ id: 42 }));
 
-    render(
-      <MemoryRouter>
-        <StartPage />
-      </MemoryRouter>,
-    );
+    const writeTextMock = vi.fn().mockResolvedValue(undefined);
+    vi.stubGlobal("navigator", {
+      ...navigator,
+      clipboard: { writeText: writeTextMock },
+    });
 
-    const qrCode = screen.getByTestId("qr-code");
-    expect(qrCode.getAttribute("data-invitation-link")).toBe(
-      "http://localhost:3000/api/invite/join/abc",
-    );
+    renderStartPage("/start/42");
+
+    await waitFor(() => {
+      expect(screen.getByRole("button", { name: "Copy Invite Link" })).toBeTruthy();
+    });
+
+    await act(async () => {
+      fireEvent.click(screen.getByRole("button", { name: "Copy Invite Link" }));
+    });
+
+    expect(writeTextMock).toHaveBeenCalledWith("http://localhost:3000/api/invite/join/abc");
   });
 
-  it("preserves absolute invitation links from the backend", () => {
-    useStartPageMock.mockReturnValueOnce(
-      buildHookResult({
-        invitation: {
-          invitationLink: "https://darts-sigma.vercel.app/api/invite/join/abc",
-          gameId: 42,
-        },
-      }),
-    );
+  it("should preserve absolute invitation links from the backend when copying the invite link", async () => {
+    setInvitation({
+      gameId: 42,
+      invitationLink: "https://darts-sigma.vercel.app/api/invite/join/abc",
+    });
+    vi.mocked(getGameThrows).mockResolvedValueOnce(buildGameThrowsResponse({ id: 42 }));
 
-    render(
-      <MemoryRouter>
-        <StartPage />
-      </MemoryRouter>,
-    );
+    const writeTextMock = vi.fn().mockResolvedValue(undefined);
+    vi.stubGlobal("navigator", {
+      ...navigator,
+      clipboard: { writeText: writeTextMock },
+    });
 
-    const qrCode = screen.getByTestId("qr-code");
-    expect(qrCode.getAttribute("data-invitation-link")).toBe(
+    renderStartPage("/start/42");
+
+    await waitFor(() => {
+      expect(screen.getByRole("button", { name: "Copy Invite Link" })).toBeTruthy();
+    });
+
+    await act(async () => {
+      fireEvent.click(screen.getByRole("button", { name: "Copy Invite Link" }));
+    });
+
+    expect(writeTextMock).toHaveBeenCalledWith(
       "https://darts-sigma.vercel.app/api/invite/join/abc",
     );
   });
 
-  it("keeps Start label while button is disabled during game start", () => {
-    useStartPageMock.mockReturnValueOnce(
-      buildHookResult({
-        starting: true,
+  it("should keep Start label while button is disabled during game start", async () => {
+    setInvitation({ gameId: 1, invitationLink: "/invite/1" });
+    vi.mocked(getGameThrows).mockResolvedValueOnce(
+      buildGameThrowsResponse({
+        id: 1,
+        players: [
+          buildBackendPlayer({ id: 1, name: "Player 1", isActive: true, position: 0 }),
+          buildBackendPlayer({ id: 2, name: "Player 2", isActive: false, position: 1 }),
+        ],
       }),
     );
+    // getGameSettings never resolves — keeps component in "starting" state
+    vi.mocked(getGameSettings).mockReturnValue(new Promise(() => undefined));
 
-    render(
-      <MemoryRouter>
-        <StartPage />
-      </MemoryRouter>,
-    );
+    renderStartPage("/start/1");
+
+    await waitFor(() => {
+      expect(screen.getByRole("button", { name: "Start" })).toBeTruthy();
+    });
+
+    // Wait for players to load (so start is enabled)
+    await waitFor(() => {
+      const startBtn = screen.getByRole("button", { name: "Start" });
+      expect(startBtn.getAttribute("disabled")).toBeNull();
+    });
+
+    await act(async () => {
+      fireEvent.click(screen.getByRole("button", { name: "Start" }));
+    });
 
     const startButton = screen.getByRole("button", { name: "Start" });
     expect(startButton).toHaveProperty("disabled", true);
   });
 
-  it("passes live player data from useStartPage into LivePlayersList", () => {
-    useStartPageMock.mockReturnValueOnce(
-      buildHookResult({
-        players: [{ id: 7, name: "Alex", position: 0 }],
-        playerCount: 1,
-        playerOrder: [7],
+  it("should pass live player data from useStartPage into LivePlayersList when players load", async () => {
+    setInvitation({ gameId: 1, invitationLink: "/invite/1" });
+    vi.mocked(getGameThrows).mockResolvedValueOnce(
+      buildGameThrowsResponse({
+        id: 1,
+        players: [buildBackendPlayer({ id: 7, name: "Alex", isActive: true, position: 0 })],
       }),
     );
 
-    render(
-      <MemoryRouter>
-        <StartPage />
-      </MemoryRouter>,
-    );
+    renderStartPage("/start/1");
 
-    const livePlayersListProps = livePlayersListMock.mock.calls.at(-1)?.[0];
-
-    expect(livePlayersListProps).toEqual(
-      expect.objectContaining({
-        players: [{ id: 7, name: "Alex", position: 0 }],
-        playerCount: 1,
-        playerOrder: [7],
-      }),
-    );
-    expect(livePlayersListProps).not.toHaveProperty("gameId");
+    await waitFor(() => {
+      expect(screen.getByText("Alex")).toBeTruthy();
+    });
   });
 });

@@ -1,12 +1,13 @@
 import React, { useMemo } from "react";
+import clsx from "clsx";
 import SelectedPlayerItem from "../player-items/SelectedPlayerItem";
 import styles from "./LivePlayersList.module.css";
 
-type LivePlayer = {
+interface LivePlayer {
   id: number;
   name: string;
   position: number | null;
-};
+}
 
 interface LivePlayersListProps {
   onRemovePlayer?: (playerId: number) => void;
@@ -50,7 +51,7 @@ function LivePlayersListComponent({
       <div className={styles.headerSelectedPlayers}>
         <h4 className={styles.headerTitle}>Selected Players</h4>
         <div
-          className={`${styles.listCount} ${isFull ? styles.listCountFull : styles.listCountOpen}`}
+          className={clsx(styles.listCount, isFull ? styles.listCountFull : styles.listCountOpen)}
           aria-live="polite"
         >
           {isFull ? `${playerCount}/${maxPlayers} Full` : `${playerCount}/${maxPlayers}`}

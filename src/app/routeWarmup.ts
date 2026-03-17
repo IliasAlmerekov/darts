@@ -14,7 +14,7 @@ interface WarmUpScheduler {
 export const selectiveRouteWarmUpTargets: readonly RouteWarmUpTarget[] = [
   {
     id: "start",
-    load: () => import("@/pages/StartPage"),
+    load: () => import("@/pages/StartPage/StartPage"),
   },
   {
     id: "joined",

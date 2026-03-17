@@ -1,18 +1,18 @@
 // @vitest-environment jsdom
-import { fireEvent, render, screen, waitFor } from "@testing-library/react";
-import { afterEach, describe, expect, it, vi } from "vitest";
-import QRCode from "./QRCode";
-
 vi.mock("qrcode.react", () => ({
   QRCodeSVG: ({ value }: { value: string }) => <svg data-testid="qr-svg" data-value={value} />,
 }));
+
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { afterEach, describe, expect, it, vi } from "vitest";
+import QRCode from "./QRCode";
 
 describe("QRCode", () => {
   afterEach(() => {
     vi.restoreAllMocks();
   });
 
-  it("renders QR code and join heading while lobby is open", () => {
+  it("should render QR code and join heading when lobby is open", () => {
     render(
       <QRCode invitationLink="http://localhost:5173/invite/room" gameId={42} isLobbyFull={false} />,
     );
@@ -22,7 +22,7 @@ describe("QRCode", () => {
     expect(screen.queryByTestId("qr-svg")).not.toBeNull();
   });
 
-  it("shows full state message when lobby is full", () => {
+  it("should show full state message when lobby is full", () => {
     render(<QRCode invitationLink="http://localhost:5173/invite/room" gameId={42} isLobbyFull />);
 
     expect(screen.queryByText("Room is full")).not.toBeNull();
@@ -31,7 +31,7 @@ describe("QRCode", () => {
     expect(screen.queryByText("10/10 players joined")).toBeNull();
   });
 
-  it("copies invitation link to clipboard", async () => {
+  it("should copy invitation link to clipboard when copy button is clicked", async () => {
     const writeText = vi.fn().mockResolvedValue(undefined);
     Object.assign(navigator, {
       clipboard: { writeText },

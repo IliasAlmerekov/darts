@@ -3,6 +3,7 @@ import { DragEndEvent } from "@dnd-kit/core";
 import { arrayMove } from "@dnd-kit/sortable";
 import { updatePlayerOrder } from "@/shared/api/room";
 import { toUserErrorMessage } from "@/lib/error/error-to-user-message";
+import { clientLogger } from "@/shared/services/browser/clientLogger";
 import type { SetStartPageError } from "./useStartPageError";
 
 type UpdatePlayerOrderFn = (
@@ -10,7 +11,7 @@ type UpdatePlayerOrderFn = (
   positions: Array<{ playerId: number; position: number }>,
 ) => Promise<void>;
 
-type PersistPlayerOrderParams = {
+interface PersistPlayerOrderParams {
   gameId: number;
   nextOrder: number[];
   previousOrder: number[];
@@ -18,23 +19,23 @@ type PersistPlayerOrderParams = {
   onError: (error: unknown) => void;
   onRollback: (order: number[]) => void;
   shouldRollback: () => boolean;
-};
+}
 
-type OrderedPlayer = {
+interface OrderedPlayer {
   id: number;
   position: number | null;
-};
+}
 
-type UsePlayerOrderPersistenceParams = {
+interface UsePlayerOrderPersistenceParams {
   gameId: number | null;
   players: OrderedPlayer[];
   setPageError: SetStartPageError;
-};
+}
 
-export type UsePlayerOrderPersistenceResult = {
+export interface UsePlayerOrderPersistenceResult {
   playerOrder: number[];
   handleDragEnd: (event: DragEndEvent) => void;
-};
+}
 
 export async function persistPlayerOrder({
   gameId,
@@ -113,15 +114,20 @@ export function usePlayerOrderPersistence({
       }
 
       setPlayerOrder((items) => {
-        const oldIndex = items.indexOf(Number(active.id));
-        const newIndex = items.indexOf(Number(over.id));
+        const activeId = Number(active.id);
+        const overId = Number(over.id);
+        if (!Number.isFinite(activeId) || !Number.isFinite(overId)) {
+          return items;
+        }
+        const oldIndex = items.indexOf(activeId);
+        const newIndex = items.indexOf(overId);
         if (oldIndex === -1 || newIndex === -1) {
           return items;
         }
 
         const nextOrder = arrayMove(items, oldIndex, newIndex);
 
-        if (gameId) {
+        if (gameId !== null) {
           const requestId = ++playerOrderRequestIdRef.current;
 
           void persistPlayerOrder({
@@ -130,7 +136,7 @@ export function usePlayerOrderPersistence({
             previousOrder: items,
             updatePlayerOrder,
             onError: (error) => {
-              console.warn("Failed to persist player order", error);
+              clientLogger.warn("room.player-order.persist.failed", { error });
               setPageError(
                 toUserErrorMessage(error, "Could not update player order. Please try again."),
               );

@@ -4,7 +4,7 @@ import { describe, expect, it, vi } from "vitest";
 import GuestPlayerOverlay from "./GuestPlayerOverlay";
 
 describe("GuestPlayerOverlay", () => {
-  it("prevents adding when username is empty", () => {
+  it("should prevent adding when username is empty", () => {
     const onAdd = vi.fn();
     render(
       <GuestPlayerOverlay
@@ -22,7 +22,7 @@ describe("GuestPlayerOverlay", () => {
     expect(onAdd).not.toHaveBeenCalled();
   });
 
-  it("calls onAdd when username is provided", () => {
+  it("should call onAdd when username is provided", () => {
     const onAdd = vi.fn();
     render(
       <GuestPlayerOverlay
@@ -40,7 +40,7 @@ describe("GuestPlayerOverlay", () => {
     expect(onAdd).toHaveBeenCalledTimes(1);
   });
 
-  it("renders error message with aria-describedby", () => {
+  it("should render error message with aria-describedby when an error is provided", () => {
     render(
       <GuestPlayerOverlay
         isOpen
@@ -58,7 +58,7 @@ describe("GuestPlayerOverlay", () => {
     expect(input.getAttribute("aria-describedby")).toBe(error.getAttribute("id"));
   });
 
-  it("renders suggestions and allows selecting one", () => {
+  it("should render suggestions and allow selecting one when suggestions are provided", () => {
     const onSuggestionClick = vi.fn();
     render(
       <GuestPlayerOverlay
@@ -79,7 +79,7 @@ describe("GuestPlayerOverlay", () => {
     expect(onSuggestionClick).toHaveBeenCalledWith("Alex 2");
   });
 
-  it("exposes the guest form as an accessible modal dialog", () => {
+  it("should expose the guest form as an accessible modal dialog when open", () => {
     render(
       <GuestPlayerOverlay
         isOpen
