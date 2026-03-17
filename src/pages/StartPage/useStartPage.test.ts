@@ -3,25 +3,25 @@ import { describe, expect, it, vi } from "vitest";
 import { persistPlayerOrder, shouldRedirectToCurrentGame } from "./useStartPage";
 
 describe("shouldRedirectToCurrentGame", () => {
-  it("returns true when route and invitation are missing but current game exists", () => {
+  it("should return true when route and invitation are missing but current game exists", () => {
     expect(shouldRedirectToCurrentGame(undefined, null, 42)).toBe(true);
   });
 
-  it("returns false when route already contains game id", () => {
+  it("should return false when route already contains game id", () => {
     expect(shouldRedirectToCurrentGame("42", null, 42)).toBe(false);
   });
 
-  it("returns false when invitation already points to game", () => {
+  it("should return false when invitation already points to game", () => {
     expect(shouldRedirectToCurrentGame(undefined, 42, 42)).toBe(false);
   });
 
-  it("returns false when current game id is missing", () => {
+  it("should return false when current game id is missing", () => {
     expect(shouldRedirectToCurrentGame(undefined, null, null)).toBe(false);
   });
 });
 
 describe("persistPlayerOrder", () => {
-  it("persists reordered positions on success", async () => {
+  it("should persist reordered positions on success", async () => {
     const updatePlayerOrder = vi.fn(async () => {});
     const onError = vi.fn();
     const onRollback = vi.fn();
@@ -45,7 +45,7 @@ describe("persistPlayerOrder", () => {
     expect(onRollback).not.toHaveBeenCalled();
   });
 
-  it("rolls back when request fails and rollback is still relevant", async () => {
+  it("should roll back when request fails and rollback is still relevant", async () => {
     const updatePlayerOrder = vi.fn(async () => {
       throw new Error("network");
     });
@@ -66,7 +66,7 @@ describe("persistPlayerOrder", () => {
     expect(onRollback).toHaveBeenCalledWith([10, 20, 30]);
   });
 
-  it("does not roll back stale request failure", async () => {
+  it("should not roll back stale request failure", async () => {
     const updatePlayerOrder = vi.fn(async () => {
       throw new Error("network");
     });
