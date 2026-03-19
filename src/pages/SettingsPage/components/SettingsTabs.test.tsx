@@ -4,7 +4,7 @@ import { describe, expect, it, vi } from "vitest";
 import { SettingsTabs } from "./SettingsTabs";
 
 describe("SettingsTabs", () => {
-  it("calls onChange with selected option id", () => {
+  it("should call onChange with the selected option id when a button is clicked", () => {
     const onChange = vi.fn();
 
     render(
