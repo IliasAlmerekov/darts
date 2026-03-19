@@ -74,6 +74,37 @@ describe("player-mappers", () => {
     expect(finished.map((p) => p.id)).toEqual([3, 1, 2]);
   });
 
+  it("should map isDouble and isTriple flags from backend throws to UIRound fields", () => {
+    const players = [
+      buildPlayer({
+        id: 5,
+        name: "Bob",
+        score: 150,
+        isActive: false,
+        roundHistory: [
+          {
+            throws: [{ value: 10, isDouble: true }, { value: 20, isTriple: true }, { value: 5 }],
+          },
+        ],
+        currentRoundThrows: [],
+      }),
+    ];
+
+    const mapped = mapPlayersToUI(players);
+
+    expect(mapped[0]?.rounds[0]).toMatchObject({
+      throw1: 10,
+      throw1IsDouble: true,
+      throw2: 20,
+      throw2IsTriple: true,
+      throw3: 5,
+    });
+    expect(mapped[0]?.rounds[0]).not.toHaveProperty("throw1IsTriple");
+    expect(mapped[0]?.rounds[0]).not.toHaveProperty("throw2IsDouble");
+    expect(mapped[0]?.rounds[0]).not.toHaveProperty("throw3IsDouble");
+    expect(mapped[0]?.rounds[0]).not.toHaveProperty("throw3IsTriple");
+  });
+
   it("should use backend round numbers to align throw display for current round when rounds are sparse", () => {
     const players = [
       buildPlayer({
