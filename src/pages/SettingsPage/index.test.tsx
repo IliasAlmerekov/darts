@@ -1,5 +1,18 @@
 // @vitest-environment jsdom
-import type { ReactNode } from "react";
+
+const getGameSettingsMock = vi.hoisted(() => vi.fn());
+const saveGameSettingsMock = vi.hoisted(() => vi.fn());
+
+vi.mock("@/shared/api/game", () => ({
+  getGameSettings: (...args: unknown[]) => getGameSettingsMock(...args),
+  saveGameSettings: (...args: unknown[]) => saveGameSettingsMock(...args),
+}));
+
+vi.mock("@/shared/ui/admin-layout", () => ({
+  AdminLayout: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
+}));
+
+import React from "react";
 import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
 import { beforeEach, describe, expect, it, vi } from "vitest";
@@ -17,18 +30,6 @@ import {
 } from "@/shared/store";
 import type { GameSettingsResponse, GameThrowsResponse } from "@/types";
 import SettingsPage from ".";
-
-const getGameSettingsMock = vi.fn();
-const saveGameSettingsMock = vi.fn();
-
-vi.mock("@/shared/api/game", () => ({
-  getGameSettings: (...args: unknown[]) => getGameSettingsMock(...args),
-  saveGameSettings: (...args: unknown[]) => saveGameSettingsMock(...args),
-}));
-
-vi.mock("@/shared/ui/admin-layout", () => ({
-  AdminLayout: ({ children }: { children: ReactNode }) => <div>{children}</div>,
-}));
 
 function createGameResponse(): GameThrowsResponse {
   return {
@@ -102,7 +103,7 @@ describe("SettingsPage", () => {
     saveGameSettingsMock.mockImplementation(() => new Promise(() => {}));
   });
 
-  it("hydrates from the active route game in store without fetching settings again", async () => {
+  it("should hydrate from the active game in store without fetching settings again", async () => {
     setCurrentGameId(42);
     setGameData({
       ...createGameResponse(),
@@ -126,7 +127,7 @@ describe("SettingsPage", () => {
     expect(getGameSettingsMock).not.toHaveBeenCalled();
   });
 
-  it("fetches canonical settings on direct route access when the game is not already in store", async () => {
+  it("should fetch canonical settings on direct route access when the game is not in the store", async () => {
     getGameSettingsMock.mockResolvedValueOnce(
       createSettingsResponse({
         startScore: 501,
@@ -149,7 +150,7 @@ describe("SettingsPage", () => {
     });
   });
 
-  it("does not preselect fallback defaults while route settings are still loading", async () => {
+  it("should not preselect fallback defaults while route settings are loading", async () => {
     const pendingLoad = createDeferred<GameSettingsResponse>();
     getGameSettingsMock.mockImplementationOnce(() => pendingLoad.promise);
 
@@ -183,7 +184,7 @@ describe("SettingsPage", () => {
     });
   });
 
-  it("shows cached route settings immediately while canonical settings refresh in the background", async () => {
+  it("should show cached route settings immediately while canonical settings refresh in the background", async () => {
     setGameSettings(
       {
         startScore: 101,
@@ -222,7 +223,7 @@ describe("SettingsPage", () => {
     });
   });
 
-  it("updates the pre-create draft from /settings when there is no active gameId", async () => {
+  it("should update the pre-create draft from /settings when there is no active gameId", async () => {
     renderSettingsPage("/settings");
 
     fireEvent.click(screen.getByRole("button", { name: "Double-out" }));
@@ -242,7 +243,7 @@ describe("SettingsPage", () => {
     expect(getGameSettingsMock).not.toHaveBeenCalled();
   });
 
-  it("uses the standalone pre-create draft on /settings even when store has currentGameId", async () => {
+  it("should use the standalone pre-create draft on /settings even when store has currentGameId", async () => {
     setCurrentGameId(42);
     setPreCreateGameSettings({
       startScore: 401,
@@ -263,7 +264,7 @@ describe("SettingsPage", () => {
     expect(getGameSettingsMock).not.toHaveBeenCalled();
   });
 
-  it("treats the route gameId as authoritative and ignores stale shared game settings", async () => {
+  it("should treat the route gameId as authoritative and ignore stale shared game settings", async () => {
     setCurrentGameId(99);
     setGameData({
       ...createGameResponse(),
@@ -302,7 +303,7 @@ describe("SettingsPage", () => {
     });
   });
 
-  it("saves settings for the route gameId even when another page left a different game in the store", async () => {
+  it("should save settings for the route gameId even when another page left a different game in the store", async () => {
     setCurrentGameId(99);
     setGameData({
       ...createGameResponse(),
@@ -360,7 +361,7 @@ describe("SettingsPage", () => {
     });
   });
 
-  it("does not send startScore when changing only the game mode for an existing game", async () => {
+  it("should not send startScore when changing only the game mode for an existing game", async () => {
     getGameSettingsMock.mockResolvedValueOnce(
       createSettingsResponse({
         startScore: 501,
@@ -395,7 +396,7 @@ describe("SettingsPage", () => {
     });
   });
 
-  it("still sends the selected points when changing points for an existing game", async () => {
+  it("should send the selected points when changing points for an existing game", async () => {
     getGameSettingsMock.mockResolvedValueOnce(
       createSettingsResponse({
         startScore: 301,
@@ -431,7 +432,7 @@ describe("SettingsPage", () => {
     });
   });
 
-  it("shows an explicit inline error when the server forbids changing points for an existing game", async () => {
+  it("should show an explicit inline error when the server forbids changing points for an existing game", async () => {
     getGameSettingsMock.mockResolvedValueOnce(
       createSettingsResponse({
         startScore: 301,
@@ -466,7 +467,7 @@ describe("SettingsPage", () => {
     });
   });
 
-  it("aborts an in-flight route settings load on unmount so it cannot overwrite shared game state later", async () => {
+  it("should abort an in-flight route settings load on unmount so it cannot overwrite shared game state later", async () => {
     const pendingLoad = createDeferred<GameSettingsResponse>();
     getGameSettingsMock.mockImplementation(() => pendingLoad.promise);
 
