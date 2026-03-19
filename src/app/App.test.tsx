@@ -97,7 +97,7 @@ vi.mock("@/pages/PlayerProfilePage", () => ({
   default: () => <div>Player Profile</div>,
 }));
 
-import { act, render, screen } from "@testing-library/react";
+import { act, render, screen, waitForElementToBeRemoved } from "@testing-library/react";
 import { Outlet } from "react-router-dom";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { clearUnauthorizedHandler, setUnauthorizedHandler } from "@/shared/api";
@@ -119,6 +119,11 @@ describe("App routing", () => {
 
     if (!rendered) {
       throw new Error("Expected App to render");
+    }
+
+    const skeleton = screen.queryByTestId("universal-skeleton");
+    if (skeleton) {
+      await waitForElementToBeRemoved(skeleton, { timeout: 5000 });
     }
 
     return rendered;
