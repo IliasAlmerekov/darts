@@ -90,6 +90,12 @@ export interface Round {
   throw2IsBust?: boolean;
   throw3IsBust?: boolean;
   isRoundBust?: boolean;
+  throw1IsDouble?: boolean;
+  throw2IsDouble?: boolean;
+  throw3IsDouble?: boolean;
+  throw1IsTriple?: boolean;
+  throw2IsTriple?: boolean;
+  throw3IsTriple?: boolean;
 }
 
 export interface WinnerPlayerProps {
