@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { useAuthenticatedUser } from "@/shared/hooks/useAuthenticatedUser";
 import { useLogin } from "./useLogin";
 import { getActiveGameId } from "@/shared/store";
@@ -13,6 +13,7 @@ import { resolveSafeLoginRedirect } from "./lib/safeRedirect";
 interface LoginPageReturn {
   error: string | null;
   loading: boolean;
+  successMessage: string | null;
   handleSubmit: (e: React.FormEvent<HTMLFormElement>) => Promise<void>;
 }
 
@@ -20,7 +21,13 @@ export function useLoginPage(): LoginPageReturn {
   const [submitError, setSubmitError] = useState<string | null>(null);
   const { login, loading, error: loginError } = useLogin();
   const navigate = useNavigate();
+  const location = useLocation();
   const { user } = useAuthenticatedUser();
+
+  const successMessage =
+    new URLSearchParams(location.search).get("left") === "1"
+      ? "You have successfully left the game"
+      : null;
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>): Promise<void> => {
     e.preventDefault();
@@ -62,6 +69,7 @@ export function useLoginPage(): LoginPageReturn {
   return {
     error: submitError ?? loginError,
     loading,
+    successMessage,
     handleSubmit,
   };
 }

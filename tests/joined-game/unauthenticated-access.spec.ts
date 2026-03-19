@@ -36,7 +36,7 @@ test("Display page for unauthenticated users", async ({ page }) => {
   await expect(page).toHaveURL("/");
 
   // Verify the joined game confirmation page is not displayed
-  await expect(page.locator("h1")).not.toContainText("Spiel beigetreten");
+  await expect(page.locator("h1")).not.toContainText("Joined game");
 
   // Verify we're on the login page instead
   await expect(page.getByRole("textbox", { name: "Email" })).toBeVisible({

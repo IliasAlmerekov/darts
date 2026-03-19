@@ -40,7 +40,7 @@ test.describe("User Permissions and Security", () => {
     await page.goto("/start");
 
     await expect(page).toHaveURL(/\/joined$/);
-    await expect(page.getByRole("heading", { name: /spiel beigetreten/i })).toBeVisible();
+    await expect(page.getByRole("heading", { name: /joined game/i })).toBeVisible();
     await expect(page.getByRole("button", { name: /create game/i })).not.toBeVisible();
   });
 });
