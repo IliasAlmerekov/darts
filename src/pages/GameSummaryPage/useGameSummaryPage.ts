@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useStore } from "@nanostores/react";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
 import {
   getFinishedGame,
@@ -33,6 +34,18 @@ import { parseLocationState } from "@/lib/router/locationState";
 interface SummaryLocationState {
   finishedGameId?: number;
   summary?: FinishedPlayerResponse[];
+}
+
+interface UseGameSummaryPageResult {
+  error: string | null;
+  starting: boolean;
+  podiumData: WinnerPlayerProps[];
+  newList: WinnerPlayerProps[];
+  leaderBoardList: WinnerPlayerProps[];
+  loadSummary: () => Promise<void>;
+  handleUndo: () => Promise<void>;
+  handlePlayAgain: () => Promise<void>;
+  handleBackToStart: () => Promise<void>;
 }
 
 function createEmptyRound(): WinnerPlayerProps["rounds"][number] {
@@ -73,10 +86,11 @@ function isUndoAckResponse(response: UndoThrowResponse): response is UndoAckResp
 /**
  * Loads summary data for a finished game and provides rematch actions.
  */
-export function useGameSummaryPage() {
+export function useGameSummaryPage(): UseGameSummaryPageResult {
   const navigate = useNavigate();
   const location = useLocation();
   const { id: summaryGameIdParam } = useParams<{ id?: string }>();
+  const lastFinishedGameSummary = useStore($lastFinishedGameSummary);
   const [serverFinished, setServerFinished] = useState<FinishedPlayerResponse[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [starting, setStarting] = useState<boolean>(false);
@@ -93,7 +107,7 @@ export function useGameSummaryPage() {
     }
 
     const parsedParam = Number(summaryGameIdParam);
-    return Number.isFinite(parsedParam) ? parsedParam : null;
+    return Number.isFinite(parsedParam) && parsedParam > 0 ? parsedParam : null;
   }, [location.state, summaryGameIdParam]);
 
   const summaryFromNavigationState = useMemo(() => {
@@ -106,18 +120,17 @@ export function useGameSummaryPage() {
   }, [finishedGameIdFromRoute, location.state]);
 
   const summaryFromStore = useMemo(() => {
-    const cachedSummary = $lastFinishedGameSummary.get();
-    if (!cachedSummary || cachedSummary.gameId !== finishedGameIdFromRoute) {
+    if (!lastFinishedGameSummary || lastFinishedGameSummary.gameId !== finishedGameIdFromRoute) {
       return null;
     }
 
-    return cachedSummary.summary;
-  }, [finishedGameIdFromRoute]);
+    return lastFinishedGameSummary.summary;
+  }, [finishedGameIdFromRoute, lastFinishedGameSummary]);
 
   const finishedSummary = summaryFromNavigationState ?? summaryFromStore ?? serverFinished;
 
   const loadSummary = useCallback(async (): Promise<void> => {
-    if (!finishedGameIdFromRoute) return;
+    if (finishedGameIdFromRoute === null) return;
 
     try {
       setError(null);
@@ -133,8 +146,8 @@ export function useGameSummaryPage() {
     }
   }, [finishedGameIdFromRoute]);
 
-  useEffect(() => {
-    if (!finishedGameIdFromRoute) {
+  useEffect((): void => {
+    if (finishedGameIdFromRoute === null) {
       return;
     }
 
@@ -188,7 +201,7 @@ export function useGameSummaryPage() {
   const podiumData = podiumList.length === 2 ? podiumListWithPlaceholder : podiumList;
 
   const handleUndo = useCallback(async (): Promise<void> => {
-    if (!finishedGameIdFromRoute) return;
+    if (finishedGameIdFromRoute === null) return;
 
     const currentGameData = $gameData.get();
     const optimisticUndoState =
@@ -252,7 +265,7 @@ export function useGameSummaryPage() {
   }, [finishedGameIdFromRoute, navigate]);
 
   const handlePlayAgain = useCallback(async (): Promise<void> => {
-    if (!finishedGameIdFromRoute || startGameInFlightRef.current) return;
+    if (finishedGameIdFromRoute === null || startGameInFlightRef.current) return;
 
     startGameInFlightRef.current = true;
     setStarting(true);
@@ -285,7 +298,7 @@ export function useGameSummaryPage() {
   }, [finishedGameIdFromRoute, navigate]);
 
   const handleBackToStart = useCallback(async (): Promise<void> => {
-    if (!finishedGameIdFromRoute) return;
+    if (finishedGameIdFromRoute === null) return;
 
     resetRoomStore();
 
