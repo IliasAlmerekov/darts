@@ -9,6 +9,8 @@ function mapThrowsToRound(throws: BackendRoundHistory["throws"]): UIRound {
     if (throw1.isBust !== undefined) {
       round.throw1IsBust = throw1.isBust;
     }
+    if (throw1.isDouble) round.throw1IsDouble = true;
+    if (throw1.isTriple) round.throw1IsTriple = true;
   }
 
   if (throw2) {
@@ -16,6 +18,8 @@ function mapThrowsToRound(throws: BackendRoundHistory["throws"]): UIRound {
     if (throw2.isBust !== undefined) {
       round.throw2IsBust = throw2.isBust;
     }
+    if (throw2.isDouble) round.throw2IsDouble = true;
+    if (throw2.isTriple) round.throw2IsTriple = true;
   }
 
   if (throw3) {
@@ -23,6 +27,8 @@ function mapThrowsToRound(throws: BackendRoundHistory["throws"]): UIRound {
     if (throw3.isBust !== undefined) {
       round.throw3IsBust = throw3.isBust;
     }
+    if (throw3.isDouble) round.throw3IsDouble = true;
+    if (throw3.isTriple) round.throw3IsTriple = true;
   }
 
   if (throws.length > 0) {

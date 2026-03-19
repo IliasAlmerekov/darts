@@ -1,17 +1,11 @@
 import React from "react";
-import { useLocation } from "react-router-dom";
 import styles from "./LoginPage.module.css";
 import { useLoginPage } from "./useLoginPage";
 import { LoginForm } from "./LoginForm";
 import deepblueLogo from "@/assets/icons/madeByDeepblue.svg";
 
 function LoginPage(): React.JSX.Element {
-  const { error, loading, handleSubmit } = useLoginPage();
-  const location = useLocation();
-  const successMessage =
-    new URLSearchParams(location.search).get("left") === "1"
-      ? "You have successfully left the game"
-      : null;
+  const { error, loading, successMessage, handleSubmit } = useLoginPage();
 
   return (
     <div className={styles.loginContainer}>

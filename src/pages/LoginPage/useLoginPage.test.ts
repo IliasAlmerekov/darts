@@ -8,6 +8,7 @@ const navigateMock = vi.fn();
 const useLoginMock = vi.fn();
 const useAuthenticatedUserMock = vi.fn();
 const getActiveGameIdMock = vi.fn();
+const useLocationMock = vi.fn();
 const assignMock = vi.fn();
 
 vi.mock("react-router-dom", async (importOriginal) => {
@@ -15,6 +16,7 @@ vi.mock("react-router-dom", async (importOriginal) => {
   return {
     ...actual,
     useNavigate: () => navigateMock,
+    useLocation: () => useLocationMock(),
   };
 });
 
@@ -51,6 +53,13 @@ describe("useLoginPage", () => {
       error: null,
     });
     getActiveGameIdMock.mockReturnValue(null);
+    useLocationMock.mockReturnValue({
+      pathname: "/login",
+      search: "",
+      hash: "",
+      key: "test",
+      state: null,
+    });
   });
 
   it("redirects authenticated users to the generic start route from a game-specific start redirect", async () => {

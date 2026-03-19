@@ -2,7 +2,7 @@
   "rewrites": [
     {
       "source": "/api/:path*",
-      "destination": "https://darts-backend-vjwa.onrender.com/api/:path*"
+      "destination": "https://darts-backend-production-7da0.up.railway.app/api/:path*"
     },
     {
       "source": "/(.*)",

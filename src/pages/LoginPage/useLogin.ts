@@ -18,7 +18,14 @@ interface LoginReturn {
 }
 
 function isLoginLocationState(s: unknown): s is { from?: string } {
-  return typeof s === "object" && s !== null;
+  if (typeof s !== "object" || s === null) {
+    return false;
+  }
+  if ("from" in s) {
+    const record = s as Record<string, unknown>;
+    return typeof record["from"] === "string";
+  }
+  return true;
 }
 
 export function useLogin(): LoginReturn {
@@ -27,12 +34,10 @@ export function useLogin(): LoginReturn {
   const navigate = useNavigate();
   const location = useLocation();
 
-  const from = ((): string => {
-    return resolveSafeLoginRedirect(
-      parseLocationState(location.state, isLoginLocationState)?.from,
-      ROUTES.start(),
-    );
-  })();
+  const from = resolveSafeLoginRedirect(
+    parseLocationState(location.state, isLoginLocationState)?.from,
+    ROUTES.start(),
+  );
 
   const navigateToRedirect = (redirect: string): void => {
     const safeRedirect = resolveSafeLoginRedirect(redirect, from);

@@ -39,6 +39,10 @@ vi.mock("react-router-dom", () => ({
   useParams: () => routeParams,
 }));
 
+vi.mock("@nanostores/react", () => ({
+  useStore: (store: { get: () => unknown }) => store.get(),
+}));
+
 vi.mock("@/shared/api/game", () => ({
   getFinishedGame: (...args: unknown[]) => getFinishedGameMock(...args),
   getGameThrows: (...args: unknown[]) => getGameThrowsMock(...args),
@@ -117,15 +121,22 @@ function buildFinishedGameState(): GameThrowsResponse {
 }
 
 function buildStartedGameState(): GameThrowsResponse {
+  const finishedGameState = buildFinishedGameState();
+  const firstPlayer = finishedGameState.players[0];
+  const secondPlayer = finishedGameState.players[1];
+  if (!firstPlayer || !secondPlayer) {
+    throw new Error("Fixture error: expected two players in finished game state");
+  }
+
   return {
-    ...buildFinishedGameState(),
+    ...finishedGameState,
     status: "started",
     currentRound: 7,
     currentThrowCount: 2,
     winnerId: null,
     players: [
       {
-        ...buildFinishedGameState().players[0]!,
+        ...firstPlayer,
         score: 20,
         isActive: true,
         position: null,
@@ -137,7 +148,7 @@ function buildStartedGameState(): GameThrowsResponse {
         roundHistory: [],
       },
       {
-        ...buildFinishedGameState().players[1]!,
+        ...secondPlayer,
       },
     ],
   };
@@ -241,7 +252,7 @@ describe("useGameSummaryPage", () => {
     });
   });
 
-  it("undoes last throw from compact ack and navigates back to game route", async () => {
+  it("should undo last throw and navigate back to game route when compact ack response is returned", async () => {
     undoLastThrowMock.mockResolvedValueOnce(
       buildUndoAck({
         scoreboardDelta: {
@@ -290,7 +301,7 @@ describe("useGameSummaryPage", () => {
     });
   });
 
-  it("keeps supporting the legacy full undo response", async () => {
+  it("should keep supporting legacy full undo response when backend does not return compact ack", async () => {
     const legacyGameState = buildStartedGameState();
     undoLastThrowMock.mockResolvedValueOnce(legacyGameState);
 
@@ -307,7 +318,7 @@ describe("useGameSummaryPage", () => {
     });
   });
 
-  it("falls back to full game refresh when compact undo cannot be applied locally", async () => {
+  it("should refresh full game state when compact undo cannot be applied locally", async () => {
     currentGameState = null;
     const refreshedGameState = buildStartedGameState();
     undoLastThrowMock.mockResolvedValueOnce(
@@ -343,7 +354,7 @@ describe("useGameSummaryPage", () => {
     expect(setGameDataMock).toHaveBeenCalledWith(refreshedGameState);
   });
 
-  it("does not navigate when undo fails", async () => {
+  it("should not navigate when undo request fails", async () => {
     undoLastThrowMock.mockRejectedValueOnce(new Error("undo failed"));
 
     const { result } = renderHook(() => useGameSummaryPage());
@@ -357,7 +368,7 @@ describe("useGameSummaryPage", () => {
     expect(navigateMock).not.toHaveBeenCalledWith("/game/42");
   });
 
-  it("navigates to game route after startRematch resolves", async () => {
+  it("should navigate to game route when startRematch resolves successfully", async () => {
     const { result } = renderHook(() => useGameSummaryPage());
 
     await act(async () => {
@@ -369,7 +380,7 @@ describe("useGameSummaryPage", () => {
     expect(navigateMock).toHaveBeenCalledWith("/game/77");
   });
 
-  it("does not overwrite shared game state when starting a rematch", async () => {
+  it("should not overwrite shared game state when starting a rematch", async () => {
     const { result } = renderHook(() => useGameSummaryPage());
 
     await act(async () => {
@@ -383,7 +394,7 @@ describe("useGameSummaryPage", () => {
     });
   });
 
-  it("does not navigate when startRematch fails", async () => {
+  it("should not navigate when startRematch fails", async () => {
     startRematchMock.mockRejectedValueOnce(new Error("server error"));
 
     const { result } = renderHook(() => useGameSummaryPage());
@@ -397,13 +408,15 @@ describe("useGameSummaryPage", () => {
     expect(result.current.error).toBeTruthy();
   });
 
-  it("prevents concurrent handlePlayAgain calls while starting", async () => {
-    let resolveStartRematch!: (value: {
-      success: boolean;
-      gameId: number;
-      settings: { startScore: number; doubleOut: boolean; tripleOut: boolean };
-      invitationLink?: string;
-    }) => void;
+  it("should prevent concurrent handlePlayAgain calls when rematch start is already pending", async () => {
+    let resolveStartRematch:
+      | ((value: {
+          success: boolean;
+          gameId: number;
+          settings: { startScore: number; doubleOut: boolean; tripleOut: boolean };
+          invitationLink?: string;
+        }) => void)
+      | null = null;
     startRematchMock.mockImplementation(
       () =>
         new Promise((resolve) => {
@@ -413,7 +426,7 @@ describe("useGameSummaryPage", () => {
 
     const { result } = renderHook(() => useGameSummaryPage());
 
-    let firstCall: Promise<void>;
+    let firstCall: Promise<void> | null = null;
     await act(async () => {
       firstCall = result.current.handlePlayAgain();
     });
@@ -423,6 +436,9 @@ describe("useGameSummaryPage", () => {
     });
 
     await act(async () => {
+      if (resolveStartRematch === null || firstCall === null) {
+        throw new Error("Fixture error: rematch promise was not initialized");
+      }
       resolveStartRematch({
         success: true,
         gameId: 77,
@@ -432,19 +448,21 @@ describe("useGameSummaryPage", () => {
           tripleOut: false,
         },
       });
-      await firstCall!;
+      await firstCall;
     });
 
     expect(startRematchMock).toHaveBeenCalledTimes(1);
   });
 
-  it("navigate is called after startRematch resolves, not before", async () => {
-    let resolveStartRematch!: (value: {
-      success: boolean;
-      gameId: number;
-      settings: { startScore: number; doubleOut: boolean; tripleOut: boolean };
-      invitationLink?: string;
-    }) => void;
+  it("should call navigate only after startRematch resolves when rematch start is pending", async () => {
+    let resolveStartRematch:
+      | ((value: {
+          success: boolean;
+          gameId: number;
+          settings: { startScore: number; doubleOut: boolean; tripleOut: boolean };
+          invitationLink?: string;
+        }) => void)
+      | null = null;
     startRematchMock.mockImplementation(
       () =>
         new Promise((resolve) => {
@@ -454,7 +472,7 @@ describe("useGameSummaryPage", () => {
 
     const { result } = renderHook(() => useGameSummaryPage());
 
-    let callPromise: Promise<void>;
+    let callPromise: Promise<void> | null = null;
     await act(async () => {
       callPromise = result.current.handlePlayAgain();
     });
@@ -462,6 +480,9 @@ describe("useGameSummaryPage", () => {
     expect(navigateMock).not.toHaveBeenCalled();
 
     await act(async () => {
+      if (resolveStartRematch === null || callPromise === null) {
+        throw new Error("Fixture error: rematch promise was not initialized");
+      }
       resolveStartRematch({
         success: true,
         gameId: 77,
@@ -471,19 +492,21 @@ describe("useGameSummaryPage", () => {
           tripleOut: false,
         },
       });
-      await callPromise!;
+      await callPromise;
     });
 
     expect(navigateMock).toHaveBeenCalledWith("/game/77");
   });
 
-  it("starting flag is true while startRematch is pending and false after", async () => {
-    let resolveStartRematch!: (value: {
-      success: boolean;
-      gameId: number;
-      settings: { startScore: number; doubleOut: boolean; tripleOut: boolean };
-      invitationLink?: string;
-    }) => void;
+  it("should keep starting flag true when startRematch is pending and false after completion", async () => {
+    let resolveStartRematch:
+      | ((value: {
+          success: boolean;
+          gameId: number;
+          settings: { startScore: number; doubleOut: boolean; tripleOut: boolean };
+          invitationLink?: string;
+        }) => void)
+      | null = null;
     startRematchMock.mockImplementation(
       () =>
         new Promise((resolve) => {
@@ -493,7 +516,7 @@ describe("useGameSummaryPage", () => {
 
     const { result } = renderHook(() => useGameSummaryPage());
 
-    let callPromise: Promise<void>;
+    let callPromise: Promise<void> | null = null;
     await act(async () => {
       callPromise = result.current.handlePlayAgain();
     });
@@ -501,6 +524,9 @@ describe("useGameSummaryPage", () => {
     expect(result.current.starting).toBe(true);
 
     await act(async () => {
+      if (resolveStartRematch === null || callPromise === null) {
+        throw new Error("Fixture error: rematch promise was not initialized");
+      }
       resolveStartRematch({
         success: true,
         gameId: 77,
@@ -510,13 +536,13 @@ describe("useGameSummaryPage", () => {
           tripleOut: false,
         },
       });
-      await callPromise!;
+      await callPromise;
     });
 
     expect(result.current.starting).toBe(false);
   });
 
-  it("does not navigate when rematch response misses game id", async () => {
+  it("should not navigate when rematch response misses game id", async () => {
     startRematchMock.mockResolvedValueOnce({
       success: false,
       gameId: 0,
@@ -536,7 +562,7 @@ describe("useGameSummaryPage", () => {
     expect(navigateMock).not.toHaveBeenCalledWith("/start/77");
   });
 
-  it("does not overwrite shared game state when returning to start from summary", async () => {
+  it("should not overwrite shared game state when returning to start from summary", async () => {
     const { result } = renderHook(() => useGameSummaryPage());
 
     await act(async () => {
@@ -550,7 +576,7 @@ describe("useGameSummaryPage", () => {
     expect(navigateMock).toHaveBeenCalledWith("/start/77");
   });
 
-  it("keeps action handlers referentially stable across rerenders when dependencies do not change", async () => {
+  it("should keep action handlers referentially stable when dependencies do not change", async () => {
     const { result } = renderHook(() => useGameSummaryPage());
     const initialHandleUndo = result.current.handleUndo;
     const initialHandlePlayAgain = result.current.handlePlayAgain;
@@ -565,7 +591,7 @@ describe("useGameSummaryPage", () => {
     expect(result.current.handleBackToStart).toBe(initialHandleBackToStart);
   });
 
-  it("uses summary from navigation state without refetching finished game", async () => {
+  it("should use summary from navigation state when it matches finished game id", async () => {
     locationState = {
       finishedGameId: 42,
       summary: [
@@ -605,7 +631,7 @@ describe("useGameSummaryPage", () => {
     });
   });
 
-  it("uses summary from store without refetching finished game", () => {
+  it("should use summary from store when navigation summary is absent", () => {
     locationState = { finishedGameId: 42 };
     lastFinishedGameSummaryStore = {
       gameId: 42,
@@ -634,7 +660,7 @@ describe("useGameSummaryPage", () => {
     expect(setLastFinishedGameSummaryMock).not.toHaveBeenCalled();
   });
 
-  it("fetches summary from backend for direct URL entry when navigation state and cache are absent", async () => {
+  it("should fetch summary from backend when navigation state and cache are absent", async () => {
     locationState = null;
     routeParams = { id: "42" };
     getFinishedGameMock.mockResolvedValueOnce([
@@ -677,7 +703,7 @@ describe("useGameSummaryPage", () => {
   });
 
   describe("handlePlayAgain", () => {
-    it("calls the rematch adapter with the finished game id", async () => {
+    it("should call rematch adapter when finished game id is available", async () => {
       const { result } = renderHook(() => useGameSummaryPage());
 
       await act(async () => {
@@ -688,7 +714,7 @@ describe("useGameSummaryPage", () => {
       expect(startRematchMock).toHaveBeenCalledTimes(1);
     });
 
-    it("does not set invitation when the rematch adapter returns only a game id", async () => {
+    it("should not set invitation when rematch adapter returns only game id", async () => {
       startRematchMock.mockResolvedValueOnce({
         success: true,
         gameId: 77,
@@ -709,7 +735,7 @@ describe("useGameSummaryPage", () => {
       expect(setCurrentGameIdMock).toHaveBeenCalledWith(77);
     });
 
-    it("does not call the rematch adapter when finishedGameId is absent", async () => {
+    it("should not call rematch adapter when finishedGameId is absent", async () => {
       locationState = null;
       routeParams = { id: undefined };
 

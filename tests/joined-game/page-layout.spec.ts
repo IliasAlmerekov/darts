@@ -41,11 +41,11 @@ test("Verify page layout and styling", async ({ page }) => {
     await expect(card).toBeVisible();
 
     // Verify the welcome message block is visible
-    const successBox = page.getByText("Willkommen, testuser!");
+    const successBox = page.getByText("Welcome, testuser!");
     await expect(successBox).toBeVisible();
 
     // Verify the heading is visible
-    await expect(page.locator("h1")).toContainText("Spiel beigetreten");
+    await expect(page.locator("h1")).toContainText("Joined game");
 
     // Verify no logout button is shown on the joined confirmation page
     const logoutButton = page.locator("button").filter({ hasText: /logout/i });

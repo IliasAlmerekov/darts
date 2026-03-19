@@ -23,10 +23,30 @@ function GameSummaryPage(): React.JSX.Element {
   } = useGameSummaryPage();
 
   const gameSettings = useStore($gameSettings);
-  const startScore = gameSettings?.startScore ?? 301;
-  const summaryActionButtonProps = {
-    ...(styles.summaryActionButton !== undefined ? { className: styles.summaryActionButton } : {}),
-  };
+  const hasValidStartScore =
+    typeof gameSettings?.startScore === "number" &&
+    Number.isFinite(gameSettings.startScore) &&
+    gameSettings.startScore > 0;
+
+  if (!hasValidStartScore) {
+    return (
+      <div className={styles.summary}>
+        <div className={styles.errorPanel}>
+          <ErrorState
+            title="Game settings are unavailable"
+            message="Could not render summary because start score is missing."
+          />
+        </div>
+      </div>
+    );
+  }
+
+  const startScore = gameSettings.startScore;
+  const summaryActionButtonClassName = styles.summaryActionButton;
+  const summaryActionButtonProps =
+    typeof summaryActionButtonClassName === "string"
+      ? { className: summaryActionButtonClassName }
+      : {};
 
   return (
     <div className={styles.summary}>

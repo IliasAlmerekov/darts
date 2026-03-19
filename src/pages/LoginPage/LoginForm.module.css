@@ -1,0 +1,202 @@
+/* Header */
+.header {
+  margin-bottom: var(--space-lg);
+}
+
+.formTitle {
+  font-size: var(--font-size-24);
+  font-weight: var(--font-weight-bold);
+  color: var(--darkblue);
+  margin: 0 0 var(--space-xs);
+}
+
+.formSubtitle {
+  font-size: var(--font-size-16);
+  color: var(--darkgrey);
+  margin: 0;
+}
+
+/* Alerts */
+.alert {
+  padding: var(--padding-xs) var(--padding-sm);
+  margin-bottom: var(--space-sm);
+  border-radius: var(--radius-sm);
+  font-size: var(--font-size-12);
+  white-space: pre-line;
+}
+
+.alertDanger {
+  background-color: var(--red);
+  color: var(--white);
+}
+
+.alertSuccess {
+  background-color: #d4edda;
+  border: 1px solid #c3e6cb;
+  color: #155724;
+}
+
+/* Form */
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.fieldGroup {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xs);
+}
+
+.formLabel {
+  font-size: var(--font-size-12);
+  font-weight: 500;
+  color: var(--darkblue);
+}
+
+.required {
+  color: var(--red);
+}
+
+.inputWrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.inputIcon {
+  position: absolute;
+  left: 12px;
+  color: var(--darkgrey);
+  pointer-events: none;
+}
+
+.formControl {
+  width: 100%;
+  height: var(--button-height);
+  padding: 0 var(--padding-sm) 0 40px;
+  font-size: var(--font-size-16);
+  color: var(--darkblue);
+  background-color: rgb(241 241 241 / 50%);
+  border: 1px solid rgb(226 232 240);
+  border-radius: var(--radius-sm);
+  outline: none;
+  transition:
+    border-color var(--transition-base),
+    box-shadow var(--transition-base);
+}
+
+.formControl::placeholder {
+  color: var(--middlegrey);
+}
+
+.formControl:focus {
+  border-color: var(--blue);
+  box-shadow: 0 0 0 3px rgb(0 0 219 / 15%);
+}
+
+.passwordInput {
+  padding-right: 48px;
+}
+
+.passwordToggle {
+  position: absolute;
+  right: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  color: var(--darkgrey);
+  transition: color var(--transition-fast);
+}
+
+.passwordToggle:hover {
+  color: var(--darkblue);
+}
+
+/* Checkbox */
+.checkboxGroup {
+  display: flex;
+  align-items: center;
+  gap: var(--space-xs);
+}
+
+.checkbox {
+  width: 16px;
+  height: 16px;
+  accent-color: var(--darkblue);
+  border-radius: var(--radius-xs);
+  cursor: pointer;
+}
+
+.checkboxLabel {
+  font-size: var(--font-size-16);
+  color: var(--darkblue);
+  cursor: pointer;
+}
+
+/* Submit Button */
+.submitBtn {
+  width: 100%;
+  height: var(--button-height);
+  font-size: var(--font-size-16);
+  font-weight: 500;
+  color: var(--white);
+  background-color: var(--darkblue);
+  border: none;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition:
+    background-color var(--transition-base),
+    opacity var(--transition-base);
+}
+
+.submitBtn:hover {
+  background-color: var(--blue);
+}
+
+.submitBtn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* Register Link */
+.formLink {
+  margin-top: var(--space-md);
+  text-align: center;
+  font-size: var(--font-size-12);
+  color: var(--darkgrey);
+}
+
+.formLink a {
+  color: var(--darkblue);
+  font-weight: 500;
+  text-decoration: none;
+  transition: color var(--transition-fast);
+}
+
+.formLink a:hover {
+  color: var(--blue);
+}
+
+@media (width <= 600px) {
+  .header {
+    margin-bottom: var(--space-md);
+  }
+
+  .formTitle {
+    font-size: var(--font-size-20);
+  }
+
+  .form {
+    gap: var(--space-xl);
+  }
+
+  .formControl {
+    font-size: 16px;
+  }
+}

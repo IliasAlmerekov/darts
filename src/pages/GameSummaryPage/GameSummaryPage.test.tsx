@@ -56,7 +56,7 @@ describe("GameSummaryPage", () => {
     useGameSummaryPageMock.mockReturnValue(buildSummaryHookMockResult());
   });
 
-  it("renders summary action buttons in a shared actions container", () => {
+  it("should render action buttons in one summary actions container when page is loaded", () => {
     render(<GameSummaryPage />);
 
     const playAgainButton = screen.getByRole("button", { name: "Play Again" });
@@ -69,13 +69,13 @@ describe("GameSummaryPage", () => {
     expect(backToStartButton.closest(`.${styles.backToStartWrap}`)).not.toBeNull();
   });
 
-  it("does not render confetti canvas", () => {
+  it("should not render confetti canvas when page is loaded", () => {
     const { container } = render(<GameSummaryPage />);
 
     expect(container.querySelector("canvas")).toBeNull();
   });
 
-  it("renders error panel when summary hook reports error", () => {
+  it("should render error panel when summary hook reports an error", () => {
     useGameSummaryPageMock.mockReturnValue(
       buildSummaryHookMockResult({
         error: "Could not load finished game data.",
@@ -89,7 +89,7 @@ describe("GameSummaryPage", () => {
     expect(screen.getByRole("button", { name: "Retry" })).toBeTruthy();
   });
 
-  it("disables Play Again button while startGame is pending", () => {
+  it("should disable Play Again button when startGame is pending", () => {
     useGameSummaryPageMock.mockReturnValue(buildSummaryHookMockResult({ starting: true }));
 
     render(<GameSummaryPage />);
@@ -98,7 +98,7 @@ describe("GameSummaryPage", () => {
     expect(playAgainButton.hasAttribute("disabled")).toBe(true);
   });
 
-  it("enables Play Again button when not starting", () => {
+  it("should enable Play Again button when rematch start is not pending", () => {
     useGameSummaryPageMock.mockReturnValue(buildSummaryHookMockResult({ starting: false }));
 
     render(<GameSummaryPage />);

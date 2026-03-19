@@ -5,6 +5,17 @@ import useIsomorphicLayoutEffect from "@/shared/lib/useIsomorphicLayoutEffect";
 import GamePlayerItem from "./GamePlayerItem";
 import styles from "./GamePlayerItem.module.css";
 
+function formatThrowLabel(
+  value: number | string | undefined,
+  isDouble?: boolean,
+  isTriple?: boolean,
+): React.ReactNode {
+  if (value === undefined) return undefined;
+  if (isDouble) return `D${value}`;
+  if (isTriple) return `T${value}`;
+  return value;
+}
+
 interface GamePlayerItemListProps {
   userMap: WinnerPlayerProps[];
   round: number;
@@ -68,18 +79,42 @@ function GamePlayerItemListComponent({
             name={item.name}
             isActive={item.isActive}
             value={item.score}
-            gamePlayerItemThrow1={currentRound?.throw1}
-            gamePlayerItemThrow2={currentRound?.throw2}
-            gamePlayerItemThrow3={currentRound?.throw3}
+            gamePlayerItemThrow1={formatThrowLabel(
+              currentRound?.throw1,
+              currentRound?.throw1IsDouble,
+              currentRound?.throw1IsTriple,
+            )}
+            gamePlayerItemThrow2={formatThrowLabel(
+              currentRound?.throw2,
+              currentRound?.throw2IsDouble,
+              currentRound?.throw2IsTriple,
+            )}
+            gamePlayerItemThrow3={formatThrowLabel(
+              currentRound?.throw3,
+              currentRound?.throw3IsDouble,
+              currentRound?.throw3IsTriple,
+            )}
             throw1IsBust={currentRound?.throw1IsBust}
             throw2IsBust={currentRound?.throw2IsBust}
             throw3IsBust={currentRound?.throw3IsBust}
             isBust={item.isBust}
             isPlaying={item.isPlaying}
             roundsCountLength={item.rounds.length}
-            gamePlayerItemPrevThrow1={previousRound?.throw1}
-            gamePlayerItemPrevThrow2={previousRound?.throw2}
-            gamePlayerItemPrevThrow3={previousRound?.throw3}
+            gamePlayerItemPrevThrow1={formatThrowLabel(
+              previousRound?.throw1,
+              previousRound?.throw1IsDouble,
+              previousRound?.throw1IsTriple,
+            )}
+            gamePlayerItemPrevThrow2={formatThrowLabel(
+              previousRound?.throw2,
+              previousRound?.throw2IsDouble,
+              previousRound?.throw2IsTriple,
+            )}
+            gamePlayerItemPrevThrow3={formatThrowLabel(
+              previousRound?.throw3,
+              previousRound?.throw3IsDouble,
+              previousRound?.throw3IsTriple,
+            )}
             prevThrow1IsBust={previousRound?.throw1IsBust}
             prevThrow2IsBust={previousRound?.throw2IsBust}
             prevThrow3IsBust={previousRound?.throw3IsBust}
