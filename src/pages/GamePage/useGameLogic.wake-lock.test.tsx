@@ -132,6 +132,7 @@ function createMockWakeLockSentinel(release: () => Promise<void>): WakeLockSenti
   return {
     type: "screen",
     released: false,
+    onrelease: null,
     release,
     addEventListener: (
       _type: string,

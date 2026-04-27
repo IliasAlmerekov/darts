@@ -19,23 +19,25 @@ type AudioInstance = {
   addEventListener: ReturnType<typeof vi.fn>;
 };
 
+type AudioConstructor = new (src?: string) => AudioInstance;
+
 const audioInstances: AudioInstance[] = [];
 
 function createAudioMock(options?: {
   playImplementation?: () => Promise<void>;
   currentTimeSetter?: (value: number) => void;
   readyState?: number;
-}): typeof Audio {
-  return class MockAudio {
+}): AudioConstructor {
+  return class MockAudio implements AudioInstance {
     src: string;
     volume: number;
-    currentTime: number;
+    declare currentTime: number;
     readyState: number;
     play: ReturnType<typeof vi.fn>;
     pause: ReturnType<typeof vi.fn>;
     addEventListener: ReturnType<typeof vi.fn>;
 
-    constructor(src: string) {
+    constructor(src = "") {
       this.src = src;
       this.volume = 1;
       this.readyState = options?.readyState ?? 0;
