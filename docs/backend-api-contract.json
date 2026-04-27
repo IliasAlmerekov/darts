@@ -1,0 +1,2982 @@
+{
+  "openapi": "3.0.0",
+  "info": {
+    "title": "Darts Backend API",
+    "description": "OpenAPI-Dokumentation f\u00fcr Endpunkte unter `/api/*`.\nInteraktive Ansicht unter `/api/doc`, JSON-Schema unter `/api/doc.json`.\n",
+    "version": "1.0.0"
+  },
+  "paths": {
+    "/api/game/{gameId}/start": {
+      "post": {
+        "tags": ["Game Lifecycle"],
+        "summary": "Starts a game with provided settings.",
+        "operationId": "post_app_game_start",
+        "parameters": [
+          {
+            "name": "gameId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "example": 123
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/StartGameRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Aktualisierter Spielzustand nach dem Start.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Game"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/game/{gameId}/rematch/start": {
+      "post": {
+        "tags": ["Game Lifecycle"],
+        "summary": "Creates a rematch from a finished game and starts it immediately.",
+        "operationId": "post_app_game_rematch_start",
+        "parameters": [
+          {
+            "name": "gameId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "example": 123
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/StartGameRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Rematch-Spiel wurde erstellt, mit Spielern bef\u00fcllt und direkt gestartet.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Game"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/game/settings": {
+      "post": {
+        "tags": ["Game Lifecycle"],
+        "summary": "Legacy-Endpoint f\u00fcr Spielanlage mit vollst\u00e4ndigem Spielzustand",
+        "description": "Deprecated. Verwenden Sie stattdessen `POST /api/room/create`, danach `PATCH /api/game/{gameId}/settings` und `GET /api/game/{gameId}/settings` f\u00fcr den kompakten Settings-Flow.",
+        "operationId": "post_app_game_settings_create",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GameSettingsRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Deprecated: erstellt ein Spiel und liefert weiterhin den vollst\u00e4ndigen Spielzustand zur\u00fcck.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GameResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "deprecated": true
+      }
+    },
+    "/api/game/{gameId}/settings": {
+      "get": {
+        "tags": ["Game Lifecycle"],
+        "summary": "Kompakte Spieleinstellungen lesen",
+        "description": "Bevorzugter Read-Flow f\u00fcr Spieleinstellungen. Liefert nur settings-bezogene Daten und vermeidet den vollst\u00e4ndigen Spielzustand.",
+        "operationId": "get_app_game_settings_read",
+        "parameters": [
+          {
+            "name": "gameId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "example": 123
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Leichtgewichtige Spieleinstellungen.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GameSettingsResponseDto"
+                }
+              }
+            }
+          }
+        }
+      },
+      "patch": {
+        "tags": ["Game Lifecycle"],
+        "summary": "Kompakte Spieleinstellungen aktualisieren",
+        "description": "Bevorzugter Settings-Flow nach der Raumerstellung. Aktualisiert nur Einstellungen und gibt `GameSettingsResponseDto` statt des vollst\u00e4ndigen Spielzustands zur\u00fcck.",
+        "operationId": "patch_app_game_settings",
+        "parameters": [
+          {
+            "name": "gameId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "example": 123
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GameSettingsRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Spieleinstellungen wurden aktualisiert.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GameSettingsResponseDto"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/game/{gameId}/finish": {
+      "post": {
+        "tags": ["Game Lifecycle"],
+        "summary": "Finishes a game and returns a normalized summary.",
+        "operationId": "post_app_game_finish",
+        "parameters": [
+          {
+            "name": "gameId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "example": 123
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Spiel beenden und normalisierte Summary zur\u00fcckgeben.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GameSummaryResponseDto"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/game/{gameId}/reopen": {
+      "patch": {
+        "tags": ["Game Lifecycle"],
+        "summary": "Reopens a finished game and returns current state.",
+        "operationId": "patch_app_game_reopen",
+        "parameters": [
+          {
+            "name": "gameId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "example": 123
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Spiel wurde wieder ge\u00f6ffnet und befindet sich erneut im started-Status.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GameResponseDto"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/game/{gameId}/finished": {
+      "get": {
+        "tags": ["Game Lifecycle"],
+        "summary": "Returns finished game summary without mutating game state.",
+        "operationId": "get_app_game_finished",
+        "parameters": [
+          {
+            "name": "gameId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "example": 123
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Normalisierte Summary des Spiels (read-only).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GameSummaryResponseDto"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/games/{gameId}/finished": {
+      "get": {
+        "tags": ["Game Lifecycle"],
+        "summary": "Returns finished game summary without mutating game state.",
+        "operationId": "get_app_games_finished",
+        "parameters": [
+          {
+            "name": "gameId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "pattern": "\\d+",
+              "example": 123
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Normalisierte Summary des Spiels (read-only).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GameSummaryResponseDto"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/game/{gameId}": {
+      "get": {
+        "tags": ["Game Lifecycle"],
+        "summary": "Returns the current game state.",
+        "operationId": "get_app_game_state",
+        "parameters": [
+          {
+            "name": "gameId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "example": 123
+            }
+          },
+          {
+            "name": "since",
+            "in": "query",
+            "description": "Optional stateVersion from the previous response. If unchanged, endpoint returns 304.",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "example": "c9a4f0d9...",
+              "nullable": true,
+              "default": null
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Aktueller Spielzustand.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GameResponseDto"
+                }
+              }
+            }
+          },
+          "304": {
+            "description": "Spielzustand hat sich seit der letzten Version nicht ge\u00e4ndert."
+          }
+        }
+      }
+    },
+    "/api/game/{gameId}/abort": {
+      "patch": {
+        "tags": ["Game Lifecycle"],
+        "summary": "Aborts a game.",
+        "operationId": "patch_app_game_abort",
+        "parameters": [
+          {
+            "name": "gameId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "example": 123
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Spiel wurde abgebrochen.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SuccessMessageDto"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/room/create": {
+      "post": {
+        "tags": ["Game Rooms"],
+        "summary": "Creates a game with optional preselected players.",
+        "operationId": "post_room_create",
+        "requestBody": {
+          "required": false,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RoomCreateRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Spielraum wurde erfolgreich erstellt (oder wiederverwendet).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "required": ["success", "gameId"],
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "gameId": {
+                      "type": "integer",
+                      "example": 123,
+                      "nullable": true
+                    }
+                  },
+                  "type": "object"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/room/{id}": {
+      "delete": {
+        "tags": ["Game Rooms"],
+        "summary": "Removes a player from the room.",
+        "operationId": "delete_room_player_leave",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "example": 123
+            }
+          },
+          {
+            "name": "playerId",
+            "in": "query",
+            "description": "Spieler-ID, die entfernt werden soll. Wenn nicht angegeben, wird der authentifizierte User oder der Request-Body verwendet.",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "example": 42,
+              "nullable": true,
+              "default": null
+            }
+          }
+        ],
+        "requestBody": {
+          "description": "Alternative \u00dcbergabe der playerId (falls nicht als Query-Parameter).",
+          "required": false,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PlayerIdPayload"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Spieler wurde aus dem Spiel entfernt.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SuccessMessageDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "playerId fehlt oder ist ung\u00fcltig."
+          },
+          "404": {
+            "description": "Spieler wurde im Spiel nicht gefunden."
+          }
+        }
+      }
+    },
+    "/api/room/{id}/guest": {
+      "post": {
+        "tags": ["Game Rooms"],
+        "summary": "Adds a guest player to the room.",
+        "operationId": "post_room_player_guest_add",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "example": 123
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GuestPlayerRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Gast-Spieler wurde dem Spiel hinzugef\u00fcgt.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "required": ["success", "player"],
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "player": {
+                      "properties": {
+                        "id": {
+                          "type": "integer",
+                          "example": 123
+                        },
+                        "name": {
+                          "type": "string",
+                          "example": "Alex"
+                        },
+                        "position": {
+                          "type": "integer",
+                          "example": 2,
+                          "nullable": true
+                        },
+                        "isGuest": {
+                          "type": "boolean",
+                          "example": true
+                        }
+                      },
+                      "type": "object"
+                    }
+                  },
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Username ist bereits vergeben.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "required": ["success", "error", "message"],
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": false
+                    },
+                    "error": {
+                      "type": "string",
+                      "example": "USERNAME_TAKEN"
+                    },
+                    "message": {
+                      "type": "string",
+                      "example": "The name is already taken"
+                    },
+                    "suggestions": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      },
+                      "example": ["Alex 2", "Alex 3", "Alex 4"]
+                    }
+                  },
+                  "type": "object"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/room/{id}/positions": {
+      "post": {
+        "tags": ["Game Rooms"],
+        "summary": "Updates the positions of players in a room.",
+        "operationId": "post_room_update_player_positions",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "example": 123
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdatePlayerOrderRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Spielerpositionen wurden aktualisiert.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "required": ["success"],
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": true
+                    }
+                  },
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Spiel nicht gefunden."
+          }
+        }
+      }
+    },
+    "/api/room/{id}/stream": {
+      "get": {
+        "tags": ["Game Rooms"],
+        "summary": "Streams SSE updates for a room.",
+        "operationId": "get_room_stream",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "example": 123
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Server-Sent Events (SSE) Stream f\u00fcr Raum-Updates.",
+            "content": {
+              "text/event-stream": {}
+            }
+          },
+          "404": {
+            "description": "Spiel nicht gefunden."
+          }
+        }
+      }
+    },
+    "/api/room/{id}/rematch": {
+      "post": {
+        "tags": ["Game Rooms"],
+        "summary": "Creates a rematch for a finished game.",
+        "operationId": "post_room_rematch",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "example": 123
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Rematch-Spiel wurde erstellt.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "required": ["success"],
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "gameId": {
+                      "type": "integer",
+                      "example": 456,
+                      "nullable": true
+                    },
+                    "invitationLink": {
+                      "type": "string",
+                      "example": "/api/invite/join/xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx",
+                      "nullable": true
+                    },
+                    "message": {
+                      "type": "string",
+                      "example": "Vorheriges Spiel nicht gefunden",
+                      "nullable": true
+                    },
+                    "status": {
+                      "type": "integer",
+                      "example": 404,
+                      "nullable": true
+                    }
+                  },
+                  "type": "object"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/games/overview": {
+      "get": {
+        "tags": ["Statistics"],
+        "summary": "Returns overview of finished games.",
+        "operationId": "get_app_games_overview",
+        "parameters": [
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "example": 50,
+              "default": 100
+            }
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "example": 0,
+              "default": 0
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Liste der beendeten Spiele (paginiert).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GameOverviewResponseDto"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/games/{gameId}": {
+      "get": {
+        "tags": ["Statistics"],
+        "summary": "Returns details for a single game from overview context.",
+        "operationId": "get_app_games_details",
+        "parameters": [
+          {
+            "name": "gameId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "pattern": "\\d+",
+              "example": 123
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Details eines einzelnen Spiels.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GameSummaryResponseDto"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Spiel nicht gefunden."
+          }
+        }
+      }
+    },
+    "/api/players/stats": {
+      "get": {
+        "tags": ["Statistics"],
+        "summary": "Returns aggregated player stats.",
+        "operationId": "get_app_players_stats",
+        "parameters": [
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "example": 20,
+              "default": 20
+            }
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "example": 0,
+              "default": 0
+            }
+          },
+          {
+            "name": "sort",
+            "in": "query",
+            "description": "Sortierung im Format `average:asc|desc` oder `gamesplayed:asc|desc`.",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "example": "average:desc",
+              "default": "average:desc"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Aggregierte Spielerstatistiken (paginiert).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PlayerStatsResponseDto"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/game/{gameId}/throw": {
+      "post": {
+        "tags": ["Game Throws"],
+        "summary": "Records a throw for the current player.",
+        "operationId": "post_app_game_throw",
+        "parameters": [
+          {
+            "name": "gameId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "example": 123
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ThrowRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Spielzustand nach dem Erfassen des Wurfs.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GameResponseDto"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Wurf ist im aktuellen Zustand nicht erlaubt (z. B. falscher aktiver Spieler)."
+          }
+        }
+      },
+      "delete": {
+        "tags": ["Game Throws"],
+        "summary": "Undoes the last recorded throw.",
+        "operationId": "delete_app_game_throw_undo",
+        "parameters": [
+          {
+            "name": "gameId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "example": 123
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Spielzustand nach dem R\u00fcckg\u00e4ngigmachen des letzten Wurfs.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GameResponseDto"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/game/{gameId}/throw/delta": {
+      "post": {
+        "tags": ["Game Throws"],
+        "summary": "Records a throw and returns compact delta payload.",
+        "operationId": "post_app_game_throw_delta",
+        "parameters": [
+          {
+            "name": "gameId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "example": 123
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ThrowRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Kompakter Delta-Ack nach einem Wurf.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ThrowAckDto"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Wurf ist im aktuellen Zustand nicht erlaubt."
+          }
+        }
+      },
+      "delete": {
+        "tags": ["Game Throws"],
+        "summary": "Undoes the last recorded throw and returns compact delta payload.",
+        "operationId": "delete_app_game_throw_undo_delta",
+        "parameters": [
+          {
+            "name": "gameId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "example": 123
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Kompakter Delta-Ack nach dem R\u00fcckg\u00e4ngigmachen des letzten Wurfs.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UndoAckDto"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/health": {
+      "get": {
+        "tags": ["Invitations"],
+        "summary": "Lightweight readiness endpoint for proxy health checks.",
+        "operationId": "get_api_health",
+        "responses": {
+          "200": {
+            "description": "Backend is reachable and ready to accept API traffic.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "required": ["success", "status"],
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "status": {
+                      "type": "string",
+                      "example": "ok"
+                    }
+                  },
+                  "type": "object"
+                }
+              }
+            }
+          }
+        },
+        "security": []
+      }
+    },
+    "/api/invite/create/{id}": {
+      "post": {
+        "tags": ["Invitations"],
+        "summary": "Creates or returns an invitation for the given game.",
+        "operationId": "post_create_invitation",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "example": 123
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Einladungslink wurde erstellt oder existierte bereits.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "required": ["success", "status"],
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "status": {
+                      "type": "integer",
+                      "example": 200
+                    },
+                    "gameId": {
+                      "type": "integer",
+                      "example": 123,
+                      "nullable": true
+                    },
+                    "invitationLink": {
+                      "type": "string",
+                      "example": "/api/invite/join/xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx",
+                      "nullable": true
+                    },
+                    "users": {
+                      "description": "Spieler/Benutzer, die aktuell im Spiel sind (vereinfachte Darstellung).",
+                      "type": "array",
+                      "items": {
+                        "properties": {
+                          "id": {
+                            "type": "integer",
+                            "example": 1,
+                            "nullable": true
+                          },
+                          "username": {
+                            "type": "string",
+                            "example": "alice",
+                            "nullable": true
+                          }
+                        },
+                        "type": "object"
+                      }
+                    },
+                    "message": {
+                      "type": "string",
+                      "example": "Spiel nicht gefunden",
+                      "nullable": true
+                    }
+                  },
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Spiel nicht gefunden."
+          }
+        }
+      }
+    },
+    "/api/invite/join/{uuid}": {
+      "get": {
+        "tags": ["Invitations"],
+        "summary": "Joins an invitation by UUID and stores it in session.",
+        "operationId": "get_join_invitation",
+        "parameters": [
+          {
+            "name": "uuid",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "example": "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
+            }
+          }
+        ],
+        "responses": {
+          "302": {
+            "description": "Weiterleitung zum Frontend. Die Einladung wird in der Session gespeichert.",
+            "headers": {
+              "Location": {
+                "description": "Frontend-URL",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Spiel kann nicht gejoint werden (z. B. nicht mehr in Lobby oder Raum bereits voll)."
+          }
+        },
+        "security": []
+      },
+      "put": {
+        "tags": ["Invitations"],
+        "summary": "Joins an invitation by UUID and stores it in session.",
+        "operationId": "put_join_invitation",
+        "parameters": [
+          {
+            "name": "uuid",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "example": "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
+            }
+          }
+        ],
+        "responses": {
+          "302": {
+            "description": "Weiterleitung zum Frontend. Die Einladung wird in der Session gespeichert.",
+            "headers": {
+              "Location": {
+                "description": "Frontend-URL",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Spiel kann nicht gejoint werden (z. B. nicht mehr in Lobby oder Raum bereits voll)."
+          }
+        },
+        "security": []
+      },
+      "post": {
+        "tags": ["Invitations"],
+        "summary": "Joins an invitation by UUID and stores it in session.",
+        "operationId": "post_join_invitation",
+        "parameters": [
+          {
+            "name": "uuid",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "example": "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
+            }
+          }
+        ],
+        "responses": {
+          "302": {
+            "description": "Weiterleitung zum Frontend. Die Einladung wird in der Session gespeichert.",
+            "headers": {
+              "Location": {
+                "description": "Frontend-URL",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Spiel kann nicht gejoint werden (z. B. nicht mehr in Lobby oder Raum bereits voll)."
+          }
+        },
+        "security": []
+      },
+      "delete": {
+        "tags": ["Invitations"],
+        "summary": "Joins an invitation by UUID and stores it in session.",
+        "operationId": "delete_join_invitation",
+        "parameters": [
+          {
+            "name": "uuid",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "example": "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
+            }
+          }
+        ],
+        "responses": {
+          "302": {
+            "description": "Weiterleitung zum Frontend. Die Einladung wird in der Session gespeichert.",
+            "headers": {
+              "Location": {
+                "description": "Frontend-URL",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Spiel kann nicht gejoint werden (z. B. nicht mehr in Lobby oder Raum bereits voll)."
+          }
+        },
+        "security": []
+      },
+      "options": {
+        "tags": ["Invitations"],
+        "summary": "Joins an invitation by UUID and stores it in session.",
+        "operationId": "options_join_invitation",
+        "parameters": [
+          {
+            "name": "uuid",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "example": "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
+            }
+          }
+        ],
+        "responses": {
+          "302": {
+            "description": "Weiterleitung zum Frontend. Die Einladung wird in der Session gespeichert.",
+            "headers": {
+              "Location": {
+                "description": "Frontend-URL",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Spiel kann nicht gejoint werden (z. B. nicht mehr in Lobby oder Raum bereits voll)."
+          }
+        },
+        "security": []
+      },
+      "head": {
+        "tags": ["Invitations"],
+        "summary": "Joins an invitation by UUID and stores it in session.",
+        "operationId": "head_join_invitation",
+        "parameters": [
+          {
+            "name": "uuid",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "example": "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
+            }
+          }
+        ],
+        "responses": {
+          "302": {
+            "description": "Weiterleitung zum Frontend. Die Einladung wird in der Session gespeichert.",
+            "headers": {
+              "Location": {
+                "description": "Frontend-URL",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Spiel kann nicht gejoint werden (z. B. nicht mehr in Lobby oder Raum bereits voll)."
+          }
+        },
+        "security": []
+      },
+      "patch": {
+        "tags": ["Invitations"],
+        "summary": "Joins an invitation by UUID and stores it in session.",
+        "operationId": "patch_join_invitation",
+        "parameters": [
+          {
+            "name": "uuid",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "example": "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
+            }
+          }
+        ],
+        "responses": {
+          "302": {
+            "description": "Weiterleitung zum Frontend. Die Einladung wird in der Session gespeichert.",
+            "headers": {
+              "Location": {
+                "description": "Frontend-URL",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Spiel kann nicht gejoint werden (z. B. nicht mehr in Lobby oder Raum bereits voll)."
+          }
+        },
+        "security": []
+      },
+      "trace": {
+        "tags": ["Invitations"],
+        "summary": "Joins an invitation by UUID and stores it in session.",
+        "operationId": "trace_join_invitation",
+        "parameters": [
+          {
+            "name": "uuid",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "example": "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
+            }
+          }
+        ],
+        "responses": {
+          "302": {
+            "description": "Weiterleitung zum Frontend. Die Einladung wird in der Session gespeichert.",
+            "headers": {
+              "Location": {
+                "description": "Frontend-URL",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Spiel kann nicht gejoint werden (z. B. nicht mehr in Lobby oder Raum bereits voll)."
+          }
+        },
+        "security": []
+      }
+    },
+    "/api/invite/process": {
+      "post": {
+        "tags": ["Invitations"],
+        "summary": "Processes invitation stored in session for the current user.",
+        "operationId": "post_process_invitation",
+        "responses": {
+          "200": {
+            "description": "Einladung wurde verarbeitet (User dem Spiel hinzugef\u00fcgt) und Redirect f\u00fcrs Frontend zur\u00fcckgegeben.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "required": ["success", "redirect"],
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "redirect": {
+                      "type": "string",
+                      "example": "http://localhost:5173/joined"
+                    }
+                  },
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "User ist nicht authentifiziert oder Session ist ung\u00fcltig.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "required": ["success", "redirect"],
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": false
+                    },
+                    "redirect": {
+                      "type": "string",
+                      "example": "/login"
+                    }
+                  },
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Session enth\u00e4lt keine game_id (z. B. Einladung nicht zuerst gejoint).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "required": ["success", "redirect"],
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": false
+                    },
+                    "redirect": {
+                      "type": "string",
+                      "example": "/start"
+                    }
+                  },
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Spiel kann nicht gejoint werden (z. B. nicht mehr in Lobby oder Raum bereits voll)."
+          }
+        }
+      }
+    },
+    "/api/register": {
+      "post": {
+        "tags": ["Registration"],
+        "summary": "Registers a user from JSON payload.",
+        "operationId": "post_app_register",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "required": ["username", "email", "plainPassword"],
+                "properties": {
+                  "username": {
+                    "type": "string",
+                    "example": "alice"
+                  },
+                  "email": {
+                    "type": "string",
+                    "format": "email",
+                    "example": "alice@example.com"
+                  },
+                  "plainPassword": {
+                    "type": "string",
+                    "format": "password",
+                    "example": "secret"
+                  }
+                },
+                "type": "object"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Registrierung erfolgreich.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "required": ["success", "message", "status"],
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "message": {
+                      "type": "string",
+                      "example": "Registrierung erfolgreich"
+                    },
+                    "redirect": {
+                      "type": "string",
+                      "example": "/",
+                      "nullable": true
+                    },
+                    "status": {
+                      "type": "integer",
+                      "example": 201
+                    }
+                  },
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validierungsfehler.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "required": ["success", "message", "status"],
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": false
+                    },
+                    "message": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "integer",
+                      "example": 400
+                    },
+                    "errors": {
+                      "type": "object",
+                      "additionalProperties": {
+                        "type": "array",
+                        "items": {
+                          "type": "string"
+                        }
+                      }
+                    }
+                  },
+                  "type": "object"
+                }
+              }
+            }
+          }
+        },
+        "security": []
+      }
+    },
+    "/api/login": {
+      "get": {
+        "tags": ["Authentication"],
+        "summary": "Returns login state or last error for API clients.",
+        "operationId": "get_app_login",
+        "requestBody": {
+          "description": "Login-Daten f\u00fcr POST-Requests (Standard Symfony-Form-Felder). _username erwartet die E-Mail-Adresse.",
+          "required": false,
+          "content": {
+            "application/x-www-form-urlencoded": {
+              "schema": {
+                "properties": {
+                  "_username": {
+                    "type": "string",
+                    "example": "alice@example.com"
+                  },
+                  "_password": {
+                    "type": "string",
+                    "example": "secret"
+                  },
+                  "_csrf_token": {
+                    "type": "string",
+                    "example": "csrf-token"
+                  }
+                },
+                "type": "object"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Login-Status. Wenn authentifiziert, enth\u00e4lt die Antwort eine Weiterleitung zu `/api/login/success`.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "id": {
+                      "type": "integer",
+                      "example": 1,
+                      "nullable": true
+                    },
+                    "email": {
+                      "type": "string",
+                      "example": "alice@example.com",
+                      "nullable": true
+                    },
+                    "username": {
+                      "type": "string",
+                      "example": "alice",
+                      "nullable": true
+                    },
+                    "roles": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      },
+                      "example": ["ROLE_PLAYER"]
+                    },
+                    "redirect": {
+                      "type": "string",
+                      "example": "/api/login/success",
+                      "nullable": true
+                    },
+                    "last_username": {
+                      "type": "string",
+                      "example": "alice",
+                      "nullable": true
+                    },
+                    "error": {
+                      "type": "string",
+                      "example": "Ung\u00fcltige Zugangsdaten.",
+                      "nullable": true
+                    },
+                    "status": {
+                      "type": "integer",
+                      "example": 401,
+                      "nullable": true
+                    }
+                  },
+                  "type": "object"
+                }
+              }
+            }
+          }
+        },
+        "security": []
+      },
+      "post": {
+        "tags": ["Authentication"],
+        "summary": "Returns login state or last error for API clients.",
+        "operationId": "post_app_login",
+        "requestBody": {
+          "description": "Login-Daten f\u00fcr POST-Requests (Standard Symfony-Form-Felder). _username erwartet die E-Mail-Adresse.",
+          "required": false,
+          "content": {
+            "application/x-www-form-urlencoded": {
+              "schema": {
+                "properties": {
+                  "_username": {
+                    "type": "string",
+                    "example": "alice@example.com"
+                  },
+                  "_password": {
+                    "type": "string",
+                    "example": "secret"
+                  },
+                  "_csrf_token": {
+                    "type": "string",
+                    "example": "csrf-token"
+                  }
+                },
+                "type": "object"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Login-Status. Wenn authentifiziert, enth\u00e4lt die Antwort eine Weiterleitung zu `/api/login/success`.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "id": {
+                      "type": "integer",
+                      "example": 1,
+                      "nullable": true
+                    },
+                    "email": {
+                      "type": "string",
+                      "example": "alice@example.com",
+                      "nullable": true
+                    },
+                    "username": {
+                      "type": "string",
+                      "example": "alice",
+                      "nullable": true
+                    },
+                    "roles": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      },
+                      "example": ["ROLE_PLAYER"]
+                    },
+                    "redirect": {
+                      "type": "string",
+                      "example": "/api/login/success",
+                      "nullable": true
+                    },
+                    "last_username": {
+                      "type": "string",
+                      "example": "alice",
+                      "nullable": true
+                    },
+                    "error": {
+                      "type": "string",
+                      "example": "Ung\u00fcltige Zugangsdaten.",
+                      "nullable": true
+                    },
+                    "status": {
+                      "type": "integer",
+                      "example": 401,
+                      "nullable": true
+                    }
+                  },
+                  "type": "object"
+                }
+              }
+            }
+          }
+        },
+        "security": []
+      }
+    },
+    "/api/login/success": {
+      "get": {
+        "tags": ["Authentication"],
+        "summary": "Handles post-login redirection logic for API clients.",
+        "operationId": "get_login_success",
+        "responses": {
+          "200": {
+            "description": "Login-Erfolg inkl. Redirect-Ziel f\u00fcrs Frontend.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "required": ["success", "redirect"],
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "roles": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      },
+                      "example": ["ROLE_PLAYER"]
+                    },
+                    "id": {
+                      "type": "integer",
+                      "example": 1,
+                      "nullable": true
+                    },
+                    "email": {
+                      "type": "string",
+                      "example": "alice@example.com",
+                      "nullable": true
+                    },
+                    "username": {
+                      "type": "string",
+                      "example": "alice",
+                      "nullable": true
+                    },
+                    "redirect": {
+                      "type": "string",
+                      "example": "http://localhost:5173/joined"
+                    }
+                  },
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "User ist nicht authentifiziert."
+          }
+        }
+      },
+      "put": {
+        "tags": ["Authentication"],
+        "summary": "Handles post-login redirection logic for API clients.",
+        "operationId": "put_login_success",
+        "responses": {
+          "200": {
+            "description": "Login-Erfolg inkl. Redirect-Ziel f\u00fcrs Frontend.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "required": ["success", "redirect"],
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "roles": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      },
+                      "example": ["ROLE_PLAYER"]
+                    },
+                    "id": {
+                      "type": "integer",
+                      "example": 1,
+                      "nullable": true
+                    },
+                    "email": {
+                      "type": "string",
+                      "example": "alice@example.com",
+                      "nullable": true
+                    },
+                    "username": {
+                      "type": "string",
+                      "example": "alice",
+                      "nullable": true
+                    },
+                    "redirect": {
+                      "type": "string",
+                      "example": "http://localhost:5173/joined"
+                    }
+                  },
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "User ist nicht authentifiziert."
+          }
+        }
+      },
+      "post": {
+        "tags": ["Authentication"],
+        "summary": "Handles post-login redirection logic for API clients.",
+        "operationId": "post_login_success",
+        "responses": {
+          "200": {
+            "description": "Login-Erfolg inkl. Redirect-Ziel f\u00fcrs Frontend.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "required": ["success", "redirect"],
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "roles": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      },
+                      "example": ["ROLE_PLAYER"]
+                    },
+                    "id": {
+                      "type": "integer",
+                      "example": 1,
+                      "nullable": true
+                    },
+                    "email": {
+                      "type": "string",
+                      "example": "alice@example.com",
+                      "nullable": true
+                    },
+                    "username": {
+                      "type": "string",
+                      "example": "alice",
+                      "nullable": true
+                    },
+                    "redirect": {
+                      "type": "string",
+                      "example": "http://localhost:5173/joined"
+                    }
+                  },
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "User ist nicht authentifiziert."
+          }
+        }
+      },
+      "delete": {
+        "tags": ["Authentication"],
+        "summary": "Handles post-login redirection logic for API clients.",
+        "operationId": "delete_login_success",
+        "responses": {
+          "200": {
+            "description": "Login-Erfolg inkl. Redirect-Ziel f\u00fcrs Frontend.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "required": ["success", "redirect"],
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "roles": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      },
+                      "example": ["ROLE_PLAYER"]
+                    },
+                    "id": {
+                      "type": "integer",
+                      "example": 1,
+                      "nullable": true
+                    },
+                    "email": {
+                      "type": "string",
+                      "example": "alice@example.com",
+                      "nullable": true
+                    },
+                    "username": {
+                      "type": "string",
+                      "example": "alice",
+                      "nullable": true
+                    },
+                    "redirect": {
+                      "type": "string",
+                      "example": "http://localhost:5173/joined"
+                    }
+                  },
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "User ist nicht authentifiziert."
+          }
+        }
+      },
+      "options": {
+        "tags": ["Authentication"],
+        "summary": "Handles post-login redirection logic for API clients.",
+        "operationId": "options_login_success",
+        "responses": {
+          "200": {
+            "description": "Login-Erfolg inkl. Redirect-Ziel f\u00fcrs Frontend.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "required": ["success", "redirect"],
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "roles": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      },
+                      "example": ["ROLE_PLAYER"]
+                    },
+                    "id": {
+                      "type": "integer",
+                      "example": 1,
+                      "nullable": true
+                    },
+                    "email": {
+                      "type": "string",
+                      "example": "alice@example.com",
+                      "nullable": true
+                    },
+                    "username": {
+                      "type": "string",
+                      "example": "alice",
+                      "nullable": true
+                    },
+                    "redirect": {
+                      "type": "string",
+                      "example": "http://localhost:5173/joined"
+                    }
+                  },
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "User ist nicht authentifiziert."
+          }
+        }
+      },
+      "head": {
+        "tags": ["Authentication"],
+        "summary": "Handles post-login redirection logic for API clients.",
+        "operationId": "head_login_success",
+        "responses": {
+          "200": {
+            "description": "Login-Erfolg inkl. Redirect-Ziel f\u00fcrs Frontend.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "required": ["success", "redirect"],
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "roles": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      },
+                      "example": ["ROLE_PLAYER"]
+                    },
+                    "id": {
+                      "type": "integer",
+                      "example": 1,
+                      "nullable": true
+                    },
+                    "email": {
+                      "type": "string",
+                      "example": "alice@example.com",
+                      "nullable": true
+                    },
+                    "username": {
+                      "type": "string",
+                      "example": "alice",
+                      "nullable": true
+                    },
+                    "redirect": {
+                      "type": "string",
+                      "example": "http://localhost:5173/joined"
+                    }
+                  },
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "User ist nicht authentifiziert."
+          }
+        }
+      },
+      "patch": {
+        "tags": ["Authentication"],
+        "summary": "Handles post-login redirection logic for API clients.",
+        "operationId": "patch_login_success",
+        "responses": {
+          "200": {
+            "description": "Login-Erfolg inkl. Redirect-Ziel f\u00fcrs Frontend.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "required": ["success", "redirect"],
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "roles": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      },
+                      "example": ["ROLE_PLAYER"]
+                    },
+                    "id": {
+                      "type": "integer",
+                      "example": 1,
+                      "nullable": true
+                    },
+                    "email": {
+                      "type": "string",
+                      "example": "alice@example.com",
+                      "nullable": true
+                    },
+                    "username": {
+                      "type": "string",
+                      "example": "alice",
+                      "nullable": true
+                    },
+                    "redirect": {
+                      "type": "string",
+                      "example": "http://localhost:5173/joined"
+                    }
+                  },
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "User ist nicht authentifiziert."
+          }
+        }
+      },
+      "trace": {
+        "tags": ["Authentication"],
+        "summary": "Handles post-login redirection logic for API clients.",
+        "operationId": "trace_login_success",
+        "responses": {
+          "200": {
+            "description": "Login-Erfolg inkl. Redirect-Ziel f\u00fcrs Frontend.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "required": ["success", "redirect"],
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "roles": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      },
+                      "example": ["ROLE_PLAYER"]
+                    },
+                    "id": {
+                      "type": "integer",
+                      "example": 1,
+                      "nullable": true
+                    },
+                    "email": {
+                      "type": "string",
+                      "example": "alice@example.com",
+                      "nullable": true
+                    },
+                    "username": {
+                      "type": "string",
+                      "example": "alice",
+                      "nullable": true
+                    },
+                    "redirect": {
+                      "type": "string",
+                      "example": "http://localhost:5173/joined"
+                    }
+                  },
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "User ist nicht authentifiziert."
+          }
+        }
+      }
+    },
+    "/api/logout": {
+      "get": {
+        "tags": ["Authentication"],
+        "summary": "Logs out the current user.",
+        "operationId": "get_app_logout",
+        "responses": {
+          "default": {
+            "description": ""
+          }
+        }
+      },
+      "put": {
+        "tags": ["Authentication"],
+        "summary": "Logs out the current user.",
+        "operationId": "put_app_logout",
+        "responses": {
+          "default": {
+            "description": ""
+          }
+        }
+      },
+      "post": {
+        "tags": ["Authentication"],
+        "summary": "Logs out the current user.",
+        "operationId": "post_app_logout",
+        "responses": {
+          "default": {
+            "description": ""
+          }
+        }
+      },
+      "delete": {
+        "tags": ["Authentication"],
+        "summary": "Logs out the current user.",
+        "operationId": "delete_app_logout",
+        "responses": {
+          "default": {
+            "description": ""
+          }
+        }
+      },
+      "options": {
+        "tags": ["Authentication"],
+        "summary": "Logs out the current user.",
+        "operationId": "options_app_logout",
+        "responses": {
+          "default": {
+            "description": ""
+          }
+        }
+      },
+      "head": {
+        "tags": ["Authentication"],
+        "summary": "Logs out the current user.",
+        "operationId": "head_app_logout",
+        "responses": {
+          "default": {
+            "description": ""
+          }
+        }
+      },
+      "patch": {
+        "tags": ["Authentication"],
+        "summary": "Logs out the current user.",
+        "operationId": "patch_app_logout",
+        "responses": {
+          "default": {
+            "description": ""
+          }
+        }
+      },
+      "trace": {
+        "tags": ["Authentication"],
+        "summary": "Logs out the current user.",
+        "operationId": "trace_app_logout",
+        "responses": {
+          "default": {
+            "description": ""
+          }
+        }
+      }
+    },
+    "/api/csrf": {
+      "get": {
+        "tags": ["Authentication"],
+        "summary": "Returns CSRF tokens for authentication flows.",
+        "operationId": "get_app_csrf_tokens",
+        "responses": {
+          "200": {
+            "description": "CSRF-Tokens f\u00fcr Login/Registration.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "required": ["success", "tokens"],
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "tokens": {
+                      "type": "object",
+                      "example": {
+                        "authenticate": "csrf-token",
+                        "user_registration": "csrf-token"
+                      },
+                      "additionalProperties": {
+                        "type": "string"
+                      }
+                    }
+                  },
+                  "type": "object"
+                }
+              }
+            }
+          }
+        },
+        "security": []
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "StartGameRequest": {
+        "properties": {
+          "startscore": {
+            "type": "integer",
+            "nullable": true,
+            "enum": [101, 201, 301, 401, 501]
+          },
+          "doubleout": {
+            "type": "boolean",
+            "nullable": true
+          },
+          "tripleout": {
+            "type": "boolean",
+            "nullable": true
+          },
+          "playerPositions": {
+            "type": "array",
+            "items": {
+              "type": "integer"
+            },
+            "nullable": true,
+            "maxItems": 10,
+            "minItems": 2
+          }
+        },
+        "type": "object"
+      },
+      "GameSettingsRequest": {
+        "properties": {
+          "startScore": {
+            "type": "integer",
+            "nullable": true,
+            "default": null,
+            "enum": [101, 201, 301, 401, 501]
+          },
+          "outMode": {
+            "type": "string",
+            "nullable": true,
+            "default": null,
+            "enum": ["singleout", "doubleout", "tripleout"]
+          },
+          "doubleOut": {
+            "type": "boolean",
+            "nullable": true,
+            "default": null
+          },
+          "tripleOut": {
+            "type": "boolean",
+            "nullable": true,
+            "default": null
+          }
+        },
+        "type": "object"
+      },
+      "RoomCreateRequest": {
+        "properties": {
+          "previousGameId": {
+            "type": "integer",
+            "nullable": true,
+            "default": null,
+            "minimum": 0,
+            "exclusiveMinimum": true
+          },
+          "playerIds": {
+            "type": "array",
+            "items": {
+              "type": "integer"
+            },
+            "nullable": true,
+            "default": null
+          },
+          "excludePlayerIds": {
+            "type": "array",
+            "items": {
+              "type": "integer"
+            },
+            "nullable": true,
+            "default": null
+          },
+          "startScore": {
+            "type": "integer",
+            "nullable": true,
+            "default": null,
+            "enum": [101, 201, 301, 401, 501]
+          },
+          "doubleOut": {
+            "type": "boolean",
+            "nullable": true,
+            "default": null
+          },
+          "tripleOut": {
+            "type": "boolean",
+            "nullable": true,
+            "default": null
+          }
+        },
+        "type": "object"
+      },
+      "PlayerIdPayload": {
+        "properties": {
+          "playerId": {
+            "type": "integer",
+            "nullable": true,
+            "default": null
+          }
+        },
+        "type": "object"
+      },
+      "GuestPlayerRequest": {
+        "required": ["username"],
+        "properties": {
+          "username": {
+            "type": "string",
+            "maxLength": 30
+          }
+        },
+        "type": "object"
+      },
+      "UpdatePlayerOrderRequest": {
+        "properties": {
+          "positions": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": {
+                "type": "integer"
+              }
+            },
+            "default": [],
+            "minItems": 1
+          }
+        },
+        "type": "object"
+      },
+      "ThrowRequest": {
+        "required": ["playerId", "value"],
+        "properties": {
+          "playerId": {
+            "type": "integer",
+            "minimum": 0,
+            "exclusiveMinimum": true
+          },
+          "value": {
+            "type": "integer",
+            "maximum": 60,
+            "minimum": 0
+          },
+          "isDouble": {
+            "type": "boolean",
+            "nullable": true
+          },
+          "isTriple": {
+            "type": "boolean",
+            "nullable": true
+          },
+          "isBust": {
+            "type": "boolean",
+            "nullable": true
+          }
+        },
+        "type": "object"
+      },
+      "Game": {
+        "type": "object"
+      },
+      "ThrowResponseDto": {
+        "required": ["value", "isDouble", "isTriple", "isBust"],
+        "properties": {
+          "value": {
+            "type": "integer"
+          },
+          "isDouble": {
+            "type": "boolean"
+          },
+          "isTriple": {
+            "type": "boolean"
+          },
+          "isBust": {
+            "type": "boolean"
+          }
+        },
+        "type": "object"
+      },
+      "PlayerResponseDto": {
+        "required": ["id", "name", "score", "isActive", "isBust", "isGuest"],
+        "properties": {
+          "id": {
+            "type": "integer"
+          },
+          "name": {
+            "type": "string"
+          },
+          "score": {
+            "type": "integer"
+          },
+          "isActive": {
+            "type": "boolean"
+          },
+          "isBust": {
+            "type": "boolean"
+          },
+          "position": {
+            "type": "integer",
+            "nullable": true,
+            "default": null
+          },
+          "throwsInCurrentRound": {
+            "type": "integer",
+            "default": 0
+          },
+          "currentRoundThrows": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ThrowResponseDto"
+            },
+            "default": []
+          },
+          "roundHistory": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": {
+                "oneOf": [
+                  {
+                    "type": "integer"
+                  },
+                  {
+                    "type": "array",
+                    "items": {
+                      "$ref": "#/components/schemas/ThrowResponseDto"
+                    }
+                  }
+                ]
+              }
+            },
+            "default": []
+          },
+          "isGuest": {
+            "type": "boolean"
+          }
+        },
+        "type": "object"
+      },
+      "GameResponseDto": {
+        "required": ["id", "status", "currentRound", "currentThrowCount", "players", "settings"],
+        "properties": {
+          "id": {
+            "type": "integer"
+          },
+          "status": {
+            "type": "string"
+          },
+          "currentRound": {
+            "type": "integer"
+          },
+          "activePlayerId": {
+            "type": "integer",
+            "nullable": true
+          },
+          "currentThrowCount": {
+            "type": "integer"
+          },
+          "players": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PlayerResponseDto"
+            }
+          },
+          "winnerId": {
+            "type": "integer",
+            "nullable": true
+          },
+          "settings": {
+            "type": "object",
+            "additionalProperties": {
+              "nullable": true,
+              "oneOf": [
+                {
+                  "oneOf": [
+                    {
+                      "type": "array",
+                      "items": {
+                        "nullable": true
+                      }
+                    },
+                    {
+                      "type": "object",
+                      "additionalProperties": {
+                        "nullable": true
+                      }
+                    }
+                  ]
+                },
+                {
+                  "type": "boolean"
+                },
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        },
+        "type": "object"
+      },
+      "GameSettingsResponseDto": {
+        "required": ["gameId", "startScore", "doubleOut", "tripleOut", "status"],
+        "properties": {
+          "gameId": {
+            "type": "integer"
+          },
+          "startScore": {
+            "type": "integer"
+          },
+          "doubleOut": {
+            "type": "boolean"
+          },
+          "tripleOut": {
+            "type": "boolean"
+          },
+          "status": {
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
+      "GameSummaryWinnerDto": {
+        "required": ["id"],
+        "properties": {
+          "id": {
+            "type": "integer"
+          },
+          "username": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "type": "object"
+      },
+      "GameSummaryFinishedPlayerDto": {
+        "required": ["roundAverage"],
+        "properties": {
+          "playerId": {
+            "type": "integer",
+            "nullable": true
+          },
+          "username": {
+            "type": "string",
+            "nullable": true
+          },
+          "position": {
+            "type": "integer",
+            "nullable": true
+          },
+          "roundsPlayed": {
+            "type": "integer",
+            "nullable": true
+          },
+          "roundAverage": {
+            "type": "number",
+            "format": "float"
+          }
+        },
+        "type": "object"
+      },
+      "GameSummaryResponseDto": {
+        "required": ["gameId", "winnerRoundsPlayed", "winnerRoundAverage", "finishedPlayers"],
+        "properties": {
+          "gameId": {
+            "type": "integer"
+          },
+          "finishedAt": {
+            "type": "string",
+            "nullable": true
+          },
+          "winner": {
+            "nullable": true,
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/GameSummaryWinnerDto"
+              }
+            ]
+          },
+          "winnerRoundsPlayed": {
+            "type": "integer"
+          },
+          "winnerRoundAverage": {
+            "type": "number",
+            "format": "float"
+          },
+          "finishedPlayers": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/GameSummaryFinishedPlayerDto"
+            }
+          }
+        },
+        "type": "object"
+      },
+      "SuccessMessageDto": {
+        "required": ["message"],
+        "properties": {
+          "message": {
+            "type": "string"
+          },
+          "success": {
+            "type": "boolean",
+            "default": true
+          }
+        },
+        "type": "object"
+      },
+      "GameOverviewItemDto": {
+        "required": ["id", "playersCount", "winnerRounds"],
+        "properties": {
+          "id": {
+            "type": "integer"
+          },
+          "date": {
+            "type": "string",
+            "nullable": true
+          },
+          "finishedAt": {
+            "type": "string",
+            "nullable": true
+          },
+          "playersCount": {
+            "type": "integer"
+          },
+          "winnerName": {
+            "type": "string",
+            "nullable": true
+          },
+          "winnerId": {
+            "type": "integer",
+            "nullable": true
+          },
+          "winnerRounds": {
+            "type": "integer"
+          }
+        },
+        "type": "object"
+      },
+      "GameOverviewResponseDto": {
+        "required": ["limit", "offset", "total", "items"],
+        "properties": {
+          "limit": {
+            "type": "integer"
+          },
+          "offset": {
+            "type": "integer"
+          },
+          "total": {
+            "type": "integer"
+          },
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/GameOverviewItemDto"
+            }
+          }
+        },
+        "type": "object"
+      },
+      "PlayerStatsDto": {
+        "required": ["playerId", "name", "gamesPlayed", "scoreAverage"],
+        "properties": {
+          "playerId": {
+            "type": "integer"
+          },
+          "name": {
+            "type": "string"
+          },
+          "gamesPlayed": {
+            "type": "integer"
+          },
+          "scoreAverage": {
+            "type": "number",
+            "format": "float"
+          }
+        },
+        "type": "object"
+      },
+      "PlayerStatsResponseDto": {
+        "required": ["limit", "offset", "total", "items"],
+        "properties": {
+          "limit": {
+            "type": "integer"
+          },
+          "offset": {
+            "type": "integer"
+          },
+          "total": {
+            "type": "integer"
+          },
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PlayerStatsDto"
+            }
+          }
+        },
+        "type": "object"
+      },
+      "ThrowDeltaDto": {
+        "required": [
+          "id",
+          "playerId",
+          "playerName",
+          "value",
+          "isDouble",
+          "isTriple",
+          "isBust",
+          "score",
+          "roundNumber",
+          "timestamp"
+        ],
+        "properties": {
+          "id": {
+            "type": "integer"
+          },
+          "playerId": {
+            "type": "integer"
+          },
+          "playerName": {
+            "type": "string"
+          },
+          "value": {
+            "type": "integer"
+          },
+          "isDouble": {
+            "type": "boolean"
+          },
+          "isTriple": {
+            "type": "boolean"
+          },
+          "isBust": {
+            "type": "boolean"
+          },
+          "score": {
+            "type": "integer"
+          },
+          "roundNumber": {
+            "type": "integer"
+          },
+          "timestamp": {
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
+      "ScoreboardPlayerDeltaDto": {
+        "required": ["playerId", "name", "score", "isActive", "isGuest"],
+        "properties": {
+          "playerId": {
+            "type": "integer"
+          },
+          "name": {
+            "type": "string"
+          },
+          "score": {
+            "type": "integer"
+          },
+          "position": {
+            "type": "integer",
+            "nullable": true
+          },
+          "isActive": {
+            "type": "boolean"
+          },
+          "isGuest": {
+            "type": "boolean"
+          },
+          "isBust": {
+            "type": "boolean",
+            "nullable": true
+          }
+        },
+        "type": "object"
+      },
+      "ScoreboardDeltaDto": {
+        "required": ["changedPlayers", "status", "currentRound"],
+        "properties": {
+          "changedPlayers": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ScoreboardPlayerDeltaDto"
+            }
+          },
+          "winnerId": {
+            "type": "integer",
+            "nullable": true
+          },
+          "status": {
+            "type": "string"
+          },
+          "currentRound": {
+            "type": "integer"
+          }
+        },
+        "type": "object"
+      },
+      "ThrowAckDto": {
+        "required": ["success", "gameId", "stateVersion", "scoreboardDelta", "serverTs"],
+        "properties": {
+          "success": {
+            "type": "boolean"
+          },
+          "gameId": {
+            "type": "integer"
+          },
+          "stateVersion": {
+            "type": "string"
+          },
+          "throw": {
+            "nullable": true,
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/ThrowDeltaDto"
+              }
+            ]
+          },
+          "scoreboardDelta": {
+            "$ref": "#/components/schemas/ScoreboardDeltaDto"
+          },
+          "serverTs": {
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
+      "UndoAckDto": {
+        "required": ["success", "gameId", "stateVersion", "scoreboardDelta", "serverTs"],
+        "properties": {
+          "success": {
+            "type": "boolean"
+          },
+          "gameId": {
+            "type": "integer"
+          },
+          "stateVersion": {
+            "type": "string"
+          },
+          "undoneThrow": {
+            "nullable": true,
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/ThrowDeltaDto"
+              }
+            ]
+          },
+          "scoreboardDelta": {
+            "$ref": "#/components/schemas/ScoreboardDeltaDto"
+          },
+          "serverTs": {
+            "type": "string"
+          }
+        },
+        "type": "object"
+      }
+    },
+    "securitySchemes": {
+      "SessionCookie": {
+        "type": "apiKey",
+        "name": "PHPSESSID",
+        "in": "cookie"
+      }
+    }
+  },
+  "security": [
+    {
+      "SessionCookie": []
+    }
+  ],
+  "tags": [
+    {
+      "name": "Game Lifecycle"
+    },
+    {
+      "name": "Game Rooms"
+    },
+    {
+      "name": "Statistics"
+    },
+    {
+      "name": "Game Throws"
+    },
+    {
+      "name": "Invitations"
+    },
+    {
+      "name": "Registration"
+    },
+    {
+      "name": "Authentication"
+    }
+  ]
+}
