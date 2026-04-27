@@ -26,28 +26,38 @@ function createAudioMock(options?: {
   currentTimeSetter?: (value: number) => void;
   readyState?: number;
 }): typeof Audio {
-  return function MockAudio(this: AudioInstance, src: string) {
-    this.src = src;
-    this.volume = 1;
-    this.readyState = options?.readyState ?? 0;
+  return class MockAudio {
+    src: string;
+    volume: number;
+    currentTime: number;
+    readyState: number;
+    play: ReturnType<typeof vi.fn>;
+    pause: ReturnType<typeof vi.fn>;
+    addEventListener: ReturnType<typeof vi.fn>;
 
-    let internalCurrentTime = 0;
-    Object.defineProperty(this, "currentTime", {
-      configurable: true,
-      enumerable: true,
-      get: () => internalCurrentTime,
-      set: (value: number) => {
-        options?.currentTimeSetter?.(value);
-        internalCurrentTime = value;
-      },
-    });
+    constructor(src: string) {
+      this.src = src;
+      this.volume = 1;
+      this.readyState = options?.readyState ?? 0;
 
-    this.play = vi.fn(options?.playImplementation ?? (() => Promise.resolve()));
-    this.pause = vi.fn();
-    this.addEventListener = vi.fn();
+      let internalCurrentTime = 0;
+      Object.defineProperty(this, "currentTime", {
+        configurable: true,
+        enumerable: true,
+        get: () => internalCurrentTime,
+        set: (value: number) => {
+          options?.currentTimeSetter?.(value);
+          internalCurrentTime = value;
+        },
+      });
 
-    audioInstances.push(this);
-  } as unknown as typeof Audio;
+      this.play = vi.fn(options?.playImplementation ?? (() => Promise.resolve()));
+      this.pause = vi.fn();
+      this.addEventListener = vi.fn();
+
+      audioInstances.push(this);
+    }
+  };
 }
 
 async function loadSoundPlayerModule() {
