@@ -39,29 +39,36 @@ Do not create design, plan, or implementation files during this phase.
 
 The lead agent owns orchestration and the final artifact. The lead should not read the whole project linearly when focused subagents can gather enough relevant context.
 
+Project-local subagent identity is mandatory. Research subagents must be instances of the project-local `researcher` agent declared in `.codex/config.toml` under `[agents.researcher]` with `config_file = "agents/researcher.toml"` and instructions from `.codex/agents/researcher.md`. Generic runtime roles, `architect`, `explorer`, or any spawned agent that does not load the project-local `researcher` config and instructions are not valid substitutes.
+
+Do not simulate a project-local `researcher` by spawning `architect`, `worker`, generic `explorer`, or another generic role and putting "you are a researcher" in the prompt. If the runtime cannot dispatch the configured project-local `researcher`, stop before research fan-out with a blocked report.
+
 Workflow:
 
 1. Read `docs/convention/coding-standards.md`.
 2. Read `docs/repo-map.md`, if it exists.
-3. Define the task scope and preliminary `{feature-slug}`.
-4. Start several read-only subagents with narrow research directions.
-5. Merge subagent outputs into one `research.md`.
-6. Remove noise: opinions, advice, unevidenced guesses, and long code excerpts.
-7. Mark missing data as `NOT FOUND` when it was searched for and not found.
+3. Read `.codex/config.toml` and confirm `[agents.researcher]` resolves to the project-local researcher config file.
+4. Define the task scope and preliminary `{feature-slug}`.
+5. Start several project-local `researcher` subagents with narrow research directions.
+6. Merge subagent outputs into one `research.md`.
+7. Remove noise: opinions, advice, unevidenced guesses, and long code excerpts.
+8. Mark missing data as `NOT FOUND` when it was searched for and not found.
 
 ## Subagent Split
 
-Start independent read-only researchers in parallel when the runtime supports subagents. Use cheaper or faster models for these narrow research tasks when available.
+Start independent project-local `researcher` subagents in parallel when the runtime supports subagents. Use the model configured by `.codex/agents/researcher.toml`.
 
 Default directions:
 
-- Architecture researcher: project structure, layer boundaries, routes, dependency direction, key entrypoints.
-- Domain researcher: domain types, stores, business rules, DTOs, mappers, state.
-- Integration researcher: API, SSE, browser APIs, external contracts, network clients.
-- Test researcher: existing Vitest, Testing Library, and Playwright coverage, test helpers, coverage gaps.
-- Risk researcher: security, reliability, validation, error handling, and other risk areas from applicable convention docs.
+- Architecture direction: project structure, layer boundaries, routes, dependency direction, key entrypoints.
+- Domain direction: domain types, stores, business rules, DTOs, mappers, state.
+- Integration direction: API, SSE, browser APIs, external contracts, network clients.
+- Test direction: existing Vitest, Testing Library, and Playwright coverage, test helpers, coverage gaps.
+- Risk direction: security, reliability, validation, error handling, and other risk areas from applicable convention docs.
 
 For a narrow task, reduce the number of directions if appropriate. Never mix facts with solution design.
+
+The `architect` agent is reserved for Design and Planning. Do not use `architect` for Research, including the Architecture direction.
 
 ## Subagent Prompt Template
 
@@ -102,6 +109,7 @@ Return only dry facts with evidence:
 
 - Do not write production code.
 - Do not change files except `docs/{feature-slug}/research/research.md`.
+- Do not dispatch `architect`, `worker`, generic `explorer`, or any non-`researcher` agent for research directions.
 - Do not design the solution.
 - Do not write "better to do it this way".
 - Do not suggest refactoring.
@@ -169,6 +177,7 @@ The minimum fact list that Design must use.
 ## Done Criteria
 
 - `docs/{feature-slug}/research/research.md` exists.
+- All research fan-out used project-local `researcher` subagents, or stopped before fan-out because project-local researcher dispatch was unavailable.
 - The artifact contains only facts, relevant files, and unknowns.
 - Every important fact has evidence or `NOT FOUND`.
 - The artifact contains no solution, implementation plan, production code, or refactoring advice.

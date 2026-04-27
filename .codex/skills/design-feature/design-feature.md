@@ -2,11 +2,11 @@
 
 Short phase card for Design and post-approval Planning.
 
-The complete skill instruction is in [SKILL.md](SKILL.md). When Design starts, read `SKILL.md` first and follow it as the source of truth: it defines the diagram-only design contract, Human-in-the-Loop gate, and planning file rules.
+The complete skill instruction is in [SKILL.md](SKILL.md). When Design starts, read `SKILL.md` first and follow it as the source of truth: it defines the Typora-compatible diagram-only design contract, Human-in-the-Loop gate, and planning file rules.
 
 ## Goal
 
-Turn `docs/{feature-slug}/research/research.md` into a minimal diagram-only design.
+Turn `docs/{feature-slug}/research/research.md` into a minimal diagram-only design that renders visually in Typora when Markdown diagrams are enabled.
 
 ## Input
 
@@ -24,10 +24,10 @@ docs/{feature-slug}/design/design.md
 
 The design artifact must contain the design only as:
 
-- Data Flow Diagram.
-- Sequence Diagram.
+- `## Data Flow` with exactly one Typora-compatible Mermaid `graph LR` or `graph TD`.
+- `## Sequence Diagram` with exactly one Mermaid `sequenceDiagram`.
 
-No implementation plan, architecture prose, refactoring advice, or production code belongs in `design.md`.
+No implementation plan, architecture prose, refactoring advice, tables, file inventories, stage notes, screenshots, ASCII diagrams, or production code belongs in `design.md`. Keep diagrams compact enough to read: include only primary boundaries, state transitions, external contracts, and user-visible branches.
 
 ## Human Gate
 
