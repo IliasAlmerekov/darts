@@ -46,6 +46,67 @@ describe("getAuthenticatedUser", () => {
     });
   });
 
+  it("should return authenticated user when the response is a direct user shape", async () => {
+    vi.spyOn(globalThis, "fetch").mockResolvedValueOnce(
+      createMockResponse({
+        body: {
+          success: true,
+          roles: ["ROLE_ADMIN"],
+          id: 11,
+          email: "admin@example.com",
+          redirect: "/start",
+        },
+        status: 200,
+        headers: new Headers({ "content-type": "application/json" }),
+        url: "/api/login/success",
+      }),
+    );
+
+    await expect(getAuthenticatedUser()).resolves.toMatchObject({
+      id: 11,
+      email: "admin@example.com",
+      roles: ["ROLE_ADMIN"],
+      redirect: "/start",
+    });
+  });
+
+  it("should normalize a profile envelope into a player authenticated user", async () => {
+    vi.spyOn(globalThis, "fetch").mockResolvedValueOnce(
+      createMockResponse({
+        body: {
+          success: true,
+          profile: {
+            id: 23,
+            nickname: "Ton Eighty",
+            stats: {
+              gamesPlayed: 12,
+              scoreAverage: 58.4,
+            },
+          },
+        },
+        status: 200,
+        headers: new Headers({ "content-type": "application/json" }),
+        url: "/api/login/success",
+      }),
+    );
+
+    await expect(getAuthenticatedUser()).resolves.toEqual({
+      success: true,
+      roles: ["ROLE_PLAYER"],
+      id: 23,
+      username: "Ton Eighty",
+      redirect: "/playerprofile",
+      profile: {
+        id: 23,
+        nickname: "Ton Eighty",
+        stats: {
+          gamesPlayed: 12,
+          scoreAverage: 58.4,
+        },
+      },
+    });
+  });
+
   it("should return null when the auth-check response is 401", async () => {
     vi.spyOn(globalThis, "fetch").mockResolvedValueOnce(
       createMockResponse({
@@ -108,7 +169,7 @@ describe("getAuthenticatedUser", () => {
     });
   });
 
-  it("should return null when the auth-check payload is explicitly unauthenticated", async () => {
+  it("should throw ApiError when the auth-check payload is explicitly unauthorized", async () => {
     vi.spyOn(globalThis, "fetch").mockResolvedValueOnce(
       createMockResponse({
         body: { success: false },
@@ -118,7 +179,39 @@ describe("getAuthenticatedUser", () => {
       }),
     );
 
-    await expect(getAuthenticatedUser()).resolves.toBeNull();
+    await expect(getAuthenticatedUser()).rejects.toMatchObject({
+      name: "ApiError",
+      message: "Authorization failed for authenticated user",
+      status: 401,
+      data: { success: false },
+    });
+  });
+
+  it("should throw ApiError when the auth-check returns a malformed profile envelope", async () => {
+    vi.spyOn(globalThis, "fetch").mockResolvedValueOnce(
+      createMockResponse({
+        body: {
+          success: true,
+          profile: {
+            id: 23,
+            nickname: "Ton Eighty",
+            stats: {
+              gamesPlayed: "12",
+              scoreAverage: 58.4,
+            },
+          },
+        },
+        status: 200,
+        headers: new Headers({ "content-type": "application/json" }),
+        url: "/api/login/success",
+      }),
+    );
+
+    await expect(getAuthenticatedUser()).rejects.toMatchObject({
+      name: "ApiError",
+      message: "Unexpected response shape for authenticated user",
+      status: 200,
+    });
   });
 });
 

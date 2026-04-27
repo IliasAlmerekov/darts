@@ -66,6 +66,70 @@ describe("PlayerProfilePage", () => {
     expect(screen.getByText("Benutzername: alice@example.com")).toBeTruthy();
   });
 
+  it("renders nickname for profile-backed authenticated users", () => {
+    useAuthenticatedUserMock.mockReturnValue({
+      user: createUser({
+        username: null,
+        profile: {
+          id: 42,
+          nickname: "Captain Double",
+          stats: {
+            gamesPlayed: 18,
+            scoreAverage: 56.4,
+          },
+        },
+      }),
+      loading: false,
+      error: null,
+    });
+
+    render(<PlayerProfilePage />);
+
+    expect(screen.getByText("Benutzername: Captain Double")).toBeTruthy();
+  });
+
+  it("renders games played for profile-backed authenticated users", () => {
+    useAuthenticatedUserMock.mockReturnValue({
+      user: createUser({
+        profile: {
+          id: 42,
+          nickname: "Captain Double",
+          stats: {
+            gamesPlayed: 18,
+            scoreAverage: 56.4,
+          },
+        },
+      }),
+      loading: false,
+      error: null,
+    });
+
+    render(<PlayerProfilePage />);
+
+    expect(screen.getByText("Spiele gespielt: 18")).toBeTruthy();
+  });
+
+  it("renders score average for profile-backed authenticated users", () => {
+    useAuthenticatedUserMock.mockReturnValue({
+      user: createUser({
+        profile: {
+          id: 42,
+          nickname: "Captain Double",
+          stats: {
+            gamesPlayed: 18,
+            scoreAverage: 56.4,
+          },
+        },
+      }),
+      loading: false,
+      error: null,
+    });
+
+    render(<PlayerProfilePage />);
+
+    expect(screen.getByText("Durchschnittspunktzahl: 56.4")).toBeTruthy();
+  });
+
   it("renders the hook error state", () => {
     useAuthenticatedUserMock.mockReturnValue({
       user: null,
