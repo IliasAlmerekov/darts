@@ -1,6 +1,6 @@
 ---
 name: design-feature
-description: Create the Design phase after docs/{feature-slug}/research/research.md. Use when Codex must produce a diagram-only design artifact with Data Flow and Sequence Diagram, stop for Human-in-the-Loop approval, and only after approval create planning files that split implementation into small verifiable stages to reduce hallucination risk.
+description: Create the Design phase after docs/{feature-slug}/research/research.md. Use when Codex must produce a Typora-compatible diagram-only design artifact with Data Flow and Sequence Diagram, stop for Human-in-the-Loop approval, and only after approval create planning files that split implementation into small verifiable stages to reduce hallucination risk.
 ---
 
 # Design Feature
@@ -30,12 +30,19 @@ Create exactly one design artifact before approval:
 docs/{feature-slug}/design/design.md
 ```
 
-The design artifact must be diagram-only. It may contain a title and short source links, but the design itself must be represented only as:
+The design artifact must be diagram-only and render visually in Typora when Markdown diagrams are enabled. It may contain only:
 
-- Data Flow Diagram with Mermaid `flowchart`.
+- One title.
+- One short source research link.
+- `## Data Flow` with exactly one Typora-compatible Mermaid flowchart block.
+- `## Sequence Diagram` with exactly one Mermaid `sequenceDiagram`.
+
+The design itself must be represented only as:
+
+- Data Flow Diagram with Mermaid `graph LR` or `graph TD`.
 - Sequence Diagram with Mermaid `sequenceDiagram`.
 
-Do not include prose sections such as architecture narrative, alternatives, implementation plan, component plan, API rewrite proposal, testing strategy, or refactoring advice.
+Do not include prose sections such as architecture narrative, alternatives, implementation plan, component plan, API rewrite proposal, testing strategy, or refactoring advice. Do not add tables, bullet lists, file inventories, risk sections, code snippets, or stage notes to `design.md`.
 
 ## design.md Template
 
@@ -47,7 +54,7 @@ Source research: `docs/{feature-slug}/research/research.md`
 ## Data Flow
 
 ```mermaid
-flowchart TD
+graph TD
   User[User] --> UI[Relevant UI or caller]
   UI --> Store[State or coordination layer]
   Store --> API[API or integration boundary]
@@ -74,13 +81,22 @@ sequenceDiagram
 ```
 ````
 
-Adjust participants to the actual research facts. Remove placeholder nodes that are not part of the task.
+Adjust participants to the actual research facts. Remove placeholder nodes that are not part of the task. Keep both diagrams readable: show only primary boundaries, state transitions, external contracts, and user-visible branches. Do not mirror every file, test, helper, or evidence item from `research.md`.
+
+Typora compatibility rules:
+
+- Use fenced Markdown code blocks with `mermaid` as the language.
+- Use `graph LR` or `graph TD` for Data Flow, matching Typora's Mermaid flowchart examples.
+- Use `sequenceDiagram` for Sequence Diagram.
+- Do not use ASCII diagrams, tables, screenshots, or prose descriptions as substitutes for diagrams.
 
 ## Design Rules
 
 - Base every node and interaction on facts from `research.md`.
 - Prefer existing boundaries and names from the codebase.
 - Keep the diagram minimal; include only elements needed for the task.
+- Prefer 6-12 nodes in the Data Flow diagram unless the approved research proves a larger boundary is unavoidable.
+- Prefer fewer than 12 participants in the Sequence Diagram; combine local helpers behind their owning module when that improves readability.
 - Show external systems and browser APIs explicitly when they matter.
 - Mark uncertain edges as `Unknown` only if research already marked them as unknown.
 - Do not invent missing components, APIs, stores, or routes.

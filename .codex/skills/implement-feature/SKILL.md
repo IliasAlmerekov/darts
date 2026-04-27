@@ -39,34 +39,59 @@ Do not implement the whole feature unless the selected approved stage explicitly
 
 ## Lead Agent Duties
 
-The active chat agent manages the loop and owns final integration. The chat agent may coordinate subagents, but must keep the stage scope narrow and enforce the plan.
+The active chat agent is the lead orchestrator for this phase. It manages the loop, keeps the stage scope narrow, and enforces the selected plan.
 
-Before editing code:
+Invoking this skill is an explicit request to use the implementation subagents for this phase. The lead agent must not write production code or tests directly during `implement-feature`.
 
-1. Read the selected plan file.
-2. Read `docs/convention/coding-standards.md`.
-3. Read only the relevant convention domain files.
-4. Confirm the exact file scope and allowed changes.
-5. Check for dirty worktree changes that overlap the selected file scope.
+When subagent runtime is available, the lead agent must coordinate the project-local `coder`, `tester`, `security`, and `reviewer` subagents according to the Development Loop below. Do not create, register, or delegate to a separate `lead_orchestrator` or `lead-orchestrator` subagent.
+
+If subagent runtime is unavailable or blocked, stop before implementation and return a blocked report that names the missing capability. Do not fall back to self-implementation.
+
+Project-local subagent identity is mandatory. A valid implementation subagent is one declared in `.codex/config.toml` under `[agents.<name>]` with its configured `config_file` under `.codex/agents/`. For this phase, the required names are exactly `coder`, `tester`, `security`, and `reviewer`; `explorer` may run only after the full required loop. Generic runtime roles such as `worker`, generic `tester`, generic `reviewer`, or any spawned agent that does not load the matching `.codex/agents/{name}.toml` and `.codex/agents/{name}.md` are not valid substitutes.
+
+Do not simulate a project-local subagent by spawning a generic role and putting "you are the project-local coder" in the prompt. If the runtime cannot dispatch the configured project-local agent by name and config, stop before implementation with a blocked report.
+
+During `implement-feature`, the lead agent must not use `apply_patch`, shell write commands, formatters with `--write`, editor commands, or any other file mutation mechanism on production or test files. If the runtime requires the lead to transfer a `coder`-authored patch into the shared worktree, the transfer must be mechanical and exact; any content decision, conflict resolution, or follow-up code change must go back to `coder`.
+
+Before dispatching `coder`:
+
+1. Read `.codex/config.toml` and confirm `[agents.coder]`, `[agents.tester]`, `[agents.security]`, and `[agents.reviewer]` resolve to project-local config files.
+2. Read the selected plan file.
+3. Read `docs/convention/coding-standards.md`.
+4. Read only the relevant convention domain files.
+5. Confirm the exact file scope and allowed changes.
+6. Check for dirty worktree changes that overlap the selected file scope.
 
 ## Development Loop
 
 Run this bounded loop for the selected implementation stage:
 
-1. `coder` writes scoped code and required tests.
-2. `tester` checks test coverage, runs targeted tests, and identifies missing behavior coverage.
-3. `security` checks security, validation, secrets, authorization, reliability, and unsafe defaults.
-4. `reviewer` checks the diff against:
+1. Lead assigns the selected stage and exact file scope to `coder`.
+2. `coder` writes scoped code and required tests.
+3. Lead reviews the `coder` report and verifies the diff stays inside the approved file scope.
+4. `tester` checks test coverage, runs targeted tests, and identifies missing behavior coverage.
+5. `security` checks security, validation, secrets, authorization, reliability, and unsafe defaults.
+6. `reviewer` checks the diff against:
    - the selected plan stage;
    - `docs/{feature-slug}/design/design.md`;
    - `docs/convention/coding-standards.md`;
    - relevant `docs/convention/{domain}.md` files;
    - exact file scope and team rules.
-5. If any blocker exists, return the work to `coder`.
-6. Repeat the loop at most 3 total cycles.
-7. After 3 cycles with unresolved blockers, stop and return control to the developer with a clear blocked report.
+7. If any blocker exists, lead returns the work to `coder`.
+8. Repeat the loop at most 3 total cycles.
+9. After 3 cycles with unresolved blockers, stop and return control to the developer with a clear blocked report.
 
 The loop exists to improve quality, not to create an endless debate. A blocker must be concrete, reproducible, and tied to a file, rule, failing command, or plan mismatch.
+
+Invalid implementation sequences:
+
+- Lead writes or edits production code/tests, then sends that work to `tester`, `security`, `reviewer`, or `explorer`.
+- Lead starts `tester`, `security`, `reviewer`, or `explorer` before a `coder` result exists for the selected stage.
+- Lead fixes blocker feedback directly instead of returning the work to `coder`.
+- Lead spawns generic runtime roles such as `worker`, generic `tester`, generic `reviewer`, or any agent that does not load the matching project-local `.codex/agents/{name}.toml` and `.codex/agents/{name}.md`.
+- Lead prompts a generic agent to behave as `coder`, `tester`, `security`, `reviewer`, or `explorer` instead of dispatching the configured project-local agent.
+
+If an invalid sequence happens, stop immediately and return a workflow-violation report. Do not continue verification and do not mark the stage complete.
 
 ## Role Contracts
 
@@ -119,6 +144,8 @@ After cycle 3:
 ## Guardrails
 
 - Do not start without a specific approved plan stage.
+- Do not use generic runtime roles as substitutes for project-local `.codex` agents.
+- Lead must not author, patch, rewrite, format, or self-fix production code or tests during this phase.
 - Do not modify files outside the stage file scope.
 - Do not delete or revert user changes.
 - Do not change dependencies, migrations, permissions, auth, tokens, or access policy without explicit human approval.
@@ -164,6 +191,7 @@ Always include:
 ## Done Criteria
 
 - Exactly one approved stage was implemented.
+- The lead agent delegated implementation to the project-local `coder` and verification to the project-local `tester`, `security`, and `reviewer`, or stopped before implementation because project-local subagent dispatch was unavailable.
 - All changes are within the selected stage file scope.
 - Tests were added or updated for every behavior change.
 - Tester, security, and reviewer found no blockers, or the loop stopped after 3 cycles and returned control to the developer.

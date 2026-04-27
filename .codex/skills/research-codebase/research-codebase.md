@@ -18,4 +18,6 @@ The artifact must contain only dry facts about the project: what exists where, w
 
 ## Principle
 
-The lead agent starts several parallel read-only subagents with narrow directions: architecture, domain/data, integrations, tests, and risks. Each subagent returns only facts, relevant files, and unknowns with evidence in `path:line` format.
+The lead agent starts several parallel project-local `researcher` subagents with narrow directions: architecture, domain/data, integrations, tests, and risks. Each subagent returns only facts, relevant files, and unknowns with evidence in `path:line` format.
+
+Valid research subagents must come from `.codex/config.toml` `[agents.researcher]` and load `.codex/agents/researcher.toml` plus `.codex/agents/researcher.md`. The `architect` agent is reserved for Design and Planning and must not be used for Research, including the Architecture direction. Generic runtime roles such as `worker` or generic `explorer` are not valid substitutes, even when prompted to behave like researchers.
