@@ -1,6 +1,7 @@
 import { apiClient, ApiValidationError } from "./client";
 import { ApiError, UnauthorizedError } from "./errors";
 import { isFiniteNumber, isRecord } from "@/lib/guards/guards";
+import { ROUTES } from "@/shared/lib/router/routes";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -35,6 +36,17 @@ interface CsrfTokensResponse {
 
 export type Role = "ROLE_USER" | "ROLE_ADMIN" | "ROLE_PLAYER";
 
+export interface AuthenticatedUserProfileStats {
+  gamesPlayed: number;
+  scoreAverage: number;
+}
+
+export interface AuthenticatedUserProfile {
+  id: number;
+  nickname: string;
+  stats: AuthenticatedUserProfileStats;
+}
+
 export interface AuthenticatedUser {
   success: boolean;
   roles: Role[];
@@ -43,6 +55,7 @@ export interface AuthenticatedUser {
   username?: string | null;
   redirect: string;
   gameId?: number | null;
+  profile?: AuthenticatedUserProfile;
 }
 
 const LOGIN_ENDPOINT = "/login";
@@ -108,7 +121,8 @@ function isAuthenticatedUser(data: unknown): data is AuthenticatedUser {
     typeof data.redirect === "string" &&
     (data.email === undefined || isNullableString(data.email)) &&
     (data.username === undefined || isNullableString(data.username)) &&
-    (data.gameId === undefined || data.gameId === null || isFiniteNumber(data.gameId))
+    (data.gameId === undefined || data.gameId === null || isFiniteNumber(data.gameId)) &&
+    (data.profile === undefined || isAuthenticatedUserProfile(data.profile))
   );
 }
 
@@ -118,8 +132,40 @@ function isAuthenticatedUserEnvelope(
   return isRecord(data) && data.success === true && isAuthenticatedUser(data.user);
 }
 
+function isAuthenticatedUserProfileStats(data: unknown): data is AuthenticatedUserProfileStats {
+  return isRecord(data) && isFiniteNumber(data.gamesPlayed) && isFiniteNumber(data.scoreAverage);
+}
+
+function isAuthenticatedUserProfile(data: unknown): data is AuthenticatedUserProfile {
+  return (
+    isRecord(data) &&
+    isFiniteNumber(data.id) &&
+    typeof data.nickname === "string" &&
+    isAuthenticatedUserProfileStats(data.stats)
+  );
+}
+
+function isAuthenticatedUserProfileEnvelope(
+  data: unknown,
+): data is { success: true; profile: AuthenticatedUserProfile } {
+  return isRecord(data) && data.success === true && isAuthenticatedUserProfile(data.profile);
+}
+
 function isUnauthenticatedAuthResponse(data: unknown): boolean {
   return isRecord(data) && data.success === false;
+}
+
+function normalizeProfileEnvelope(response: {
+  profile: AuthenticatedUserProfile;
+}): AuthenticatedUser {
+  return {
+    success: true,
+    roles: ["ROLE_PLAYER"],
+    id: response.profile.id,
+    username: response.profile.nickname,
+    redirect: ROUTES.playerProfile,
+    profile: response.profile,
+  };
 }
 
 /**
@@ -204,9 +250,14 @@ export async function getAuthenticatedUser(
   const timeoutMs = options.timeoutMs ?? AUTH_CHECK_TIMEOUT_MS;
   const isAuthenticatedUserResponse = (
     data: unknown,
-  ): data is AuthenticatedUser | { success: true; user: AuthenticatedUser } | { success: false } =>
+  ): data is
+    | AuthenticatedUser
+    | { success: true; user: AuthenticatedUser }
+    | { success: true; profile: AuthenticatedUserProfile }
+    | { success: false } =>
     isAuthenticatedUserEnvelope(data) ||
     isAuthenticatedUser(data) ||
+    isAuthenticatedUserProfileEnvelope(data) ||
     isUnauthenticatedAuthResponse(data);
 
   try {
@@ -225,8 +276,15 @@ export async function getAuthenticatedUser(
       return response;
     }
 
+    if (isAuthenticatedUserProfileEnvelope(response)) {
+      return normalizeProfileEnvelope(response);
+    }
+
     if (isUnauthenticatedAuthResponse(response)) {
-      return null;
+      throw new ApiError("Authorization failed for authenticated user", {
+        status: 401,
+        data: response,
+      });
     }
 
     throw new ApiError("Unexpected response shape for authenticated user", {

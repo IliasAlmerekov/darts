@@ -7,7 +7,16 @@ const ROLE_LABELS: Record<string, string> = {
   ROLE_USER: "Benutzer",
 };
 
-function getDisplayName(username?: string | null, email?: string | null): string {
+function getDisplayName(
+  nickname?: string | null,
+  username?: string | null,
+  email?: string | null,
+): string {
+  const normalizedNickname = nickname?.trim();
+  if (normalizedNickname) {
+    return normalizedNickname;
+  }
+
   const normalizedUsername = username?.trim();
   if (normalizedUsername) {
     return normalizedUsername;
@@ -44,8 +53,14 @@ const PlayerProfilePage = (): React.JSX.Element => {
       <h1>Spielerprofil</h1>
       {user && (
         <div>
-          <p>Benutzername: {getDisplayName(user.username, user.email)}</p>
+          <p>Benutzername: {getDisplayName(user.profile?.nickname, user.username, user.email)}</p>
           {user.email ? <p>E-Mail: {user.email}</p> : null}
+          {user.profile ? (
+            <>
+              <p>Spiele gespielt: {user.profile.stats.gamesPlayed}</p>
+              <p>Durchschnittspunktzahl: {user.profile.stats.scoreAverage}</p>
+            </>
+          ) : null}
           <p>Rollen: {user.roles.length > 0 ? user.roles.map(formatRole).join(", ") : "Keine"}</p>
         </div>
       )}
