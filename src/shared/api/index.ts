@@ -1,6 +1,6 @@
 // Core HTTP client
 export { API_BASE_URL, clearUnauthorizedHandler, setUnauthorizedHandler } from "./client";
-export { ApiError, NetworkError, TimeoutError, UnauthorizedError } from "./errors";
+export { ApiError, ForbiddenError, NetworkError, TimeoutError, UnauthorizedError } from "./errors";
 
 // Domain API modules
 export * from "./endpoints";
