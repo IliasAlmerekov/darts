@@ -6,7 +6,9 @@ import { applyGameScoreboardDelta, normalizeGameData } from "../lib/game/gameSta
 const gameDataAtom = atom<GameThrowsResponse | null>(null);
 const isLoadingAtom = atom<boolean>(false);
 const errorAtom = atom<Error | null>(null);
-const $gameSettingsByGameId = atom<{ gameId: number; settings: GameSettingsResponse } | null>(null);
+const gameSettingsByGameIdAtom = atom<{ gameId: number; settings: GameSettingsResponse } | null>(
+  null,
+);
 
 export const $gameData: ReadableAtom<GameThrowsResponse | null> = gameDataAtom;
 export const $isLoading: ReadableAtom<boolean> = isLoadingAtom;
@@ -17,7 +19,7 @@ export const $gameSettings = computed(gameDataAtom, (gameData) => {
 });
 
 function setCachedGameSettings(gameId: number, settings: GameSettingsResponse): void {
-  const current = $gameSettingsByGameId.get();
+  const current = gameSettingsByGameIdAtom.get();
   const isUnchanged =
     current?.gameId === gameId &&
     current.settings.startScore === settings.startScore &&
@@ -28,11 +30,11 @@ function setCachedGameSettings(gameId: number, settings: GameSettingsResponse): 
     return;
   }
 
-  $gameSettingsByGameId.set({ gameId, settings });
+  gameSettingsByGameIdAtom.set({ gameId, settings });
 }
 
 export function getCachedGameSettings(gameId: number): GameSettingsResponse | null {
-  const current = $gameSettingsByGameId.get();
+  const current = gameSettingsByGameIdAtom.get();
   return current?.gameId === gameId ? current.settings : null;
 }
 
@@ -120,5 +122,5 @@ export function resetGameStore(): void {
   gameDataAtom.set(null);
   isLoadingAtom.set(false);
   errorAtom.set(null);
-  $gameSettingsByGameId.set(null);
+  gameSettingsByGameIdAtom.set(null);
 }
