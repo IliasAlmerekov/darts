@@ -1,14 +1,15 @@
 // @vitest-environment jsdom
-import { render, screen } from "@testing-library/react";
+import { render, screen, within } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { AuthenticatedUser } from "@/shared/api/auth";
-import PlayerProfilePage from ".";
 
-const useAuthenticatedUserMock = vi.fn();
+const useAuthenticatedUserMock = vi.hoisted(() => vi.fn());
 
 vi.mock("@/shared/hooks/useAuthenticatedUser", () => ({
   useAuthenticatedUser: () => useAuthenticatedUserMock(),
 }));
+
+import PlayerProfilePage from ".";
 
 function createUser(overrides: Partial<AuthenticatedUser> = {}): AuthenticatedUser {
   return {
@@ -42,9 +43,11 @@ describe("PlayerProfilePage", () => {
     render(<PlayerProfilePage />);
 
     expect(screen.getByRole("heading", { level: 1, name: "Spielerprofil" })).toBeTruthy();
-    expect(screen.getByText("Benutzername: Alice")).toBeTruthy();
-    expect(screen.getByText("E-Mail: alice@example.com")).toBeTruthy();
-    expect(screen.getByText("Rollen: Administrator, Spieler")).toBeTruthy();
+    const identitySection = screen.getByRole("region", { name: "Identität" });
+    expect(within(identitySection).getByText("Benutzername: Alice")).toBeTruthy();
+    expect(within(identitySection).getByText("E-Mail: alice@example.com")).toBeTruthy();
+    const rolesSection = screen.getByRole("region", { name: "Rollen" });
+    expect(within(rolesSection).getByText("Rollen: Administrator, Spieler")).toBeTruthy();
     expect(
       screen.queryByText(
         'Benutzername: {"success":true,"id":42,"roles":["ROLE_ADMIN","ROLE_PLAYER"],"email":"alice@example.com","username":"Alice","redirect":"/profile"}',
@@ -63,7 +66,8 @@ describe("PlayerProfilePage", () => {
 
     render(<PlayerProfilePage />);
 
-    expect(screen.getByText("Benutzername: alice@example.com")).toBeTruthy();
+    const identitySection = screen.getByRole("region", { name: "Identität" });
+    expect(within(identitySection).getByText("Benutzername: alice@example.com")).toBeTruthy();
   });
 
   it("renders nickname for profile-backed authenticated users", () => {
@@ -85,7 +89,8 @@ describe("PlayerProfilePage", () => {
 
     render(<PlayerProfilePage />);
 
-    expect(screen.getByText("Benutzername: Captain Double")).toBeTruthy();
+    const identitySection = screen.getByRole("region", { name: "Identität" });
+    expect(within(identitySection).getByText("Benutzername: Captain Double")).toBeTruthy();
   });
 
   it("renders games played for profile-backed authenticated users", () => {
@@ -106,7 +111,8 @@ describe("PlayerProfilePage", () => {
 
     render(<PlayerProfilePage />);
 
-    expect(screen.getByText("Spiele gespielt: 18")).toBeTruthy();
+    const statsSection = screen.getByRole("region", { name: "Statistiken" });
+    expect(within(statsSection).getByText("Spiele gespielt: 18")).toBeTruthy();
   });
 
   it("renders score average for profile-backed authenticated users", () => {
@@ -127,7 +133,31 @@ describe("PlayerProfilePage", () => {
 
     render(<PlayerProfilePage />);
 
-    expect(screen.getByText("Durchschnittspunktzahl: 56.4")).toBeTruthy();
+    const statsSection = screen.getByRole("region", { name: "Statistiken" });
+    expect(within(statsSection).getByText("Durchschnittspunktzahl: 56.4")).toBeTruthy();
+  });
+
+  it("renders structured identity, stats, and roles sections for profile users", () => {
+    useAuthenticatedUserMock.mockReturnValue({
+      user: createUser({
+        profile: {
+          id: 42,
+          nickname: "Captain Double",
+          stats: {
+            gamesPlayed: 18,
+            scoreAverage: 56.4,
+          },
+        },
+      }),
+      loading: false,
+      error: null,
+    });
+
+    render(<PlayerProfilePage />);
+
+    expect(screen.getByRole("region", { name: "Identität" })).toBeTruthy();
+    expect(screen.getByRole("region", { name: "Statistiken" })).toBeTruthy();
+    expect(screen.getByRole("region", { name: "Rollen" })).toBeTruthy();
   });
 
   it("renders the hook error state", () => {
