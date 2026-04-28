@@ -98,9 +98,10 @@ from this file.
 
 ## Multi-Agent Workflow Orchestration
 
-For the `.codex` multi-agent workflow, the active chat agent is the lead orchestrator.
-Do not create, register, or delegate to a separate `lead_orchestrator` or
-`lead-orchestrator` subagent.
+For the `.codex` multi-agent workflow, there is no separate `lead_orchestrator` or
+`lead-orchestrator` subagent. The active chat agent is the lead and owns orchestration.
+
+Do not create, register, or delegate to a separate lead orchestrator subagent.
 
 The active chat agent owns phase sequencing, artifact handoff, Human-in-the-Loop gates,
 cycle limits, and subagent dispatch. Project-local subagents under `.codex/agents/` are
