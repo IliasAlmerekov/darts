@@ -44,11 +44,16 @@ Depending on the assignment, use only the relevant inputs:
 If asked to help create or verify Design, enforce the `design-feature` contract:
 
 - The design artifact is `docs/{feature-slug}/design/design.md`.
-- The design must be represented only as:
-  - Data Flow Diagram with Mermaid `flowchart`.
+- The design must be represented only as the following diagrams, in this order:
+  - Data Flow Diagram with Mermaid `graph LR` or `graph TD`.
   - Sequence Diagram with Mermaid `sequenceDiagram`.
-- Do not add architecture prose, component plans, API rewrite proposals, testing strategy, alternatives, or implementation plan to `design.md`.
-- Base every participant, node, and edge on facts from `research.md`.
+  - C4 Context Diagram (Level 1) with Mermaid `C4Context`.
+  - C4 Container Diagram (Level 2) with Mermaid `C4Container`.
+  - C4 Component Diagram (Level 3) with Mermaid `C4Component`.
+- Each diagram must be paired with a `### Why` rationale block of 2–5 short sentences that justifies the chosen nodes, boundaries, containers, components, or participants by citing facts from `research.md` (`path:line` style). Diagrams without a rationale block are incomplete.
+- The C4 Context diagram stays at people / Darts App boundary / external systems. The C4 Container diagram stays at deployable/executable units inside the Darts App boundary. The C4 Component diagram zooms into a single container most affected by the task.
+- Do not allow architecture prose, component plans, API rewrite proposals, testing strategy, alternatives, or implementation plan in `design.md` outside the `### Why` rationale blocks. Rationale must not propose new APIs, files, refactors, or tests.
+- Base every participant, node, container, component, and edge on facts from `research.md`.
 - Mark an edge as `Unknown` only when research already identified it as unknown.
 - Stop for Human-in-the-Loop approval after creating or changing `design.md`.
 - Do not create planning files before explicit approval.

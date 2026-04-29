@@ -49,22 +49,31 @@ const PlayerProfilePage = (): React.JSX.Element => {
   if (error) return <div>Fehler: {error}</div>;
 
   return (
-    <div>
+    <main>
       <h1>Spielerprofil</h1>
       {user && (
-        <div>
-          <p>Benutzername: {getDisplayName(user.profile?.nickname, user.username, user.email)}</p>
-          {user.email ? <p>E-Mail: {user.email}</p> : null}
+        <>
+          <section aria-labelledby="profile-identity-heading">
+            <h2 id="profile-identity-heading">Identität</h2>
+            <p>Benutzername: {getDisplayName(user.profile?.nickname, user.username, user.email)}</p>
+            {user.email ? <p>E-Mail: {user.email}</p> : null}
+          </section>
+
           {user.profile ? (
-            <>
+            <section aria-labelledby="profile-stats-heading">
+              <h2 id="profile-stats-heading">Statistiken</h2>
               <p>Spiele gespielt: {user.profile.stats.gamesPlayed}</p>
               <p>Durchschnittspunktzahl: {user.profile.stats.scoreAverage}</p>
-            </>
+            </section>
           ) : null}
-          <p>Rollen: {user.roles.length > 0 ? user.roles.map(formatRole).join(", ") : "Keine"}</p>
-        </div>
+
+          <section aria-labelledby="profile-roles-heading">
+            <h2 id="profile-roles-heading">Rollen</h2>
+            <p>Rollen: {user.roles.length > 0 ? user.roles.map(formatRole).join(", ") : "Keine"}</p>
+          </section>
+        </>
       )}
-    </div>
+    </main>
   );
 };
 

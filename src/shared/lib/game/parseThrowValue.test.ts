@@ -116,6 +116,24 @@ describe("parseThrowValue", () => {
       expect(() => parseThrowValue("Xabc")).toThrow("Invalid throw value: Xabc");
     });
 
+    it("should throw ApiError for invalid modifiers with numeric values", () => {
+      const capturedError = (() => {
+        try {
+          parseThrowValue("X20");
+          return null;
+        } catch (error) {
+          return error;
+        }
+      })();
+
+      expect(capturedError).toBeInstanceOf(ApiError);
+      expect(capturedError).toMatchObject({
+        message: "Invalid throw value: X20",
+        status: 400,
+        data: { input: "X20" },
+      });
+    });
+
     it("should throw error for empty string after modifier", () => {
       expect(() => parseThrowValue("D")).toThrowError(ApiError);
       expect(() => parseThrowValue("D")).toThrow("Invalid throw value: D");

@@ -21,7 +21,7 @@ export function parseThrowValue(input: string | number): ParsedThrow {
   const modifier = input.charAt(0);
   const numericValue = parseInt(input.slice(1), 10);
 
-  if (isNaN(numericValue)) {
+  if ((modifier !== "D" && modifier !== "T") || Number.isNaN(numericValue)) {
     throw new ApiError(`Invalid throw value: ${input}`, {
       status: 400,
       data: { input },
