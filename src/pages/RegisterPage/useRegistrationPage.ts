@@ -1,6 +1,5 @@
-import { useState } from "react";
+import { FormEvent } from "react";
 import { useRegistration } from "./useRegistration";
-import { mapAuthErrorMessage } from "@/lib/error/auth-error-handling";
 
 /**
  * Orchestrates registration page state and submission handling.
@@ -8,36 +7,33 @@ import { mapAuthErrorMessage } from "@/lib/error/auth-error-handling";
 interface RegistrationPageReturn {
   error: string | null;
   loading: boolean;
-  handleSubmit: (e: React.FormEvent<HTMLFormElement>) => Promise<void>;
+  handleSubmit: (e: FormEvent<HTMLFormElement>) => Promise<void>;
 }
 
 export function useRegistrationPage(): RegistrationPageReturn {
-  const [submitError, setSubmitError] = useState<string | null>(null);
-  const { register, loading, error: registrationError } = useRegistration();
+  const { register, loading, error } = useRegistration();
 
-  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>): Promise<void> => {
+  const handleSubmit = async (e: FormEvent<HTMLFormElement>): Promise<void> => {
     e.preventDefault();
-    setSubmitError(null);
 
-    try {
-      const formElement = e.currentTarget;
-      const username = (formElement.elements.namedItem("username") as HTMLInputElement).value;
-      const email = (formElement.elements.namedItem("email") as HTMLInputElement).value;
-      const password = (formElement.elements.namedItem("password") as HTMLInputElement).value;
+    const formElement = e.currentTarget;
+    const usernameInput = formElement.elements.namedItem("username");
+    const emailInput = formElement.elements.namedItem("email");
+    const passwordInput = formElement.elements.namedItem("password");
 
-      await register(username, email, password);
-    } catch (err) {
-      setSubmitError(
-        mapAuthErrorMessage({
-          flow: "registration",
-          error: err,
-        }),
-      );
+    if (
+      !(usernameInput instanceof HTMLInputElement) ||
+      !(emailInput instanceof HTMLInputElement) ||
+      !(passwordInput instanceof HTMLInputElement)
+    ) {
+      return;
     }
+
+    await register(usernameInput.value, emailInput.value, passwordInput.value);
   };
 
   return {
-    error: submitError ?? registrationError,
+    error,
     loading,
     handleSubmit,
   };

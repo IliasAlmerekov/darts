@@ -23,7 +23,7 @@ function SettingsTabsComponent({
   onChange,
   disabled = false,
   mobileLayout = "stack",
-}: SettingsTabsProps): JSX.Element {
+}: SettingsTabsProps): React.JSX.Element {
   const activeIndex =
     selectedId === null ? -1 : options.findIndex((option) => option.id === selectedId);
   const hasActiveSelection = activeIndex >= 0;

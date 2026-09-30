@@ -29,7 +29,7 @@ const StatisticsPagination = React.memo(function StatisticsPagination({
   limit,
   onPrevious,
   onNext,
-}: StatisticsPaginationProps): JSX.Element {
+}: StatisticsPaginationProps): React.JSX.Element {
   return (
     <Pagination className={styles.paginationControls}>
       <PaginationContent>
@@ -54,7 +54,7 @@ function sortParamFromMethod(method: SortMethod): string | undefined {
   return "average:desc";
 }
 
-export default function StatisticsPage(): JSX.Element {
+export default function StatisticsPage(): React.JSX.Element {
   const [sortMethod, setSortMethod] = useState<SortMethod>("alphabetically");
   const [offset, setOffset] = useState(0);
 
@@ -110,11 +110,13 @@ export default function StatisticsPage(): JSX.Element {
                 <div className={styles.playerStats}>
                   <div className={styles.roundStat}>
                     <span className={styles.statLabel}>Ø Round</span>
-                    <span className={styles.statValue}>{player.scoreAverage?.toFixed(1) || 0}</span>
+                    <span className={styles.statValue}>
+                      {(player.scoreAverage ?? 0).toFixed(1)}
+                    </span>
                   </div>
                   <div className={styles.gamesStat}>
                     <span className={styles.statLabel}>Played games</span>
-                    <span className={styles.statValue}>{Math.round(player.gamesPlayed || 0)}</span>
+                    <span className={styles.statValue}>{Math.round(player.gamesPlayed ?? 0)}</span>
                   </div>
                 </div>
               </div>

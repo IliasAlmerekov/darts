@@ -101,6 +101,55 @@ describe("useLoginPage", () => {
     });
   });
 
+  it("redirects profile-backed players to the player profile when no active game exists", async () => {
+    useAuthenticatedUserMock.mockReturnValue({
+      user: {
+        success: true,
+        roles: ["ROLE_PLAYER"],
+        id: 23,
+        username: "Ton Eighty",
+        redirect: "/playerprofile",
+        profile: {
+          id: 23,
+          nickname: "Ton Eighty",
+          stats: {
+            gamesPlayed: 12,
+            scoreAverage: 58.4,
+          },
+        },
+      },
+      loading: false,
+      error: null,
+    });
+
+    renderHook(() => useLoginPage());
+
+    await waitFor(() => {
+      expect(navigateMock).toHaveBeenCalledWith("/playerprofile");
+    });
+  });
+
+  it("prefers the cached active game route over a profile-backed redirect", async () => {
+    useAuthenticatedUserMock.mockReturnValue({
+      user: {
+        success: true,
+        roles: ["ROLE_PLAYER"],
+        id: 23,
+        username: "Ton Eighty",
+        redirect: "/playerprofile",
+      },
+      loading: false,
+      error: null,
+    });
+    getActiveGameIdMock.mockReturnValue(99);
+
+    renderHook(() => useLoginPage());
+
+    await waitFor(() => {
+      expect(navigateMock).toHaveBeenCalledWith("/start/99");
+    });
+  });
+
   it("falls back to the internal start route when the authenticated user has an external redirect", async () => {
     useAuthenticatedUserMock.mockReturnValue({
       user: {

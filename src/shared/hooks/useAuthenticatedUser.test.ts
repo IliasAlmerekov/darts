@@ -15,7 +15,7 @@ vi.mock("@/shared/services/browser/clientLogger", () => ({
 
 import { renderHook, waitFor } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { TimeoutError } from "@/shared/api";
+import { ApiError, TimeoutError } from "@/shared/api";
 import { useAuthenticatedUser } from "./useAuthenticatedUser";
 import type { AuthenticatedUser } from "@/shared/api/auth";
 import { $authChecked, resetAuthStore } from "@/shared/store/auth";
@@ -163,7 +163,64 @@ describe("useAuthenticatedUser", () => {
     expect(result.current.error).toBeNull();
   });
 
-  it("should expose the auth failure state when the request fails unexpectedly", async () => {
+  it("should retain a profile-backed authenticated user", async () => {
+    getAuthenticatedUserMock.mockResolvedValue(
+      buildAuthenticatedUser({
+        roles: ["ROLE_PLAYER"],
+        id: 23,
+        username: "Ton Eighty",
+        redirect: "/playerprofile",
+        profile: {
+          id: 23,
+          nickname: "Ton Eighty",
+          stats: {
+            gamesPlayed: 12,
+            scoreAverage: 58.4,
+          },
+        },
+      }),
+    );
+
+    const { result } = renderHook(() => useAuthenticatedUser());
+
+    await waitFor(() => {
+      expect(result.current.loading).toBe(false);
+    });
+
+    expect(result.current.user).toMatchObject({
+      roles: ["ROLE_PLAYER"],
+      redirect: "/playerprofile",
+      profile: {
+        nickname: "Ton Eighty",
+        stats: {
+          gamesPlayed: 12,
+          scoreAverage: 58.4,
+        },
+      },
+    });
+    expect(result.current.error).toBeNull();
+  });
+
+  it("should expose a mapped auth failure when the auth API rejects with authorization failure", async () => {
+    getAuthenticatedUserMock.mockRejectedValue(
+      new ApiError("Authorization failed for authenticated user", {
+        status: 401,
+        data: { success: false },
+      }),
+    );
+
+    const { result } = renderHook(() => useAuthenticatedUser());
+
+    await waitFor(() => {
+      expect(result.current.loading).toBe(false);
+    });
+
+    expect(result.current.user).toBeNull();
+    expect(result.current.error).toBe("Incorrect email or password.");
+    expect($authChecked.get()).toBe(true);
+  });
+
+  it("should expose a mapped auth failure state when the request fails unexpectedly", async () => {
     const error = new Error("network failed");
     getAuthenticatedUserMock.mockRejectedValue(error);
 
@@ -174,7 +231,7 @@ describe("useAuthenticatedUser", () => {
     });
 
     expect(result.current.user).toBeNull();
-    expect(result.current.error).toBe("network failed");
+    expect(result.current.error).toBe("Login failed. Please try again.");
     expect($authChecked.get()).toBe(true);
   });
 

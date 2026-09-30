@@ -1,0 +1,65 @@
+approval_policy = "on-request"
+sandbox_mode = "workspace-write"
+web_search = "cached"
+model = "gpt-5.5"
+model_reasoning_effort = "high"
+model_instructions_file = "../AGENTS.md"
+
+[features]
+shell_tool = true
+shell_snapshot = true
+unified_exec = true
+apply_patch_freeform = true
+multi_agent = true
+
+[profiles.default]
+model = "gpt-5.5"
+model_reasoning_effort = "high"
+temperature = 0.1
+
+[profiles.research]
+model = "gpt-5.3-codex-spark"
+model_reasoning_effort = "medium"
+temperature = 0.0
+web_search = "cached"
+
+[profiles.review]
+model = "gpt-5.5"
+model_reasoning_effort = "high"
+temperature = 0.0
+
+[agents]
+max_threads = 5
+max_depth = 2
+
+[agents.researcher]
+description = "Read-only Research subagent. Maps one assigned direction into dry facts, relevant files, and unknowns with evidence, without proposing solutions or edits."
+config_file = "agents/researcher.toml"
+
+[agents.coder]
+description = "Implementation loop subagent. Writes scoped production code and tests only for the selected approved plan stage."
+config_file = "agents/coder.toml"
+
+[agents.reviewer]
+description = "Implementation loop subagent. Reviews coder output for correctness, plan alignment, exact file scope, and docs/convention/coding-standards.md compliance."
+config_file = "agents/reviewer.toml"
+
+[agents.tester]
+description = "Implementation loop subagent. Verifies test coverage and runs targeted checks for the selected approved plan stage without expanding scope."
+config_file = "agents/tester.toml"
+
+[agents.security]
+description = "Implementation loop subagent. Checks security, validation, secrets, authorization, reliability, and unsafe defaults for the selected approved plan stage."
+config_file = "agents/security.toml"
+
+[agents.architect]
+description = "Design support subagent. Verifies that diagram-only design and post-approval planning stay grounded in research facts, existing project boundaries, and coding standards."
+config_file = "agents/architect.toml"
+
+[agents.explorer]
+description = "Final integration verifier. Runs local validation commands when needed and returns a ready-or-blocked verdict with evidence."
+config_file = "agents/explorer.toml"
+
+
+[mcp_servers.context7]
+url = "https://mcp.context7.com/mcp"

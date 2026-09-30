@@ -5,7 +5,6 @@ import { mapAuthErrorMessage } from "@/lib/error/auth-error-handling";
 import { ApiError } from "@/shared/api";
 import { isRecord } from "@/lib/guards/guards";
 import { clientLogger } from "@/shared/services/browser/clientLogger";
-import { ROUTES } from "@/lib/router/routes";
 
 /**
  * Provides registration flow state and action.
@@ -54,9 +53,7 @@ export function useRegistration(): RegistrationReturn {
       }
 
       if (response?.redirect) {
-        const redirectPath =
-          response.redirect === ROUTES.start() ? ROUTES.start() : response.redirect;
-        navigate(redirectPath);
+        navigate(response.redirect);
       }
       return response;
     } catch (err) {

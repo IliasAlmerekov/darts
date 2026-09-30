@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect, useCallback, useRef } from "react";
+import React, { useState, useMemo, useEffect, useCallback, useRef } from "react";
 import { useParams } from "react-router-dom";
 import { useStore } from "@nanostores/react";
 import {
@@ -23,6 +23,8 @@ const GAME_MODE_OPTIONS = [
   { label: "Double-out", id: "double-out" },
   { label: "Triple-out", id: "triple-out" },
 ] as const satisfies ReadonlyArray<{ label: string; id: GameMode }>;
+
+const DEFAULT_START_SCORE = 301 as const;
 
 const POINTS_OPTIONS = [
   { label: "101", id: 101 },
@@ -55,7 +57,7 @@ function isAbortError(error: unknown): boolean {
   return error instanceof Error && error.name === "AbortError";
 }
 
-function SettingsPage(): JSX.Element {
+function SettingsPage(): React.JSX.Element {
   const { id: gameIdParam } = useParams<{ id?: string }>();
   const gameData = useStore($gameData);
   const gameSettings = useStore($gameSettings);
@@ -65,7 +67,7 @@ function SettingsPage(): JSX.Element {
   const [isSaving, setIsSaving] = useState(false);
   const [savingScope, setSavingScope] = useState<"game-mode" | "points" | null>(null);
   const [selectedGameMode, setSelectedGameMode] = useState<GameMode>("single-out");
-  const [selectedPoints, setSelectedPoints] = useState<number>(301);
+  const [selectedPoints, setSelectedPoints] = useState<number>(DEFAULT_START_SCORE);
   const [loadedSettings, setLoadedSettings] = useState<GameSettingsResponse | null>(null);
   const [saveErrorMessage, setSaveErrorMessage] = useState<string | null>(null);
   const [hasHydratedSelection, setHasHydratedSelection] = useState(false);
@@ -109,7 +111,7 @@ function SettingsPage(): JSX.Element {
     const controller = new AbortController();
     const { signal } = controller;
 
-    const loadGameSettings = async () => {
+    const loadGameSettings = async (): Promise<void> => {
       try {
         const settings = await getGameSettings(routeGameId, signal);
         if (signal.aborted) {
@@ -146,7 +148,7 @@ function SettingsPage(): JSX.Element {
     [activeGameSettings],
   );
 
-  const currentPoints = activeGameSettings?.startScore ?? 301;
+  const currentPoints = activeGameSettings?.startScore ?? DEFAULT_START_SCORE;
   const effectiveGameId = routeGameId;
   const isHydratingRouteSettings =
     routeGameId !== null && !hasHydratedSelection && activeGameSettings === null;

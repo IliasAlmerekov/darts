@@ -36,6 +36,39 @@ describe("auth store", () => {
     expect($authError.get()).toBeNull();
   });
 
+  it("should retain profile-backed authenticated user data", () => {
+    setAuthenticatedUser(
+      buildAuthenticatedUser({
+        roles: ["ROLE_PLAYER"],
+        id: 23,
+        username: "Ton Eighty",
+        redirect: "/playerprofile",
+        profile: {
+          id: 23,
+          nickname: "Ton Eighty",
+          stats: {
+            gamesPlayed: 12,
+            scoreAverage: 58.4,
+          },
+        },
+      }),
+    );
+
+    expect($user.get()).toMatchObject({
+      roles: ["ROLE_PLAYER"],
+      redirect: "/playerprofile",
+      profile: {
+        nickname: "Ton Eighty",
+        stats: {
+          gamesPlayed: 12,
+          scoreAverage: 58.4,
+        },
+      },
+    });
+    expect($authChecked.get()).toBe(true);
+    expect($authError.get()).toBeNull();
+  });
+
   it("should clear the cached user when auth fails", () => {
     setAuthenticatedUser(buildAuthenticatedUser());
 

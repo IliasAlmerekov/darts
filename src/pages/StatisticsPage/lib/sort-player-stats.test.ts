@@ -14,7 +14,7 @@ function player(name: string, scoreAverage: number, playerId: number): PlayerPro
 }
 
 describe("sortPlayerStats", () => {
-  it("sorts alphabetically ignoring case", () => {
+  it("should sort alphabetically ignoring case", () => {
     const items = [player("beta", 10, 1), player("Alpha", 20, 2), player("charlie", 5, 3)];
 
     const sorted = sortPlayerStats(items, "alphabetically");
@@ -22,7 +22,7 @@ describe("sortPlayerStats", () => {
     expect(sorted.map((item) => item.name)).toEqual(["Alpha", "beta", "charlie"]);
   });
 
-  it("sorts by score in descending order", () => {
+  it("should sort by score in descending order", () => {
     const items = [player("Alpha", 10, 1), player("Beta", 30, 2), player("Charlie", 20, 3)];
 
     const sorted = sortPlayerStats(items, "score");

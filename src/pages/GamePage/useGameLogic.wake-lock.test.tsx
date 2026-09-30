@@ -128,6 +128,26 @@ function buildGameData(status: GameThrowsResponse["status"]): GameThrowsResponse
   };
 }
 
+function createMockWakeLockSentinel(release: () => Promise<void>): WakeLockSentinel {
+  return {
+    type: "screen",
+    released: false,
+    onrelease: null,
+    release,
+    addEventListener: (
+      _type: string,
+      _listener: EventListenerOrEventListenerObject | null,
+      _options?: boolean | AddEventListenerOptions,
+    ) => {},
+    removeEventListener: (
+      _type: string,
+      _listener: EventListenerOrEventListenerObject | null,
+      _options?: boolean | EventListenerOptions,
+    ) => {},
+    dispatchEvent: (_event: Event) => true,
+  };
+}
+
 async function flushMicrotasks(): Promise<void> {
   await Promise.resolve();
   await Promise.resolve();
@@ -188,9 +208,7 @@ describe("useGameLogic wake-lock wiring", () => {
 
   it("should acquire a screen wake lock when the fetched game is started", async () => {
     const releaseMock = vi.fn().mockResolvedValue(undefined);
-    const requestMock = vi
-      .fn()
-      .mockResolvedValue({ release: releaseMock } as unknown as WakeLockSentinel);
+    const requestMock = vi.fn().mockResolvedValue(createMockWakeLockSentinel(releaseMock));
 
     setNavigatorWakeLock(requestMock);
     getGameThrowsIfChangedMock.mockResolvedValue(buildGameData("started"));
@@ -212,7 +230,9 @@ describe("useGameLogic wake-lock wiring", () => {
     ["lobby status", buildGameData("lobby")],
     ["finished status", buildGameData("finished")],
   ] as const)("should not acquire a wake lock for %s", async (_label, gameData) => {
-    const requestMock = vi.fn().mockResolvedValue({} as WakeLockSentinel);
+    const requestMock = vi
+      .fn()
+      .mockResolvedValue(createMockWakeLockSentinel(vi.fn().mockResolvedValue(undefined)));
 
     setNavigatorWakeLock(requestMock);
     getGameThrowsIfChangedMock.mockResolvedValue(gameData);
@@ -227,9 +247,7 @@ describe("useGameLogic wake-lock wiring", () => {
 
   it("should release the wake lock when the game transitions from started to finished", async () => {
     const releaseMock = vi.fn().mockResolvedValue(undefined);
-    const requestMock = vi
-      .fn()
-      .mockResolvedValue({ release: releaseMock } as unknown as WakeLockSentinel);
+    const requestMock = vi.fn().mockResolvedValue(createMockWakeLockSentinel(releaseMock));
 
     setNavigatorWakeLock(requestMock);
     getGameThrowsIfChangedMock.mockResolvedValue(buildGameData("started"));
@@ -251,9 +269,7 @@ describe("useGameLogic wake-lock wiring", () => {
 
   it("should acquire the wake lock when the game transitions from lobby to started", async () => {
     const releaseMock = vi.fn().mockResolvedValue(undefined);
-    const requestMock = vi
-      .fn()
-      .mockResolvedValue({ release: releaseMock } as unknown as WakeLockSentinel);
+    const requestMock = vi.fn().mockResolvedValue(createMockWakeLockSentinel(releaseMock));
 
     setNavigatorWakeLock(requestMock);
     getGameThrowsIfChangedMock.mockResolvedValue(buildGameData("lobby"));
@@ -277,9 +293,7 @@ describe("useGameLogic wake-lock wiring", () => {
 
   it("should release the wake lock when the hook unmounts", async () => {
     const releaseMock = vi.fn().mockResolvedValue(undefined);
-    const requestMock = vi
-      .fn()
-      .mockResolvedValue({ release: releaseMock } as unknown as WakeLockSentinel);
+    const requestMock = vi.fn().mockResolvedValue(createMockWakeLockSentinel(releaseMock));
 
     setNavigatorWakeLock(requestMock);
     getGameThrowsIfChangedMock.mockResolvedValue(buildGameData("started"));

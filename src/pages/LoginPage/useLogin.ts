@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
+import { ApiError } from "@/shared/api";
 import { loginWithCredentials, getAuthenticatedUser } from "@/shared/api/auth";
 import { clientLogger } from "@/shared/services/browser/clientLogger";
 import { invalidateAuthState, setAuthenticatedUser } from "@/shared/store/auth";
@@ -26,6 +27,10 @@ function isLoginLocationState(s: unknown): s is { from?: string } {
     return typeof record["from"] === "string";
   }
   return true;
+}
+
+function getAuthErrorRawMessage(error: unknown): string | undefined {
+  return error instanceof ApiError && error.status === 401 ? "unauthorized" : undefined;
 }
 
 export function useLogin(): LoginReturn {
@@ -89,23 +94,26 @@ export function useLogin(): LoginReturn {
       clientLogger.error("auth.login.failed", {
         error,
       });
-      try {
-        const authenticatedUser = await getAuthenticatedUser();
-        if (authenticatedUser?.redirect) {
-          setAuthenticatedUser(authenticatedUser);
-          navigateToRedirect(authenticatedUser.redirect);
-          return;
+      if (!(error instanceof ApiError && error.status === 401)) {
+        try {
+          const authenticatedUser = await getAuthenticatedUser();
+          if (authenticatedUser?.redirect) {
+            setAuthenticatedUser(authenticatedUser);
+            navigateToRedirect(authenticatedUser.redirect);
+            return;
+          }
+        } catch (sessionCheckError) {
+          clientLogger.error("auth.login.session-check-after-error.failed", {
+            error: sessionCheckError,
+          });
         }
-      } catch (sessionCheckError) {
-        clientLogger.error("auth.login.session-check-after-error.failed", {
-          error: sessionCheckError,
-        });
       }
 
       setError(
         mapAuthErrorMessage({
           flow: "login",
           error,
+          rawMessage: getAuthErrorRawMessage(error),
         }),
       );
     } finally {

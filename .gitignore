@@ -8,10 +8,6 @@
 # testing
 /coverage
 
-# agents
-.claude/
-.codex/
-
 # production
 /build
 /dist

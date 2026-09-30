@@ -20,7 +20,7 @@ describe("useRegistration", () => {
     vi.clearAllMocks();
   });
 
-  it("sets mapped validation errors for registration", async () => {
+  it("should set mapped validation errors when registration fails with 422", async () => {
     registerUserMock.mockRejectedValueOnce(
       new ApiError("Validation failed", {
         status: 422,
@@ -43,7 +43,7 @@ describe("useRegistration", () => {
     expect(navigateMock).not.toHaveBeenCalled();
   });
 
-  it("retries registration with refreshed csrf token", async () => {
+  it("should retry registration with refreshed CSRF token when first attempt fails", async () => {
     registerUserMock.mockRejectedValueOnce(
       new ApiError("Validation failed", {
         status: 422,
