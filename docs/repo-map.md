@@ -30,8 +30,7 @@ Tech stack:
 ## Root directories
 
 ```text
-.claude/            # Claude-specific project context
-.codex/             # Codex skills/workflow metadata
+.codex/             # Codex project config
 .github/            # GitHub automation
 .husky/             # Git hooks
 docker/             # Docker support files

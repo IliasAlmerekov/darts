@@ -1,115 +1,42 @@
-# AGENTS.md — Darts App Context
+# Darts App (frontend)
 
-## Source Of Truth
+PWA darts game: rooms, SSE live throws, player statistics. React 18, TypeScript, Vite,
+Nanostores, CSS Modules. Backend lives in a separate repository; its API contract is
+`docs/backend-api-contract.json`.
 
-Before implementing any change, agents **must** read and follow the rules in
-[`docs/convention/coding-standards.md`](docs/convention/coding-standards.md).
+## Before changing code
 
-`AGENTS.md` is context-only. It does not define coding rules, exceptions, quality gates,
-or additional process requirements. If anything in this file differs from or extends the
-coding standards, ignore this file and follow the coding standards.
+Read `docs/convention/coding-standards.md`, then every domain file its table maps to your
+change. The conventions win over current code: fix the code, keep the rule. A domain the
+table lacks is undocumented, so ask the user before deciding it.
 
-## Project
+For navigation, start at `docs/repo-map.md`.
 
-PWA darts game with room creation, SSE real-time throw streaming, and player statistics.
+For library APIs (React, React Router, Nanostores, Vitest, Testing Library, Playwright,
+Vite), query Context7 before writing code.
 
-For fast navigation, start with [`docs/repo-map.md`](docs/repo-map.md). It is
-context-only and does not define coding rules.
+## Tickets
 
-## Documentation
+When a ticket names its source-of-truth files, read only those. When it asks for a
+literal-value inventory, take every member from the named source; a member the source
+lacks stays missing.
 
-When unsure about the API or behavior of any library in this project, fetch up-to-date docs
-via Context7 before writing code:
+## Verification
 
-```text
-mcp__context7__resolve-library-id -> mcp__context7__query-docs
-```
+`npm run validate:push` runs build, lint, prettier, typecheck, secret scan and unit tests;
+the `pre-push` hook runs the same script. Run `npm run test:e2e` as well when the change
+touches browser flows, routing, auth, responsive layout, or a Playwright-covered journey.
 
-Use this for React, React Router, Nanostores, Vitest, Testing Library, Playwright, Vite,
-TypeScript, and any other dependency where API accuracy matters.
+A fresh clone has no `node_modules`: run `npm install` first, or the hook fails.
 
-## Hard Safety Rules
+## Guardrails
 
-Agents must not:
+Ask the user first before you:
 
-- Read production secrets.
-- Paste `.env` values into prompts, logs, commits, or issue comments.
-- Push directly to `main`.
-- Add `Co-Authored-By:` (or `Co-authored-by:`) trailers to commit messages, PR
-  descriptions, or any other git metadata. Commits are authored by the human
-  developer only.
-- Disable auth, validation, CSRF, or authorization checks.
-- Change permissions, roles, tokens, credentials, or access policy without human approval.
-- Run destructive commands without human approval.
-- Install random packages or change dependencies without a clear reason and human approval.
-- Create, edit, or run database migrations without human approval.
-- Send code, logs, traces, secrets, or project files to external services without explicit
-  permission.
+- add, remove, or upgrade a dependency;
+- touch auth, validation, CSRF, roles, tokens, or credentials;
+- run a destructive command.
 
-## Tech Stack
-
-- Runtime/UI: React 18
-- Language: TypeScript 5.8
-- Build: Vite 7
-- Routing: React Router 6
-- State: Nanostores
-- Styling: CSS Modules
-- Testing: Vitest, Testing Library, Playwright
-
-## Project Structure
-
-```text
-src/
-  app/         # bootstrap, providers, router, global guards, error boundaries
-  assets/      # static assets imported by code
-  pages/       # route-level components
-  shared/      # api client, utilities, hooks, types, shared UI kit
-  test/        # test-only helpers, architecture tests, Vitest setup
-  index.tsx    # app entry
-  vite-env.d.ts
-```
-
-This is a pages-based layout. The authoritative `src/` layout is defined in
-`docs/convention/architecture.md`.
-
-## Verification Commands
-
-Repository validation is enforced by the pre-push hook via `npm run validate:push`.
-The standard local commands are:
-
-```bash
-npm run build
-npm run eslint
-npm run stylelint
-npm run prettier:check
-npm run test
-npm run typecheck
-npm run secrets:check
-```
-
-Run `npm run test:e2e` when touching browser flows, routing, auth, responsive behavior, or
-Playwright-covered user journeys.
-
-## Workflow Context
-
-The repository documents a multi-phase workflow for non-trivial changes. Artifact paths and
-process details should be taken from the coding standards and repository docs, not inferred
-from this file.
-
-## Multi-Agent Workflow Orchestration
-
-For the `.codex` multi-agent workflow, there is no separate `lead_orchestrator` or
-`lead-orchestrator` subagent. The active chat agent is the lead and owns orchestration.
-
-Do not create, register, or delegate to a separate lead orchestrator subagent.
-
-The active chat agent owns phase sequencing, artifact handoff, Human-in-the-Loop gates,
-cycle limits, and subagent dispatch. Project-local subagents under `.codex/agents/` are
-specialized workers only: `researcher`, `architect`, `coder`, `tester`, `security`,
-`reviewer`, and `explorer`.
-
-## Ticket-Driven Source Of Truth
-
-- If a ticket limits the source of truth to a specific file list, use only those files.
-- If a ticket requires literal-value inventory before implementation, do not infer missing
-  members from the ticket text or from other files.
+Keep `.env` values out of prompts, logs, commits, and issues. Work on a branch; `main`
+changes only through a merge request. Commits carry the human author only, with no
+`Co-Authored-By` trailer.
