@@ -1,0 +1,107 @@
+name: darts-production
+
+x-runtime: &runtime
+  restart: unless-stopped
+  logging:
+    driver: local
+    options:
+      max-size: "10m"
+      max-file: "3"
+
+services:
+  proxy:
+    <<: *runtime
+    image: caddy:2.10.2-alpine
+    mem_limit: 64m
+    memswap_limit: 128m
+    environment:
+      APP_HOSTNAME: ${APP_HOSTNAME:?Set APP_HOSTNAME}
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      frontend:
+        condition: service_healthy
+      backend:
+        condition: service_healthy
+
+  frontend:
+    <<: *runtime
+    image: ${FRONTEND_IMAGE:?Set FRONTEND_IMAGE}
+    # Release images arrive through docker load, never from a registry.
+    pull_policy: never
+    mem_limit: 32m
+    memswap_limit: 64m
+
+  backend:
+    <<: *runtime
+    image: ${BACKEND_IMAGE:?Set BACKEND_IMAGE}
+    pull_policy: never
+    mem_limit: 384m
+    memswap_limit: 1024m
+    environment:
+      APP_ENV: prod
+      APP_DEBUG: "0"
+      FRONTEND_URL: https://${APP_HOSTNAME}
+      CORS_ALLOW_ORIGIN: ^https://${APP_HOSTNAME}$
+      SYMFONY_TRUSTED_PROXIES: REMOTE_ADDR
+      MAILER_DSN: "null://null"
+      MESSENGER_TRANSPORT_DSN: "sync://"
+    secrets:
+      - app_secret
+      - mysql_password
+    volumes:
+      - sessions:/app/var/sessions
+    depends_on:
+      mysql:
+        condition: service_healthy
+
+  mysql:
+    <<: *runtime
+    image: mysql:8.4.8
+    mem_limit: 256m
+    memswap_limit: 512m
+    environment:
+      MYSQL_DATABASE: darts
+      MYSQL_USER: darts
+      MYSQL_PASSWORD_FILE: /run/secrets/mysql_password
+      MYSQL_ROOT_PASSWORD_FILE: /run/secrets/mysql_root_password
+    secrets:
+      - mysql_password
+      - mysql_root_password
+    volumes:
+      - mysql_data:/var/lib/mysql
+    command:
+      - --innodb-buffer-pool-size=64M
+      - --innodb-log-buffer-size=8M
+      - --max-connections=40
+      - --table-open-cache=256
+      - --performance-schema=OFF
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          'MYSQL_PWD="$$(cat /run/secrets/mysql_password)" mysql -h 127.0.0.1 -u darts -D darts -e "SELECT 1" >/dev/null',
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 30
+      start_period: 60s
+
+volumes:
+  mysql_data:
+  sessions:
+  caddy_data:
+  caddy_config:
+
+secrets:
+  app_secret:
+    file: ${SECRETS_DIR:?Set SECRETS_DIR}/app_secret
+  mysql_password:
+    file: ${SECRETS_DIR}/mysql_password
+  mysql_root_password:
+    file: ${SECRETS_DIR}/mysql_root_password

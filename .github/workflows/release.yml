@@ -1,0 +1,222 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - "[0-9]+.[0-9]+.[0-9]+"
+
+permissions:
+  contents: read
+
+jobs:
+  checks:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Validate tag
+        env:
+          TAG: ${{ github.ref_name }}
+        run: |
+          if [[ ! $TAG =~ ^(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)$ ]]; then
+            echo "::error::Tag '$TAG' is not bare semver such as 0.1.0"
+            exit 1
+          fi
+
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      # No dependency cache in the release path, so a poisoned cache cannot reach production.
+      - name: Setup Node.js
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 20
+          package-manager-cache: false
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Validate (build, lint, format, typecheck, secrets, unit tests)
+        run: npm run validate:push
+
+  build:
+    needs: checks
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    outputs:
+      archive: ${{ steps.package.outputs.archive }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Resolve release metadata
+        id: meta
+        env:
+          TAG: ${{ github.ref_name }}
+          APP_HOSTNAME: ${{ vars.APP_HOSTNAME }}
+        run: |
+          [[ $TAG =~ ^(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)$ ]] || { echo "::error::Bad tag"; exit 1; }
+          [[ -n $APP_HOSTNAME ]] || { echo "::error::Repository variable APP_HOSTNAME is not set"; exit 1; }
+          backend_ref=$(tr -d '[:space:]' < deploy/backend-ref)
+          [[ $backend_ref =~ ^[0-9a-f]{40}$ ]] || { echo "::error::deploy/backend-ref is not a 40-character SHA"; exit 1; }
+          {
+            echo "backend_ref=$backend_ref"
+            echo "frontend_image=darts-frontend:$TAG"
+            echo "backend_image=darts-backend:$TAG-${backend_ref:0:12}"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Checkout backend at the pinned commit
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          repository: IliasAlmerekov/darts-backend
+          ref: ${{ steps.meta.outputs.backend_ref }}
+          path: backend
+          persist-credentials: false
+
+      - name: Verify backend commit
+        env:
+          BACKEND_REF: ${{ steps.meta.outputs.backend_ref }}
+        run: |
+          head=$(git -C backend rev-parse HEAD)
+          if [[ $head != "$BACKEND_REF" ]]; then
+            echo "::error::Backend HEAD $head differs from deploy/backend-ref $BACKEND_REF"
+            exit 1
+          fi
+
+      - name: Build frontend image
+        env:
+          IMAGE: ${{ steps.meta.outputs.frontend_image }}
+        run: |
+          docker build --platform linux/amd64 \
+            --label "org.opencontainers.image.revision=$GITHUB_SHA" \
+            --label "org.opencontainers.image.version=$GITHUB_REF_NAME" \
+            -f deploy/frontend.Dockerfile -t "$IMAGE" .
+
+      - name: Build backend image
+        env:
+          IMAGE: ${{ steps.meta.outputs.backend_image }}
+          BACKEND_REF: ${{ steps.meta.outputs.backend_ref }}
+        run: |
+          docker build --platform linux/amd64 \
+            --label "org.opencontainers.image.revision=$BACKEND_REF" \
+            --label "org.opencontainers.image.version=$GITHUB_REF_NAME" \
+            -f backend/app/Dockerfile --target runtime -t "$IMAGE" backend
+
+      - name: Scan frontend image (report)
+        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
+        with:
+          image-ref: ${{ steps.meta.outputs.frontend_image }}
+          severity: HIGH,CRITICAL
+          exit-code: "0"
+
+      - name: Scan backend image (report)
+        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
+        with:
+          image-ref: ${{ steps.meta.outputs.backend_image }}
+          severity: HIGH,CRITICAL
+          exit-code: "0"
+
+      - name: Fail on fixable critical vulnerabilities (frontend)
+        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
+        env:
+          TRIVY_SKIP_DB_UPDATE: "true"
+        with:
+          image-ref: ${{ steps.meta.outputs.frontend_image }}
+          severity: CRITICAL
+          ignore-unfixed: true
+          exit-code: "1"
+
+      - name: Fail on fixable critical vulnerabilities (backend)
+        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
+        env:
+          TRIVY_SKIP_DB_UPDATE: "true"
+        with:
+          image-ref: ${{ steps.meta.outputs.backend_image }}
+          severity: CRITICAL
+          ignore-unfixed: true
+          exit-code: "1"
+
+      - name: Package release
+        id: package
+        env:
+          RELEASE_TAG: ${{ github.ref_name }}
+          COMMIT_SHA: ${{ github.sha }}
+          RUN_ID: ${{ github.run_id }}
+          APP_HOSTNAME: ${{ vars.APP_HOSTNAME }}
+          FRONTEND_IMAGE: ${{ steps.meta.outputs.frontend_image }}
+          BACKEND_IMAGE: ${{ steps.meta.outputs.backend_image }}
+        run: |
+          archive=$(deploy/package-release.sh "$RUNNER_TEMP/release")
+          # compose.yaml and Caddyfile live on the server only. The rollout rejects any other member list.
+          members=$(tar -tzf "$archive" | LC_ALL=C sort | tr '\n' ' ')
+          if [[ $members != "images.sha256 images.tar.gz release.env " ]]; then
+            echo "::error::Unexpected archive members: $members"
+            exit 1
+          fi
+          echo "archive=$(basename "$archive")" >> "$GITHUB_OUTPUT"
+          ls -lh "$archive"
+
+      - name: Upload release archive
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: release
+          path: ${{ runner.temp }}/release/${{ steps.package.outputs.archive }}
+          if-no-files-found: error
+          retention-days: 7
+          compression-level: 0
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    environment:
+      name: azure-production
+      url: https://${{ vars.APP_HOSTNAME }}
+    concurrency:
+      group: deploy-production
+      cancel-in-progress: false
+    steps:
+      - name: Download release archive
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: release
+          path: ${{ runner.temp }}/release
+
+      - name: Configure SSH
+        env:
+          DEPLOY_SSH_KEY: ${{ secrets.DEPLOY_SSH_KEY }}
+          DEPLOY_KNOWN_HOSTS: ${{ secrets.DEPLOY_KNOWN_HOSTS }}
+        run: |
+          [[ -n $DEPLOY_SSH_KEY && -n $DEPLOY_KNOWN_HOSTS ]] || { echo "::error::Deploy secrets are missing"; exit 1; }
+          install -d -m 700 "$RUNNER_TEMP/ssh"
+          (umask 077; printf '%s\n' "$DEPLOY_SSH_KEY" > "$RUNNER_TEMP/ssh/key")
+          printf '%s\n' "$DEPLOY_KNOWN_HOSTS" > "$RUNNER_TEMP/ssh/known_hosts"
+
+      - name: Upload and roll out
+        env:
+          DEPLOY_HOST: ${{ vars.DEPLOY_HOST }}
+          DEPLOY_USER: ${{ vars.DEPLOY_USER }}
+          ARCHIVE: ${{ needs.build.outputs.archive }}
+        run: |
+          [[ -n $DEPLOY_HOST && -n $DEPLOY_USER ]] || { echo "::error::DEPLOY_HOST or DEPLOY_USER is not set"; exit 1; }
+          [[ $ARCHIVE =~ ^darts-release-[0-9]+\.[0-9]+\.[0-9]+-[0-9a-f]{40}-[0-9]+\.tar\.gz$ ]] || { echo "::error::Bad archive name"; exit 1; }
+          ssh_opts=(
+            -i "$RUNNER_TEMP/ssh/key"
+            -o IdentitiesOnly=yes
+            -o StrictHostKeyChecking=yes
+            -o UserKnownHostsFile="$RUNNER_TEMP/ssh/known_hosts"
+            -o BatchMode=yes
+            -o ConnectTimeout=20
+            -o ServerAliveInterval=30
+          )
+          scp "${ssh_opts[@]}" "$RUNNER_TEMP/release/$ARCHIVE" "$DEPLOY_USER@$DEPLOY_HOST:/opt/darts/incoming/$ARCHIVE"
+          # ARCHIVE passed the regex above, so expanding it on the runner is intended.
+          # shellcheck disable=SC2029
+          ssh "${ssh_opts[@]}" "$DEPLOY_USER@$DEPLOY_HOST" "sudo -n /opt/darts/bin/rollout /opt/darts/incoming/$ARCHIVE"
+
+      - name: Remove SSH key
+        if: always()
+        run: rm -rf "$RUNNER_TEMP/ssh"
