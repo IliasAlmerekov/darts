@@ -93,22 +93,23 @@ project name, because a new name would start with empty volumes.
 
 ## GitHub settings
 
-Create the `production` environment and add a required reviewer if you want to approve
-each deploy. Then set (do not commit the key):
+Create the `azure-production` environment and add a required reviewer if you want to approve
+each deploy. The name avoids the `Production` environment that Vercel created, because GitHub
+environment names are case-insensitive. Then set (do not commit the key):
 
 ```sh
-gh api -X PUT repos/IliasAlmerekov/darts/environments/production
-gh secret set DEPLOY_SSH_KEY --env production < ./darts-deploy
+gh api -X PUT repos/IliasAlmerekov/darts/environments/azure-production
+gh secret set DEPLOY_SSH_KEY --env azure-production < ./darts-deploy
 ssh-keyscan -t ed25519 dartsapp.swedencentral.cloudapp.azure.com > known_hosts
 # Compare the fingerprint with `ssh-keygen -lf /etc/ssh/ssh_host_ed25519_key.pub` on the VM.
-gh secret set DEPLOY_KNOWN_HOSTS --env production < known_hosts
-gh variable set DEPLOY_HOST --env production --body dartsapp.swedencentral.cloudapp.azure.com
-gh variable set DEPLOY_USER --env production --body darts-deploy
+gh secret set DEPLOY_KNOWN_HOSTS --env azure-production < known_hosts
+gh variable set DEPLOY_HOST --env azure-production --body dartsapp.swedencentral.cloudapp.azure.com
+gh variable set DEPLOY_USER --env azure-production --body darts-deploy
 gh variable set APP_HOSTNAME --body dartsapp.swedencentral.cloudapp.azure.com
 ```
 
 `APP_HOSTNAME` is a repository variable because the build job writes it into
-`release.env`, and that job does not use the `production` environment.
+`release.env`, and that job does not use the `azure-production` environment.
 
 Delete `./darts-deploy` from your machine once the secret is set.
 
@@ -177,4 +178,4 @@ change `compose.yaml` or the `Caddyfile`, so it cannot add host mounts, privileg
 or other services. It can still ship a malicious frontend or backend image. That image
 runs inside the fixed stack: no host mounts, no extra privileges, access to the database,
 the session volume and the `app_secret` and `mysql_password` secrets. Protect the deploy
-key and the `production` environment reviewers accordingly.
+key and the `azure-production` environment reviewers accordingly.

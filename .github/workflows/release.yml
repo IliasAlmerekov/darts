@@ -173,7 +173,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 30
     environment:
-      name: production
+      name: azure-production
       url: https://${{ vars.APP_HOSTNAME }}
     concurrency:
       group: deploy-production
