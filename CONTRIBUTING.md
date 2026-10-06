@@ -82,9 +82,9 @@ Other directories (`shared/hooks/`, `shared/lib/`, `app/`) use **direct file imp
 
 ## Commits & PRs
 
-- Use Conventional Commits (`feat:`, `fix:`, `refactor:`, `test:`, `chore:`).
+- Use [Conventional Commits 1.0.0](https://www.conventionalcommits.org/en/v1.0.0/) (`feat:`, `fix:`, `refactor:`, `test:`, `chore:`).
 - Do not bypass Husky or Commitlint.
-- Describe user impact and test results in the PR.
+- Fill in `.github/pull_request_template.md` as the PR body. The rules for each part are in `AGENTS.md` under "Commits and pull requests".
 
 ## Security
 
