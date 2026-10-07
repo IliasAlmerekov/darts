@@ -14,11 +14,3 @@
 .playerboardList {
   margin-top: var(--space-xl);
 }
-
-.dateInfo h1 {
-  margin-bottom: 0;
-}
-
-.dateInfo h3 {
-  margin-top: 0;
-}
