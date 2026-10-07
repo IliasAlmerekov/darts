@@ -23,9 +23,9 @@ lacks stays missing.
 
 ## Verification
 
-`npm run validate:push` runs build, lint, prettier, typecheck, secret scan and unit tests;
-the `pre-push` hook runs the same script. Run `npm run test:e2e` as well when the change
-touches browser flows, routing, auth, responsive layout, or a Playwright-covered journey.
+`npm run validate:push` runs build, ESLint, Stylelint, prettier, typecheck, knip, secret scan
+and unit tests; the `pre-push` hook runs the same script. Run `npm run test:e2e` as well when
+the change touches browser flows, routing, auth, responsive layout, or a Playwright-covered journey.
 
 A fresh clone has no `node_modules`: run `npm install` first, or the hook fails.
 
