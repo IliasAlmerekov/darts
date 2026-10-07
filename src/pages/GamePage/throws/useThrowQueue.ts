@@ -1,6 +1,6 @@
 import { useCallback, useRef, useState } from "react";
 import { recordThrow, setGameStateVersion } from "@/shared/api/game";
-import { clientLogger } from "@/lib/clientLogger";
+import { clientLogger } from "@/shared/services/browser/clientLogger";
 import type { GameThrowsResponse, ThrowRequest } from "@/types";
 import { playSound } from "@/shared/services/browser/soundPlayer";
 import { $gameData, setGameData } from "@/shared/store";

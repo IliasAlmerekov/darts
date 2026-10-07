@@ -1,7 +1,7 @@
 import { useMemo } from "react";
 import { LoaderFunctionArgs, useLoaderData } from "react-router-dom";
 import { getFinishedGame } from "@/shared/api/game";
-import { clientLogger } from "@/lib/clientLogger";
+import { clientLogger } from "@/shared/services/browser/clientLogger";
 import type { FinishedPlayerResponse, WinnerPlayerProps } from "@/types";
 
 type UseGameDetailPageResult = {
