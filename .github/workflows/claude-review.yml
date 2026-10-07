@@ -1,0 +1,49 @@
+name: Claude Code Review
+
+on:
+  pull_request:
+    types: [opened, ready_for_review, reopened]
+    paths-ignore:
+      - "**.md"
+      - "docs/**"
+      - "package-lock.json"
+
+concurrency:
+  group: claude-review-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  review:
+    if: >
+      github.event.pull_request.draft == false &&
+      github.event.pull_request.user.login != 'dependabot[bot]' &&
+      github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read
+      pull-requests: write
+      issues: write
+      id-token: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+      - uses: anthropics/claude-code-action@v1
+        with:
+          anthropic_api_key: ${{ secrets.CLAUDE_REVIEW }}
+          claude_args: >-
+            --model claude-sonnet-5-5
+            --max-turns 30
+            --allowedTools "mcp__github_inline_comment__create_inline_comment,Bash(gh pr diff:*),Bash(gh pr view:*),Bash(gh pr comment:*)"
+          prompt: |
+            REPO: ${{ github.repository }}
+            PR NUMBER: ${{ github.event.pull_request.number }}
+
+            Проведи ревью этого pull request. Сфокусируйся на багах,
+            безопасности и логических ошибках; стиль и мелочи пропускай.
+            Diff получи через `gh pr diff`.
+            Инлайн-комментарии оставляй только по существенным замечаниям
+            через mcp__github_inline_comment__create_inline_comment.
+            В конце оставь один короткий итоговый комментарий через `gh pr comment`.
+            Если замечаний нет, так и напиши.
