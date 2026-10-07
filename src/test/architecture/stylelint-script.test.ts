@@ -1,26 +1,33 @@
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
-import { describe, expect, it } from "vitest";
+import { beforeAll, describe, expect, it } from "vitest";
+import { isRecord } from "@/lib/guards/guards";
 
-// npm runs scripts through sh, which has no `**`. An unquoted glob is expanded by
-// the shell and, with generated CSS in coverage/ or dist/, can hand stylelint only
-// ignored files (AllFilesIgnoredError). Quoted, stylelint resolves the glob itself.
-const SOURCE_CSS_GLOB = '"src/**/*.css"';
-
-interface PackageJson {
-  scripts: Record<string, string>;
-}
-
-const packageJson = JSON.parse(
-  readFileSync(resolve(process.cwd(), "package.json"), "utf8"),
-) as PackageJson;
+// npm runs scripts through sh, which has no globstar: an unquoted `**/*.css` is
+// expanded by the shell like `*/*.css`. With generated CSS in coverage/ that can hand
+// stylelint only ignored files (AllFilesIgnoredError). Double-quoted, the glob reaches
+// stylelint verbatim and stylelint resolves it itself.
+const QUOTED_SOURCE_CSS_GLOB = /^stylelint "src\/\*\*\/\*\.css"(\s|$)/;
 
 describe("stylelint npm scripts", () => {
-  it("lints source CSS through a quoted glob", () => {
-    expect(packageJson.scripts["stylelint"]).toBe(`stylelint ${SOURCE_CSS_GLOB}`);
+  let scripts: Record<string, unknown> = {};
+
+  beforeAll(() => {
+    const packageJson: unknown = JSON.parse(
+      readFileSync(resolve(process.cwd(), "package.json"), "utf8"),
+    );
+
+    if (!isRecord(packageJson) || !isRecord(packageJson["scripts"])) {
+      throw new Error("package.json has no scripts object");
+    }
+
+    scripts = packageJson["scripts"];
   });
 
-  it("fixes source CSS through the same quoted glob", () => {
-    expect(packageJson.scripts["stylelint:fix"]).toBe(`stylelint ${SOURCE_CSS_GLOB} --fix`);
-  });
+  it.each(["stylelint", "stylelint:fix"])(
+    "%s passes the double-quoted src/**/*.css glob to stylelint",
+    (scriptName) => {
+      expect(scripts[scriptName]).toEqual(expect.stringMatching(QUOTED_SOURCE_CSS_GLOB));
+    },
+  );
 });
