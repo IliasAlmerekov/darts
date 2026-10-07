@@ -4,7 +4,7 @@ Thanks for contributing! This guide summarizes how we work on the frontend and h
 
 ## Prerequisites
 
-- Node.js 20 + npm, pinned in `.nvmrc`. CI uses Node.js 20, except the GitLab `e2e_tests` job, which runs in the Playwright Docker image.
+- Node.js 20.19+ + npm, pinned in `.nvmrc` (Vite 7 requires `^20.19.0 || >=22.12.0`). CI uses Node.js 20, except the GitLab `e2e_tests` job, which runs in the Playwright Docker image.
 - Install dependencies and the Playwright browser:
 
 ```bash
