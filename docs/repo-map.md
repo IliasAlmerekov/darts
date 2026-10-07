@@ -216,7 +216,6 @@ Reusable UI folders:
 
 ```text
 admin-layout/
-auth-form/
 back-button/
 button/
 dialog/
