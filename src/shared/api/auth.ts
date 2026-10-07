@@ -36,7 +36,7 @@ interface CsrfTokensResponse {
 
 export type Role = "ROLE_USER" | "ROLE_ADMIN" | "ROLE_PLAYER";
 
-export interface AuthenticatedUserProfileStats {
+interface AuthenticatedUserProfileStats {
   gamesPlayed: number;
   scoreAverage: number;
 }

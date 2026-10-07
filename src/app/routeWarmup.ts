@@ -57,7 +57,7 @@ export function scheduleSelectiveRouteWarmUp(
   return scheduleIdleTask(scheduler, warmUp);
 }
 
-export async function prefetchStatisticsPageData(): Promise<void> {
+async function prefetchStatisticsPageData(): Promise<void> {
   const { prefetchInitialPlayerStats } = await import("@/pages/StatisticsPage/usePlayerStats");
   await prefetchInitialPlayerStats();
 }

@@ -5,12 +5,8 @@ export type {
   GameDataProps,
   GameMode,
   GameStatus,
-  Round,
-  RoundHistory,
   ScoreboardDelta,
-  ScoreboardPlayerDelta,
   ThrowAckResponse,
-  ThrowDelta,
   WinnerPlayerProps,
   PlayerThrow,
 } from "./game";
