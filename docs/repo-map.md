@@ -289,6 +289,7 @@ Load only the convention files relevant to the task. Start from
 
 ```text
 package.json
+.nvmrc
 vite.config.ts
 tsconfig.json
 tsconfig.eslint.json

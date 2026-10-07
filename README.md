@@ -10,11 +10,7 @@ Dart score app is an app where you can effortlessly keep track of your dart game
 git clone <repository-url>
 ```
 
-2. Install dependencies:
-
-```bash
-npm install
-```
+2. Set up Node.js 20, dependencies and the Playwright browser as described in [CONTRIBUTING.md → Prerequisites](CONTRIBUTING.md#prerequisites).
 
 ## Getting Started
 

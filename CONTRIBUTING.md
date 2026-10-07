@@ -4,24 +4,30 @@ Thanks for contributing! This guide summarizes how we work on the frontend and h
 
 ## Prerequisites
 
-- Node.js + npm
-- Install dependencies:
+- Node.js 20 + npm, pinned in `.nvmrc`. CI uses Node.js 20, except the GitLab `e2e_tests` job, which runs in the Playwright Docker image.
+- Install dependencies and the Playwright browser:
 
 ```bash
+nvm use
 npm install
+npx playwright install chromium
 ```
 
-## Project Structure (FSD)
+On a fresh Linux machine, use `npx playwright install --with-deps chromium` to also install the system libraries Chromium needs.
 
-We follow Feature-Sliced Design. Main layers live in `src/`:
+## Project Structure
 
-- `app/` — app bootstrap and global styles
-- `assets/` — static assets
-- `entities/` — domain entities
-- `features/` — business features (main development unit)
-- `shared/` — shared UI, hooks, libs, types, stores
+The project is pages-based. Main entries in `src/`:
 
-Do not import feature internals from other features. Only import from `features/<feature>/index.ts`.
+- `app/` — bootstrap: router, providers, route guards, error boundaries
+- `assets/` — static assets imported by code
+- `pages/` — route-level components, one folder per page
+- `shared/` — cross-page reusable code (api, hooks, lib, services, store, types, ui)
+- `test/` — test-only helpers
+
+Dependencies point one way: `app -> pages -> shared`. A page must not import from another page.
+
+[`docs/convention/architecture.md`](docs/convention/architecture.md) is the source of truth for folder layout and import rules.
 
 ## Development
 
