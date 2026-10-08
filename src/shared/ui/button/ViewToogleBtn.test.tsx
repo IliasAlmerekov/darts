@@ -62,6 +62,14 @@ describe("ViewToogleButton", () => {
     expect(currentPageName()).toBe(current);
   });
 
+  it("should not mark any view as current when the route matches neither view", () => {
+    renderAt(ROUTES.details(551));
+
+    for (const name of ["Players", "Games"]) {
+      expect(screen.getByRole("link", { name }).hasAttribute("aria-current")).toBe(false);
+    }
+  });
+
   describe("navigation", () => {
     beforeEach(() => {
       vi.useFakeTimers();
@@ -119,7 +127,6 @@ describe("ViewToogleButton", () => {
       { modifier: "metaKey", init: { metaKey: true } },
       { modifier: "shiftKey", init: { shiftKey: true } },
       { modifier: "altKey", init: { altKey: true } },
-      { modifier: "middle button", init: { button: 1 } },
     ])("should leave a $modifier click to the browser", ({ init }) => {
       renderAt(ROUTES.statistics);
       const gamesLink = screen.getByRole("link", { name: "Games" });

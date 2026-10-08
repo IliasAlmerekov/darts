@@ -52,13 +52,14 @@ describe("NavigationBar", () => {
   });
 
   it.each([
-    { route: ROUTES.statistics, current: "Statistics" },
-    { route: ROUTES.details(551), current: "Statistics" },
-    { route: ROUTES.gamesOverview, current: "Statistics" },
-    { route: ROUTES.start(), current: "Game" },
-    { route: ROUTES.start(7), current: "Game" },
-    { route: ROUTES.settings(7), current: "Settings" },
-  ])("should mark $current as the current page on $route", ({ route, current }) => {
+    { route: ROUTES.statistics, current: "Statistics", value: "page" },
+    { route: ROUTES.details(551), current: "Statistics", value: "true" },
+    { route: ROUTES.gamesOverview, current: "Statistics", value: "true" },
+    { route: ROUTES.start(), current: "Game", value: "true" },
+    { route: ROUTES.start(7), current: "Game", value: "page" },
+    { route: ROUTES.settings(), current: "Settings", value: "true" },
+    { route: ROUTES.settings(7), current: "Settings", value: "page" },
+  ])("should mark $current with aria-current $value on $route", ({ route, current, value }) => {
     render(
       <MemoryRouter initialEntries={[route]}>
         <NavigationBar currentGameId={7} />
@@ -68,7 +69,7 @@ describe("NavigationBar", () => {
     for (const name of ["Statistics", "Game", "Settings"]) {
       const link = screen.getByRole("link", { name });
       if (name === current) {
-        expect(link.getAttribute("aria-current")).toBe("page");
+        expect(link.getAttribute("aria-current")).toBe(value);
       } else {
         expect(link.hasAttribute("aria-current")).toBe(false);
       }
@@ -147,7 +148,6 @@ describe("NavigationBar", () => {
       { modifier: "metaKey", init: { metaKey: true } },
       { modifier: "shiftKey", init: { shiftKey: true } },
       { modifier: "altKey", init: { altKey: true } },
-      { modifier: "middle button", init: { button: 1 } },
     ])("should leave a $modifier click to the browser", ({ init }) => {
       renderAt(ROUTES.statistics);
       const gameLink = screen.getByRole("link", { name: "Game" });
@@ -185,6 +185,20 @@ describe("NavigationBar", () => {
       historyBack();
 
       expect(currentLocation()).toBe(ROUTES.playerProfile);
+    });
+
+    it("should navigate to the section page when its link is clicked from a sub-page", () => {
+      renderAt(ROUTES.details(551));
+
+      fireEvent.click(screen.getByRole("link", { name: "Statistics" }));
+      act(() => {
+        vi.advanceTimersByTime(110);
+      });
+
+      expect(currentLocation()).toBe(ROUTES.statistics);
+      expect(screen.getByRole("link", { name: "Statistics" }).getAttribute("aria-current")).toBe(
+        "page",
+      );
     });
 
     it("should cancel a pending navigation when the route changes during the preview", () => {

@@ -72,8 +72,16 @@ function NavigationBar({ className, currentGameId = null }: NavigationBarProps):
   };
 
   // aria-current follows the real route only; the visual highlight may show a preview or fallback.
+  // "page" when the link targets exactly this URL, "true" when we are elsewhere in its section.
   const activeTabId = navItems.find((item) => getIsActive(item.id, item.path))?.id ?? null;
   const displayedTabId = previewTabId ?? activeTabId ?? "statistics";
+
+  const getAriaCurrent = (itemId: string, itemPath: string): "page" | "true" | undefined => {
+    if (itemId !== activeTabId) {
+      return undefined;
+    }
+    return itemPath === location.pathname ? "page" : "true";
+  };
 
   useEffect(() => {
     // A route change (e.g. Back) during the preview wins over the pending navigation.
@@ -103,7 +111,7 @@ function NavigationBar({ className, currentGameId = null }: NavigationBarProps):
     }
 
     event.preventDefault();
-    if (itemId === activeTabId) {
+    if (path === location.pathname) {
       return;
     }
 
@@ -135,7 +143,7 @@ function NavigationBar({ className, currentGameId = null }: NavigationBarProps):
             <Link
               key={item.id}
               to={item.path}
-              aria-current={item.id === activeTabId ? "page" : undefined}
+              aria-current={getAriaCurrent(item.id, item.path)}
               onClick={(event) => handleTabClick(event, item.path, item.id)}
               className={clsx(styles.tabButton, {
                 [styles.active ?? ""]: displayedTabId === item.id,

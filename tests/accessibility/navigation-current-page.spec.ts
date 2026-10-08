@@ -67,12 +67,15 @@ test.describe("Navigation current page", () => {
     await expect(page).toHaveURL(/\/gamesoverview$/);
     await expect(gamesLink).toHaveAttribute("aria-current", "page");
     await expect(playersLink).not.toHaveAttribute("aria-current");
+    // Still in the Statistics section, but not on the page its link targets.
+    await expect(statisticsLink).toHaveAttribute("aria-current", "true");
 
     await page.goBack();
 
     await expect(page).toHaveURL(/\/statistics$/);
     await expect(playersLink).toHaveAttribute("aria-current", "page");
     await expect(gamesLink).not.toHaveAttribute("aria-current");
+    await expect(statisticsLink).toHaveAttribute("aria-current", "page");
 
     await page.goBack();
 
