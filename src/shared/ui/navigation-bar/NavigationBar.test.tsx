@@ -19,9 +19,13 @@ function LocationProbe(): React.JSX.Element {
 }
 
 function renderAt(...history: string[]): void {
+  renderWithGameAt(7, ...history);
+}
+
+function renderWithGameAt(currentGameId: number | null, ...history: string[]): void {
   render(
     <MemoryRouter initialEntries={history} initialIndex={history.length - 1}>
-      <NavigationBar currentGameId={7} />
+      <NavigationBar currentGameId={currentGameId} />
       <LocationProbe />
     </MemoryRouter>,
   );
@@ -76,7 +80,7 @@ describe("NavigationBar", () => {
     }
   });
 
-  it("should show the active icon for the current page", () => {
+  it("should show the active icon for the current section", () => {
     render(
       <MemoryRouter initialEntries={[ROUTES.details(551)]}>
         <NavigationBar />
@@ -199,6 +203,21 @@ describe("NavigationBar", () => {
       expect(screen.getByRole("link", { name: "Statistics" }).getAttribute("aria-current")).toBe(
         "page",
       );
+    });
+
+    it("should mark a game route as the Game section and navigate to start when no game is active", () => {
+      renderWithGameAt(null, ROUTES.start(7));
+      const gameLink = screen.getByRole("link", { name: "Game" });
+      expect(gameLink.getAttribute("href")).toBe(ROUTES.start());
+      expect(gameLink.getAttribute("aria-current")).toBe("true");
+
+      fireEvent.click(gameLink);
+      act(() => {
+        vi.advanceTimersByTime(110);
+      });
+
+      expect(currentLocation()).toBe(ROUTES.start());
+      expect(screen.getByRole("link", { name: "Game" }).getAttribute("aria-current")).toBe("page");
     });
 
     it("should cancel a pending navigation when the route changes during the preview", () => {

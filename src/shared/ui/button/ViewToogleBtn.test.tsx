@@ -152,6 +152,20 @@ describe("ViewToogleButton", () => {
       expect(currentPageName()).toBe("Players");
     });
 
+    it("should navigate when a view is clicked from a route that matches neither view", () => {
+      renderAt(ROUTES.details(551));
+
+      fireEvent.click(screen.getByRole("link", { name: "Players" }));
+      expect(currentLocation()).toBe(ROUTES.details(551));
+
+      act(() => {
+        vi.advanceTimersByTime(180);
+      });
+
+      expect(currentLocation()).toBe(ROUTES.statistics);
+      expect(currentPageName()).toBe("Players");
+    });
+
     it("should cancel a pending navigation when the route changes during the preview", () => {
       renderAt(ROUTES.playerProfile, ROUTES.statistics);
 
