@@ -25,7 +25,7 @@ type PlayerStatsRequestResult = {
   total: number;
 };
 
-export const INITIAL_PLAYER_STATS_QUERY: Readonly<PlayerStatsQuery> = {
+const INITIAL_PLAYER_STATS_QUERY: Readonly<PlayerStatsQuery> = {
   limit: 10,
   offset: 0,
   sortParam: undefined,
@@ -53,7 +53,7 @@ export function clearPlayerStatsCache(): void {
 
 registerAuthInvalidationListener(clearPlayerStatsCache);
 
-export function prefetchPlayerStats(query: PlayerStatsQuery): Promise<void> {
+function prefetchPlayerStats(query: PlayerStatsQuery): Promise<void> {
   const queryKey = getPlayerStatsQueryKey(query);
 
   const existingPrefetch = playerStatsPrefetches.get(queryKey);

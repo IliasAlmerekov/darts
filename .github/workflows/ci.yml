@@ -45,6 +45,9 @@ jobs:
       - name: Typecheck
         run: npm run typecheck
 
+      - name: Knip
+        run: npm run knip
+
       - name: Secrets check
         run: npm run secrets:check
 

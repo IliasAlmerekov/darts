@@ -102,8 +102,8 @@ Rules:
 The API layer has a **two-level public surface**:
 
 - `@/shared/api` (the `index.ts` barrel) exposes cross-cutting symbols: `apiClient`,
-  `setUnauthorizedHandler`, `ApiError`, `NetworkError`, `UnauthorizedError`,
-  `TimeoutError`, endpoint constants.
+  `setUnauthorizedHandler`, `ApiError`, `ForbiddenError`, `NetworkError`,
+  `UnauthorizedError`, `TimeoutError`, endpoint constants.
 - `@/shared/api/<domain>` (`auth`, `game`, `room`, `statistics`) is the per-domain public
   surface. Pages and other shared code import resource calls and DTO types directly from
   these modules: `import { getGameThrows } from "@/shared/api/game"`.

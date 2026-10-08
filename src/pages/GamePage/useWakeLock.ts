@@ -1,4 +1,4 @@
-import { clientLogger } from "@/lib/clientLogger";
+import { clientLogger } from "@/shared/services/browser/clientLogger";
 import { useEffect, useRef } from "react";
 
 export function useWakeLock(isEnabled: boolean): void {

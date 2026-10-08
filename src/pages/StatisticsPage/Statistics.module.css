@@ -94,22 +94,6 @@
   padding-bottom: var(--space-md);
 }
 
-.paginationButton {
-  border: none;
-  border-radius: 100px;
-  background-color: var(--lightgrey);
-  color: var(--darkblue);
-  cursor: pointer;
-  font-size: var(--font-size-16);
-  font-weight: 700;
-  min-height: 40px;
-  padding: 0 var(--space-md);
-}
-
-.disabledButton {
-  opacity: 0.5;
-}
-
 .paginationStatus {
   align-self: center;
   font-weight: 700;

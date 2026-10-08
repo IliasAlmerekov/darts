@@ -7,7 +7,7 @@
     "unusedExports": "error",
     "unusedFiles": "error",
     "unlisted": "warn",
-    "unusedDependencies": "warn",
+    "unusedDependencies": "error",
     "unusedClass": "error"
   }
 }

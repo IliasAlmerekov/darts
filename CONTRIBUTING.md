@@ -43,6 +43,7 @@ Run the exact scripts defined in `package.json`:
 
 ```bash
 npm run eslint
+npm run knip
 npm run stylelint
 npm run test
 npm run test:e2e

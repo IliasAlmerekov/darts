@@ -4,7 +4,7 @@ import { toUserErrorMessage } from "@/lib/error/error-to-user-message";
 import { ROUTES } from "@/lib/router/routes";
 import { unlockSounds } from "@/shared/services/browser/soundPlayer";
 import { setLastFinishedGameSummary } from "@/shared/store";
-import { clientLogger } from "@/lib/clientLogger";
+import { clientLogger } from "@/shared/services/browser/clientLogger";
 import type { GameSummaryResponse, GameThrowsResponse, RoomStreamEventType } from "@/types";
 import { shouldAutoFinishGame, shouldNavigateToSummary } from "./lib/gameLogic.helpers";
 

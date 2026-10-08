@@ -11,13 +11,13 @@ export interface EventSourceListener {
   handler: EventHandler;
 }
 
-export interface UseEventSourceOptions {
+interface UseEventSourceOptions {
   initialRetryDelayMs?: number;
   maxRetryDelayMs?: number;
   withCredentials?: boolean;
 }
 
-export interface UseEventSourceResult {
+interface UseEventSourceResult {
   error: Error | null;
   isConnected: boolean;
 }
