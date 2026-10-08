@@ -1,4 +1,4 @@
-import React, { useCallback, useState } from "react";
+import React, { useCallback, useId, useRef, useState } from "react";
 import clsx from "clsx";
 import { QRCodeSVG } from "qrcode.react";
 import styles from "./QRCode.module.css";
@@ -12,6 +12,8 @@ interface QRCodeProps {
 
 function QRCode({ invitationLink, gameId, isLobbyFull, children }: QRCodeProps): React.JSX.Element {
   const [copyFeedback, setCopyFeedback] = useState<"idle" | "copied" | "failed">("idle");
+  const invitationLinkInputRef = useRef<HTMLInputElement>(null);
+  const copyFeedbackId = useId();
 
   const copyInvitationLink = useCallback(async (): Promise<void> => {
     if (!invitationLink) {
@@ -35,6 +37,8 @@ function QRCode({ invitationLink, gameId, isLobbyFull, children }: QRCodeProps):
       setCopyFeedback("copied");
     } catch {
       setCopyFeedback("failed");
+      invitationLinkInputRef.current?.focus();
+      invitationLinkInputRef.current?.select();
     }
   }, [invitationLink]);
 
@@ -67,6 +71,16 @@ function QRCode({ invitationLink, gameId, isLobbyFull, children }: QRCodeProps):
         </div>
 
         <div className={styles.invitationLinkBox}>
+          <input
+            ref={invitationLinkInputRef}
+            type="text"
+            readOnly
+            value={invitationLink}
+            aria-label="Invitation link"
+            aria-describedby={copyFeedbackId}
+            className={styles.invitationLinkInput}
+            onFocus={(event) => event.currentTarget.select()}
+          />
           <button
             type="button"
             className={styles.copyButton}
@@ -74,11 +88,11 @@ function QRCode({ invitationLink, gameId, isLobbyFull, children }: QRCodeProps):
           >
             Copy Invite Link
           </button>
-          <span className={styles.copyFeedback} aria-live="polite">
+          <span id={copyFeedbackId} className={styles.copyFeedback} aria-live="polite">
             {copyFeedback === "copied"
               ? "Copied"
               : copyFeedback === "failed"
-                ? "Copy failed. Select and copy manually."
+                ? "Copy failed. Select the link above and copy it manually."
                 : ""}
           </span>
         </div>
