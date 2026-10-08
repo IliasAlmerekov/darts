@@ -107,6 +107,23 @@
   align-self: center;
 }
 
+.invitationLinkInput {
+  box-sizing: border-box;
+  width: 100%;
+  padding: 0.5rem 0.75rem;
+  border: 1px solid var(--middlegrey);
+  border-radius: var(--radius-sm);
+  font-size: var(--font-size-12);
+  background: var(--white);
+  color: var(--darkgrey);
+  text-overflow: ellipsis;
+}
+
+.invitationLinkInput:focus-visible {
+  outline: 2px solid var(--blue);
+  outline-offset: 2px;
+}
+
 .copyButton {
   width: 100%;
   padding: 0.65rem 0.85rem;
