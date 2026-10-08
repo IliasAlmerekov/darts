@@ -114,8 +114,13 @@ test.describe("Responsive admin layouts", () => {
     await page.goto("/start");
     await page.waitForLoadState("domcontentloaded");
 
+    // Labels are visually hidden on mobile but stay the links' accessible names.
     const navLabels = page.locator('[class*="tabLabel"]');
-    await expect(navLabels.first()).toBeHidden();
+    const labelBox = await navLabels.first().boundingBox();
+    expect(labelBox === null || (labelBox.width <= 1 && labelBox.height <= 1)).toBe(true);
+    await expect(
+      page.getByRole("navigation", { name: "Main" }).getByRole("link", { name: "Statistics" }),
+    ).toBeVisible();
 
     const leftPanel = page.locator('[class*="existingPlayerList"]:visible').first();
     const rightPanel = page.locator('[class*="addedPlayerList"]:visible').first();
