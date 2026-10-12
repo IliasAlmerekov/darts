@@ -1,5 +1,5 @@
-import type { GameSettingsResponse, GameThrowsResponse } from "./api";
-import type { FinishedGameProps } from "./game";
+import type { FinishedPlayerResponse, GameSettingsResponse, GameThrowsResponse } from "./api";
+import type { FinishedGameProps, WinnerPlayerProps } from "./game";
 import type { BackendPlayer } from "./player";
 
 export function buildFinishedGame(overrides: Partial<FinishedGameProps> = {}): FinishedGameProps {
@@ -54,4 +54,68 @@ export function buildGameThrowsResponse(
     settings: buildGameSettingsResponse(),
     ...overrides,
   };
+}
+
+/**
+ * Four finished players in finishing order. Cara has no recorded rounds, which is what the
+ * API normalizer produces when the backend sends `roundsPlayed: null`.
+ */
+export function buildFinishedPlayerResponses(): FinishedPlayerResponse[] {
+  return [
+    { playerId: 1, username: "Alice", position: 1, roundsPlayed: 5, roundAverage: 60.5 },
+    { playerId: 2, username: "Bob", position: 2, roundsPlayed: 6, roundAverage: 50 },
+    { playerId: 3, username: "Cara", position: 3, roundsPlayed: 0, roundAverage: 0 },
+    { playerId: 4, username: "Dan", position: 4, roundsPlayed: 7, roundAverage: 40.25 },
+  ];
+}
+
+/** The standings entries the summary and detail pages show for `buildFinishedPlayerResponses()`. */
+export function buildExpectedStandings(): WinnerPlayerProps[] {
+  return [
+    {
+      id: 1,
+      name: "Alice",
+      score: 0,
+      isActive: false,
+      index: 0,
+      rounds: [{}, {}, {}, {}, {}],
+      scoreAverage: 60.5,
+      roundCount: 5,
+    },
+    {
+      id: 2,
+      name: "Bob",
+      score: 0,
+      isActive: false,
+      index: 1,
+      rounds: [{}, {}, {}, {}, {}, {}],
+      scoreAverage: 50,
+      roundCount: 6,
+    },
+    {
+      id: 3,
+      name: "Cara",
+      score: 0,
+      isActive: false,
+      index: 2,
+      rounds: [{}],
+      scoreAverage: 0,
+      roundCount: 0,
+    },
+    {
+      id: 4,
+      name: "Dan",
+      score: 0,
+      isActive: false,
+      index: 3,
+      rounds: [{}, {}, {}, {}, {}, {}, {}],
+      scoreAverage: 40.25,
+      roundCount: 7,
+    },
+  ];
+}
+
+/** The empty third podium slot shown when a game had only two players. */
+export function buildExpectedPodiumPlaceholder(): WinnerPlayerProps {
+  return { id: 0, name: "-", score: 0, isActive: false, index: 0, rounds: [{}] };
 }
