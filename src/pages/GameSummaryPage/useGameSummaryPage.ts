@@ -23,12 +23,10 @@ import { playSound } from "@/shared/services/browser/soundPlayer";
 import { toUserErrorMessage } from "@/lib/error/error-to-user-message";
 import { ROUTES } from "@/lib/router/routes";
 import { applyOptimisticUndo } from "@/lib/game/applyOptimisticUndo";
-import {
-  buildFinishedGameStandings,
-  type FinishedGameStandings,
-} from "@/lib/game/finishedGameStandings";
+import type { FinishedGameStandings } from "@/lib/game/finishedGameStandings";
 import { clientLogger } from "@/shared/services/browser/clientLogger";
 import { parseLocationState } from "@/lib/router/locationState";
+import { buildGameSummaryStandings } from "./lib/gameSummaryStandings";
 
 interface SummaryLocationState {
   finishedGameId?: number;
@@ -119,8 +117,6 @@ export function useGameSummaryPage(): UseGameSummaryPageResult {
     return lastFinishedGameSummary.summary;
   }, [finishedGameIdFromRoute, lastFinishedGameSummary]);
 
-  const finishedSummary = summaryFromNavigationState ?? summaryFromStore ?? serverFinished;
-
   const loadSummary = useCallback(async (): Promise<void> => {
     if (finishedGameIdFromRoute === null) return;
 
@@ -161,8 +157,13 @@ export function useGameSummaryPage(): UseGameSummaryPageResult {
   }, [finishedGameIdFromRoute, loadSummary, summaryFromNavigationState, summaryFromStore]);
 
   const { standings, podiumData, leaderBoardList } = useMemo(
-    () => buildFinishedGameStandings(finishedSummary),
-    [finishedSummary],
+    () =>
+      buildGameSummaryStandings({
+        fromNavigation: summaryFromNavigationState,
+        fromStore: summaryFromStore,
+        fromServer: serverFinished,
+      }),
+    [serverFinished, summaryFromNavigationState, summaryFromStore],
   );
 
   const handleUndo = useCallback(async (): Promise<void> => {

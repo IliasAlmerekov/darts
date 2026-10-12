@@ -1,17 +1,11 @@
 import { useMemo } from "react";
 import { LoaderFunctionArgs, useLoaderData } from "react-router-dom";
 import { getFinishedGame } from "@/shared/api/game";
-import {
-  buildFinishedGameStandings,
-  type FinishedGameStandings,
-} from "@/lib/game/finishedGameStandings";
+import type { FinishedGameStandings } from "@/lib/game/finishedGameStandings";
 import type { FinishedPlayerResponse } from "@/types";
+import { buildGameDetailStandings } from "./lib/gameDetailStandings";
 
 type GameDetailLoaderData = FinishedPlayerResponse[];
-
-function isGameDetailLoaderData(value: unknown): value is GameDetailLoaderData {
-  return Array.isArray(value);
-}
 
 /**
  * React Router 6 loader
@@ -35,9 +29,5 @@ export async function gameDetailLoader({
 export function useGameDetailPage(): FinishedGameStandings {
   const rawLoaderData = useLoaderData();
 
-  if (!isGameDetailLoaderData(rawLoaderData)) {
-    throw new Error("Unexpected loader data format for GameDetailPage");
-  }
-
-  return useMemo(() => buildFinishedGameStandings(rawLoaderData), [rawLoaderData]);
+  return useMemo(() => buildGameDetailStandings(rawLoaderData), [rawLoaderData]);
 }

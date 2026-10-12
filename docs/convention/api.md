@@ -148,12 +148,10 @@ Rules:
   `getGameThrows`), a store action (e.g. `setGameData(data)` calls `normalizeGameData(data)`
   before `gameDataAtom.set(...)`), or a **page-private logic file** under
   `src/pages/<Page>/lib/*` -- these are pure-logic layers and may transform DTOs locally.
-  A page hook may also call a tested mapper from `src/shared/lib/<domain>/` inside
-  `useMemo` (e.g. `useGameDetailPage` and `useGameSummaryPage` call
-  `buildFinishedGameStandings`).
-- Mappers must **not** be called from JSX (`*.tsx` render bodies).
-- Page hooks must **not** transform DTOs inline. A hook that returns derived data into
-  render gets it from a tested mapper in a `lib/` file or from a store action.
+- Mappers must **not** be called from JSX (`*.tsx` render bodies) or from page hooks that
+  participate in the render flow (`use*.ts` directly returning derived data into render).
+  Run the transform in a `lib/` file or a store action and feed the UI the already-mapped
+  result.
 - Raw DTOs are not passed to UI components. The store / API / page-`lib` layer owns the
   mapping; UI receives the mapped shape.
 
@@ -207,13 +205,12 @@ rg -nP '\bfetch\s*\(' src --glob '!src/shared/api/client.ts' --glob '!**/*.test.
 rg -nP '\b(data|response)\s+as\s+[A-Za-z]' src/shared/api --glob '!**/*.test.{ts,tsx}'
 ```
 
-**3. Mappers imported by JSX files** -- mappers may be called from API / store /
-`pages/<X>/lib/` and from page hooks, but must not appear in JSX:
+**3. Mappers imported by render-flow files** -- mappers may live in API / store /
+`pages/<X>/lib/`, but must not appear in JSX or render-flow hooks:
 
 ```bash
-rg -nP "from ['\"]@/(shared/lib|lib)/[a-z-]+/[A-Za-z-]*(?:[Mm]appers?|[Nn]ormalizer|Standings)['\"]" \
-  src/pages -g 'src/pages/**/*.tsx'
+rg -nP "from ['\"]@/(shared/lib|lib)/[a-z-]+/[a-z-]*(?:[Mm]appers?|[Nn]ormalizer)['\"]" \
+  src/pages -g 'src/pages/**/*.tsx' -g 'src/pages/**/use*.ts'
 ```
 
-A clean run of all three prints nothing. No command catches an inline DTO transform in a
-page hook; review checks that one.
+A clean run of all three prints nothing.
