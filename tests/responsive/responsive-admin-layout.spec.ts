@@ -1,26 +1,11 @@
 import { test, expect, type Page } from "@playwright/test";
+import { mockAdminSession } from "../shared/auth-route-mocks";
 
 const viewports = [
   { name: "phone-360", width: 360, height: 800 },
   { name: "tablet-portrait", width: 768, height: 1024 },
   { name: "tablet-landscape", width: 1024, height: 768 },
 ];
-
-const mockAuth = async (page: Page): Promise<void> => {
-  await page.route("**/api/login/success", async (route) => {
-    await route.fulfill({
-      status: 200,
-      contentType: "application/json",
-      body: JSON.stringify({
-        success: true,
-        roles: ["ROLE_ADMIN", "ROLE_PLAYER"],
-        id: 1,
-        username: "testuser",
-        redirect: "/start",
-      }),
-    });
-  });
-};
 
 type MockPlayer = {
   id: number;
@@ -91,7 +76,7 @@ const mockInvitation = async (page: Page, gameId = 1): Promise<void> => {
 
 test.describe("Responsive admin layouts", () => {
   test("Start page adapts without overflow", async ({ page }) => {
-    await mockAuth(page);
+    await mockAdminSession(page);
 
     for (const viewport of viewports) {
       await page.setViewportSize({ width: viewport.width, height: viewport.height });
@@ -109,7 +94,7 @@ test.describe("Responsive admin layouts", () => {
   });
 
   test("Start page stacks panels and hides nav labels on mobile", async ({ page }) => {
-    await mockAuth(page);
+    await mockAdminSession(page);
     await page.setViewportSize({ width: 360, height: 800 });
     await page.goto("/start");
     await page.waitForLoadState("domcontentloaded");
@@ -142,7 +127,7 @@ test.describe("Responsive admin layouts", () => {
   test("Start page places Create Game above Start on mobile when no QR exists", async ({
     page,
   }) => {
-    await mockAuth(page);
+    await mockAdminSession(page);
     await page.setViewportSize({ width: 360, height: 800 });
     await page.goto("/start");
     await page.waitForLoadState("domcontentloaded");
@@ -167,7 +152,7 @@ test.describe("Responsive admin layouts", () => {
   test("Start page keeps Create Game and Start actions near the bottom when lobby is empty", async ({
     page,
   }) => {
-    await mockAuth(page);
+    await mockAdminSession(page);
     await page.setViewportSize({ width: 1024, height: 768 });
     await page.goto("/start");
     await page.waitForLoadState("domcontentloaded");
@@ -209,7 +194,7 @@ test.describe("Responsive admin layouts", () => {
   });
 
   test("Start page hides create button on mobile when QR exists", async ({ page }) => {
-    await mockAuth(page);
+    await mockAdminSession(page);
     await mockGame(page, 1, "lobby");
     await mockInvitation(page, 1);
     await page.addInitScript(() => {
@@ -230,7 +215,7 @@ test.describe("Responsive admin layouts", () => {
   test("Start page keeps Selected Players header and count visible across viewports", async ({
     page,
   }) => {
-    await mockAuth(page);
+    await mockAdminSession(page);
     await mockGame(page, 1, "lobby");
     await mockInvitation(page, 1);
     await page.addInitScript(() => {
@@ -257,7 +242,7 @@ test.describe("Responsive admin layouts", () => {
   });
 
   test("Start page centers QR heading text", async ({ page }) => {
-    await mockAuth(page);
+    await mockAdminSession(page);
     await mockGame(page, 1, "lobby");
     await mockInvitation(page, 1);
     await page.addInitScript(() => {
@@ -277,7 +262,7 @@ test.describe("Responsive admin layouts", () => {
   });
 
   test("Start page enlarges QR code and hides invite link on mobile", async ({ page }) => {
-    await mockAuth(page);
+    await mockAdminSession(page);
     await mockGame(page, 1, "lobby");
     await mockInvitation(page, 1);
     await page.addInitScript(() => {
@@ -308,7 +293,7 @@ test.describe("Responsive admin layouts", () => {
   });
 
   test("Mobile start and guest buttons sit together with 90/10 split", async ({ page }) => {
-    await mockAuth(page);
+    await mockAdminSession(page);
     await mockGame(page, 1, "lobby");
     await mockInvitation(page, 1);
     await page.addInitScript(() => {
@@ -345,7 +330,7 @@ test.describe("Responsive admin layouts", () => {
   });
 
   test("Guest overlay keeps side padding on mobile", async ({ page }) => {
-    await mockAuth(page);
+    await mockAdminSession(page);
     await mockGame(page, 1, "lobby");
     await mockInvitation(page, 1);
     await page.addInitScript(() => {
@@ -372,7 +357,7 @@ test.describe("Responsive admin layouts", () => {
   });
 
   test("Mobile players list scrolls without pushing action buttons", async ({ page }) => {
-    await mockAuth(page);
+    await mockAdminSession(page);
     await mockGame(page, 1, "lobby", createMockPlayers(9));
     await mockInvitation(page, 1);
     await page.addInitScript(() => {
@@ -415,7 +400,7 @@ test.describe("Responsive admin layouts", () => {
   });
 
   test("Start button stays visible at the bottom on short screens", async ({ page }) => {
-    await mockAuth(page);
+    await mockAdminSession(page);
     await mockGame(page, 1, "lobby", createMockPlayers(10));
     await mockInvitation(page, 1);
     await page.addInitScript(() => {
@@ -449,7 +434,7 @@ test.describe("Responsive admin layouts", () => {
   });
 
   test("Mobile navigation keeps deepblue icon left and shrinks icons", async ({ page }) => {
-    await mockAuth(page);
+    await mockAdminSession(page);
     await page.setViewportSize({ width: 360, height: 800 });
     await page.goto("/start");
     await page.waitForLoadState("domcontentloaded");
@@ -479,7 +464,7 @@ test.describe("Responsive admin layouts", () => {
   });
 
   test("Game page adapts without overflow", async ({ page }) => {
-    await mockAuth(page);
+    await mockAdminSession(page);
     await mockGame(page, 1);
 
     for (const viewport of viewports) {
@@ -500,7 +485,7 @@ test.describe("Responsive admin layouts", () => {
   test("Game page desktop aligns throws, shifts score, and keeps undo compact on the right", async ({
     page,
   }) => {
-    await mockAuth(page);
+    await mockAdminSession(page);
     await mockGame(page, 1);
 
     await page.setViewportSize({ width: 1280, height: 800 });

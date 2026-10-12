@@ -1,20 +1,5 @@
 import { test, expect, type Locator, type Page } from "@playwright/test";
-
-const mockAdminSession = async (page: Page): Promise<void> => {
-  await page.route("**/api/login/success", async (route) => {
-    await route.fulfill({
-      status: 200,
-      contentType: "application/json",
-      body: JSON.stringify({
-        success: true,
-        roles: ["ROLE_ADMIN", "ROLE_PLAYER"],
-        id: 1,
-        username: "testuser",
-        redirect: "/start",
-      }),
-    });
-  });
-};
+import { mockAdminSession } from "../shared/auth-route-mocks";
 
 const mockEmptyStatistics = async (page: Page): Promise<void> => {
   const emptyPage = JSON.stringify({ limit: 10, offset: 0, total: 0, items: [] });
