@@ -1,4 +1,4 @@
-import { test } from "../shared/test";
+import { test } from "./test";
 
 test.describe("Test group", () => {
   test("seed", async () => {

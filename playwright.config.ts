@@ -51,12 +51,15 @@ export default defineConfig({
     {
       name: "live-preflight",
       testMatch: "live/preflight.setup.ts",
+      retries: 0,
     },
     {
       // Opt-in suite against a real backend; the preflight fails the run when it is unreachable.
       name: "live",
       testMatch: "live/**/*.spec.ts",
       dependencies: ["live-preflight"],
+      // A live login that only passes on retry is a failure worth seeing.
+      retries: 0,
       use: { ...devices["Desktop Chrome"] },
     },
   ],

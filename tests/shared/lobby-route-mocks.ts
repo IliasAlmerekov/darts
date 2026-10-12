@@ -1,6 +1,7 @@
 import type { Page, Route } from "@playwright/test";
+import { fulfillRoomStream, isRoomStreamUrl } from "./room-stream-mocks";
 
-type LobbyPlayer = {
+interface LobbyPlayer {
   id: number;
   name: string;
   score: number;
@@ -10,13 +11,13 @@ type LobbyPlayer = {
   throwsInCurrentRound: number;
   currentRoundThrows: [];
   roundHistory: [];
-};
+}
 
-type LobbySettings = {
+interface LobbySettings {
   startScore: number;
   doubleOut: boolean;
   tripleOut: boolean;
-};
+}
 
 const DEFAULT_LOBBY_GAME_ID = 101;
 const FIRST_GUEST_PLAYER_ID = 1001;
@@ -31,6 +32,10 @@ function jsonResponse(route: Route, body: unknown): Promise<void> {
 
 function matchPath(pattern: RegExp): (url: URL) => boolean {
   return (url) => pattern.test(url.pathname);
+}
+
+function lastPathSegmentAsId(route: Route): number {
+  return Number(new URL(route.request().url()).pathname.split("/").pop());
 }
 
 /**
@@ -65,22 +70,24 @@ export async function mockLobbyApi(page: Page): Promise<void> {
   });
 
   await page.route(matchPath(/^\/api\/invite\/create\/\d+$/), async (route) => {
-    const gameId = Number(new URL(route.request().url()).pathname.split("/").pop());
+    const gameId = lastPathSegmentAsId(route);
     await jsonResponse(route, { gameId, invitationLink: `/invite/${gameId}` });
   });
 
   await page.route(matchPath(/^\/api\/game\/\d+$/), async (route) => {
-    const gameId = Number(new URL(route.request().url()).pathname.split("/").pop());
+    const gameId = lastPathSegmentAsId(route);
     await jsonResponse(route, gameState(gameId));
   });
 
-  await page.route(matchPath(/^\/api\/room\/\d+\/stream$/), async (route) => {
-    await route.fulfill({
-      status: 200,
-      contentType: "text/event-stream",
-      body: `retry: 60000\nevent: players\ndata: ${JSON.stringify({ players })}\n\n`,
-    });
-  });
+  await page.route(isRoomStreamUrl, (route) =>
+    fulfillRoomStream(
+      route,
+      `event: players
+data: ${JSON.stringify({ players })}
+
+`,
+    ),
+  );
 
   await page.route(matchPath(/^\/api\/room\/\d+\/guest$/), async (route) => {
     const payload: unknown = route.request().postDataJSON();

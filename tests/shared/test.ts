@@ -1,10 +1,10 @@
 import { test as base, expect } from "@playwright/test";
 
-type UnmockedApiGuardFixtures = {
+interface UnmockedApiGuardFixtures {
   failOnUnmockedApi: boolean;
   unmockedApiRequests: string[];
   backgroundApiMocks: void;
-};
+}
 
 const EMPTY_PLAYER_STATS_RESPONSE = { limit: 20, offset: 0, total: 0, items: [] };
 
@@ -42,6 +42,7 @@ export const test = base.extend<UnmockedApiGuardFixtures>({
     { auto: true },
   ],
   // The app shell prefetches statistics on every page; specs about statistics override this.
+  // Depending on the guard fixture registers this route after it, so this mock wins over the guard.
   backgroundApiMocks: [
     async ({ page, unmockedApiRequests: _guardRegisteredFirst }, use) => {
       await page.route(

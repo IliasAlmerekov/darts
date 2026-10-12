@@ -24,7 +24,15 @@ export const MOCK_LOGIN_CREDENTIALS = {
   password: "mocked-password",
 } as const;
 
-const ADMIN_SESSION_RESPONSE = {
+interface AdminSessionResponse {
+  success: true;
+  roles: string[];
+  id: number;
+  username: string;
+  redirect: string;
+}
+
+const ADMIN_SESSION_RESPONSE: AdminSessionResponse = {
   success: true,
   roles: ["ROLE_ADMIN", "ROLE_PLAYER"],
   id: 1,
@@ -78,7 +86,10 @@ export async function mockAdminLoginFlow(page: Page): Promise<void> {
   await mockLoginFlow(page, ADMIN_SESSION_RESPONSE);
 }
 
-async function mockLoginFlow(page: Page, sessionResponse: object): Promise<void> {
+async function mockLoginFlow(
+  page: Page,
+  sessionResponse: AdminSessionResponse | ProfileLoginSuccessResponse,
+): Promise<void> {
   let loginCompleted = false;
 
   await page.context().clearCookies();

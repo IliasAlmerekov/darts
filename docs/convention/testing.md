@@ -21,8 +21,10 @@ Rules:
 
 Rationale:
 
-Vitest is configured to include only `src/**/*.test.{ts,tsx}`. Playwright is
-configured to run `tests/**/*.spec.ts` and ignore `tests/shared/**`.
+Vitest is configured to include only `src/**/*.test.{ts,tsx}`. The Playwright
+`mocked` project runs `tests/**/*.spec.ts` and ignores `tests/shared/**` and
+`tests/live/**`. The `live` project runs `tests/live/**/*.spec.ts` after
+`tests/live/preflight.setup.ts`.
 
 ## Vitest files
 
@@ -167,6 +169,7 @@ Run:
 ```bash
 npm run test
 npm run test:e2e
+npm run test:e2e:live   # when tests/live/ changes; needs a backend and credentials
 npm run coverage
 rg --files src tests | rg '(^|[/\\])__tests__([/\\]|$)'
 rg -n '^\s*test\(' src --glob '*.{test,spec}.{ts,tsx}'
