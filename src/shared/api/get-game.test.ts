@@ -1,5 +1,10 @@
 // @vitest-environment node
+vi.mock("@/shared/services/browser/clientLogger", () => ({
+  clientLogger: { warn: vi.fn(), error: vi.fn() },
+}));
+
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { clientLogger } from "@/shared/services/browser/clientLogger";
 import {
   finishGame,
   getFinishedGame,
@@ -47,6 +52,7 @@ describe("getGameThrowsIfChanged", () => {
     resetGameStateVersion();
     clearUnauthorizedHandler();
     vi.restoreAllMocks();
+    vi.mocked(clientLogger.warn).mockReset();
   });
 
   it("returns data for valid getGameThrows response", async () => {
@@ -193,6 +199,45 @@ describe("getGameThrowsIfChanged", () => {
         roundAverage: 0,
       },
     ]);
+  });
+
+  it("warns when a finished player arrives without roundsPlayed", async () => {
+    vi.spyOn(apiClient, "get").mockResolvedValueOnce({
+      gameId: 520,
+      finishedAt: null,
+      winner: null,
+      winnerRoundsPlayed: 4,
+      winnerRoundAverage: 62.5,
+      finishedPlayers: [
+        { playerId: 1, username: "Winner", position: 1, roundsPlayed: 4, roundAverage: 62.5 },
+        { playerId: 7, username: "Bob", position: 2, roundsPlayed: null, roundAverage: 0 },
+      ],
+    });
+
+    await getFinishedGame(520);
+
+    expect(vi.mocked(clientLogger.warn)).toHaveBeenCalledTimes(1);
+    expect(vi.mocked(clientLogger.warn)).toHaveBeenCalledWith(
+      "game.finished-player.rounds-played.missing",
+      { context: { gameId: 520, playerId: 7, index: 1 } },
+    );
+  });
+
+  it("does not warn when every finished player has roundsPlayed", async () => {
+    vi.spyOn(apiClient, "get").mockResolvedValueOnce({
+      gameId: 520,
+      finishedAt: null,
+      winner: null,
+      winnerRoundsPlayed: 4,
+      winnerRoundAverage: 62.5,
+      finishedPlayers: [
+        { playerId: 1, username: "Winner", position: 1, roundsPlayed: 4, roundAverage: 62.5 },
+      ],
+    });
+
+    await getFinishedGame(520);
+
+    expect(vi.mocked(clientLogger.warn)).not.toHaveBeenCalled();
   });
 
   it("routes conditional game fetches through apiClient.request and forwards AbortSignal", async () => {
