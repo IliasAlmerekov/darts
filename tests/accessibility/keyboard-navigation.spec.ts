@@ -1,20 +1,19 @@
 // spec: specs/login-test-plan.md
 // seed: tests/shared/seed.spec.ts
 
-import { test, expect } from "@playwright/test";
-import {
-  getAuthTestCredentials,
-  skipWhenAuthCredentialsMissing,
-} from "../shared/auth-test-credentials";
+import { test, expect } from "../shared/test";
+import { MOCK_LOGIN_CREDENTIALS, mockAdminLoginFlow } from "../shared/auth-route-mocks";
 
 test.describe("Accessibility and Usability", () => {
-  skipWhenAuthCredentialsMissing();
+  test.beforeEach(async ({ page }) => {
+    await mockAdminLoginFlow(page);
+  });
 
   test("Keyboard Navigation", async ({ page }) => {
-    const { email: testEmail, password: testPassword } = getAuthTestCredentials();
+    const { email: testEmail, password: testPassword } = MOCK_LOGIN_CREDENTIALS;
 
     // 1. Navigate to login page using only keyboard (Tab key)
-    await page.goto("http://localhost:5173/");
+    await page.goto("/");
 
     await expect(page.getByRole("textbox", { name: "Email *" })).toBeVisible();
     await expect(page.getByRole("textbox", { name: "Password *" })).toBeVisible();
@@ -69,6 +68,6 @@ test.describe("Accessibility and Usability", () => {
 
     await page.keyboard.press("Enter");
 
-    await expect(page).toHaveURL("http://localhost:5173/start");
+    await expect(page).toHaveURL("/start");
   });
 });

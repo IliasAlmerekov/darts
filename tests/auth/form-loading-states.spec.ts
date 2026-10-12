@@ -1,20 +1,19 @@
 // spec: specs/login-test-plan.md
 // seed: tests/shared/seed.spec.ts
 
-import { test, expect } from "@playwright/test";
-import {
-  getAuthTestCredentials,
-  skipWhenAuthCredentialsMissing,
-} from "../shared/auth-test-credentials";
+import { test, expect } from "../shared/test";
+import { MOCK_LOGIN_CREDENTIALS, mockAdminLoginFlow } from "../shared/auth-route-mocks";
 
 test.describe("User Interface Interactions", () => {
-  skipWhenAuthCredentialsMissing();
+  test.beforeEach(async ({ page }) => {
+    await mockAdminLoginFlow(page);
+  });
 
   test("Form Loading States", async ({ page }) => {
-    const { email: testEmail, password: testPassword } = getAuthTestCredentials();
+    const { email: testEmail, password: testPassword } = MOCK_LOGIN_CREDENTIALS;
 
     // 1. Navigate to the login page
-    await page.goto("http://localhost:5173/");
+    await page.goto("/");
 
     const emailField = page.getByRole("textbox", { name: "Email *" });
     const passwordField = page.getByLabel("Password *");
@@ -47,6 +46,6 @@ test.describe("User Interface Interactions", () => {
     await page.getByRole("button", { name: "Sign in" }).click();
 
     // Verify successful submission by checking redirect
-    await expect(page).toHaveURL("http://localhost:5173/start");
+    await expect(page).toHaveURL("/start");
   });
 });

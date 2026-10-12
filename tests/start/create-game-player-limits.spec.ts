@@ -1,14 +1,13 @@
 // spec: specs/ticket-test-plan.md
 // seed: tests/start/create-game.spec.ts
 
-import { test, expect } from "@playwright/test";
-import { skipWhenAuthCredentialsMissing } from "../shared/auth-test-credentials";
+import { test, expect } from "../shared/test";
 import { addGuestPlayer, createGame, loginAsAdmin } from "../shared/start-page-helpers";
+import { mockLobbyApi } from "../shared/lobby-route-mocks";
 
 test.describe("Error Handling and Edge Cases", () => {
-  skipWhenAuthCredentialsMissing();
-
   test("Maximum players limit enforcement", async ({ page }) => {
+    await mockLobbyApi(page);
     await loginAsAdmin(page);
     await createGame(page);
 

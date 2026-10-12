@@ -1,9 +1,11 @@
 // spec: specs/joined-game-test-plan.md
 // seed: seed.spec.ts
 
-import { test, expect } from "@playwright/test";
+import { test, expect } from "../shared/test";
+import { mockQuietRoomStream } from "../shared/room-stream-mocks";
 
 test("Successfully display joined game confirmation page", async ({ page }) => {
+  await mockQuietRoomStream(page);
   // Mock the login success check to return authenticated user with roles
   await page.route("**/api/login/success", async (route) => {
     await route.fulfill({

@@ -88,19 +88,20 @@ shared/
 
 ## Scripts
 
-| Command                 | Description                             |
-| ----------------------- | --------------------------------------- |
-| `npm run dev`           | Start dev server                        |
-| `npm run build`         | Type-check and build for production     |
-| `npm run preview`       | Preview production build locally        |
-| `npm run typecheck`     | Run TypeScript type-checking            |
-| `npm run eslint`        | Lint JS/TS sources                      |
-| `npm run stylelint`     | Lint CSS modules                        |
-| `npm run test`          | Run unit/integration tests (Vitest)     |
-| `npm run coverage`      | Run tests with coverage report          |
-| `npm run test:e2e`      | Run end-to-end tests (Playwright)       |
-| `npm run secrets:check` | Scan for accidentally committed secrets |
-| `npm run knip`          | Find unused exports and dead code       |
+| Command                 | Description                               |
+| ----------------------- | ----------------------------------------- |
+| `npm run dev`           | Start dev server                          |
+| `npm run build`         | Type-check and build for production       |
+| `npm run preview`       | Preview production build locally          |
+| `npm run typecheck`     | Run TypeScript type-checking              |
+| `npm run eslint`        | Lint JS/TS sources                        |
+| `npm run stylelint`     | Lint CSS modules                          |
+| `npm run test`          | Run unit/integration tests (Vitest)       |
+| `npm run coverage`      | Run tests with coverage report            |
+| `npm run test:e2e`      | Run mocked end-to-end tests (Playwright)  |
+| `npm run test:e2e:live` | Run live end-to-end tests (needs backend) |
+| `npm run secrets:check` | Scan for accidentally committed secrets   |
+| `npm run knip`          | Find unused exports and dead code         |
 
 ## Tech stack
 

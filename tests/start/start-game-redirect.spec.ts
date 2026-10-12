@@ -1,17 +1,16 @@
 // spec: specs/ticket-test-plan.md
 // seed: tests/start/create-game.spec.ts
 
-import { test, expect } from "@playwright/test";
-import { skipWhenAuthCredentialsMissing } from "../shared/auth-test-credentials";
+import { test, expect } from "../shared/test";
 import { addGuestPlayer, createGame, loginAsAdmin } from "../shared/start-page-helpers";
+import { mockLobbyApi } from "../shared/lobby-route-mocks";
 
 test.describe("Create Game with QR Code", () => {
-  skipWhenAuthCredentialsMissing();
-
   test("Start game and redirect to game page", async ({ page }) => {
     const firstGuestName = `GuestA${Date.now()}`;
     const secondGuestName = `GuestB${Date.now()}`;
 
+    await mockLobbyApi(page);
     await loginAsAdmin(page);
     const gameId = await createGame(page);
     await addGuestPlayer(page, firstGuestName);

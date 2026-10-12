@@ -15,6 +15,9 @@ if (existsSync(".env.local")) {
 }
 
 const baseURL = process.env.PLAYWRIGHT_BASE_URL ?? "http://localhost:5173";
+const baseUrlParts = new URL(baseURL);
+const devServerHost = baseUrlParts.hostname;
+const devServerPort = baseUrlParts.port || (baseUrlParts.protocol === "https:" ? "443" : "80");
 const ciWorkersRaw = process.env.PLAYWRIGHT_WORKERS;
 const ciWorkers = ciWorkersRaw === undefined ? 2 : Number.parseInt(ciWorkersRaw, 10);
 const workers =
@@ -22,8 +25,6 @@ const workers =
 
 export default defineConfig({
   testDir: "./tests",
-  testMatch: "**/*.spec.ts",
-  testIgnore: ["**/shared/**"],
   timeout: 60000,
   expect: {
     timeout: 10000,
@@ -41,13 +42,27 @@ export default defineConfig({
 
   projects: [
     {
-      name: "chromium",
+      // Deterministic suite: no secrets, every /api request answered by a route mock.
+      name: "mocked",
+      testMatch: "**/*.spec.ts",
+      testIgnore: ["**/shared/**", "live/**"],
+      use: { ...devices["Desktop Chrome"] },
+    },
+    {
+      name: "live-preflight",
+      testMatch: "live/preflight.setup.ts",
+    },
+    {
+      // Opt-in suite against a real backend; the preflight fails the run when it is unreachable.
+      name: "live",
+      testMatch: "live/**/*.spec.ts",
+      dependencies: ["live-preflight"],
       use: { ...devices["Desktop Chrome"] },
     },
   ],
 
   webServer: {
-    command: "npm run dev -- --host 127.0.0.1 --port 5173 --strictPort",
+    command: `npm run dev -- --host ${devServerHost} --port ${devServerPort} --strictPort`,
     url: baseURL,
     reuseExistingServer: !process.env.CI,
     timeout: 120000,

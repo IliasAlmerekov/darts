@@ -1,20 +1,19 @@
-import { expect, test } from "@playwright/test";
-import { skipWhenAuthCredentialsMissing } from "../shared/auth-test-credentials";
+import { expect, test } from "../shared/test";
 import { loginAsAdmin } from "../shared/start-page-helpers";
+import { mockLobbyApi } from "../shared/lobby-route-mocks";
 
 test.describe("Pre-create game settings", () => {
-  skipWhenAuthCredentialsMissing();
-
   test("sends selected settings when creating a room after editing /settings", async ({ page }) => {
     let createRoomPayload: Record<string, unknown> | null = null;
 
+    await mockLobbyApi(page);
     await loginAsAdmin(page);
-    await page.goto("http://localhost:5173/settings");
+    await page.goto("/settings");
 
     await page.getByRole("button", { name: "Double-out" }).click();
     await page.getByRole("button", { name: "501" }).click();
 
-    await page.goto("http://localhost:5173/start");
+    await page.goto("/start");
 
     await page.route("**/api/room/create", async (route, request) => {
       createRoomPayload = request.postDataJSON() as Record<string, unknown>;
@@ -35,7 +34,7 @@ test.describe("Pre-create game settings", () => {
 
     await page.getByRole("button", { name: /^create game$/i }).click();
 
-    await expect(page).toHaveURL("http://localhost:5173/start/520");
+    await expect(page).toHaveURL("/start/520");
     expect(createRoomPayload).toEqual({
       startScore: 501,
       doubleOut: true,

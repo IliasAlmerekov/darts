@@ -1,12 +1,17 @@
 // spec: specs/login-test-plan.md
 // seed: tests/shared/seed.spec.ts
 
-import { test, expect } from "@playwright/test";
+import { test, expect } from "../shared/test";
+import { mockUnauthenticatedSession } from "../shared/auth-route-mocks";
 
 test.describe("Login Form Functionality", () => {
+  test.beforeEach(async ({ page }) => {
+    await mockUnauthenticatedSession(page);
+  });
+
   test("Empty Field Validation", async ({ page }) => {
     // 1. Navigate to the login page
-    await page.goto("http://localhost:5173/");
+    await page.goto("/");
 
     // Wait for form to become interactive
     await page.getByText("Sign in").first().waitFor({ state: "visible" });
@@ -31,7 +36,7 @@ test.describe("Login Form Functionality", () => {
 
     // Verify HTML5 validation prevents submission and focuses on email field
     await expect(page.getByRole("textbox", { name: "Email *" })).toBeFocused();
-    await expect(page).toHaveURL("http://localhost:5173/");
+    await expect(page).toHaveURL("/");
 
     // 4. Fill email field only and leave password empty
     await page.getByRole("textbox", { name: "Email *" }).fill("test@example.com");
@@ -44,6 +49,6 @@ test.describe("Login Form Functionality", () => {
 
     // Verify HTML5 validation focuses on password field
     await expect(page.getByRole("textbox", { name: "Password *" })).toBeFocused();
-    await expect(page).toHaveURL("http://localhost:5173/");
+    await expect(page).toHaveURL("/");
   });
 });

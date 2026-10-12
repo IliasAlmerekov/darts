@@ -1,12 +1,17 @@
 // spec: specs/login-test-plan.md
 // seed: tests/shared/seed.spec.ts
 
-import { test, expect } from "@playwright/test";
+import { test, expect } from "../shared/test";
+import { mockUnauthenticatedSession } from "../shared/auth-route-mocks";
 
 test.describe("User Interface Interactions", () => {
+  test.beforeEach(async ({ page }) => {
+    await mockUnauthenticatedSession(page);
+  });
+
   test("Password Visibility Toggle", async ({ page }) => {
     // 1. Navigate to the login page
-    await page.goto("http://localhost:5173/");
+    await page.goto("/");
 
     // Wait for form to become interactive
     await page.getByText("Sign in").first().waitFor({ state: "visible" });

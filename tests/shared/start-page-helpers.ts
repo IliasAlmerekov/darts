@@ -1,10 +1,11 @@
 import { expect, type Page } from "@playwright/test";
-import { getAuthTestCredentials } from "./auth-test-credentials";
+import { MOCK_LOGIN_CREDENTIALS, mockAdminLoginFlow } from "./auth-route-mocks";
 
 export async function loginAsAdmin(page: Page): Promise<void> {
-  const { email: testEmail, password: testPassword } = getAuthTestCredentials();
+  const { email: testEmail, password: testPassword } = MOCK_LOGIN_CREDENTIALS;
 
-  await page.goto("http://localhost:5173/");
+  await mockAdminLoginFlow(page);
+  await page.goto("/");
   await page.getByText("Sign in").first().waitFor({ state: "visible" });
   await expect(page.getByRole("heading", { name: "Sign in" })).toBeVisible();
 
@@ -12,7 +13,7 @@ export async function loginAsAdmin(page: Page): Promise<void> {
   await page.getByRole("textbox", { name: "Password *" }).fill(testPassword);
   await page.getByRole("button", { name: "Sign in" }).click();
 
-  await expect(page).toHaveURL("http://localhost:5173/start");
+  await expect(page).toHaveURL("/start");
 }
 
 export async function createGame(page: Page): Promise<number> {

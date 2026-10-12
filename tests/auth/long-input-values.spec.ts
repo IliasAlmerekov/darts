@@ -1,12 +1,17 @@
 // spec: specs/login-test-plan.md
 // seed: tests/shared/seed.spec.ts
 
-import { test, expect } from "@playwright/test";
+import { test, expect } from "../shared/test";
+import { mockUnauthenticatedSession } from "../shared/auth-route-mocks";
 
 test.describe("Error Handling and Edge Cases", () => {
+  test.beforeEach(async ({ page }) => {
+    await mockUnauthenticatedSession(page);
+  });
+
   test("Long Input Values", async ({ page }) => {
     // 1. Navigate to login page
-    await page.goto("http://localhost:5173/");
+    await page.goto("/");
 
     // Verify login form is displayed
     await expect(page.getByRole("heading", { name: "Sign in" })).toBeVisible();
@@ -37,7 +42,7 @@ test.describe("Error Handling and Edge Cases", () => {
     await page.getByRole("button", { name: "Sign in" }).click();
 
     // Verify application doesn't crash and provides appropriate validation
-    await expect(page).toHaveURL("http://localhost:5173/");
+    await expect(page).toHaveURL("/");
 
     // Verify form remains accessible and functional
     await expect(page.getByRole("textbox", { name: "Email *" })).toBeVisible();

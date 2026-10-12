@@ -1,4 +1,4 @@
-import { test, expect, type Locator, type Page } from "@playwright/test";
+import { test, expect, type Locator, type Page } from "../shared/test";
 import { mockAdminSession } from "../shared/auth-route-mocks";
 
 const mockEmptyStatistics = async (page: Page): Promise<void> => {

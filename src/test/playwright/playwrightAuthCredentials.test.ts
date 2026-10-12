@@ -16,11 +16,11 @@ describe("resolvePlaywrightAuthTestCredentials", () => {
         password: "change-me",
       },
       missingVariableNames: [],
-      skipReason: null,
+      missingReason: null,
     });
   });
 
-  it("reports missing auth env variables with a skip reason", () => {
+  it("reports missing auth env variables with a reason", () => {
     const result = resolvePlaywrightAuthTestCredentials({});
 
     expect(result.isConfigured).toBe(false);
@@ -33,8 +33,10 @@ describe("resolvePlaywrightAuthTestCredentials", () => {
       "PLAYWRIGHT_TEST_EMAIL",
       "PLAYWRIGHT_TEST_PASSWORD",
     ]);
-    expect(result.skipReason).toContain("Missing PLAYWRIGHT_TEST_EMAIL, PLAYWRIGHT_TEST_PASSWORD.");
-    expect(result.skipReason).toContain(".env/.env.local");
-    expect(result.skipReason).toContain("CI secrets");
+    expect(result.missingReason).toContain(
+      "Missing PLAYWRIGHT_TEST_EMAIL, PLAYWRIGHT_TEST_PASSWORD.",
+    );
+    expect(result.missingReason).toContain(".env/.env.local");
+    expect(result.missingReason).toContain("CI secrets");
   });
 });

@@ -1,20 +1,19 @@
 // spec: specs/login-test-plan.md
 // seed: tests/shared/seed.spec.ts
 
-import { test, expect } from "@playwright/test";
-import {
-  getAuthTestCredentials,
-  skipWhenAuthCredentialsMissing,
-} from "../shared/auth-test-credentials";
+import { test, expect } from "../shared/test";
+import { MOCK_LOGIN_CREDENTIALS, mockAdminLoginFlow } from "../shared/auth-route-mocks";
 
 test.describe("Error Handling and Edge Cases", () => {
-  skipWhenAuthCredentialsMissing();
+  test.beforeEach(async ({ page }) => {
+    await mockAdminLoginFlow(page);
+  });
 
   test("CSRF Token Handling", async ({ page }) => {
-    const { email: testEmail, password: testPassword } = getAuthTestCredentials();
+    const { email: testEmail, password: testPassword } = MOCK_LOGIN_CREDENTIALS;
 
     // 1. Navigate to login page
-    await page.goto("http://localhost:5173/");
+    await page.goto("/");
 
     // Verify login form is displayed (CSRF token should be properly loaded)
     await expect(page.getByRole("heading", { name: "Sign in" })).toBeVisible();
