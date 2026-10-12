@@ -4,6 +4,11 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { useGameSummaryPage } from "./useGameSummaryPage";
 import { playSound } from "@/shared/services/browser/soundPlayer";
 import type { GameThrowsResponse, ScoreboardDelta, UndoAckResponse } from "@/types";
+import {
+  buildExpectedPodiumPlaceholder,
+  buildExpectedStandings,
+  buildFinishedPlayerResponses,
+} from "@/shared/types/game.test-support";
 
 const navigateMock = vi.fn();
 const getFinishedGameMock = vi.fn();
@@ -608,7 +613,7 @@ describe("useGameSummaryPage", () => {
     const { result } = renderHook(() => useGameSummaryPage());
 
     expect(getFinishedGameMock).not.toHaveBeenCalled();
-    expect(result.current.newList).toEqual([
+    expect(result.current.standings).toEqual([
       expect.objectContaining({
         id: 1,
         name: "Alice",
@@ -616,7 +621,7 @@ describe("useGameSummaryPage", () => {
         roundCount: 5,
       }),
     ]);
-    expect(result.current.newList[0]?.rounds[0]).toEqual({});
+    expect(result.current.standings[0]?.rounds[0]).toEqual({});
     expect(setLastFinishedGameSummaryMock).toHaveBeenCalledWith({
       gameId: 42,
       summary: [
@@ -649,7 +654,7 @@ describe("useGameSummaryPage", () => {
     const { result } = renderHook(() => useGameSummaryPage());
 
     expect(getFinishedGameMock).not.toHaveBeenCalled();
-    expect(result.current.newList).toEqual([
+    expect(result.current.standings).toEqual([
       expect.objectContaining({
         id: 2,
         name: "Bob",
@@ -679,7 +684,7 @@ describe("useGameSummaryPage", () => {
       expect(getFinishedGameMock).toHaveBeenCalledWith(42);
     });
     await waitFor(() => {
-      expect(result.current.newList).toEqual([
+      expect(result.current.standings).toEqual([
         expect.objectContaining({
           id: 3,
           name: "Carol",
@@ -747,5 +752,45 @@ describe("useGameSummaryPage", () => {
 
       expect(startRematchMock).not.toHaveBeenCalled();
     });
+  });
+
+  describe("standings", () => {
+    const [alice, bob, cara, dan] = buildExpectedStandings();
+    const placeholder = buildExpectedPodiumPlaceholder();
+
+    it.each([
+      {
+        playerCount: 2,
+        standings: [alice, bob],
+        podium: [alice, bob, placeholder],
+        leaderboard: [],
+      },
+      {
+        playerCount: 3,
+        standings: [alice, bob, cara],
+        podium: [alice, bob, cara],
+        leaderboard: [],
+      },
+      {
+        playerCount: 4,
+        standings: [alice, bob, cara, dan],
+        podium: [alice, bob, cara],
+        leaderboard: [dan],
+      },
+    ])(
+      "should build podium and leaderboard when the game had $playerCount players",
+      ({ playerCount, standings, podium, leaderboard }) => {
+        locationState = {
+          finishedGameId: 42,
+          summary: buildFinishedPlayerResponses().slice(0, playerCount),
+        };
+
+        const { result } = renderHook(() => useGameSummaryPage());
+
+        expect(result.current.standings).toStrictEqual(standings);
+        expect(result.current.podiumData).toStrictEqual(podium);
+        expect(result.current.leaderBoardList).toStrictEqual(leaderboard);
+      },
+    );
   });
 });

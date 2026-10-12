@@ -19,6 +19,7 @@ import type {
   UpdateGameSettingsPayload,
 } from "@/types";
 import { isFiniteNumber, isRecord } from "@/lib/guards/guards";
+import { clientLogger } from "@/shared/services/browser/clientLogger";
 
 // ---------------------------------------------------------------------------
 // Endpoints
@@ -190,9 +191,19 @@ function isGameSummaryEnvelopeResponse(data: unknown): data is {
   );
 }
 
-function normalizeFinishedPlayer(item: unknown, index: number): GameSummaryResponse[number] | null {
+function normalizeFinishedPlayer(
+  item: unknown,
+  index: number,
+  gameId: number,
+): GameSummaryResponse[number] | null {
   if (!isRecord(item) || !isFiniteNumber(item.roundAverage)) {
     return null;
+  }
+
+  if (!isFiniteNumber(item.roundsPlayed)) {
+    clientLogger.warn("game.finished-player.rounds-played.missing", {
+      context: { gameId, playerId: item.playerId ?? null, index },
+    });
   }
 
   const playerId = isFiniteNumber(item.playerId) ? item.playerId : index + 1;
@@ -212,7 +223,7 @@ function normalizeFinishedPlayer(item: unknown, index: number): GameSummaryRespo
   };
 }
 
-function normalizeGameSummaryResponse(data: unknown): GameSummaryResponse | null {
+function normalizeGameSummaryResponse(data: unknown, gameId: number): GameSummaryResponse | null {
   if (isGameSummaryResponse(data)) {
     return data;
   }
@@ -222,7 +233,7 @@ function normalizeGameSummaryResponse(data: unknown): GameSummaryResponse | null
   }
 
   const finishedPlayers = data.finishedPlayers
-    .map((item, index) => normalizeFinishedPlayer(item, index))
+    .map((item, index) => normalizeFinishedPlayer(item, index, gameId))
     .filter((item): item is NonNullable<typeof item> => item !== null);
 
   return finishedPlayers.length === data.finishedPlayers.length ? finishedPlayers : null;
@@ -469,7 +480,7 @@ export async function finishGame(
     ...(signal ? { signal } : {}),
     validate: isGameSummaryEnvelopeResponse,
   });
-  const summary = normalizeGameSummaryResponse(data);
+  const summary = normalizeGameSummaryResponse(data, gameId);
   if (!summary) {
     throw new ApiError("Unexpected response shape for finish game", { status: 200, data });
   }
@@ -487,7 +498,7 @@ export async function getFinishedGame(
     ...(signal ? { signal } : {}),
     validate: isGameSummaryEnvelopeResponse,
   });
-  const summary = normalizeGameSummaryResponse(data);
+  const summary = normalizeGameSummaryResponse(data, gameId);
   if (!summary) {
     throw new ApiError("Unexpected response shape for finished game", { status: 200, data });
   }

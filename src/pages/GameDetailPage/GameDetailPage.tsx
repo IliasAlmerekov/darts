@@ -7,7 +7,7 @@ import { BackButton } from "@/shared/ui/back-button";
 import { useGameDetailPage } from "./useGameDetailPage";
 
 export default function GameDetailPage(): React.JSX.Element {
-  const { podiumData, newList, leaderBoardList } = useGameDetailPage();
+  const { podiumData, standings, leaderBoardList } = useGameDetailPage();
 
   return (
     <div className={styles.gameDetails}>
@@ -16,7 +16,7 @@ export default function GameDetailPage(): React.JSX.Element {
       </div>
       <div className={styles.podiumCard}>
         <h1>Game details</h1>
-        <Podium userMap={podiumData} list={newList} />
+        <Podium userMap={podiumData} list={standings} />
         <div className={styles.playerboardList}>
           <OverviewPlayerItemList userMap={leaderBoardList} />
         </div>

@@ -9,7 +9,7 @@ type GameSummaryHookMockResult = {
   error: string | null;
   starting: boolean;
   podiumData: WinnerPlayerProps[];
-  newList: WinnerPlayerProps[];
+  standings: WinnerPlayerProps[];
   leaderBoardList: WinnerPlayerProps[];
   loadSummary: () => void;
   handleUndo: () => Promise<void>;
@@ -23,7 +23,7 @@ const buildSummaryHookMockResult = (
   error: null,
   starting: false,
   podiumData: [],
-  newList: [],
+  standings: [],
   leaderBoardList: [],
   loadSummary: vi.fn(),
   handleUndo: vi.fn(async () => {}),

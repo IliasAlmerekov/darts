@@ -11,6 +11,11 @@ vi.mock("@/shared/api/game", () => ({
 import { renderHook } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { FinishedPlayerResponse } from "@/types";
+import {
+  buildExpectedPodiumPlaceholder,
+  buildExpectedStandings,
+  buildFinishedPlayerResponses,
+} from "@/shared/types/game.test-support";
 import { gameDetailLoader, useGameDetailPage } from "./useGameDetailPage";
 
 const getFinishedGameMock = vi.fn();
@@ -69,9 +74,9 @@ describe("useGameDetailPage", () => {
 
     const { result } = renderHook(() => useGameDetailPage());
 
-    expect(result.current.newList).toHaveLength(2);
+    expect(result.current.standings).toHaveLength(2);
     expect(result.current.podiumData).toHaveLength(3);
-    expect(result.current.newList[0]?.rounds[0]).toEqual({});
+    expect(result.current.standings[0]?.rounds[0]).toEqual({});
   });
 
   it("should throw when loader data is not an array", () => {
@@ -79,6 +84,43 @@ describe("useGameDetailPage", () => {
 
     expect(() => renderHook(() => useGameDetailPage())).toThrow(
       "Unexpected loader data format for GameDetailPage",
+    );
+  });
+
+  describe("standings", () => {
+    const [alice, bob, cara, dan] = buildExpectedStandings();
+    const placeholder = buildExpectedPodiumPlaceholder();
+
+    it.each([
+      {
+        playerCount: 2,
+        standings: [alice, bob],
+        podium: [alice, bob, placeholder],
+        leaderboard: [],
+      },
+      {
+        playerCount: 3,
+        standings: [alice, bob, cara],
+        podium: [alice, bob, cara],
+        leaderboard: [],
+      },
+      {
+        playerCount: 4,
+        standings: [alice, bob, cara, dan],
+        podium: [alice, bob, cara],
+        leaderboard: [dan],
+      },
+    ])(
+      "should build podium and leaderboard when the game had $playerCount players",
+      ({ playerCount, standings, podium, leaderboard }) => {
+        useLoaderDataMock.mockReturnValue(buildFinishedPlayerResponses().slice(0, playerCount));
+
+        const { result } = renderHook(() => useGameDetailPage());
+
+        expect(result.current.standings).toStrictEqual(standings);
+        expect(result.current.podiumData).toStrictEqual(podium);
+        expect(result.current.leaderBoardList).toStrictEqual(leaderboard);
+      },
     );
   });
 });
