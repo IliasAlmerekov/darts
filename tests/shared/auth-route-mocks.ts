@@ -30,6 +30,22 @@ export const PROFILE_LOGIN_SUCCESS_RESPONSE: ProfileLoginSuccessResponse = {
   },
 };
 
+export async function mockAdminSession(page: Page): Promise<void> {
+  await page.route("**/api/login/success", async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify({
+        success: true,
+        roles: ["ROLE_ADMIN", "ROLE_PLAYER"],
+        id: 1,
+        username: "testuser",
+        redirect: "/start",
+      }),
+    });
+  });
+}
+
 async function mockUnauthenticatedSession(page: Page): Promise<void> {
   await page.context().clearCookies();
 
