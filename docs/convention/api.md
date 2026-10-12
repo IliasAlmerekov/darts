@@ -141,17 +141,19 @@ Rules:
 
 - They live in `src/shared/lib/<domain>/` (see `shared/lib/game/`: `gameStateNormalizer`,
   `applyOptimisticUndo`, `mergeGameSettings`, `player-mappers`, `roundAverage`,
-  `parseThrowValue`).
+  `parseThrowValue`, `finishedGameStandings`).
 - Every mapper has a co-located `*.test.ts` (`gameStateNormalizer.test.ts`,
   `player-mappers.test.ts`, ...).
 - Mappers are called from any of: an API domain function (e.g. inside
   `getGameThrows`), a store action (e.g. `setGameData(data)` calls `normalizeGameData(data)`
   before `gameDataAtom.set(...)`), or a **page-private logic file** under
   `src/pages/<Page>/lib/*` -- these are pure-logic layers and may transform DTOs locally.
-- Mappers must **not** be called from JSX (`*.tsx` render bodies) or from page hooks that
-  participate in the render flow (`use*.ts` directly returning derived data into render).
-  Run the transform in a `lib/` file or a store action and feed the UI the already-mapped
-  result.
+  A page hook may also call a mapper from `src/shared/lib/<domain>/` inside `useMemo`
+  when its DTO arrives from several sources and no single API function or store action
+  owns it (e.g. `useGameSummaryPage` calls `buildFinishedGameStandings`).
+- Mappers must **not** be called from JSX (`*.tsx` render bodies).
+- Page hooks must **not** transform DTOs inline. A hook that returns derived data into
+  render gets it from a tested mapper in a `lib/` file or from a store action.
 - Raw DTOs are not passed to UI components. The store / API / page-`lib` layer owns the
   mapping; UI receives the mapped shape.
 

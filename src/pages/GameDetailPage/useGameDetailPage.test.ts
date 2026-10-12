@@ -74,9 +74,9 @@ describe("useGameDetailPage", () => {
 
     const { result } = renderHook(() => useGameDetailPage());
 
-    expect(result.current.newList).toHaveLength(2);
+    expect(result.current.standings).toHaveLength(2);
     expect(result.current.podiumData).toHaveLength(3);
-    expect(result.current.newList[0]?.rounds[0]).toEqual({});
+    expect(result.current.standings[0]?.rounds[0]).toEqual({});
   });
 
   it("should throw when loader data is not an array", () => {
@@ -117,7 +117,7 @@ describe("useGameDetailPage", () => {
 
         const { result } = renderHook(() => useGameDetailPage());
 
-        expect(result.current.newList).toStrictEqual(standings);
+        expect(result.current.standings).toStrictEqual(standings);
         expect(result.current.podiumData).toStrictEqual(podium);
         expect(result.current.leaderBoardList).toStrictEqual(leaderboard);
       },

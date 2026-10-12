@@ -613,7 +613,7 @@ describe("useGameSummaryPage", () => {
     const { result } = renderHook(() => useGameSummaryPage());
 
     expect(getFinishedGameMock).not.toHaveBeenCalled();
-    expect(result.current.newList).toEqual([
+    expect(result.current.standings).toEqual([
       expect.objectContaining({
         id: 1,
         name: "Alice",
@@ -621,7 +621,7 @@ describe("useGameSummaryPage", () => {
         roundCount: 5,
       }),
     ]);
-    expect(result.current.newList[0]?.rounds[0]).toEqual({});
+    expect(result.current.standings[0]?.rounds[0]).toEqual({});
     expect(setLastFinishedGameSummaryMock).toHaveBeenCalledWith({
       gameId: 42,
       summary: [
@@ -654,7 +654,7 @@ describe("useGameSummaryPage", () => {
     const { result } = renderHook(() => useGameSummaryPage());
 
     expect(getFinishedGameMock).not.toHaveBeenCalled();
-    expect(result.current.newList).toEqual([
+    expect(result.current.standings).toEqual([
       expect.objectContaining({
         id: 2,
         name: "Bob",
@@ -684,7 +684,7 @@ describe("useGameSummaryPage", () => {
       expect(getFinishedGameMock).toHaveBeenCalledWith(42);
     });
     await waitFor(() => {
-      expect(result.current.newList).toEqual([
+      expect(result.current.standings).toEqual([
         expect.objectContaining({
           id: 3,
           name: "Carol",
@@ -787,7 +787,7 @@ describe("useGameSummaryPage", () => {
 
         const { result } = renderHook(() => useGameSummaryPage());
 
-        expect(result.current.newList).toStrictEqual(standings);
+        expect(result.current.standings).toStrictEqual(standings);
         expect(result.current.podiumData).toStrictEqual(podium);
         expect(result.current.leaderBoardList).toStrictEqual(leaderboard);
       },

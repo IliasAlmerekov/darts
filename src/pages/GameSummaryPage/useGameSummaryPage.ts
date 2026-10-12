@@ -8,12 +8,7 @@ import {
   startRematch,
   undoLastThrow,
 } from "@/shared/api/game";
-import type {
-  FinishedPlayerResponse,
-  UndoThrowResponse,
-  UndoAckResponse,
-  WinnerPlayerProps,
-} from "@/types";
+import type { FinishedPlayerResponse, UndoThrowResponse, UndoAckResponse } from "@/types";
 import {
   $gameData,
   $lastFinishedGameSummary,
@@ -28,6 +23,10 @@ import { playSound } from "@/shared/services/browser/soundPlayer";
 import { toUserErrorMessage } from "@/lib/error/error-to-user-message";
 import { ROUTES } from "@/lib/router/routes";
 import { applyOptimisticUndo } from "@/lib/game/applyOptimisticUndo";
+import {
+  buildFinishedGameStandings,
+  type FinishedGameStandings,
+} from "@/lib/game/finishedGameStandings";
 import { clientLogger } from "@/shared/services/browser/clientLogger";
 import { parseLocationState } from "@/lib/router/locationState";
 
@@ -36,20 +35,13 @@ interface SummaryLocationState {
   summary?: FinishedPlayerResponse[];
 }
 
-interface UseGameSummaryPageResult {
+interface UseGameSummaryPageResult extends FinishedGameStandings {
   error: string | null;
   starting: boolean;
-  podiumData: WinnerPlayerProps[];
-  newList: WinnerPlayerProps[];
-  leaderBoardList: WinnerPlayerProps[];
   loadSummary: () => Promise<void>;
   handleUndo: () => Promise<void>;
   handlePlayAgain: () => Promise<void>;
   handleBackToStart: () => Promise<void>;
-}
-
-function createEmptyRound(): WinnerPlayerProps["rounds"][number] {
-  return {};
 }
 
 function isFinishedPlayerResponseArray(value: unknown): value is FinishedPlayerResponse[] {
@@ -168,37 +160,10 @@ export function useGameSummaryPage(): UseGameSummaryPageResult {
     void loadSummary();
   }, [finishedGameIdFromRoute, loadSummary, summaryFromNavigationState, summaryFromStore]);
 
-  const newList: WinnerPlayerProps[] = useMemo(() => {
-    if (finishedSummary.length > 0) {
-      return finishedSummary.map((player) => {
-        const roundsPlayed = Math.max(player.roundsPlayed ?? 0, 1);
-        return {
-          id: player.playerId,
-          name: player.username,
-          score: 0,
-          isActive: false,
-          index: player.position - 1,
-          rounds: Array.from({ length: roundsPlayed }, () => createEmptyRound()),
-          scoreAverage: player.roundAverage,
-          roundCount: player.roundsPlayed,
-        };
-      });
-    }
-    return [];
-  }, [finishedSummary]);
-
-  const podiumList = newList.slice(0, 3);
-  const leaderBoardList = newList.slice(3, newList.length);
-  const podiumListWithPlaceholder = [...podiumList];
-  podiumListWithPlaceholder.push({
-    id: 0,
-    name: "-",
-    score: 0,
-    isActive: false,
-    index: 0,
-    rounds: [createEmptyRound()],
-  });
-  const podiumData = podiumList.length === 2 ? podiumListWithPlaceholder : podiumList;
+  const { standings, podiumData, leaderBoardList } = useMemo(
+    () => buildFinishedGameStandings(finishedSummary),
+    [finishedSummary],
+  );
 
   const handleUndo = useCallback(async (): Promise<void> => {
     if (finishedGameIdFromRoute === null) return;
@@ -324,7 +289,7 @@ export function useGameSummaryPage(): UseGameSummaryPageResult {
     error,
     starting,
     podiumData,
-    newList,
+    standings,
     leaderBoardList,
     loadSummary,
     handleUndo,

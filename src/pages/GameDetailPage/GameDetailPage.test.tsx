@@ -46,7 +46,7 @@ describe("GameDetailPage", () => {
   it("should render game details when hook returns data", () => {
     useGameDetailPageMock.mockReturnValue({
       podiumData: [buildPlayer()],
-      newList: [buildPlayer()],
+      standings: [buildPlayer()],
       leaderBoardList: [],
     });
 

@@ -14,7 +14,7 @@ function GameSummaryPage(): React.JSX.Element {
     error,
     starting,
     podiumData,
-    newList,
+    standings,
     leaderBoardList,
     loadSummary,
     handleUndo,
@@ -64,7 +64,7 @@ function GameSummaryPage(): React.JSX.Element {
         </button>
       </div>
       <div className={styles.podiumBoard}>
-        <Podium userMap={podiumData} list={newList} startScore={startScore} />
+        <Podium userMap={podiumData} list={standings} startScore={startScore} />
       </div>
       <div className={styles.leaderBoard}>
         <OverviewPlayerItemList userMap={leaderBoardList} startScore={startScore} />
