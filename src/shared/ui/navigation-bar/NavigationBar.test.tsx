@@ -63,6 +63,11 @@ describe("NavigationBar", () => {
     { route: ROUTES.start(7), current: "Game", value: "page" },
     { route: ROUTES.settings(), current: "Settings", value: "true" },
     { route: ROUTES.settings(7), current: "Settings", value: "page" },
+    { route: "/statistics/", current: "Statistics", value: "page" },
+    { route: "/Statistics", current: "Statistics", value: "page" },
+    { route: "/GamesOverview/", current: "Statistics", value: "true" },
+    { route: "/Start/7/", current: "Game", value: "page" },
+    { route: "/SETTINGS", current: "Settings", value: "true" },
   ])("should mark $current with aria-current $value on $route", ({ route, current, value }) => {
     render(
       <MemoryRouter initialEntries={[route]}>

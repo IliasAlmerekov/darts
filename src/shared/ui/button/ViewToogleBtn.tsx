@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState, useCallback } from "react";
 import clsx from "clsx";
 import styles from "./ViewToogleBtn.module.css";
-import { Link, useLocation, useNavigate } from "react-router-dom";
+import { Link, matchPath, useLocation, useNavigate } from "react-router-dom";
 import { isPlainLeftClick } from "@/lib/router/isPlainLeftClick";
 import { ROUTES } from "@/lib/router/routes";
 
@@ -10,10 +10,11 @@ function ViewToogleButton(): React.JSX.Element {
   const navigate = useNavigate();
 
   // aria-current follows the real route only; the visual highlight may show a preview or fallback.
+  // matchPath ignores case and a trailing slash, as the router does when it renders the page.
   const activeView =
-    location.pathname === ROUTES.gamesOverview
+    matchPath(ROUTES.gamesOverview, location.pathname) !== null
       ? "games"
-      : location.pathname === ROUTES.statistics
+      : matchPath(ROUTES.statistics, location.pathname) !== null
         ? "players"
         : null;
   const [previewView, setPreviewView] = useState<"players" | "games" | null>(null);

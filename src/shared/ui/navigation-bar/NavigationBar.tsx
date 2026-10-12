@@ -58,16 +58,17 @@ function NavigationBar({ className, currentGameId = null }: NavigationBarProps):
     [gamePath, settingsPath],
   );
 
+  // matchPath ignores case and a trailing slash, as the router does when it renders the page.
+  const isAt = (path: string): boolean => matchPath(path, location.pathname) !== null;
+  const isWithin = (path: string): boolean =>
+    matchPath({ path, end: false }, location.pathname) !== null;
+
   const getIsActive = (itemId: string, itemPath: string): boolean => {
     return (
-      location.pathname === itemPath ||
-      (itemId === "game" &&
-        (location.pathname === ROUTES.start() ||
-          location.pathname.startsWith(ROUTES.start() + "/"))) ||
-      (itemId === "statistics" &&
-        (location.pathname === ROUTES.gamesOverview ||
-          matchPath(ROUTES.detailsPattern, location.pathname) !== null)) ||
-      (itemId === "settings" && location.pathname.startsWith(ROUTES.settings()))
+      isAt(itemPath) ||
+      (itemId === "game" && isWithin(ROUTES.start())) ||
+      (itemId === "statistics" && (isAt(ROUTES.gamesOverview) || isAt(ROUTES.detailsPattern))) ||
+      (itemId === "settings" && isWithin(ROUTES.settings()))
     );
   };
 
@@ -80,7 +81,7 @@ function NavigationBar({ className, currentGameId = null }: NavigationBarProps):
     if (itemId !== activeTabId) {
       return undefined;
     }
-    return itemPath === location.pathname ? "page" : "true";
+    return isAt(itemPath) ? "page" : "true";
   };
 
   useEffect(() => {
@@ -111,7 +112,7 @@ function NavigationBar({ className, currentGameId = null }: NavigationBarProps):
     }
 
     event.preventDefault();
-    if (path === location.pathname) {
+    if (isAt(path)) {
       return;
     }
 

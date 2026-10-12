@@ -50,6 +50,9 @@ describe("ViewToogleButton", () => {
   it.each([
     { route: ROUTES.statistics, current: "Players" },
     { route: ROUTES.gamesOverview, current: "Games" },
+    { route: "/statistics/", current: "Players" },
+    { route: "/GamesOverview", current: "Games" },
+    { route: "/gamesoverview/", current: "Games" },
   ])("should mark $current as the current page on $route", ({ route, current }) => {
     renderAt(route);
 
