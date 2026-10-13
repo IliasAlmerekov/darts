@@ -9,8 +9,7 @@ variables:
 workflow:
   rules:
     - if: $CI_PIPELINE_SOURCE == "merge_request_event"
-    # Scheduled and "Run pipeline" pipelines exist only for the live E2E job.
-    - if: $CI_PIPELINE_SOURCE == "schedule"
+    # "Run pipeline" pipelines exist only for the live E2E job.
     - if: $CI_PIPELINE_SOURCE == "web"
     - when: never
 
@@ -95,7 +94,6 @@ e2e_live:
   image: mcr.microsoft.com/playwright:v1.58.1-noble
   stage: check
   rules:
-    - if: $CI_PIPELINE_SOURCE == "schedule"
     - if: $CI_PIPELINE_SOURCE == "web"
   variables:
     PLAYWRIGHT_WORKERS: 1

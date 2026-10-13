@@ -24,8 +24,8 @@ Mock the requests a scenario makes with the helpers in `shared/`.
 `npm run test:e2e:live` runs `live/` against a running backend. It needs
 `PLAYWRIGHT_TEST_EMAIL`, `PLAYWRIGHT_TEST_PASSWORD`, and `VITE_API_TARGET` pointing at the
 backend. A preflight checks them and `GET /api/health` first, and fails the run with a message
-naming what is missing. CI runs it only on demand: the `E2E live` GitHub workflow by hand,
-and the GitLab `e2e_live` job in schedule or "Run pipeline" pipelines.
+naming what is missing. CI runs it only on demand: the `E2E live` GitHub workflow and the
+GitLab `e2e_live` job in "Run pipeline" pipelines.
 
 `PLAYWRIGHT_BASE_URL` sets the app URL for both suites, and Playwright starts the dev server on
 its host and port. Navigate with relative paths only.
