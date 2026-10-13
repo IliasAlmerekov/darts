@@ -56,7 +56,7 @@ function isPlayersEventPayload(value: unknown): value is PlayersEventPayload {
   return list === null || list.every(isRawPlayer);
 }
 
-export interface UseGamePlayersResult {
+interface UseGamePlayersResult {
   players: Player[];
   count: number;
   appendOptimisticPlayer: (player: OptimisticPlayer) => void;

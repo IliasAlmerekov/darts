@@ -32,7 +32,7 @@ interface UsePlayerOrderPersistenceParams {
   setPageError: SetStartPageError;
 }
 
-export interface UsePlayerOrderPersistenceResult {
+interface UsePlayerOrderPersistenceResult {
   playerOrder: number[];
   handleDragEnd: (event: DragEndEvent) => void;
 }

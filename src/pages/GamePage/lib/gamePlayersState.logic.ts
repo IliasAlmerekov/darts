@@ -6,7 +6,7 @@ import {
   getZeroScorePlayerIds,
 } from "./gameLogic.helpers";
 
-export interface BuildGamePlayersStateOptions {
+interface BuildGamePlayersStateOptions {
   dismissedZeroScorePlayerIds: number[];
   gameData: GameThrowsResponse | null;
   hasError: boolean;
@@ -15,7 +15,7 @@ export interface BuildGamePlayersStateOptions {
   skipFinishOverlay: boolean;
 }
 
-export interface GamePlayersDerivedState {
+interface GamePlayersDerivedState {
   activePlayer: GameThrowsResponse["players"][number] | null;
   activePlayers: UIPlayer[];
   finishedPlayers: UIPlayer[];

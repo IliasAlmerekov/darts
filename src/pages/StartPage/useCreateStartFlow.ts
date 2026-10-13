@@ -24,7 +24,7 @@ interface UseCreateStartFlowParams {
   setPageError: SetStartPageError;
 }
 
-export interface UseCreateStartFlowResult {
+interface UseCreateStartFlowResult {
   creating: boolean;
   starting: boolean;
   handleCreateRoom: () => Promise<void>;

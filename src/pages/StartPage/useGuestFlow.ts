@@ -18,7 +18,7 @@ interface UseGuestFlowParams {
   appendOptimisticPlayer: (player: OptimisticGuestPlayer) => void;
 }
 
-export interface UseGuestFlowResult {
+interface UseGuestFlowResult {
   isLobbyFull: boolean;
   isGuestOverlayOpen: boolean;
   guestUsername: string;

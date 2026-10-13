@@ -2,7 +2,7 @@ import { useCallback, useState } from "react";
 
 export type SetStartPageError = (message: string | null) => void;
 
-export interface UseStartPageErrorResult {
+interface UseStartPageErrorResult {
   pageError: string | null;
   setPageError: SetStartPageError;
   clearPageError: () => void;

@@ -12,7 +12,7 @@ export type PlaywrightAuthTestCredentials = {
   password: string;
 };
 
-export type PlaywrightAuthCredentialResolution =
+type PlaywrightAuthCredentialResolution =
   | {
       isConfigured: true;
       credentials: PlaywrightAuthTestCredentials;
