@@ -30,6 +30,10 @@ workflow and the GitLab `e2e_live` job in schedule or "Run pipeline" pipelines.
 `PLAYWRIGHT_BASE_URL` sets the app URL for both suites, and Playwright starts the dev server on
 its host and port. Navigate with relative paths only.
 
+The docker compose stack already serves the app on port 5173, and a local run reuses whatever
+answers there. Run `PLAYWRIGHT_BASE_URL=http://127.0.0.1:5174 npm run test:e2e` so Playwright
+starts its own dev server from your working tree.
+
 ## Running tests
 
 ```bash
