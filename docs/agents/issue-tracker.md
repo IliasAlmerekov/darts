@@ -20,7 +20,7 @@ Infer the repo from `git remote -v`; `gh` does this automatically when run insid
 
 When set to `yes`, PRs run through the same labels and states as issues, using the `gh pr` equivalents:
 
-- **Read a PR**: `gh pr view <number> --comments`, `gh pr diff <number>` for the diff, and `gh api --paginate repos/{owner}/{repo}/pulls/<number>/comments` for inline review comments, which `--comments` omits.
+- **Read a PR**: `gh pr view <number> --json number,title,body,author,createdAt,updatedAt,labels` for the metadata, `gh pr view <number> --comments`, `gh pr diff <number>` for the diff, and `gh api --paginate repos/{owner}/{repo}/pulls/<number>/comments` for inline review comments, which `--comments` omits.
 - **List external PRs for triage**: `gh api --paginate 'repos/{owner}/{repo}/pulls?state=open' --jq '.[] | select(.author_association | IN("OWNER","MEMBER","COLLABORATOR") | not) | {number, title, author: .user.login, author_association, labels: [.labels[].name]}'`.
 - **Comment / label / close**: `gh pr comment`, `gh pr edit --add-label`/`--remove-label`, `gh pr close`.
 
@@ -44,4 +44,4 @@ Used by `/wayfinder`. The **map** is a single issue with **child** issues as tic
 - **Blocking**: native issue dependencies: `gh api --method POST repos/{owner}/{repo}/issues/<child>/dependencies/blocked_by -F issue_id=<blocker-db-id>`. A ticket is unblocked when `gh api repos/{owner}/{repo}/issues/<child> --jq .issue_dependencies_summary.blocked_by` returns `0`, which counts open blockers only.
 - **Frontier query**: list the map's children in map order with `gh api --paginate repos/{owner}/{repo}/issues/<map>/sub_issues --jq '.[] | select(.state == "open" and (.assignees | length) == 0) | {number, title}'`, plus any task-list children, then drop each one whose `blocked_by` count above is not `0`. The first remaining child wins.
 - **Claim**: `gh issue edit <n> --add-assignee @me`, the session's first write.
-- **Resolve**: `gh issue comment <n> --body "<answer>"`, then `gh issue close <n>`, then append a context pointer (gist plus link) to the map's Decisions-so-far with `gh issue edit <map> --body-file <file>`.
+- **Resolve**: `gh issue comment <n> --body "<answer>"`, then `gh issue close <n>`, then append a context pointer (gist plus link) to the map's Decisions-so-far. Other sessions edit the map concurrently, so refetch its body (`gh issue view <map> --json body --jq .body`) right before the edit, apply only your change to that fresh copy, and write it with `gh issue edit <map> --body-file <file>`.
