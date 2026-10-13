@@ -63,3 +63,17 @@ Ask the user first before you:
 
 Keep `.env` values out of prompts, logs, commits, and issues. Work on a branch; `main`
 changes only through a merge request.
+
+## Agent skills
+
+### Issue tracker
+
+GitHub Issues in IliasAlmerekov/darts, via the `gh` CLI. See `docs/agents/issue-tracker.md`.
+
+### Triage labels
+
+The five default roles, each label named after its role. See `docs/agents/triage-labels.md`.
+
+### Domain docs
+
+Single-context: `GLOSSARY.md` and `docs/adr/` at the repo root. See `docs/agents/domain.md`.
