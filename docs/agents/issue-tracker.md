@@ -6,7 +6,7 @@ Issues and specs for this repo live as GitHub issues. Use the `gh` CLI for all o
 
 - **Create an issue**: `gh issue create --title "..." --body "..."`. Use a heredoc for multi-line bodies.
 - **Read an issue**: `gh issue view <number> --json number,title,body,author,createdAt,updatedAt,labels,comments`.
-- **List issues**: `gh issue list --state open --limit 200 --json number,title,body,author,createdAt,updatedAt,labels,comments --jq '[.[] | {number, title, body, author: .author.login, createdAt, updatedAt, labels: [.labels[].name], comments: [.comments[].body]}]'` with appropriate `--label` and `--state` filters.
+- **List issues**: `gh issue list --state open --limit 200 --json number,title,body,author,createdAt,updatedAt,labels,comments --jq '[.[] | {number, title, body, author: .author.login, createdAt, updatedAt, labels: [.labels[].name], comments: [.comments[] | {author: .author.login, createdAt, body}]}]'` with appropriate `--label` and `--state` filters.
 - **Make an issue a sub-issue of a parent**: `gh issue create --parent <parent> ...`, or `gh issue edit <parent> --add-sub-issue <child>` afterwards (`gh` 2.94+). Older `gh`: `gh api --method POST repos/<owner>/<repo>/issues/<parent>/sub_issues -F sub_issue_id=<child-db-id>` (the integer database id from `gh api repos/<owner>/<repo>/issues/<child> --jq .id`, not the `#number`). Without sub-issues, put `Part of #<parent>` at the top of the child body.
 - **Comment on an issue**: `gh issue comment <number> --body "..."`
 - **Apply / remove labels**: `gh issue edit <number> --add-label "..."` / `--remove-label "..."`
@@ -33,3 +33,15 @@ Create a GitHub issue.
 ## When a skill says "fetch the relevant ticket"
 
 Read it as in **Read an issue** above.
+
+## Wayfinding operations
+
+Used by `/wayfinder`. The **map** is a single issue with **child** issues as tickets. The local `gh` may predate `--parent` and the `blockedBy`/`subIssues` JSON fields, so these recipes use `gh api`. A `<db-id>` is the integer from `gh api repos/{owner}/{repo}/issues/<n> --jq .id`, never the `#number`.
+
+- **Labels**: before the first map, create any that are missing: `for t in map research prototype grilling task; do gh label create "wayfinder:$t" || true; done`.
+- **Map**: `gh issue create --label wayfinder:map`, holding the Notes / Decisions-so-far / Fog body.
+- **Child ticket**: create the issue with its `wayfinder:<type>` label, then link it: `gh api --method POST repos/{owner}/{repo}/issues/<map>/sub_issues -F sub_issue_id=<child-db-id>`. GitHub caps a parent at 100 sub-issues; past that, add further children to a task list in the map body and put `Part of #<map>` at the top of each child body. Once claimed, the ticket is assigned to the driving dev.
+- **Blocking**: native issue dependencies: `gh api --method POST repos/{owner}/{repo}/issues/<child>/dependencies/blocked_by -F issue_id=<blocker-db-id>`. A ticket is unblocked when `gh api repos/{owner}/{repo}/issues/<child> --jq .issue_dependencies_summary.blocked_by` returns `0`, which counts open blockers only.
+- **Frontier query**: list the map's children in map order with `gh api --paginate repos/{owner}/{repo}/issues/<map>/sub_issues --jq '.[] | select(.state == "open" and (.assignees | length) == 0) | {number, title}'`, plus any task-list children, then drop each one whose `blocked_by` count above is not `0`. The first remaining child wins.
+- **Claim**: `gh issue edit <n> --add-assignee @me`, the session's first write.
+- **Resolve**: `gh issue comment <n> --body "<answer>"`, then `gh issue close <n>`, then append a context pointer (gist plus link) to the map's Decisions-so-far with `gh issue edit <map> --body-file <file>`.
