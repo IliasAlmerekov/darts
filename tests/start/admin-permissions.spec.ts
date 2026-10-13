@@ -1,7 +1,7 @@
 // spec: specs/ticket-test-plan.md
 // seed: tests/start/create-game.spec.ts
 
-import { test, expect, type Page } from "@playwright/test";
+import { test, expect, type Page } from "../shared/test";
 
 async function mockAuthenticatedUser(page: Page, roles: string[]): Promise<void> {
   await page.context().clearCookies();

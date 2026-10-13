@@ -1,7 +1,7 @@
 // spec: specs/joined-game-test-plan.md
 // seed: seed.spec.ts
 
-import { test, expect } from "@playwright/test";
+import { test, expect } from "../shared/test";
 
 test("Display page for unauthenticated users", async ({ page }) => {
   // 1. Clear all authentication cookies

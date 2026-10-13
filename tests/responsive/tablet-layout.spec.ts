@@ -1,7 +1,7 @@
 // spec: specs/login-test-plan.md
 // seed: tests/shared/seed.spec.ts
 
-import { test, expect } from "@playwright/test";
+import { test, expect } from "../shared/test";
 import { mockFailedLogin } from "../shared/auth-route-mocks";
 
 test.describe("Cross-Browser and Responsive Tests", () => {

@@ -1,12 +1,17 @@
 // spec: specs/login-test-plan.md
 // seed: tests/shared/seed.spec.ts
 
-import { test, expect } from "@playwright/test";
+import { test, expect } from "../shared/test";
+import { mockUnauthenticatedSession } from "../shared/auth-route-mocks";
 
 test.describe("User Interface Interactions", () => {
+  test.beforeEach(async ({ page }) => {
+    await mockUnauthenticatedSession(page);
+  });
+
   test("Navigation to Registration", async ({ page }) => {
     // 1. Navigate to the login page
-    await page.goto("http://localhost:5173/");
+    await page.goto("/");
 
     // Verify login page displays with 'Don't have an account? Sign up' text and link
     await expect(page.getByText("Don't have an account?")).toBeVisible();
@@ -16,7 +21,7 @@ test.describe("User Interface Interactions", () => {
     await page.getByRole("link", { name: "Sign up" }).click();
 
     // Verify navigation to '/register' page
-    await expect(page).toHaveURL("http://localhost:5173/register");
+    await expect(page).toHaveURL("/register");
 
     // Verify registration form is displayed with 'Create an account' heading
     await expect(page.getByRole("heading", { name: "Create an account" })).toBeVisible();
@@ -28,7 +33,7 @@ test.describe("User Interface Interactions", () => {
     await page.getByRole("link", { name: "Sign in" }).click();
 
     // Verify navigation back to '/' login page
-    await expect(page).toHaveURL("http://localhost:5173/");
+    await expect(page).toHaveURL("/");
 
     // Verify login form is displayed
     await expect(page.getByRole("heading", { name: "Sign in" })).toBeVisible();

@@ -1,20 +1,15 @@
-import { test, expect } from "@playwright/test";
+import { test, expect } from "../shared/test";
 import {
-  getAuthTestCredentials,
-  skipWhenAuthCredentialsMissing,
-} from "../shared/auth-test-credentials";
-import {
+  MOCK_LOGIN_CREDENTIALS,
   mockProfileLoginSuccessFlow,
   PROFILE_LOGIN_SUCCESS_RESPONSE,
 } from "../shared/auth-route-mocks";
 
 test.describe("Player profile login success", () => {
-  skipWhenAuthCredentialsMissing();
-
   test("ordinary player login reaches the player profile and renders profile data", async ({
     page,
   }) => {
-    const { email: testEmail, password: testPassword } = getAuthTestCredentials();
+    const { email: testEmail, password: testPassword } = MOCK_LOGIN_CREDENTIALS;
     const { profile } = PROFILE_LOGIN_SUCCESS_RESPONSE;
 
     await mockProfileLoginSuccessFlow(page);

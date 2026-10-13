@@ -1,7 +1,7 @@
 // spec: specs/login-test-plan.md
 // seed: tests/shared/seed.spec.ts
 
-import { test, expect } from "@playwright/test";
+import { test, expect } from "../shared/test";
 import { mockFailedLogin } from "../shared/auth-route-mocks";
 
 test.describe("Login Form Functionality", () => {
@@ -9,7 +9,7 @@ test.describe("Login Form Functionality", () => {
     await mockFailedLogin(page);
 
     // 1. Navigate to the login page
-    await page.goto("http://localhost:5173/");
+    await page.goto("/");
 
     // Wait for form to become interactive
     await page.getByText("Sign in").first().waitFor({ state: "visible" });
@@ -30,7 +30,7 @@ test.describe("Login Form Functionality", () => {
     await expect(page.getByText("Incorrect email or password.")).toBeVisible();
 
     // Verify user remains on login page
-    await expect(page).toHaveURL("http://localhost:5173/");
+    await expect(page).toHaveURL("/");
 
     // Verify form fields remain populated
     await expect(page.getByRole("textbox", { name: "Email *" })).toHaveValue("wrong@example.com");

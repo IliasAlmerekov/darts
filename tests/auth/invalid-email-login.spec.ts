@@ -1,12 +1,17 @@
 // spec: specs/login-test-plan.md
 // seed: tests/shared/seed.spec.ts
 
-import { test, expect } from "@playwright/test";
+import { test, expect } from "../shared/test";
+import { mockUnauthenticatedSession } from "../shared/auth-route-mocks";
 
 test.describe("Login Form Functionality", () => {
+  test.beforeEach(async ({ page }) => {
+    await mockUnauthenticatedSession(page);
+  });
+
   test("Login with Invalid Email Format", async ({ page }) => {
     // 1. Navigate to the login page
-    await page.goto("http://localhost:5173/");
+    await page.goto("/");
 
     // Wait for form to become interactive
     await page.getByText("Sign in").first().waitFor({ state: "visible" });
@@ -26,7 +31,7 @@ test.describe("Login Form Functionality", () => {
     await page.getByRole("button", { name: "Sign in" }).click();
 
     // Verify form did not submit to the server (still on login page)
-    await expect(page).toHaveURL("http://localhost:5173/");
+    await expect(page).toHaveURL("/");
 
     // Verify email field remains focused (HTML5 validation)
     await expect(page.getByRole("textbox", { name: "Email *" })).toBeFocused();

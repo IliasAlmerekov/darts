@@ -1,23 +1,15 @@
-import { test } from "@playwright/test";
 import {
   resolvePlaywrightAuthTestCredentials,
   type PlaywrightAuthTestCredentials,
 } from "../../src/test/playwright/playwrightAuthCredentials";
 
-const resolvedAuthTestCredentials = resolvePlaywrightAuthTestCredentials();
-const shouldSkipAuthDependentTests = !resolvedAuthTestCredentials.isConfigured;
-const authTestSkipReason = resolvedAuthTestCredentials.isConfigured
-  ? ""
-  : resolvedAuthTestCredentials.skipReason;
-
-export function skipWhenAuthCredentialsMissing(): void {
-  test.skip(shouldSkipAuthDependentTests, authTestSkipReason);
-}
-
+/** Live suite only: the live preflight has already failed the run when these are missing. */
 export function getAuthTestCredentials(): PlaywrightAuthTestCredentials {
-  if (!resolvedAuthTestCredentials.isConfigured) {
-    throw new Error(authTestSkipReason);
+  const resolved = resolvePlaywrightAuthTestCredentials();
+
+  if (!resolved.isConfigured) {
+    throw new Error(resolved.missingReason);
   }
 
-  return resolvedAuthTestCredentials.credentials;
+  return resolved.credentials;
 }

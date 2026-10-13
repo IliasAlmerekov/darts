@@ -4,7 +4,7 @@ Thanks for contributing! This guide summarizes how we work on the frontend and h
 
 ## Prerequisites
 
-- Node.js 20.19+ + npm, pinned in `.nvmrc` (Vite 7 requires `^20.19.0 || >=22.12.0`). CI uses Node.js 20, except the GitLab `e2e_tests` job, which runs in the Playwright Docker image.
+- Node.js 20.19+ + npm, pinned in `.nvmrc` (Vite 7 requires `^20.19.0 || >=22.12.0`). CI uses Node.js 20, except the GitLab `e2e_tests` and `e2e_live` jobs, which run in the Playwright Docker image.
 - Install dependencies and the Playwright browser:
 
 ```bash
@@ -47,6 +47,8 @@ npm run knip
 npm run stylelint
 npm run test
 npm run test:e2e
+# Only with a running backend and PLAYWRIGHT_TEST_* credentials:
+npm run test:e2e:live
 npm run typecheck
 ```
 
@@ -79,7 +81,7 @@ Other directories (`shared/hooks/`, `shared/lib/`, `app/`) use **direct file imp
 
 - Add/extend tests for every behavior change (unit/integration with Vitest, E2E with Playwright).
 - Prefer behavioral tests over implementation details.
-- Tests must be deterministic (no real time, no external services).
+- Tests must be deterministic (no real time, no external services). The one exception is the opt-in live Playwright suite in `tests/live/`.
 
 ## Accessibility
 

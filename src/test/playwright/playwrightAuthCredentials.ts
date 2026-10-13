@@ -17,13 +17,13 @@ export type PlaywrightAuthCredentialResolution =
       isConfigured: true;
       credentials: PlaywrightAuthTestCredentials;
       missingVariableNames: [];
-      skipReason: null;
+      missingReason: null;
     }
   | {
       isConfigured: false;
       credentials: null;
       missingVariableNames: PlaywrightAuthCredentialEnvName[];
-      skipReason: string;
+      missingReason: string;
     };
 
 function readEnvValue(
@@ -52,7 +52,7 @@ export function resolvePlaywrightAuthTestCredentials(
         password,
       },
       missingVariableNames: [],
-      skipReason: null,
+      missingReason: null,
     };
   }
 
@@ -60,8 +60,8 @@ export function resolvePlaywrightAuthTestCredentials(
     isConfigured: false,
     credentials: null,
     missingVariableNames,
-    skipReason: `Missing ${missingVariableNames.join(
+    missingReason: `Missing ${missingVariableNames.join(
       ", ",
-    )}. Provide them in .env/.env.local for local runs or as CI secrets to enable auth-dependent Playwright specs.`,
+    )}. Provide them in .env/.env.local for local runs or as CI secrets to run the live Playwright suite.`,
   };
 }

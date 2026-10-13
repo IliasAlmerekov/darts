@@ -1,14 +1,13 @@
 // spec: specs/ticket-test-plan.md
 // seed: tests/start/create-game.spec.ts
 
-import { test, expect } from "@playwright/test";
-import { skipWhenAuthCredentialsMissing } from "../shared/auth-test-credentials";
+import { test, expect } from "../shared/test";
 import { createGame, loginAsAdmin } from "../shared/start-page-helpers";
+import { mockLobbyApi } from "../shared/lobby-route-mocks";
 
 test.describe("Error Handling and Edge Cases", () => {
-  skipWhenAuthCredentialsMissing();
-
   test("Handle network failures during game creation", async ({ page }) => {
+    await mockLobbyApi(page);
     await loginAsAdmin(page);
 
     await page.route("**/api/room/create", async (route) => {

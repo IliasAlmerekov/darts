@@ -1,11 +1,16 @@
 // spec: specs/login-test-plan.md
 // seed: tests/shared/seed.spec.ts
 
-import { test, expect, type Locator } from "@playwright/test";
+import { test, expect, type Locator } from "../shared/test";
+import { mockUnauthenticatedSession } from "../shared/auth-route-mocks";
 
 test.describe("Accessibility and Usability", () => {
+  test.beforeEach(async ({ page }) => {
+    await mockUnauthenticatedSession(page);
+  });
+
   test("Visual Focus Indicators", async ({ page }) => {
-    await page.goto("http://localhost:5173/");
+    await page.goto("/");
 
     const emailField = page.getByRole("textbox", { name: "Email *" });
     await expect(emailField).toBeEnabled();

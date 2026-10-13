@@ -21,8 +21,10 @@ Rules:
 
 Rationale:
 
-Vitest is configured to include only `src/**/*.test.{ts,tsx}`. Playwright is
-configured to run `tests/**/*.spec.ts` and ignore `tests/shared/**`.
+Vitest is configured to include only `src/**/*.test.{ts,tsx}`. The Playwright
+`mocked` project runs `tests/**/*.spec.ts` and ignores `tests/shared/**` and
+`tests/live/**`. The `live` project runs `tests/live/**/*.spec.ts` after
+`tests/live/preflight.setup.ts`.
 
 ## Vitest files
 
@@ -130,9 +132,11 @@ Rules:
 Rules:
 
 - Put each E2E scenario under the matching `tests/<domain>/` folder.
-- Import `{ test, expect }` from `@playwright/test`.
-- Use shared helpers from `tests/shared/` for login, game creation, auth credentials, and route mocks.
-- Call `skipWhenAuthCredentialsMissing()` in auth-dependent specs.
+- Import `{ test, expect }` from `@playwright/test` only in `tests/live/`.
+- Import `{ test, expect }` from `tests/shared/test.ts` in every spec outside `tests/live/`; its fixture fails the test on any `/api` request without a route mock.
+- Mock every API request a mocked spec makes with the helpers in `tests/shared/`. Do not skip a spec for missing credentials or backend.
+- Put scenarios that need a real backend under `tests/live/`; they run with `npm run test:e2e:live`, behind a preflight that fails when credentials or the backend are missing.
+- Navigate with paths relative to `baseURL`; do not hardcode a host or port.
 - Prefer `getByRole`, `getByLabel`, and `getByText` locators.
 - Use `page.locator()` only for generated markup, CSS-module checks, or layout checks that have no accessible target.
 - Wait through Playwright assertions instead of fixed sleeps.
@@ -165,6 +169,7 @@ Run:
 ```bash
 npm run test
 npm run test:e2e
+npm run test:e2e:live   # when tests/live/ changes; needs a backend and credentials
 npm run coverage
 rg --files src tests | rg '(^|[/\\])__tests__([/\\]|$)'
 rg -n '^\s*test\(' src --glob '*.{test,spec}.{ts,tsx}'

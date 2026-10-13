@@ -2,14 +2,9 @@
 // seed: tests/shared/seed.spec.ts
 
 import { test, expect } from "@playwright/test";
-import {
-  getAuthTestCredentials,
-  skipWhenAuthCredentialsMissing,
-} from "../shared/auth-test-credentials";
+import { getAuthTestCredentials } from "../shared/auth-test-credentials";
 
 test.describe("Authentication Flow and Redirects", () => {
-  skipWhenAuthCredentialsMissing();
-
   test("Logout and Re-login Flow", async ({ page, context }) => {
     const { email: testEmail, password: testPassword } = getAuthTestCredentials();
     const emailField = page.getByRole("textbox", { name: "Email *" });
@@ -17,7 +12,7 @@ test.describe("Authentication Flow and Redirects", () => {
     const submitButton = page.getByRole("button", { name: "Sign in" });
 
     // 1. Login with valid credentials
-    await page.goto("http://localhost:5173/");
+    await page.goto("/");
 
     // Wait for form to become interactive
     await page.getByText("Sign in").first().waitFor({ state: "visible" });
@@ -28,13 +23,13 @@ test.describe("Authentication Flow and Redirects", () => {
     await submitButton.click();
 
     // Verify successful authentication - should reach the dashboard/start page
-    await expect(page).toHaveURL("http://localhost:5173/start");
+    await expect(page).toHaveURL("/start");
 
     // 2. Clear browser storage and context to simulate logout
     await context.clearCookies();
 
     // 3. Navigate to a protected route to test authentication
-    await page.goto("http://localhost:5173/start");
+    await page.goto("/start");
 
     // Wait for auth redirect resolution.
     await expect
@@ -54,9 +49,9 @@ test.describe("Authentication Flow and Redirects", () => {
       await submitButton.click();
 
       // Verify successful re-authentication
-      await expect(page).toHaveURL("http://localhost:5173/start");
+      await expect(page).toHaveURL("/start");
     } else {
-      await expect(page).toHaveURL("http://localhost:5173/start");
+      await expect(page).toHaveURL("/start");
     }
   });
 });

@@ -1,11 +1,16 @@
 // spec: specs/login-test-plan.md
 // seed: tests/shared/seed.spec.ts
 
-import { test, expect } from "@playwright/test";
+import { test, expect } from "../shared/test";
+import { mockUnauthenticatedSession } from "../shared/auth-route-mocks";
 
 test.describe("Accessibility and Usability", () => {
+  test.beforeEach(async ({ page }) => {
+    await mockUnauthenticatedSession(page);
+  });
+
   test("Screen Reader Compatibility", async ({ page }) => {
-    await page.goto("http://localhost:5173/");
+    await page.goto("/");
 
     await expect(page.getByRole("heading", { name: "Sign in" })).toBeVisible();
     await expect(page.getByRole("heading", { level: 1 })).toHaveText("Sign in");

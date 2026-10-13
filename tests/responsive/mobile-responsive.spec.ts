@@ -1,7 +1,7 @@
 // spec: specs/login-test-plan.md
 // seed: tests/shared/seed.spec.ts
 
-import { test, expect } from "@playwright/test";
+import { test, expect } from "../shared/test";
 import { mockFailedLogin } from "../shared/auth-route-mocks";
 
 test.describe("Cross-Browser and Responsive Tests", () => {
@@ -9,7 +9,7 @@ test.describe("Cross-Browser and Responsive Tests", () => {
     await mockFailedLogin(page);
 
     await page.setViewportSize({ width: 375, height: 667 });
-    await page.goto("http://localhost:5173/");
+    await page.goto("/");
 
     const signInButton = page.getByRole("button", { name: "Sign in" });
     const emailField = page.getByRole("textbox", { name: "Email *" });
