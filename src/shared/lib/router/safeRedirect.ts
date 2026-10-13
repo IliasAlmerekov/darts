@@ -1,6 +1,16 @@
+// URL parsing drops tab, CR and LF, so "/\t/evil.example" becomes "//evil.example".
+const hasControlCharacter = (value: string): boolean =>
+  Array.from(value).some((character) => {
+    const code = character.charCodeAt(0);
+    return code < 0x20 || code === 0x7f;
+  });
+
 // Browsers read a backslash as a slash, so "/\evil.example" would leave the origin.
 const isInternalPath = (path: string): boolean =>
-  path.startsWith("/") && !path.startsWith("//") && !path.includes("\\");
+  path.startsWith("/") &&
+  !path.startsWith("//") &&
+  !path.includes("\\") &&
+  !hasControlCharacter(path);
 
 /**
  * Returns the redirect as an in-app path, or null when it may leave the SPA.

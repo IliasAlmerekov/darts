@@ -12,6 +12,13 @@ describe("resolveSafeRedirect", () => {
     },
   );
 
+  it.each(["/\t/evil.example", "/\n/evil.example", "/\r/evil.example", "/start\u0000"])(
+    "falls back when the path %j contains a control character",
+    (redirect) => {
+      expect(resolveSafeRedirect(redirect, FALLBACK)).toBe(FALLBACK);
+    },
+  );
+
   it.each(["//evil.example", "https://evil.example/phishing", "javascript:alert(1)"])(
     "falls back when %s points outside the app",
     (redirect) => {
