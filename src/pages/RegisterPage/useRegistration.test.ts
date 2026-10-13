@@ -104,9 +104,7 @@ describe("useRegistration", () => {
 
     expect(navigateMock).toHaveBeenCalledWith("/start");
     expect(navigateMock).not.toHaveBeenCalledWith("/\\evil.example");
-    expect(vi.mocked(clientLogger.warn)).toHaveBeenCalledWith("auth.registration.unsafe_redirect", {
-      redirect: "/\\evil.example",
-    });
+    expect(vi.mocked(clientLogger.warn)).toHaveBeenCalledWith("auth.registration.unsafe_redirect");
   });
 
   it("should not warn when registration redirects to the start route by a same-origin URL", async () => {

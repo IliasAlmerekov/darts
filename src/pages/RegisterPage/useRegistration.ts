@@ -57,9 +57,8 @@ export function useRegistration(): RegistrationReturn {
       if (response?.redirect) {
         const safeRedirect = toSafeRedirectPath(response.redirect);
         if (safeRedirect === null) {
-          clientLogger.warn("auth.registration.unsafe_redirect", {
-            redirect: response.redirect,
-          });
+          // The URL itself stays out of the log: it may carry a token.
+          clientLogger.warn("auth.registration.unsafe_redirect");
         }
         navigate(safeRedirect ?? ROUTES.start());
       }
