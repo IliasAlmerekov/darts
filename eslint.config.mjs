@@ -136,11 +136,11 @@ export default [
       "no-restricted-syntax": [
         "error",
         {
-          selector: "Literal[value=/^https?:\\/\\/(localhost|127\\.0\\.0\\.1)/]",
+          selector: "Literal[value=/^https?:\\/\\//]",
           message: "Navigate with paths relative to baseURL so PLAYWRIGHT_BASE_URL applies.",
         },
         {
-          selector: "TemplateElement[value.raw=/^https?:\\/\\/(localhost|127\\.0\\.0\\.1)/]",
+          selector: "TemplateElement[value.raw=/^https?:\\/\\//]",
           message: "Navigate with paths relative to baseURL so PLAYWRIGHT_BASE_URL applies.",
         },
       ],
