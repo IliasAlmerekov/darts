@@ -3,11 +3,10 @@ name: E2E live
 # Opt-in live suite against a running backend. Needs the repository secrets
 # PLAYWRIGHT_TEST_EMAIL and PLAYWRIGHT_TEST_PASSWORD and the repository variable
 # VITE_API_TARGET. The preflight fails the run and names whichever of them is missing
-# or unreachable.
+# or unreachable. Manual runs only: the suite signs in and out as the production admin,
+# which a scheduled run would do while the tablet may be in use.
 on:
   workflow_dispatch:
-  schedule:
-    - cron: "0 4 * * *"
 
 concurrency:
   group: e2e-live
