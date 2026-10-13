@@ -111,4 +111,39 @@ export default [
       ],
     },
   },
+  {
+    files: ["tests/**/*.spec.ts"],
+    ignores: ["tests/live/**"],
+    rules: {
+      "no-restricted-imports": [
+        "error",
+        {
+          paths: [
+            {
+              name: "@playwright/test",
+              importNames: ["test", "expect"],
+              message:
+                "Mocked specs import { test, expect } from tests/shared/test.ts, which fails on unmocked /api requests.",
+            },
+          ],
+        },
+      ],
+    },
+  },
+  {
+    files: ["tests/**/*.ts"],
+    rules: {
+      "no-restricted-syntax": [
+        "error",
+        {
+          selector: "Literal[value=/^https?:\\/\\/(localhost|127\\.0\\.0\\.1)/]",
+          message: "Navigate with paths relative to baseURL so PLAYWRIGHT_BASE_URL applies.",
+        },
+        {
+          selector: "TemplateElement[value.raw=/^https?:\\/\\/(localhost|127\\.0\\.0\\.1)/]",
+          message: "Navigate with paths relative to baseURL so PLAYWRIGHT_BASE_URL applies.",
+        },
+      ],
+    },
+  },
 ];

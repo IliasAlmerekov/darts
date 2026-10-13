@@ -137,6 +137,7 @@ Rules:
 - Mock every API request a mocked spec makes with the helpers in `tests/shared/`. Do not skip a spec for missing credentials or backend.
 - Put scenarios that need a real backend under `tests/live/`; they run with `npm run test:e2e:live`, behind a preflight that fails when credentials or the backend are missing.
 - Navigate with paths relative to `baseURL`; do not hardcode a host or port.
+- ESLint enforces the shared `test` import and relative URLs; `npm run typecheck` covers `tests/`.
 - Prefer `getByRole`, `getByLabel`, and `getByText` locators.
 - Use `page.locator()` only for generated markup, CSS-module checks, or layout checks that have no accessible target.
 - Wait through Playwright assertions instead of fixed sleeps.

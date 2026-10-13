@@ -41,11 +41,7 @@ test.describe("Accessibility and Usability", () => {
 
     const buttonHasFocusIndicator = await showPasswordButton.evaluate((el) => {
       const styles = window.getComputedStyle(el);
-      return (
-        styles.outlineStyle !== "none" ||
-        styles.outlineStyle === "auto" ||
-        styles.boxShadow !== "none"
-      );
+      return styles.outlineStyle !== "none" || styles.boxShadow !== "none";
     });
     expect(buttonHasFocusIndicator).toBe(true);
 
