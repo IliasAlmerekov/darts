@@ -30,8 +30,16 @@ export function LoginForm({
         <p className={styles.formSubtitle}>Enter your credentials to access your account</p>
       </div>
 
-      {success && <div className={`${styles.alert} ${styles.alertSuccess}`}>{success}</div>}
-      {error && <div className={`${styles.alert} ${styles.alertDanger}`}>{error}</div>}
+      {success && (
+        <div role="status" className={`${styles.alert} ${styles.alertSuccess}`}>
+          {success}
+        </div>
+      )}
+      {error && (
+        <div role="alert" className={`${styles.alert} ${styles.alertDanger}`}>
+          {error}
+        </div>
+      )}
 
       <form onSubmit={onSubmit} className={styles.form} data-testid="login-form">
         <div className={styles.fieldGroup}>
