@@ -21,7 +21,7 @@ interface StartPageLatestState {
 
 export { persistPlayerOrder, resolveGameId, shouldRedirectToCurrentGame };
 
-export interface UseStartPageResult {
+interface UseStartPageResult {
   invitation: ReturnType<typeof useStore<typeof $invitation>>;
   gameId: number | null;
   lastFinishedGameId: ReturnType<typeof useStore<typeof $lastFinishedGameId>>;

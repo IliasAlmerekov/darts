@@ -4,6 +4,8 @@ import { registerUser, type RegistrationResponse } from "@/shared/api/auth";
 import { mapAuthErrorMessage } from "@/lib/error/auth-error-handling";
 import { ApiError } from "@/shared/api";
 import { isRecord } from "@/lib/guards/guards";
+import { ROUTES } from "@/lib/router/routes";
+import { toSafeRedirectPath } from "@/lib/router/safeRedirect";
 import { clientLogger } from "@/shared/services/browser/clientLogger";
 
 /**
@@ -53,7 +55,12 @@ export function useRegistration(): RegistrationReturn {
       }
 
       if (response?.redirect) {
-        navigate(response.redirect);
+        const safeRedirect = toSafeRedirectPath(response.redirect);
+        if (safeRedirect === null) {
+          // The URL itself stays out of the log: it may carry a token.
+          clientLogger.warn("auth.registration.unsafe_redirect");
+        }
+        navigate(safeRedirect ?? ROUTES.start());
       }
       return response;
     } catch (err) {

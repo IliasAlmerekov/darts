@@ -52,7 +52,7 @@ const ADD_GUEST_ENDPOINT = (id: number) => `/room/${id}/guest`;
 // Room
 // ---------------------------------------------------------------------------
 
-export type CreateGamePayload = Partial<CreateGameSettingsPayload> & {
+type CreateGamePayload = Partial<CreateGameSettingsPayload> & {
   previousGameId?: number | undefined;
   playerIds?: number[];
   excludePlayerIds?: number[];

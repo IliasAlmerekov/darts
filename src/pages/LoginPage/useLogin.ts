@@ -6,7 +6,7 @@ import { clientLogger } from "@/shared/services/browser/clientLogger";
 import { invalidateAuthState, setAuthenticatedUser } from "@/shared/store/auth";
 import { mapAuthErrorMessage } from "@/lib/error/auth-error-handling";
 import { ROUTES } from "@/lib/router/routes";
-import { resolveSafeLoginRedirect } from "./lib/safeRedirect";
+import { resolveSafeRedirect } from "@/lib/router/safeRedirect";
 import { parseLocationState } from "@/lib/router/locationState";
 
 /**
@@ -39,13 +39,13 @@ export function useLogin(): LoginReturn {
   const navigate = useNavigate();
   const location = useLocation();
 
-  const from = resolveSafeLoginRedirect(
+  const from = resolveSafeRedirect(
     parseLocationState(location.state, isLoginLocationState)?.from,
     ROUTES.start(),
   );
 
   const navigateToRedirect = (redirect: string): void => {
-    const safeRedirect = resolveSafeLoginRedirect(redirect, from);
+    const safeRedirect = resolveSafeRedirect(redirect, from);
     const redirectPath = safeRedirect === ROUTES.start() ? from : safeRedirect;
 
     navigate(redirectPath);

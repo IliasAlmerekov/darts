@@ -60,6 +60,14 @@ typecheck:
   script:
     - npm run typecheck
 
+prod_audit:
+  <<: *base_job
+  stage: check
+  # npm audit reads only package-lock.json, so the job skips npm ci.
+  before_script: []
+  script:
+    - npm audit --omit=dev --audit-level=high
+
 secret_check:
   <<: *base_job
   stage: check

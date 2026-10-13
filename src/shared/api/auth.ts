@@ -7,14 +7,14 @@ import { ROUTES } from "@/shared/lib/router/routes";
 // Types
 // ---------------------------------------------------------------------------
 
-export interface LoginResponse {
+interface LoginResponse {
   redirect?: string;
   success?: boolean;
   error?: string | null;
   last_username?: string | null;
 }
 
-export interface LoginCredentials {
+interface LoginCredentials {
   email: string;
   password: string;
 }
@@ -23,7 +23,7 @@ export interface RegistrationResponse {
   redirect?: string;
 }
 
-export interface RegistrationData {
+interface RegistrationData {
   username: string;
   email: string;
   password: string;

@@ -4,7 +4,7 @@ import {
 } from "@/lib/game/finishedGameStandings";
 import type { FinishedPlayerResponse } from "@/types";
 
-export interface GameSummarySources {
+interface GameSummarySources {
   fromNavigation: FinishedPlayerResponse[] | null;
   fromStore: FinishedPlayerResponse[] | null;
   fromServer: FinishedPlayerResponse[];

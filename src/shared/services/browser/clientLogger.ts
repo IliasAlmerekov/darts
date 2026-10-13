@@ -9,7 +9,7 @@ type ClientLogDetails = Record<string, unknown> & {
   error?: unknown;
 };
 
-export interface ClientLogger {
+interface ClientLogger {
   warn(event: string, details?: ClientLogDetails): void;
   error(event: string, details?: ClientLogDetails): void;
 }
