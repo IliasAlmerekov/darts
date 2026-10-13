@@ -99,10 +99,6 @@ e2e_live:
     - if: $CI_PIPELINE_SOURCE == "web"
   variables:
     PLAYWRIGHT_WORKERS: 1
+  # No artifacts: failure snapshots capture the login form with the credentials.
   script:
     - npm run test:e2e:live
-  artifacts:
-    when: always
-    paths:
-      - playwright-report/
-    expire_in: 1 week
