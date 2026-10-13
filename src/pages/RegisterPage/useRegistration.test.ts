@@ -1,13 +1,4 @@
 // @vitest-environment jsdom
-import { act, renderHook } from "@testing-library/react";
-import { beforeEach, describe, expect, it, vi } from "vitest";
-import { ApiError } from "@/shared/api";
-import { clientLogger } from "@/shared/services/browser/clientLogger";
-import { useRegistration } from "./useRegistration";
-
-const navigateMock = vi.fn();
-const registerUserMock = vi.fn();
-
 vi.mock("react-router-dom", () => ({
   useNavigate: () => navigateMock,
 }));
@@ -19,6 +10,15 @@ vi.mock("@/shared/api/auth", () => ({
 vi.mock("@/shared/services/browser/clientLogger", () => ({
   clientLogger: { warn: vi.fn(), error: vi.fn() },
 }));
+
+import { act, renderHook } from "@testing-library/react";
+import { beforeEach, describe, expect, it, vi } from "vitest";
+import { ApiError } from "@/shared/api";
+import { clientLogger } from "@/shared/services/browser/clientLogger";
+import { useRegistration } from "./useRegistration";
+
+const navigateMock = vi.fn();
+const registerUserMock = vi.fn();
 
 describe("useRegistration", () => {
   beforeEach(() => {
@@ -107,5 +107,20 @@ describe("useRegistration", () => {
     expect(vi.mocked(clientLogger.warn)).toHaveBeenCalledWith("auth.registration.unsafe_redirect", {
       redirect: "/\\evil.example",
     });
+  });
+
+  it("should not warn when registration redirects to the start route by a same-origin URL", async () => {
+    registerUserMock.mockResolvedValueOnce({
+      redirect: `${window.location.origin}/start`,
+    });
+
+    const { result } = renderHook(() => useRegistration());
+
+    await act(async () => {
+      await result.current.register("john", "john@example.com", "Password123!");
+    });
+
+    expect(navigateMock).toHaveBeenCalledWith("/start");
+    expect(vi.mocked(clientLogger.warn)).not.toHaveBeenCalled();
   });
 });

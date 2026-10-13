@@ -3,14 +3,12 @@ const isInternalPath = (path: string): boolean =>
   path.startsWith("/") && !path.startsWith("//") && !path.includes("\\");
 
 /**
- * Keeps redirects inside the SPA and only accepts internal paths or same-origin URLs.
+ * Returns the redirect as an in-app path, or null when it may leave the SPA.
+ * Accepts internal paths and same-origin URLs.
  */
-export function resolveSafeRedirect(
-  redirect: string | null | undefined,
-  fallbackPath: string,
-): string {
+export function toSafeRedirectPath(redirect: string | null | undefined): string | null {
   if (!redirect) {
-    return fallbackPath;
+    return null;
   }
 
   if (isInternalPath(redirect)) {
@@ -29,9 +27,19 @@ export function resolveSafeRedirect(
         return normalizedPath;
       }
     } catch {
-      return fallbackPath;
+      return null;
     }
   }
 
-  return fallbackPath;
+  return null;
+}
+
+/**
+ * Keeps redirects inside the SPA and falls back when the redirect is unsafe or missing.
+ */
+export function resolveSafeRedirect(
+  redirect: string | null | undefined,
+  fallbackPath: string,
+): string {
+  return toSafeRedirectPath(redirect) ?? fallbackPath;
 }
