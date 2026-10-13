@@ -12,4 +12,4 @@ The skills speak in terms of five canonical triage roles. This file maps those r
 
 When a skill mentions a role (e.g. "apply the AFK-ready triage label"), use the corresponding label string from this table.
 
-Edit the "Label in our tracker" column to match whatever vocabulary you actually use.
+Change a string in the "Label in our tracker" column only together with the live GitHub label (`gh label create`, or `gh label edit <old> --name <new>`) and the triage summary in `AGENTS.md`.
