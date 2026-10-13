@@ -1,9 +1,11 @@
-const isInternalPath = (path: string): boolean => path.startsWith("/") && !path.startsWith("//");
+// Browsers read a backslash as a slash, so "/\evil.example" would leave the origin.
+const isInternalPath = (path: string): boolean =>
+  path.startsWith("/") && !path.startsWith("//") && !path.includes("\\");
 
 /**
- * Keeps login redirects inside the SPA and only accepts internal paths or same-origin URLs.
+ * Keeps redirects inside the SPA and only accepts internal paths or same-origin URLs.
  */
-export function resolveSafeLoginRedirect(
+export function resolveSafeRedirect(
   redirect: string | null | undefined,
   fallbackPath: string,
 ): string {
