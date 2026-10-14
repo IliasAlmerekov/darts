@@ -2,9 +2,9 @@ import { useCallback, useRef, useState } from "react";
 import { useStore } from "@nanostores/react";
 import type { NavigateFunction } from "react-router-dom";
 import { createRoom } from "@/shared/api/room";
-import { getLastFinishedGameId } from "@/shared/query/game.queries";
 import { getGameSettings, startGame } from "@/shared/api/game";
 import {
+  $lastFinishedGameId,
   $preCreateGameSettings,
   resetGameStore,
   setCurrentGameId,
@@ -98,7 +98,7 @@ export function useCreateStartFlow({
 
     try {
       const response = await createRoom({
-        previousGameId: getLastFinishedGameId() ?? undefined,
+        previousGameId: $lastFinishedGameId.get() ?? undefined,
         startScore: preCreateGameSettings.startScore,
         doubleOut: preCreateGameSettings.doubleOut,
         tripleOut: preCreateGameSettings.tripleOut,

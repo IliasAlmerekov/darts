@@ -6,6 +6,7 @@ import { createElement } from "react";
 import { QueryClientProvider, type QueryClient } from "@tanstack/react-query";
 import { createQueryClient, queryClient as appQueryClient } from "@/shared/query/queryClient";
 import { gameQueries } from "@/shared/query/game.queries";
+import { $lastFinishedGameId, setLastFinishedGameId } from "@/shared/store";
 import { gameSummaryLoader, useGameSummaryPage } from "./useGameSummaryPage";
 import { playSound } from "@/shared/services/browser/soundPlayer";
 import type { GameThrowsResponse, ScoreboardDelta, UndoAckResponse } from "@/types";
@@ -695,6 +696,17 @@ describe("useGameSummaryPage", () => {
     expect(testQueryClient.getQueryData(["finishedGame", 42])).toBeUndefined();
   });
 
+  it("should stop offering the game as rematch source when undo succeeds", async () => {
+    setLastFinishedGameId(42);
+    const { result } = renderSummaryHook();
+
+    await act(async () => {
+      await result.current.handleUndo();
+    });
+
+    expect($lastFinishedGameId.get()).toBeNull();
+  });
+
   it("should keep the finishedGame entry when undo fails", async () => {
     testQueryClient.setQueryData(["finishedGame", 42], [finishedPlayer(1, "Alice")]);
     undoLastThrowMock.mockRejectedValueOnce(new Error("boom"));
@@ -742,6 +754,14 @@ describe("useGameSummaryPage", () => {
       expect(appQueryClient.getQueryData(gameQueries.finished(42).queryKey)).toEqual([
         finishedPlayer(3, "Carol"),
       ]);
+    });
+
+    it("should make the summary's game the rematch source for the next room", async () => {
+      getFinishedGameMock.mockResolvedValueOnce([finishedPlayer(3, "Carol")]);
+
+      await gameSummaryLoader({ params: { id: "42" }, request: new Request("http://x/") });
+
+      expect($lastFinishedGameId.get()).toBe(42);
     });
 
     it("should not fetch again when the game page already seeded the cache", async () => {

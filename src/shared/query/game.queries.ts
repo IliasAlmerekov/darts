@@ -1,9 +1,8 @@
-import { queryOptions, type QueryClient } from "@tanstack/react-query";
+import { queryOptions } from "@tanstack/react-query";
 import { getFinishedGame, getGameSettings, getGameThrows } from "@/shared/api/game";
 import { toLobbyPlayers } from "@/lib/game/lobbyPlayers";
 import { clientLogger } from "@/shared/services/browser/clientLogger";
 import { $gameData, getCachedGameSettings } from "@/shared/store";
-import { queryClient as appQueryClient } from "./queryClient";
 
 const FINISHED_GAME_KEY = "finishedGame";
 
@@ -80,24 +79,3 @@ export const gameQueries = {
       },
     }),
 };
-
-/**
- * Id of the newest cached finished game, or null when none is cached. Game ids grow with
- * creation order, so the highest id wins no matter which response arrived last.
- * Undo and rematch remove the entry, so a game that went back to play is never returned.
- */
-export function getLastFinishedGameId(client: QueryClient = appQueryClient): number | null {
-  let latest: number | null = null;
-
-  for (const query of client.getQueryCache().findAll({ queryKey: [FINISHED_GAME_KEY] })) {
-    const gameId: unknown = query.queryKey[1];
-    if (typeof gameId !== "number" || query.state.data === undefined) {
-      continue;
-    }
-    if (latest === null || gameId > latest) {
-      latest = gameId;
-    }
-  }
-
-  return latest;
-}

@@ -189,11 +189,14 @@ function setStoredPreCreateGameSettings(settings: CreateGameSettingsPayload): vo
 const currentGameIdAtom = atom<number | null>(getStoredGameId());
 const invitationAtom = atom<Invitation | null>(getStoredInvitation());
 const preCreateGameSettingsAtom = atom<CreateGameSettingsPayload>(getStoredPreCreateGameSettings());
+const lastFinishedGameIdAtom = atom<number | null>(null);
 
 export const $currentGameId: ReadableAtom<number | null> = currentGameIdAtom;
 export const $invitation: ReadableAtom<Invitation | null> = invitationAtom;
 export const $preCreateGameSettings: ReadableAtom<CreateGameSettingsPayload> =
   preCreateGameSettingsAtom;
+/** The game this session finished last. A new room offers its players again. */
+export const $lastFinishedGameId: ReadableAtom<number | null> = lastFinishedGameIdAtom;
 
 /**
  * Sets the current game id and persists it in session storage.
@@ -240,6 +243,22 @@ export function setPreCreateGameSettings(settings: CreateGameSettingsPayload): v
  */
 export function resetPreCreateGameSettings(): void {
   setPreCreateGameSettings(DEFAULT_PRE_CREATE_GAME_SETTINGS);
+}
+
+/**
+ * Records the game this session finished last, the rematch source for the next room.
+ */
+export function setLastFinishedGameId(gameId: number): void {
+  lastFinishedGameIdAtom.set(gameId);
+}
+
+/**
+ * Forgets the last finished game when it is this game, for example after undo or a rematch.
+ */
+export function clearLastFinishedGameId(gameId: number): void {
+  if (lastFinishedGameIdAtom.get() === gameId) {
+    lastFinishedGameIdAtom.set(null);
+  }
 }
 
 /**

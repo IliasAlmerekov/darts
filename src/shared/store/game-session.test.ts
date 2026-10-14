@@ -97,15 +97,48 @@ describe("game-session store: finished game summary", () => {
     vi.resetModules();
   });
 
-  it.each([
-    "$lastFinishedGameSummary",
-    "$lastFinishedGameId",
-    "setLastFinishedGameSummary",
-    "setLastFinishedGameId",
-  ])("should not export %s when the public store API is loaded", async (name) => {
+  it.each(["$lastFinishedGameSummary", "setLastFinishedGameSummary"])(
+    "should not export %s when the public store API is loaded",
+    async (name) => {
+      const roomStore = await import("./game-session");
+
+      expect(name in roomStore).toBe(false);
+    },
+  );
+});
+
+// ─── Last finished game: the rematch source for the next room ───────────────
+
+describe("game-session store: last finished game", () => {
+  beforeEach(() => {
+    window.sessionStorage.clear();
+    vi.resetModules();
+  });
+
+  it("should start with no last finished game", async () => {
     const roomStore = await import("./game-session");
 
-    expect(name in roomStore).toBe(false);
+    expect(roomStore.$lastFinishedGameId.get()).toBeNull();
+  });
+
+  it("should keep the game set last", async () => {
+    const roomStore = await import("./game-session");
+
+    roomStore.setLastFinishedGameId(9);
+    roomStore.setLastFinishedGameId(5);
+
+    expect(roomStore.$lastFinishedGameId.get()).toBe(5);
+  });
+
+  it("should clear the last finished game only for the same game id", async () => {
+    const roomStore = await import("./game-session");
+    roomStore.setLastFinishedGameId(9);
+
+    roomStore.clearLastFinishedGameId(5);
+    expect(roomStore.$lastFinishedGameId.get()).toBe(9);
+
+    roomStore.clearLastFinishedGameId(9);
+    expect(roomStore.$lastFinishedGameId.get()).toBeNull();
   });
 });
 

@@ -5,7 +5,9 @@ import { getGameThrows, createRematchGame, startRematch, undoLastThrow } from "@
 import type { UndoThrowResponse, UndoAckResponse } from "@/types";
 import {
   $gameData,
+  clearLastFinishedGameId,
   setCurrentGameId,
+  setLastFinishedGameId,
   setGameData,
   setGameScoreboardDelta,
   setInvitation,
@@ -43,7 +45,8 @@ function parseGameId(param: string | undefined): number | null {
  * React Router 6 loader
  * Registers the route: loader: gameSummaryLoader
  * Returns null without fetching when the route has no valid game id.
- * Fills the `['finishedGame', id]` query before the page renders.
+ * Fills the `['finishedGame', id]` query before the page renders and records the game as
+ * the session's last finished game.
  */
 export async function gameSummaryLoader({ params }: LoaderFunctionArgs): Promise<null> {
   const gameId = parseGameId(params.id);
@@ -55,6 +58,8 @@ export async function gameSummaryLoader({ params }: LoaderFunctionArgs): Promise
   // A failed fetch is logged by the query function. The page then mounts, fetches again and
   // shows its Retry action, so the failure does not reach the route error boundary.
   await queryClient.ensureQueryData(gameQueries.finished(gameId)).catch(() => undefined);
+  // The summary only follows a game the session played, unlike game detail.
+  setLastFinishedGameId(gameId);
   return null;
 }
 
@@ -112,6 +117,7 @@ export function useGameSummaryPage(): UseGameSummaryPageResult {
   const releaseFinishedGame = useCallback(
     (gameId: number): void => {
       setReleasedGameId(gameId);
+      clearLastFinishedGameId(gameId);
       client.removeQueries({ queryKey: gameQueries.finished(gameId).queryKey });
     },
     [client],
