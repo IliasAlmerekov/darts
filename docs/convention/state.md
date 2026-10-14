@@ -7,10 +7,6 @@ Rules for shared state in `src/shared/store/`. Source-of-truth: must be checked 
 
 ```
 src/shared/store/
-  auth.ts                  # public surface: $readable atoms + action functions
-  auth.state.ts            # internal mutable atoms (this file is private to auth.ts)
-  auth.test.ts             # co-located unit tests
-  auth.test-support.ts     # test-only helpers
   game-session.ts          # combined: internal atoms + public surface in one file
   game-session.test.ts
   game-state.ts            # combined layout
@@ -20,8 +16,8 @@ src/shared/store/
 
 Two file layouts coexist and both are accepted:
 
-- **Split** (`auth.ts` + `auth.state.ts`): mutable atoms live in `*.state.ts`; the public
-  module imports them and never re-exports them.
+- **Split** (`<name>.ts` + `<name>.state.ts`): mutable atoms live in `*.state.ts`; the public
+  module imports them and never re-exports them. No store uses this layout today.
 - **Combined** (`game-state.ts`, `game-session.ts`): mutable atoms are declared as
   module-scoped `const`s inside the same file as the public surface, never exported.
 
@@ -34,35 +30,33 @@ Each store domain has three layers:
 
 ```ts
 // 1. Internal mutable atom (not exported)
-const userAtom = atom<AuthenticatedUser | null>(null);
+const currentGameIdAtom = atom<number | null>(null);
 
 // 2. Public readable atom (exported, $-prefixed, ReadableAtom-typed)
-export const $user: ReadableAtom<AuthenticatedUser | null> = userAtom;
+export const $currentGameId: ReadableAtom<number | null> = currentGameIdAtom;
 
 // 3. Action function (the only way to mutate)
-export function setAuthenticatedUser(user: AuthenticatedUser | null): void {
-  userAtom.set(user);
-  authErrorAtom.set(null);
-  authCheckedAtom.set(true);
+export function setCurrentGameId(gameId: number | null): void {
+  currentGameIdAtom.set(gameId);
 }
 ```
 
 Rules:
 
 - The `ReadableAtom<T>` annotation on the public export is **required**. It strips
-  `.set()` from the type, so `$user.set(...)` outside the store file fails to typecheck.
+  `.set()` from the type, so `$currentGameId.set(...)` outside the store file fails to typecheck.
 - Mutable atoms (the bare `xAtom` form) are never exported.
 - All writes go through action functions exported from the same file.
 
 ## Naming
 
-| Concept            | Form                                     | Example                                           |
-| ------------------ | ---------------------------------------- | ------------------------------------------------- |
-| Internal mutable   | `<name>Atom` (camelCase, no prefix)      | `userAtom`, `gameDataAtom`, `errorAtom`           |
-| Public readable    | `$<name>` (`$` prefix)                   | `$user`, `$gameData`, `$lastFinishedGameId`       |
-| Computed atom      | `$<name>` (`$` prefix, same as readable) | `$gameSettings`, `$lastFinishedGameId`            |
-| Action function    | verb-first, imperative                   | `setGameData`, `clearAuthError`, `resetGameStore` |
-| Pure read function | verb-first, returns plain value          | `getCachedGameSettings(gameId)`                   |
+| Concept            | Form                                     | Example                                              |
+| ------------------ | ---------------------------------------- | ---------------------------------------------------- |
+| Internal mutable   | `<name>Atom` (camelCase, no prefix)      | `currentGameIdAtom`, `gameDataAtom`, `errorAtom`     |
+| Public readable    | `$<name>` (`$` prefix)                   | `$currentGameId`, `$gameData`, `$lastFinishedGameId` |
+| Computed atom      | `$<name>` (`$` prefix, same as readable) | `$gameSettings`, `$lastFinishedGameId`               |
+| Action function    | verb-first, imperative                   | `setGameData`, `clearError`, `resetGameStore`        |
+| Pure read function | verb-first, returns plain value          | `getCachedGameSettings(gameId)`                      |
 
 ## Reading
 
@@ -100,8 +94,8 @@ Forbidden:
   declares the atom. Action functions live there.
 - Outside the store file, `$atom.set(...)` is a type error and must stay one. Do not
   cast away the `ReadableAtom` typing.
-- Action functions are the API: name them by intent (`setGameData`, `invalidateAuthState`)
-  and keep them in the public surface file (`auth.ts`, not `auth.state.ts`).
+- Action functions are the API: name them by intent (`setGameData`, `resetRoomStore`)
+  and keep them in the public surface file, not in a `*.state.ts` file.
 - Persist side effects (sessionStorage, listeners) belong in the action, not the caller.
   See `setCurrentGameId` in `game-session.ts` for the pattern.
 
@@ -134,7 +128,7 @@ An unbounded `Record<id, data>` cache that grows on every fetch is forbidden.
   1. The success branch of the operation that originally set it
      (`setGameData` clears `errorAtom`, since it is the success counterpart of
      `setError`), or
-  2. A dedicated clearer named for the action (`clearAuthError`).
+  2. A dedicated clearer named for the action (`clearError`).
 - Unconditional `errorAtom.set(null)` from unrelated code paths or effects is forbidden.
 
 ## When to use a store
@@ -144,8 +138,8 @@ game data the player is currently in, room state, etc.
 
 Data read from the server lives in the TanStack Query cache, not in a store
 ([ADR 0001](../adr/0001-tanstack-query-for-server-reads.md)). The authenticated user is
-server data: the auth store in the layout above is removed in #157. Do not add new
-server data to Nanostores.
+server data and lives under the `['auth', 'me']` query key. Do not add new server data
+to Nanostores.
 
 Local UI state (open/closed toggles, form inputs, hover state, ephemeral selection)
 stays in `useState` inside the component. Do not promote local state to a store unless
@@ -157,8 +151,7 @@ two unrelated pages need it.
   in tests are the convention.
 - Do not `vi.spyOn($atom, "set")`. Atoms are exported as `ReadableAtom` and have no `.set`
   in the public type. Spy on observable behavior (rendered output, store final state) instead.
-- Test-only seed/reset helpers live in `<name>.test-support.ts` (see
-  `auth.test-support.ts`). They may import the internal mutable atoms via the same
+- Test-only seed/reset helpers live in `<name>.test-support.ts` . They may import the internal mutable atoms via the same
   module structure as the public surface uses.
 - `*.test-support.ts` files must be imported **only** from test files (`*.test.ts`,
   `*.test.tsx`). Importing them from production code is forbidden -- it would pull

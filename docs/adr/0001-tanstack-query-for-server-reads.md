@@ -15,5 +15,5 @@ Route loaders stay the entry point for data that depends on route params. A load
 ## Consequences
 
 - `QueryClient` defaults match the old behaviour: no retry, no refetch on window focus or reconnect, `staleTime: 0`. A page that wants more opts in per query.
-- The Nanostores auth store (`$user`, `$authChecked`, `$authError`) is removed in #157. `docs/convention/state.md` still shows it as the layout example until then.
+- The Nanostores auth store (`$user`, `$authChecked`, `$authError`) is removed in #157.
 - Logout and the 401 handler call `queryClient.clear()`, because every cached read belongs to the old session.

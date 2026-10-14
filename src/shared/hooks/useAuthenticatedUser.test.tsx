@@ -18,12 +18,9 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { ApiError, TimeoutError } from "@/shared/api";
 import { useAuthenticatedUser } from "./useAuthenticatedUser";
 import type { AuthenticatedUser } from "@/shared/api/auth";
-import { $authChecked, resetAuthStore } from "@/shared/store/auth";
-import {
-  testOnlySetAuthChecked,
-  testOnlySetAuthError,
-  testOnlySetUser,
-} from "@/shared/store/auth.test-support";
+import { QueryClientProvider } from "@tanstack/react-query";
+import type { ReactNode } from "react";
+import { queryClient } from "@/shared/query/queryClient";
 
 const getAuthenticatedUserMock = vi.fn();
 const setCurrentGameIdMock = vi.fn();
@@ -56,34 +53,32 @@ function createDeferredAuth(): DeferredAuth {
   };
 }
 
+function wrapper({ children }: { children: ReactNode }): React.JSX.Element {
+  return <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>;
+}
+
 describe("useAuthenticatedUser", () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    resetAuthStore();
+    queryClient.clear();
   });
 
   it("should pass a live signal and timeoutMs 5000 when starting auth check", async () => {
     getAuthenticatedUserMock.mockResolvedValue(null);
-    const setTimeoutSpy = vi.spyOn(window, "setTimeout");
-    const { result } = renderHook(() => useAuthenticatedUser());
+    const { result } = renderHook(() => useAuthenticatedUser(), { wrapper });
 
-    try {
-      expect(setTimeoutSpy).not.toHaveBeenCalled();
-      expect(getAuthenticatedUserMock).toHaveBeenCalledWith(
-        expect.objectContaining({
-          signal: expect.any(AbortSignal),
-          timeoutMs: 5000,
-        }),
-      );
+    expect(getAuthenticatedUserMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        signal: expect.any(AbortSignal),
+        timeoutMs: 5000,
+      }),
+    );
 
-      const [firstCallOptions] = getAuthenticatedUserMock.mock.calls[0] as [
-        { signal?: AbortSignal; timeoutMs?: number },
-      ];
+    const [firstCallOptions] = getAuthenticatedUserMock.mock.calls[0] as [
+      { signal?: AbortSignal; timeoutMs?: number },
+    ];
 
-      expect(firstCallOptions.signal?.aborted).toBe(false);
-    } finally {
-      setTimeoutSpy.mockRestore();
-    }
+    expect(firstCallOptions.signal?.aborted).toBe(false);
 
     await waitFor(() => {
       expect(result.current.loading).toBe(false);
@@ -101,7 +96,7 @@ describe("useAuthenticatedUser", () => {
       },
     );
 
-    const { unmount } = renderHook(() => useAuthenticatedUser());
+    const { unmount } = renderHook(() => useAuthenticatedUser(), { wrapper });
     expect(getAuthenticatedUserMock).toHaveBeenCalledTimes(1);
     expect(getAuthenticatedUserMock).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -121,21 +116,12 @@ describe("useAuthenticatedUser", () => {
     expect(setCurrentGameIdMock).not.toHaveBeenCalled();
   });
 
-  it("should mark auth as checked and unauthenticated when the auth bootstrap times out", async () => {
-    const existingUser = buildAuthenticatedUser({
-      roles: ["ROLE_ADMIN"],
-      id: 77,
-      gameId: 13,
-    });
-    testOnlySetUser(existingUser);
-    testOnlySetAuthChecked(false);
-    testOnlySetAuthError(null);
-
+  it("should treat as unauthenticated when the auth bootstrap times out", async () => {
     getAuthenticatedUserMock.mockRejectedValue(
       new TimeoutError("Request timed out after 5000ms", "/api/login/success"),
     );
 
-    const { result } = renderHook(() => useAuthenticatedUser());
+    const { result } = renderHook(() => useAuthenticatedUser(), { wrapper });
 
     await waitFor(() => {
       expect(getAuthenticatedUserMock).toHaveBeenCalledTimes(1);
@@ -147,13 +133,12 @@ describe("useAuthenticatedUser", () => {
     expect(result.current.user).toBeNull();
     expect(result.current.loading).toBe(false);
     expect(result.current.error).toBeNull();
-    expect($authChecked.get()).toBe(true);
   });
 
   it("should mark auth as unauthenticated when the auth API resolves null", async () => {
     getAuthenticatedUserMock.mockResolvedValue(null);
 
-    const { result } = renderHook(() => useAuthenticatedUser());
+    const { result } = renderHook(() => useAuthenticatedUser(), { wrapper });
 
     await waitFor(() => {
       expect(result.current.loading).toBe(false);
@@ -181,7 +166,7 @@ describe("useAuthenticatedUser", () => {
       }),
     );
 
-    const { result } = renderHook(() => useAuthenticatedUser());
+    const { result } = renderHook(() => useAuthenticatedUser(), { wrapper });
 
     await waitFor(() => {
       expect(result.current.loading).toBe(false);
@@ -209,7 +194,7 @@ describe("useAuthenticatedUser", () => {
       }),
     );
 
-    const { result } = renderHook(() => useAuthenticatedUser());
+    const { result } = renderHook(() => useAuthenticatedUser(), { wrapper });
 
     await waitFor(() => {
       expect(result.current.loading).toBe(false);
@@ -217,14 +202,13 @@ describe("useAuthenticatedUser", () => {
 
     expect(result.current.user).toBeNull();
     expect(result.current.error).toBe("Incorrect email or password.");
-    expect($authChecked.get()).toBe(true);
   });
 
   it("should expose a mapped auth failure state when the request fails unexpectedly", async () => {
     const error = new Error("network failed");
     getAuthenticatedUserMock.mockRejectedValue(error);
 
-    const { result } = renderHook(() => useAuthenticatedUser());
+    const { result } = renderHook(() => useAuthenticatedUser(), { wrapper });
 
     await waitFor(() => {
       expect(result.current.loading).toBe(false);
@@ -232,7 +216,6 @@ describe("useAuthenticatedUser", () => {
 
     expect(result.current.user).toBeNull();
     expect(result.current.error).toBe("Login failed. Please try again.");
-    expect($authChecked.get()).toBe(true);
   });
 
   it("should reuse the cached auth result when the first auth check already succeeded", async () => {
@@ -243,7 +226,7 @@ describe("useAuthenticatedUser", () => {
       }),
     );
 
-    const firstHook = renderHook(() => useAuthenticatedUser());
+    const firstHook = renderHook(() => useAuthenticatedUser(), { wrapper });
 
     await waitFor(() => {
       expect(firstHook.result.current.loading).toBe(false);
@@ -251,7 +234,7 @@ describe("useAuthenticatedUser", () => {
 
     firstHook.unmount();
 
-    const secondHook = renderHook(() => useAuthenticatedUser());
+    const secondHook = renderHook(() => useAuthenticatedUser(), { wrapper });
 
     expect(secondHook.result.current.loading).toBe(false);
     expect(secondHook.result.current.user).toMatchObject({ id: 3 });

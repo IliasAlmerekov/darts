@@ -4,13 +4,12 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { useLogin } from "./useLogin";
 import { ApiError } from "@/shared/api";
 import { ROUTES } from "@/lib/router/routes";
+import { queryClient } from "@/shared/query/queryClient";
 
 const navigateMock = vi.fn();
 const useLocationMock = vi.fn();
 const loginWithCredentialsMock = vi.fn();
 const getAuthenticatedUserMock = vi.fn();
-const invalidateAuthStateMock = vi.fn();
-const setAuthenticatedUserMock = vi.fn();
 const assignMock = vi.fn();
 
 vi.mock("react-router-dom", async (importOriginal) => {
@@ -27,14 +26,14 @@ vi.mock("@/shared/api/auth", () => ({
   getAuthenticatedUser: (...args: unknown[]) => getAuthenticatedUserMock(...args),
 }));
 
-vi.mock("@/shared/store/auth", () => ({
-  invalidateAuthState: (...args: unknown[]) => invalidateAuthStateMock(...args),
-  setAuthenticatedUser: (...args: unknown[]) => setAuthenticatedUserMock(...args),
-}));
+const AUTH_KEY = ["auth", "me"] as const;
+const SEEDED_USER = { success: true, roles: ["ROLE_ADMIN"], id: 99, redirect: "/start" };
 
 describe("useLogin", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    queryClient.clear();
+    queryClient.setQueryData(AUTH_KEY, SEEDED_USER);
     Object.defineProperty(window, "location", {
       configurable: true,
       value: {
@@ -67,7 +66,7 @@ describe("useLogin", () => {
     });
 
     expect(getAuthenticatedUserMock).toHaveBeenCalledTimes(1);
-    expect(setAuthenticatedUserMock).toHaveBeenCalledWith(
+    expect(queryClient.getQueryData(AUTH_KEY)).toEqual(
       expect.objectContaining({ id: 1, redirect: "/start" }),
     );
     expect(navigateMock).toHaveBeenCalledWith("/start");
@@ -89,7 +88,7 @@ describe("useLogin", () => {
     expect(result.current.error).toBe("Network error. Please check your connection and try again.");
   });
 
-  it("invalidates cached auth state before navigating by redirect response", async () => {
+  it("resets the cached auth user before navigating by redirect response", async () => {
     loginWithCredentialsMock.mockResolvedValueOnce({
       success: true,
       redirect: "/start/42",
@@ -101,7 +100,7 @@ describe("useLogin", () => {
       await result.current.login("admin@test.com", "password");
     });
 
-    expect(invalidateAuthStateMock).toHaveBeenCalledTimes(1);
+    expect(queryClient.getQueryData(AUTH_KEY)).toBeUndefined();
     expect(navigateMock).toHaveBeenCalledWith("/start/42");
     expect(getAuthenticatedUserMock).not.toHaveBeenCalled();
   });
@@ -125,7 +124,7 @@ describe("useLogin", () => {
       await result.current.login("player@test.com", "password");
     });
 
-    expect(invalidateAuthStateMock).toHaveBeenCalledTimes(1);
+    expect(queryClient.getQueryData(AUTH_KEY)).toBeUndefined();
     expect(navigateMock).toHaveBeenCalledWith(ROUTES.joined);
     expect(getAuthenticatedUserMock).not.toHaveBeenCalled();
   });
@@ -159,8 +158,8 @@ describe("useLogin", () => {
     });
 
     expect(getAuthenticatedUserMock).toHaveBeenCalledTimes(1);
-    expect(setAuthenticatedUserMock).toHaveBeenCalledWith(profileBackedUser);
-    expect(invalidateAuthStateMock).not.toHaveBeenCalled();
+    expect(queryClient.getQueryData(AUTH_KEY)).toEqual(profileBackedUser);
+    expect(queryClient.getQueryData(AUTH_KEY)).toBeDefined();
     expect(navigateMock).toHaveBeenCalledWith("/playerprofile");
     expect(result.current.error).toBeNull();
   });
@@ -178,7 +177,7 @@ describe("useLogin", () => {
     });
 
     expect(getAuthenticatedUserMock).not.toHaveBeenCalled();
-    expect(setAuthenticatedUserMock).not.toHaveBeenCalled();
+    expect(queryClient.getQueryData(AUTH_KEY)).toEqual(SEEDED_USER);
     expect(navigateMock).not.toHaveBeenCalled();
     expect(result.current.error).toBe("Incorrect email or password.");
   });
@@ -202,7 +201,7 @@ describe("useLogin", () => {
     });
 
     expect(getAuthenticatedUserMock).toHaveBeenCalledTimes(1);
-    expect(setAuthenticatedUserMock).not.toHaveBeenCalled();
+    expect(queryClient.getQueryData(AUTH_KEY)).toEqual(SEEDED_USER);
     expect(navigateMock).not.toHaveBeenCalled();
     expect(result.current.error).toBe("Incorrect email or password.");
   });
@@ -226,7 +225,7 @@ describe("useLogin", () => {
       await result.current.login("admin@test.com", "password");
     });
 
-    expect(invalidateAuthStateMock).toHaveBeenCalledTimes(1);
+    expect(queryClient.getQueryData(AUTH_KEY)).toBeUndefined();
     expect(navigateMock).toHaveBeenCalledWith("/statistics");
   });
 
@@ -242,7 +241,7 @@ describe("useLogin", () => {
       await result.current.login("admin@test.com", "password");
     });
 
-    expect(invalidateAuthStateMock).toHaveBeenCalledTimes(1);
+    expect(queryClient.getQueryData(AUTH_KEY)).toBeUndefined();
     expect(assignMock).not.toHaveBeenCalled();
     expect(navigateMock).toHaveBeenCalledWith(ROUTES.start());
   });

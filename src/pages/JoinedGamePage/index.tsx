@@ -1,11 +1,12 @@
 import React, { useEffect, useState } from "react";
 import { useStore } from "@nanostores/react";
+import { useAuthenticatedUser } from "@/shared/hooks/useAuthenticatedUser";
 import { useRoomStream } from "@/shared/hooks/useRoomStream";
-import { $currentGameId, $user } from "@/shared/store";
+import { $currentGameId } from "@/shared/store";
 import styles from "./JoinedGamePage.module.css";
 
 function JoinedGamePage(): React.JSX.Element {
-  const user = useStore($user);
+  const { user } = useAuthenticatedUser();
   const currentGameId = useStore($currentGameId);
   const { event } = useRoomStream(currentGameId);
   const [hasGameStarted, setHasGameStarted] = useState(false);

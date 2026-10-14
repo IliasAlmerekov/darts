@@ -3,7 +3,8 @@ import { useLocation, useNavigate } from "react-router-dom";
 import { ApiError } from "@/shared/api";
 import { loginWithCredentials, getAuthenticatedUser } from "@/shared/api/auth";
 import { clientLogger } from "@/shared/services/browser/clientLogger";
-import { invalidateAuthState, setAuthenticatedUser } from "@/shared/store/auth";
+import { authQueries } from "@/shared/query/auth.queries";
+import { queryClient } from "@/shared/query/queryClient";
 import { mapAuthErrorMessage } from "@/lib/error/auth-error-handling";
 import { ROUTES } from "@/lib/router/routes";
 import { resolveSafeRedirect } from "@/lib/router/safeRedirect";
@@ -62,7 +63,7 @@ export function useLogin(): LoginReturn {
         if (!response.error) {
           const authenticatedUser = await getAuthenticatedUser();
           if (authenticatedUser?.redirect) {
-            setAuthenticatedUser(authenticatedUser);
+            queryClient.setQueryData(authQueries.me().queryKey, authenticatedUser);
             navigateToRedirect(authenticatedUser.redirect);
             return;
           }
@@ -81,13 +82,13 @@ export function useLogin(): LoginReturn {
         if (response.redirect.startsWith("/api/")) {
           const authenticatedUser = await getAuthenticatedUser();
           if (authenticatedUser?.redirect) {
-            setAuthenticatedUser(authenticatedUser);
+            queryClient.setQueryData(authQueries.me().queryKey, authenticatedUser);
             navigateToRedirect(authenticatedUser.redirect);
             return;
           }
         }
 
-        invalidateAuthState();
+        void queryClient.resetQueries({ queryKey: authQueries.me().queryKey });
         navigateToRedirect(response.redirect);
       }
     } catch (error) {
@@ -98,7 +99,7 @@ export function useLogin(): LoginReturn {
         try {
           const authenticatedUser = await getAuthenticatedUser();
           if (authenticatedUser?.redirect) {
-            setAuthenticatedUser(authenticatedUser);
+            queryClient.setQueryData(authQueries.me().queryKey, authenticatedUser);
             navigateToRedirect(authenticatedUser.redirect);
             return;
           }

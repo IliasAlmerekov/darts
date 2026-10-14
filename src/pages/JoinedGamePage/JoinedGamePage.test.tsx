@@ -7,14 +7,18 @@ import JoinedGamePage from "./index";
 // ── Nanostores ──────────────────────────────────────────────────────────────
 const mockUseStore = vi.fn();
 const mockUseRoomStream = vi.fn();
+const mockUseAuthenticatedUser = vi.fn();
 
 vi.mock("@nanostores/react", () => ({
   useStore: (store: unknown) => mockUseStore(store),
 }));
 
 vi.mock("@/shared/store", () => ({
-  $user: { key: "$user" },
   $currentGameId: { key: "$currentGameId" },
+}));
+
+vi.mock("@/shared/hooks/useAuthenticatedUser", () => ({
+  useAuthenticatedUser: () => mockUseAuthenticatedUser(),
 }));
 
 vi.mock("@/shared/hooks/useRoomStream", () => ({
@@ -39,6 +43,8 @@ describe("JoinedGamePage", () => {
   beforeEach(() => {
     mockUseStore.mockReset();
     mockUseStore.mockReturnValue(null);
+    mockUseAuthenticatedUser.mockReset();
+    mockUseAuthenticatedUser.mockReturnValue({ user: null, loading: false, error: null });
     mockUseRoomStream.mockReset();
     mockUseRoomStream.mockReturnValue({
       event: null,
@@ -60,11 +66,11 @@ describe("JoinedGamePage", () => {
   });
 
   it("should show username in welcome message when user is authenticated", () => {
-    const storeMap = new Map<string, unknown>([
-      ["$user", buildAuthenticatedUser({ username: "Alice" })],
-      ["$currentGameId", null],
-    ]);
-    mockUseStore.mockImplementation((store: { key: string }) => storeMap.get(store.key) ?? null);
+    mockUseAuthenticatedUser.mockReturnValue({
+      user: buildAuthenticatedUser({ username: "Alice" }),
+      loading: false,
+      error: null,
+    });
 
     renderPage();
 
@@ -78,10 +84,7 @@ describe("JoinedGamePage", () => {
   });
 
   it("should render game id when currentGameId is set", () => {
-    const storeMap = new Map<string, unknown>([
-      ["$user", null],
-      ["$currentGameId", 42],
-    ]);
+    const storeMap = new Map<string, unknown>([["$currentGameId", 42]]);
     mockUseStore.mockImplementation((store: { key: string }) => storeMap.get(store.key) ?? null);
 
     renderPage();
@@ -97,10 +100,7 @@ describe("JoinedGamePage", () => {
   });
 
   it("should show started message and hide waiting indicator when game-started event arrives", () => {
-    const storeMap = new Map<string, unknown>([
-      ["$user", null],
-      ["$currentGameId", 42],
-    ]);
+    const storeMap = new Map<string, unknown>([["$currentGameId", 42]]);
     mockUseStore.mockImplementation((store: { key: string }) => storeMap.get(store.key) ?? null);
     mockUseRoomStream.mockReturnValue({
       event: { type: "game-started", data: null },

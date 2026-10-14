@@ -1,3 +1,6 @@
+import { queryClient } from "@/shared/query/queryClient";
+import { INITIAL_PLAYER_STATS_PARAMS, statsQueries } from "@/shared/query/statistics.queries";
+
 export interface RouteWarmUpTarget {
   id: "start" | "joined";
   load: () => Promise<unknown>;
@@ -58,8 +61,7 @@ export function scheduleSelectiveRouteWarmUp(
 }
 
 async function prefetchStatisticsPageData(): Promise<void> {
-  const { prefetchInitialPlayerStats } = await import("@/pages/StatisticsPage/usePlayerStats");
-  await prefetchInitialPlayerStats();
+  await queryClient.prefetchQuery(statsQueries.players(INITIAL_PLAYER_STATS_PARAMS));
 }
 
 export function scheduleStatisticsPrefetch(
