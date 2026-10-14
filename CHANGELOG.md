@@ -21,7 +21,7 @@ and this project does **not** yet follow [Semantic Versioning](https://semver.or
 
 - Tests: `npm run test:e2e` is a mocked suite that fails any spec with an unmocked `/api` request (#116)
 - Game pages: the summary and detail pages build podium and leaderboard with one shared mapper, `buildFinishedGameStandings` (#113)
-- Docs: ADR 0001 records that server reads go through TanStack Query, and the glossary defines *current game* (#157)
+- Docs: ADR 0001 records that server reads go through TanStack Query, and the glossary defines _current game_ (#157)
 - Docs: commits follow Conventional Commits and every PR body follows one template (#129)
 - Docs: contribution docs match the repo, and generated Playwright reports are no longer tracked (#118)
 - Tooling: Playwright tests are typechecked and linted
