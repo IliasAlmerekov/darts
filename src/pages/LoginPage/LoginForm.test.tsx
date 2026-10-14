@@ -31,10 +31,24 @@ describe("LoginForm banners", () => {
     expect(screen.getByRole("status").textContent).toBe("You have successfully left the game");
   });
 
-  it("renders no alert or status without error or success", () => {
+  it("keeps an empty status region mounted without a success message", () => {
     renderForm({});
 
     expect(screen.queryByRole("alert")).toBeNull();
-    expect(screen.queryByRole("status")).toBeNull();
+    expect(screen.getByRole("status").textContent).toBe("");
+  });
+
+  it("fills the same status region when a success message arrives later", () => {
+    const { rerender } = renderForm({});
+    const region = screen.getByRole("status");
+
+    rerender(
+      <MemoryRouter>
+        <LoginForm error={null} success="Saved" loading={false} onSubmit={vi.fn()} />
+      </MemoryRouter>,
+    );
+
+    expect(screen.getByRole("status")).toBe(region);
+    expect(region.textContent).toBe("Saved");
   });
 });

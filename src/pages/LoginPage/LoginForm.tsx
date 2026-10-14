@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { Mail, Lock, Eye, EyeOff } from "lucide-react";
 import styles from "./LoginForm.module.css";
@@ -18,6 +18,13 @@ export function LoginForm({
   onSubmit,
 }: LoginFormProps): React.JSX.Element {
   const [showPassword, setShowPassword] = useState(false);
+  // The status region mounts empty and receives its text after mount, because
+  // screen readers announce changes to a live region, not a region that appears filled.
+  const [announcedSuccess, setAnnouncedSuccess] = useState<string | null>(null);
+
+  useEffect(() => {
+    setAnnouncedSuccess(success ?? null);
+  }, [success]);
 
   function handleTogglePassword(): void {
     setShowPassword((prev) => !prev);
@@ -30,11 +37,11 @@ export function LoginForm({
         <p className={styles.formSubtitle}>Enter your credentials to access your account</p>
       </div>
 
-      {success && (
-        <div role="status" className={`${styles.alert} ${styles.alertSuccess}`}>
-          {success}
-        </div>
-      )}
+      <div role="status">
+        {announcedSuccess && (
+          <div className={`${styles.alert} ${styles.alertSuccess}`}>{announcedSuccess}</div>
+        )}
+      </div>
       {error && (
         <div role="alert" className={`${styles.alert} ${styles.alertDanger}`}>
           {error}
