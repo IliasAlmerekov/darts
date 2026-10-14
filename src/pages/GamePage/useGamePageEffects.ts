@@ -12,7 +12,7 @@ import { shouldAutoFinishGame, shouldNavigateToSummary } from "./lib/gameLogic.h
 interface UseGameSummaryNavigationOptions {
   gameData: GameThrowsResponse | null;
   gameId: number | null;
-  navigate: (to: string) => void;
+  navigate: (to: string, options?: { state?: { finishedGameId: number } }) => void;
 }
 
 interface UseRoomEventRefetchOptions {
@@ -26,7 +26,7 @@ const GAME_FINISHED_EVENT_TYPE: RoomStreamEventType = "game-finished";
 interface UseAutoFinishGameOptions {
   gameData: GameThrowsResponse | null;
   gameId: number | null;
-  navigate: (to: string) => void;
+  navigate: (to: string, options?: { state?: { finishedGameId: number } }) => void;
   setPageError: (message: string | null) => void;
   shouldShowFinishOverlay: boolean;
 }
@@ -58,7 +58,7 @@ export function useGameSummaryNavigation({
 }: UseGameSummaryNavigationOptions): void {
   useEffect(() => {
     if (gameId !== null && shouldNavigateToSummary(gameData, gameId)) {
-      navigate(ROUTES.summary(gameId));
+      navigate(ROUTES.summary(gameId), { state: { finishedGameId: gameId } });
     }
   }, [gameData, gameId, navigate]);
 }
@@ -105,7 +105,7 @@ export function useAutoFinishGame({
 
         resetGameStateVersion(gameId);
         queryClient.setQueryData(gameQueries.finished(gameId).queryKey, summary);
-        navigate(ROUTES.summary(gameId));
+        navigate(ROUTES.summary(gameId), { state: { finishedGameId: gameId } });
       })
       .catch((error: unknown): void => {
         if (isAbortError(error) || signal.aborted) {

@@ -44,13 +44,14 @@ function parseGameId(param: string | undefined): number | null {
 /**
  * React Router 6 loader
  * Registers the route: loader: gameSummaryLoader
+ * Returns null without fetching when the route has no valid game id.
  * Fills the `['finishedGame', id]` query before the page renders.
  */
 export async function gameSummaryLoader({ params }: LoaderFunctionArgs): Promise<null> {
   const gameId = parseGameId(params.id);
 
   if (gameId === null) {
-    throw new Response("Invalid game id", { status: 400 });
+    return null;
   }
 
   await queryClient.ensureQueryData(gameQueries.finished(gameId));

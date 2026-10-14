@@ -10,6 +10,8 @@ export const gameQueries = {
   finished: (gameId: number) =>
     queryOptions({
       queryKey: [FINISHED_GAME_KEY, gameId] as const,
+      // A finished game does not change. Undo and rematch remove the entry.
+      staleTime: Infinity,
       queryFn: async ({ signal }) => {
         try {
           return await getFinishedGame(gameId, signal);

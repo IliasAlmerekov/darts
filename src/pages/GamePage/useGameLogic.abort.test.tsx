@@ -193,7 +193,9 @@ describe("useGameLogic auto-finish abort handling", () => {
       expect(finishGameMock).toHaveBeenCalledWith(1, expect.any(AbortSignal));
     });
     await waitFor(() => {
-      expect(navigateMock).toHaveBeenCalledWith("/summary/1");
+      expect(navigateMock).toHaveBeenCalledWith("/summary/1", {
+        state: { finishedGameId: 1 },
+      });
     });
 
     expect(queryClient.getQueryData(["finishedGame", 1])).toEqual(summaryPayload);

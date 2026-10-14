@@ -625,6 +625,7 @@ describe("useGameSummaryPage", () => {
     const { result } = renderSummaryHook();
 
     expect(result.current.standings).toEqual([expect.objectContaining({ id: 2, name: "Bob" })]);
+    expect(getFinishedGameMock).not.toHaveBeenCalled();
   });
 
   it("should show game B when game A's response arrives after B's", async () => {
@@ -736,10 +737,12 @@ describe("useGameSummaryPage", () => {
       expect(getFinishedGameMock).not.toHaveBeenCalled();
     });
 
-    it.each(["abc", "0", "-1"])("should reject the invalid game id %s with a 400", async (id) => {
+    it.each(["abc", "0", "-1"])("should fetch nothing for the invalid game id %s", async (id) => {
       await expect(
         gameSummaryLoader({ params: { id }, request: new Request("http://x/") }),
-      ).rejects.toMatchObject({ status: 400 });
+      ).resolves.toBeNull();
+
+      expect(getFinishedGameMock).not.toHaveBeenCalled();
     });
   });
 
