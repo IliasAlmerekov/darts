@@ -136,7 +136,7 @@ export default [
             {
               allowTypeImports: true,
               regex:
-                "^@/(shared/lib|lib)/game/(applyOptimisticUndo|finishedGameStandings|gameStateNormalizer|mergeGameSettings|parseThrowValue|player-mappers|roundAverage)$",
+                "^@/(shared/lib|lib)/game/(applyOptimisticUndo|finishedGameStandings|gameStateNormalizer|mergeGameSettings|parseThrowValue|player-mappers|roundAverage)(\\.ts)?$",
               message:
                 "Render-flow files must not call DTO mappers. Call them from a page lib/ file (docs/convention/api.md, Mappers).",
             },
