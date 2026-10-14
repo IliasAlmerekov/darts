@@ -118,27 +118,6 @@
   color: var(--darkblue);
 }
 
-/* Checkbox */
-.checkboxGroup {
-  display: flex;
-  align-items: center;
-  gap: var(--space-xs);
-}
-
-.checkbox {
-  width: 16px;
-  height: 16px;
-  accent-color: var(--darkblue);
-  border-radius: var(--radius-xs);
-  cursor: pointer;
-}
-
-.checkboxLabel {
-  font-size: var(--font-size-16);
-  color: var(--darkblue);
-  cursor: pointer;
-}
-
 /* Submit Button */
 .submitBtn {
   width: 100%;
@@ -164,23 +143,42 @@
   cursor: not-allowed;
 }
 
-/* Register Link */
-.formLink {
+/* Sign up */
+.signup {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xs);
   margin-top: var(--space-md);
+}
+
+.signupPrompt {
+  margin: 0;
   text-align: center;
-  font-size: var(--font-size-12);
-  color: var(--darkgrey);
-}
-
-.formLink a {
-  color: var(--darkblue);
-  font-weight: 500;
-  text-decoration: none;
-  transition: color var(--transition-fast);
-}
-
-.formLink a:hover {
+  font-size: var(--font-size-14);
   color: var(--blue);
+}
+
+.signupBtn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: var(--button-height);
+  font-size: var(--font-size-16);
+  font-weight: 500;
+  color: var(--blue);
+  text-decoration: none;
+  background-color: transparent;
+  border: 1px solid var(--blue);
+  border-radius: var(--radius-sm);
+  transition:
+    background-color var(--transition-base),
+    color var(--transition-base);
+}
+
+.signupBtn:hover {
+  color: var(--white);
+  background-color: var(--blue);
 }
 
 @media (width <= 600px) {

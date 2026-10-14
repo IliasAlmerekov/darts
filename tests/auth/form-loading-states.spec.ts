@@ -17,7 +17,6 @@ test.describe("User Interface Interactions", () => {
 
     const emailField = page.getByRole("textbox", { name: "Email *" });
     const passwordField = page.getByLabel("Password *");
-    const rememberMeCheckbox = page.getByRole("checkbox", { name: "Remember me" });
     const submitButton = page.getByRole("button", { name: "Sign in" });
 
     // Button must be immediately enabled — session check must not block form interaction
@@ -25,7 +24,6 @@ test.describe("User Interface Interactions", () => {
 
     await expect(emailField).toBeVisible();
     await expect(passwordField).toBeVisible();
-    await expect(rememberMeCheckbox).toBeVisible();
     await expect(submitButton).toBeVisible();
 
     // 2. Wait for the form to become fully interactive
@@ -34,7 +32,6 @@ test.describe("User Interface Interactions", () => {
     // Verify all form fields become enabled
     await expect(emailField).toBeEnabled();
     await expect(passwordField).toBeEnabled();
-    await expect(rememberMeCheckbox).toBeEnabled();
 
     // Verify submit button shows 'Sign in' text
     await expect(page.getByRole("button", { name: "Sign in" })).toBeVisible();

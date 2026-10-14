@@ -22,7 +22,6 @@ test.describe("Accessibility and Usability", () => {
     await expect(page.getByRole("textbox", { name: "Password *" })).toHaveAttribute("required");
 
     await expect(page.getByRole("button", { name: "Show password" })).toBeVisible();
-    await expect(page.getByRole("checkbox", { name: "Remember me" })).toBeVisible();
 
     await expect(page.getByRole("textbox", { name: "Email *" })).toHaveAttribute("type", "email");
     await expect(page.getByRole("textbox", { name: "Password *" })).toHaveAttribute(

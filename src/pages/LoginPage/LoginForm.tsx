@@ -99,27 +99,17 @@ export function LoginForm({
           </div>
         </div>
 
-        <div className={styles.checkboxGroup}>
-          <input
-            type="checkbox"
-            name="_remember_me"
-            id="_remember_me"
-            className={styles.checkbox}
-            disabled={loading}
-          />
-          <label htmlFor="_remember_me" className={styles.checkboxLabel}>
-            Remember me
-          </label>
-        </div>
-
         <button type="submit" className={styles.submitBtn} disabled={loading}>
           {loading ? "Signing in..." : "Sign in"}
         </button>
       </form>
 
-      <p className={styles.formLink}>
-        Don&apos;t have an account? <Link to={ROUTES.register}>Sign up</Link>
-      </p>
+      <div className={styles.signup}>
+        <p className={styles.signupPrompt}>Don&apos;t have an account?</p>
+        <Link to={ROUTES.register} className={styles.signupBtn}>
+          Sign up
+        </Link>
+      </div>
     </>
   );
 }

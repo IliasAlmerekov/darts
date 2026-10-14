@@ -129,29 +129,7 @@ Comprehensive test plan for the authentication system including login page funct
    - expect: Button label should change back to 'Show password'
    - expect: Button icon should change to indicate showing state
 
-#### 2.2. Remember Me Checkbox Functionality
-
-**File:** `tests/auth/remember-me-checkbox.spec.ts`
-
-**Steps:**
-
-1. Navigate to the login page
-   - expect: Remember me checkbox should be unchecked by default
-   - expect: Checkbox should be labeled 'Remember me'
-
-2. Click the 'Remember me' checkbox
-   - expect: Checkbox should become checked
-   - expect: Checkbox state should be visibly indicated
-
-3. Click the 'Remember me' checkbox again
-   - expect: Checkbox should become unchecked
-   - expect: Checkbox should return to default state
-
-4. Check the remember me option and then login with valid credentials
-   - expect: Login should succeed normally
-   - expect: Remember me preference should be sent with login request
-
-#### 2.3. Navigation to Registration
+#### 2.2. Navigation to Registration
 
 **File:** `tests/auth/navigation-to-registration.spec.ts`
 
@@ -169,7 +147,7 @@ Comprehensive test plan for the authentication system including login page funct
    - expect: Should navigate back to '/' login page
    - expect: Login form should be displayed
 
-#### 2.4. Form Loading States
+#### 2.3. Form Loading States
 
 **File:** `tests/auth/form-loading-states.spec.ts`
 
@@ -333,13 +311,12 @@ Comprehensive test plan for the authentication system including login page funct
 
 1. Navigate to login page using only keyboard (Tab key)
    - expect: Should be able to reach all interactive elements
-   - expect: Tab order should be logical: email → password → show/hide → remember me → submit → sign up link
+   - expect: Tab order should be logical: email → password → show/hide → submit → sign up link
    - expect: Focus indicators should be visible
 
 2. Fill form using only keyboard input
    - expect: Should be able to type in email and password fields
    - expect: Should be able to activate password toggle with Enter/Space
-   - expect: Should be able to check/uncheck remember me with Space
 
 3. Submit form using Enter key
    - expect: Form should submit when Enter is pressed in any field
