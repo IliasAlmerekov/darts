@@ -1,5 +1,5 @@
 import { queryOptions } from "@tanstack/react-query";
-import { TimeoutError } from "@/shared/api/errors";
+import { TimeoutError } from "@/shared/api";
 import { getAuthenticatedUser } from "@/shared/api/auth";
 import { clientLogger } from "@/shared/services/browser/clientLogger";
 import { setCurrentGameId } from "@/shared/store";
