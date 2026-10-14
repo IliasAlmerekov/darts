@@ -38,11 +38,11 @@ import {
   addGuestPlayer,
 } from "@/shared/api/room";
 import { useStartPage } from "./useStartPage";
+import { queryClient } from "@/shared/query/queryClient";
 import {
   resetRoomStore,
   resetGameStore,
   resetPreCreateGameSettings,
-  setLastFinishedGameSummary,
   setInvitation,
   setPreCreateGameSettings,
 } from "@/shared/store";
@@ -161,7 +161,7 @@ describe("useStartPage action guards", () => {
     resetRoomStore();
     resetGameStore();
     resetPreCreateGameSettings();
-    setLastFinishedGameSummary(null);
+    queryClient.clear();
     vi.stubGlobal("EventSource", MockEventSource);
     vi.stubGlobal("Audio", MockAudio);
     vi.mocked(getGameThrows).mockResolvedValue(buildGameThrowsResponse());
@@ -241,7 +241,7 @@ describe("useStartPage action guards", () => {
   });
 
   it("should prevent duplicate createRoom calls while first request is pending", async () => {
-    setLastFinishedGameSummary({ gameId: 77, summary: [] });
+    queryClient.setQueryData(["finishedGame", 77], []);
     setPreCreateGameSettings(buildGameSettingsResponse({ doubleOut: true }));
     const pending = deferred<{ gameId: number; invitationLink: string }>();
     vi.mocked(createRoom).mockReturnValueOnce(pending.promise);

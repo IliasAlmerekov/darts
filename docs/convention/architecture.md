@@ -32,7 +32,7 @@ src/shared/
   api/         # apiClient, endpoints, typed errors, mappers
   hooks/       # cross-page hooks
   lib/         # pure helpers (guards, router, error mapping, game logic, etc.)
-  query/       # the QueryClient and query options per resource (auth, statistics)
+  query/       # the QueryClient and query options per resource (auth, statistics, finished game)
   services/    # browser-side services (logger, sound, storage)
   store/       # Nanostores atoms and actions
   types/       # cross-page type definitions, including `*.test-support.ts`
@@ -167,7 +167,7 @@ Rules:
 - Every `<Route>` carries an explicit `errorElement={<ErrorBoundary />}`. There is no
   single global error boundary placed outside the router.
 - React Router 6 loaders are used for route data fetching (`startPageLoader`,
-  `gameDetailLoader`, `gamesOverviewLoader`). New page-level data fetches go through a
+  `gameDetailLoader`, `gameSummaryLoader`, `gamesOverviewLoader`). New page-level data fetches go through a
   loader, not `useEffect` after mount. The loader fills the query cache with
   `queryClient.ensureQueryData(...)` and the page reads the same key with `useQuery`
   ([ADR 0001](../adr/0001-tanstack-query-for-server-reads.md)). Data whose key changes

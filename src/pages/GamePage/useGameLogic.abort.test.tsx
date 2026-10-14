@@ -38,6 +38,7 @@ vi.mock("@/shared/services/browser/soundPlayer", () => ({
 }));
 
 import { act, renderHook, waitFor } from "@testing-library/react";
+import { queryClient } from "@/shared/query/queryClient";
 import { beforeAll, beforeEach, afterAll, describe, expect, it, vi } from "vitest";
 import type { GameSummaryResponse, GameThrowsResponse } from "@/types";
 import * as gameStore from "@/shared/store/game-state";
@@ -159,7 +160,7 @@ describe("useGameLogic auto-finish abort handling", () => {
     window.sessionStorage.clear();
     gameStore.resetGameStore();
     roomStore.resetRoomStore();
-    roomStore.setLastFinishedGameSummary(null);
+    queryClient.clear();
     getGameThrowsIfChangedMock.mockResolvedValue(buildAutoFinishGameData());
     createRematchMock.mockResolvedValue({
       success: true,
@@ -173,7 +174,7 @@ describe("useGameLogic auto-finish abort handling", () => {
     });
   });
 
-  it("should navigate to summary and cache the finish payload when auto-finish completes", async () => {
+  it("should navigate to summary and seed the finishedGame query when auto-finish completes", async () => {
     const summaryPayload: GameSummaryResponse = [
       {
         playerId: 2,
@@ -193,17 +194,11 @@ describe("useGameLogic auto-finish abort handling", () => {
     });
     await waitFor(() => {
       expect(navigateMock).toHaveBeenCalledWith("/summary/1", {
-        state: {
-          finishedGameId: 1,
-          summary: summaryPayload,
-        },
+        state: { finishedGameId: 1 },
       });
     });
 
-    expect(roomStore.$lastFinishedGameSummary.get()).toEqual({
-      gameId: 1,
-      summary: summaryPayload,
-    });
+    expect(queryClient.getQueryData(["finishedGame", 1])).toEqual(summaryPayload);
     expect(resetGameStateVersionMock).toHaveBeenCalledWith(1);
   });
 
@@ -245,7 +240,7 @@ describe("useGameLogic auto-finish abort handling", () => {
     });
 
     expect(navigateMock).not.toHaveBeenCalled();
-    expect(roomStore.$lastFinishedGameSummary.get()).toBeNull();
+    expect(queryClient.getQueryData(["finishedGame", 1])).toBeUndefined();
   });
 
   it("should not navigate to summary while auto-finish is still pending", async () => {
@@ -258,7 +253,7 @@ describe("useGameLogic auto-finish abort handling", () => {
     });
 
     expect(navigateMock).not.toHaveBeenCalled();
-    expect(roomStore.$lastFinishedGameSummary.get()).toBeNull();
+    expect(queryClient.getQueryData(["finishedGame", 1])).toBeUndefined();
 
     unmount();
   });

@@ -1,17 +1,12 @@
-import { atom, computed } from "nanostores";
+import { atom } from "nanostores";
 import type { ReadableAtom } from "nanostores";
 import { isRecord } from "@/lib/guards/guards";
 import { clientLogger } from "@/shared/services/browser/clientLogger";
-import type { CreateGameSettingsPayload, GameSummaryResponse } from "@/types";
+import type { CreateGameSettingsPayload } from "@/types";
 
 export interface Invitation {
   gameId: number;
   invitationLink: string;
-}
-
-export interface FinishedGameSummarySnapshot {
-  gameId: number;
-  summary: GameSummaryResponse;
 }
 
 export const GAME_ID_STORAGE_KEY = "darts_current_game_id";
@@ -193,17 +188,10 @@ function setStoredPreCreateGameSettings(settings: CreateGameSettingsPayload): vo
 
 const currentGameIdAtom = atom<number | null>(getStoredGameId());
 const invitationAtom = atom<Invitation | null>(getStoredInvitation());
-const lastFinishedGameSummaryAtom = atom<FinishedGameSummarySnapshot | null>(null);
 const preCreateGameSettingsAtom = atom<CreateGameSettingsPayload>(getStoredPreCreateGameSettings());
 
 export const $currentGameId: ReadableAtom<number | null> = currentGameIdAtom;
 export const $invitation: ReadableAtom<Invitation | null> = invitationAtom;
-export const $lastFinishedGameSummary: ReadableAtom<FinishedGameSummarySnapshot | null> =
-  lastFinishedGameSummaryAtom;
-export const $lastFinishedGameId = computed(
-  lastFinishedGameSummaryAtom,
-  (snapshot) => snapshot?.gameId ?? null,
-);
 export const $preCreateGameSettings: ReadableAtom<CreateGameSettingsPayload> =
   preCreateGameSettingsAtom;
 
@@ -237,13 +225,6 @@ export function setInvitation(invitation: Invitation | null): void {
   if (invitationGameId !== undefined) {
     setCurrentGameId(invitationGameId);
   }
-}
-
-/**
- * Stores the latest finished game summary for the current SPA navigation flow.
- */
-export function setLastFinishedGameSummary(snapshot: FinishedGameSummarySnapshot | null): void {
-  lastFinishedGameSummaryAtom.set(snapshot);
 }
 
 /**

@@ -3,20 +3,16 @@ import { finishGame, resetGameStateVersion } from "@/shared/api/game";
 import { toUserErrorMessage } from "@/lib/error/error-to-user-message";
 import { ROUTES } from "@/lib/router/routes";
 import { unlockSounds } from "@/shared/services/browser/soundPlayer";
-import { setLastFinishedGameSummary } from "@/shared/store";
+import { gameQueries } from "@/shared/query/game.queries";
+import { queryClient } from "@/shared/query/queryClient";
 import { clientLogger } from "@/shared/services/browser/clientLogger";
-import type { GameSummaryResponse, GameThrowsResponse, RoomStreamEventType } from "@/types";
+import type { GameThrowsResponse, RoomStreamEventType } from "@/types";
 import { shouldAutoFinishGame, shouldNavigateToSummary } from "./lib/gameLogic.helpers";
-
-interface GameSummaryNavigationState {
-  finishedGameId: number;
-  summary?: GameSummaryResponse;
-}
 
 interface UseGameSummaryNavigationOptions {
   gameData: GameThrowsResponse | null;
   gameId: number | null;
-  navigate: (to: string, options?: { state?: GameSummaryNavigationState }) => void;
+  navigate: (to: string, options?: { state?: { finishedGameId: number } }) => void;
 }
 
 interface UseRoomEventRefetchOptions {
@@ -30,7 +26,7 @@ const GAME_FINISHED_EVENT_TYPE: RoomStreamEventType = "game-finished";
 interface UseAutoFinishGameOptions {
   gameData: GameThrowsResponse | null;
   gameId: number | null;
-  navigate: (to: string, options?: { state?: GameSummaryNavigationState }) => void;
+  navigate: (to: string, options?: { state?: { finishedGameId: number } }) => void;
   setPageError: (message: string | null) => void;
   shouldShowFinishOverlay: boolean;
 }
@@ -108,10 +104,8 @@ export function useAutoFinishGame({
         }
 
         resetGameStateVersion(gameId);
-        setLastFinishedGameSummary({ gameId, summary });
-        navigate(ROUTES.summary(gameId), {
-          state: { finishedGameId: gameId, summary },
-        });
+        queryClient.setQueryData(gameQueries.finished(gameId).queryKey, summary);
+        navigate(ROUTES.summary(gameId), { state: { finishedGameId: gameId } });
       })
       .catch((error: unknown): void => {
         if (isAbortError(error) || signal.aborted) {

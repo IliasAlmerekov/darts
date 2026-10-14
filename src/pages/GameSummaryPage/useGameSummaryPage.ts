@@ -1,22 +1,14 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { useStore } from "@nanostores/react";
-import { useLocation, useNavigate, useParams } from "react-router-dom";
-import {
-  getFinishedGame,
-  getGameThrows,
-  createRematchGame,
-  startRematch,
-  undoLastThrow,
-} from "@/shared/api/game";
-import type { FinishedPlayerResponse, UndoThrowResponse, UndoAckResponse } from "@/types";
+import { useCallback, useMemo, useRef, useState } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useNavigate, useParams, type LoaderFunctionArgs } from "react-router-dom";
+import { getGameThrows, createRematchGame, startRematch, undoLastThrow } from "@/shared/api/game";
+import type { UndoThrowResponse, UndoAckResponse } from "@/types";
 import {
   $gameData,
-  $lastFinishedGameSummary,
   setCurrentGameId,
   setGameData,
   setGameScoreboardDelta,
   setInvitation,
-  setLastFinishedGameSummary,
   resetRoomStore,
 } from "@/shared/store";
 import { playSound } from "@/shared/services/browser/soundPlayer";
@@ -25,13 +17,9 @@ import { ROUTES } from "@/lib/router/routes";
 import { applyOptimisticUndo } from "@/lib/game/applyOptimisticUndo";
 import type { FinishedGameStandings } from "@/lib/game/finishedGameStandings";
 import { clientLogger } from "@/shared/services/browser/clientLogger";
-import { parseLocationState } from "@/lib/router/locationState";
+import { gameQueries } from "@/shared/query/game.queries";
+import { queryClient } from "@/shared/query/queryClient";
 import { buildGameSummaryStandings } from "./lib/gameSummaryStandings";
-
-interface SummaryLocationState {
-  finishedGameId?: number;
-  summary?: FinishedPlayerResponse[];
-}
 
 interface UseGameSummaryPageResult extends FinishedGameStandings {
   error: string | null;
@@ -42,31 +30,32 @@ interface UseGameSummaryPageResult extends FinishedGameStandings {
   handleBackToStart: () => Promise<void>;
 }
 
-function isFinishedPlayerResponseArray(value: unknown): value is FinishedPlayerResponse[] {
-  return (
-    Array.isArray(value) &&
-    value.every(
-      (item) =>
-        item !== null &&
-        typeof item === "object" &&
-        typeof item.playerId === "number" &&
-        typeof item.username === "string" &&
-        typeof item.position === "number" &&
-        typeof item.roundsPlayed === "number" &&
-        typeof item.roundAverage === "number",
-    )
-  );
+function parseGameId(param: string | undefined): number | null {
+  if (!param) {
+    return null;
+  }
+
+  const parsed = Number(param);
+  return Number.isFinite(parsed) && parsed > 0 ? parsed : null;
 }
 
-function isSummaryLocationState(s: unknown): s is SummaryLocationState {
-  return (
-    typeof s === "object" &&
-    s !== null &&
-    (!Object.prototype.hasOwnProperty.call(s, "finishedGameId") ||
-      typeof Reflect.get(s, "finishedGameId") === "number") &&
-    (!Object.prototype.hasOwnProperty.call(s, "summary") ||
-      isFinishedPlayerResponseArray(Reflect.get(s, "summary")))
-  );
+/**
+ * React Router 6 loader
+ * Registers the route: loader: gameSummaryLoader
+ * Returns null without fetching when the route has no valid game id.
+ * Fills the `['finishedGame', id]` query before the page renders.
+ */
+export async function gameSummaryLoader({ params }: LoaderFunctionArgs): Promise<null> {
+  const gameId = parseGameId(params.id);
+
+  if (gameId === null) {
+    return null;
+  }
+
+  // A failed fetch is logged by the query function. The page then mounts, fetches again and
+  // shows its Retry action, so the failure does not reach the route error boundary.
+  await queryClient.ensureQueryData(gameQueries.finished(gameId)).catch(() => undefined);
+  return null;
 }
 
 function isUndoAckResponse(response: UndoThrowResponse): response is UndoAckResponse {
@@ -78,92 +67,59 @@ function isUndoAckResponse(response: UndoThrowResponse): response is UndoAckResp
  */
 export function useGameSummaryPage(): UseGameSummaryPageResult {
   const navigate = useNavigate();
-  const location = useLocation();
+  const client = useQueryClient();
   const { id: summaryGameIdParam } = useParams<{ id?: string }>();
-  const lastFinishedGameSummary = useStore($lastFinishedGameSummary);
-  const [serverFinished, setServerFinished] = useState<FinishedPlayerResponse[]>([]);
-  const [error, setError] = useState<string | null>(null);
+  const [actionErrorState, setActionErrorState] = useState<{
+    gameId: number | null;
+    message: string;
+  } | null>(null);
   const [starting, setStarting] = useState<boolean>(false);
+  const [releasedGameId, setReleasedGameId] = useState<number | null>(null);
   const startGameInFlightRef = useRef<boolean>(false);
 
-  const finishedGameIdFromRoute = useMemo(() => {
-    const stateGameId = parseLocationState(location.state, isSummaryLocationState)?.finishedGameId;
-    if ("number" === typeof stateGameId) {
-      return stateGameId;
-    }
+  const finishedGameIdFromRoute = useMemo(
+    () => parseGameId(summaryGameIdParam),
+    [summaryGameIdParam],
+  );
 
-    if (!summaryGameIdParam) {
-      return null;
-    }
+  // An action error belongs to the game it happened on, so it never follows a route change.
+  const actionError =
+    actionErrorState?.gameId === finishedGameIdFromRoute ? actionErrorState.message : null;
+  const setActionError = useCallback(
+    (message: string | null): void => {
+      setActionErrorState(message === null ? null : { gameId: finishedGameIdFromRoute, message });
+    },
+    [finishedGameIdFromRoute],
+  );
 
-    const parsedParam = Number(summaryGameIdParam);
-    return Number.isFinite(parsedParam) && parsedParam > 0 ? parsedParam : null;
-  }, [location.state, summaryGameIdParam]);
+  const summaryQuery = useQuery({
+    ...gameQueries.finished(finishedGameIdFromRoute ?? 0),
+    enabled: finishedGameIdFromRoute !== null && finishedGameIdFromRoute !== releasedGameId,
+  });
+  const { refetch } = summaryQuery;
 
-  const summaryFromNavigationState = useMemo(() => {
-    const locationState = parseLocationState(location.state, isSummaryLocationState);
-    if (!locationState || locationState.finishedGameId !== finishedGameIdFromRoute) {
-      return null;
-    }
-
-    return isFinishedPlayerResponseArray(locationState.summary) ? locationState.summary : null;
-  }, [finishedGameIdFromRoute, location.state]);
-
-  const summaryFromStore = useMemo(() => {
-    if (!lastFinishedGameSummary || lastFinishedGameSummary.gameId !== finishedGameIdFromRoute) {
-      return null;
-    }
-
-    return lastFinishedGameSummary.summary;
-  }, [finishedGameIdFromRoute, lastFinishedGameSummary]);
+  const error =
+    actionError ??
+    (summaryQuery.error
+      ? toUserErrorMessage(summaryQuery.error, "Could not load finished game data.")
+      : null);
 
   const loadSummary = useCallback(async (): Promise<void> => {
-    if (finishedGameIdFromRoute === null) return;
+    setActionError(null);
+    await refetch();
+  }, [refetch, setActionError]);
 
-    try {
-      setError(null);
-      const data = await getFinishedGame(finishedGameIdFromRoute);
-      setServerFinished(data);
-      setLastFinishedGameSummary({ gameId: finishedGameIdFromRoute, summary: data });
-    } catch (err: unknown) {
-      clientLogger.error("game-summary.fetch.failed", {
-        context: { finishedGameId: finishedGameIdFromRoute },
-        error: err,
-      });
-      setError(toUserErrorMessage(err, "Could not load finished game data."));
-    }
-  }, [finishedGameIdFromRoute]);
-
-  useEffect((): void => {
-    if (finishedGameIdFromRoute === null) {
-      return;
-    }
-
-    if (summaryFromNavigationState) {
-      setError(null);
-      setLastFinishedGameSummary({
-        gameId: finishedGameIdFromRoute,
-        summary: summaryFromNavigationState,
-      });
-      return;
-    }
-
-    if (summaryFromStore) {
-      setError(null);
-      return;
-    }
-
-    void loadSummary();
-  }, [finishedGameIdFromRoute, loadSummary, summaryFromNavigationState, summaryFromStore]);
+  const releaseFinishedGame = useCallback(
+    (gameId: number): void => {
+      setReleasedGameId(gameId);
+      client.removeQueries({ queryKey: gameQueries.finished(gameId).queryKey });
+    },
+    [client],
+  );
 
   const { standings, podiumData, leaderBoardList } = useMemo(
-    () =>
-      buildGameSummaryStandings({
-        fromNavigation: summaryFromNavigationState,
-        fromStore: summaryFromStore,
-        fromServer: serverFinished,
-      }),
-    [serverFinished, summaryFromNavigationState, summaryFromStore],
+    () => buildGameSummaryStandings(summaryQuery.data),
+    [summaryQuery.data],
   );
 
   const handleUndo = useCallback(async (): Promise<void> => {
@@ -177,7 +133,7 @@ export function useGameSummaryPage(): UseGameSummaryPageResult {
     let serverUndoApplied = false;
 
     try {
-      setError(null);
+      setActionError(null);
       if (optimisticUndoState) {
         setGameData(optimisticUndoState);
       }
@@ -212,6 +168,7 @@ export function useGameSummaryPage(): UseGameSummaryPageResult {
       }
 
       playSound("undo");
+      releaseFinishedGame(finishedGameIdFromRoute);
       navigate(ROUTES.game(finishedGameIdFromRoute), {
         state: { skipFinishOverlay: true },
       });
@@ -226,9 +183,9 @@ export function useGameSummaryPage(): UseGameSummaryPageResult {
         },
         error: err,
       });
-      setError(toUserErrorMessage(err, "Could not reopen game and undo throw."));
+      setActionError(toUserErrorMessage(err, "Could not reopen game and undo throw."));
     }
-  }, [finishedGameIdFromRoute, navigate]);
+  }, [finishedGameIdFromRoute, navigate, releaseFinishedGame, setActionError]);
 
   const handlePlayAgain = useCallback(async (): Promise<void> => {
     if (finishedGameIdFromRoute === null || startGameInFlightRef.current) return;
@@ -237,12 +194,13 @@ export function useGameSummaryPage(): UseGameSummaryPageResult {
     setStarting(true);
 
     try {
-      setError(null);
+      setActionError(null);
       const rematch = await startRematch(finishedGameIdFromRoute);
       if (!rematch?.gameId) {
         throw new Error("Invalid rematch response: missing game id");
       }
 
+      releaseFinishedGame(finishedGameIdFromRoute);
       setCurrentGameId(rematch.gameId);
       if (rematch.invitationLink) {
         setInvitation({
@@ -256,12 +214,12 @@ export function useGameSummaryPage(): UseGameSummaryPageResult {
         context: { finishedGameId: finishedGameIdFromRoute },
         error: err,
       });
-      setError(toUserErrorMessage(err, "Could not start a rematch."));
+      setActionError(toUserErrorMessage(err, "Could not start a rematch."));
     } finally {
       startGameInFlightRef.current = false;
       setStarting(false);
     }
-  }, [finishedGameIdFromRoute, navigate]);
+  }, [finishedGameIdFromRoute, navigate, releaseFinishedGame, setActionError]);
 
   const handleBackToStart = useCallback(async (): Promise<void> => {
     if (finishedGameIdFromRoute === null) return;
@@ -269,12 +227,13 @@ export function useGameSummaryPage(): UseGameSummaryPageResult {
     resetRoomStore();
 
     try {
-      setError(null);
+      setActionError(null);
       const rematch = await createRematchGame(finishedGameIdFromRoute);
       if (!rematch?.gameId) {
         throw new Error("Invalid rematch response: missing game id");
       }
 
+      releaseFinishedGame(finishedGameIdFromRoute);
       setCurrentGameId(rematch.gameId);
       navigate(ROUTES.start(rematch.gameId));
     } catch (err) {
@@ -282,9 +241,9 @@ export function useGameSummaryPage(): UseGameSummaryPageResult {
         context: { finishedGameId: finishedGameIdFromRoute },
         error: err,
       });
-      setError(toUserErrorMessage(err, "Could not return to start."));
+      setActionError(toUserErrorMessage(err, "Could not return to start."));
     }
-  }, [finishedGameIdFromRoute, navigate]);
+  }, [finishedGameIdFromRoute, navigate, releaseFinishedGame, setActionError]);
 
   return {
     error,

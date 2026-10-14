@@ -7,46 +7,16 @@ import {
 import { buildGameSummaryStandings } from "./gameSummaryStandings";
 
 describe("buildGameSummaryStandings", () => {
-  const players = buildFinishedPlayerResponses();
-  const [alice, bob, cara] = buildExpectedStandings();
+  it("should build standings from the finished game query data", () => {
+    const { standings } = buildGameSummaryStandings(buildFinishedPlayerResponses().slice(0, 2));
 
-  it("should prefer navigation state over store and server", () => {
-    const result = buildGameSummaryStandings({
-      fromNavigation: players.slice(0, 1),
-      fromStore: players.slice(0, 2),
-      fromServer: players.slice(0, 3),
-    });
-
-    expect(result.standings).toStrictEqual([alice]);
+    expect(standings).toStrictEqual(buildExpectedStandings().slice(0, 2));
   });
 
-  it("should use the store when navigation state is absent", () => {
-    const result = buildGameSummaryStandings({
-      fromNavigation: null,
-      fromStore: players.slice(0, 2),
-      fromServer: players.slice(0, 3),
-    });
+  it("should build empty standings while the query has no data", () => {
+    const { standings, leaderBoardList } = buildGameSummaryStandings(undefined);
 
-    expect(result.standings).toStrictEqual([alice, bob]);
-  });
-
-  it("should use the server response when navigation state and store are absent", () => {
-    const result = buildGameSummaryStandings({
-      fromNavigation: null,
-      fromStore: null,
-      fromServer: players.slice(0, 3),
-    });
-
-    expect(result.standings).toStrictEqual([alice, bob, cara]);
-  });
-
-  it("should return empty standings when the server response is still empty", () => {
-    const result = buildGameSummaryStandings({
-      fromNavigation: null,
-      fromStore: null,
-      fromServer: [],
-    });
-
-    expect(result).toStrictEqual({ standings: [], podiumData: [], leaderBoardList: [] });
+    expect(standings).toEqual([]);
+    expect(leaderBoardList).toEqual([]);
   });
 });

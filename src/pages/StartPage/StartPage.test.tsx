@@ -17,6 +17,7 @@ vi.mock("@/shared/api/room", () => ({
 import { fireEvent, render, screen, waitFor, act } from "@testing-library/react";
 import { MemoryRouter, Routes, Route } from "react-router-dom";
 import { describe, expect, it, vi, beforeEach, afterEach } from "vitest";
+import { queryClient } from "@/shared/query/queryClient";
 import { getGameThrows, getGameSettings } from "@/shared/api/game";
 import {
   createRoom,
@@ -30,7 +31,6 @@ import {
   resetRoomStore,
   resetGameStore,
   resetPreCreateGameSettings,
-  setLastFinishedGameSummary,
   setInvitation,
 } from "@/shared/store";
 import { buildBackendPlayer, buildGameThrowsResponse } from "@/shared/types/game.test-support";
@@ -116,7 +116,7 @@ describe("StartPage", () => {
     resetRoomStore();
     resetGameStore();
     resetPreCreateGameSettings();
-    setLastFinishedGameSummary(null);
+    queryClient.clear();
     vi.stubGlobal("EventSource", MockEventSource);
     vi.stubGlobal("Audio", MockAudio);
     vi.mocked(getGameThrows).mockResolvedValue(buildGameThrowsResponse());
