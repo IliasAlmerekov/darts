@@ -7,6 +7,10 @@ and this project does **not** yet follow [Semantic Versioning](https://semver.or
 
 ## [Unreleased]
 
+### Changed
+
+- Lobby: the invitation link and the Copy Invite Link button are hidden at 1020px wide and below, so tablets show only the QR code (#178)
+
 ## [0.1.3] - 2026-10-14
 
 ### Added
