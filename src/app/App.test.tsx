@@ -303,7 +303,7 @@ describe("App routing", () => {
     await renderApp();
     // App was re-imported after vi.resetModules(), so take the client from the same module graph.
     const { queryClient } = await import("@/shared/query/queryClient");
-    queryClient.setQueryData(["auth", "me"], { id: 1 });
+    queryClient.setQueryData(["auth", "me"], { id: 1, roles: ["ROLE_PLAYER"] });
 
     expect(await screen.findByText("Start Page")).toBeTruthy();
     expect(setUnauthorizedHandler).toHaveBeenCalledTimes(1);
