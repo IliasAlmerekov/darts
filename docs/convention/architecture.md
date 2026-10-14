@@ -32,7 +32,7 @@ src/shared/
   api/         # apiClient, endpoints, typed errors, mappers
   hooks/       # cross-page hooks
   lib/         # pure helpers (guards, router, error mapping, game logic, etc.)
-  query/       # the QueryClient and query options per resource (auth, statistics, finished game)
+  query/       # the QueryClient and query options per resource (auth, statistics, game)
   services/    # browser-side services (logger, sound, storage)
   store/       # Nanostores atoms and actions
   types/       # cross-page type definitions, including `*.test-support.ts`

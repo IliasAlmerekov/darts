@@ -12,6 +12,7 @@ import {
 } from "@/shared/ui/pagination";
 import { StatisticsHeaderControls } from "@/shared/ui/statistics-header-controls";
 import type { FinishedGameProps } from "@/types";
+import { parseOffset } from "./lib/parseOffset";
 import { useGamesOverview } from "./useGamesOverview";
 
 const LIMIT = 9;
@@ -72,7 +73,7 @@ const GamesPagination = React.memo(function GamesPagination({
 
 export default function GamesOverviewPage(): React.JSX.Element {
   const [searchParams, setSearchParams] = useSearchParams();
-  const offset = Number(searchParams.get("offset") ?? "0");
+  const offset = parseOffset(searchParams.get("offset"));
 
   const { games, total, loading, error, retry } = useGamesOverview();
   const renderableGames = games.filter(isRenderableFinishedGame);
@@ -81,7 +82,7 @@ export default function GamesOverviewPage(): React.JSX.Element {
 
   const handlePreviousPage = useCallback(() => {
     setSearchParams((prev) => {
-      const newOffset = Math.max(0, Number(prev.get("offset") ?? "0") - LIMIT);
+      const newOffset = Math.max(0, parseOffset(prev.get("offset")) - LIMIT);
       if (newOffset === 0) {
         prev.delete("offset");
       } else {
@@ -93,7 +94,7 @@ export default function GamesOverviewPage(): React.JSX.Element {
 
   const handleNextPage = useCallback(() => {
     setSearchParams((prev) => {
-      prev.set("offset", String(Number(prev.get("offset") ?? "0") + LIMIT));
+      prev.set("offset", String(parseOffset(prev.get("offset")) + LIMIT));
       return prev;
     });
   }, [setSearchParams]);

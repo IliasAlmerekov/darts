@@ -14,9 +14,12 @@ vi.mock("@/shared/ui/admin-layout", () => ({
 
 import React from "react";
 import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
-import { MemoryRouter, Route, Routes } from "react-router-dom";
+import { QueryClientProvider, type QueryClient } from "@tanstack/react-query";
+import { createMemoryRouter, MemoryRouter, Route, RouterProvider, Routes } from "react-router-dom";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { ApiError } from "@/shared/api";
+import { gameQueries } from "@/shared/query/game.queries";
+import { createQueryClient } from "@/shared/query/queryClient";
 import {
   $currentGameId,
   $gameData,
@@ -77,20 +80,37 @@ function createDeferred<T>(): Deferred<T> {
   };
 }
 
+let testQueryClient: QueryClient;
+
 function renderSettingsPage(initialEntry: string): ReturnType<typeof render> {
   return render(
-    <MemoryRouter initialEntries={[initialEntry]}>
-      <Routes>
-        <Route path="/settings" element={<SettingsPage />} />
-        <Route path="/settings/:id" element={<SettingsPage />} />
-      </Routes>
-    </MemoryRouter>,
+    <QueryClientProvider client={testQueryClient}>
+      <MemoryRouter initialEntries={[initialEntry]}>
+        <Routes>
+          <Route path="/settings" element={<SettingsPage />} />
+          <Route path="/settings/:id" element={<SettingsPage />} />
+        </Routes>
+      </MemoryRouter>
+    </QueryClientProvider>,
   );
+}
+
+function renderSettingsRouter(initialEntry: string): ReturnType<typeof createMemoryRouter> {
+  const router = createMemoryRouter([{ path: "/settings/:id", element: <SettingsPage /> }], {
+    initialEntries: [initialEntry],
+  });
+  render(
+    <QueryClientProvider client={testQueryClient}>
+      <RouterProvider router={router} />
+    </QueryClientProvider>,
+  );
+  return router;
 }
 
 describe("SettingsPage", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    testQueryClient = createQueryClient();
     resetGameStore();
     resetRoomStore();
     setPreCreateGameSettings({
@@ -491,5 +511,123 @@ describe("SettingsPage", () => {
     });
 
     expect($gameData.get()).toBeNull();
+  });
+
+  it("should show route game B's settings when game A's response arrives after B's", async () => {
+    const gameA = createDeferred<GameSettingsResponse>();
+    const gameB = createDeferred<GameSettingsResponse>();
+    getGameSettingsMock.mockImplementation((gameId: number) =>
+      gameId === 1 ? gameA.promise : gameB.promise,
+    );
+    const router = renderSettingsRouter("/settings/1");
+    await waitFor(() => {
+      expect(getGameSettingsMock).toHaveBeenCalledWith(1, expect.any(AbortSignal));
+    });
+
+    await act(async () => {
+      await router.navigate("/settings/2");
+    });
+    await act(async () => {
+      gameB.resolve(createSettingsResponse({ startScore: 401, doubleOut: true }));
+      await gameB.promise;
+    });
+    await act(async () => {
+      gameA.resolve(createSettingsResponse({ startScore: 101, tripleOut: true }));
+      await gameA.promise;
+    });
+
+    await waitFor(() => {
+      expect(screen.getByRole("button", { name: "Double-out" }).getAttribute("aria-pressed")).toBe(
+        "true",
+      );
+    });
+    expect(screen.getByRole("button", { name: "401" }).getAttribute("aria-pressed")).toBe("true");
+    expect(screen.getByRole("button", { name: "Triple-out" }).getAttribute("aria-pressed")).toBe(
+      "false",
+    );
+  });
+
+  it("should replace the cached settings of the route game with the save response", async () => {
+    getGameSettingsMock.mockResolvedValueOnce(createSettingsResponse({ startScore: 301 }));
+    saveGameSettingsMock.mockResolvedValueOnce(
+      createSettingsResponse({ startScore: 501, tripleOut: true }),
+    );
+
+    renderSettingsPage("/settings/42");
+    await waitFor(() => {
+      expect(testQueryClient.getQueryData(gameQueries.settings(42).queryKey)).toEqual(
+        createSettingsResponse({ startScore: 301 }),
+      );
+    });
+
+    fireEvent.click(screen.getByRole("button", { name: "501" }));
+
+    await waitFor(() => {
+      expect(testQueryClient.getQueryData(gameQueries.settings(42).queryKey)).toEqual(
+        createSettingsResponse({ startScore: 501, tripleOut: true }),
+      );
+    });
+    expect(screen.getByRole("button", { name: "Triple-out" }).getAttribute("aria-pressed")).toBe(
+      "true",
+    );
+  });
+
+  it("should keep the save response when a settings read that started earlier resolves later", async () => {
+    setGameSettings(createSettingsResponse({ startScore: 301 }), 42);
+    const pendingLoad = createDeferred<GameSettingsResponse>();
+    getGameSettingsMock.mockImplementationOnce(() => pendingLoad.promise);
+    saveGameSettingsMock.mockResolvedValueOnce(createSettingsResponse({ startScore: 501 }));
+
+    renderSettingsPage("/settings/42");
+    await waitFor(() => {
+      expect(getGameSettingsMock).toHaveBeenCalledWith(42, expect.any(AbortSignal));
+    });
+    fireEvent.click(screen.getByRole("button", { name: "501" }));
+    await waitFor(() => {
+      expect(testQueryClient.getQueryData(gameQueries.settings(42).queryKey)).toEqual(
+        createSettingsResponse({ startScore: 501 }),
+      );
+    });
+
+    await act(async () => {
+      pendingLoad.resolve(createSettingsResponse({ startScore: 301 }));
+      await pendingLoad.promise;
+    });
+
+    expect(testQueryClient.getQueryData(gameQueries.settings(42).queryKey)).toEqual(
+      createSettingsResponse({ startScore: 501 }),
+    );
+    expect(screen.getByRole("button", { name: "501" }).getAttribute("aria-pressed")).toBe("true");
+  });
+
+  it("should keep a save for game A under game A when the route moves to game B before it resolves", async () => {
+    const pendingSave = createDeferred<GameSettingsResponse>();
+    saveGameSettingsMock.mockImplementationOnce(() => pendingSave.promise);
+    getGameSettingsMock.mockImplementation((gameId: number) =>
+      Promise.resolve(createSettingsResponse({ startScore: gameId === 1 ? 301 : 401 })),
+    );
+    const router = renderSettingsRouter("/settings/1");
+    await waitFor(() => {
+      expect(screen.getByRole("button", { name: "301" }).getAttribute("aria-pressed")).toBe("true");
+    });
+
+    fireEvent.click(screen.getByRole("button", { name: "501" }));
+    await act(async () => {
+      await router.navigate("/settings/2");
+    });
+    await act(async () => {
+      pendingSave.resolve(createSettingsResponse({ startScore: 501 }));
+      await pendingSave.promise;
+    });
+
+    expect(testQueryClient.getQueryData(gameQueries.settings(1).queryKey)).toEqual(
+      createSettingsResponse({ startScore: 501 }),
+    );
+    await waitFor(() => {
+      expect(testQueryClient.getQueryData(gameQueries.settings(2).queryKey)).toEqual(
+        createSettingsResponse({ startScore: 401 }),
+      );
+    });
+    expect(screen.getByRole("button", { name: "401" }).getAttribute("aria-pressed")).toBe("true");
   });
 });

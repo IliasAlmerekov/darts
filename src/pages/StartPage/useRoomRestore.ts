@@ -3,6 +3,9 @@ import type { LoaderFunctionArgs, NavigateFunction } from "react-router-dom";
 import { redirect } from "react-router-dom";
 import { getGameThrows } from "@/shared/api/game";
 import { getInvitation } from "@/shared/api/room";
+import { toLobbyPlayers } from "@/lib/game/lobbyPlayers";
+import { gameQueries } from "@/shared/query/game.queries";
+import { queryClient } from "@/shared/query/queryClient";
 import { clientLogger } from "@/shared/services/browser/clientLogger";
 import {
   $currentGameId,
@@ -54,7 +57,7 @@ function isAbortError(error: unknown): boolean {
 /**
  * React Router 6 loader for the StartPage route.
  * Fetches game throws and invitation data before the page renders,
- * and populates the game-session stores.
+ * populates the game-session stores, and fills the lobby players query.
  * Register as: loader={startPageLoader}
  */
 export async function startPageLoader({
@@ -71,6 +74,9 @@ export async function startPageLoader({
   const invitation = $invitation.get();
 
   if (invitation?.gameId === gameId) {
+    // The SSE stream was closed while the page was away, so a list cached on an earlier visit
+    // may miss players. Without it the page starts from the game store and reads once.
+    queryClient.removeQueries({ queryKey: gameQueries.lobbyPlayers(gameId).queryKey });
     return null;
   }
 
@@ -107,6 +113,10 @@ export async function startPageLoader({
   }
 
   setGameData(gameData);
+  queryClient.setQueryData(
+    gameQueries.lobbyPlayers(gameId).queryKey,
+    toLobbyPlayers(gameData.players),
+  );
 
   try {
     const invitationData = await getInvitation(gameId, request.signal);

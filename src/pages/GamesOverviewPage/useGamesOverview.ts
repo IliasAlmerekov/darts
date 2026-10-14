@@ -1,13 +1,10 @@
 import { useCallback } from "react";
-import {
-  type LoaderFunctionArgs,
-  useLoaderData,
-  useNavigate,
-  useNavigation,
-} from "react-router-dom";
-import { getGamesOverview } from "@/shared/api/statistics";
-import { clientLogger } from "@/shared/services/browser/clientLogger";
+import { useQuery } from "@tanstack/react-query";
+import { type LoaderFunctionArgs, useNavigation, useSearchParams } from "react-router-dom";
+import { queryClient } from "@/shared/query/queryClient";
+import { statsQueries } from "@/shared/query/statistics.queries";
 import type { FinishedGameProps } from "@/types";
+import { parseOffset } from "./lib/parseOffset";
 
 const LIMIT = 9;
 
@@ -21,93 +18,47 @@ interface UseGamesOverviewResult {
   retry: () => void;
 }
 
-type GamesOverviewLoaderData = {
-  games: FinishedGameProps[];
-  total: number;
-  error: string | null;
-};
-
-function isCompleteFinishedGame(game: FinishedGameProps): boolean {
-  if (typeof game.winnerName !== "string" || game.winnerName.trim().length === 0) {
-    return false;
-  }
-
-  if (typeof game.date !== "string") {
-    return false;
-  }
-
-  const parsedDate = new Date(game.date);
-  return !Number.isNaN(parsedDate.getTime());
-}
-
-function isGamesOverviewLoaderData(value: unknown): value is GamesOverviewLoaderData {
-  return (
-    typeof value === "object" &&
-    value !== null &&
-    "games" in value &&
-    "total" in value &&
-    "error" in value
-  );
-}
-
 /**
  * React Router 6 loader for the GamesOverview route.
- * Reads `offset` from URL search params and fetches the corresponding page.
+ * Reads `offset` from URL search params and fills that page's query before the page renders.
  * Register as: loader={gamesOverviewLoader}
  */
-export async function gamesOverviewLoader({
-  request,
-}: LoaderFunctionArgs): Promise<GamesOverviewLoaderData> {
-  const url = new URL(request.url);
-  const offset = Number(url.searchParams.get("offset") ?? "0");
+export async function gamesOverviewLoader({ request }: LoaderFunctionArgs): Promise<null> {
+  const offset = parseOffset(new URL(request.url).searchParams.get("offset"));
 
-  try {
-    const { items, total } = await getGamesOverview(LIMIT, offset, request.signal);
-
-    const invalidGames = items.filter((game) => !isCompleteFinishedGame(game));
-    if (invalidGames.length > 0) {
-      clientLogger.error("statistics.games-overview.invalid-data", {
-        context: {
-          limit: LIMIT,
-          offset,
-          invalidGameIds: invalidGames.map((game) => game.id),
-        },
-      });
-      return { games: [], total: 0, error: GAMES_OVERVIEW_ERROR_MESSAGE };
-    }
-
-    return { games: items, total, error: null };
-  } catch (err: unknown) {
-    clientLogger.error("statistics.games-overview.fetch.failed", {
-      context: { limit: LIMIT, offset },
-      error: err,
-    });
-    return { games: [], total: 0, error: GAMES_OVERVIEW_ERROR_MESSAGE };
-  }
+  // A failed read is logged by the query function and leaves the query in an error state,
+  // which the page shows with its Retry action.
+  await queryClient
+    .ensureQueryData(statsQueries.games({ limit: LIMIT, offset }))
+    .catch(() => undefined);
+  return null;
 }
 
 /**
- * Reads the pre-fetched games overview data provided by the React Router loader.
+ * Reads the games overview page of the current `offset` from the query cache.
  */
 export function useGamesOverview(): UseGamesOverviewResult {
-  const rawLoaderData = useLoaderData();
-
-  if (!isGamesOverviewLoaderData(rawLoaderData)) {
-    throw new Error("Unexpected loader data format for GamesOverviewPage");
-  }
-
+  const [searchParams] = useSearchParams();
+  const offset = parseOffset(searchParams.get("offset"));
   const navigation = useNavigation();
-  const navigate = useNavigate();
+
+  const { data, error, isFetching, refetch } = useQuery({
+    ...statsQueries.games({ limit: LIMIT, offset }),
+    // The loader already tried this key. Retry is the user's call.
+    retryOnMount: false,
+  });
 
   const retry = useCallback((): void => {
-    navigate(0);
-  }, [navigate]);
+    void refetch();
+  }, [refetch]);
+
+  const hasError = error !== null;
 
   return {
-    games: rawLoaderData.games,
-    total: rawLoaderData.total,
-    loading: navigation.state === "loading",
-    error: rawLoaderData.error,
+    games: hasError ? [] : (data?.items ?? []),
+    total: hasError ? 0 : (data?.total ?? 0),
+    loading: navigation.state === "loading" || isFetching,
+    error: hasError ? GAMES_OVERVIEW_ERROR_MESSAGE : null,
     retry,
   };
 }

@@ -14,6 +14,8 @@ and this project does **not** yet follow [Semantic Versioning](https://semver.or
 ### Changed
 
 - Lobby: the invitation link and the Copy Invite Link button are hidden at 1020px wide and below, so tablets show only the QR code (#178)
+- Data: game detail, games overview, game settings and the lobby player list are TanStack Query reads, so a late response updates only its own key. Game detail reuses the finished game the summary page cached, games overview retries without a route reload, and the lobby player list no longer fetches what the start page loader already read (#169)
+- Docs: the glossary defines _lobby_ (#169)
 
 ## [0.1.3] - 2026-10-14
 

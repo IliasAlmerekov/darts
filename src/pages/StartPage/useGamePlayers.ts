@@ -1,21 +1,15 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
-import { useStore } from "@nanostores/react";
+import { useCallback, useMemo } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEventSource, type EventSourceListener } from "@/shared/hooks/useEventSource";
-import { getGameThrows } from "@/shared/api/game";
+import { sortLobbyPlayers, type LobbyPlayer } from "@/lib/game/lobbyPlayers";
 import { clientLogger } from "@/shared/services/browser/clientLogger";
-import { $gameData } from "@/shared/store";
+import { gameQueries } from "@/shared/query/game.queries";
 
 interface RawPlayer {
   id: number;
   username?: string;
   name?: string;
   position?: number | null;
-}
-
-interface Player {
-  id: number;
-  name: string;
-  position: number | null;
 }
 
 type OptimisticPlayer = {
@@ -57,95 +51,35 @@ function isPlayersEventPayload(value: unknown): value is PlayersEventPayload {
 }
 
 interface UseGamePlayersResult {
-  players: Player[];
+  players: LobbyPlayer[];
   count: number;
   appendOptimisticPlayer: (player: OptimisticPlayer) => void;
   removeOptimisticPlayer: (playerId: number) => void;
 }
 
+const NO_PLAYERS: LobbyPlayer[] = [];
+
 export function useGamePlayers(gameId: number | null): UseGamePlayersResult {
-  const gameData = useStore($gameData);
-
-  const mapStorePlayers = useCallback((sourcePlayers: RawPlayer[]) => {
-    return sourcePlayers
-      .map((player) => ({
-        id: player.id,
-        name: player.name ?? "",
-        position: player.position ?? null,
-      }))
-      .sort(
-        (a, b) => (a.position ?? Number.MAX_SAFE_INTEGER) - (b.position ?? Number.MAX_SAFE_INTEGER),
-      );
-  }, []);
-
-  const [players, setPlayers] = useState<Player[]>(() => {
-    if (gameId === null) {
-      return [];
-    }
-
-    if (!gameData || gameData.id !== gameId) {
-      return [];
-    }
-
-    return mapStorePlayers(gameData.players);
+  const queryClient = useQueryClient();
+  const { data: players = NO_PLAYERS } = useQuery({
+    ...gameQueries.lobbyPlayers(gameId ?? 0),
+    enabled: gameId !== null,
   });
 
-  const sortPlayers = useCallback((list: Player[]): Player[] => {
-    return [...list].sort(
-      (a, b) => (a.position ?? Number.MAX_SAFE_INTEGER) - (b.position ?? Number.MAX_SAFE_INTEGER),
-    );
-  }, []);
+  const updatePlayers = useCallback(
+    (update: (currentPlayers: LobbyPlayer[]) => LobbyPlayer[]): void => {
+      if (gameId === null) {
+        return;
+      }
+      const { queryKey } = gameQueries.lobbyPlayers(gameId);
+      // A read still in flight started before this write, so its response would be older.
+      void queryClient.cancelQueries({ queryKey });
+      queryClient.setQueryData(queryKey, (currentPlayers) => update(currentPlayers ?? NO_PLAYERS));
+    },
+    [gameId, queryClient],
+  );
 
   const url = useMemo(() => (gameId !== null ? `/api/room/${gameId}/stream` : null), [gameId]);
-
-  useEffect(() => {
-    if (gameId === null) {
-      setPlayers([]);
-      return;
-    }
-
-    if (!gameData || gameData.id !== gameId) {
-      return;
-    }
-
-    setPlayers(mapStorePlayers(gameData.players));
-  }, [gameId, gameData, mapStorePlayers]);
-
-  useEffect(() => {
-    let isMounted = true;
-    const controller = new AbortController();
-
-    if (gameId === null) {
-      setPlayers([]);
-      return;
-    }
-
-    getGameThrows(gameId, controller.signal)
-      .then((response) => {
-        if (!isMounted) return;
-        const sourcePlayers = response.players ?? [];
-        const mappedPlayers = sourcePlayers.map((player) => ({
-          id: player.id,
-          name: player.name ?? "",
-          position: player.position ?? null,
-        }));
-        setPlayers(sortPlayers(mappedPlayers));
-      })
-      .catch((error) => {
-        if (error instanceof Error && error.name === "AbortError") {
-          return;
-        }
-        clientLogger.error("room.players.fetch.failed", {
-          context: { gameId },
-          error,
-        });
-      });
-
-    return () => {
-      controller.abort();
-      isMounted = false;
-    };
-  }, [gameId, sortPlayers]);
 
   const handlePlayers = useCallback(
     (event: MessageEvent<string>) => {
@@ -161,17 +95,12 @@ export function useGamePlayers(gameId: number | null): UseGamePlayersResult {
         const list = payload.items ?? payload.players;
 
         if (Array.isArray(list)) {
-          if (list.length === 0) {
-            setPlayers([]);
-            return;
-          }
-
           const mappedPlayers = list.map((player, index) => ({
             id: player.id,
             name: player.username ?? player.name ?? "",
             position: player.position ?? index,
           }));
-          setPlayers(sortPlayers(mappedPlayers));
+          updatePlayers(() => sortLobbyPlayers(mappedPlayers));
         }
       } catch (error) {
         clientLogger.error("room.players.sse-parse.failed", {
@@ -180,7 +109,7 @@ export function useGamePlayers(gameId: number | null): UseGamePlayersResult {
         });
       }
     },
-    [sortPlayers],
+    [updatePlayers],
   );
 
   const listeners = useMemo<readonly EventSourceListener[]>(() => {
@@ -189,7 +118,7 @@ export function useGamePlayers(gameId: number | null): UseGamePlayersResult {
 
   const appendOptimisticPlayer = useCallback(
     (player: OptimisticPlayer): void => {
-      setPlayers((currentPlayers) => {
+      updatePlayers((currentPlayers) => {
         if (currentPlayers.some((existingPlayer) => existingPlayer.id === player.id)) {
           return currentPlayers;
         }
@@ -198,23 +127,26 @@ export function useGamePlayers(gameId: number | null): UseGamePlayersResult {
           currentPlayers.length > 0
             ? Math.max(...currentPlayers.map((existingPlayer) => existingPlayer.position ?? 0)) + 1
             : 0;
-        const nextPlayer: Player = {
+        const nextPlayer: LobbyPlayer = {
           id: player.id,
           name: player.name,
           position: player.position ?? fallbackPosition,
         };
 
-        return sortPlayers([...currentPlayers, nextPlayer]);
+        return sortLobbyPlayers([...currentPlayers, nextPlayer]);
       });
     },
-    [sortPlayers],
+    [updatePlayers],
   );
 
-  const removeOptimisticPlayer = useCallback((playerId: number): void => {
-    setPlayers((currentPlayers) =>
-      currentPlayers.filter((existingPlayer) => existingPlayer.id !== playerId),
-    );
-  }, []);
+  const removeOptimisticPlayer = useCallback(
+    (playerId: number): void => {
+      updatePlayers((currentPlayers) =>
+        currentPlayers.filter((existingPlayer) => existingPlayer.id !== playerId),
+      );
+    },
+    [updatePlayers],
+  );
 
   useEventSource(url, listeners, { withCredentials: true });
 
