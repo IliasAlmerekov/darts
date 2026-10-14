@@ -2,7 +2,7 @@
 // seed: tests/shared/seed.spec.ts
 
 import { test, expect } from "../shared/test";
-import { mockUnauthenticatedSession } from "../shared/auth-route-mocks";
+import { mockFailedLogin, mockUnauthenticatedSession } from "../shared/auth-route-mocks";
 
 test.describe("Accessibility and Usability", () => {
   test.beforeEach(async ({ page }) => {
@@ -42,5 +42,22 @@ test.describe("Accessibility and Usability", () => {
 
     await expect(page.getByRole("button", { name: "Sign in" })).toBeEnabled();
     await expect(page.getByRole("textbox", { name: "Password *" })).toBeVisible();
+  });
+
+  test("Login error is announced through role=alert", async ({ page }) => {
+    await mockFailedLogin(page);
+    await page.goto("/");
+
+    await page.getByRole("textbox", { name: "Email *" }).fill("wrong@example.com");
+    await page.getByRole("textbox", { name: "Password *" }).fill("wrongpassword");
+    await page.getByRole("button", { name: "Sign in" }).click();
+
+    await expect(page.getByRole("alert")).toHaveText("Incorrect email or password.");
+  });
+
+  test("Success message is announced through role=status", async ({ page }) => {
+    await page.goto("/?left=1");
+
+    await expect(page.getByRole("status")).toHaveText("You have successfully left the game");
   });
 });
