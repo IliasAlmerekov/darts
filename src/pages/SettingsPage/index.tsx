@@ -1,20 +1,21 @@
 import React, { useState, useMemo, useEffect, useCallback, useRef } from "react";
 import { useParams } from "react-router-dom";
 import { useStore } from "@nanostores/react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   $gameData,
   $gameSettings,
   $preCreateGameSettings,
-  getCachedGameSettings,
   setGameSettings,
   setPreCreateGameSettings,
   setCurrentGameId,
 } from "@/shared/store";
-import { getGameSettings, saveGameSettings } from "@/shared/api/game";
+import { saveGameSettings } from "@/shared/api/game";
+import { gameQueries } from "@/shared/query/game.queries";
 import { clientLogger } from "@/shared/services/browser/clientLogger";
 import { toUserErrorMessage } from "@/lib/error/error-to-user-message";
 import { ErrorState } from "@/shared/ui/error-state";
-import type { CreateGameSettingsPayload, GameMode, GameSettingsResponse } from "@/types";
+import type { CreateGameSettingsPayload, GameMode } from "@/types";
 import styles from "./Settings.module.css";
 import { SettingsTabs } from "./components/SettingsTabs";
 
@@ -53,12 +54,9 @@ function parseRouteGameId(gameIdParam: string | undefined): number | null {
   return Number.isFinite(parsed) ? parsed : null;
 }
 
-function isAbortError(error: unknown): boolean {
-  return error instanceof Error && error.name === "AbortError";
-}
-
 function SettingsPage(): React.JSX.Element {
   const { id: gameIdParam } = useParams<{ id?: string }>();
+  const queryClient = useQueryClient();
   const gameData = useStore($gameData);
   const gameSettings = useStore($gameSettings);
   const preCreateGameSettings = useStore($preCreateGameSettings);
@@ -68,18 +66,20 @@ function SettingsPage(): React.JSX.Element {
   const [savingScope, setSavingScope] = useState<"game-mode" | "points" | null>(null);
   const [selectedGameMode, setSelectedGameMode] = useState<GameMode>("single-out");
   const [selectedPoints, setSelectedPoints] = useState<number>(DEFAULT_START_SCORE);
-  const [loadedSettings, setLoadedSettings] = useState<GameSettingsResponse | null>(null);
   const [saveErrorMessage, setSaveErrorMessage] = useState<string | null>(null);
   const [hasHydratedSelection, setHasHydratedSelection] = useState(false);
   const selectedGameModeRef = useRef(selectedGameMode);
   const selectedPointsRef = useRef(selectedPoints);
   const effectiveGameIdRef = useRef<number | null>(null);
   const isSavingRef = useRef(false);
-  const cachedRouteGameSettings = routeGameId !== null ? getCachedGameSettings(routeGameId) : null;
-  const activeGameSettings =
-    routeGameId !== null && gameData?.id === routeGameId
-      ? gameSettings
-      : (loadedSettings ?? cachedRouteGameSettings);
+  const hasRouteGameInStore =
+    routeGameId !== null && gameData?.id === routeGameId && gameSettings !== null;
+  // Read the route game's settings unless the game store already holds them.
+  const { data: routeGameSettings } = useQuery({
+    ...gameQueries.settings(routeGameId ?? 0),
+    enabled: routeGameId !== null && !hasRouteGameInStore,
+  });
+  const activeGameSettings = hasRouteGameInStore ? gameSettings : (routeGameSettings ?? null);
   const preCreateGameMode = useMemo(
     () => resolveGameMode(preCreateGameSettings.doubleOut, preCreateGameSettings.tripleOut),
     [preCreateGameSettings.doubleOut, preCreateGameSettings.tripleOut],
@@ -93,7 +93,6 @@ function SettingsPage(): React.JSX.Element {
 
   useEffect(() => {
     setHasHydratedSelection(false);
-    setLoadedSettings(null);
     setSaveErrorMessage(null);
     if (routeGameId === null) {
       setSelectedGameMode(preCreateGameMode);
@@ -101,43 +100,6 @@ function SettingsPage(): React.JSX.Element {
       setHasHydratedSelection(true);
     }
   }, [preCreateGameMode, preCreateGameSettings.startScore, routeGameId]);
-
-  // Load settings only for the explicit route game id.
-  useEffect(() => {
-    if (!routeGameId) {
-      return;
-    }
-
-    const controller = new AbortController();
-    const { signal } = controller;
-
-    const loadGameSettings = async (): Promise<void> => {
-      try {
-        const settings = await getGameSettings(routeGameId, signal);
-        if (signal.aborted) {
-          return;
-        }
-        setLoadedSettings(settings);
-      } catch (error) {
-        if (isAbortError(error) || signal.aborted) {
-          return;
-        }
-        clientLogger.error("settings.load.failed", {
-          context: { routeGameId },
-          error,
-        });
-      }
-    };
-
-    const hasCurrentGameInStore = gameData?.id === routeGameId && gameSettings !== null;
-    if (!hasCurrentGameInStore) {
-      void loadGameSettings();
-    }
-
-    return () => {
-      controller.abort();
-    };
-  }, [routeGameId, gameData?.id, gameSettings]);
 
   // Only hydrate the UI from canonical settings for the route game.
   const currentGameMode = useMemo(
@@ -186,7 +148,7 @@ function SettingsPage(): React.JSX.Element {
       return;
     }
 
-    const shouldSyncFromCanonicalResponse = loadedSettings !== null;
+    const shouldSyncFromCanonicalResponse = routeGameSettings !== undefined;
     if (hasHydratedSelection && !shouldSyncFromCanonicalResponse) {
       return;
     }
@@ -202,8 +164,8 @@ function SettingsPage(): React.JSX.Element {
     currentGameMode,
     currentPoints,
     hasHydratedSelection,
-    loadedSettings,
     routeGameId,
+    routeGameSettings,
   ]);
 
   const updatePreCreateSettings = useCallback((settings: CreateGameSettingsPayload): void => {
@@ -244,7 +206,10 @@ function SettingsPage(): React.JSX.Element {
           },
           effectiveGameIdRef.current,
         );
-        setLoadedSettings(response);
+        queryClient.setQueryData(
+          gameQueries.settings(effectiveGameIdRef.current).queryKey,
+          response,
+        );
         setGameSettings(response, effectiveGameIdRef.current);
         setSaveErrorMessage(null);
       } catch (error) {
@@ -266,7 +231,7 @@ function SettingsPage(): React.JSX.Element {
         isSavingRef.current = false;
       }
     },
-    [updatePreCreateSettings],
+    [queryClient, updatePreCreateSettings],
   );
 
   const handlePointsClick = useCallback(
@@ -304,7 +269,10 @@ function SettingsPage(): React.JSX.Element {
           },
           effectiveGameIdRef.current,
         );
-        setLoadedSettings(response);
+        queryClient.setQueryData(
+          gameQueries.settings(effectiveGameIdRef.current).queryKey,
+          response,
+        );
         setGameSettings(response, effectiveGameIdRef.current);
         setSaveErrorMessage(null);
       } catch (error) {
@@ -326,7 +294,7 @@ function SettingsPage(): React.JSX.Element {
         isSavingRef.current = false;
       }
     },
-    [updatePreCreateSettings],
+    [queryClient, updatePreCreateSettings],
   );
 
   return (

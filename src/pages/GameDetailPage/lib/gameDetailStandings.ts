@@ -4,18 +4,12 @@ import {
 } from "@/lib/game/finishedGameStandings";
 import type { FinishedPlayerResponse } from "@/types";
 
-function isFinishedPlayerList(value: unknown): value is FinishedPlayerResponse[] {
-  return Array.isArray(value);
-}
-
 /**
- * Builds the standings from the game detail loader data.
- * Throws when the loader returned something other than a player list.
+ * Builds the standings from the finished game query data.
+ * The query has no data until the first response arrives, which gives empty standings.
  */
-export function buildGameDetailStandings(loaderData: unknown): FinishedGameStandings {
-  if (!isFinishedPlayerList(loaderData)) {
-    throw new Error("Unexpected loader data format for GameDetailPage");
-  }
-
-  return buildFinishedGameStandings(loaderData);
+export function buildGameDetailStandings(
+  players: FinishedPlayerResponse[] | undefined,
+): FinishedGameStandings {
+  return buildFinishedGameStandings(players ?? []);
 }

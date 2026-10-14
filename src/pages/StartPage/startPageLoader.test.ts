@@ -1,5 +1,7 @@
 // @vitest-environment jsdom
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { gameQueries } from "@/shared/query/game.queries";
+import { queryClient } from "@/shared/query/queryClient";
 import { startPageLoader } from "./useRoomRestore";
 
 // ── store mocks ───────────────────────────────────────────────────────────────
@@ -63,6 +65,7 @@ function redirectLocation(result: unknown): string | null {
 
 beforeEach(() => {
   vi.resetAllMocks();
+  queryClient.clear();
   $currentGameIdGet.mockReturnValue(null);
   $invitationGet.mockReturnValue(null);
 });
@@ -148,6 +151,23 @@ describe("startPageLoader — fetch and store update", () => {
 
     expect(setInvitationMock).toHaveBeenCalledWith({ gameId: 42, invitationLink: "/invite/42" });
     expect(setCurrentGameIdMock).toHaveBeenCalledWith(42);
+  });
+
+  it("writes the fetched players into the lobby players query in position order", async () => {
+    getGameThrowsMock.mockResolvedValue({
+      ...lobbyGame(42),
+      players: [
+        { id: 2, name: "Bob", position: 1 },
+        { id: 1, name: "Alice", position: 0 },
+      ],
+    });
+
+    await startPageLoader(makeArgs("42"));
+
+    expect(queryClient.getQueryData(gameQueries.lobbyPlayers(42).queryKey)).toEqual([
+      { id: 1, name: "Alice", position: 0 },
+      { id: 2, name: "Bob", position: 1 },
+    ]);
   });
 
   it("returns null on full success", async () => {

@@ -8,8 +8,10 @@ vi.mock("@/shared/api/statistics", () => ({
 }));
 
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { QueryClientProvider } from "@tanstack/react-query";
 import { createMemoryRouter, RouterProvider } from "react-router-dom";
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { queryClient } from "@/shared/query/queryClient";
 import { buildFinishedGame } from "@/shared/types/game.test-support";
 import styles from "./GamesOverview.module.css";
 import GamesOverviewPage from "./GamesOverview";
@@ -43,12 +45,17 @@ function renderPage(path = "/games"): ReturnType<typeof render> {
     ],
     { initialEntries: [path] },
   );
-  return render(<RouterProvider router={router} />);
+  return render(
+    <QueryClientProvider client={queryClient}>
+      <RouterProvider router={router} />
+    </QueryClientProvider>,
+  );
 }
 
 describe("GamesOverviewPage", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    queryClient.clear();
   });
 
   it("should render loading indicator during pagination navigation", async () => {
@@ -86,12 +93,14 @@ describe("GamesOverviewPage", () => {
     expect(await screen.findByRole("button", { name: /retry/i })).toBeTruthy();
   });
 
-  it("should call retry when retry button is clicked", async () => {
-    getGamesOverviewMock.mockRejectedValue(new Error("Network error"));
+  it("should refetch without a route reload when retry is clicked", async () => {
+    getGamesOverviewMock.mockRejectedValueOnce(new Error("Network error"));
     renderPage();
 
+    getGamesOverviewMock.mockResolvedValueOnce({ items: GAMES, total: 2 });
     fireEvent.click(await screen.findByRole("button", { name: /retry/i }));
 
+    expect(await screen.findByText("Alice")).toBeTruthy();
     expect(getGamesOverviewMock).toHaveBeenCalledTimes(2);
   });
 

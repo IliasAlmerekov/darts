@@ -7,7 +7,7 @@ import {
 import { buildGameDetailStandings } from "./gameDetailStandings";
 
 describe("buildGameDetailStandings", () => {
-  it("should build standings when loader data is a player list", () => {
+  it("should build standings when the finished game has players", () => {
     const [alice, bob, cara, dan] = buildExpectedStandings();
 
     const result = buildGameDetailStandings(buildFinishedPlayerResponses());
@@ -17,9 +17,11 @@ describe("buildGameDetailStandings", () => {
     expect(result.leaderBoardList).toStrictEqual([dan]);
   });
 
-  it("should throw when loader data is not a player list", () => {
-    expect(() => buildGameDetailStandings(null)).toThrow(
-      "Unexpected loader data format for GameDetailPage",
-    );
+  it("should build empty standings while the finished game has no data", () => {
+    expect(buildGameDetailStandings(undefined)).toStrictEqual({
+      standings: [],
+      podiumData: expect.any(Array),
+      leaderBoardList: [],
+    });
   });
 });

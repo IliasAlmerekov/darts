@@ -17,6 +17,8 @@ vi.mock("@/shared/api/room", () => ({
 import { fireEvent, render, screen, waitFor, act } from "@testing-library/react";
 import { MemoryRouter, Routes, Route } from "react-router-dom";
 import { describe, expect, it, vi, beforeEach, afterEach } from "vitest";
+import { QueryClientProvider } from "@tanstack/react-query";
+import { createQueryClient } from "@/shared/query/queryClient";
 import { queryClient } from "@/shared/query/queryClient";
 import { getGameThrows, getGameSettings } from "@/shared/api/game";
 import {
@@ -95,12 +97,14 @@ class MockAudio {
 
 function renderStartPage(path: string): void {
   render(
-    <MemoryRouter initialEntries={[path]}>
-      <Routes>
-        <Route path="/start/:id" element={<StartPage />} />
-        <Route path="/start" element={<StartPage />} />
-      </Routes>
-    </MemoryRouter>,
+    <QueryClientProvider client={createQueryClient()}>
+      <MemoryRouter initialEntries={[path]}>
+        <Routes>
+          <Route path="/start/:id" element={<StartPage />} />
+          <Route path="/start" element={<StartPage />} />
+        </Routes>
+      </MemoryRouter>
+    </QueryClientProvider>,
   );
 }
 

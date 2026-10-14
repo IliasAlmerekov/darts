@@ -27,6 +27,8 @@ vi.mock("@/shared/api/room", () => ({
 import { act, renderHook, waitFor } from "@testing-library/react";
 import { MemoryRouter, Routes, Route } from "react-router-dom";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { QueryClientProvider } from "@tanstack/react-query";
+import { createQueryClient } from "@/shared/query/queryClient";
 import React from "react";
 import { ApiError } from "@/shared/api";
 import { getGameThrows, getGameSettings, startGame } from "@/shared/api/game";
@@ -129,21 +131,26 @@ function deferred<T>(): Deferred<T> {
 function makeWrapper(
   path: string,
 ): ({ children }: { children: React.ReactNode }) => React.ReactElement {
+  const queryClient = createQueryClient();
   return function Wrapper({ children }: { children: React.ReactNode }): React.ReactElement {
     return React.createElement(
-      MemoryRouter,
-      { initialEntries: [path] },
+      QueryClientProvider,
+      { client: queryClient },
       React.createElement(
-        Routes,
-        null,
-        React.createElement(Route, {
-          path: "/start/:id",
-          element: React.createElement(React.Fragment, null, children),
-        }),
-        React.createElement(Route, {
-          path: "/start",
-          element: React.createElement(React.Fragment, null, children),
-        }),
+        MemoryRouter,
+        { initialEntries: [path] },
+        React.createElement(
+          Routes,
+          null,
+          React.createElement(Route, {
+            path: "/start/:id",
+            element: React.createElement(React.Fragment, null, children),
+          }),
+          React.createElement(Route, {
+            path: "/start",
+            element: React.createElement(React.Fragment, null, children),
+          }),
+        ),
       ),
     );
   };
