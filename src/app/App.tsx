@@ -19,6 +19,7 @@ import { scheduleSelectiveRouteWarmUp } from "@/app/routeWarmup";
 import { useStatisticsPrefetch } from "@/app/useStatisticsPrefetch";
 import { gameDetailLoader } from "@/pages/GameDetailPage/useGameDetailPage";
 import { startPageLoader } from "@/pages/StartPage/useRoomRestore";
+import { gameSummaryLoader } from "@/pages/GameSummaryPage/useGameSummaryPage";
 import { gamesOverviewLoader } from "@/pages/GamesOverviewPage/useGamesOverview";
 import { clearUnauthorizedHandler, setUnauthorizedHandler } from "@/shared/api";
 import { ROUTES } from "@/lib/router/routes";
@@ -104,6 +105,7 @@ function createAppRouter(): ReturnType<typeof createBrowserRouter> {
           <Route
             path={ROUTES.summaryPattern}
             element={withSuspense(<GameSummaryPage />)}
+            loader={gameSummaryLoader}
             errorElement={<ErrorBoundary />}
           />
           <Route element={<AdminLayoutRoute />} errorElement={<ErrorBoundary />}>

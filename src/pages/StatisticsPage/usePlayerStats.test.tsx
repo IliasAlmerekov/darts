@@ -4,6 +4,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { QueryClientProvider } from "@tanstack/react-query";
 import type { ReactNode } from "react";
 import { queryClient } from "@/shared/query/queryClient";
+import { INITIAL_PLAYER_STATS_PARAMS, statsQueries } from "@/shared/query/statistics.queries";
 import type { PlayerProps } from "@/types";
 import { usePlayerStats } from "./usePlayerStats";
 
@@ -39,6 +40,18 @@ describe("usePlayerStats", () => {
     expect(result.current.loading).toBe(true);
     expect(result.current.stats).toEqual([]);
     expect(result.current.error).toBeNull();
+  });
+
+  it("reuses a prefetched first page instead of requesting it again", async () => {
+    getPlayerStatsMock.mockResolvedValue({ items: PLAYERS, total: 2 });
+    await queryClient.prefetchQuery(statsQueries.players(INITIAL_PLAYER_STATS_PARAMS));
+    expect(getPlayerStatsMock).toHaveBeenCalledTimes(1);
+
+    const { result } = renderHook(() => usePlayerStats(INITIAL_PLAYER_STATS_PARAMS), { wrapper });
+
+    expect(result.current.stats).toEqual(PLAYERS);
+    expect(result.current.loading).toBe(false);
+    expect(getPlayerStatsMock).toHaveBeenCalledTimes(1);
   });
 
   it("should expose fetched stats and total when API succeeds", async () => {
@@ -236,14 +249,11 @@ describe("usePlayerStats", () => {
     ]);
   });
 
-  it("re-fetches when returning to a previously loaded query", async () => {
-    getPlayerStatsMock
-      .mockResolvedValueOnce({ items: PLAYERS, total: 20 })
-      .mockResolvedValueOnce({
-        items: [{ id: 3, playerId: 3, name: "Carol", scoreAverage: 62.1, gamesPlayed: 8 }],
-        total: 20,
-      })
-      .mockResolvedValueOnce({ items: PLAYERS, total: 20 });
+  it("serves a recently loaded page from cache when returning to it", async () => {
+    getPlayerStatsMock.mockResolvedValueOnce({ items: PLAYERS, total: 20 }).mockResolvedValueOnce({
+      items: [{ id: 3, playerId: 3, name: "Carol", scoreAverage: 62.1, gamesPlayed: 8 }],
+      total: 20,
+    });
 
     const { result, rerender } = renderHook(
       ({ offset }: { offset: number }) =>
@@ -260,9 +270,9 @@ describe("usePlayerStats", () => {
 
     rerender({ offset: 0 });
 
-    await waitFor(() => expect(result.current.loading).toBe(false));
-    expect(result.current.stats).toEqual(PLAYERS);
-    expect(getPlayerStatsMock).toHaveBeenCalledTimes(3);
+    await waitFor(() => expect(result.current.stats).toEqual(PLAYERS));
+    expect(result.current.loading).toBe(false);
+    expect(getPlayerStatsMock).toHaveBeenCalledTimes(2);
   });
 
   it("ignores a late response for a previous page", async () => {

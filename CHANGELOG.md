@@ -22,6 +22,7 @@ and this project does **not** yet follow [Semantic Versioning](https://semver.or
 ### Changed
 
 - Data: the auth check and player statistics are TanStack Query reads, so a late response updates only its own key. Statistics load only after login, and logout and the 401 handler clear the query cache (#157)
+- Data: the game summary reads the finished game from the `['finishedGame', id]` query through a route loader, so game A's standings can no longer show on game B. Undo and rematch remove the entry (#168, #107)
 - Tests: `npm run test:e2e` is a mocked suite that fails any spec with an unmocked `/api` request (#116)
 - Game pages: the summary and detail pages build podium and leaderboard with one shared mapper, `buildFinishedGameStandings` (#113)
 - Docs: ADR 0001 records that server reads go through TanStack Query, and the glossary defines _current game_ (#157)
@@ -35,11 +36,13 @@ and this project does **not** yet follow [Semantic Versioning](https://semver.or
 ### Removed
 
 - Auth: the Nanostores auth store (`$user`, `$authChecked`, `$authError`) is gone; the query cache owns the authenticated user (#157)
+- Game summary: `$lastFinishedGameSummary`, `$lastFinishedGameId` and the `summary` field in navigation state are gone (#168)
 - Login: the Remember me checkbox, which never changed the login request (#150, #111)
 - Code: unused styles, unused exports, the `react-error-boundary` dependency and the `clientLogger` re-export (#117)
 
 ### Fixed
 
+- Statistics: the player statistics prefetch runs only for admins, and the Statistics page reuses the prefetched first page for 30 seconds (#110)
 - Accessibility: login and registration error and success banners are announced to screen readers (#112)
 - Invitations: when copying the link fails, a selectable link is shown (#119)
 - Tooling: the stylelint glob no longer breaks on shell expansion (#114)

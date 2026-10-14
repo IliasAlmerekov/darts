@@ -1,7 +1,12 @@
 // @vitest-environment jsdom
 import { act, renderHook, waitFor } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { useGameSummaryPage } from "./useGameSummaryPage";
+import type { ReactNode } from "react";
+import { createElement } from "react";
+import { QueryClientProvider, type QueryClient } from "@tanstack/react-query";
+import { createQueryClient, queryClient as appQueryClient } from "@/shared/query/queryClient";
+import { gameQueries } from "@/shared/query/game.queries";
+import { gameSummaryLoader, useGameSummaryPage } from "./useGameSummaryPage";
 import { playSound } from "@/shared/services/browser/soundPlayer";
 import type { GameThrowsResponse, ScoreboardDelta, UndoAckResponse } from "@/types";
 import {
@@ -20,27 +25,15 @@ const setCurrentGameIdMock = vi.fn();
 const setGameDataMock = vi.fn();
 const setGameScoreboardDeltaMock = vi.fn();
 const setInvitationMock = vi.fn();
-const setLastFinishedGameSummaryMock = vi.fn();
 const resetRoomStoreMock = vi.fn();
 
 // Mutable state for router/store — allows per-test overrides without vi.doMock
-let locationState: { finishedGameId?: number; summary?: unknown } | null = { finishedGameId: 42 };
 let routeParams: { id?: string | undefined } = { id: "42" };
-let lastFinishedGameSummaryStore: {
-  gameId: number;
-  summary: Array<{
-    playerId: number;
-    username: string;
-    position: number;
-    roundsPlayed: number;
-    roundAverage: number;
-  }>;
-} | null = null;
+let testQueryClient: QueryClient;
 let currentGameState: GameThrowsResponse | null = null;
 
 vi.mock("react-router-dom", () => ({
   useNavigate: () => navigateMock,
-  useLocation: () => ({ state: locationState }),
   useParams: () => routeParams,
 }));
 
@@ -63,14 +56,10 @@ vi.mock("@/shared/store", async (importOriginal) => {
     $gameData: {
       get: () => currentGameState,
     },
-    $lastFinishedGameSummary: {
-      get: () => lastFinishedGameSummaryStore,
-    },
     setCurrentGameId: (...args: unknown[]) => setCurrentGameIdMock(...args),
     setGameData: (...args: unknown[]) => setGameDataMock(...args),
     setGameScoreboardDelta: (...args: unknown[]) => setGameScoreboardDeltaMock(...args),
     setInvitation: (...args: unknown[]) => setInvitationMock(...args),
-    setLastFinishedGameSummary: (...args: unknown[]) => setLastFinishedGameSummaryMock(...args),
     resetRoomStore: (...args: unknown[]) => resetRoomStoreMock(...args),
   };
 });
@@ -212,6 +201,26 @@ function applyScoreboardDelta(currentState: GameThrowsResponse, scoreboardDelta:
   };
 }
 
+function wrapper({ children }: { children: ReactNode }): ReactNode {
+  return createElement(QueryClientProvider, { client: testQueryClient }, children);
+}
+
+function renderSummaryHook() {
+  return renderHook(() => useGameSummaryPage(), { wrapper });
+}
+
+function finishedPlayer(playerId: number, username: string) {
+  return { playerId, username, position: 1, roundsPlayed: 5, roundAverage: 60.2 };
+}
+
+function deferred<T>() {
+  let resolve!: (value: T) => void;
+  const promise = new Promise<T>((res) => {
+    resolve = res;
+  });
+  return { promise, resolve };
+}
+
 describe("useGameSummaryPage", () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -219,13 +228,11 @@ describe("useGameSummaryPage", () => {
     setGameScoreboardDeltaMock.mockReset();
     setCurrentGameIdMock.mockReset();
     setInvitationMock.mockReset();
-    setLastFinishedGameSummaryMock.mockReset();
     resetRoomStoreMock.mockReset();
 
     // Reset mutable router/store state to defaults before each test
-    locationState = { finishedGameId: 42 };
     routeParams = { id: "42" };
-    lastFinishedGameSummaryStore = null;
+    testQueryClient = createQueryClient();
     currentGameState = buildFinishedGameState();
 
     getFinishedGameMock.mockResolvedValue([]);
@@ -279,7 +286,7 @@ describe("useGameSummaryPage", () => {
       }),
     );
 
-    const { result } = renderHook(() => useGameSummaryPage());
+    const { result } = renderSummaryHook();
 
     await act(async () => {
       await result.current.handleUndo();
@@ -310,7 +317,7 @@ describe("useGameSummaryPage", () => {
     const legacyGameState = buildStartedGameState();
     undoLastThrowMock.mockResolvedValueOnce(legacyGameState);
 
-    const { result } = renderHook(() => useGameSummaryPage());
+    const { result } = renderSummaryHook();
 
     await act(async () => {
       await result.current.handleUndo();
@@ -348,7 +355,7 @@ describe("useGameSummaryPage", () => {
     );
     getGameThrowsMock.mockResolvedValueOnce(refreshedGameState);
 
-    const { result } = renderHook(() => useGameSummaryPage());
+    const { result } = renderSummaryHook();
 
     await act(async () => {
       await result.current.handleUndo();
@@ -362,7 +369,7 @@ describe("useGameSummaryPage", () => {
   it("should not navigate when undo request fails", async () => {
     undoLastThrowMock.mockRejectedValueOnce(new Error("undo failed"));
 
-    const { result } = renderHook(() => useGameSummaryPage());
+    const { result } = renderSummaryHook();
 
     await act(async () => {
       await result.current.handleUndo();
@@ -374,7 +381,7 @@ describe("useGameSummaryPage", () => {
   });
 
   it("should navigate to game route when startRematch resolves successfully", async () => {
-    const { result } = renderHook(() => useGameSummaryPage());
+    const { result } = renderSummaryHook();
 
     await act(async () => {
       await result.current.handlePlayAgain();
@@ -386,7 +393,7 @@ describe("useGameSummaryPage", () => {
   });
 
   it("should not overwrite shared game state when starting a rematch", async () => {
-    const { result } = renderHook(() => useGameSummaryPage());
+    const { result } = renderSummaryHook();
 
     await act(async () => {
       await result.current.handlePlayAgain();
@@ -402,7 +409,7 @@ describe("useGameSummaryPage", () => {
   it("should not navigate when startRematch fails", async () => {
     startRematchMock.mockRejectedValueOnce(new Error("server error"));
 
-    const { result } = renderHook(() => useGameSummaryPage());
+    const { result } = renderSummaryHook();
 
     await act(async () => {
       await result.current.handlePlayAgain();
@@ -429,7 +436,7 @@ describe("useGameSummaryPage", () => {
         }),
     );
 
-    const { result } = renderHook(() => useGameSummaryPage());
+    const { result } = renderSummaryHook();
 
     let firstCall: Promise<void> | null = null;
     await act(async () => {
@@ -475,7 +482,7 @@ describe("useGameSummaryPage", () => {
         }),
     );
 
-    const { result } = renderHook(() => useGameSummaryPage());
+    const { result } = renderSummaryHook();
 
     let callPromise: Promise<void> | null = null;
     await act(async () => {
@@ -519,7 +526,7 @@ describe("useGameSummaryPage", () => {
         }),
     );
 
-    const { result } = renderHook(() => useGameSummaryPage());
+    const { result } = renderSummaryHook();
 
     let callPromise: Promise<void> | null = null;
     await act(async () => {
@@ -558,7 +565,7 @@ describe("useGameSummaryPage", () => {
       },
     });
 
-    const { result } = renderHook(() => useGameSummaryPage());
+    const { result } = renderSummaryHook();
 
     await act(async () => {
       await result.current.handlePlayAgain();
@@ -568,7 +575,7 @@ describe("useGameSummaryPage", () => {
   });
 
   it("should not overwrite shared game state when returning to start from summary", async () => {
-    const { result } = renderHook(() => useGameSummaryPage());
+    const { result } = renderSummaryHook();
 
     await act(async () => {
       await result.current.handleBackToStart();
@@ -582,13 +589,13 @@ describe("useGameSummaryPage", () => {
   });
 
   it("should keep action handlers referentially stable when dependencies do not change", async () => {
-    const { result } = renderHook(() => useGameSummaryPage());
+    const { result } = renderSummaryHook();
     const initialHandleUndo = result.current.handleUndo;
     const initialHandlePlayAgain = result.current.handlePlayAgain;
     const initialHandleBackToStart = result.current.handleBackToStart;
 
     await waitFor(() => {
-      expect(getFinishedGameMock).toHaveBeenCalledWith(42);
+      expect(getFinishedGameMock).toHaveBeenCalledWith(42, expect.any(AbortSignal));
     });
 
     expect(result.current.handleUndo).toBe(initialHandleUndo);
@@ -596,120 +603,175 @@ describe("useGameSummaryPage", () => {
     expect(result.current.handleBackToStart).toBe(initialHandleBackToStart);
   });
 
-  it("should use summary from navigation state when it matches finished game id", async () => {
-    locationState = {
-      finishedGameId: 42,
-      summary: [
-        {
-          playerId: 1,
-          username: "Alice",
-          position: 1,
-          roundsPlayed: 5,
-          roundAverage: 60.2,
-        },
-      ],
-    };
+  it("should fetch the summary through the finishedGame query", async () => {
+    getFinishedGameMock.mockResolvedValueOnce([finishedPlayer(3, "Carol")]);
 
-    const { result } = renderHook(() => useGameSummaryPage());
+    const { result } = renderSummaryHook();
 
-    expect(getFinishedGameMock).not.toHaveBeenCalled();
-    expect(result.current.standings).toEqual([
-      expect.objectContaining({
-        id: 1,
-        name: "Alice",
-        scoreAverage: 60.2,
-        roundCount: 5,
-      }),
-    ]);
-    expect(result.current.standings[0]?.rounds[0]).toEqual({});
-    expect(setLastFinishedGameSummaryMock).toHaveBeenCalledWith({
-      gameId: 42,
-      summary: [
-        {
-          playerId: 1,
-          username: "Alice",
-          position: 1,
-          roundsPlayed: 5,
-          roundAverage: 60.2,
-        },
-      ],
-    });
-  });
-
-  it("should use summary from store when navigation summary is absent", () => {
-    locationState = { finishedGameId: 42 };
-    lastFinishedGameSummaryStore = {
-      gameId: 42,
-      summary: [
-        {
-          playerId: 2,
-          username: "Bob",
-          position: 1,
-          roundsPlayed: 4,
-          roundAverage: 45.5,
-        },
-      ],
-    };
-
-    const { result } = renderHook(() => useGameSummaryPage());
-
-    expect(getFinishedGameMock).not.toHaveBeenCalled();
-    expect(result.current.standings).toEqual([
-      expect.objectContaining({
-        id: 2,
-        name: "Bob",
-        scoreAverage: 45.5,
-        roundCount: 4,
-      }),
-    ]);
-    expect(setLastFinishedGameSummaryMock).not.toHaveBeenCalled();
-  });
-
-  it("should fetch summary from backend when navigation state and cache are absent", async () => {
-    locationState = null;
-    routeParams = { id: "42" };
-    getFinishedGameMock.mockResolvedValueOnce([
-      {
-        playerId: 3,
-        username: "Carol",
-        position: 1,
-        roundsPlayed: 6,
-        roundAverage: 75.4,
-      },
-    ]);
-
-    const { result } = renderHook(() => useGameSummaryPage());
-
-    await waitFor(() => {
-      expect(getFinishedGameMock).toHaveBeenCalledWith(42);
-    });
     await waitFor(() => {
       expect(result.current.standings).toEqual([
-        expect.objectContaining({
-          id: 3,
-          name: "Carol",
-          scoreAverage: 75.4,
-          roundCount: 6,
-        }),
+        expect.objectContaining({ id: 3, name: "Carol", scoreAverage: 60.2, roundCount: 5 }),
       ]);
     });
-    expect(setLastFinishedGameSummaryMock).toHaveBeenCalledWith({
-      gameId: 42,
-      summary: [
-        {
-          playerId: 3,
-          username: "Carol",
-          position: 1,
-          roundsPlayed: 6,
-          roundAverage: 75.4,
-        },
-      ],
+    expect(getFinishedGameMock).toHaveBeenCalledWith(42, expect.any(AbortSignal));
+    expect(testQueryClient.getQueryData(["finishedGame", 42])).toEqual([
+      finishedPlayer(3, "Carol"),
+    ]);
+  });
+
+  it("should read the summary seeded by the game page without waiting for the network", () => {
+    testQueryClient.setQueryData(["finishedGame", 42], [finishedPlayer(2, "Bob")]);
+
+    const { result } = renderSummaryHook();
+
+    expect(result.current.standings).toEqual([expect.objectContaining({ id: 2, name: "Bob" })]);
+    expect(getFinishedGameMock).not.toHaveBeenCalled();
+  });
+
+  it("should show game B when game A's response arrives after B's", async () => {
+    const gameA = deferred<ReturnType<typeof finishedPlayer>[]>();
+    const gameB = deferred<ReturnType<typeof finishedPlayer>[]>();
+    getFinishedGameMock.mockImplementation((id: number) =>
+      id === 1 ? gameA.promise : gameB.promise,
+    );
+    routeParams = { id: "1" };
+    const { result, rerender } = renderSummaryHook();
+
+    routeParams = { id: "2" };
+    rerender();
+    await act(async () => {
+      gameB.resolve([finishedPlayer(20, "Beta")]);
+      await gameB.promise;
+    });
+    await act(async () => {
+      gameA.resolve([finishedPlayer(10, "Alpha")]);
+      await gameA.promise;
+    });
+
+    await waitFor(() => {
+      expect(result.current.standings.map((player) => player.name)).toEqual(["Beta"]);
+    });
+  });
+
+  it("should not show game A's standings while game B loads", async () => {
+    getFinishedGameMock.mockImplementation((id: number) =>
+      id === 1 ? Promise.resolve([finishedPlayer(10, "Alpha")]) : new Promise(() => {}),
+    );
+    routeParams = { id: "1" };
+    const { result, rerender } = renderSummaryHook();
+    await waitFor(() => {
+      expect(result.current.standings.map((player) => player.name)).toEqual(["Alpha"]);
+    });
+
+    routeParams = { id: "2" };
+    rerender();
+
+    expect(result.current.standings).toEqual([]);
+  });
+
+  it("should drop an action error from game A when the route moves to game B", async () => {
+    undoLastThrowMock.mockRejectedValueOnce(new Error("boom"));
+    routeParams = { id: "1" };
+    const { result, rerender } = renderSummaryHook();
+    await act(async () => {
+      await result.current.handleUndo();
+    });
+    expect(result.current.error).not.toBeNull();
+
+    routeParams = { id: "2" };
+    rerender();
+
+    expect(result.current.error).toBeNull();
+  });
+
+  it("should remove the finishedGame entry when undo succeeds", async () => {
+    testQueryClient.setQueryData(["finishedGame", 42], [finishedPlayer(1, "Alice")]);
+    const { result } = renderSummaryHook();
+
+    await act(async () => {
+      await result.current.handleUndo();
+    });
+
+    expect(testQueryClient.getQueryData(["finishedGame", 42])).toBeUndefined();
+  });
+
+  it("should keep the finishedGame entry when undo fails", async () => {
+    testQueryClient.setQueryData(["finishedGame", 42], [finishedPlayer(1, "Alice")]);
+    undoLastThrowMock.mockRejectedValueOnce(new Error("boom"));
+    const { result } = renderSummaryHook();
+
+    await act(async () => {
+      await result.current.handleUndo();
+    });
+
+    expect(testQueryClient.getQueryData(["finishedGame", 42])).toBeDefined();
+  });
+
+  it("should remove the finishedGame entry when a rematch starts", async () => {
+    testQueryClient.setQueryData(["finishedGame", 42], [finishedPlayer(1, "Alice")]);
+    const { result } = renderSummaryHook();
+
+    await act(async () => {
+      await result.current.handlePlayAgain();
+    });
+
+    expect(testQueryClient.getQueryData(["finishedGame", 42])).toBeUndefined();
+  });
+
+  it("should remove the finishedGame entry when returning to start", async () => {
+    testQueryClient.setQueryData(["finishedGame", 42], [finishedPlayer(1, "Alice")]);
+    const { result } = renderSummaryHook();
+
+    await act(async () => {
+      await result.current.handleBackToStart();
+    });
+
+    expect(testQueryClient.getQueryData(["finishedGame", 42])).toBeUndefined();
+  });
+
+  describe("gameSummaryLoader", () => {
+    beforeEach(() => {
+      appQueryClient.clear();
+    });
+
+    it("should fill the finishedGame cache before the page renders", async () => {
+      getFinishedGameMock.mockResolvedValueOnce([finishedPlayer(3, "Carol")]);
+
+      await gameSummaryLoader({ params: { id: "42" }, request: new Request("http://x/") });
+
+      expect(appQueryClient.getQueryData(gameQueries.finished(42).queryKey)).toEqual([
+        finishedPlayer(3, "Carol"),
+      ]);
+    });
+
+    it("should not fetch again when the game page already seeded the cache", async () => {
+      appQueryClient.setQueryData(gameQueries.finished(42).queryKey, [finishedPlayer(3, "Carol")]);
+
+      await gameSummaryLoader({ params: { id: "42" }, request: new Request("http://x/") });
+
+      expect(getFinishedGameMock).not.toHaveBeenCalled();
+    });
+
+    it("should not throw when the fetch fails, so the page can show its Retry action", async () => {
+      getFinishedGameMock.mockRejectedValueOnce(new Error("network down"));
+
+      await expect(
+        gameSummaryLoader({ params: { id: "42" }, request: new Request("http://x/") }),
+      ).resolves.toBeNull();
+    });
+
+    it.each(["abc", "0", "-1"])("should fetch nothing for the invalid game id %s", async (id) => {
+      await expect(
+        gameSummaryLoader({ params: { id }, request: new Request("http://x/") }),
+      ).resolves.toBeNull();
+
+      expect(getFinishedGameMock).not.toHaveBeenCalled();
     });
   });
 
   describe("handlePlayAgain", () => {
     it("should call rematch adapter when finished game id is available", async () => {
-      const { result } = renderHook(() => useGameSummaryPage());
+      const { result } = renderSummaryHook();
 
       await act(async () => {
         await result.current.handlePlayAgain();
@@ -730,7 +792,7 @@ describe("useGameSummaryPage", () => {
         },
       });
 
-      const { result } = renderHook(() => useGameSummaryPage());
+      const { result } = renderSummaryHook();
 
       await act(async () => {
         await result.current.handlePlayAgain();
@@ -741,10 +803,9 @@ describe("useGameSummaryPage", () => {
     });
 
     it("should not call rematch adapter when finishedGameId is absent", async () => {
-      locationState = null;
       routeParams = { id: undefined };
 
-      const { result } = renderHook(() => useGameSummaryPage());
+      const { result } = renderSummaryHook();
 
       await act(async () => {
         await result.current.handlePlayAgain();
@@ -779,15 +840,16 @@ describe("useGameSummaryPage", () => {
       },
     ])(
       "should build podium and leaderboard when the game had $playerCount players",
-      ({ playerCount, standings, podium, leaderboard }) => {
-        locationState = {
-          finishedGameId: 42,
-          summary: buildFinishedPlayerResponses().slice(0, playerCount),
-        };
+      async ({ playerCount, standings, podium, leaderboard }) => {
+        getFinishedGameMock.mockResolvedValueOnce(
+          buildFinishedPlayerResponses().slice(0, playerCount),
+        );
 
-        const { result } = renderHook(() => useGameSummaryPage());
+        const { result } = renderSummaryHook();
 
-        expect(result.current.standings).toStrictEqual(standings);
+        await waitFor(() => {
+          expect(result.current.standings).toStrictEqual(standings);
+        });
         expect(result.current.podiumData).toStrictEqual(podium);
         expect(result.current.leaderBoardList).toStrictEqual(leaderboard);
       },

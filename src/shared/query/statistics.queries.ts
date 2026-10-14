@@ -14,10 +14,14 @@ export const INITIAL_PLAYER_STATS_PARAMS: Readonly<PlayerStatsParams> = {
   sortParam: undefined,
 };
 
+// Long enough for a prefetch at sign-in to serve the Statistics page opened soon after.
+const PLAYER_STATS_STALE_TIME_MS = 30_000;
+
 export const statsQueries = {
   players: ({ limit, offset, sortParam }: PlayerStatsParams) =>
     queryOptions({
       queryKey: ["stats", "players", { limit, offset, sortParam }] as const,
+      staleTime: PLAYER_STATS_STALE_TIME_MS,
       queryFn: async ({ signal }) => {
         try {
           return await getPlayerStats(limit, offset, sortParam, signal);
