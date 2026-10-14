@@ -35,7 +35,7 @@ export function RegisterForm({
         </div>
       )}
 
-      <form onSubmit={onSubmit} className={styles.form}>
+      <form onSubmit={onSubmit} className={styles.form} data-testid="register-form">
         <div className={styles.fieldGroup}>
           <label htmlFor="username" className={styles.formLabel}>
             Username <span className={styles.required}>*</span>
@@ -109,9 +109,12 @@ export function RegisterForm({
         </button>
       </form>
 
-      <p className={styles.formLink}>
-        Already have an account? <Link to={ROUTES.login}>Sign in</Link>
-      </p>
+      <div className={styles.login}>
+        <p className={styles.loginPrompt}>Already have an account?</p>
+        <Link to={ROUTES.login} className={styles.loginBtn}>
+          Sign in
+        </Link>
+      </div>
     </>
   );
 }

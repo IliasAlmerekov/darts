@@ -3,6 +3,7 @@
 import { render, screen } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import { describe, expect, it, vi } from "vitest";
+import { ROUTES } from "@/lib/router/routes";
 import { RegisterForm } from "./RegisterForm";
 
 function renderForm(error: string | null) {
@@ -25,5 +26,29 @@ describe("RegisterForm banners", () => {
 
     expect(screen.queryByRole("alert")).toBeNull();
     expect(screen.queryByRole("status")).toBeNull();
+  });
+});
+
+describe("RegisterForm login entry", () => {
+  it("links Sign in to the login route", () => {
+    renderForm(null);
+
+    expect(screen.getByRole("link", { name: "Sign in" }).getAttribute("href")).toBe(ROUTES.login);
+  });
+
+  it("places Sign in outside the form, after Create account", () => {
+    renderForm(null);
+    const form = screen.getByTestId("register-form");
+    const submit = screen.getByRole("button", { name: "Create account" });
+    const signIn = screen.getByRole("link", { name: "Sign in" });
+
+    expect(form.contains(signIn)).toBe(false);
+    expect(submit.compareDocumentPosition(signIn) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  });
+
+  it("shows the prompt line as its own element", () => {
+    renderForm(null);
+
+    expect(screen.getByText("Already have an account?").tagName).toBe("P");
   });
 });
