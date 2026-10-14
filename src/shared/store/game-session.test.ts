@@ -1,6 +1,5 @@
 // @vitest-environment jsdom
 import {
-  type FinishedGameSummarySnapshot,
   GAME_ID_STORAGE_KEY,
   INVITATION_STORAGE_KEY,
   PRE_CREATE_SETTINGS_STORAGE_KEY,
@@ -12,29 +11,6 @@ function buildInvitation(overrides: Partial<Invitation> = {}): Invitation {
   return {
     gameId: 12,
     invitationLink: "/invite/12",
-    ...overrides,
-  };
-}
-
-function buildFinishedGameSummaryEntry(
-  overrides: Partial<FinishedGameSummarySnapshot["summary"][number]> = {},
-): FinishedGameSummarySnapshot["summary"][number] {
-  return {
-    playerId: 1,
-    username: "Alice",
-    position: 1,
-    roundsPlayed: 5,
-    roundAverage: 54.2,
-    ...overrides,
-  };
-}
-
-function buildFinishedGameSummarySnapshot(
-  overrides: Partial<FinishedGameSummarySnapshot> = {},
-): FinishedGameSummarySnapshot {
-  return {
-    gameId: 88,
-    summary: [buildFinishedGameSummaryEntry()],
     ...overrides,
   };
 }
@@ -78,31 +54,6 @@ describe("game-session store", () => {
     expect(window.sessionStorage.getItem(GAME_ID_STORAGE_KEY)).toBeNull();
   });
 
-  it("should preserve the last finished game id when resetting room-scoped state", async () => {
-    const roomStore = await import("./game-session");
-    const snapshot = buildFinishedGameSummarySnapshot();
-
-    roomStore.setLastFinishedGameSummary(snapshot);
-    roomStore.setInvitation(buildInvitation());
-
-    roomStore.resetRoomStore();
-
-    expect(roomStore.$lastFinishedGameId.get()).toBe(88);
-    expect(roomStore.$invitation.get()).toBeNull();
-    expect(roomStore.$currentGameId.get()).toBeNull();
-  });
-
-  it("should store and clear the last finished game summary snapshot when updates are applied", async () => {
-    const roomStore = await import("./game-session");
-    const snapshot = buildFinishedGameSummarySnapshot();
-
-    roomStore.setLastFinishedGameSummary(snapshot);
-    expect(roomStore.$lastFinishedGameSummary.get()).toEqual(snapshot);
-
-    roomStore.setLastFinishedGameSummary(null);
-    expect(roomStore.$lastFinishedGameSummary.get()).toBeNull();
-  });
-
   it("should hydrate pre-create settings from sessionStorage when the module initializes", async () => {
     window.sessionStorage.setItem(
       PRE_CREATE_SETTINGS_STORAGE_KEY,
@@ -138,80 +89,23 @@ describe("game-session store", () => {
   });
 });
 
-// ─── Ticket 8 — $lastFinishedGameId is computed from $lastFinishedGameSummary ─
+// ─── Finished game summary lives in the query cache, not the store ───────────
 
-describe("game-session store — Ticket 8: $lastFinishedGameId computed from $lastFinishedGameSummary", () => {
+describe("game-session store: finished game summary", () => {
   beforeEach(() => {
     window.sessionStorage.clear();
     vi.resetModules();
   });
 
-  it("should be null when $lastFinishedGameSummary is null", async () => {
+  it.each([
+    "$lastFinishedGameSummary",
+    "$lastFinishedGameId",
+    "setLastFinishedGameSummary",
+    "setLastFinishedGameId",
+  ])("should not export %s when the public store API is loaded", async (name) => {
     const roomStore = await import("./game-session");
 
-    expect(roomStore.$lastFinishedGameSummary.get()).toBeNull();
-    expect(roomStore.$lastFinishedGameId.get()).toBeNull();
-  });
-
-  it("should derive gameId from $lastFinishedGameSummary when summary is set", async () => {
-    const roomStore = await import("./game-session");
-    const snapshot = buildFinishedGameSummarySnapshot({
-      gameId: 42,
-      summary: [
-        buildFinishedGameSummaryEntry({ username: "Bob", roundsPlayed: 8, roundAverage: 61.0 }),
-      ],
-    });
-
-    roomStore.setLastFinishedGameSummary(snapshot);
-
-    expect(roomStore.$lastFinishedGameId.get()).toBe(42);
-  });
-
-  it("should update reactively when the summary changes to a different gameId", async () => {
-    const roomStore = await import("./game-session");
-    const first = buildFinishedGameSummarySnapshot({
-      gameId: 10,
-      summary: [buildFinishedGameSummaryEntry({ roundsPlayed: 3, roundAverage: 40.0 })],
-    });
-    const second = buildFinishedGameSummarySnapshot({
-      gameId: 20,
-      summary: [
-        buildFinishedGameSummaryEntry({ playerId: 2, username: "Bob", roundAverage: 55.0 }),
-      ],
-    });
-
-    roomStore.setLastFinishedGameSummary(first);
-    expect(roomStore.$lastFinishedGameId.get()).toBe(10);
-
-    roomStore.setLastFinishedGameSummary(second);
-    expect(roomStore.$lastFinishedGameId.get()).toBe(20);
-  });
-
-  it("should return null when $lastFinishedGameSummary is cleared", async () => {
-    const roomStore = await import("./game-session");
-    const snapshot = buildFinishedGameSummarySnapshot({
-      gameId: 7,
-      summary: [
-        buildFinishedGameSummaryEntry({
-          playerId: 3,
-          username: "Carol",
-          roundsPlayed: 6,
-          roundAverage: 48.5,
-        }),
-      ],
-    });
-
-    roomStore.setLastFinishedGameSummary(snapshot);
-    expect(roomStore.$lastFinishedGameId.get()).toBe(7);
-
-    roomStore.setLastFinishedGameSummary(null);
-    expect(roomStore.$lastFinishedGameId.get()).toBeNull();
-  });
-
-  it("should not export setLastFinishedGameId when the public store API is loaded", async () => {
-    const roomStore = await import("./game-session");
-
-    expect("setLastFinishedGameId" in roomStore).toBe(false);
+    expect(name in roomStore).toBe(false);
   });
 });
 

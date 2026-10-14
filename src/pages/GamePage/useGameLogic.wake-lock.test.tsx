@@ -188,7 +188,6 @@ describe("useGameLogic wake-lock wiring", () => {
     window.sessionStorage.clear();
     gameStore.resetGameStore();
     roomStore.resetRoomStore();
-    roomStore.setLastFinishedGameSummary(null);
     getGameThrowsIfChangedMock.mockResolvedValue(null);
     createRematchMock.mockResolvedValue({
       success: true,

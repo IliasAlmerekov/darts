@@ -2,6 +2,7 @@ import { useCallback, useRef, useState } from "react";
 import { useStore } from "@nanostores/react";
 import type { NavigateFunction } from "react-router-dom";
 import { createRoom } from "@/shared/api/room";
+import { getLastFinishedGameId } from "@/shared/query/game.queries";
 import { getGameSettings, startGame } from "@/shared/api/game";
 import {
   $preCreateGameSettings,
@@ -19,7 +20,6 @@ const START_SOUND_PATH = "/sounds/start-round-sound.mp3";
 interface UseCreateStartFlowParams {
   gameId: number | null;
   invitationGameId?: number | null | undefined;
-  lastFinishedGameId: number | null;
   navigate: NavigateFunction;
   setPageError: SetStartPageError;
 }
@@ -47,7 +47,6 @@ function playStartSound(): void {
 export function useCreateStartFlow({
   gameId,
   invitationGameId,
-  lastFinishedGameId,
   navigate,
   setPageError,
 }: UseCreateStartFlowParams): UseCreateStartFlowResult {
@@ -99,7 +98,7 @@ export function useCreateStartFlow({
 
     try {
       const response = await createRoom({
-        previousGameId: lastFinishedGameId ?? undefined,
+        previousGameId: getLastFinishedGameId() ?? undefined,
         startScore: preCreateGameSettings.startScore,
         doubleOut: preCreateGameSettings.doubleOut,
         tripleOut: preCreateGameSettings.tripleOut,
@@ -115,14 +114,7 @@ export function useCreateStartFlow({
       createRoomInFlightRef.current = false;
       setCreating(false);
     }
-  }, [
-    creating,
-    invitationGameId,
-    lastFinishedGameId,
-    navigate,
-    preCreateGameSettings,
-    setPageError,
-  ]);
+  }, [creating, invitationGameId, navigate, preCreateGameSettings, setPageError]);
 
   return {
     creating,

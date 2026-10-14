@@ -1,0 +1,47 @@
+import { queryOptions, type QueryClient } from "@tanstack/react-query";
+import { getFinishedGame } from "@/shared/api/game";
+import { clientLogger } from "@/shared/services/browser/clientLogger";
+import { queryClient as appQueryClient } from "./queryClient";
+
+const FINISHED_GAME_KEY = "finishedGame";
+
+export const gameQueries = {
+  /** Final standings of a finished game. The game page seeds this key after finishing. */
+  finished: (gameId: number) =>
+    queryOptions({
+      queryKey: [FINISHED_GAME_KEY, gameId] as const,
+      queryFn: async ({ signal }) => {
+        try {
+          return await getFinishedGame(gameId, signal);
+        } catch (error: unknown) {
+          if (!signal.aborted) {
+            clientLogger.error("game-summary.fetch.failed", {
+              context: { finishedGameId: gameId },
+              error,
+            });
+          }
+          throw error;
+        }
+      },
+    }),
+};
+
+/**
+ * Id of the most recently cached finished game, or null when none is cached.
+ * Undo and rematch remove the entry, so a game that went back to play is never returned.
+ */
+export function getLastFinishedGameId(client: QueryClient = appQueryClient): number | null {
+  let latest: { gameId: number; updatedAt: number } | null = null;
+
+  for (const query of client.getQueryCache().findAll({ queryKey: [FINISHED_GAME_KEY] })) {
+    const gameId: unknown = query.queryKey[1];
+    if (typeof gameId !== "number" || query.state.data === undefined) {
+      continue;
+    }
+    if (latest === null || query.state.dataUpdatedAt >= latest.updatedAt) {
+      latest = { gameId, updatedAt: query.state.dataUpdatedAt };
+    }
+  }
+
+  return latest?.gameId ?? null;
+}

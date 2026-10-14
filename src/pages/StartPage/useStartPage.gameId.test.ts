@@ -37,13 +37,13 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import React from "react";
 import { resolveGameId } from "./useStartPage";
 import { useStartPage } from "./useStartPage";
+import { queryClient } from "@/shared/query/queryClient";
 import { getGameThrows } from "@/shared/api/game";
 import { getInvitation, updatePlayerOrder } from "@/shared/api/room";
 import {
   resetRoomStore,
   resetGameStore,
   resetPreCreateGameSettings,
-  setLastFinishedGameSummary,
   setCurrentGameId,
   setInvitation,
 } from "@/shared/store";
@@ -197,7 +197,7 @@ function sharedBeforeEach(): void {
   resetRoomStore();
   resetGameStore();
   resetPreCreateGameSettings();
-  setLastFinishedGameSummary(null);
+  queryClient.clear();
   vi.stubGlobal("EventSource", MockEventSource);
   vi.stubGlobal("Audio", MockAudio);
   vi.mocked(getGameThrows).mockResolvedValue(buildGameThrowsResponse({ status: "lobby" }));
