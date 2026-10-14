@@ -571,4 +571,32 @@ describe("SettingsPage", () => {
       "true",
     );
   });
+
+  it("should keep the save response when a settings read that started earlier resolves later", async () => {
+    setGameSettings(createSettingsResponse({ startScore: 301 }), 42);
+    const pendingLoad = createDeferred<GameSettingsResponse>();
+    getGameSettingsMock.mockImplementationOnce(() => pendingLoad.promise);
+    saveGameSettingsMock.mockResolvedValueOnce(createSettingsResponse({ startScore: 501 }));
+
+    renderSettingsPage("/settings/42");
+    await waitFor(() => {
+      expect(getGameSettingsMock).toHaveBeenCalledWith(42, expect.any(AbortSignal));
+    });
+    fireEvent.click(screen.getByRole("button", { name: "501" }));
+    await waitFor(() => {
+      expect(testQueryClient.getQueryData(gameQueries.settings(42).queryKey)).toEqual(
+        createSettingsResponse({ startScore: 501 }),
+      );
+    });
+
+    await act(async () => {
+      pendingLoad.resolve(createSettingsResponse({ startScore: 301 }));
+      await pendingLoad.promise;
+    });
+
+    expect(testQueryClient.getQueryData(gameQueries.settings(42).queryKey)).toEqual(
+      createSettingsResponse({ startScore: 501 }),
+    );
+    expect(screen.getByRole("button", { name: "501" }).getAttribute("aria-pressed")).toBe("true");
+  });
 });

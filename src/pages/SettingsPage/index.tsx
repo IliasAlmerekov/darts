@@ -15,7 +15,7 @@ import { gameQueries } from "@/shared/query/game.queries";
 import { clientLogger } from "@/shared/services/browser/clientLogger";
 import { toUserErrorMessage } from "@/lib/error/error-to-user-message";
 import { ErrorState } from "@/shared/ui/error-state";
-import type { CreateGameSettingsPayload, GameMode } from "@/types";
+import type { CreateGameSettingsPayload, GameMode, GameSettingsResponse } from "@/types";
 import styles from "./Settings.module.css";
 import { SettingsTabs } from "./components/SettingsTabs";
 
@@ -172,6 +172,17 @@ function SettingsPage(): React.JSX.Element {
     setPreCreateGameSettings(settings);
   }, []);
 
+  const storeSavedSettings = useCallback(
+    (settings: GameSettingsResponse, gameId: number): void => {
+      const { queryKey } = gameQueries.settings(gameId);
+      // A read still in flight started before the save, so its response would be older.
+      void queryClient.cancelQueries({ queryKey });
+      queryClient.setQueryData(queryKey, settings);
+      setGameSettings(settings, gameId);
+    },
+    [queryClient],
+  );
+
   const handleGameModeClick = useCallback(
     async (id: string | number) => {
       if (isSavingRef.current) return;
@@ -206,11 +217,7 @@ function SettingsPage(): React.JSX.Element {
           },
           effectiveGameIdRef.current,
         );
-        queryClient.setQueryData(
-          gameQueries.settings(effectiveGameIdRef.current).queryKey,
-          response,
-        );
-        setGameSettings(response, effectiveGameIdRef.current);
+        storeSavedSettings(response, effectiveGameIdRef.current);
         setSaveErrorMessage(null);
       } catch (error) {
         setSelectedGameMode(previousMode);
@@ -231,7 +238,7 @@ function SettingsPage(): React.JSX.Element {
         isSavingRef.current = false;
       }
     },
-    [queryClient, updatePreCreateSettings],
+    [storeSavedSettings, updatePreCreateSettings],
   );
 
   const handlePointsClick = useCallback(
@@ -269,11 +276,7 @@ function SettingsPage(): React.JSX.Element {
           },
           effectiveGameIdRef.current,
         );
-        queryClient.setQueryData(
-          gameQueries.settings(effectiveGameIdRef.current).queryKey,
-          response,
-        );
-        setGameSettings(response, effectiveGameIdRef.current);
+        storeSavedSettings(response, effectiveGameIdRef.current);
         setSaveErrorMessage(null);
       } catch (error) {
         setSelectedPoints(previousPoints);
@@ -294,7 +297,7 @@ function SettingsPage(): React.JSX.Element {
         isSavingRef.current = false;
       }
     },
-    [queryClient, updatePreCreateSettings],
+    [storeSavedSettings, updatePreCreateSettings],
   );
 
   return (
