@@ -46,9 +46,6 @@ test.describe("Accessibility and Usability", () => {
     expect(buttonHasFocusIndicator).toBe(true);
 
     await page.keyboard.press("Tab");
-    await expect(page.getByRole("checkbox", { name: "Remember me" })).toBeFocused();
-
-    await page.keyboard.press("Tab");
     await expect(page.getByRole("button", { name: "Sign in" })).toBeFocused();
 
     await page.keyboard.press("Tab");
@@ -58,7 +55,6 @@ test.describe("Accessibility and Usability", () => {
       emailField,
       passwordField,
       page.getByRole("button", { name: "Show password" }),
-      page.getByRole("checkbox", { name: "Remember me" }),
       page.getByRole("button", { name: "Sign in" }),
       page.getByRole("link", { name: "Sign up" }),
     ];
@@ -74,7 +70,6 @@ test.describe("Accessibility and Usability", () => {
       emailField,
       passwordField,
       page.getByRole("button", { name: "Show password" }),
-      page.getByRole("checkbox", { name: "Remember me" }),
       page.getByRole("link", { name: "Sign up" }),
     ];
 

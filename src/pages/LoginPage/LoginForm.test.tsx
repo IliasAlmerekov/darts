@@ -3,6 +3,7 @@
 import { render, screen } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import { describe, expect, it, vi } from "vitest";
+import { ROUTES } from "@/lib/router/routes";
 import { LoginForm } from "./LoginForm";
 
 function renderForm(props: { error?: string | null; success?: string | null }) {
@@ -17,6 +18,39 @@ function renderForm(props: { error?: string | null; success?: string | null }) {
     </MemoryRouter>,
   );
 }
+
+describe("LoginForm login and registration controls", () => {
+  it("has no Remember me checkbox", () => {
+    renderForm({});
+
+    expect(screen.queryByRole("checkbox")).toBeNull();
+    expect(screen.queryByLabelText(/remember me/i)).toBeNull();
+  });
+
+  it("links Sign up to the registration route", () => {
+    renderForm({});
+
+    expect(screen.getByRole("link", { name: "Sign up" }).getAttribute("href")).toBe(
+      ROUTES.register,
+    );
+  });
+
+  it("places Sign up outside the form, after Sign in", () => {
+    renderForm({});
+    const form = screen.getByTestId("login-form");
+    const signIn = screen.getByRole("button", { name: "Sign in" });
+    const signUp = screen.getByRole("link", { name: "Sign up" });
+
+    expect(form.contains(signUp)).toBe(false);
+    expect(signIn.compareDocumentPosition(signUp) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  });
+
+  it("shows the prompt line as its own element", () => {
+    renderForm({});
+
+    expect(screen.getByText("Don't have an account?")).toBeTruthy();
+  });
+});
 
 describe("LoginForm banners", () => {
   it("announces an error through role=alert", () => {

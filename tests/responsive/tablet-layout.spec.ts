@@ -16,7 +16,6 @@ test.describe("Cross-Browser and Responsive Tests", () => {
     const passwordField = page.getByLabel("Password *");
     const signInButton = page.getByRole("button", { name: "Sign in" });
     const showPasswordButton = page.getByRole("button", { name: "Show password" });
-    const rememberCheckbox = page.getByRole("checkbox", { name: "Remember me" });
     const signUpLink = page.getByRole("link", { name: "Sign up" });
     const loginForm = page.getByTestId("login-form");
 
@@ -25,7 +24,6 @@ test.describe("Cross-Browser and Responsive Tests", () => {
     await expect(passwordField).toBeVisible();
     await expect(signInButton).toBeVisible();
     await expect(showPasswordButton).toBeVisible();
-    await expect(rememberCheckbox).toBeVisible();
     await expect(signUpLink).toBeVisible();
 
     const hasHorizontalScroll = await page.evaluate(

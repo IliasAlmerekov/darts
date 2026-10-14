@@ -5,6 +5,39 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0),
 and this project does **not** yet follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html), but will adopt it in the future.
 
+## [Unreleased]
+
+### Added
+
+- Login: Sign up is a full-width outlined button below Sign in, and "Don't have an account?" is blue (#150)
+- Registration: Sign in is a full-width outlined button below Create account, and "Already have an account?" is blue (#150)
+- Navigation: the main navigation is a `<nav>` landmark and marks the current page with `aria-current` (#120)
+- Tooling: `knip` runs in `validate:push` and CI, so unused code fails the build (#117)
+- Tests: `npm run test:e2e:live` runs the Playwright suite against a real backend, on demand in CI (#116)
+- Tooling: a Vite dev server compose file, `compose.dev.yaml`
+- CI: the build fails on high-severity production advisories (#115)
+
+### Changed
+
+- Tests: `npm run test:e2e` is a mocked suite that fails any spec with an unmocked `/api` request (#116)
+- Game pages: the summary and detail pages build podium and leaderboard with one shared mapper, `buildFinishedGameStandings` (#113)
+- Docs: commits follow Conventional Commits and every PR body follows one template (#129)
+- Docs: contribution docs match the repo, and generated Playwright reports are no longer tracked (#118)
+- Tooling: Playwright tests are typechecked and linted
+- Dependencies: `react-router-dom` is 6.30.6, and non-breaking audit fixes are applied to dev tooling (#115)
+
+### Removed
+
+- Login: the Remember me checkbox, which never changed the login request (#150, #111)
+- Code: unused styles, unused exports, the `react-error-boundary` dependency and the `clientLogger` re-export (#117)
+
+### Fixed
+
+- Accessibility: login and registration error and success banners are announced to screen readers (#112)
+- Invitations: when copying the link fails, a selectable link is shown (#119)
+- Tooling: the stylelint glob no longer breaks on shell expansion (#114)
+- Security: login and registration redirects reject backslashes (#115)
+
 ## [0.3.0] - 2026-02-03
 
 ### Changed

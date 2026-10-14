@@ -18,7 +18,6 @@ test.describe("Accessibility and Usability", () => {
     await expect(page.getByRole("textbox", { name: "Email *" })).toBeVisible();
     await expect(page.getByRole("textbox", { name: "Password *" })).toBeVisible();
     await expect(page.getByRole("button", { name: "Show password" })).toBeVisible();
-    await expect(page.getByRole("checkbox", { name: "Remember me" })).toBeVisible();
     await expect(page.getByRole("button", { name: "Sign in" })).toBeVisible();
     await expect(page.getByRole("link", { name: "Sign up" })).toBeVisible();
 
@@ -32,15 +31,11 @@ test.describe("Accessibility and Usability", () => {
     await expect(page.getByRole("button", { name: "Show password" })).toBeFocused();
 
     await page.keyboard.press("Tab");
-    await expect(page.getByRole("checkbox", { name: "Remember me" })).toBeFocused();
-
-    await page.keyboard.press("Tab");
     await expect(page.getByRole("button", { name: "Sign in" })).toBeFocused();
 
     await page.keyboard.press("Tab");
     await expect(page.getByRole("link", { name: "Sign up" })).toBeFocused();
 
-    await page.keyboard.press("Shift+Tab");
     await page.keyboard.press("Shift+Tab");
     await page.keyboard.press("Shift+Tab");
     await page.keyboard.press("Shift+Tab");
@@ -57,12 +52,6 @@ test.describe("Accessibility and Usability", () => {
     await expect(page.getByRole("button", { name: "Hide password" })).toBeFocused();
     await expect(page.getByRole("textbox", { name: "Password *" })).toHaveAttribute("type", "text");
 
-    await page.keyboard.press("Tab");
-    await page.keyboard.press("Space");
-
-    await expect(page.getByRole("checkbox", { name: "Remember me" })).toBeChecked();
-
-    await page.keyboard.press("Shift+Tab");
     await page.keyboard.press("Shift+Tab");
     await page.keyboard.press("Shift+Tab");
 
