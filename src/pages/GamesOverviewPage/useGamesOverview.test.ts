@@ -95,6 +95,20 @@ describe("gamesOverviewLoader", () => {
     expect(getGamesOverviewMock).toHaveBeenCalledWith(9, 18, expect.any(AbortSignal));
   });
 
+  it.each(["abc", "-9", "1.5"])(
+    "should read the first page for the invalid offset %s",
+    async (offset) => {
+      getGamesOverviewMock.mockResolvedValue({ items: [], total: 0 });
+
+      await gamesOverviewLoader({
+        request: new Request(`http://localhost/games?offset=${offset}`),
+        params: {},
+      });
+
+      expect(getGamesOverviewMock).toHaveBeenCalledWith(9, 0, expect.any(AbortSignal));
+    },
+  );
+
   it("should not throw and should log when the API rejects", async () => {
     const failure = new Error("Network error");
     getGamesOverviewMock.mockRejectedValue(failure);
