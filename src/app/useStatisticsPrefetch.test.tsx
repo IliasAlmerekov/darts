@@ -57,6 +57,19 @@ describe("useStatisticsPrefetch", () => {
     expect(getPlayerStatsMock).toHaveBeenCalledWith(10, 0, undefined, expect.any(AbortSignal));
   });
 
+  it("does not load statistics for a signed-in user without the admin role", async () => {
+    renderHook(() => useStatisticsPrefetch(), { wrapper });
+
+    act(() => {
+      queryClient.setQueryData(["auth", "me"], { id: 1, roles: ["ROLE_PLAYER"] });
+    });
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(IDLE_FALLBACK_DELAY_MS * 2);
+    });
+
+    expect(getPlayerStatsMock).not.toHaveBeenCalled();
+  });
+
   it("cancels the pending prefetch when the cache is cleared before it runs", async () => {
     renderHook(() => useStatisticsPrefetch(), { wrapper });
 
