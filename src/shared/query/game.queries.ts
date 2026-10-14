@@ -29,21 +29,22 @@ export const gameQueries = {
 };
 
 /**
- * Id of the most recently cached finished game, or null when none is cached.
+ * Id of the newest cached finished game, or null when none is cached. Game ids grow with
+ * creation order, so the highest id wins no matter which response arrived last.
  * Undo and rematch remove the entry, so a game that went back to play is never returned.
  */
 export function getLastFinishedGameId(client: QueryClient = appQueryClient): number | null {
-  let latest: { gameId: number; updatedAt: number } | null = null;
+  let latest: number | null = null;
 
   for (const query of client.getQueryCache().findAll({ queryKey: [FINISHED_GAME_KEY] })) {
     const gameId: unknown = query.queryKey[1];
     if (typeof gameId !== "number" || query.state.data === undefined) {
       continue;
     }
-    if (latest === null || query.state.dataUpdatedAt >= latest.updatedAt) {
-      latest = { gameId, updatedAt: query.state.dataUpdatedAt };
+    if (latest === null || gameId > latest) {
+      latest = gameId;
     }
   }
 
-  return latest?.gameId ?? null;
+  return latest;
 }

@@ -669,6 +669,21 @@ describe("useGameSummaryPage", () => {
     expect(result.current.standings).toEqual([]);
   });
 
+  it("should drop an action error from game A when the route moves to game B", async () => {
+    undoLastThrowMock.mockRejectedValueOnce(new Error("boom"));
+    routeParams = { id: "1" };
+    const { result, rerender } = renderSummaryHook();
+    await act(async () => {
+      await result.current.handleUndo();
+    });
+    expect(result.current.error).not.toBeNull();
+
+    routeParams = { id: "2" };
+    rerender();
+
+    expect(result.current.error).toBeNull();
+  });
+
   it("should remove the finishedGame entry when undo succeeds", async () => {
     testQueryClient.setQueryData(["finishedGame", 42], [finishedPlayer(1, "Alice")]);
     const { result } = renderSummaryHook();
@@ -735,6 +750,14 @@ describe("useGameSummaryPage", () => {
       await gameSummaryLoader({ params: { id: "42" }, request: new Request("http://x/") });
 
       expect(getFinishedGameMock).not.toHaveBeenCalled();
+    });
+
+    it("should not throw when the fetch fails, so the page can show its Retry action", async () => {
+      getFinishedGameMock.mockRejectedValueOnce(new Error("network down"));
+
+      await expect(
+        gameSummaryLoader({ params: { id: "42" }, request: new Request("http://x/") }),
+      ).resolves.toBeNull();
     });
 
     it.each(["abc", "0", "-1"])("should fetch nothing for the invalid game id %s", async (id) => {

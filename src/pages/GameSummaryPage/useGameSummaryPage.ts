@@ -15,13 +15,11 @@ import { playSound } from "@/shared/services/browser/soundPlayer";
 import { toUserErrorMessage } from "@/lib/error/error-to-user-message";
 import { ROUTES } from "@/lib/router/routes";
 import { applyOptimisticUndo } from "@/lib/game/applyOptimisticUndo";
-import {
-  buildFinishedGameStandings,
-  type FinishedGameStandings,
-} from "@/lib/game/finishedGameStandings";
+import type { FinishedGameStandings } from "@/lib/game/finishedGameStandings";
 import { clientLogger } from "@/shared/services/browser/clientLogger";
 import { gameQueries } from "@/shared/query/game.queries";
 import { queryClient } from "@/shared/query/queryClient";
+import { buildGameSummaryStandings } from "./lib/gameSummaryStandings";
 
 interface UseGameSummaryPageResult extends FinishedGameStandings {
   error: string | null;
@@ -54,7 +52,9 @@ export async function gameSummaryLoader({ params }: LoaderFunctionArgs): Promise
     return null;
   }
 
-  await queryClient.ensureQueryData(gameQueries.finished(gameId));
+  // A failed fetch is logged by the query function. The page then mounts, fetches again and
+  // shows its Retry action, so the failure does not reach the route error boundary.
+  await queryClient.ensureQueryData(gameQueries.finished(gameId)).catch(() => undefined);
   return null;
 }
 
@@ -69,7 +69,10 @@ export function useGameSummaryPage(): UseGameSummaryPageResult {
   const navigate = useNavigate();
   const client = useQueryClient();
   const { id: summaryGameIdParam } = useParams<{ id?: string }>();
-  const [actionError, setActionError] = useState<string | null>(null);
+  const [actionErrorState, setActionErrorState] = useState<{
+    gameId: number | null;
+    message: string;
+  } | null>(null);
   const [starting, setStarting] = useState<boolean>(false);
   const [releasedGameId, setReleasedGameId] = useState<number | null>(null);
   const startGameInFlightRef = useRef<boolean>(false);
@@ -77,6 +80,16 @@ export function useGameSummaryPage(): UseGameSummaryPageResult {
   const finishedGameIdFromRoute = useMemo(
     () => parseGameId(summaryGameIdParam),
     [summaryGameIdParam],
+  );
+
+  // An action error belongs to the game it happened on, so it never follows a route change.
+  const actionError =
+    actionErrorState?.gameId === finishedGameIdFromRoute ? actionErrorState.message : null;
+  const setActionError = useCallback(
+    (message: string | null): void => {
+      setActionErrorState(message === null ? null : { gameId: finishedGameIdFromRoute, message });
+    },
+    [finishedGameIdFromRoute],
   );
 
   const summaryQuery = useQuery({
@@ -94,7 +107,7 @@ export function useGameSummaryPage(): UseGameSummaryPageResult {
   const loadSummary = useCallback(async (): Promise<void> => {
     setActionError(null);
     await refetch();
-  }, [refetch]);
+  }, [refetch, setActionError]);
 
   const releaseFinishedGame = useCallback(
     (gameId: number): void => {
@@ -105,7 +118,7 @@ export function useGameSummaryPage(): UseGameSummaryPageResult {
   );
 
   const { standings, podiumData, leaderBoardList } = useMemo(
-    () => buildFinishedGameStandings(summaryQuery.data ?? []),
+    () => buildGameSummaryStandings(summaryQuery.data),
     [summaryQuery.data],
   );
 
@@ -172,7 +185,7 @@ export function useGameSummaryPage(): UseGameSummaryPageResult {
       });
       setActionError(toUserErrorMessage(err, "Could not reopen game and undo throw."));
     }
-  }, [finishedGameIdFromRoute, navigate, releaseFinishedGame]);
+  }, [finishedGameIdFromRoute, navigate, releaseFinishedGame, setActionError]);
 
   const handlePlayAgain = useCallback(async (): Promise<void> => {
     if (finishedGameIdFromRoute === null || startGameInFlightRef.current) return;
@@ -206,7 +219,7 @@ export function useGameSummaryPage(): UseGameSummaryPageResult {
       startGameInFlightRef.current = false;
       setStarting(false);
     }
-  }, [finishedGameIdFromRoute, navigate, releaseFinishedGame]);
+  }, [finishedGameIdFromRoute, navigate, releaseFinishedGame, setActionError]);
 
   const handleBackToStart = useCallback(async (): Promise<void> => {
     if (finishedGameIdFromRoute === null) return;
@@ -230,7 +243,7 @@ export function useGameSummaryPage(): UseGameSummaryPageResult {
       });
       setActionError(toUserErrorMessage(err, "Could not return to start."));
     }
-  }, [finishedGameIdFromRoute, navigate, releaseFinishedGame]);
+  }, [finishedGameIdFromRoute, navigate, releaseFinishedGame, setActionError]);
 
   return {
     error,
