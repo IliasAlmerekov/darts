@@ -52,6 +52,9 @@ The diff already shows files and changes, so the body carries only the four part
 notes, verification detail, follow-ups, and benchmarks go in a comment on the issue. Close the
 issue once its acceptance criteria are met and that comment carries the verification.
 
+Every PR adds its change to `CHANGELOG.md` under `## [Unreleased]`, in the group it fits
+(Added, Changed, Removed, Fixed), as `Area: change (#N)`.
+
 Commits, PR titles and bodies, and issue comments carry the human author only: no
 `Co-Authored-By` trailer and no Claude or agent footer.
 
