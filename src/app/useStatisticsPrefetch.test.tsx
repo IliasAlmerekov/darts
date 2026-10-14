@@ -56,4 +56,50 @@ describe("useStatisticsPrefetch", () => {
     expect(getPlayerStatsMock).toHaveBeenCalledTimes(1);
     expect(getPlayerStatsMock).toHaveBeenCalledWith(10, 0, undefined, expect.any(AbortSignal));
   });
+
+  it("cancels the pending prefetch when the cache is cleared before it runs", async () => {
+    renderHook(() => useStatisticsPrefetch(), { wrapper });
+
+    act(() => {
+      queryClient.setQueryData(["auth", "me"], { id: 1, roles: ["ROLE_ADMIN"] });
+    });
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(0);
+    });
+    act(() => {
+      queryClient.clear();
+    });
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(IDLE_FALLBACK_DELAY_MS * 2);
+    });
+
+    expect(getPlayerStatsMock).not.toHaveBeenCalled();
+  });
+
+  it("prefetches again for a user who signs in after a cache clear", async () => {
+    renderHook(() => useStatisticsPrefetch(), { wrapper });
+
+    act(() => {
+      queryClient.setQueryData(["auth", "me"], { id: 1, roles: ["ROLE_ADMIN"] });
+    });
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(IDLE_FALLBACK_DELAY_MS * 2);
+    });
+    expect(getPlayerStatsMock).toHaveBeenCalledTimes(1);
+
+    act(() => {
+      queryClient.clear();
+    });
+    act(() => {
+      queryClient.setQueryData(["auth", "me"], { id: 2, roles: ["ROLE_ADMIN"] });
+    });
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(0);
+    });
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(IDLE_FALLBACK_DELAY_MS * 2);
+    });
+
+    expect(getPlayerStatsMock).toHaveBeenCalledTimes(2);
+  });
 });

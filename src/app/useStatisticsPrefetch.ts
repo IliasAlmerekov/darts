@@ -1,15 +1,20 @@
-import { useEffect } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useEffect, useSyncExternalStore } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import { scheduleStatisticsPrefetch } from "@/app/routeWarmup";
 import { authQueries } from "@/shared/query/auth.queries";
 
 /**
- * Warms the first statistics page once the auth query holds a user. It only watches the
- * auth query (`enabled: false`) and never starts the session check itself.
+ * Warms the first statistics page once the query cache holds an authenticated user. It
+ * reads the cache through a subscription, not a query observer: `queryClient.clear()` on
+ * logout or 401 orphans an observer, and the next session would never reach it. The hook
+ * never starts the session check itself.
  */
 export function useStatisticsPrefetch(): void {
-  const { data: user } = useQuery({ ...authQueries.me(), enabled: false });
-  const isSignedIn = user != null;
+  const queryClient = useQueryClient();
+  const isSignedIn = useSyncExternalStore(
+    (onStoreChange) => queryClient.getQueryCache().subscribe(onStoreChange),
+    () => queryClient.getQueryData(authQueries.me().queryKey) != null,
+  );
 
   useEffect(() => {
     if (!isSignedIn) {
