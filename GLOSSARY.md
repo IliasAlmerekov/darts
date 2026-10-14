@@ -2,6 +2,12 @@
 
 A darts scoring app: players join a game, throw until they check out, and see where they finished.
 
+## Playing
+
+**Current game**:
+The game a player takes part in right now. A player has at most one; joining another game replaces it.
+_Avoid_: active game
+
 ## Finished game
 
 **Standings**:

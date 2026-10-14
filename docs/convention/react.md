@@ -77,6 +77,9 @@ Rules:
   `EventSource`. Return a function from the effect that undoes every side effect started
   inside it. See `src/shared/hooks/useEventSource.ts` for the canonical dispose pattern
   with an `isDisposed` flag and a `cleanupSource` capture.
+- **Server reads go through TanStack Query**, not effects
+  ([ADR 0001](../adr/0001-tanstack-query-for-server-reads.md)). The rule below covers the
+  fetches still made in effects, such as on the game page.
 - **Fetches inside effects use `AbortController`.** Pass `controller.signal` to the API
   function and call `controller.abort()` in the cleanup:
 
