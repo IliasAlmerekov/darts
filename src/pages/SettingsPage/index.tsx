@@ -207,6 +207,8 @@ function SettingsPage(): React.JSX.Element {
         return;
       }
 
+      // The route can move to another game while the save is pending.
+      const gameId = effectiveGameIdRef.current;
       setSaveErrorMessage(null);
       setIsSaving(true);
       setSavingScope("game-mode");
@@ -218,9 +220,9 @@ function SettingsPage(): React.JSX.Element {
             doubleOut: isDoubleOut,
             tripleOut: isTripleOut,
           },
-          effectiveGameIdRef.current,
+          gameId,
         );
-        storeSavedSettings(response, effectiveGameIdRef.current);
+        storeSavedSettings(response, gameId);
         setSaveErrorMessage(null);
       } catch (error) {
         setSelectedGameMode(previousMode);
@@ -230,7 +232,7 @@ function SettingsPage(): React.JSX.Element {
         );
         clientLogger.error("settings.save-game-mode.failed", {
           context: {
-            gameId: effectiveGameIdRef.current,
+            gameId,
             requestedMode: mode,
           },
           error,
@@ -265,6 +267,8 @@ function SettingsPage(): React.JSX.Element {
         return;
       }
 
+      // The route can move to another game while the save is pending.
+      const gameId = effectiveGameIdRef.current;
       setSaveErrorMessage(null);
       setIsSaving(true);
       setSavingScope("points");
@@ -277,9 +281,9 @@ function SettingsPage(): React.JSX.Element {
             doubleOut: isDoubleOut,
             tripleOut: isTripleOut,
           },
-          effectiveGameIdRef.current,
+          gameId,
         );
-        storeSavedSettings(response, effectiveGameIdRef.current);
+        storeSavedSettings(response, gameId);
         setSaveErrorMessage(null);
       } catch (error) {
         setSelectedPoints(previousPoints);
@@ -289,7 +293,7 @@ function SettingsPage(): React.JSX.Element {
         );
         clientLogger.error("settings.save-points.failed", {
           context: {
-            gameId: effectiveGameIdRef.current,
+            gameId,
             requestedPoints: points,
           },
           error,

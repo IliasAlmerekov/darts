@@ -599,4 +599,35 @@ describe("SettingsPage", () => {
     );
     expect(screen.getByRole("button", { name: "501" }).getAttribute("aria-pressed")).toBe("true");
   });
+
+  it("should keep a save for game A under game A when the route moves to game B before it resolves", async () => {
+    const pendingSave = createDeferred<GameSettingsResponse>();
+    saveGameSettingsMock.mockImplementationOnce(() => pendingSave.promise);
+    getGameSettingsMock.mockImplementation((gameId: number) =>
+      Promise.resolve(createSettingsResponse({ startScore: gameId === 1 ? 301 : 401 })),
+    );
+    const router = renderSettingsRouter("/settings/1");
+    await waitFor(() => {
+      expect(screen.getByRole("button", { name: "301" }).getAttribute("aria-pressed")).toBe("true");
+    });
+
+    fireEvent.click(screen.getByRole("button", { name: "501" }));
+    await act(async () => {
+      await router.navigate("/settings/2");
+    });
+    await act(async () => {
+      pendingSave.resolve(createSettingsResponse({ startScore: 501 }));
+      await pendingSave.promise;
+    });
+
+    expect(testQueryClient.getQueryData(gameQueries.settings(1).queryKey)).toEqual(
+      createSettingsResponse({ startScore: 501 }),
+    );
+    await waitFor(() => {
+      expect(testQueryClient.getQueryData(gameQueries.settings(2).queryKey)).toEqual(
+        createSettingsResponse({ startScore: 401 }),
+      );
+    });
+    expect(screen.getByRole("button", { name: "401" }).getAttribute("aria-pressed")).toBe("true");
+  });
 });
