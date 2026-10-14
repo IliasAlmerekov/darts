@@ -1,19 +1,8 @@
-import { useEffect } from "react";
-import { useStore } from "@nanostores/react";
-import { ApiError, TimeoutError } from "@/shared/api";
-import { getAuthenticatedUser, type AuthenticatedUser } from "@/shared/api/auth";
+import { useQuery } from "@tanstack/react-query";
+import { ApiError } from "@/shared/api";
+import type { AuthenticatedUser } from "@/shared/api/auth";
 import { mapAuthErrorMessage } from "@/lib/error/auth-error-handling";
-import { clientLogger } from "@/shared/services/browser/clientLogger";
-import {
-  $authChecked,
-  $authError,
-  $user,
-  setAuthenticatedUser,
-  setAuthFailed,
-} from "@/shared/store/auth";
-import { setCurrentGameId } from "@/shared/store";
-
-const AUTHENTICATED_USER_TIMEOUT_MS = 5000;
+import { authQueries } from "@/shared/query/auth.queries";
 
 type UseAuthenticatedUserResult = {
   user: AuthenticatedUser | null;
@@ -21,90 +10,26 @@ type UseAuthenticatedUserResult = {
   error: string | null;
 };
 
-function isAbortError(error: unknown): boolean {
-  return error instanceof Error && error.name === "AbortError";
-}
-
 function getAuthErrorRawMessage(error: unknown): string | undefined {
   return error instanceof ApiError && error.status === 401 ? "unauthorized" : undefined;
 }
 
 /**
- * Fetches the currently authenticated user and exposes loading/error state.
+ * Reads the authenticated user from the query cache and exposes loading/error state.
  */
 export const useAuthenticatedUser = (): UseAuthenticatedUserResult => {
-  const user = useStore($user);
-  const checked = useStore($authChecked);
-  const error = useStore($authError);
+  const { data, isPending, error } = useQuery(authQueries.me());
 
-  useEffect(() => {
-    if (checked) {
-      return;
-    }
-
-    const controller = new AbortController();
-
-    const fetchUser = async (): Promise<void> => {
-      try {
-        const userData = await getAuthenticatedUser({
-          signal: controller.signal,
-          timeoutMs: AUTHENTICATED_USER_TIMEOUT_MS,
-        });
-        if (controller.signal.aborted) {
-          return;
-        }
-
-        setAuthenticatedUser(userData);
-
-        if (userData) {
-          if (typeof userData.gameId === "number") {
-            setCurrentGameId(userData.gameId);
-          }
-        }
-      } catch (err) {
-        if (controller.signal.aborted) {
-          return;
-        }
-
-        if (err instanceof TimeoutError) {
-          setAuthenticatedUser(null);
-          return;
-        }
-
-        if (isAbortError(err)) {
-          setAuthenticatedUser(null);
-          return;
-        }
-
-        if (err instanceof Error) {
-          clientLogger.error("auth.bootstrap.failed", {
-            context: { timeoutMs: AUTHENTICATED_USER_TIMEOUT_MS },
-            error: err,
-          });
-          setAuthFailed(
-            mapAuthErrorMessage({
-              flow: "login",
-              error: err,
-              rawMessage: getAuthErrorRawMessage(err),
-            }),
-          );
-        } else {
-          setAuthFailed(
-            mapAuthErrorMessage({
-              flow: "login",
-              error: err,
-            }),
-          );
-        }
-      }
-    };
-
-    void fetchUser();
-
-    return () => {
-      controller.abort();
-    };
-  }, [checked]);
-
-  return { user, loading: !checked, error };
+  return {
+    user: data ?? null,
+    loading: isPending,
+    error:
+      error === null
+        ? null
+        : mapAuthErrorMessage({
+            flow: "login",
+            error,
+            rawMessage: getAuthErrorRawMessage(error),
+          }),
+  };
 };

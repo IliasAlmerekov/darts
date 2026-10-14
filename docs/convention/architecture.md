@@ -32,6 +32,7 @@ src/shared/
   api/         # apiClient, endpoints, typed errors, mappers
   hooks/       # cross-page hooks
   lib/         # pure helpers (guards, router, error mapping, game logic, etc.)
+  query/       # the QueryClient and query options per resource (auth, statistics)
   services/    # browser-side services (logger, sound, storage)
   store/       # Nanostores atoms and actions
   types/       # cross-page type definitions, including `*.test-support.ts`
@@ -128,7 +129,7 @@ code is forbidden -- use `@/types` instead.
 ### `shared/{store,hooks,services,lib}/`
 
 These layers do **not** have barrels. Consumers deep-import by file name:
-`@/shared/store/auth`, `@/shared/store/game-state`,
+`@/shared/store/game-session`, `@/shared/store/game-state`,
 `@/shared/services/browser/clientLogger`, `@/lib/guards/guards`. This is the convention,
 not a violation.
 

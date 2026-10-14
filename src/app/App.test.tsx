@@ -32,10 +32,6 @@ vi.mock("@/shared/services/browser/clientLogger", () => ({
   },
 }));
 
-vi.mock("@/shared/store/auth", () => ({
-  invalidateAuthState: vi.fn(),
-}));
-
 vi.mock("@/shared/store/game-session", () => ({
   resetRoomStore: vi.fn(),
 }));
@@ -102,7 +98,6 @@ import { Outlet } from "react-router-dom";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { clearUnauthorizedHandler, setUnauthorizedHandler } from "@/shared/api";
 import { scheduleSelectiveRouteWarmUp, scheduleStatisticsPrefetch } from "@/app/routeWarmup";
-import { invalidateAuthState } from "@/shared/store/auth";
 import { resetRoomStore } from "@/shared/store/game-session";
 import { resetGameStore } from "@/shared/store/game-state";
 
@@ -289,33 +284,33 @@ describe("App routing", () => {
   it("should schedule selective route warm-up and run cleanup when the app unmounts", async () => {
     const stopWarmup = vi.fn();
     vi.mocked(scheduleSelectiveRouteWarmUp).mockReturnValueOnce(stopWarmup);
-    const stopStatisticsPrefetch = vi.fn();
-    vi.mocked(scheduleStatisticsPrefetch).mockReturnValueOnce(stopStatisticsPrefetch);
 
     const { unmount } = await renderApp();
 
     expect(scheduleSelectiveRouteWarmUp).toHaveBeenCalledTimes(1);
-    expect(scheduleStatisticsPrefetch).toHaveBeenCalledTimes(1);
+    expect(scheduleStatisticsPrefetch).not.toHaveBeenCalled();
 
     await act(async () => {
       unmount();
     });
 
     expect(stopWarmup).toHaveBeenCalledTimes(1);
-    expect(stopStatisticsPrefetch).toHaveBeenCalledTimes(1);
   });
 
-  it("should clear auth, room, and game stores when unauthorized handler fires", async () => {
+  it("should clear the query cache, room, and game stores when unauthorized handler fires", async () => {
     window.history.pushState({}, "", "/start");
 
     await renderApp();
+    // App was re-imported after vi.resetModules(), so take the client from the same module graph.
+    const { queryClient } = await import("@/shared/query/queryClient");
+    queryClient.setQueryData(["auth", "me"], { id: 1 });
 
     expect(await screen.findByText("Start Page")).toBeTruthy();
     expect(setUnauthorizedHandler).toHaveBeenCalledTimes(1);
 
     await triggerUnauthorizedHandler();
 
-    expect(vi.mocked(invalidateAuthState)).toHaveBeenCalledTimes(1);
+    expect(queryClient.getQueryData(["auth", "me"])).toBeUndefined();
     expect(vi.mocked(resetRoomStore)).toHaveBeenCalledTimes(1);
     expect(vi.mocked(resetGameStore)).toHaveBeenCalledTimes(1);
   });

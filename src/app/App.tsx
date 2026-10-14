@@ -14,13 +14,15 @@ import ScrollToTop from "@/app/ScrollToTop";
 import AdminLayoutRoute from "@/app/routes/AdminLayoutRoute";
 import NotFoundPage from "@/app/routes/NotFoundPage";
 import ProtectedRoutes from "@/app/ProtectedRoutes";
-import { scheduleSelectiveRouteWarmUp, scheduleStatisticsPrefetch } from "@/app/routeWarmup";
+import { QueryClientProvider } from "@tanstack/react-query";
+import { scheduleSelectiveRouteWarmUp } from "@/app/routeWarmup";
+import { useStatisticsPrefetch } from "@/app/useStatisticsPrefetch";
 import { gameDetailLoader } from "@/pages/GameDetailPage/useGameDetailPage";
 import { startPageLoader } from "@/pages/StartPage/useRoomRestore";
 import { gamesOverviewLoader } from "@/pages/GamesOverviewPage/useGamesOverview";
 import { clearUnauthorizedHandler, setUnauthorizedHandler } from "@/shared/api";
 import { ROUTES } from "@/lib/router/routes";
-import { invalidateAuthState } from "@/shared/store/auth";
+import { queryClient } from "@/shared/query/queryClient";
 import { resetRoomStore } from "@/shared/store/game-session";
 import { resetGameStore } from "@/shared/store/game-state";
 import { UniversalSkeleton } from "@/shared/ui/skeletons";
@@ -51,12 +53,17 @@ function AppShell(): React.JSX.Element {
   );
 }
 
+function StatisticsPrefetch(): null {
+  useStatisticsPrefetch();
+  return null;
+}
+
 function UnauthorizedNavigationBridge(): null {
   const navigate = useNavigate();
 
   useEffect(() => {
     setUnauthorizedHandler(() => {
-      invalidateAuthState();
+      queryClient.clear();
       resetRoomStore();
       resetGameStore();
       navigate(ROUTES.login, { state: { from: window.location.pathname }, replace: true });
@@ -163,18 +170,19 @@ function App(): React.JSX.Element {
 
   useEffect(() => {
     const stopRouteWarmUp = scheduleSelectiveRouteWarmUp();
-    const stopStatisticsPrefetch = scheduleStatisticsPrefetch();
 
     return () => {
-      stopStatisticsPrefetch();
       stopRouteWarmUp();
     };
   }, []);
 
   return (
-    <div className={styles.root}>
-      <RouterProvider router={router} future={{ v7_startTransition: true }} />
-    </div>
+    <QueryClientProvider client={queryClient}>
+      <StatisticsPrefetch />
+      <div className={styles.root}>
+        <RouterProvider router={router} future={{ v7_startTransition: true }} />
+      </div>
+    </QueryClientProvider>
   );
 }
 

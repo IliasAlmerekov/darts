@@ -9,6 +9,7 @@ import {
 } from "./auth";
 import { apiClient } from "./client";
 import { TimeoutError } from "./errors";
+import { queryClient } from "@/shared/query/queryClient";
 import { createMockResponse } from "./test-utils";
 
 describe("getAuthenticatedUser", () => {
@@ -363,6 +364,24 @@ describe("logout", () => {
       expect.objectContaining({ validate: expect.any(Function) }),
     );
     expect(onSuccess).toHaveBeenCalledTimes(1);
+  });
+
+  it("should clear the query cache when logout succeeds", async () => {
+    queryClient.setQueryData(["auth", "me"], { id: 1 });
+    vi.spyOn(apiClient, "post").mockResolvedValueOnce(undefined);
+
+    await logout();
+
+    expect(queryClient.getQueryCache().getAll()).toHaveLength(0);
+  });
+
+  it("should keep the query cache when logout fails", async () => {
+    queryClient.setQueryData(["auth", "me"], { id: 1 });
+    vi.spyOn(apiClient, "post").mockRejectedValueOnce(new Error("Network error"));
+
+    await expect(logout()).rejects.toThrow("Network error");
+
+    expect(queryClient.getQueryData(["auth", "me"])).toEqual({ id: 1 });
   });
 
   it("should not call the success callback when logout fails", async () => {

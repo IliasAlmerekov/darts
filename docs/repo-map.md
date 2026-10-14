@@ -141,6 +141,7 @@ src/shared/
   api/         # apiClient, domain API modules, typed errors, endpoint helpers
   hooks/       # cross-page hooks
   lib/         # pure helpers: error, game, guards, router
+  query/       # QueryClient and query options (auth, statistics)
   services/    # browser-side services
   store/       # Nanostores atoms and actions
   types/       # shared types and test-support builders
@@ -179,8 +180,6 @@ outside `src/shared/api/`; use the public surfaces.
 Main store files:
 
 ```text
-auth.ts
-auth.state.ts
 game-session.ts
 game-state.ts
 index.ts

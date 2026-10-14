@@ -1,13 +1,11 @@
 // @vitest-environment jsdom
 import { renderHook, waitFor, act } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { invalidateAuthState } from "@/shared/store/auth";
+import { QueryClientProvider } from "@tanstack/react-query";
+import type { ReactNode } from "react";
+import { queryClient } from "@/shared/query/queryClient";
 import type { PlayerProps } from "@/types";
-import {
-  clearPlayerStatsCache,
-  prefetchInitialPlayerStats,
-  usePlayerStats,
-} from "./usePlayerStats";
+import { usePlayerStats } from "./usePlayerStats";
 
 const getPlayerStatsMock = vi.fn();
 
@@ -20,17 +18,22 @@ const PLAYERS = [
   { id: 2, playerId: 2, name: "Bob", scoreAverage: 40.0, gamesPlayed: 5 },
 ];
 
+function wrapper({ children }: { children: ReactNode }): React.JSX.Element {
+  return <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>;
+}
+
 describe("usePlayerStats", () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    clearPlayerStatsCache();
+    queryClient.clear();
   });
 
   it("should start with loading true and no data", () => {
     getPlayerStatsMock.mockReturnValue(new Promise(() => {})); // never resolves
 
-    const { result } = renderHook(() =>
-      usePlayerStats({ limit: 10, offset: 0, sortParam: undefined }),
+    const { result } = renderHook(
+      () => usePlayerStats({ limit: 10, offset: 0, sortParam: undefined }),
+      { wrapper },
     );
 
     expect(result.current.loading).toBe(true);
@@ -41,8 +44,9 @@ describe("usePlayerStats", () => {
   it("should expose fetched stats and total when API succeeds", async () => {
     getPlayerStatsMock.mockResolvedValue({ items: PLAYERS, total: 2 });
 
-    const { result } = renderHook(() =>
-      usePlayerStats({ limit: 10, offset: 0, sortParam: undefined }),
+    const { result } = renderHook(
+      () => usePlayerStats({ limit: 10, offset: 0, sortParam: undefined }),
+      { wrapper },
     );
 
     await waitFor(() => {
@@ -57,8 +61,9 @@ describe("usePlayerStats", () => {
   it("should handle paginated response with items array", async () => {
     getPlayerStatsMock.mockResolvedValue({ items: PLAYERS, total: 42 });
 
-    const { result } = renderHook(() =>
-      usePlayerStats({ limit: 10, offset: 0, sortParam: undefined }),
+    const { result } = renderHook(
+      () => usePlayerStats({ limit: 10, offset: 0, sortParam: undefined }),
+      { wrapper },
     );
 
     await waitFor(() => expect(result.current.loading).toBe(false));
@@ -70,8 +75,9 @@ describe("usePlayerStats", () => {
   it("should expose empty stats when API returns empty items array", async () => {
     getPlayerStatsMock.mockResolvedValue({ items: [], total: 0 });
 
-    const { result } = renderHook(() =>
-      usePlayerStats({ limit: 10, offset: 0, sortParam: undefined }),
+    const { result } = renderHook(
+      () => usePlayerStats({ limit: 10, offset: 0, sortParam: undefined }),
+      { wrapper },
     );
 
     await waitFor(() => expect(result.current.loading).toBe(false));
@@ -83,8 +89,9 @@ describe("usePlayerStats", () => {
   it("should set error message and stop loading when API rejects", async () => {
     getPlayerStatsMock.mockRejectedValue(new Error("Network error"));
 
-    const { result } = renderHook(() =>
-      usePlayerStats({ limit: 10, offset: 0, sortParam: undefined }),
+    const { result } = renderHook(
+      () => usePlayerStats({ limit: 10, offset: 0, sortParam: undefined }),
+      { wrapper },
     );
 
     await waitFor(() => expect(result.current.loading).toBe(false));
@@ -97,8 +104,9 @@ describe("usePlayerStats", () => {
     getPlayerStatsMock.mockRejectedValueOnce(new Error("fail"));
     getPlayerStatsMock.mockResolvedValueOnce({ items: PLAYERS, total: 2 });
 
-    const { result } = renderHook(() =>
-      usePlayerStats({ limit: 10, offset: 0, sortParam: undefined }),
+    const { result } = renderHook(
+      () => usePlayerStats({ limit: 10, offset: 0, sortParam: undefined }),
+      { wrapper },
     );
 
     await waitFor(() => expect(result.current.error).toBe("Could not load player statistics"));
@@ -124,8 +132,9 @@ describe("usePlayerStats", () => {
         }),
     );
 
-    const { result } = renderHook(() =>
-      usePlayerStats({ limit: 10, offset: 0, sortParam: undefined }),
+    const { result } = renderHook(
+      () => usePlayerStats({ limit: 10, offset: 0, sortParam: undefined }),
+      { wrapper },
     );
 
     await waitFor(() => expect(result.current.loading).toBe(false));
@@ -134,7 +143,7 @@ describe("usePlayerStats", () => {
       result.current.retry();
     });
 
-    expect(result.current.loading).toBe(true);
+    await waitFor(() => expect(result.current.loading).toBe(true));
     expect(result.current.stats).toEqual(PLAYERS);
     expect(result.current.total).toBe(20);
     expect(result.current.error).toBeNull();
@@ -159,7 +168,7 @@ describe("usePlayerStats", () => {
     const { result, rerender } = renderHook(
       ({ offset }: { offset: number }) =>
         usePlayerStats({ limit: 10, offset, sortParam: undefined }),
-      { initialProps: { offset: 0 } },
+      { initialProps: { offset: 0 }, wrapper },
     );
 
     await waitFor(() => expect(result.current.loading).toBe(false));
@@ -177,7 +186,7 @@ describe("usePlayerStats", () => {
     const { result, rerender } = renderHook(
       ({ sortParam }: { sortParam: string | undefined }) =>
         usePlayerStats({ limit: 10, offset: 0, sortParam }),
-      { initialProps: { sortParam: undefined as string | undefined } },
+      { initialProps: { sortParam: undefined as string | undefined }, wrapper },
     );
 
     await waitFor(() => expect(result.current.loading).toBe(false));
@@ -203,7 +212,7 @@ describe("usePlayerStats", () => {
     const { result, rerender } = renderHook(
       ({ offset }: { offset: number }) =>
         usePlayerStats({ limit: 10, offset, sortParam: undefined }),
-      { initialProps: { offset: 0 } },
+      { initialProps: { offset: 0 }, wrapper },
     );
 
     await waitFor(() => expect(result.current.loading).toBe(false));
@@ -239,7 +248,7 @@ describe("usePlayerStats", () => {
     const { result, rerender } = renderHook(
       ({ offset }: { offset: number }) =>
         usePlayerStats({ limit: 10, offset, sortParam: undefined }),
-      { initialProps: { offset: 0 } },
+      { initialProps: { offset: 0 }, wrapper },
     );
 
     await waitFor(() => expect(result.current.loading).toBe(false));
@@ -256,108 +265,72 @@ describe("usePlayerStats", () => {
     expect(getPlayerStatsMock).toHaveBeenCalledTimes(3);
   });
 
-  it("reuses in-flight prefetch when hook mounts before prefetch completes", async () => {
-    let resolvePrefetch: ((value: { items: PlayerProps[]; total: number }) => void) | undefined;
-
-    getPlayerStatsMock.mockImplementationOnce(
-      () =>
-        new Promise<{ items: PlayerProps[]; total: number }>((resolve) => {
-          resolvePrefetch = resolve;
-        }),
-    );
-
-    const prefetchPromise = prefetchInitialPlayerStats();
-
-    const { result } = renderHook(() =>
-      usePlayerStats({ limit: 10, offset: 0, sortParam: undefined }),
-    );
-
-    expect(result.current.loading).toBe(true);
-
-    act(() => {
-      resolvePrefetch?.({ items: PLAYERS, total: 2 });
-    });
-
-    await act(async () => {
-      await prefetchPromise;
-    });
-
-    await waitFor(() => expect(result.current.loading).toBe(false));
-    expect(result.current.stats).toEqual(PLAYERS);
-    expect(getPlayerStatsMock).toHaveBeenCalledTimes(1);
-  });
-
-  it("clears in-flight prefetches when auth state is invalidated", async () => {
-    getPlayerStatsMock.mockResolvedValueOnce({ items: PLAYERS, total: 2 }).mockResolvedValueOnce({
-      items: [{ id: 3, playerId: 3, name: "Carol", scoreAverage: 62.1, gamesPlayed: 8 }],
-      total: 1,
-    });
-
-    const firstRender = renderHook(() =>
-      usePlayerStats({ limit: 10, offset: 0, sortParam: undefined }),
-    );
-
-    await waitFor(() => expect(firstRender.result.current.loading).toBe(false));
-    expect(getPlayerStatsMock).toHaveBeenCalledTimes(1);
-
-    firstRender.unmount();
-    invalidateAuthState();
-
-    const secondRender = renderHook(() =>
-      usePlayerStats({ limit: 10, offset: 0, sortParam: undefined }),
-    );
-
-    expect(secondRender.result.current.loading).toBe(true);
-
-    await waitFor(() => expect(secondRender.result.current.loading).toBe(false));
-    expect(secondRender.result.current.stats).toEqual([
-      { id: 3, playerId: 3, name: "Carol", scoreAverage: 62.1, gamesPlayed: 8 },
-    ]);
-    expect(getPlayerStatsMock).toHaveBeenCalledTimes(2);
-  });
-
-  it("does not reuse pre-invalidation in-flight prefetch after auth invalidation", async () => {
-    let resolvePrefetch: ((value: { items: PlayerProps[]; total: number }) => void) | undefined;
+  it("ignores a late response for a previous page", async () => {
+    let resolveFirstPage: ((value: { items: PlayerProps[]; total: number }) => void) | undefined;
+    const carol = { id: 3, playerId: 3, name: "Carol", scoreAverage: 62.1, gamesPlayed: 8 };
 
     getPlayerStatsMock
       .mockImplementationOnce(
         () =>
           new Promise<{ items: PlayerProps[]; total: number }>((resolve) => {
-            resolvePrefetch = resolve;
+            resolveFirstPage = resolve;
           }),
       )
-      .mockResolvedValueOnce({
-        items: [{ id: 4, playerId: 4, name: "Dylan", scoreAverage: 58.4, gamesPlayed: 12 }],
-        total: 1,
-      });
+      .mockResolvedValueOnce({ items: [carol], total: 20 });
 
-    const prefetchPromise = prefetchInitialPlayerStats();
-
-    invalidateAuthState();
-
-    await act(async () => {
-      resolvePrefetch?.({ items: PLAYERS, total: 2 });
-      await prefetchPromise;
-    });
-
-    const { result } = renderHook(() =>
-      usePlayerStats({ limit: 10, offset: 0, sortParam: undefined }),
+    const { result, rerender } = renderHook(
+      ({ offset }: { offset: number }) =>
+        usePlayerStats({ limit: 10, offset, sortParam: undefined }),
+      { initialProps: { offset: 0 }, wrapper },
     );
 
-    expect(result.current.loading).toBe(true);
+    rerender({ offset: 10 });
+    await waitFor(() => expect(result.current.stats).toEqual([carol]));
 
-    await waitFor(() => expect(result.current.loading).toBe(false));
-    expect(result.current.stats).toEqual([
-      { id: 4, playerId: 4, name: "Dylan", scoreAverage: 58.4, gamesPlayed: 12 },
-    ]);
-    expect(getPlayerStatsMock).toHaveBeenCalledTimes(2);
+    await act(async () => {
+      resolveFirstPage?.({ items: PLAYERS, total: 20 });
+      await Promise.resolve();
+    });
+
+    expect(result.current.stats).toEqual([carol]);
+  });
+
+  it("ignores a late response for a previous sort", async () => {
+    let resolveFirstSort: ((value: { items: PlayerProps[]; total: number }) => void) | undefined;
+    const carol = { id: 3, playerId: 3, name: "Carol", scoreAverage: 62.1, gamesPlayed: 8 };
+
+    getPlayerStatsMock
+      .mockImplementationOnce(
+        () =>
+          new Promise<{ items: PlayerProps[]; total: number }>((resolve) => {
+            resolveFirstSort = resolve;
+          }),
+      )
+      .mockResolvedValueOnce({ items: [carol], total: 1 });
+
+    const { result, rerender } = renderHook(
+      ({ sortParam }: { sortParam: string | undefined }) =>
+        usePlayerStats({ limit: 10, offset: 0, sortParam }),
+      { initialProps: { sortParam: undefined as string | undefined }, wrapper },
+    );
+
+    rerender({ sortParam: "average:desc" });
+    await waitFor(() => expect(result.current.stats).toEqual([carol]));
+
+    await act(async () => {
+      resolveFirstSort?.({ items: PLAYERS, total: 2 });
+      await Promise.resolve();
+    });
+
+    expect(result.current.stats).toEqual([carol]);
   });
 
   it("should pass limit, offset and sortParam to the API call", async () => {
     getPlayerStatsMock.mockResolvedValue({ items: [], total: 0 });
 
-    const { result } = renderHook(() =>
-      usePlayerStats({ limit: 5, offset: 15, sortParam: "average:desc" }),
+    const { result } = renderHook(
+      () => usePlayerStats({ limit: 5, offset: 15, sortParam: "average:desc" }),
+      { wrapper },
     );
 
     await waitFor(() => expect(result.current.loading).toBe(false));
@@ -371,8 +344,9 @@ describe("usePlayerStats", () => {
     };
     getPlayerStatsMock.mockReturnValue(new Promise((res) => (resolve = res)));
 
-    const { result, unmount } = renderHook(() =>
-      usePlayerStats({ limit: 10, offset: 0, sortParam: undefined }),
+    const { result, unmount } = renderHook(
+      () => usePlayerStats({ limit: 10, offset: 0, sortParam: undefined }),
+      { wrapper },
     );
 
     expect(result.current.loading).toBe(true);

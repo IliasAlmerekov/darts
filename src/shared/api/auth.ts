@@ -1,6 +1,7 @@
 import { apiClient, ApiValidationError } from "./client";
 import { ApiError, UnauthorizedError } from "./errors";
 import { isFiniteNumber, isRecord } from "@/lib/guards/guards";
+import { queryClient } from "@/shared/query/queryClient";
 import { ROUTES } from "@/shared/lib/router/routes";
 
 // ---------------------------------------------------------------------------
@@ -190,12 +191,13 @@ export async function loginWithCredentials(credentials: LoginCredentials): Promi
 }
 
 /**
- * Logs out the current user.
+ * Logs out the current user and drops every cached read of the old session.
  */
 export async function logout(onSuccess?: () => void): Promise<void> {
   await apiClient.post(LOGOUT_ENDPOINT, undefined, {
     validate: isLogoutResponse,
   });
+  queryClient.clear();
   onSuccess?.();
 }
 
