@@ -36,6 +36,7 @@ and this project does **not** yet follow [Semantic Versioning](https://semver.or
 
 ### Fixed
 
+- Statistics: the player statistics prefetch runs only for admins, and the Statistics page reuses the prefetched first page for 30 seconds (#110)
 - Accessibility: login and registration error and success banners are announced to screen readers (#112)
 - Invitations: when copying the link fails, a selectable link is shown (#119)
 - Tooling: the stylelint glob no longer breaks on shell expansion (#114)
