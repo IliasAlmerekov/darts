@@ -206,11 +206,9 @@ rg -nP '\b(data|response)\s+as\s+[A-Za-z]' src/shared/api --glob '!**/*.test.{ts
 ```
 
 **3. Mappers imported by render-flow files** -- mappers may live in API / store /
-`pages/<X>/lib/`, but must not appear in JSX or render-flow hooks:
+`pages/<X>/lib/`, but must not appear in JSX or render-flow hooks. ESLint enforces this
+(`no-restricted-imports` for `src/pages/**/*.tsx` and `src/pages/**/use*.ts` in
+`eslint.config.mjs`). A new mapper module whose name lacks `mapper`, `normalizer` or
+`Standings` needs its name added to that rule's regex.
 
-```bash
-rg -nP "from ['\"]@/(shared/lib|lib)/[a-z-]+/[a-z-]*(?:[Mm]appers?|[Nn]ormalizer)['\"]" \
-  src/pages -g 'src/pages/**/*.tsx' -g 'src/pages/**/use*.ts'
-```
-
-A clean run of all three prints nothing.
+A clean run of the `rg` checks prints nothing, and `npm run eslint` passes.

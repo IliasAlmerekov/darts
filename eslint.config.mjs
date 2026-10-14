@@ -112,6 +112,35 @@ export default [
     },
   },
   {
+    // A later block replaces the rule options of the pages block above, so it repeats them.
+    files: ["src/pages/**/*.tsx", "src/pages/**/use*.ts"],
+    // Existing debt: useUndoFlow calls normalizeGameData in an undo handler.
+    ignores: ["src/pages/GamePage/throws/useUndoFlow.ts"],
+    rules: {
+      "no-restricted-imports": [
+        "error",
+        {
+          patterns: [
+            {
+              group: ["@/pages/*", "../pages/*"],
+              message: "Pages must not import from other pages. Use shared/ for cross-page code.",
+            },
+            {
+              group: ["@/app/*", "../app/*"],
+              message: "Pages must not import from app/. Move shared logic to shared/.",
+            },
+            {
+              allowTypeImports: true,
+              regex: "^@/(shared/lib|lib)/[a-z-]+/[a-zA-Z-]*([Mm]appers?|[Nn]ormalizer|Standings)$",
+              message:
+                "Render-flow files must not call DTO mappers. Call them from a page lib/ file (docs/convention/api.md, Mappers).",
+            },
+          ],
+        },
+      ],
+    },
+  },
+  {
     files: ["tests/**/*.spec.ts"],
     ignores: ["tests/live/**"],
     rules: {
