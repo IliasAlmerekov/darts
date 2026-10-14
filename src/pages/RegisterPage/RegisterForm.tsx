@@ -29,7 +29,11 @@ export function RegisterForm({
         <p className={styles.formSubtitle}>Enter your details to get started</p>
       </div>
 
-      {error && <div className={`${styles.alert} ${styles.alertDanger}`}>{error}</div>}
+      {error && (
+        <div role="alert" className={`${styles.alert} ${styles.alertDanger}`}>
+          {error}
+        </div>
+      )}
 
       <form onSubmit={onSubmit} className={styles.form}>
         <div className={styles.fieldGroup}>
