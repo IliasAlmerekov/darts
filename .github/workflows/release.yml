@@ -3,7 +3,7 @@ name: Release
 on:
   push:
     tags:
-      - "[0-9]+.[0-9]+.[0-9]+"
+      - "v[0-9]+.[0-9]+.[0-9]+"
 
 permissions:
   contents: read
@@ -12,20 +12,30 @@ jobs:
   checks:
     runs-on: ubuntu-latest
     timeout-minutes: 30
+    outputs:
+      version: ${{ steps.tag.outputs.version }}
     steps:
+      # The tag is v<semver>. Images, the archive and the server use the bare version.
       - name: Validate tag
+        id: tag
         env:
           TAG: ${{ github.ref_name }}
         run: |
-          if [[ ! $TAG =~ ^(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)$ ]]; then
-            echo "::error::Tag '$TAG' is not bare semver such as 0.1.0"
+          if [[ ! $TAG =~ ^v(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)$ ]]; then
+            echo "::error::Tag '$TAG' is not v-prefixed semver such as v0.1.0"
             exit 1
           fi
+          echo "version=${TAG#v}" >> "$GITHUB_OUTPUT"
 
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
+
+      - name: Check release notes
+        env:
+          VERSION: ${{ steps.tag.outputs.version }}
+        run: deploy/release-notes.sh "$VERSION"
 
       # No dependency cache in the release path, so a poisoned cache cannot reach production.
       - name: Setup Node.js
@@ -55,10 +65,10 @@ jobs:
       - name: Resolve release metadata
         id: meta
         env:
-          TAG: ${{ github.ref_name }}
+          TAG: ${{ needs.checks.outputs.version }}
           APP_HOSTNAME: ${{ vars.APP_HOSTNAME }}
         run: |
-          [[ $TAG =~ ^(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)$ ]] || { echo "::error::Bad tag"; exit 1; }
+          [[ $TAG =~ ^(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)$ ]] || { echo "::error::Bad version"; exit 1; }
           [[ -n $APP_HOSTNAME ]] || { echo "::error::Repository variable APP_HOSTNAME is not set"; exit 1; }
           backend_ref=$(tr -d '[:space:]' < deploy/backend-ref)
           [[ $backend_ref =~ ^[0-9a-f]{40}$ ]] || { echo "::error::deploy/backend-ref is not a 40-character SHA"; exit 1; }
@@ -89,20 +99,22 @@ jobs:
       - name: Build frontend image
         env:
           IMAGE: ${{ steps.meta.outputs.frontend_image }}
+          VERSION: ${{ needs.checks.outputs.version }}
         run: |
           docker build --platform linux/amd64 \
             --label "org.opencontainers.image.revision=$GITHUB_SHA" \
-            --label "org.opencontainers.image.version=$GITHUB_REF_NAME" \
+            --label "org.opencontainers.image.version=$VERSION" \
             -f deploy/frontend.Dockerfile -t "$IMAGE" .
 
       - name: Build backend image
         env:
           IMAGE: ${{ steps.meta.outputs.backend_image }}
           BACKEND_REF: ${{ steps.meta.outputs.backend_ref }}
+          VERSION: ${{ needs.checks.outputs.version }}
         run: |
           docker build --platform linux/amd64 \
             --label "org.opencontainers.image.revision=$BACKEND_REF" \
-            --label "org.opencontainers.image.version=$GITHUB_REF_NAME" \
+            --label "org.opencontainers.image.version=$VERSION" \
             -f backend/app/Dockerfile --target runtime -t "$IMAGE" backend
 
       - name: Scan frontend image (report)
@@ -142,7 +154,7 @@ jobs:
       - name: Package release
         id: package
         env:
-          RELEASE_TAG: ${{ github.ref_name }}
+          RELEASE_TAG: ${{ needs.checks.outputs.version }}
           COMMIT_SHA: ${{ github.sha }}
           RUN_ID: ${{ github.run_id }}
           APP_HOSTNAME: ${{ vars.APP_HOSTNAME }}
@@ -220,3 +232,26 @@ jobs:
       - name: Remove SSH key
         if: always()
         run: rm -rf "$RUNNER_TEMP/ssh"
+
+  # The tag page on GitHub shows the CHANGELOG.md section of the deployed version.
+  github-release:
+    needs: [checks, deploy]
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Create GitHub release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ github.ref_name }}
+          VERSION: ${{ needs.checks.outputs.version }}
+        run: |
+          deploy/release-notes.sh "$VERSION" > "$RUNNER_TEMP/notes.md"
+          gh release create "$TAG" --repo "$GITHUB_REPOSITORY" --verify-tag \
+            --title "$TAG" --notes-file "$RUNNER_TEMP/notes.md"

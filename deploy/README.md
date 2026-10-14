@@ -115,21 +115,23 @@ Delete `./darts-deploy` from your machine once the secret is set.
 
 ## Release
 
-Push a bare semver tag from the commit you want to ship:
+Move the `## [Unreleased]` entries of `CHANGELOG.md` under `## [<version>] - <date>`, merge
+that to `main`, then push an annotated `v`-prefixed semver tag from the merge commit:
 
 ```sh
-git tag 0.1.0
-git push origin 0.1.0
+git tag -a --cleanup=verbatim v0.1.3 -m "v0.1.3" -m "$(deploy/release-notes.sh 0.1.3)"
+git push github v0.1.3
 ```
 
 `.github/workflows/release.yml` then runs:
 
-1. `npm run validate:push`.
+1. Checks that `CHANGELOG.md` has notes under `## [<version>]`, then `npm run validate:push`.
 2. Builds both images for linux/amd64. The backend comes from `darts-backend` at the
    commit in `backend-ref`. Trivy prints HIGH and CRITICAL findings and fails the run on
    CRITICAL findings that have a fix.
 3. Uploads the archive and runs `/opt/darts/bin/rollout` on the VM. Only one deploy runs
    at a time.
+4. Creates the GitHub release for the tag, with that `CHANGELOG.md` section as its notes.
 
 The rollout loads the images, starts MySQL, stops the old proxy and backend, runs the
 migrations, starts the new stack and checks `https://<APP_HOSTNAME>/api/health` and `/`
@@ -137,7 +139,9 @@ on the VM. If a step fails after the old release was stopped, it starts the old 
 again. Then it keeps the current and previous release directories and their images, and
 deletes older ones.
 
-A tag like `v0.1.0` or `0.1.0-rc.1` does not start the workflow.
+Images, the release archive and the server use the version without the `v`, so
+`darts-frontend:0.1.3` ships from tag `v0.1.3`. A tag like `0.1.0` or `v0.1.0-rc.1` does
+not start the workflow.
 
 ## First administrator
 

@@ -29,6 +29,7 @@ and this project does **not** yet follow [Semantic Versioning](https://semver.or
 - Docs: contribution docs match the repo, and generated Playwright reports are no longer tracked (#118)
 - Tooling: Playwright tests are typechecked and linted
 - Dependencies: `react-router-dom` is 6.30.6, and non-breaking audit fixes are applied to dev tooling (#115)
+- Release: tags are `v`-prefixed, such as `v0.1.3`, and each tag's GitHub release shows its `CHANGELOG.md` section
 - Deploy: releases build `darts-backend` at `ae475cd`, which adds admin-only API access, the invitation login payload and camelCase game settings
 
 ### Removed
