@@ -7,11 +7,14 @@ and this project does **not** yet follow [Semantic Versioning](https://semver.or
 
 ## [Unreleased]
 
+### Added
+
+- Tooling: ESLint fails when a page component or `use*` hook imports a DTO mapper, so mapping stays in a page `lib/` file
+
 ## [0.1.3] - 2026-10-14
 
 ### Added
 
-- Tooling: ESLint fails when a page component or `use*` hook imports a DTO mapper, so mapping stays in a page `lib/` file
 - Login: Sign up is a full-width outlined button below Sign in, and "Don't have an account?" is blue (#150)
 - Registration: Sign in is a full-width outlined button below Create account, and "Already have an account?" is blue (#150)
 - Navigation: the main navigation is a `<nav>` landmark and marks the current page with `aria-current` (#120)
