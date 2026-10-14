@@ -4,6 +4,7 @@ import { type LoaderFunctionArgs, useNavigation, useSearchParams } from "react-r
 import { queryClient } from "@/shared/query/queryClient";
 import { statsQueries } from "@/shared/query/statistics.queries";
 import type { FinishedGameProps } from "@/types";
+import { parseOffset } from "./lib/parseOffset";
 
 const LIMIT = 9;
 
@@ -15,12 +16,6 @@ interface UseGamesOverviewResult {
   loading: boolean;
   error: string | null;
   retry: () => void;
-}
-
-/** The `offset` search param, or 0 (the first page) when it is missing, negative or fractional. */
-function parseOffset(value: string | null): number {
-  const parsed = Number(value ?? "0");
-  return Number.isInteger(parsed) && parsed >= 0 ? parsed : 0;
 }
 
 /**

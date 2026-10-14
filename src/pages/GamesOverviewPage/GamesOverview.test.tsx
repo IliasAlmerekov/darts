@@ -176,4 +176,17 @@ describe("GamesOverviewPage", () => {
     // Page 1 of 3 (27 items, limit=9)
     expect(await screen.findByText(/page 1 of/i)).toBeTruthy();
   });
+
+  it("should show the first page and page forward from it when the offset param is invalid", async () => {
+    getGamesOverviewMock.mockResolvedValue({ items: GAMES, total: 27 });
+    renderPage("/games?offset=abc");
+
+    expect(await screen.findByText(/page 1 of 3/i)).toBeTruthy();
+
+    fireEvent.click(screen.getByRole("link", { name: /go to next page/i }));
+
+    await waitFor(() => {
+      expect(getGamesOverviewMock).toHaveBeenLastCalledWith(9, 9, expect.any(AbortSignal));
+    });
+  });
 });
