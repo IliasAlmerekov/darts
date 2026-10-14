@@ -196,6 +196,13 @@
   }
 }
 
+/* Tablets and phones host the lobby: players join by scanning the QR code */
+@media (width <= 1020px) {
+  .invitationLinkBox {
+    display: none;
+  }
+}
+
 /* Tablet styles */
 @media (width <= 768px) {
   .qrCodeContainer {
@@ -235,17 +242,6 @@
 
   .gameIdValue {
     font-size: var(--font-size-20);
-  }
-
-  .invitationLinkBox {
-    width: 100%;
-    max-width: 260px;
-    align-self: center;
-  }
-
-  .copyButton {
-    font-size: var(--font-size-12);
-    padding: 0.5rem 0.75rem;
   }
 }
 
@@ -289,10 +285,6 @@
 
   .gameIdValue {
     font-size: var(--font-size-16);
-  }
-
-  .invitationLinkBox {
-    display: none;
   }
 }
 
