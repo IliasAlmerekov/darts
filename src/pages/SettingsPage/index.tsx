@@ -158,6 +158,9 @@ function SettingsPage(): React.JSX.Element {
 
     setSelectedGameMode(currentGameMode);
     setSelectedPoints(currentPoints);
+    // The tabs already show these values, so a click before the next render must read them.
+    selectedGameModeRef.current = currentGameMode;
+    selectedPointsRef.current = currentPoints;
     setHasHydratedSelection(true);
   }, [
     activeGameSettings,
