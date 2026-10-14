@@ -31,7 +31,7 @@ That is the mocked suite: every `/api` request needs a route mock. `npm run test
 
 When most mocked specs fail on the login page, read `test-results/*/error-context.md`. A Vite
 import error there means the dev server on :5173 runs stale `node_modules`; Playwright reuses
-it. Run `docker restart dartsapp-frontend-1`.
+it. Run `docker compose -f compose.dev.yaml restart frontend`.
 
 A fresh clone has no `node_modules`: run `npm install` first, or the hook fails.
 

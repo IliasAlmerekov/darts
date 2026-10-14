@@ -9,7 +9,7 @@ and this project does **not** yet follow [Semantic Versioning](https://semver.or
 
 ### Added
 
-- Tooling: ESLint fails when a page component or `use*` hook imports a DTO mapper, so mapping stays in a page `lib/` file
+- Tooling: ESLint fails when a page component or `use*` hook imports a DTO mapper, so mapping stays in a page `lib/` file (#176)
 
 ## [0.1.3] - 2026-10-14
 

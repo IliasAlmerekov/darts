@@ -114,8 +114,12 @@ export default [
   {
     // A later block replaces the rule options of the pages block above, so it repeats them.
     files: ["src/pages/**/*.tsx", "src/pages/**/use*.ts"],
-    // Existing debt: useUndoFlow calls normalizeGameData in an undo handler.
-    ignores: ["src/pages/GamePage/throws/useUndoFlow.ts"],
+    // Existing debt: these hooks call a mapper inside an event handler.
+    ignores: [
+      "src/pages/GamePage/throws/useThrowHandler.ts",
+      "src/pages/GamePage/throws/useUndoFlow.ts",
+      "src/pages/GameSummaryPage/useGameSummaryPage.ts",
+    ],
     rules: {
       "no-restricted-imports": [
         "error",
@@ -131,7 +135,8 @@ export default [
             },
             {
               allowTypeImports: true,
-              regex: "^@/(shared/lib|lib)/[a-z-]+/[a-zA-Z-]*([Mm]appers?|[Nn]ormalizer|Standings)$",
+              regex:
+                "^@/(shared/lib|lib)/game/(applyOptimisticUndo|finishedGameStandings|gameStateNormalizer|mergeGameSettings|parseThrowValue|player-mappers|roundAverage)$",
               message:
                 "Render-flow files must not call DTO mappers. Call them from a page lib/ file (docs/convention/api.md, Mappers).",
             },
