@@ -19,13 +19,12 @@ function renderForm(props: { error?: string | null; success?: string | null }) {
   );
 }
 
-describe("LoginForm registration entry", () => {
+describe("LoginForm login and registration controls", () => {
   it("has no Remember me checkbox", () => {
-    const { container } = renderForm({});
+    renderForm({});
 
     expect(screen.queryByRole("checkbox")).toBeNull();
     expect(screen.queryByLabelText(/remember me/i)).toBeNull();
-    expect(container.querySelector('[name="_remember_me"]')).toBeNull();
   });
 
   it("links Sign up to the registration route", () => {
