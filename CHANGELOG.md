@@ -7,20 +7,11 @@ and this project does **not** yet follow [Semantic Versioning](https://semver.or
 
 ## [Unreleased]
 
-### Added
-
-- Tooling: ESLint fails when a page component or `use*` hook imports a DTO mapper, so mapping stays in a page `lib/` file (#176)
-
-### Changed
-
-- Lobby: the invitation link and the Copy Invite Link button are hidden at 1020px wide and below, so tablets show only the QR code (#178)
-- Data: game detail, games overview, game settings and the lobby player list are TanStack Query reads, so a late response updates only its own key. Game detail reuses the finished game the summary page cached, games overview retries without a route reload, and the lobby player list no longer fetches what the start page loader already read (#169)
-- Docs: the glossary defines _lobby_ (#169)
-
 ## [0.1.3] - 2026-10-14
 
 ### Added
 
+- Tooling: ESLint fails when a page component or `use*` hook imports a DTO mapper, so mapping stays in a page `lib/` file (#176)
 - Login: Sign up is a full-width outlined button below Sign in, and "Don't have an account?" is blue (#150)
 - Registration: Sign in is a full-width outlined button below Create account, and "Already have an account?" is blue (#150)
 - Navigation: the main navigation is a `<nav>` landmark and marks the current page with `aria-current` (#120)
@@ -31,6 +22,9 @@ and this project does **not** yet follow [Semantic Versioning](https://semver.or
 
 ### Changed
 
+- Lobby: the invitation link and the Copy Invite Link button are hidden at 1020px wide and below, so tablets show only the QR code (#178)
+- Data: game detail, games overview, game settings and the lobby player list are TanStack Query reads, so a late response updates only its own key. Game detail reuses the finished game the summary page cached, games overview retries without a route reload, and the lobby player list no longer fetches what the start page loader already read (#169)
+- Docs: the glossary defines _lobby_ (#169)
 - Data: the auth check and player statistics are TanStack Query reads, so a late response updates only its own key. Statistics load only after login, and logout and the 401 handler clear the query cache (#157)
 - Data: the game summary reads the finished game from the `['finishedGame', id]` query through a route loader, so game A's standings can no longer show on game B. Undo and rematch remove the entry (#168, #107)
 - Tests: `npm run test:e2e` is a mocked suite that fails any spec with an unmocked `/api` request (#116)
