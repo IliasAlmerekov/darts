@@ -95,6 +95,17 @@ describe("startPageLoader — invitation already loaded", () => {
     expect(result).toBeNull();
     expect(getGameThrowsMock).not.toHaveBeenCalled();
   });
+
+  it("drops lobby players cached on an earlier visit, so the page reads them again", async () => {
+    $invitationGet.mockReturnValue({ gameId: 42, invitationLink: "/invite/42" });
+    queryClient.setQueryData(gameQueries.lobbyPlayers(42).queryKey, [
+      { id: 1, name: "Alice", position: 0 },
+    ]);
+
+    await startPageLoader(makeArgs("42"));
+
+    expect(queryClient.getQueryData(gameQueries.lobbyPlayers(42).queryKey)).toBeUndefined();
+  });
 });
 
 describe("startPageLoader — redirect cases (before fetch)", () => {

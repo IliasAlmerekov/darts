@@ -74,6 +74,9 @@ export async function startPageLoader({
   const invitation = $invitation.get();
 
   if (invitation?.gameId === gameId) {
+    // The SSE stream was closed while the page was away, so a list cached on an earlier visit
+    // may miss players. Without it the page starts from the game store and reads once.
+    queryClient.removeQueries({ queryKey: gameQueries.lobbyPlayers(gameId).queryKey });
     return null;
   }
 
