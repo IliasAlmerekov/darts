@@ -167,7 +167,10 @@ Rules:
   single global error boundary placed outside the router.
 - React Router 6 loaders are used for route data fetching (`startPageLoader`,
   `gameDetailLoader`, `gamesOverviewLoader`). New page-level data fetches go through a
-  loader, not `useEffect` after mount.
+  loader, not `useEffect` after mount. The loader fills the query cache with
+  `queryClient.ensureQueryData(...)` and the page reads the same key with `useQuery`
+  ([ADR 0001](../adr/0001-tanstack-query-for-server-reads.md)). Data whose key changes
+  inside the page, such as pagination, uses `useQuery` alone.
 - Optional URL parameters use `:id?` (e.g. `/start/:id?`, `/settings/:id?`). Do not
   declare two parallel routes for the same page.
 - Role-restricted routes are nested inside a `<ProtectedRoutes allowedRoles={[...]}>`

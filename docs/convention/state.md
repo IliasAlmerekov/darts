@@ -139,8 +139,13 @@ An unbounded `Record<id, data>` cache that grows on every fetch is forbidden.
 
 ## When to use a store
 
-Nanostores is for **cross-page** or **truly shared** state -- auth session, current
-game id, game data the player is currently in, etc.
+Nanostores is for **cross-page** or **truly shared** client state -- current game id,
+game data the player is currently in, room state, etc.
+
+Data read from the server lives in the TanStack Query cache, not in a store
+([ADR 0001](../adr/0001-tanstack-query-for-server-reads.md)). The authenticated user is
+server data: the auth store in the layout above is removed in #157. Do not add new
+server data to Nanostores.
 
 Local UI state (open/closed toggles, form inputs, hover state, ephemeral selection)
 stays in `useState` inside the component. Do not promote local state to a store unless
