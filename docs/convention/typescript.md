@@ -60,7 +60,6 @@ Shared guards live in `src/shared/lib/guards/guards.ts`. API responses are not c
 guards: each has a Valibot schema in its `src/shared/api/` domain file (see `api.md`).
 
 - `isRecord(value): value is Record<string, unknown>`
-- `isFiniteNumber(value): value is number`
 
 Validation rules:
 

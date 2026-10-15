@@ -1,16 +1,10 @@
 // @vitest-environment jsdom
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import {
-  getAuthenticatedUser,
-  isRoleArray,
-  loginWithCredentials,
-  logout,
-  registerUser,
-} from "./auth";
-import { apiClient } from "./client";
+import { getAuthenticatedUser, loginWithCredentials, logout, registerUser } from "./auth";
+import { apiClient, ApiValidationError } from "./client";
 import { TimeoutError } from "./errors";
 import { queryClient } from "@/shared/query/queryClient";
-import { createMockResponse } from "./test-utils";
+import { createMockResponse, respondWith } from "./test-utils";
 
 describe("getAuthenticatedUser", () => {
   beforeEach(() => {
@@ -170,6 +164,22 @@ describe("getAuthenticatedUser", () => {
     });
   });
 
+  it("should throw ApiError when the auth-check user has an unknown role", async () => {
+    vi.spyOn(globalThis, "fetch").mockResolvedValueOnce(
+      createMockResponse({
+        body: { success: true, roles: ["ROLE_ROOT"], id: 7, redirect: "/start" },
+        status: 200,
+        headers: new Headers({ "content-type": "application/json" }),
+        url: "/api/login/success",
+      }),
+    );
+
+    await expect(getAuthenticatedUser()).rejects.toMatchObject({
+      name: "ApiError",
+      message: "Unexpected response shape for authenticated user",
+    });
+  });
+
   it("should throw ApiError when the auth-check payload is explicitly unauthorized", async () => {
     vi.spyOn(globalThis, "fetch").mockResolvedValueOnce(
       createMockResponse({
@@ -221,18 +231,40 @@ describe("loginWithCredentials", () => {
     vi.restoreAllMocks();
   });
 
-  it("should throw ApiError when login returns a malformed response shape", async () => {
-    vi.spyOn(apiClient, "post").mockResolvedValueOnce({ redirect: 42 });
+  it("returns the login status for a contract example", async () => {
+    vi.spyOn(apiClient, "post").mockImplementationOnce(
+      respondWith({ success: true, redirect: "/api/login/success", last_username: "alice" }),
+    );
 
     await expect(
       loginWithCredentials({ email: "alice@example.com", password: "s3cr3t" }),
-    ).rejects.toMatchObject({
-      name: "ApiError",
-      message: "Unexpected response shape for login",
-      status: 200,
-    });
+    ).resolves.toEqual({ success: true, redirect: "/api/login/success", last_username: "alice" });
+  });
+
+  it("rejects with ApiValidationError when login returns a malformed response shape", async () => {
+    vi.spyOn(apiClient, "post").mockImplementationOnce(respondWith({ redirect: 42 }));
+
+    await expect(
+      loginWithCredentials({ email: "alice@example.com", password: "s3cr3t" }),
+    ).rejects.toBeInstanceOf(ApiValidationError);
+  });
+
+  it("rejects with ApiValidationError when login returns none of the known fields", async () => {
+    vi.spyOn(apiClient, "post").mockImplementationOnce(respondWith({}));
+
+    await expect(
+      loginWithCredentials({ email: "alice@example.com", password: "s3cr3t" }),
+    ).rejects.toBeInstanceOf(ApiValidationError);
   });
 });
+
+// Contract example: POST /api/register, 201
+const registrationExample = {
+  success: true,
+  message: "Registrierung erfolgreich",
+  redirect: "/",
+  status: 201,
+};
 
 describe("registerUser", () => {
   beforeEach(() => {
@@ -240,7 +272,7 @@ describe("registerUser", () => {
   });
 
   it("should call apiClient.post with mapped registration payload", async () => {
-    vi.spyOn(apiClient, "post").mockResolvedValueOnce({ redirect: "/start" });
+    vi.spyOn(apiClient, "post").mockImplementationOnce(respondWith(registrationExample));
 
     const result = await registerUser({
       username: "alice",
@@ -257,12 +289,16 @@ describe("registerUser", () => {
       },
       expect.objectContaining({ validate: expect.any(Object) }),
     );
-    expect(result).toEqual({ redirect: "/start" });
+    expect(result).toEqual(registrationExample);
   });
 
   it("should not issue CSRF ping when refreshCsrf is false", async () => {
-    const getSpy = vi.spyOn(apiClient, "get").mockResolvedValueOnce(undefined);
-    vi.spyOn(apiClient, "post").mockResolvedValueOnce({ redirect: "/start" });
+    const getSpy = vi
+      .spyOn(apiClient, "get")
+      .mockImplementationOnce(
+        respondWith({ success: true, tokens: { user_registration: "csrf-token" } }),
+      );
+    vi.spyOn(apiClient, "post").mockImplementationOnce(respondWith(registrationExample));
 
     await registerUser(
       { username: "alice", email: "alice@example.com", password: "s3cr3t" },
@@ -273,8 +309,12 @@ describe("registerUser", () => {
   });
 
   it("should route CSRF ping through apiClient.get with skipAuthRedirect when refreshCsrf is true", async () => {
-    const getSpy = vi.spyOn(apiClient, "get").mockResolvedValueOnce(undefined);
-    vi.spyOn(apiClient, "post").mockResolvedValueOnce({ redirect: "/start" });
+    const getSpy = vi
+      .spyOn(apiClient, "get")
+      .mockImplementationOnce(
+        respondWith({ success: true, tokens: { user_registration: "csrf-token" } }),
+      );
+    vi.spyOn(apiClient, "post").mockImplementationOnce(respondWith(registrationExample));
 
     await registerUser({ username: "alice", email: "alice@example.com", password: "s3cr3t" }, true);
 
@@ -288,7 +328,7 @@ describe("registerUser", () => {
   // This test FAILS on the current buggy implementation
   it("should not call native fetch with bare /register path (must include API_BASE_URL)", async () => {
     // Mock apiClient.post so only the CSRF-ping path can trigger native fetch
-    vi.spyOn(apiClient, "post").mockResolvedValueOnce({ redirect: "/start" });
+    vi.spyOn(apiClient, "post").mockImplementationOnce(respondWith(registrationExample));
     // Intercept all native fetch calls; reject so the ping error is caught and swallowed
     const fetchSpy = vi.spyOn(globalThis, "fetch").mockRejectedValue(new Error("network"));
 
@@ -302,7 +342,7 @@ describe("registerUser", () => {
 
   it("should proceed with registration even when CSRF ping rejects", async () => {
     vi.spyOn(apiClient, "get").mockRejectedValueOnce(new Error("Network error"));
-    vi.spyOn(apiClient, "post").mockResolvedValueOnce({ redirect: "/start" });
+    vi.spyOn(apiClient, "post").mockImplementationOnce(respondWith(registrationExample));
 
     const result = await registerUser(
       { username: "alice", email: "alice@example.com", password: "s3cr3t" },
@@ -310,40 +350,26 @@ describe("registerUser", () => {
     );
 
     expect(apiClient.post).toHaveBeenCalled();
-    expect(result).toEqual({ redirect: "/start" });
+    expect(result).toEqual(registrationExample);
   });
 
-  it("should throw ApiError when registration returns a malformed response shape", async () => {
-    vi.spyOn(apiClient, "post").mockResolvedValueOnce({ redirect: 42 });
+  it("rejects with ApiValidationError when registration has no contract message", async () => {
+    vi.spyOn(apiClient, "post").mockImplementationOnce(
+      respondWith({ success: true, redirect: "/", status: 201 }),
+    );
 
     await expect(
       registerUser({ username: "alice", email: "alice@example.com", password: "s3cr3t" }),
-    ).rejects.toMatchObject({
-      name: "ApiError",
-      message: "Unexpected response shape for registration",
-      status: 200,
-    });
-  });
-});
-
-describe("isRoleArray", () => {
-  it("should return true for valid role strings", () => {
-    expect(isRoleArray(["ROLE_USER"])).toBe(true);
-    expect(isRoleArray(["ROLE_ADMIN"])).toBe(true);
-    expect(isRoleArray(["ROLE_PLAYER"])).toBe(true);
-    expect(isRoleArray(["ROLE_USER", "ROLE_ADMIN"])).toBe(true);
+    ).rejects.toBeInstanceOf(ApiValidationError);
   });
 
-  it("should return false for unknown role strings", () => {
-    expect(isRoleArray(["INVALID"])).toBe(false);
-  });
+  it("proceeds with registration when the CSRF response is malformed", async () => {
+    vi.spyOn(apiClient, "get").mockImplementationOnce(respondWith({ success: true, tokens: [] }));
+    vi.spyOn(apiClient, "post").mockImplementationOnce(respondWith(registrationExample));
 
-  it("should return false for non-string array elements", () => {
-    expect(isRoleArray([123])).toBe(false);
-  });
-
-  it("should return false for null", () => {
-    expect(isRoleArray(null)).toBe(false);
+    await expect(
+      registerUser({ username: "alice", email: "alice@example.com", password: "s3cr3t" }, true),
+    ).resolves.toEqual(registrationExample);
   });
 });
 
@@ -354,7 +380,7 @@ describe("logout", () => {
 
   it("should call the success callback when logout succeeds", async () => {
     const onSuccess = vi.fn();
-    vi.spyOn(apiClient, "post").mockResolvedValueOnce(undefined);
+    vi.spyOn(apiClient, "post").mockImplementationOnce(respondWith(""));
 
     await logout(onSuccess);
 
@@ -368,11 +394,17 @@ describe("logout", () => {
 
   it("should clear the query cache when logout succeeds", async () => {
     queryClient.setQueryData(["auth", "me"], { id: 1 });
-    vi.spyOn(apiClient, "post").mockResolvedValueOnce(undefined);
+    vi.spyOn(apiClient, "post").mockImplementationOnce(respondWith(""));
 
     await logout();
 
     expect(queryClient.getQueryCache().getAll()).toHaveLength(0);
+  });
+
+  it("rejects with ApiValidationError when logout answers with JSON instead of the redirect page", async () => {
+    vi.spyOn(apiClient, "post").mockImplementationOnce(respondWith({ success: true }));
+
+    await expect(logout()).rejects.toBeInstanceOf(ApiValidationError);
   });
 
   it("should keep the query cache when logout fails", async () => {

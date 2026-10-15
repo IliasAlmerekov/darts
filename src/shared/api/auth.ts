@@ -1,63 +1,92 @@
 import * as v from "valibot";
 import { apiClient, ApiValidationError } from "./client";
 import { ApiError, UnauthorizedError } from "./errors";
-import { isFiniteNumber, isRecord } from "@/lib/guards/guards";
+import { integerSchema } from "./schemas";
 import { queryClient } from "@/shared/query/queryClient";
 import { ROUTES } from "@/shared/lib/router/routes";
 
 // ---------------------------------------------------------------------------
-// Types
+// Schemas
 // ---------------------------------------------------------------------------
 
-interface LoginResponse {
-  redirect?: string;
-  success?: boolean;
-  error?: string | null;
-  last_username?: string | null;
-}
+// Login behaviour is out of scope for #158, so the login and auth-check schemas keep the
+// rules of the old guards. The PR for #158 lists where they differ from the contract.
+
+const roleSchema = v.picklist(["ROLE_USER", "ROLE_ADMIN", "ROLE_PLAYER"]);
+
+/** `POST /api/login`. At least one of the known fields must be present. */
+const loginResponseSchema = v.pipe(
+  v.object({
+    redirect: v.optional(v.string()),
+    success: v.optional(v.boolean()),
+    error: v.optional(v.nullable(v.string())),
+    last_username: v.optional(v.nullable(v.string())),
+  }),
+  v.check((login) => Object.keys(login).length > 0),
+);
+
+/** Contract response of `POST /api/register`, 201. */
+const registrationResponseSchema = v.object({
+  success: v.boolean(),
+  message: v.string(),
+  redirect: v.optional(v.nullable(v.string())),
+  status: integerSchema,
+});
+
+/** Contract response of `GET /api/csrf`. */
+const csrfTokensResponseSchema = v.object({
+  success: v.boolean(),
+  tokens: v.record(v.string(), v.string()),
+});
+
+// The contract documents no logout body; the backend answers with its redirect page as text.
+const logoutResponseSchema = v.string();
+
+const authenticatedUserProfileSchema = v.object({
+  id: v.number(),
+  nickname: v.string(),
+  stats: v.object({
+    gamesPlayed: v.number(),
+    scoreAverage: v.number(),
+  }),
+});
+
+/** `GET /api/login/success`, the shape the contract documents. */
+const authenticatedUserSchema = v.object({
+  success: v.literal(true),
+  roles: v.array(roleSchema),
+  id: v.number(),
+  email: v.optional(v.nullable(v.string())),
+  username: v.optional(v.nullable(v.string())),
+  redirect: v.string(),
+  gameId: v.optional(v.nullable(v.number())),
+  profile: v.optional(authenticatedUserProfileSchema),
+});
+
+// The backend also answers with a user envelope, a player profile envelope, or
+// `{ success: false }`; the contract does not document these yet.
+const authCheckResponseSchema = v.union([
+  v.object({ success: v.literal(true), user: authenticatedUserSchema }),
+  authenticatedUserSchema,
+  v.object({ success: v.literal(true), profile: authenticatedUserProfileSchema }),
+  v.object({ success: v.literal(false) }),
+]);
+
+type LoginResponse = v.InferOutput<typeof loginResponseSchema>;
+export type RegistrationResponse = v.InferOutput<typeof registrationResponseSchema>;
+export type Role = v.InferOutput<typeof roleSchema>;
+type AuthenticatedUserProfile = v.InferOutput<typeof authenticatedUserProfileSchema>;
+export type AuthenticatedUser = v.InferOutput<typeof authenticatedUserSchema>;
 
 interface LoginCredentials {
   email: string;
   password: string;
 }
 
-export interface RegistrationResponse {
-  redirect?: string;
-}
-
 interface RegistrationData {
   username: string;
   email: string;
   password: string;
-}
-
-interface CsrfTokensResponse {
-  success: boolean;
-  tokens: Record<string, string>;
-}
-
-export type Role = "ROLE_USER" | "ROLE_ADMIN" | "ROLE_PLAYER";
-
-interface AuthenticatedUserProfileStats {
-  gamesPlayed: number;
-  scoreAverage: number;
-}
-
-export interface AuthenticatedUserProfile {
-  id: number;
-  nickname: string;
-  stats: AuthenticatedUserProfileStats;
-}
-
-export interface AuthenticatedUser {
-  success: boolean;
-  roles: Role[];
-  id: number;
-  email?: string | null;
-  username?: string | null;
-  redirect: string;
-  gameId?: number | null;
-  profile?: AuthenticatedUserProfile;
 }
 
 const LOGIN_ENDPOINT = "/login";
@@ -69,92 +98,6 @@ const AUTH_CHECK_TIMEOUT_MS = 8000;
 interface GetAuthenticatedUserOptions {
   signal?: AbortSignal;
   timeoutMs?: number;
-}
-
-function isNullableString(value: unknown): value is string | null {
-  return typeof value === "string" || value === null;
-}
-
-const VALID_ROLES: ReadonlySet<string> = new Set(["ROLE_USER", "ROLE_ADMIN", "ROLE_PLAYER"]);
-
-export function isRoleArray(value: unknown): value is Role[] {
-  return Array.isArray(value) && value.every((r) => VALID_ROLES.has(r));
-}
-
-function isLoginResponse(data: unknown): data is LoginResponse {
-  if (!isRecord(data)) {
-    return false;
-  }
-
-  const hasKnownField =
-    "redirect" in data || "success" in data || "error" in data || "last_username" in data;
-
-  return (
-    hasKnownField &&
-    (data.redirect === undefined || typeof data.redirect === "string") &&
-    (data.success === undefined || typeof data.success === "boolean") &&
-    (data.error === undefined || isNullableString(data.error)) &&
-    (data.last_username === undefined || isNullableString(data.last_username))
-  );
-}
-
-function isRegistrationResponse(data: unknown): data is RegistrationResponse {
-  return isRecord(data) && (data.redirect === undefined || typeof data.redirect === "string");
-}
-
-function isCsrfTokensResponse(data: unknown): data is CsrfTokensResponse {
-  if (!isRecord(data) || data.success !== true || !isRecord(data.tokens)) {
-    return false;
-  }
-
-  return Object.values(data.tokens).every((token) => typeof token === "string");
-}
-
-function isLogoutResponse(data: unknown): data is string {
-  return typeof data === "string";
-}
-
-function isAuthenticatedUser(data: unknown): data is AuthenticatedUser {
-  return (
-    isRecord(data) &&
-    data.success === true &&
-    isRoleArray(data.roles) &&
-    isFiniteNumber(data.id) &&
-    typeof data.redirect === "string" &&
-    (data.email === undefined || isNullableString(data.email)) &&
-    (data.username === undefined || isNullableString(data.username)) &&
-    (data.gameId === undefined || data.gameId === null || isFiniteNumber(data.gameId)) &&
-    (data.profile === undefined || isAuthenticatedUserProfile(data.profile))
-  );
-}
-
-function isAuthenticatedUserEnvelope(
-  data: unknown,
-): data is { success: true; user: AuthenticatedUser } {
-  return isRecord(data) && data.success === true && isAuthenticatedUser(data.user);
-}
-
-function isAuthenticatedUserProfileStats(data: unknown): data is AuthenticatedUserProfileStats {
-  return isRecord(data) && isFiniteNumber(data.gamesPlayed) && isFiniteNumber(data.scoreAverage);
-}
-
-function isAuthenticatedUserProfile(data: unknown): data is AuthenticatedUserProfile {
-  return (
-    isRecord(data) &&
-    isFiniteNumber(data.id) &&
-    typeof data.nickname === "string" &&
-    isAuthenticatedUserProfileStats(data.stats)
-  );
-}
-
-function isAuthenticatedUserProfileEnvelope(
-  data: unknown,
-): data is { success: true; profile: AuthenticatedUserProfile } {
-  return isRecord(data) && data.success === true && isAuthenticatedUserProfile(data.profile);
-}
-
-function isUnauthenticatedAuthResponse(data: unknown): boolean {
-  return isRecord(data) && data.success === false;
 }
 
 function normalizeProfileEnvelope(response: {
@@ -178,17 +121,11 @@ export async function loginWithCredentials(credentials: LoginCredentials): Promi
   payload.set("_username", credentials.email);
   payload.set("_password", credentials.password);
 
-  const response: unknown = await apiClient.post(LOGIN_ENDPOINT, payload.toString(), {
+  return apiClient.post(LOGIN_ENDPOINT, payload.toString(), {
     headers: { "Content-Type": "application/x-www-form-urlencoded" },
     skipAuthRedirect: true,
-    validate: v.custom(isLoginResponse),
+    validate: loginResponseSchema,
   });
-
-  if (!isLoginResponse(response)) {
-    throw new ApiError("Unexpected response shape for login", { status: 200, data: response });
-  }
-
-  return response;
 }
 
 /**
@@ -196,7 +133,7 @@ export async function loginWithCredentials(credentials: LoginCredentials): Promi
  */
 export async function logout(onSuccess?: () => void): Promise<void> {
   await apiClient.post(LOGOUT_ENDPOINT, undefined, {
-    validate: v.custom(isLogoutResponse),
+    validate: logoutResponseSchema,
   });
   queryClient.clear();
   onSuccess?.();
@@ -214,7 +151,7 @@ export async function registerUser(
     try {
       await apiClient.get(CSRF_ENDPOINT, {
         skipAuthRedirect: true,
-        validate: v.custom(isCsrfTokensResponse),
+        validate: csrfTokensResponseSchema,
       });
     } catch (error) {
       const { clientLogger } = await import("@/shared/services/browser/clientLogger");
@@ -222,7 +159,7 @@ export async function registerUser(
     }
   }
 
-  const response: unknown = await apiClient.post(
+  return apiClient.post(
     REGISTER_ENDPOINT,
     {
       username: data.username,
@@ -230,18 +167,9 @@ export async function registerUser(
       plainPassword: data.password,
     },
     {
-      validate: v.custom(isRegistrationResponse),
+      validate: registrationResponseSchema,
     },
   );
-
-  if (!isRegistrationResponse(response)) {
-    throw new ApiError("Unexpected response shape for registration", {
-      status: 200,
-      data: response,
-    });
-  }
-
-  return response;
 }
 
 /**
@@ -251,47 +179,29 @@ export async function getAuthenticatedUser(
   options: GetAuthenticatedUserOptions = {},
 ): Promise<AuthenticatedUser | null> {
   const timeoutMs = options.timeoutMs ?? AUTH_CHECK_TIMEOUT_MS;
-  const isAuthenticatedUserResponse = (
-    data: unknown,
-  ): data is
-    | AuthenticatedUser
-    | { success: true; user: AuthenticatedUser }
-    | { success: true; profile: AuthenticatedUserProfile }
-    | { success: false } =>
-    isAuthenticatedUserEnvelope(data) ||
-    isAuthenticatedUser(data) ||
-    isAuthenticatedUserProfileEnvelope(data) ||
-    isUnauthenticatedAuthResponse(data);
 
   try {
-    const response: unknown = await apiClient.get("/login/success", {
+    const response = await apiClient.get("/login/success", {
       signal: options.signal,
       skipAuthRedirect: true,
       timeoutMs,
-      validate: v.custom(isAuthenticatedUserResponse),
+      validate: authCheckResponseSchema,
     });
 
-    if (isAuthenticatedUserEnvelope(response)) {
+    if ("user" in response) {
       return response.user;
     }
 
-    if (isAuthenticatedUser(response)) {
+    if ("roles" in response) {
       return response;
     }
 
-    if (isAuthenticatedUserProfileEnvelope(response)) {
+    if ("profile" in response) {
       return normalizeProfileEnvelope(response);
     }
 
-    if (isUnauthenticatedAuthResponse(response)) {
-      throw new ApiError("Authorization failed for authenticated user", {
-        status: 401,
-        data: response,
-      });
-    }
-
-    throw new ApiError("Unexpected response shape for authenticated user", {
-      status: 200,
+    throw new ApiError("Authorization failed for authenticated user", {
+      status: 401,
       data: response,
     });
   } catch (error) {

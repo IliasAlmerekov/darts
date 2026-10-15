@@ -226,7 +226,7 @@ rg -nP '\b(data|response)\s+as\s+[A-Za-z]' src/shared/api --glob '!**/*.test.{ts
 **3. Hand-written response guards or re-checks inside `shared/api/`**:
 
 ```bash
-rg -nP 'function is\w+\(|: unknown = await apiClient' src/shared/api --glob '!**/*.test.{ts,tsx}'
+rg -nP 'function is\w+Response\(|: unknown = await apiClient|v\.custom\(' src/shared/api --glob '!**/*.test.{ts,tsx}'
 ```
 
 **4. Mappers imported by render-flow files** -- mappers may live in API / store /
