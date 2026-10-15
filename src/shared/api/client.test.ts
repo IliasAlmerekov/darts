@@ -178,6 +178,28 @@ describe("apiClient request timeout", () => {
     await expect(requestPromise).rejects.toThrow(DOMException);
   });
 
+  it("should keep the caller's reason when the external signal aborts with 'timeout'", async () => {
+    const externalController = new AbortController();
+
+    vi.spyOn(globalThis, "fetch").mockImplementation(
+      (_url, init) =>
+        new Promise((_resolve, reject) => {
+          init?.signal?.addEventListener("abort", () => {
+            reject(init.signal?.reason);
+          });
+        }),
+    );
+
+    const requestPromise = apiClient.get("/slow", {
+      signal: externalController.signal,
+      validate: acceptUnknown,
+    });
+
+    externalController.abort("timeout");
+
+    await expect(requestPromise).rejects.toBe("timeout");
+  });
+
   it("should throw NetworkError when fetch fails with a network error after an external abort", async () => {
     const externalController = new AbortController();
 

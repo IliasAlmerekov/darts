@@ -3,7 +3,9 @@ import type { ApiRequestConfig, QueryParams } from "./types";
 import { isRecord } from "@/lib/guards/guards";
 
 const DEFAULT_TIMEOUT_MS = 30_000;
-const TIMEOUT_REASON = "timeout";
+// A private symbol, so a caller that aborts its own signal with "timeout" is not
+// mistaken for the client's deadline.
+const TIMEOUT_REASON = Symbol("apiClient timeout");
 
 const ENV_API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 type AuthRedirectHandler = () => void;
