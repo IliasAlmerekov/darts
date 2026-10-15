@@ -105,7 +105,7 @@ async function parseResponseData(response: Response): Promise<unknown> {
 // still streaming would look like a malformed body. Racing the signal keeps the
 // abort reason, and also settles a stalled body that never reacts to the abort.
 function readResponseData(response: Response, signal: AbortSignal): Promise<unknown> {
-  const aborted = new Promise<never>((_resolve, reject) => {
+  const abortRejection = new Promise<never>((_resolve, reject) => {
     if (signal.aborted) {
       reject(signal.reason);
       return;
@@ -113,7 +113,7 @@ function readResponseData(response: Response, signal: AbortSignal): Promise<unkn
     signal.addEventListener("abort", () => reject(signal.reason), { once: true });
   });
 
-  return Promise.race([parseResponseData(response), aborted]);
+  return Promise.race([parseResponseData(response), abortRejection]);
 }
 
 function isAcceptedStatus(status: number, acceptedStatuses?: number[]): boolean {

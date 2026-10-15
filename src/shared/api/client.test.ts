@@ -225,6 +225,12 @@ describe("apiClient response body deadline", () => {
 
     await assertion;
   });
+});
+
+describe("apiClient error body parsing", () => {
+  beforeEach(() => {
+    vi.restoreAllMocks();
+  });
 
   it("should throw ApiError with the fallback message when an error body is not valid JSON", async () => {
     vi.spyOn(globalThis, "fetch").mockResolvedValueOnce(
