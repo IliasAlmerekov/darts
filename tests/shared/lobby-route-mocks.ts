@@ -74,7 +74,6 @@ export async function mockLobbyApi(page: Page): Promise<void> {
     const gameId = lastPathSegmentAsId(route);
     await jsonResponse(route, {
       success: true,
-      status: 200,
       gameId,
       invitationLink: `/invite/${gameId}`,
     });

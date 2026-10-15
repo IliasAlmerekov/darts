@@ -182,10 +182,10 @@ describe("game api contract payloads", () => {
       vi.spyOn(apiClient, "post")
         .mockImplementationOnce(respondWith({ success: true, gameId: 777 }))
         .mockImplementationOnce(
-          respondWith({ success: false, status: 404, gameId: null, invitationLink: null }),
+          respondWith({ success: false, gameId: null, invitationLink: null }),
         );
 
-      await expect(createRematch(42)).rejects.toMatchObject({ name: "ApiError", status: 404 });
+      await expect(createRematch(42)).rejects.toMatchObject({ name: "ApiError", status: 200 });
     });
   });
 

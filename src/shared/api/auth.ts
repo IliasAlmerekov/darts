@@ -1,7 +1,6 @@
 import * as v from "valibot";
 import { apiClient, ApiValidationError } from "./client";
 import { ApiError, UnauthorizedError } from "./errors";
-import { integerSchema } from "./schemas";
 import { queryClient } from "@/shared/query/queryClient";
 import { ROUTES } from "@/shared/lib/router/routes";
 
@@ -25,12 +24,14 @@ const loginResponseSchema = v.pipe(
   v.check((login) => Object.keys(login).length > 0),
 );
 
-/** Contract response of `POST /api/register`, 201. */
+/**
+ * Contract response of `POST /api/register`, 201. The contract requires `status`, but the
+ * backend moves it into the HTTP status and drops it from the body, so the schema omits it.
+ */
 const registrationResponseSchema = v.object({
   success: v.boolean(),
   message: v.string(),
   redirect: v.optional(v.nullable(v.string())),
-  status: integerSchema,
 });
 
 /** Contract response of `GET /api/csrf`. */

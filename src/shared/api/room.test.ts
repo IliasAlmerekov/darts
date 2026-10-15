@@ -17,10 +17,10 @@ import { apiClient, ApiValidationError } from "./client";
 import { ApiError } from "./errors";
 import { respondWith } from "./test-utils";
 
-// Contract example: POST /api/invite/create/{id}
+// Contract example: POST /api/invite/create/{id}, without `status`: the backend moves it into
+// the HTTP status.
 const invitationExample = {
   success: true,
-  status: 200,
   gameId: 123,
   invitationLink: "/api/invite/join/xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx",
   users: [{ id: 1, username: "alice" }],
@@ -61,9 +61,9 @@ describe("getInvitation", () => {
     });
   });
 
-  it("rejects with ApiValidationError when status is missing", async () => {
+  it("rejects with ApiValidationError when success is missing", async () => {
     vi.mocked(apiClient.post).mockImplementationOnce(
-      respondWith({ success: true, gameId: 123, invitationLink: "/api/invite/join/x" }),
+      respondWith({ gameId: 123, invitationLink: "/api/invite/join/x" }),
     );
 
     await expect(getInvitation(123)).rejects.toBeInstanceOf(ApiValidationError);
@@ -71,7 +71,7 @@ describe("getInvitation", () => {
 
   it("rejects with ApiError when the contract-valid payload has no invitation link", async () => {
     vi.mocked(apiClient.post).mockImplementationOnce(
-      respondWith({ success: false, status: 404, gameId: null, invitationLink: null }),
+      respondWith({ success: false, gameId: null, invitationLink: null }),
     );
 
     await expect(getInvitation(123)).rejects.toBeInstanceOf(ApiError);

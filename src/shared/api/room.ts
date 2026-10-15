@@ -39,7 +39,7 @@ type GuestPlayer = v.InferOutput<typeof addGuestResponseSchema>["player"];
 function toRoomInvitation(invite: v.InferOutput<typeof invitationResponseSchema>): RoomInvitation {
   if (typeof invite.gameId !== "number" || typeof invite.invitationLink !== "string") {
     throw new ApiError("Invitation response has no game id or link", {
-      status: invite.status,
+      status: 200,
       data: invite,
     });
   }

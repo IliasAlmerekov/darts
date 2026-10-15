@@ -13,10 +13,12 @@ export const successMessageResponseSchema = v.object({
 
 export type SuccessMessageResponse = v.InferOutput<typeof successMessageResponseSchema>;
 
-/** Contract response of `POST /api/invite/create/{id}`. */
+/**
+ * Contract response of `POST /api/invite/create/{id}`. The contract requires `status`, but the
+ * backend moves it into the HTTP status and drops it from the body, so the schema omits it.
+ */
 export const invitationResponseSchema = v.object({
   success: v.boolean(),
-  status: integerSchema,
   gameId: v.optional(v.nullable(integerSchema)),
   invitationLink: v.optional(v.nullable(v.string())),
   users: v.optional(

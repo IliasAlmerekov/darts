@@ -258,12 +258,12 @@ describe("loginWithCredentials", () => {
   });
 });
 
-// Contract example: POST /api/register, 201
+// Contract example: POST /api/register, 201, without `status`: the backend moves it into the
+// HTTP status.
 const registrationExample = {
   success: true,
   message: "Registrierung erfolgreich",
   redirect: "/",
-  status: 201,
 };
 
 describe("registerUser", () => {

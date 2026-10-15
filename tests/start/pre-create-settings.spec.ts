@@ -30,7 +30,6 @@ test.describe("Pre-create game settings", () => {
         contentType: "application/json",
         body: JSON.stringify({
           success: true,
-          status: 200,
           gameId: 520,
           invitationLink: "/invite/520",
         }),

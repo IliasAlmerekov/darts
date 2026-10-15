@@ -72,7 +72,6 @@ const mockInvitation = async (page: Page, gameId = 1): Promise<void> => {
       contentType: "application/json",
       body: JSON.stringify({
         success: true,
-        status: 200,
         gameId,
         invitationLink: `/invite/${gameId}`,
       }),

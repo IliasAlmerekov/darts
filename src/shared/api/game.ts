@@ -432,7 +432,7 @@ export async function createRematch(previousGameId: number): Promise<RematchResp
   // The contract allows a null game id and link; without them there is nothing to join.
   if (typeof invite.gameId !== "number" || typeof invite.invitationLink !== "string") {
     throw new ApiError("Invitation response has no game id or link", {
-      status: invite.status,
+      status: 200,
       data: invite,
     });
   }
