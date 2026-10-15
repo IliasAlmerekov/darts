@@ -2,42 +2,49 @@ import * as v from "valibot";
 import { apiClient } from "./client";
 import { ApiError } from "./errors";
 import { createInviteEndpoint } from "./endpoints";
-import { isRecord } from "@/lib/guards/guards";
-import type {
-  CreateRoomResponse,
-  AddGuestPayload,
-  GuestPlayer,
-  CreateGameSettingsPayload,
-} from "@/types";
+import { integerSchema, invitationResponseSchema, successMessageResponseSchema } from "./schemas";
+import type { AddGuestPayload, CreateGameSettingsPayload } from "@/types";
 
-function isCreateRoomResponse(data: unknown): data is CreateRoomResponse {
-  return (
-    isRecord(data) && typeof data.gameId === "number" && typeof data.invitationLink === "string"
-  );
+const createRoomResponseSchema = v.object({
+  success: v.boolean(),
+  gameId: v.nullable(integerSchema),
+});
+
+const updatePlayerOrderResponseSchema = v.object({
+  success: v.boolean(),
+});
+
+// The contract marks no player field as required; a guest without id and name cannot be shown.
+const addGuestResponseSchema = v.object({
+  success: v.boolean(),
+  player: v.object({
+    id: integerSchema,
+    name: v.string(),
+    position: v.optional(v.nullable(integerSchema), null),
+    isGuest: v.optional(v.boolean()),
+  }),
+});
+
+interface RoomInvitation {
+  gameId: number;
+  invitationLink: string;
 }
 
-function isCreateRoomGameIdResponse(data: unknown): data is { gameId: number } {
-  return isRecord(data) && data.success === true && typeof data.gameId === "number";
-}
+type GuestPlayer = v.InferOutput<typeof addGuestResponseSchema>["player"];
 
-function isGuestPlayerResponse(data: unknown): data is { success: true; player: GuestPlayer } {
-  const player = isRecord(data) && isRecord(data.player) ? data.player : null;
+/**
+ * Reads the game id and link from an invitation. The contract allows both to be null, for
+ * example when the game does not exist; without them there is nothing to join.
+ */
+function toRoomInvitation(invite: v.InferOutput<typeof invitationResponseSchema>): RoomInvitation {
+  if (typeof invite.gameId !== "number" || typeof invite.invitationLink !== "string") {
+    throw new ApiError("Invitation response has no game id or link", {
+      status: invite.status,
+      data: invite,
+    });
+  }
 
-  return (
-    isRecord(data) &&
-    data.success === true &&
-    player !== null &&
-    typeof player.id === "number" &&
-    typeof player.name === "string"
-  );
-}
-
-function isMessageResponse(data: unknown): data is { message: string } {
-  return isRecord(data) && typeof data.message === "string";
-}
-
-function isSuccessResponse(data: unknown): data is { success: boolean } {
-  return isRecord(data) && typeof data.success === "boolean";
+  return { gameId: invite.gameId, invitationLink: invite.invitationLink };
 }
 
 // ---------------------------------------------------------------------------
@@ -62,24 +69,18 @@ type CreateGamePayload = Partial<CreateGameSettingsPayload> & {
 /**
  * Fetches an invitation link for a game.
  */
-export async function getInvitation(
-  gameId: number,
-  signal?: AbortSignal,
-): Promise<CreateRoomResponse> {
-  const data: unknown = await apiClient.post(createInviteEndpoint(gameId), undefined, {
+export async function getInvitation(gameId: number, signal?: AbortSignal): Promise<RoomInvitation> {
+  const invite = await apiClient.post(createInviteEndpoint(gameId), undefined, {
     ...(signal ? { signal } : {}),
-    validate: v.custom(isCreateRoomResponse),
+    validate: invitationResponseSchema,
   });
-  if (!isCreateRoomResponse(data)) {
-    throw new ApiError("Unexpected response shape for invitation", { status: 200, data });
-  }
-  return data;
+  return toRoomInvitation(invite);
 }
 
 /**
  * Creates a new room and returns its invitation payload.
  */
-export async function createRoom(payload?: CreateGamePayload): Promise<CreateRoomResponse> {
+export async function createRoom(payload?: CreateGamePayload): Promise<RoomInvitation> {
   const hasPayload =
     payload !== undefined &&
     (typeof payload.previousGameId === "number" ||
@@ -90,26 +91,17 @@ export async function createRoom(payload?: CreateGamePayload): Promise<CreateRoo
       typeof payload.tripleOut === "boolean");
   const body = hasPayload && payload ? payload : {};
 
-  const room: unknown = await apiClient.post(CREATE_ROOM_ENDPOINT, body, {
-    validate: v.custom(isCreateRoomGameIdResponse),
+  const room = await apiClient.post(CREATE_ROOM_ENDPOINT, body, {
+    validate: createRoomResponseSchema,
   });
-  if (!isCreateRoomGameIdResponse(room)) {
-    throw new ApiError("Unexpected response shape for create room", { status: 200, data: room });
+  if (room.gameId === null) {
+    throw new ApiError("Create room response has no game id", { status: 200, data: room });
   }
-  const invite: unknown = await apiClient.post(createInviteEndpoint(room.gameId), undefined, {
-    validate: v.custom(isCreateRoomResponse),
+  const invite = await apiClient.post(createInviteEndpoint(room.gameId), undefined, {
+    validate: invitationResponseSchema,
   });
-  if (!isCreateRoomResponse(invite)) {
-    throw new ApiError("Unexpected response shape for room invitation", {
-      status: 200,
-      data: invite,
-    });
-  }
 
-  return {
-    gameId: invite.gameId,
-    invitationLink: invite.invitationLink,
-  };
+  return toRoomInvitation(invite);
 }
 
 /**
@@ -119,7 +111,7 @@ export async function leaveRoom(gameId: number, playerId?: number): Promise<void
   const query = typeof playerId === "number" ? { playerId } : undefined;
   await apiClient.delete(ROOM_ENDPOINT(gameId), {
     ...(query ? { query } : {}),
-    validate: v.custom(isMessageResponse),
+    validate: successMessageResponseSchema,
   });
 }
 
@@ -134,7 +126,7 @@ export async function updatePlayerOrder(
     UPDATE_PLAYER_ORDER_ENDPOINT(gameId),
     { positions },
     {
-      validate: v.custom(isSuccessResponse),
+      validate: updatePlayerOrderResponseSchema,
     },
   );
 }
@@ -150,11 +142,8 @@ export async function addGuestPlayer(
   gameId: number,
   payload: AddGuestPayload,
 ): Promise<GuestPlayer> {
-  const data: unknown = await apiClient.post(ADD_GUEST_ENDPOINT(gameId), payload, {
-    validate: v.custom(isGuestPlayerResponse),
+  const data = await apiClient.post(ADD_GUEST_ENDPOINT(gameId), payload, {
+    validate: addGuestResponseSchema,
   });
-  if (!isGuestPlayerResponse(data)) {
-    throw new ApiError("Unexpected response shape for add guest", { status: 200, data });
-  }
   return data.player;
 }

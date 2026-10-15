@@ -1,3 +1,6 @@
+import type * as v from "valibot";
+import { parseResponse } from "./client";
+
 type MockResponseOptions = {
   body?: unknown;
   headers?: HeadersInit;
@@ -38,4 +41,26 @@ export function createMockResponse({
   }
 
   return response;
+}
+
+/**
+ * Mock implementation for an `apiClient` method. It parses `payload` with the schema the
+ * caller passed in `validate`, as the real client does, so a malformed payload rejects with
+ * `ApiValidationError`.
+ */
+export function respondWith(payload: unknown): (...args: unknown[]) => Promise<never> {
+  return (...args) => {
+    const config = args.at(-1);
+    const schema =
+      typeof config === "object" && config !== null && "validate" in config
+        ? config.validate
+        : undefined;
+
+    if (schema === undefined) {
+      return Promise.reject(new Error("respondWith: the call passed no validate schema"));
+    }
+
+    // safe: apiClient's signature ties the parsed output to the schema the caller passed
+    return Promise.resolve().then(() => parseResponse(schema as v.GenericSchema, payload) as never);
+  };
 }

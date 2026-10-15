@@ -4,11 +4,6 @@ import type {
   ScoreboardDelta,
 } from "./game";
 
-export interface CreateRoomResponse {
-  gameId: number;
-  invitationLink: string;
-}
-
 export interface StartGameRequest {
   startScore: number;
   doubleOut: boolean;
@@ -51,12 +46,6 @@ export interface StartRematchResponse extends RematchGameResponse {
 
 export interface AddGuestPayload {
   username: string;
-}
-
-export interface GuestPlayer {
-  id: number;
-  name: string;
-  position?: number | null;
 }
 
 export interface AddGuestErrorResponse {

@@ -41,7 +41,7 @@ export class ApiValidationError extends Error {
  * Parses a response body with its schema and throws `ApiValidationError` with the raw body
  * when it does not match.
  */
-function parseResponse<TSchema extends ResponseSchema>(
+export function parseResponse<TSchema extends ResponseSchema>(
   schema: TSchema,
   data: unknown,
 ): v.InferOutput<TSchema> {

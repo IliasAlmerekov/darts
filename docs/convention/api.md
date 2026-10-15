@@ -11,6 +11,7 @@ src/shared/api/
   client.ts            # apiClient + ApiValidationError + setUnauthorizedHandler
   errors.ts            # typed error classes
   endpoints.ts         # cross-domain endpoints only (currently: createInviteEndpoint)
+  schemas.ts           # Valibot schemas shared by 2+ domain files
   types.ts             # apiClient types (HttpMethod, ApiRequestConfig, QueryParams)
   index.ts             # barrel: cross-cutting public surface
   test-utils.ts        # createMockResponse and respondWith helpers for tests
@@ -35,7 +36,7 @@ The API layer has two levels (also documented in `architecture.md`):
 - `@/shared/api/<domain>` -- the domain module is the public entry for its DTO types,
   resource functions, guards (when needed externally) and any per-domain caches.
 
-Internals -- `client.ts`, `errors.ts`, `types.ts`, `endpoints.ts` -- must never be deep-
+Internals -- `client.ts`, `errors.ts`, `types.ts`, `endpoints.ts`, `schemas.ts` -- must never be deep-
 imported from outside `shared/api/`. Always go through the barrel.
 
 ## `apiClient` -- single gateway
@@ -88,14 +89,15 @@ ADR 0002 records why responses are described by Valibot schemas.
   Do not write a separate interface for it. `@/types` re-exports response types that
   pages use.
 - Follow the contract: a required field is required, an optional field is `v.optional`,
-  `nullable: true` is `v.nullable`, `integer` is `v.pipe(v.number(), v.integer())`. A
+  `nullable: true` is `v.nullable`, `integer` is `integerSchema`. A
   contract `default` goes into `v.optional(schema, default)`, so the output type has the
   field.
 - A schema may be narrower than the contract where the contract is untyped (for example
   a `status` string becomes `v.picklist`). It must not be looser.
 - A client-side discriminant the backend does not send is added with `v.transform` in the
   schema (`type: "full-state"`), so the type matches the runtime value.
-- A schema used by 2+ domain files is exported from the domain file that owns it.
+- A schema used by 2+ domain files lives in `schemas.ts`, like a shared endpoint in
+  `endpoints.ts`. `integerSchema` (contract `integer`) lives there too.
 - Shared guards in `@/lib/guards/guards` are for code outside the API layer. Do not write
   `isXxxResponse` guards in `shared/api/`.
 
