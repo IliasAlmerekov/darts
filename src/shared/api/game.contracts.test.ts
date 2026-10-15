@@ -140,7 +140,7 @@ describe("game api contract adapters", () => {
 
     expect(deleteSpy).toHaveBeenCalledWith(
       "/game/42/throw",
-      expect.objectContaining({ validate: expect.any(Function) }),
+      expect.objectContaining({ validate: expect.any(Object) }),
     );
     expect(response).toEqual(compactUndoAck);
   });

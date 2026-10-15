@@ -31,7 +31,7 @@ describe("room/create-room api", () => {
     expect(apiClient.post).toHaveBeenCalledWith(
       "/invite/create/520",
       undefined,
-      expect.objectContaining({ validate: expect.any(Function) }),
+      expect.objectContaining({ validate: expect.any(Object) }),
     );
     expect(response.gameId).toBe(520);
   });
@@ -47,7 +47,7 @@ describe("room/create-room api", () => {
 
     expect(apiClient.post).toHaveBeenCalledWith("/invite/create/520", undefined, {
       signal: controller.signal,
-      validate: expect.any(Function),
+      validate: expect.any(Object),
     });
   });
 
@@ -65,13 +65,13 @@ describe("room/create-room api", () => {
       1,
       "/room/create",
       {},
-      expect.objectContaining({ validate: expect.any(Function) }),
+      expect.objectContaining({ validate: expect.any(Object) }),
     );
     expect(apiClient.post).toHaveBeenNthCalledWith(
       2,
       "/invite/create/520",
       undefined,
-      expect.objectContaining({ validate: expect.any(Function) }),
+      expect.objectContaining({ validate: expect.any(Object) }),
     );
     expect(response).toEqual({
       gameId: 520,
@@ -103,7 +103,7 @@ describe("room/create-room api", () => {
         doubleOut: true,
         tripleOut: false,
       },
-      expect.objectContaining({ validate: expect.any(Function) }),
+      expect.objectContaining({ validate: expect.any(Object) }),
     );
   });
 });

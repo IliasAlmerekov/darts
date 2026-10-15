@@ -1,3 +1,4 @@
+import * as v from "valibot";
 import { apiClient, ApiValidationError } from "./client";
 import { ApiError, UnauthorizedError } from "./errors";
 import { isFiniteNumber, isRecord } from "@/lib/guards/guards";
@@ -180,7 +181,7 @@ export async function loginWithCredentials(credentials: LoginCredentials): Promi
   const response: unknown = await apiClient.post(LOGIN_ENDPOINT, payload.toString(), {
     headers: { "Content-Type": "application/x-www-form-urlencoded" },
     skipAuthRedirect: true,
-    validate: isLoginResponse,
+    validate: v.custom(isLoginResponse),
   });
 
   if (!isLoginResponse(response)) {
@@ -195,7 +196,7 @@ export async function loginWithCredentials(credentials: LoginCredentials): Promi
  */
 export async function logout(onSuccess?: () => void): Promise<void> {
   await apiClient.post(LOGOUT_ENDPOINT, undefined, {
-    validate: isLogoutResponse,
+    validate: v.custom(isLogoutResponse),
   });
   queryClient.clear();
   onSuccess?.();
@@ -213,7 +214,7 @@ export async function registerUser(
     try {
       await apiClient.get(CSRF_ENDPOINT, {
         skipAuthRedirect: true,
-        validate: isCsrfTokensResponse,
+        validate: v.custom(isCsrfTokensResponse),
       });
     } catch (error) {
       const { clientLogger } = await import("@/shared/services/browser/clientLogger");
@@ -229,7 +230,7 @@ export async function registerUser(
       plainPassword: data.password,
     },
     {
-      validate: isRegistrationResponse,
+      validate: v.custom(isRegistrationResponse),
     },
   );
 
@@ -267,7 +268,7 @@ export async function getAuthenticatedUser(
       signal: options.signal,
       skipAuthRedirect: true,
       timeoutMs,
-      validate: isAuthenticatedUserResponse,
+      validate: v.custom(isAuthenticatedUserResponse),
     });
 
     if (isAuthenticatedUserEnvelope(response)) {

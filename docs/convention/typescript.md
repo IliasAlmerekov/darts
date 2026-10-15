@@ -56,7 +56,8 @@ In production code, any `as unknown` should be replaced with runtime validation 
 
 ## Type guards
 
-Shared guards live in `src/shared/lib/guards/guards.ts`.
+Shared guards live in `src/shared/lib/guards/guards.ts`. API responses are not checked by
+guards: each has a Valibot schema in its `src/shared/api/` domain file (see `api.md`).
 
 - `isRecord(value): value is Record<string, unknown>`
 - `isFiniteNumber(value): value is number`
@@ -65,12 +66,13 @@ Validation rules:
 
 - Guards must validate full shape, not only `isRecord` alone.
 - Shared guards used in 2+ files must stay in `src/shared/lib/guards/guards.ts`.
-- `apiClient` calls must pass `validate: (data: unknown) => data is T`.
+- `apiClient` calls must pass `validate: <Valibot schema>`; the result type is inferred from it.
 - `location.state` is validated via `parseLocationState<T>(state, validate)` from `src/shared/lib/router/locationState.ts`. Direct `as` casts on `location.state` are forbidden; the call site provides the page-local type guard.
 
 ## Naming
 
-- `interface` for object shapes.
+- `interface` for object shapes, except API response types: they are
+  `type XResponse = v.InferOutput<typeof xResponseSchema>`.
 - `type` for unions/intersections/computed aliases.
 - Component props as `FooProps` local interfaces.
 - No `.types.ts` files.

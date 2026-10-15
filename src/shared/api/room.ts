@@ -1,3 +1,4 @@
+import * as v from "valibot";
 import { apiClient } from "./client";
 import { ApiError } from "./errors";
 import { createInviteEndpoint } from "./endpoints";
@@ -67,7 +68,7 @@ export async function getInvitation(
 ): Promise<CreateRoomResponse> {
   const data: unknown = await apiClient.post(createInviteEndpoint(gameId), undefined, {
     ...(signal ? { signal } : {}),
-    validate: isCreateRoomResponse,
+    validate: v.custom(isCreateRoomResponse),
   });
   if (!isCreateRoomResponse(data)) {
     throw new ApiError("Unexpected response shape for invitation", { status: 200, data });
@@ -90,13 +91,13 @@ export async function createRoom(payload?: CreateGamePayload): Promise<CreateRoo
   const body = hasPayload && payload ? payload : {};
 
   const room: unknown = await apiClient.post(CREATE_ROOM_ENDPOINT, body, {
-    validate: isCreateRoomGameIdResponse,
+    validate: v.custom(isCreateRoomGameIdResponse),
   });
   if (!isCreateRoomGameIdResponse(room)) {
     throw new ApiError("Unexpected response shape for create room", { status: 200, data: room });
   }
   const invite: unknown = await apiClient.post(createInviteEndpoint(room.gameId), undefined, {
-    validate: isCreateRoomResponse,
+    validate: v.custom(isCreateRoomResponse),
   });
   if (!isCreateRoomResponse(invite)) {
     throw new ApiError("Unexpected response shape for room invitation", {
@@ -118,7 +119,7 @@ export async function leaveRoom(gameId: number, playerId?: number): Promise<void
   const query = typeof playerId === "number" ? { playerId } : undefined;
   await apiClient.delete(ROOM_ENDPOINT(gameId), {
     ...(query ? { query } : {}),
-    validate: isMessageResponse,
+    validate: v.custom(isMessageResponse),
   });
 }
 
@@ -133,7 +134,7 @@ export async function updatePlayerOrder(
     UPDATE_PLAYER_ORDER_ENDPOINT(gameId),
     { positions },
     {
-      validate: isSuccessResponse,
+      validate: v.custom(isSuccessResponse),
     },
   );
 }
@@ -150,7 +151,7 @@ export async function addGuestPlayer(
   payload: AddGuestPayload,
 ): Promise<GuestPlayer> {
   const data: unknown = await apiClient.post(ADD_GUEST_ENDPOINT(gameId), payload, {
-    validate: isGuestPlayerResponse,
+    validate: v.custom(isGuestPlayerResponse),
   });
   if (!isGuestPlayerResponse(data)) {
     throw new ApiError("Unexpected response shape for add guest", { status: 200, data });

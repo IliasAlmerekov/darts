@@ -29,7 +29,7 @@ describe("game/rematch api", () => {
     expect(apiClient.post).toHaveBeenCalledWith(
       "/room/520/rematch",
       undefined,
-      expect.objectContaining({ validate: expect.any(Function) }),
+      expect.objectContaining({ validate: expect.any(Object) }),
     );
     expect(response).toEqual({
       success: true,
@@ -48,13 +48,13 @@ describe("game/rematch api", () => {
       1,
       "/room/520/rematch",
       undefined,
-      expect.objectContaining({ validate: expect.any(Function) }),
+      expect.objectContaining({ validate: expect.any(Object) }),
     );
     expect(apiClient.post).toHaveBeenNthCalledWith(
       2,
       "/invite/create/777",
       undefined,
-      expect.objectContaining({ validate: expect.any(Function) }),
+      expect.objectContaining({ validate: expect.any(Object) }),
     );
     expect(response).toEqual({
       success: true,
@@ -77,13 +77,13 @@ describe("game/rematch api", () => {
 
     expect(apiClient.get).toHaveBeenCalledWith(
       "/game/520/settings",
-      expect.objectContaining({ validate: expect.any(Function) }),
+      expect.objectContaining({ validate: expect.any(Object) }),
     );
     expect(apiClient.post).toHaveBeenNthCalledWith(
       1,
       "/room/520/rematch",
       undefined,
-      expect.objectContaining({ validate: expect.any(Function) }),
+      expect.objectContaining({ validate: expect.any(Object) }),
     );
     expect(apiClient.post).toHaveBeenNthCalledWith(
       2,
@@ -93,7 +93,7 @@ describe("game/rematch api", () => {
         doubleout: true,
         tripleout: false,
       },
-      expect.objectContaining({ validate: expect.any(Function) }),
+      expect.objectContaining({ validate: expect.any(Object) }),
     );
     expect(response).toEqual({
       success: true,

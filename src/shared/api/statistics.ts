@@ -1,3 +1,4 @@
+import * as v from "valibot";
 import { apiClient } from "./client";
 import { ApiError } from "./errors";
 import type { PlayerDataProps, GameDataProps } from "@/types";
@@ -356,7 +357,7 @@ export async function getPlayerStats(
   const data: unknown = await apiClient.get("/players/stats", {
     query,
     signal,
-    validate: isPlayerStatsResponse,
+    validate: v.custom(isPlayerStatsResponse),
   });
   const normalized = normalizePlayerDataResponse(data);
   if (normalized === null) {
@@ -376,7 +377,7 @@ export async function getGamesOverview(
   const data: unknown = await apiClient.get("/games/overview", {
     query: { limit, offset },
     signal,
-    validate: isGamesOverviewResponse,
+    validate: v.custom(isGamesOverviewResponse),
   });
   const normalized = normalizeGamesOverviewResponse(data);
   if (normalized === null) {

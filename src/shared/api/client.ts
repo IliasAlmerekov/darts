@@ -1,3 +1,4 @@
+import * as v from "valibot";
 import { ApiError, ForbiddenError, NetworkError, TimeoutError, UnauthorizedError } from "./errors";
 import type { ApiRequestConfig, QueryParams } from "./types";
 import { isRecord } from "@/lib/guards/guards";
@@ -11,8 +12,10 @@ interface ApiResponse<T> {
   response: Response;
 }
 
-type ValidatedApiRequestConfig<T> = ApiRequestConfig & {
-  validate: (data: unknown) => data is T;
+type ResponseSchema = v.GenericSchema;
+
+type ValidatedApiRequestConfig<TSchema extends ResponseSchema> = ApiRequestConfig & {
+  validate: TSchema;
 };
 
 let onUnauthorized: AuthRedirectHandler | null = null;
@@ -32,6 +35,23 @@ export class ApiValidationError extends Error {
   constructor(public readonly raw: unknown) {
     super("API response failed validation");
   }
+}
+
+/**
+ * Parses a response body with its schema and throws `ApiValidationError` with the raw body
+ * when it does not match.
+ */
+function parseResponse<TSchema extends ResponseSchema>(
+  schema: TSchema,
+  data: unknown,
+): v.InferOutput<TSchema> {
+  const result = v.safeParse(schema, data);
+
+  if (!result.success) {
+    throw new ApiValidationError(data);
+  }
+
+  return result.output;
 }
 
 export function setUnauthorizedHandler(handler: AuthRedirectHandler): void {
@@ -104,15 +124,18 @@ function isAcceptedStatus(status: number, acceptedStatuses?: number[]): boolean 
   return acceptedStatuses?.includes(status) ?? false;
 }
 
-async function request<T>(
+async function request<TSchema extends ResponseSchema>(
   endpoint: string,
-  config: ValidatedApiRequestConfig<T> & { returnResponse: true },
-): Promise<ApiResponse<T>>;
-async function request<T>(endpoint: string, config: ValidatedApiRequestConfig<T>): Promise<T>;
-async function request<T>(
+  config: ValidatedApiRequestConfig<TSchema> & { returnResponse: true },
+): Promise<ApiResponse<v.InferOutput<TSchema>>>;
+async function request<TSchema extends ResponseSchema>(
   endpoint: string,
-  config: ValidatedApiRequestConfig<T>,
-): Promise<T | ApiResponse<T>> {
+  config: ValidatedApiRequestConfig<TSchema>,
+): Promise<v.InferOutput<TSchema>>;
+async function request<TSchema extends ResponseSchema>(
+  endpoint: string,
+  config: ValidatedApiRequestConfig<TSchema>,
+): Promise<v.InferOutput<TSchema> | ApiResponse<v.InferOutput<TSchema>>> {
   const {
     method = "GET",
     query,
@@ -195,11 +218,7 @@ async function request<T>(
     });
   }
 
-  const validatedData = validate(data)
-    ? data
-    : (() => {
-        throw new ApiValidationError(data);
-      })();
+  const validatedData = parseResponse(validate, data);
 
   if (returnResponse) {
     return {
@@ -211,29 +230,36 @@ async function request<T>(
   return validatedData;
 }
 
+type MethodConfig<TSchema extends ResponseSchema> = Omit<
+  ValidatedApiRequestConfig<TSchema>,
+  "method" | "body"
+>;
+
 export const apiClient = {
   request,
-  get: <T>(endpoint: string, config: Omit<ValidatedApiRequestConfig<T>, "method" | "body">) =>
-    request<T>(endpoint, { ...config, method: "GET" }),
+  get: <TSchema extends ResponseSchema>(endpoint: string, config: MethodConfig<TSchema>) =>
+    request(endpoint, { ...config, method: "GET" }),
 
-  post: <T>(
+  post: <TSchema extends ResponseSchema>(
     endpoint: string,
     body: unknown,
-    config: Omit<ValidatedApiRequestConfig<T>, "method" | "body">,
-  ) => request<T>(endpoint, { ...config, method: "POST", body }),
+    config: MethodConfig<TSchema>,
+  ) => request(endpoint, { ...config, method: "POST", body }),
 
-  put: <T>(
+  put: <TSchema extends ResponseSchema>(
     endpoint: string,
     body: unknown,
-    config: Omit<ValidatedApiRequestConfig<T>, "method" | "body">,
-  ) => request<T>(endpoint, { ...config, method: "PUT", body }),
+    config: MethodConfig<TSchema>,
+  ) => request(endpoint, { ...config, method: "PUT", body }),
 
-  patch: <T>(
+  patch: <TSchema extends ResponseSchema>(
     endpoint: string,
     body: unknown,
-    config: Omit<ValidatedApiRequestConfig<T>, "method" | "body">,
-  ) => request<T>(endpoint, { ...config, method: "PATCH", body }),
+    config: MethodConfig<TSchema>,
+  ) => request(endpoint, { ...config, method: "PATCH", body }),
 
-  delete: <T>(endpoint: string, config: Omit<ValidatedApiRequestConfig<T>, "method">) =>
-    request<T>(endpoint, { ...config, method: "DELETE" }),
+  delete: <TSchema extends ResponseSchema>(
+    endpoint: string,
+    config: Omit<ValidatedApiRequestConfig<TSchema>, "method">,
+  ) => request(endpoint, { ...config, method: "DELETE" }),
 };

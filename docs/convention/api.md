@@ -13,7 +13,7 @@ src/shared/api/
   endpoints.ts         # cross-domain endpoints only (currently: createInviteEndpoint)
   types.ts             # apiClient types (HttpMethod, ApiRequestConfig, QueryParams)
   index.ts             # barrel: cross-cutting public surface
-  test-utils.ts        # createMockResponse helper for tests
+  test-utils.ts        # createMockResponse and respondWith helpers for tests
   auth.ts              # per-domain public surface (auth flows + DTO types)
   game.ts              # per-domain public surface (game flows + ETag cache)
   room.ts              # per-domain public surface (room flows)
@@ -33,7 +33,7 @@ The API layer has two levels (also documented in `architecture.md`):
   `ForbiddenError`, `NetworkError`, `TimeoutError`, `API_BASE_URL`, plus everything
   re-exported from `endpoints.ts` and the per-domain modules.
 - `@/shared/api/<domain>` -- the domain module is the public entry for its DTO types,
-  resource functions, type guards (when needed externally) and any per-domain caches.
+  resource functions, guards (when needed externally) and any per-domain caches.
 
 Internals -- `client.ts`, `errors.ts`, `types.ts`, `endpoints.ts` -- must never be deep-
 imported from outside `shared/api/`. Always go through the barrel.
@@ -45,11 +45,12 @@ network call goes through `apiClient.{get,post,put,patch,delete,request}`.
 
 Rules for callers:
 
-- Every call **must** pass `validate: (data: unknown) => data is T`. There is no overload
-  without it. Calls without `validate` are a type error.
-- The `validate` guard receives the parsed body (`unknown`) and must verify the full
-  response shape, not just `isRecord`. If validation fails, the client throws
-  `ApiValidationError`.
+- Every call **must** pass `validate`: the Valibot schema of the response body. There is
+  no overload without it. Calls without `validate` are a type error.
+- The schema describes the full response shape, as `docs/backend-api-contract.json`
+  defines it. `apiClient` runs `v.safeParse` and returns the typed output, so the return
+  type is `v.InferOutput` of the schema. If parsing fails, the client throws
+  `ApiValidationError` with the raw body in `raw`.
 - `AbortSignal` is forwarded through the optional `signal` config; combine it with the
   client's built-in 30s timeout (do not add a second timeout).
 - For 4xx/5xx the client throws a typed error (see below). The success path is reached
@@ -58,36 +59,45 @@ Rules for callers:
   raw `Response` (status, headers) -- e.g. ETag flows. Otherwise the helper methods
   (`get`/`post`/...) are the convention.
 
-## Defensive double-validate (codebase convention)
+## Parse once
 
-Every domain function follows this shape:
+`apiClient` parses each response once. The domain function uses the typed output directly
+and does not check it again:
 
 ```ts
-const data: unknown = await apiClient.get(GAME_ENDPOINT(id), {
+const game = await apiClient.get(GAME_ENDPOINT(id), {
   signal,
-  validate: isGameThrowsResponse,
+  validate: gameThrowsResponseSchema,
 });
 
-if (!isGameThrowsResponse(data)) {
-  throw new ApiError("Unexpected response shape", { status: 200, data });
-}
-
-return data;
+return game;
 ```
 
-The redundancy is intentional: the `apiClient` already throws `ApiValidationError` on a
-failed guard, but each domain function re-narrows so the return type is provably the DTO
-without relying on inference at the call site (`const data: unknown` is the convention).
-Keep this shape for new endpoints.
+Do not re-check the result with a guard, and do not widen it to `unknown`. When the
+endpoint's data needs a UI shape, pass the output to a mapper (see "Mappers").
 
-## Type guards
+## Response schemas
 
-- Each domain file declares its own private `isXxxResponse` guards above the resource
-  functions.
-- Guards reuse `isRecord` and `isFiniteNumber` from `@/lib/guards/guards`.
-- Domain-specific guards stay private to the file unless they are reused (then they get
-  exported, like `isRoleArray` in `auth.ts`).
-- Cross-cutting reusable guards belong in `@/lib/guards/guards`, not in `shared/api/`.
+ADR 0002 records why responses are described by Valibot schemas.
+
+- Each response read in a domain file has one schema, declared above the resource
+  functions as `camelCaseSchema` (`gameThrowsResponseSchema`). Import Valibot as
+  `import * as v from "valibot"`.
+- The response type is inferred from the schema:
+  `export type GameSettingsResponse = v.InferOutput<typeof gameSettingsResponseSchema>`.
+  Do not write a separate interface for it. `@/types` re-exports response types that
+  pages use.
+- Follow the contract: a required field is required, an optional field is `v.optional`,
+  `nullable: true` is `v.nullable`, `integer` is `v.pipe(v.number(), v.integer())`. A
+  contract `default` goes into `v.optional(schema, default)`, so the output type has the
+  field.
+- A schema may be narrower than the contract where the contract is untyped (for example
+  a `status` string becomes `v.picklist`). It must not be looser.
+- A client-side discriminant the backend does not send is added with `v.transform` in the
+  schema (`type: "full-state"`), so the type matches the runtime value.
+- A schema used by 2+ domain files is exported from the domain file that owns it.
+- Shared guards in `@/lib/guards/guards` are for code outside the API layer. Do not write
+  `isXxxResponse` guards in `shared/api/`.
 
 ## Typed errors
 
@@ -102,7 +112,8 @@ All errors thrown by `apiClient` are instances of `ApiError` or its subclasses:
 | `TimeoutError`      | 0      | Built-in 30s timeout aborted the request                                          |
 
 `ApiValidationError` (in `client.ts`) is a separate class -- it does **not** extend
-`ApiError`. It is thrown when `validate(...)` returns false.
+`ApiError`. It is thrown when the body does not match the `validate` schema; `raw` holds
+the body.
 
 Rules:
 
@@ -185,11 +196,16 @@ User-facing messages come from `toUserErrorMessage(error, fallback?)` in
   to build mock `Response` objects.
 - API domain tests mock `apiClient.{get,post,...}`, **not** `fetch`. The single fetch in
   `client.ts` is exercised by `client.test.ts`.
+- Mock an `apiClient` method with `respondWith(payload)` from `test-utils.ts`. It parses
+  `payload` with the schema the caller passed, as the real client does, so a malformed
+  payload rejects with `ApiValidationError`.
+- Each public API function has a test with a valid payload built from the contract
+  example and one with an invalid payload.
 - Mappers are unit-tested in isolation (no API mocks needed since they are pure).
 
 ## Verification
 
-Most rules are enforced by types (`validate` is required, `ReadableAtom` removes `.set`,
+Most rules are enforced by types (`validate` is a required schema, `ReadableAtom` removes `.set`,
 typed errors). The remaining checks below catch the structural rules ESLint and TS do not
 see.
 
@@ -205,7 +221,13 @@ rg -nP '\bfetch\s*\(' src --glob '!src/shared/api/client.ts' --glob '!**/*.test.
 rg -nP '\b(data|response)\s+as\s+[A-Za-z]' src/shared/api --glob '!**/*.test.{ts,tsx}'
 ```
 
-**3. Mappers imported by render-flow files** -- mappers may live in API / store /
+**3. Hand-written response guards or re-checks inside `shared/api/`**:
+
+```bash
+rg -nP 'function is\w+\(|: unknown = await apiClient' src/shared/api --glob '!**/*.test.{ts,tsx}'
+```
+
+**4. Mappers imported by render-flow files** -- mappers may live in API / store /
 `pages/<X>/lib/`, but must not appear in JSX or render-flow hooks. ESLint enforces this
 (`no-restricted-imports` for `src/pages/**/*.tsx` and `src/pages/**/use*.ts` in
 `eslint.config.mjs`). The rule lists the mapper modules named above by file, so a new

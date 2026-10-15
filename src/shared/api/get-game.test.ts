@@ -64,7 +64,7 @@ describe("getGameThrowsIfChanged", () => {
     expect(data).toEqual(response);
     expect(apiClient.get).toHaveBeenCalledWith(
       "/game/520",
-      expect.objectContaining({ validate: expect.any(Function) }),
+      expect.objectContaining({ validate: expect.any(Object) }),
     );
   });
 
@@ -77,7 +77,7 @@ describe("getGameThrowsIfChanged", () => {
 
     expect(apiClient.get).toHaveBeenCalledWith("/game/520", {
       signal: controller.signal,
-      validate: expect.any(Function),
+      validate: expect.any(Object),
     });
   });
 
@@ -93,7 +93,7 @@ describe("getGameThrowsIfChanged", () => {
 
     expect(apiClient.get).toHaveBeenCalledWith("/game/520/settings", {
       signal: controller.signal,
-      validate: expect.any(Function),
+      validate: expect.any(Object),
     });
   });
 
@@ -154,7 +154,7 @@ describe("getGameThrowsIfChanged", () => {
 
     expect(apiClient.post).toHaveBeenCalledWith("/game/520/finish", undefined, {
       signal: controller.signal,
-      validate: expect.any(Function),
+      validate: expect.any(Object),
     });
   });
 
@@ -264,7 +264,7 @@ describe("getGameThrowsIfChanged", () => {
       expect.objectContaining({
         method: "GET",
         signal: controller.signal,
-        validate: expect.any(Function),
+        validate: expect.any(Object),
       }),
     );
     expect(fetchTrap).not.toHaveBeenCalled();
@@ -310,7 +310,7 @@ describe("getGameThrowsIfChanged", () => {
         headers: expect.objectContaining({
           "If-None-Match": "etag-v1",
         }),
-        validate: expect.any(Function),
+        validate: expect.any(Object),
       }),
     );
     expect(fetchTrap).not.toHaveBeenCalled();

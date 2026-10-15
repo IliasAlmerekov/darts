@@ -1,3 +1,4 @@
+import * as v from "valibot";
 import { apiClient } from "./client";
 import { ApiError } from "./errors";
 import { createInviteEndpoint } from "./endpoints";
@@ -378,7 +379,7 @@ export async function getGameThrows(
 ): Promise<GameThrowsResponse> {
   const data: unknown = await apiClient.get(GAME_ENDPOINT(gameId), {
     ...(signal ? { signal } : {}),
-    validate: isGameThrowsResponse,
+    validate: v.custom(isGameThrowsResponse),
   });
   if (!isGameThrowsResponse(data)) {
     throw new ApiError("Unexpected response shape", { status: 200, data });
@@ -395,14 +396,14 @@ export async function getGameThrowsIfChanged(
   signal?: AbortSignal,
 ): Promise<GameThrowsResponse | null> {
   const currentVersion = gameStateVersionById.get(gameId) ?? null;
-  const { data, response } = await apiClient.request<unknown>(GAME_ENDPOINT(gameId), {
+  const { data, response } = await apiClient.request(GAME_ENDPOINT(gameId), {
     method: "GET",
     ...(currentVersion ? { query: { since: currentVersion } } : {}),
     ...(currentVersion ? { headers: { "If-None-Match": currentVersion } } : {}),
     ...(signal ? { signal } : {}),
     acceptedStatuses: [304],
     returnResponse: true,
-    validate: isConditionalGameStateResponse,
+    validate: v.custom(isConditionalGameStateResponse),
   });
 
   if (response.status === 304) {
@@ -464,7 +465,7 @@ export async function startGame(gameId: number, config: StartGameRequest): Promi
       tripleout: config.tripleOut,
     },
     {
-      validate: isStartGameResponse,
+      validate: v.custom(isStartGameResponse),
     },
   );
 }
@@ -478,7 +479,7 @@ export async function finishGame(
 ): Promise<GameSummaryResponse> {
   const data: unknown = await apiClient.post(FINISH_GAME_ENDPOINT(gameId), undefined, {
     ...(signal ? { signal } : {}),
-    validate: isGameSummaryEnvelopeResponse,
+    validate: v.custom(isGameSummaryEnvelopeResponse),
   });
   const summary = normalizeGameSummaryResponse(data, gameId);
   if (!summary) {
@@ -496,7 +497,7 @@ export async function getFinishedGame(
 ): Promise<GameSummaryResponse> {
   const data: unknown = await apiClient.get(FINISHED_GAME_ENDPOINT(gameId), {
     ...(signal ? { signal } : {}),
-    validate: isGameSummaryEnvelopeResponse,
+    validate: v.custom(isGameSummaryEnvelopeResponse),
   });
   const summary = normalizeGameSummaryResponse(data, gameId);
   if (!summary) {
@@ -510,7 +511,7 @@ export async function getFinishedGame(
  */
 export async function reopenGame(gameId: number): Promise<GameThrowsResponse> {
   const data: unknown = await apiClient.patch(REOPEN_GAME_ENDPOINT(gameId), undefined, {
-    validate: isGameThrowsResponse,
+    validate: v.custom(isGameThrowsResponse),
   });
   if (!isGameThrowsResponse(data)) {
     throw new ApiError("Unexpected response shape for reopen game", { status: 200, data });
@@ -523,7 +524,7 @@ export async function reopenGame(gameId: number): Promise<GameThrowsResponse> {
  */
 export async function abortGame(gameId: number): Promise<{ message: string }> {
   const data: unknown = await apiClient.patch(ABORT_GAME_ENDPOINT(gameId), undefined, {
-    validate: isMessageResponse,
+    validate: v.custom(isMessageResponse),
   });
   if (!isMessageResponse(data)) {
     throw new ApiError("Unexpected response shape for abort game", { status: 200, data });
@@ -538,7 +539,7 @@ export async function abortGame(gameId: number): Promise<{ message: string }> {
  */
 export async function createRematchGame(previousGameId: number): Promise<RematchGameResponse> {
   const rematch: unknown = await apiClient.post(REMATCH_ENDPOINT(previousGameId), undefined, {
-    validate: isRematchLikeResponse,
+    validate: v.custom(isRematchLikeResponse),
   });
   if (!isRematchLikeResponse(rematch)) {
     throw new ApiError("Unexpected response shape for rematch", { status: 200, data: rematch });
@@ -565,7 +566,7 @@ export async function createRematch(previousGameId: number): Promise<RematchResp
   }
 
   const invite: unknown = await apiClient.post(createInviteEndpoint(rematch.gameId), undefined, {
-    validate: isInvitationPayloadResponse,
+    validate: v.custom(isInvitationPayloadResponse),
   });
   if (
     !isRecord(invite) ||
@@ -621,7 +622,7 @@ export async function getGameSettings(
 ): Promise<GameSettingsResponse> {
   const data: unknown = await apiClient.get(GAME_SETTINGS_ENDPOINT(gameId), {
     ...(signal ? { signal } : {}),
-    validate: isGameSettingsResponse,
+    validate: v.custom(isGameSettingsResponse),
   });
   if (!isGameSettingsResponse(data)) {
     throw new ApiError("Unexpected response shape for game settings", { status: 200, data });
@@ -637,8 +638,10 @@ export async function updateGameSettings(
   payload: UpdateGameSettingsPayload,
 ): Promise<GameSettingsResponse> {
   const data: unknown = await apiClient.patch(GAME_SETTINGS_ENDPOINT(gameId), payload, {
-    validate: (data): data is GameSettingsResponse | GameThrowsResponse =>
-      isGameSettingsResponse(data) || isGameThrowsResponse(data),
+    validate: v.custom(
+      (data): data is GameSettingsResponse | GameThrowsResponse =>
+        isGameSettingsResponse(data) || isGameThrowsResponse(data),
+    ),
   });
   const settings = extractGameSettingsResponse(data);
   if (!settings) {
@@ -676,7 +679,7 @@ export async function recordThrow(
   payload: ThrowRequest,
 ): Promise<ThrowAckResponse> {
   const data: unknown = await apiClient.post(RECORD_THROW_ENDPOINT(gameId), payload, {
-    validate: isThrowAckResponse,
+    validate: v.custom(isThrowAckResponse),
   });
   if (!isThrowAckResponse(data)) {
     throw new ApiError("Unexpected response shape for record throw", { status: 200, data });
@@ -690,8 +693,9 @@ export async function recordThrow(
  */
 export async function undoLastThrow(gameId: number): Promise<UndoThrowResponse> {
   const data: unknown = await apiClient.delete(UNDO_THROW_ENDPOINT(gameId), {
-    validate: (data): data is UndoThrowResponse =>
-      isGameThrowsResponse(data) || isUndoAckResponse(data),
+    validate: v.custom(
+      (data): data is UndoThrowResponse => isGameThrowsResponse(data) || isUndoAckResponse(data),
+    ),
   });
   if (isGameThrowsResponse(data)) {
     return data;
