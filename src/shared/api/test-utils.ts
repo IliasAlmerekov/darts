@@ -15,10 +15,11 @@ export function createMockResponse({
     status,
     ...(headers === undefined ? {} : { headers }),
   };
+  const isStream = body instanceof ReadableStream;
   const responseBody =
     body === undefined || body === null
       ? null
-      : typeof body === "string"
+      : typeof body === "string" || isStream
         ? body
         : JSON.stringify(body);
   const response = new Response(responseBody, responseInit);
@@ -30,7 +31,7 @@ export function createMockResponse({
     });
   }
 
-  if (body !== undefined && typeof body !== "string") {
+  if (body !== undefined && typeof body !== "string" && !isStream) {
     Object.defineProperty(response, "json", {
       configurable: true,
       value: () => Promise.resolve(body),
