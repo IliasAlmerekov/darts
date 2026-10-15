@@ -6,7 +6,7 @@ import {
   clearUnauthorizedHandler,
   setUnauthorizedHandler,
 } from "./client";
-import { TimeoutError } from "./errors";
+import { NetworkError, TimeoutError } from "./errors";
 import { createMockResponse } from "./test-utils";
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -176,6 +176,28 @@ describe("apiClient request timeout", () => {
     externalController.abort();
 
     await expect(requestPromise).rejects.toThrow(DOMException);
+  });
+
+  it("should throw NetworkError when fetch fails with a network error after an external abort", async () => {
+    const externalController = new AbortController();
+
+    vi.spyOn(globalThis, "fetch").mockImplementation(
+      (_url, init) =>
+        new Promise((_resolve, reject) => {
+          init?.signal?.addEventListener("abort", () => {
+            reject(new TypeError("Failed to fetch"));
+          });
+        }),
+    );
+
+    const requestPromise = apiClient.get("/slow", {
+      signal: externalController.signal,
+      validate: acceptUnknown,
+    });
+
+    externalController.abort();
+
+    await expect(requestPromise).rejects.toBeInstanceOf(NetworkError);
   });
 });
 

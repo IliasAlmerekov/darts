@@ -184,7 +184,14 @@ async function request<T>(
       if (controller.signal.reason === TIMEOUT_REASON) {
         throw new TimeoutError(`Request timed out after ${timeoutDuration}ms`, url);
       }
-      throw error;
+      // Browsers reject an aborted fetch with the signal's reason; mocks and older
+      // engines reject with a fresh AbortError. Anything else is a network failure.
+      if (
+        error === controller.signal.reason ||
+        (error instanceof DOMException && error.name === "AbortError")
+      ) {
+        throw error;
+      }
     }
     throw new NetworkError("Network request failed", error);
   } finally {
