@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef } from "react";
 import { useStore } from "@nanostores/react";
 import { getGameThrowsIfChanged, resetGameStateVersion } from "@/shared/api/game";
 import { clientLogger } from "@/shared/services/browser/clientLogger";
-import type { GameSettingsResponse, GameThrowsResponse } from "@/types";
+import type { GameSettings, GameThrowsResponse } from "@/types";
 import {
   $gameData,
   $isLoading,
@@ -23,7 +23,7 @@ interface UseGameStateReturn {
   isLoading: boolean;
   error: Error | null;
   refetch: () => Promise<void>;
-  updateGameSettings: (settings: GameSettingsResponse) => void;
+  updateGameSettings: (settings: GameSettings) => void;
 }
 
 function isAbortError(error: unknown): boolean {
@@ -106,7 +106,7 @@ export function useGameState({ gameId }: UseGameStateOptions): UseGameStateRetur
   }, [fetchGameData]);
 
   const updateGameSettings = useCallback(
-    (settings: GameSettingsResponse) => {
+    (settings: GameSettings) => {
       if (gameId === null) {
         return;
       }

@@ -1,5 +1,6 @@
 // @vitest-environment node
-vi.mock("@/shared/api/client", () => ({
+vi.mock("@/shared/api/client", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("./client")>()),
   apiClient: {
     get: vi.fn(),
     post: vi.fn(),
@@ -14,6 +15,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { reopenGame } from "./game";
 
 import { apiClient } from "./client";
+import { respondWith } from "./test-utils";
 
 describe("game/reopen api", () => {
   beforeEach(() => {
@@ -35,7 +37,7 @@ describe("game/reopen api", () => {
         tripleOut: false,
       },
     };
-    vi.mocked(apiClient.patch).mockResolvedValueOnce(response);
+    vi.mocked(apiClient.patch).mockImplementationOnce(respondWith(response));
 
     const result = await reopenGame(77);
 
@@ -44,6 +46,6 @@ describe("game/reopen api", () => {
       undefined,
       expect.objectContaining({ validate: expect.any(Object) }),
     );
-    expect(result).toEqual(response);
+    expect(result).toEqual({ type: "full-state", ...response });
   });
 });

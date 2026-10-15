@@ -14,7 +14,7 @@ import {
   setLoading,
 } from "./game-state";
 import * as gameStateNormalizer from "../lib/game/gameStateNormalizer";
-import type { GameSettingsResponse, GameThrowsResponse } from "@/types";
+import type { GameSettings, GameThrowsResponse } from "@/types";
 
 function buildGamePlayer(
   overrides: Partial<GameThrowsResponse["players"][number]> = {},
@@ -26,6 +26,7 @@ function buildGamePlayer(
     isActive: true,
     position: 0,
     isBust: false,
+    isGuest: false,
     throwsInCurrentRound: 2,
     roundHistory: [],
     currentRoundThrows: [],
@@ -205,7 +206,7 @@ describe("game-state store", () => {
     });
 
     it("should update cache only when $gameData is null and settings are received", () => {
-      const settings: GameSettingsResponse = {
+      const settings: GameSettings = {
         startScore: 301,
         doubleOut: false,
         tripleOut: true,
@@ -220,12 +221,12 @@ describe("game-state store", () => {
     it("should not write to cache a second time when called with identical settings for the same game", () => {
       setGameData(mockGameData);
 
-      const settings1: GameSettingsResponse = {
+      const settings1: GameSettings = {
         startScore: 301,
         doubleOut: false,
         tripleOut: true,
       };
-      const settings2: GameSettingsResponse = {
+      const settings2: GameSettings = {
         startScore: 301,
         doubleOut: false,
         tripleOut: true,
@@ -270,7 +271,10 @@ describe("game-state store", () => {
             ...getMockPlayer(0),
             score: 40,
             throwsInCurrentRound: 2,
-            currentRoundThrows: [{ value: 20 }, { value: 20 }],
+            currentRoundThrows: [
+              { value: 20, isDouble: false, isTriple: false, isBust: false },
+              { value: 20, isDouble: false, isTriple: false, isBust: false },
+            ],
           },
           {
             ...getMockPlayer(1),
@@ -325,7 +329,10 @@ describe("game-state store", () => {
             position: null,
             isBust: false,
             throwsInCurrentRound: 2,
-            currentRoundThrows: [{ value: 20 }, { value: 20 }],
+            currentRoundThrows: [
+              { value: 20, isDouble: false, isTriple: false, isBust: false },
+              { value: 20, isDouble: false, isTriple: false, isBust: false },
+            ],
           },
           {
             ...getMockPlayer(1),
@@ -447,7 +454,7 @@ describe("game-state store", () => {
   // --- TICKET-12 ---
   describe("getCachedGameSettings — TICKET-12 (N=1 cache)", () => {
     it("should store gameId and settings when setCachedGameSettings is called via setGameSettings", () => {
-      const settings: GameSettingsResponse = { startScore: 501, doubleOut: true, tripleOut: false };
+      const settings: GameSettings = { startScore: 501, doubleOut: true, tripleOut: false };
 
       setGameSettings(settings, 7);
 
@@ -467,12 +474,12 @@ describe("game-state store", () => {
     });
 
     it("should retain only the last entry when setCachedGameSettings is called twice with different gameIds", () => {
-      const settings1: GameSettingsResponse = {
+      const settings1: GameSettings = {
         startScore: 501,
         doubleOut: true,
         tripleOut: false,
       };
-      const settings2: GameSettingsResponse = {
+      const settings2: GameSettings = {
         startScore: 301,
         doubleOut: false,
         tripleOut: true,
@@ -510,7 +517,7 @@ describe("game-state store", () => {
       setGameData(makeGameData());
       normalizeSpy.mockClear();
 
-      const newSettings: GameSettingsResponse = {
+      const newSettings: GameSettings = {
         startScore: 301,
         doubleOut: false,
         tripleOut: true,

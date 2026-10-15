@@ -13,9 +13,14 @@ import {
   getGameThrowsIfChanged,
   resetGameStateVersion,
 } from "./game";
-import { apiClient, clearUnauthorizedHandler, setUnauthorizedHandler } from "./client";
+import {
+  apiClient,
+  ApiValidationError,
+  clearUnauthorizedHandler,
+  setUnauthorizedHandler,
+} from "./client";
 import { TimeoutError } from "./errors";
-import { createMockResponse } from "./test-utils";
+import { createMockResponse, respondWith } from "./test-utils";
 
 function createValidGameResponse(overrides: Partial<Record<string, unknown>> = {}) {
   return {
@@ -31,6 +36,7 @@ function createValidGameResponse(overrides: Partial<Record<string, unknown>> = {
         score: 301,
         isActive: true,
         isBust: false,
+        isGuest: false,
         position: null,
         throwsInCurrentRound: 0,
         currentRoundThrows: [],
@@ -57,11 +63,11 @@ describe("getGameThrowsIfChanged", () => {
 
   it("returns data for valid getGameThrows response", async () => {
     const response = createValidGameResponse();
-    vi.spyOn(apiClient, "get").mockResolvedValueOnce(response);
+    vi.spyOn(apiClient, "get").mockImplementationOnce(respondWith(response));
 
     const data = await getGameThrows(520);
 
-    expect(data).toEqual(response);
+    expect(data).toEqual({ type: "full-state", ...response });
     expect(apiClient.get).toHaveBeenCalledWith(
       "/game/520",
       expect.objectContaining({ validate: expect.any(Object) }),
@@ -71,7 +77,7 @@ describe("getGameThrowsIfChanged", () => {
   it("forwards AbortSignal through getGameThrows", async () => {
     const controller = new AbortController();
     const response = createValidGameResponse();
-    vi.spyOn(apiClient, "get").mockResolvedValueOnce(response);
+    vi.spyOn(apiClient, "get").mockImplementationOnce(respondWith(response));
 
     await getGameThrows(520, controller.signal);
 
@@ -83,11 +89,15 @@ describe("getGameThrowsIfChanged", () => {
 
   it("forwards AbortSignal through getGameSettings", async () => {
     const controller = new AbortController();
-    vi.spyOn(apiClient, "get").mockResolvedValueOnce({
-      startScore: 301,
-      doubleOut: false,
-      tripleOut: true,
-    });
+    vi.spyOn(apiClient, "get").mockImplementationOnce(
+      respondWith({
+        gameId: 520,
+        startScore: 301,
+        doubleOut: false,
+        tripleOut: true,
+        status: "lobby",
+      }),
+    );
 
     await getGameSettings(520, controller.signal);
 
@@ -97,58 +107,56 @@ describe("getGameThrowsIfChanged", () => {
     });
   });
 
-  it("throws ApiError when getGameThrows receives invalid response shape", async () => {
-    vi.spyOn(apiClient, "get").mockResolvedValueOnce({ id: 520, players: [] });
+  it("rejects with ApiValidationError when getGameThrows receives invalid response shape", async () => {
+    vi.spyOn(apiClient, "get").mockImplementationOnce(respondWith({ id: 520, players: [] }));
 
-    await expect(getGameThrows(520)).rejects.toMatchObject({
-      name: "ApiError",
-      message: "Unexpected response shape",
-      status: 200,
-    });
+    await expect(getGameThrows(520)).rejects.toBeInstanceOf(ApiValidationError);
   });
 
-  it("throws ApiError when getGameThrows receives an unknown game status", async () => {
-    vi.spyOn(apiClient, "get").mockResolvedValueOnce(createValidGameResponse({ status: "active" }));
-
-    await expect(getGameThrows(520)).rejects.toMatchObject({
-      name: "ApiError",
-      message: "Unexpected response shape",
-      status: 200,
-    });
-  });
-
-  it("throws ApiError when getGameThrows receives invalid nested player data", async () => {
-    vi.spyOn(apiClient, "get").mockResolvedValueOnce(
-      createValidGameResponse({
-        players: [
-          {
-            id: 1,
-            name: "P1",
-            score: "301",
-            isActive: true,
-            isBust: false,
-            position: null,
-            throwsInCurrentRound: 0,
-            currentRoundThrows: [],
-            roundHistory: [],
-          },
-        ],
-      }),
+  it("rejects with ApiValidationError when getGameThrows receives an unknown game status", async () => {
+    vi.spyOn(apiClient, "get").mockImplementationOnce(
+      respondWith(createValidGameResponse({ status: "active" })),
     );
 
-    await expect(getGameThrows(520)).rejects.toMatchObject({
-      name: "ApiError",
-      message: "Unexpected response shape",
-      status: 200,
-    });
+    await expect(getGameThrows(520)).rejects.toBeInstanceOf(ApiValidationError);
+  });
+
+  it("rejects with ApiValidationError when getGameThrows receives invalid nested player data", async () => {
+    vi.spyOn(apiClient, "get").mockImplementationOnce(
+      respondWith(
+        createValidGameResponse({
+          players: [
+            {
+              id: 1,
+              name: "P1",
+              score: "301",
+              isActive: true,
+              isBust: false,
+              isGuest: false,
+              position: null,
+              throwsInCurrentRound: 0,
+              currentRoundThrows: [],
+              roundHistory: [],
+            },
+          ],
+        }),
+      ),
+    );
+
+    await expect(getGameThrows(520)).rejects.toBeInstanceOf(ApiValidationError);
   });
 
   it("forwards AbortSignal through finishGame", async () => {
     const controller = new AbortController();
-    const response = [
-      { playerId: 1, username: "P1", position: 1, roundsPlayed: 5, roundAverage: 60 },
-    ];
-    vi.spyOn(apiClient, "post").mockResolvedValueOnce(response);
+    const response = {
+      gameId: 520,
+      winnerRoundsPlayed: 5,
+      winnerRoundAverage: 60,
+      finishedPlayers: [
+        { playerId: 1, username: "P1", position: 1, roundsPlayed: 5, roundAverage: 60 },
+      ],
+    };
+    vi.spyOn(apiClient, "post").mockImplementationOnce(respondWith(response));
 
     await finishGame(520, controller.signal);
 
@@ -159,29 +167,31 @@ describe("getGameThrowsIfChanged", () => {
   });
 
   it("normalizes nullable summary envelope fields from getFinishedGame", async () => {
-    vi.spyOn(apiClient, "get").mockResolvedValueOnce({
-      gameId: 520,
-      finishedAt: "2026-03-10T12:00:00+00:00",
-      winner: { id: 1, username: "Winner" },
-      winnerRoundsPlayed: 4,
-      winnerRoundAverage: 62.5,
-      finishedPlayers: [
-        {
-          playerId: 1,
-          username: "Winner",
-          position: 1,
-          roundsPlayed: 4,
-          roundAverage: 62.5,
-        },
-        {
-          playerId: null,
-          username: null,
-          position: null,
-          roundsPlayed: null,
-          roundAverage: 0,
-        },
-      ],
-    });
+    vi.spyOn(apiClient, "get").mockImplementationOnce(
+      respondWith({
+        gameId: 520,
+        finishedAt: "2026-03-10T12:00:00+00:00",
+        winner: { id: 1, username: "Winner" },
+        winnerRoundsPlayed: 4,
+        winnerRoundAverage: 62.5,
+        finishedPlayers: [
+          {
+            playerId: 1,
+            username: "Winner",
+            position: 1,
+            roundsPlayed: 4,
+            roundAverage: 62.5,
+          },
+          {
+            playerId: null,
+            username: null,
+            position: null,
+            roundsPlayed: null,
+            roundAverage: 0,
+          },
+        ],
+      }),
+    );
 
     await expect(getFinishedGame(520)).resolves.toEqual([
       {
@@ -202,17 +212,19 @@ describe("getGameThrowsIfChanged", () => {
   });
 
   it("warns when a finished player arrives without roundsPlayed", async () => {
-    vi.spyOn(apiClient, "get").mockResolvedValueOnce({
-      gameId: 520,
-      finishedAt: null,
-      winner: null,
-      winnerRoundsPlayed: 4,
-      winnerRoundAverage: 62.5,
-      finishedPlayers: [
-        { playerId: 1, username: "Winner", position: 1, roundsPlayed: 4, roundAverage: 62.5 },
-        { playerId: 7, username: "Bob", position: 2, roundsPlayed: null, roundAverage: 0 },
-      ],
-    });
+    vi.spyOn(apiClient, "get").mockImplementationOnce(
+      respondWith({
+        gameId: 520,
+        finishedAt: null,
+        winner: null,
+        winnerRoundsPlayed: 4,
+        winnerRoundAverage: 62.5,
+        finishedPlayers: [
+          { playerId: 1, username: "Winner", position: 1, roundsPlayed: 4, roundAverage: 62.5 },
+          { playerId: 7, username: "Bob", position: 2, roundsPlayed: null, roundAverage: 0 },
+        ],
+      }),
+    );
 
     await getFinishedGame(520);
 
@@ -224,16 +236,18 @@ describe("getGameThrowsIfChanged", () => {
   });
 
   it("does not warn when every finished player has roundsPlayed", async () => {
-    vi.spyOn(apiClient, "get").mockResolvedValueOnce({
-      gameId: 520,
-      finishedAt: null,
-      winner: null,
-      winnerRoundsPlayed: 4,
-      winnerRoundAverage: 62.5,
-      finishedPlayers: [
-        { playerId: 1, username: "Winner", position: 1, roundsPlayed: 4, roundAverage: 62.5 },
-      ],
-    });
+    vi.spyOn(apiClient, "get").mockImplementationOnce(
+      respondWith({
+        gameId: 520,
+        finishedAt: null,
+        winner: null,
+        winnerRoundsPlayed: 4,
+        winnerRoundAverage: 62.5,
+        finishedPlayers: [
+          { playerId: 1, username: "Winner", position: 1, roundsPlayed: 4, roundAverage: 62.5 },
+        ],
+      }),
+    );
 
     await getFinishedGame(520);
 
@@ -243,22 +257,27 @@ describe("getGameThrowsIfChanged", () => {
   it("routes conditional game fetches through apiClient.request and forwards AbortSignal", async () => {
     const controller = new AbortController();
     const responseBody = createValidGameResponse();
-    const requestSpy = vi.spyOn(apiClient, "request").mockResolvedValueOnce({
-      data: responseBody,
-      response: createMockResponse({
-        body: responseBody,
-        status: 200,
-        headers: new Headers({ "content-type": "application/json", "X-Game-State-Version": "v1" }),
-        url: "http://localhost/api/game/520",
-      }),
-    });
+    const requestSpy = vi.spyOn(apiClient, "request").mockImplementationOnce(
+      respondWith(
+        responseBody,
+        createMockResponse({
+          body: responseBody,
+          status: 200,
+          headers: new Headers({
+            "content-type": "application/json",
+            "X-Game-State-Version": "v1",
+          }),
+          url: "http://localhost/api/game/520",
+        }),
+      ),
+    );
     const fetchTrap = vi
       .spyOn(globalThis, "fetch")
       .mockRejectedValue(new Error("raw fetch should not be used by getGameThrowsIfChanged"));
 
     const data = await getGameThrowsIfChanged(520, controller.signal);
 
-    expect(data).toEqual(responseBody);
+    expect(data).toEqual({ type: "full-state", ...responseBody });
     expect(requestSpy).toHaveBeenCalledWith(
       "/game/520",
       expect.objectContaining({
@@ -275,23 +294,27 @@ describe("getGameThrowsIfChanged", () => {
     const responseBody = createValidGameResponse();
     const requestSpy = vi
       .spyOn(apiClient, "request")
-      .mockResolvedValueOnce({
-        data: responseBody,
-        response: createMockResponse({
-          body: responseBody,
-          status: 200,
-          headers: new Headers({ "content-type": "application/json", ETag: "etag-v1" }),
-          url: "http://localhost/api/game/520",
-        }),
-      })
-      .mockResolvedValueOnce({
-        data: null,
-        response: createMockResponse({
-          status: 304,
-          headers: new Headers({ ETag: "etag-v1" }),
-          url: "http://localhost/api/game/520?since=etag-v1",
-        }),
-      });
+      .mockImplementationOnce(
+        respondWith(
+          responseBody,
+          createMockResponse({
+            body: responseBody,
+            status: 200,
+            headers: new Headers({ "content-type": "application/json", ETag: "etag-v1" }),
+            url: "http://localhost/api/game/520",
+          }),
+        ),
+      )
+      .mockImplementationOnce(
+        respondWith(
+          null,
+          createMockResponse({
+            status: 304,
+            headers: new Headers({ ETag: "etag-v1" }),
+            url: "http://localhost/api/game/520?since=etag-v1",
+          }),
+        ),
+      );
     const fetchTrap = vi
       .spyOn(globalThis, "fetch")
       .mockRejectedValue(new Error("raw fetch should not be used by getGameThrowsIfChanged"));
@@ -330,20 +353,17 @@ describe("getGameThrowsIfChanged", () => {
     await expect(getGameThrowsIfChanged(520)).rejects.toBe(timeoutError);
   });
 
-  it("throws ApiError when conditional fetch returns invalid response shape", async () => {
-    vi.spyOn(apiClient, "request").mockResolvedValueOnce({
-      data: { id: 520, players: [] },
-      response: createMockResponse({
-        body: { id: 520, players: [] },
-        status: 200,
-        headers: new Headers({ "content-type": "application/json", ETag: "etag-v1" }),
-        url: "http://localhost/api/game/520",
-      }),
-    });
+  it("rejects with ApiValidationError when conditional fetch returns invalid response shape", async () => {
+    vi.spyOn(apiClient, "request").mockImplementationOnce(respondWith({ id: 520, players: [] }));
+
+    await expect(getGameThrowsIfChanged(520)).rejects.toBeInstanceOf(ApiValidationError);
+  });
+
+  it("rejects with ApiError when a 200 conditional fetch has no body", async () => {
+    vi.spyOn(apiClient, "request").mockImplementationOnce(respondWith(null));
 
     await expect(getGameThrowsIfChanged(520)).rejects.toMatchObject({
       name: "ApiError",
-      message: "Unexpected response shape",
       status: 200,
     });
   });

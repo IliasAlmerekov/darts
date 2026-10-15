@@ -37,6 +37,7 @@ function createGameData(): GameThrowsResponse {
         throwsInCurrentRound: 1,
         currentRoundThrows: [{ value: 20, isDouble: true, isTriple: false, isBust: false }],
         roundHistory: [],
+        isGuest: false,
       },
     ],
     settings: {
@@ -55,6 +56,8 @@ describe("useGameSettingsFlow", () => {
   it("should merge compact settings response into game state when settings are saved", async () => {
     const updateGameSettingsStore = vi.fn();
     const updatedSettings: GameSettingsResponse = {
+      gameId: 42,
+      status: "started",
       startScore: 501,
       doubleOut: true,
       tripleOut: false,

@@ -91,7 +91,10 @@ function buildGameData(overrides: Partial<GameThrowsResponse> = {}): GameThrowsR
         position: null,
         throwsInCurrentRound: 0,
         currentRoundThrows: [],
-        roundHistory: [{ throws: [{ value: 20 }] }],
+        roundHistory: [
+          { throws: [{ value: 20, isDouble: false, isTriple: false, isBust: false }] },
+        ],
+        isGuest: false,
       },
       {
         id: 2,
@@ -102,7 +105,10 @@ function buildGameData(overrides: Partial<GameThrowsResponse> = {}): GameThrowsR
         position: null,
         throwsInCurrentRound: 0,
         currentRoundThrows: [],
-        roundHistory: [{ throws: [{ value: 20 }] }],
+        roundHistory: [
+          { throws: [{ value: 20, isDouble: false, isTriple: false, isBust: false }] },
+        ],
+        isGuest: false,
       },
     ],
     ...overrides,

@@ -90,6 +90,7 @@ function buildGameData(overrides: Partial<GameThrowsResponse> = {}): GameThrowsR
         throwsInCurrentRound: 0,
         currentRoundThrows: [],
         roundHistory: [],
+        isGuest: false,
       },
       {
         id: 2,
@@ -101,6 +102,7 @@ function buildGameData(overrides: Partial<GameThrowsResponse> = {}): GameThrowsR
         throwsInCurrentRound: 0,
         currentRoundThrows: [],
         roundHistory: [],
+        isGuest: false,
       },
     ],
     ...overrides,
@@ -427,6 +429,7 @@ describe("useThrowHandler", () => {
             { value: 19, isDouble: false, isTriple: false, isBust: false },
           ],
           roundHistory: [],
+          isGuest: false,
         },
         {
           id: 2,
@@ -438,6 +441,7 @@ describe("useThrowHandler", () => {
           throwsInCurrentRound: 0,
           currentRoundThrows: [],
           roundHistory: [],
+          isGuest: false,
         },
       ],
     });
@@ -497,6 +501,7 @@ describe("useThrowHandler", () => {
                 ],
               },
             ],
+            isGuest: false,
           },
           {
             id: 2,
@@ -508,6 +513,7 @@ describe("useThrowHandler", () => {
             throwsInCurrentRound: 0,
             currentRoundThrows: [],
             roundHistory: [],
+            isGuest: false,
           },
         ],
       }),
@@ -551,6 +557,7 @@ describe("useThrowHandler", () => {
             { value: 19, isDouble: false, isTriple: false, isBust: false },
           ],
           roundHistory: [],
+          isGuest: false,
         },
         {
           id: 2,
@@ -562,6 +569,7 @@ describe("useThrowHandler", () => {
           throwsInCurrentRound: 0,
           currentRoundThrows: [],
           roundHistory: [],
+          isGuest: false,
         },
       ],
     });
@@ -584,6 +592,7 @@ describe("useThrowHandler", () => {
             throwsInCurrentRound: 1,
             currentRoundThrows: [{ value: 20, isDouble: false, isTriple: false, isBust: false }],
             roundHistory: [],
+            isGuest: false,
           },
           {
             id: 2,
@@ -595,6 +604,7 @@ describe("useThrowHandler", () => {
             throwsInCurrentRound: 0,
             currentRoundThrows: [],
             roundHistory: [],
+            isGuest: false,
           },
         ],
       }),
@@ -675,10 +685,11 @@ describe("useThrowHandler", () => {
           position: null,
           throwsInCurrentRound: 0,
           currentRoundThrows: [
-            { value: 25, isBust: false },
-            { value: 25, isBust: false },
+            { value: 25, isBust: false, isDouble: false, isTriple: false },
+            { value: 25, isBust: false, isDouble: false, isTriple: false },
           ],
           roundHistory: [],
+          isGuest: false,
         },
         {
           id: 2,
@@ -690,6 +701,7 @@ describe("useThrowHandler", () => {
           throwsInCurrentRound: 0,
           currentRoundThrows: [],
           roundHistory: [],
+          isGuest: false,
         },
       ],
     });
@@ -836,6 +848,7 @@ describe("useThrowHandler", () => {
           throwsInCurrentRound: 1,
           currentRoundThrows: [{ value: 20, isDouble: false, isTriple: false, isBust: false }],
           roundHistory: [],
+          isGuest: false,
         },
         {
           id: 2,
@@ -847,6 +860,7 @@ describe("useThrowHandler", () => {
           throwsInCurrentRound: 0,
           currentRoundThrows: [],
           roundHistory: [],
+          isGuest: false,
         },
       ],
     });
@@ -885,6 +899,7 @@ describe("useThrowHandler", () => {
             { value: 31, isDouble: false, isTriple: false, isBust: false },
           ],
           roundHistory: [],
+          isGuest: false,
         },
         {
           id: 2,
@@ -896,6 +911,7 @@ describe("useThrowHandler", () => {
           throwsInCurrentRound: 0,
           currentRoundThrows: [],
           roundHistory: [],
+          isGuest: false,
         },
       ],
     });
@@ -947,6 +963,7 @@ describe("useThrowHandler", () => {
             { value: 31, isDouble: false, isTriple: false, isBust: false },
           ],
           roundHistory: [],
+          isGuest: false,
         },
         {
           id: 2,
@@ -958,6 +975,7 @@ describe("useThrowHandler", () => {
           throwsInCurrentRound: 0,
           currentRoundThrows: [],
           roundHistory: [],
+          isGuest: false,
         },
       ],
     });
@@ -1022,6 +1040,7 @@ describe("useThrowHandler", () => {
           throwsInCurrentRound: 1,
           currentRoundThrows: [{ value: 21, isDouble: false, isTriple: false, isBust: false }],
           roundHistory: [],
+          isGuest: false,
         },
         {
           id: 2,
@@ -1033,6 +1052,7 @@ describe("useThrowHandler", () => {
           throwsInCurrentRound: 0,
           currentRoundThrows: [],
           roundHistory: [],
+          isGuest: false,
         },
       ],
     });
@@ -1069,6 +1089,7 @@ describe("useThrowHandler", () => {
           throwsInCurrentRound: 1,
           currentRoundThrows: [{ value: 21, isDouble: false, isTriple: false, isBust: false }],
           roundHistory: [],
+          isGuest: false,
         },
         {
           id: 2,
@@ -1080,6 +1101,7 @@ describe("useThrowHandler", () => {
           throwsInCurrentRound: 0,
           currentRoundThrows: [],
           roundHistory: [],
+          isGuest: false,
         },
       ],
     });
@@ -1110,6 +1132,7 @@ describe("useThrowHandler", () => {
           throwsInCurrentRound: 1,
           currentRoundThrows: [{ value: 21, isDouble: false, isTriple: false, isBust: false }],
           roundHistory: [],
+          isGuest: false,
         },
         {
           id: 2,
@@ -1121,6 +1144,7 @@ describe("useThrowHandler", () => {
           throwsInCurrentRound: 0,
           currentRoundThrows: [],
           roundHistory: [],
+          isGuest: false,
         },
       ],
     });
@@ -1148,6 +1172,7 @@ describe("useThrowHandler", () => {
           throwsInCurrentRound: 0,
           currentRoundThrows: [],
           roundHistory: [],
+          isGuest: false,
         },
         {
           id: 2,
@@ -1159,6 +1184,7 @@ describe("useThrowHandler", () => {
           throwsInCurrentRound: 0,
           currentRoundThrows: [],
           roundHistory: [],
+          isGuest: false,
         },
       ],
     });
@@ -1178,6 +1204,7 @@ describe("useThrowHandler", () => {
           throwsInCurrentRound: 1,
           currentRoundThrows: [{ value: 21, isDouble: false, isTriple: false, isBust: false }],
           roundHistory: [],
+          isGuest: false,
         },
         {
           id: 2,
@@ -1189,6 +1216,7 @@ describe("useThrowHandler", () => {
           throwsInCurrentRound: 0,
           currentRoundThrows: [],
           roundHistory: [],
+          isGuest: false,
         },
       ],
     });
@@ -1217,6 +1245,7 @@ describe("useThrowHandler", () => {
           throwsInCurrentRound: 1,
           currentRoundThrows: [{ value: 21, isDouble: false, isTriple: false, isBust: false }],
           roundHistory: [],
+          isGuest: false,
         },
         {
           id: 2,
@@ -1228,6 +1257,7 @@ describe("useThrowHandler", () => {
           throwsInCurrentRound: 0,
           currentRoundThrows: [],
           roundHistory: [],
+          isGuest: false,
         },
       ],
     });
@@ -1249,6 +1279,7 @@ describe("useThrowHandler", () => {
             { value: 21, isDouble: false, isTriple: false, isBust: false },
           ],
           roundHistory: [],
+          isGuest: false,
         },
         {
           id: 2,
@@ -1260,6 +1291,7 @@ describe("useThrowHandler", () => {
           throwsInCurrentRound: 0,
           currentRoundThrows: [],
           roundHistory: [],
+          isGuest: false,
         },
       ],
     });
@@ -1292,6 +1324,7 @@ describe("useThrowHandler", () => {
           throwsInCurrentRound: 1,
           currentRoundThrows: [{ value: 21, isDouble: false, isTriple: false, isBust: false }],
           roundHistory: [],
+          isGuest: false,
         },
         {
           id: 2,
@@ -1303,6 +1336,7 @@ describe("useThrowHandler", () => {
           throwsInCurrentRound: 0,
           currentRoundThrows: [],
           roundHistory: [],
+          isGuest: false,
         },
       ],
     });
@@ -1333,6 +1367,7 @@ describe("useThrowHandler", () => {
           throwsInCurrentRound: 1,
           currentRoundThrows: [{ value: 21, isDouble: false, isTriple: false, isBust: false }],
           roundHistory: [],
+          isGuest: false,
         },
         {
           id: 2,
@@ -1344,6 +1379,7 @@ describe("useThrowHandler", () => {
           throwsInCurrentRound: 0,
           currentRoundThrows: [],
           roundHistory: [],
+          isGuest: false,
         },
       ],
     });

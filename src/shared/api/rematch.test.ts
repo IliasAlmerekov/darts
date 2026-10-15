@@ -1,5 +1,6 @@
 // @vitest-environment node
-vi.mock("@/shared/api/client", () => ({
+vi.mock("@/shared/api/client", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("./client")>()),
   apiClient: {
     get: vi.fn(),
     post: vi.fn(),
@@ -13,7 +14,8 @@ vi.mock("@/shared/api/client", () => ({
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { createRematch, createRematchGame, startRematch } from "./game";
 
-import { apiClient } from "./client";
+import { apiClient, ApiValidationError } from "./client";
+import { respondWith } from "./test-utils";
 
 describe("game/rematch api", () => {
   beforeEach(() => {
@@ -21,7 +23,7 @@ describe("game/rematch api", () => {
   });
 
   it("returns the minimal rematch payload without hydrating invitation data", async () => {
-    vi.mocked(apiClient.post).mockResolvedValueOnce({ gameId: 777, success: true });
+    vi.mocked(apiClient.post).mockImplementationOnce(respondWith({ gameId: 777, success: true }));
 
     const response = await createRematchGame(520);
 
@@ -39,8 +41,10 @@ describe("game/rematch api", () => {
 
   it("requests invitation via POST when rematch response has no invitationLink", async () => {
     vi.mocked(apiClient.post)
-      .mockResolvedValueOnce({ gameId: 777, success: true })
-      .mockResolvedValueOnce({ gameId: 777, invitationLink: "/invite/777" });
+      .mockImplementationOnce(respondWith({ gameId: 777, success: true }))
+      .mockImplementationOnce(
+        respondWith({ success: true, status: 200, gameId: 777, invitationLink: "/invite/777" }),
+      );
 
     const response = await createRematch(520);
 
@@ -63,15 +67,38 @@ describe("game/rematch api", () => {
     });
   });
 
+  it("rejects with ApiError when the contract-valid rematch response has no game id", async () => {
+    vi.mocked(apiClient.post).mockImplementationOnce(
+      respondWith({
+        success: false,
+        gameId: null,
+        message: "Vorheriges Spiel nicht gefunden",
+        status: 404,
+      }),
+    );
+
+    await expect(createRematchGame(520)).rejects.toMatchObject({ name: "ApiError", status: 404 });
+  });
+
+  it("rejects with ApiValidationError when the rematch response has no success flag", async () => {
+    vi.mocked(apiClient.post).mockImplementationOnce(respondWith({ gameId: 777 }));
+
+    await expect(createRematchGame(520)).rejects.toBeInstanceOf(ApiValidationError);
+  });
+
   it("starts rematch with canonical settings and returns the new game id", async () => {
-    vi.mocked(apiClient.get).mockResolvedValueOnce({
-      startScore: 501,
-      doubleOut: true,
-      tripleOut: false,
-    });
+    vi.mocked(apiClient.get).mockImplementationOnce(
+      respondWith({
+        gameId: 520,
+        startScore: 501,
+        doubleOut: true,
+        tripleOut: false,
+        status: "finished",
+      }),
+    );
     vi.mocked(apiClient.post)
-      .mockResolvedValueOnce({ gameId: 777, success: true })
-      .mockResolvedValueOnce(undefined);
+      .mockImplementationOnce(respondWith({ gameId: 777, success: true }))
+      .mockImplementationOnce(respondWith({}));
 
     const response = await startRematch(520);
 
@@ -99,9 +126,11 @@ describe("game/rematch api", () => {
       success: true,
       gameId: 777,
       settings: {
+        gameId: 520,
         startScore: 501,
         doubleOut: true,
         tripleOut: false,
+        status: "finished",
       },
     });
   });

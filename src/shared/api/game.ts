@@ -2,24 +2,22 @@ import * as v from "valibot";
 import { apiClient } from "./client";
 import { ApiError } from "./errors";
 import { createInviteEndpoint } from "./endpoints";
+import {
+  integerSchema,
+  invitationResponseSchema,
+  successMessageResponseSchema,
+  type SuccessMessageResponse,
+} from "./schemas";
 import type {
-  GameStatus,
+  FinishedPlayerResponse,
   GameSummaryResponse,
-  GameThrowsResponse,
-  ThrowAckResponse,
   ThrowRequest,
-  UndoThrowResponse,
-  UndoAckResponse,
   StartGameRequest,
-} from "@/types";
-import type {
-  GameSettingsResponse,
   RematchGameResponse,
   RematchResponse,
   StartRematchResponse,
   UpdateGameSettingsPayload,
 } from "@/types";
-import { isFiniteNumber, isRecord } from "@/lib/guards/guards";
 import { clientLogger } from "@/shared/services/browser/clientLogger";
 
 // ---------------------------------------------------------------------------
@@ -38,332 +36,212 @@ const RECORD_THROW_ENDPOINT = (id: number) => `/game/${id}/throw/delta`;
 const UNDO_THROW_ENDPOINT = (id: number) => `/game/${id}/throw`;
 
 // ---------------------------------------------------------------------------
+// Schemas
+// ---------------------------------------------------------------------------
+
+// The contract types status as a plain string; these are the values the backend sends.
+const gameStatusSchema = v.picklist(["lobby", "started", "finished"]);
+
+/** Contract `ThrowResponseDto`. */
+const playerThrowSchema = v.object({
+  value: integerSchema,
+  isDouble: v.boolean(),
+  isTriple: v.boolean(),
+  isBust: v.boolean(),
+});
+
+// The contract types a round as a map of integers and throw lists.
+const roundHistorySchema = v.object({
+  round: v.optional(integerSchema),
+  throws: v.array(playerThrowSchema),
+});
+
+/** Contract `PlayerResponseDto`. */
+const gamePlayerSchema = v.object({
+  id: integerSchema,
+  name: v.string(),
+  score: integerSchema,
+  isActive: v.boolean(),
+  isBust: v.boolean(),
+  position: v.optional(v.nullable(integerSchema), null),
+  throwsInCurrentRound: v.optional(integerSchema, 0),
+  currentRoundThrows: v.optional(v.array(playerThrowSchema), []),
+  roundHistory: v.optional(v.array(roundHistorySchema), []),
+  isGuest: v.boolean(),
+});
+
+/** Contract `GameResponseDto`, tagged `type: "full-state"` for the undo union. */
+const gameThrowsResponseSchema = v.pipe(
+  v.object({
+    id: integerSchema,
+    status: gameStatusSchema,
+    currentRound: integerSchema,
+    activePlayerId: v.optional(v.nullable(integerSchema), null),
+    currentThrowCount: integerSchema,
+    players: v.array(gamePlayerSchema),
+    winnerId: v.optional(v.nullable(integerSchema), null),
+    // The contract types settings as an open map; the game reads these three keys.
+    settings: v.object({
+      startScore: integerSchema,
+      doubleOut: v.boolean(),
+      tripleOut: v.boolean(),
+    }),
+  }),
+  v.transform((game) => ({ type: "full-state" as const, ...game })),
+);
+
+/** Contract `GameSettingsResponseDto`. */
+const gameSettingsResponseSchema = v.object({
+  gameId: integerSchema,
+  startScore: integerSchema,
+  doubleOut: v.boolean(),
+  tripleOut: v.boolean(),
+  status: v.string(),
+});
+
+/** Contract `GameSummaryResponseDto`. */
+const gameSummaryEnvelopeSchema = v.object({
+  gameId: integerSchema,
+  finishedAt: v.optional(v.nullable(v.string())),
+  winner: v.optional(
+    v.nullable(
+      v.object({
+        id: integerSchema,
+        username: v.optional(v.nullable(v.string())),
+      }),
+    ),
+  ),
+  winnerRoundsPlayed: integerSchema,
+  winnerRoundAverage: v.number(),
+  finishedPlayers: v.array(
+    v.object({
+      playerId: v.optional(v.nullable(integerSchema)),
+      username: v.optional(v.nullable(v.string())),
+      position: v.optional(v.nullable(integerSchema)),
+      roundsPlayed: v.optional(v.nullable(integerSchema)),
+      roundAverage: v.number(),
+    }),
+  ),
+});
+
+// #121 owns aligning the delta schemas with the contract. Until then they keep the old
+// guard rules: position, isBust, winnerId and throw are required keys here although the
+// contract makes them optional.
+
+/** Contract `ThrowDeltaDto`. */
+const throwDeltaSchema = v.object({
+  id: integerSchema,
+  playerId: integerSchema,
+  playerName: v.string(),
+  value: integerSchema,
+  isDouble: v.boolean(),
+  isTriple: v.boolean(),
+  isBust: v.boolean(),
+  score: integerSchema,
+  roundNumber: integerSchema,
+  timestamp: v.string(),
+});
+
+/** Contract `ScoreboardPlayerDeltaDto`. */
+const scoreboardPlayerDeltaSchema = v.object({
+  playerId: integerSchema,
+  name: v.string(),
+  score: integerSchema,
+  position: v.nullable(integerSchema),
+  isActive: v.boolean(),
+  isGuest: v.boolean(),
+  isBust: v.nullable(v.boolean()),
+});
+
+/** Contract `ScoreboardDeltaDto`. */
+const scoreboardDeltaSchema = v.object({
+  changedPlayers: v.array(scoreboardPlayerDeltaSchema),
+  winnerId: v.nullable(integerSchema),
+  status: gameStatusSchema,
+  currentRound: integerSchema,
+});
+
+/** Contract `ThrowAckDto`. */
+const throwAckResponseSchema = v.object({
+  success: v.boolean(),
+  gameId: integerSchema,
+  stateVersion: v.string(),
+  throw: v.nullable(throwDeltaSchema),
+  scoreboardDelta: scoreboardDeltaSchema,
+  serverTs: v.string(),
+});
+
+/** Contract `UndoAckDto`, tagged `type: "ack"` for the undo union. */
+const undoAckResponseSchema = v.pipe(
+  v.object({
+    success: v.boolean(),
+    gameId: integerSchema,
+    stateVersion: v.string(),
+    scoreboardDelta: scoreboardDeltaSchema,
+    serverTs: v.string(),
+  }),
+  v.transform((ack) => ({ type: "ack" as const, ...ack })),
+);
+
+// The contract documents GameResponseDto for DELETE /throw; the backend also answers with
+// UndoAckDto during the compact-delta rollout. #101 owns that union.
+const undoThrowResponseSchema = v.union([gameThrowsResponseSchema, undoAckResponseSchema]);
+
+// #121 owns validating the start response against the contract; any object passes here.
+const startGameResponseSchema = v.looseObject({});
+
+/** Contract response of `POST /api/room/{id}/rematch`. */
+const rematchResponseSchema = v.object({
+  success: v.boolean(),
+  gameId: v.optional(v.nullable(integerSchema)),
+  invitationLink: v.optional(v.nullable(v.string())),
+  message: v.optional(v.nullable(v.string())),
+  status: v.optional(v.nullable(integerSchema)),
+});
+
+export type GameStatus = v.InferOutput<typeof gameStatusSchema>;
+export type PlayerThrow = v.InferOutput<typeof playerThrowSchema>;
+export type GameThrowsResponse = v.InferOutput<typeof gameThrowsResponseSchema>;
+export type GameSettingsResponse = v.InferOutput<typeof gameSettingsResponseSchema>;
+export type ScoreboardDelta = v.InferOutput<typeof scoreboardDeltaSchema>;
+export type ThrowAckResponse = v.InferOutput<typeof throwAckResponseSchema>;
+export type UndoAckResponse = v.InferOutput<typeof undoAckResponseSchema>;
+export type UndoThrowResponse = v.InferOutput<typeof undoThrowResponseSchema>;
+
+// ---------------------------------------------------------------------------
 // ETag-based conditional game state fetching
 // ---------------------------------------------------------------------------
 
 const gameStateVersionById = new Map<number, string>();
 
-const GAME_STATUS_VALUES: readonly GameStatus[] = ["lobby", "started", "finished"];
-
-function isPositiveFiniteNumber(value: unknown): value is number {
-  return isFiniteNumber(value) && value > 0;
-}
-
-function isNullableFiniteNumber(value: unknown): value is number | null {
-  return value === null || isFiniteNumber(value);
-}
-
-function isPlayerThrow(data: unknown): boolean {
-  return (
-    isRecord(data) &&
-    isFiniteNumber(data.value) &&
-    (data.isDouble === undefined || typeof data.isDouble === "boolean") &&
-    (data.isTriple === undefined || typeof data.isTriple === "boolean") &&
-    (data.isBust === undefined || typeof data.isBust === "boolean")
-  );
-}
-
-function isRoundHistory(data: unknown): boolean {
-  return (
-    isRecord(data) &&
-    (data.round === undefined || isFiniteNumber(data.round)) &&
-    Array.isArray(data.throws) &&
-    data.throws.every(isPlayerThrow)
-  );
-}
-
-function isGamePlayer(data: unknown): boolean {
-  return (
-    isRecord(data) &&
-    isFiniteNumber(data.id) &&
-    typeof data.name === "string" &&
-    isFiniteNumber(data.score) &&
-    typeof data.isActive === "boolean" &&
-    typeof data.isBust === "boolean" &&
-    isNullableFiniteNumber(data.position) &&
-    isFiniteNumber(data.throwsInCurrentRound) &&
-    Array.isArray(data.currentRoundThrows) &&
-    data.currentRoundThrows.every(isPlayerThrow) &&
-    Array.isArray(data.roundHistory) &&
-    data.roundHistory.every(isRoundHistory)
-  );
-}
-
-function isGameSettingsResponse(data: unknown): data is GameSettingsResponse {
-  return (
-    isRecord(data) &&
-    isFiniteNumber(data.startScore) &&
-    typeof data.doubleOut === "boolean" &&
-    typeof data.tripleOut === "boolean"
-  );
-}
-
-function isStartGameResponse(data: unknown): data is Record<string, unknown> {
-  return isRecord(data);
-}
-
-function isGameStatus(value: unknown): value is GameStatus {
-  return typeof value === "string" && GAME_STATUS_VALUES.some((status) => status === value);
-}
-
-function isGameThrowsResponse(data: unknown): data is GameThrowsResponse {
-  if (!isRecord(data)) {
-    return false;
-  }
-
-  return (
-    isFiniteNumber(data.id) &&
-    isGameStatus(data.status) &&
-    isFiniteNumber(data.currentRound) &&
-    isNullableFiniteNumber(data.activePlayerId) &&
-    isFiniteNumber(data.currentThrowCount) &&
-    Array.isArray(data.players) &&
-    data.players.every(isGamePlayer) &&
-    isNullableFiniteNumber(data.winnerId) &&
-    isGameSettingsResponse(data.settings)
-  );
-}
-
-function isGameSummaryResponse(data: unknown): data is GameSummaryResponse {
-  return (
-    Array.isArray(data) &&
-    data.every(
-      (item) =>
-        isRecord(item) &&
-        isFiniteNumber(item.playerId) &&
-        typeof item.username === "string" &&
-        isFiniteNumber(item.position) &&
-        isFiniteNumber(item.roundsPlayed) &&
-        isFiniteNumber(item.roundAverage),
-    )
-  );
-}
-
-function isGameSummaryWinnerResponse(
-  data: unknown,
-): data is { id: number; username: string | null } {
-  return (
-    isRecord(data) &&
-    isFiniteNumber(data.id) &&
-    (data.username === null || typeof data.username === "string")
-  );
-}
-
-function isGameSummaryFinishedPlayerResponse(data: unknown): data is {
-  playerId: number | null;
-  username: string | null;
-  position: number | null;
-  roundsPlayed: number | null;
-  roundAverage: number;
-} {
-  return (
-    isRecord(data) &&
-    (data.playerId === null || isFiniteNumber(data.playerId)) &&
-    (data.username === null || typeof data.username === "string") &&
-    (data.position === null || isFiniteNumber(data.position)) &&
-    (data.roundsPlayed === null || isFiniteNumber(data.roundsPlayed)) &&
-    isFiniteNumber(data.roundAverage)
-  );
-}
-
-function isGameSummaryEnvelopeResponse(data: unknown): data is {
-  gameId: number;
-  finishedAt: string | null;
-  winner: { id: number; username: string | null } | null;
-  winnerRoundsPlayed: number;
-  winnerRoundAverage: number;
-  finishedPlayers: Array<{
-    playerId: number | null;
-    username: string | null;
-    position: number | null;
-    roundsPlayed: number | null;
-    roundAverage: number;
-  }>;
-} {
-  return (
-    isRecord(data) &&
-    isFiniteNumber(data.gameId) &&
-    (data.finishedAt === null || typeof data.finishedAt === "string") &&
-    (data.winner === null || isGameSummaryWinnerResponse(data.winner)) &&
-    isFiniteNumber(data.winnerRoundsPlayed) &&
-    isFiniteNumber(data.winnerRoundAverage) &&
-    Array.isArray(data.finishedPlayers) &&
-    data.finishedPlayers.every(isGameSummaryFinishedPlayerResponse)
-  );
-}
-
-function normalizeFinishedPlayer(
-  item: unknown,
+function toFinishedPlayer(
+  item: v.InferOutput<typeof gameSummaryEnvelopeSchema>["finishedPlayers"][number],
   index: number,
   gameId: number,
-): GameSummaryResponse[number] | null {
-  if (!isRecord(item) || !isFiniteNumber(item.roundAverage)) {
-    return null;
-  }
-
-  if (!isFiniteNumber(item.roundsPlayed)) {
+): FinishedPlayerResponse {
+  if (typeof item.roundsPlayed !== "number") {
     clientLogger.warn("game.finished-player.rounds-played.missing", {
       context: { gameId, playerId: item.playerId ?? null, index },
     });
   }
 
-  const playerId = isFiniteNumber(item.playerId) ? item.playerId : index + 1;
-  const username =
-    typeof item.username === "string" && item.username.trim().length > 0
-      ? item.username
-      : `Player ${index + 1}`;
-  const position = isFiniteNumber(item.position) ? item.position : index + 1;
-  const roundsPlayed = isFiniteNumber(item.roundsPlayed) ? item.roundsPlayed : 0;
-
   return {
-    playerId,
-    username,
-    position,
-    roundsPlayed,
+    playerId: item.playerId ?? index + 1,
+    username:
+      typeof item.username === "string" && item.username.trim().length > 0
+        ? item.username
+        : `Player ${index + 1}`,
+    position: item.position ?? index + 1,
+    roundsPlayed: item.roundsPlayed ?? 0,
     roundAverage: item.roundAverage,
   };
 }
 
-function normalizeGameSummaryResponse(data: unknown, gameId: number): GameSummaryResponse | null {
-  if (isGameSummaryResponse(data)) {
-    return data;
-  }
-
-  if (!isRecord(data) || !Array.isArray(data.finishedPlayers)) {
-    return null;
-  }
-
-  const finishedPlayers = data.finishedPlayers
-    .map((item, index) => normalizeFinishedPlayer(item, index, gameId))
-    .filter((item): item is NonNullable<typeof item> => item !== null);
-
-  return finishedPlayers.length === data.finishedPlayers.length ? finishedPlayers : null;
-}
-
-function isUndoAckResponse(data: unknown): data is UndoAckResponse {
-  if (!isRecord(data)) {
-    return false;
-  }
-
-  return (
-    typeof data.success === "boolean" &&
-    isFiniteNumber(data.gameId) &&
-    typeof data.stateVersion === "string" &&
-    isScoreboardDelta(data.scoreboardDelta) &&
-    typeof data.serverTs === "string"
-  );
-}
-
-function isThrowDelta(data: unknown): boolean {
-  return (
-    isRecord(data) &&
-    isFiniteNumber(data.id) &&
-    isFiniteNumber(data.playerId) &&
-    typeof data.playerName === "string" &&
-    isFiniteNumber(data.value) &&
-    typeof data.isDouble === "boolean" &&
-    typeof data.isTriple === "boolean" &&
-    typeof data.isBust === "boolean" &&
-    isFiniteNumber(data.score) &&
-    isFiniteNumber(data.roundNumber) &&
-    typeof data.timestamp === "string"
-  );
-}
-
-function isScoreboardPlayerDelta(data: unknown): boolean {
-  return (
-    isRecord(data) &&
-    isFiniteNumber(data.playerId) &&
-    typeof data.name === "string" &&
-    isFiniteNumber(data.score) &&
-    isNullableFiniteNumber(data.position) &&
-    typeof data.isActive === "boolean" &&
-    typeof data.isGuest === "boolean" &&
-    (data.isBust === null || typeof data.isBust === "boolean")
-  );
-}
-
-function isScoreboardDelta(data: unknown): boolean {
-  return (
-    isRecord(data) &&
-    Array.isArray(data.changedPlayers) &&
-    data.changedPlayers.every(isScoreboardPlayerDelta) &&
-    isNullableFiniteNumber(data.winnerId) &&
-    isGameStatus(data.status) &&
-    isFiniteNumber(data.currentRound)
-  );
-}
-
-function isThrowAckResponse(data: unknown): data is ThrowAckResponse {
-  if (!isRecord(data)) {
-    return false;
-  }
-
-  return (
-    typeof data.success === "boolean" &&
-    isFiniteNumber(data.gameId) &&
-    typeof data.stateVersion === "string" &&
-    (data.throw === null || isThrowDelta(data.throw)) &&
-    isScoreboardDelta(data.scoreboardDelta) &&
-    typeof data.serverTs === "string"
-  );
-}
-
-function isRematchLikeResponse(
-  data: unknown,
-): data is RematchGameResponse | { gameId: number; invitationLink?: string; success?: boolean } {
-  return (
-    isRecord(data) &&
-    isPositiveFiniteNumber(data.gameId) &&
-    (data.invitationLink === undefined || typeof data.invitationLink === "string") &&
-    (data.success === undefined || typeof data.success === "boolean")
-  );
-}
-
-function isMessageResponse(data: unknown): data is { message: string } {
-  return isRecord(data) && typeof data.message === "string";
-}
-
-function isConditionalGameStateResponse(data: unknown): data is GameThrowsResponse | null {
-  return data === null || isGameThrowsResponse(data);
-}
-
-function isInvitationPayloadResponse(data: unknown): data is {
-  success: boolean;
-  status: number;
-  gameId: number | null;
-  invitationLink: string | null;
-  users?: Array<{ id: number | null; username: string | null }>;
-  message?: string | null;
-} {
-  return (
-    isRecord(data) &&
-    typeof data.success === "boolean" &&
-    isFiniteNumber(data.status) &&
-    (data.gameId === null || isFiniteNumber(data.gameId)) &&
-    (data.invitationLink === null || typeof data.invitationLink === "string") &&
-    (data.message === undefined || data.message === null || typeof data.message === "string") &&
-    (data.users === undefined ||
-      (Array.isArray(data.users) &&
-        data.users.every(
-          (user) =>
-            isRecord(user) &&
-            (user.id === null || isFiniteNumber(user.id)) &&
-            (user.username === null || typeof user.username === "string"),
-        )))
-  );
-}
-
-function extractGameSettingsResponse(data: unknown): GameSettingsResponse | null {
-  if (isGameSettingsResponse(data)) {
-    return data;
-  }
-
-  if (isGameThrowsResponse(data)) {
-    return data.settings;
-  }
-
-  return null;
+function toGameSummary(
+  summary: v.InferOutput<typeof gameSummaryEnvelopeSchema>,
+  gameId: number,
+): GameSummaryResponse {
+  return summary.finishedPlayers.map((item, index) => toFinishedPlayer(item, index, gameId));
 }
 
 function getNextStateVersion(response: Response): string | null {
@@ -377,15 +255,10 @@ export async function getGameThrows(
   gameId: number,
   signal?: AbortSignal,
 ): Promise<GameThrowsResponse> {
-  const data: unknown = await apiClient.get(GAME_ENDPOINT(gameId), {
+  return apiClient.get(GAME_ENDPOINT(gameId), {
     ...(signal ? { signal } : {}),
-    validate: v.custom(isGameThrowsResponse),
+    validate: gameThrowsResponseSchema,
   });
-  if (!isGameThrowsResponse(data)) {
-    throw new ApiError("Unexpected response shape", { status: 200, data });
-  }
-
-  return data;
 }
 
 /**
@@ -403,15 +276,16 @@ export async function getGameThrowsIfChanged(
     ...(signal ? { signal } : {}),
     acceptedStatuses: [304],
     returnResponse: true,
-    validate: v.custom(isConditionalGameStateResponse),
+    // A 304 has no body, so the client hands the schema null.
+    validate: v.nullable(gameThrowsResponseSchema),
   });
 
   if (response.status === 304) {
     return null;
   }
 
-  if (!isGameThrowsResponse(data)) {
-    throw new ApiError("Unexpected response shape", {
+  if (data === null) {
+    throw new ApiError("Game state response has no body", {
       status: response.status,
       data,
       url: response.url,
@@ -465,7 +339,7 @@ export async function startGame(gameId: number, config: StartGameRequest): Promi
       tripleout: config.tripleOut,
     },
     {
-      validate: v.custom(isStartGameResponse),
+      validate: startGameResponseSchema,
     },
   );
 }
@@ -477,15 +351,11 @@ export async function finishGame(
   gameId: number,
   signal?: AbortSignal,
 ): Promise<GameSummaryResponse> {
-  const data: unknown = await apiClient.post(FINISH_GAME_ENDPOINT(gameId), undefined, {
+  const summary = await apiClient.post(FINISH_GAME_ENDPOINT(gameId), undefined, {
     ...(signal ? { signal } : {}),
-    validate: v.custom(isGameSummaryEnvelopeResponse),
+    validate: gameSummaryEnvelopeSchema,
   });
-  const summary = normalizeGameSummaryResponse(data, gameId);
-  if (!summary) {
-    throw new ApiError("Unexpected response shape for finish game", { status: 200, data });
-  }
-  return summary;
+  return toGameSummary(summary, gameId);
 }
 
 /**
@@ -495,42 +365,29 @@ export async function getFinishedGame(
   gameId: number,
   signal?: AbortSignal,
 ): Promise<GameSummaryResponse> {
-  const data: unknown = await apiClient.get(FINISHED_GAME_ENDPOINT(gameId), {
+  const summary = await apiClient.get(FINISHED_GAME_ENDPOINT(gameId), {
     ...(signal ? { signal } : {}),
-    validate: v.custom(isGameSummaryEnvelopeResponse),
+    validate: gameSummaryEnvelopeSchema,
   });
-  const summary = normalizeGameSummaryResponse(data, gameId);
-  if (!summary) {
-    throw new ApiError("Unexpected response shape for finished game", { status: 200, data });
-  }
-  return summary;
+  return toGameSummary(summary, gameId);
 }
 
 /**
  * Reopens a finished game and returns the updated game state.
  */
 export async function reopenGame(gameId: number): Promise<GameThrowsResponse> {
-  const data: unknown = await apiClient.patch(REOPEN_GAME_ENDPOINT(gameId), undefined, {
-    validate: v.custom(isGameThrowsResponse),
+  return apiClient.patch(REOPEN_GAME_ENDPOINT(gameId), undefined, {
+    validate: gameThrowsResponseSchema,
   });
-  if (!isGameThrowsResponse(data)) {
-    throw new ApiError("Unexpected response shape for reopen game", { status: 200, data });
-  }
-  return data;
 }
 
 /**
  * Aborts the specified game on the server.
  */
-export async function abortGame(gameId: number): Promise<{ message: string }> {
-  const data: unknown = await apiClient.patch(ABORT_GAME_ENDPOINT(gameId), undefined, {
-    validate: v.custom(isMessageResponse),
+export async function abortGame(gameId: number): Promise<SuccessMessageResponse> {
+  return apiClient.patch(ABORT_GAME_ENDPOINT(gameId), undefined, {
+    validate: successMessageResponseSchema,
   });
-  if (!isMessageResponse(data)) {
-    throw new ApiError("Unexpected response shape for abort game", { status: 200, data });
-  }
-
-  return data;
 }
 
 /**
@@ -538,15 +395,19 @@ export async function abortGame(gameId: number): Promise<{ message: string }> {
  * provided by the backend. This does not trigger the invite fallback call.
  */
 export async function createRematchGame(previousGameId: number): Promise<RematchGameResponse> {
-  const rematch: unknown = await apiClient.post(REMATCH_ENDPOINT(previousGameId), undefined, {
-    validate: v.custom(isRematchLikeResponse),
+  const rematch = await apiClient.post(REMATCH_ENDPOINT(previousGameId), undefined, {
+    validate: rematchResponseSchema,
   });
-  if (!isRematchLikeResponse(rematch)) {
-    throw new ApiError("Unexpected response shape for rematch", { status: 200, data: rematch });
+  // The contract allows a null game id, for example when the previous game does not exist.
+  if (typeof rematch.gameId !== "number") {
+    throw new ApiError("Rematch response has no game id", {
+      status: rematch.status ?? 200,
+      data: rematch,
+    });
   }
 
   return {
-    success: "success" in rematch ? !!rematch.success : true,
+    success: rematch.success,
     gameId: rematch.gameId,
     ...(rematch.invitationLink ? { invitationLink: rematch.invitationLink } : {}),
   };
@@ -565,15 +426,15 @@ export async function createRematch(previousGameId: number): Promise<RematchResp
     };
   }
 
-  const invite: unknown = await apiClient.post(createInviteEndpoint(rematch.gameId), undefined, {
-    validate: v.custom(isInvitationPayloadResponse),
+  const invite = await apiClient.post(createInviteEndpoint(rematch.gameId), undefined, {
+    validate: invitationResponseSchema,
   });
-  if (
-    !isRecord(invite) ||
-    typeof invite.gameId !== "number" ||
-    typeof invite.invitationLink !== "string"
-  ) {
-    throw new ApiError("Unexpected response shape for invite", { status: 200, data: invite });
+  // The contract allows a null game id and link; without them there is nothing to join.
+  if (typeof invite.gameId !== "number" || typeof invite.invitationLink !== "string") {
+    throw new ApiError("Invitation response has no game id or link", {
+      status: invite.status,
+      data: invite,
+    });
   }
   return {
     success: rematch.success,
@@ -620,14 +481,10 @@ export async function getGameSettings(
   gameId: number,
   signal?: AbortSignal,
 ): Promise<GameSettingsResponse> {
-  const data: unknown = await apiClient.get(GAME_SETTINGS_ENDPOINT(gameId), {
+  return apiClient.get(GAME_SETTINGS_ENDPOINT(gameId), {
     ...(signal ? { signal } : {}),
-    validate: v.custom(isGameSettingsResponse),
+    validate: gameSettingsResponseSchema,
   });
-  if (!isGameSettingsResponse(data)) {
-    throw new ApiError("Unexpected response shape for game settings", { status: 200, data });
-  }
-  return data;
 }
 
 /**
@@ -637,17 +494,9 @@ export async function updateGameSettings(
   gameId: number,
   payload: UpdateGameSettingsPayload,
 ): Promise<GameSettingsResponse> {
-  const data: unknown = await apiClient.patch(GAME_SETTINGS_ENDPOINT(gameId), payload, {
-    validate: v.custom(
-      (data): data is GameSettingsResponse | GameThrowsResponse =>
-        isGameSettingsResponse(data) || isGameThrowsResponse(data),
-    ),
+  return apiClient.patch(GAME_SETTINGS_ENDPOINT(gameId), payload, {
+    validate: gameSettingsResponseSchema,
   });
-  const settings = extractGameSettingsResponse(data);
-  if (!settings) {
-    throw new ApiError("Unexpected response shape for update game settings", { status: 200, data });
-  }
-  return settings;
 }
 
 /**
@@ -678,33 +527,23 @@ export async function recordThrow(
   gameId: number,
   payload: ThrowRequest,
 ): Promise<ThrowAckResponse> {
-  const data: unknown = await apiClient.post(RECORD_THROW_ENDPOINT(gameId), payload, {
-    validate: v.custom(isThrowAckResponse),
+  return apiClient.post(RECORD_THROW_ENDPOINT(gameId), payload, {
+    validate: throwAckResponseSchema,
   });
-  if (!isThrowAckResponse(data)) {
-    throw new ApiError("Unexpected response shape for record throw", { status: 200, data });
-  }
-  return data;
 }
 
 /**
- * Undoes the last throw and returns either the legacy full game state or the
- * compact acknowledgement used by the targeted scoreboard update flow.
+ * Undoes the last throw and returns either the full game state or the compact
+ * acknowledgement used by the targeted scoreboard update flow.
  */
 export async function undoLastThrow(gameId: number): Promise<UndoThrowResponse> {
-  const data: unknown = await apiClient.delete(UNDO_THROW_ENDPOINT(gameId), {
-    validate: v.custom(
-      (data): data is UndoThrowResponse => isGameThrowsResponse(data) || isUndoAckResponse(data),
-    ),
+  const undo = await apiClient.delete(UNDO_THROW_ENDPOINT(gameId), {
+    validate: undoThrowResponseSchema,
   });
-  if (isGameThrowsResponse(data)) {
-    return data;
+
+  if (undo.type === "ack") {
+    setGameStateVersion(gameId, undo.stateVersion);
   }
 
-  if (isUndoAckResponse(data)) {
-    setGameStateVersion(gameId, data.stateVersion);
-    return data;
-  }
-
-  throw new ApiError("Unexpected response shape for undo throw", { status: 200, data });
+  return undo;
 }

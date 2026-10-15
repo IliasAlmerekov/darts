@@ -5,9 +5,9 @@ import { mockQuietRoomStream } from "../shared/room-stream-mocks";
 
 type PlayerThrow = {
   value: number;
-  isDouble?: boolean;
-  isTriple?: boolean;
-  isBust?: boolean;
+  isDouble: boolean;
+  isTriple: boolean;
+  isBust: boolean;
 };
 
 type RoundHistory = {
@@ -21,6 +21,7 @@ type MockPlayer = {
   score: number;
   isActive: boolean;
   isBust: boolean;
+  isGuest: boolean;
   position: number | null;
   throwsInCurrentRound: number;
   currentRoundThrows: PlayerThrow[];
@@ -63,6 +64,7 @@ const createPlayer = (
   score,
   isActive,
   isBust: false,
+  isGuest: false,
   position: null,
   throwsInCurrentRound: 0,
   currentRoundThrows: [],

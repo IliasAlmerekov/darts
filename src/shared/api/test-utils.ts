@@ -46,21 +46,30 @@ export function createMockResponse({
 /**
  * Mock implementation for an `apiClient` method. It parses `payload` with the schema the
  * caller passed in `validate`, as the real client does, so a malformed payload rejects with
- * `ApiValidationError`.
+ * `ApiValidationError`. A call with `returnResponse: true` resolves to `{ data, response }`;
+ * `response` defaults to a 200 JSON response carrying `payload`.
  */
-export function respondWith(payload: unknown): (...args: unknown[]) => Promise<never> {
+export function respondWith(
+  payload: unknown,
+  response?: Response,
+): (...args: unknown[]) => Promise<never> {
   return (...args) => {
     const config = args.at(-1);
-    const schema =
-      typeof config === "object" && config !== null && "validate" in config
-        ? config.validate
-        : undefined;
 
-    if (schema === undefined) {
+    if (typeof config !== "object" || config === null || !("validate" in config)) {
       return Promise.reject(new Error("respondWith: the call passed no validate schema"));
     }
 
-    // safe: apiClient's signature ties the parsed output to the schema the caller passed
-    return Promise.resolve().then(() => parseResponse(schema as v.GenericSchema, payload) as never);
+    const returnResponse = "returnResponse" in config && config.returnResponse === true;
+
+    return Promise.resolve().then(() => {
+      // safe: apiClient's signature ties the parsed output to the schema the caller passed
+      const data: unknown = parseResponse(config.validate as v.GenericSchema, payload);
+      const result = returnResponse
+        ? { data, response: response ?? createMockResponse({ body: payload }) }
+        : data;
+      // safe: the caller's apiClient signature already types this result
+      return result as never;
+    });
   };
 }

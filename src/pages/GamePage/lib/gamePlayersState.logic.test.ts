@@ -32,6 +32,7 @@ function buildGameData(overrides?: Partial<GameThrowsResponse>): GameThrowsRespo
         throwsInCurrentRound: 0,
         currentRoundThrows: [],
         roundHistory: [],
+        isGuest: false,
       },
       {
         id: 2,
@@ -43,6 +44,7 @@ function buildGameData(overrides?: Partial<GameThrowsResponse>): GameThrowsRespo
         throwsInCurrentRound: 0,
         currentRoundThrows: [],
         roundHistory: [],
+        isGuest: false,
       },
     ],
     ...overrides,
@@ -81,7 +83,10 @@ describe("buildGamePlayersDerivedState", () => {
           position: null,
           throwsInCurrentRound: 0,
           currentRoundThrows: [],
-          roundHistory: [{ throws: [{ value: 20 }] }],
+          roundHistory: [
+            { throws: [{ value: 20, isDouble: false, isTriple: false, isBust: false }] },
+          ],
+          isGuest: false,
         },
         {
           id: 2,
@@ -92,7 +97,10 @@ describe("buildGamePlayersDerivedState", () => {
           position: null,
           throwsInCurrentRound: 0,
           currentRoundThrows: [],
-          roundHistory: [{ throws: [{ value: 20 }] }],
+          roundHistory: [
+            { throws: [{ value: 20, isDouble: false, isTriple: false, isBust: false }] },
+          ],
+          isGuest: false,
         },
         {
           id: 3,
@@ -103,7 +111,10 @@ describe("buildGamePlayersDerivedState", () => {
           position: 1,
           throwsInCurrentRound: 0,
           currentRoundThrows: [],
-          roundHistory: [{ throws: [{ value: 20 }] }],
+          roundHistory: [
+            { throws: [{ value: 20, isDouble: false, isTriple: false, isBust: false }] },
+          ],
+          isGuest: false,
         },
       ],
     });
@@ -166,8 +177,9 @@ describe("buildGamePlayersDerivedState", () => {
           isBust: false,
           position: null,
           throwsInCurrentRound: 1,
-          currentRoundThrows: [{ value: 21 }],
+          currentRoundThrows: [{ value: 21, isDouble: false, isTriple: false, isBust: false }],
           roundHistory: [],
+          isGuest: false,
         },
         {
           id: 2,
@@ -179,6 +191,7 @@ describe("buildGamePlayersDerivedState", () => {
           throwsInCurrentRound: 0,
           currentRoundThrows: [],
           roundHistory: [],
+          isGuest: false,
         },
       ],
     });
@@ -207,8 +220,9 @@ describe("buildGamePlayersDerivedState", () => {
           isBust: false,
           position: null,
           throwsInCurrentRound: 1,
-          currentRoundThrows: [{ value: 21 }],
+          currentRoundThrows: [{ value: 21, isDouble: false, isTriple: false, isBust: false }],
           roundHistory: [],
+          isGuest: false,
         },
         {
           id: 2,
@@ -220,6 +234,7 @@ describe("buildGamePlayersDerivedState", () => {
           throwsInCurrentRound: 0,
           currentRoundThrows: [],
           roundHistory: [],
+          isGuest: false,
         },
       ],
     });
@@ -247,8 +262,9 @@ describe("buildGamePlayersDerivedState", () => {
           isBust: false,
           position: null,
           throwsInCurrentRound: 1,
-          currentRoundThrows: [{ value: 21 }],
+          currentRoundThrows: [{ value: 21, isDouble: false, isTriple: false, isBust: false }],
           roundHistory: [],
+          isGuest: false,
         },
         {
           id: 2,
@@ -260,6 +276,7 @@ describe("buildGamePlayersDerivedState", () => {
           throwsInCurrentRound: 0,
           currentRoundThrows: [],
           roundHistory: [],
+          isGuest: false,
         },
       ],
     });

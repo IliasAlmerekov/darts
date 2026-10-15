@@ -1,8 +1,7 @@
-import type {
-  GameStatus,
-  GameThrowsResponse as BaseGameThrowsResponse,
-  ScoreboardDelta,
-} from "./game";
+import type { GameSettingsResponse } from "@/shared/api/game";
+import type { GameStatus } from "./game";
+
+export type { GameSettingsResponse, UndoAckResponse, UndoThrowResponse } from "@/shared/api/game";
 
 export interface StartGameRequest {
   startScore: number;
@@ -62,27 +61,6 @@ export interface CreateGameSettingsPayload {
 }
 
 export type UpdateGameSettingsPayload = Partial<CreateGameSettingsPayload>;
-
-export interface GameSettingsResponse {
-  startScore: number;
-  doubleOut: boolean;
-  tripleOut: boolean;
-}
-
-export type GameThrowsResponse = BaseGameThrowsResponse & {
-  type: "full-state";
-};
-
-export interface UndoAckResponse {
-  type: "ack";
-  success: boolean;
-  gameId: number;
-  stateVersion: string;
-  scoreboardDelta: ScoreboardDelta;
-  serverTs: string;
-}
-
-export type UndoThrowResponse = GameThrowsResponse | UndoAckResponse;
 
 export type RoomStreamEventType =
   | "player-joined"

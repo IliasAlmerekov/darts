@@ -11,6 +11,8 @@ export const successMessageResponseSchema = v.object({
   success: v.optional(v.boolean(), true),
 });
 
+export type SuccessMessageResponse = v.InferOutput<typeof successMessageResponseSchema>;
+
 /** Contract response of `POST /api/invite/create/{id}`. */
 export const invitationResponseSchema = v.object({
   success: v.boolean(),

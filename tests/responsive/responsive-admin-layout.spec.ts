@@ -14,6 +14,7 @@ type MockPlayer = {
   score: number;
   isActive: boolean;
   isBust: boolean;
+  isGuest: boolean;
   position: number;
   throwsInCurrentRound: number;
   currentRoundThrows: unknown[];
@@ -27,6 +28,7 @@ const createMockPlayers = (count: number): MockPlayer[] => {
     score: 301 - index * 5,
     isActive: index === 0,
     isBust: false,
+    isGuest: false,
     position: index + 1,
     throwsInCurrentRound: 0,
     currentRoundThrows: [],

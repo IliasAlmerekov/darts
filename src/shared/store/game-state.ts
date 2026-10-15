@@ -1,14 +1,12 @@
 import { atom, computed } from "nanostores";
 import type { ReadableAtom } from "nanostores";
-import type { GameSettingsResponse, GameThrowsResponse, ScoreboardDelta } from "@/types";
+import type { GameSettings, GameThrowsResponse, ScoreboardDelta } from "@/types";
 import { applyGameScoreboardDelta, normalizeGameData } from "../lib/game/gameStateNormalizer";
 
 const gameDataAtom = atom<GameThrowsResponse | null>(null);
 const isLoadingAtom = atom<boolean>(false);
 const errorAtom = atom<Error | null>(null);
-const gameSettingsByGameIdAtom = atom<{ gameId: number; settings: GameSettingsResponse } | null>(
-  null,
-);
+const gameSettingsByGameIdAtom = atom<{ gameId: number; settings: GameSettings } | null>(null);
 
 export const $gameData: ReadableAtom<GameThrowsResponse | null> = gameDataAtom;
 export const $isLoading: ReadableAtom<boolean> = isLoadingAtom;
@@ -18,7 +16,7 @@ export const $gameSettings = computed(gameDataAtom, (gameData) => {
   return gameData?.settings ?? null;
 });
 
-function setCachedGameSettings(gameId: number, settings: GameSettingsResponse): void {
+function setCachedGameSettings(gameId: number, settings: GameSettings): void {
   const current = gameSettingsByGameIdAtom.get();
   const isUnchanged =
     current?.gameId === gameId &&
@@ -33,7 +31,7 @@ function setCachedGameSettings(gameId: number, settings: GameSettingsResponse): 
   gameSettingsByGameIdAtom.set({ gameId, settings });
 }
 
-export function getCachedGameSettings(gameId: number): GameSettingsResponse | null {
+export function getCachedGameSettings(gameId: number): GameSettings | null {
   const current = gameSettingsByGameIdAtom.get();
   return current?.gameId === gameId ? current.settings : null;
 }
@@ -53,7 +51,7 @@ export function setGameData(data: GameThrowsResponse | null): void {
 /**
  * Updates only the settings fragment for the current game state.
  */
-export function setGameSettings(settings: GameSettingsResponse, expectedGameId?: number): void {
+export function setGameSettings(settings: GameSettings, expectedGameId?: number): void {
   const currentGameData = gameDataAtom.get();
   const cacheTargetGameId =
     typeof expectedGameId === "number" ? expectedGameId : currentGameData?.id;

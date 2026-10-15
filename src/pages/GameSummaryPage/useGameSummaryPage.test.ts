@@ -99,6 +99,7 @@ function buildFinishedGameState(): GameThrowsResponse {
             ],
           },
         ],
+        isGuest: false,
       },
       {
         id: 2,
@@ -110,6 +111,7 @@ function buildFinishedGameState(): GameThrowsResponse {
         throwsInCurrentRound: 0,
         currentRoundThrows: [],
         roundHistory: [],
+        isGuest: false,
       },
     ],
   };

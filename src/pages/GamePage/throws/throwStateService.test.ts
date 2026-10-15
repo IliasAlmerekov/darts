@@ -32,6 +32,7 @@ function buildGameData(overrides: Partial<GameThrowsResponse> = {}): GameThrowsR
         throwsInCurrentRound: 0,
         currentRoundThrows: [],
         roundHistory: [],
+        isGuest: false,
       },
       {
         id: 2,
@@ -43,6 +44,7 @@ function buildGameData(overrides: Partial<GameThrowsResponse> = {}): GameThrowsR
         throwsInCurrentRound: 0,
         currentRoundThrows: [],
         roundHistory: [],
+        isGuest: false,
       },
     ],
     ...overrides,
@@ -67,6 +69,7 @@ describe("throwStateService", () => {
             { value: 31, isDouble: false, isTriple: false, isBust: false },
           ],
           roundHistory: [],
+          isGuest: false,
         },
         {
           id: 2,
@@ -78,6 +81,7 @@ describe("throwStateService", () => {
           throwsInCurrentRound: 0,
           currentRoundThrows: [],
           roundHistory: [],
+          isGuest: false,
         },
       ],
     });
@@ -115,6 +119,7 @@ describe("throwStateService", () => {
               throws: [{ value: 20, isDouble: false, isTriple: false, isBust: false }],
             },
           ],
+          isGuest: false,
         },
         {
           id: 2,
@@ -126,6 +131,7 @@ describe("throwStateService", () => {
           throwsInCurrentRound: 0,
           currentRoundThrows: [],
           roundHistory: [],
+          isGuest: false,
         },
       ],
     });
@@ -168,6 +174,7 @@ describe("throwStateService", () => {
               ],
             },
           ],
+          isGuest: false,
         },
         {
           id: 2,
@@ -179,6 +186,7 @@ describe("throwStateService", () => {
           throwsInCurrentRound: 0,
           currentRoundThrows: [],
           roundHistory: [],
+          isGuest: false,
         },
       ],
     });
@@ -215,6 +223,7 @@ describe("throwStateService", () => {
             { value: 10, isDouble: false, isTriple: false, isBust: false },
           ],
           roundHistory: [],
+          isGuest: false,
         },
         {
           id: 2,
@@ -226,6 +235,7 @@ describe("throwStateService", () => {
           throwsInCurrentRound: 0,
           currentRoundThrows: [],
           roundHistory: [],
+          isGuest: false,
         },
       ],
     });
@@ -259,6 +269,7 @@ describe("throwStateService", () => {
           throwsInCurrentRound: 1,
           currentRoundThrows: [{ value: 20, isDouble: false, isTriple: false, isBust: false }],
           roundHistory: [],
+          isGuest: false,
         },
         {
           id: 2,
@@ -270,6 +281,7 @@ describe("throwStateService", () => {
           throwsInCurrentRound: 0,
           currentRoundThrows: [],
           roundHistory: [],
+          isGuest: false,
         },
       ],
     });
