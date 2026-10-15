@@ -179,6 +179,149 @@ describe("apiClient request timeout", () => {
   });
 });
 
+function createStalledJsonResponse(): Response {
+  // Headers arrive at once; the body stream never enqueues or closes.
+  return createMockResponse({
+    body: new ReadableStream<Uint8Array>(),
+    status: 200,
+    headers: new Headers({ "content-type": "application/json" }),
+  });
+}
+
+describe("apiClient response body deadline", () => {
+  beforeEach(() => {
+    vi.useFakeTimers();
+    vi.restoreAllMocks();
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  it("should throw TimeoutError when the body stalls after headers arrive", async () => {
+    vi.spyOn(globalThis, "fetch").mockResolvedValueOnce(createStalledJsonResponse());
+
+    const requestPromise = apiClient.get("/stalled", { timeoutMs: 10, validate: acceptUnknown });
+    const assertion = expect(requestPromise).rejects.toBeInstanceOf(TimeoutError);
+
+    await vi.advanceTimersByTimeAsync(10);
+
+    await assertion;
+  });
+
+  it("should throw AbortError when the external signal aborts while the body is read", async () => {
+    const externalController = new AbortController();
+    vi.spyOn(globalThis, "fetch").mockResolvedValueOnce(createStalledJsonResponse());
+
+    const requestPromise = apiClient.get("/stalled", {
+      timeoutMs: 5000,
+      signal: externalController.signal,
+      validate: acceptUnknown,
+    });
+    const assertion = expect(requestPromise).rejects.toMatchObject({ name: "AbortError" });
+
+    await vi.advanceTimersByTimeAsync(0);
+    externalController.abort();
+
+    await assertion;
+  });
+
+  it("should throw ApiError with the fallback message when an error body is not valid JSON", async () => {
+    vi.spyOn(globalThis, "fetch").mockResolvedValueOnce(
+      createMockResponse({
+        body: "<html>Bad Gateway</html>",
+        status: 502,
+        headers: new Headers({ "content-type": "application/json" }),
+      }),
+    );
+
+    await expect(apiClient.get("/broken", { validate: acceptUnknown })).rejects.toMatchObject({
+      name: "ApiError",
+      message: "Request failed",
+      status: 502,
+      data: null,
+    });
+  });
+});
+
+describe("apiClient external signal cleanup", () => {
+  beforeEach(() => {
+    vi.useFakeTimers();
+    vi.restoreAllMocks();
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  function captureRequestSignal(response: () => Promise<Response>): () => AbortSignal | undefined {
+    let requestSignal: AbortSignal | undefined;
+    vi.spyOn(globalThis, "fetch").mockImplementationOnce((_url, init) => {
+      requestSignal = init?.signal ?? undefined;
+      return response();
+    });
+    return () => requestSignal;
+  }
+
+  it("should detach from the external signal after a successful request", async () => {
+    const externalController = new AbortController();
+    const getRequestSignal = captureRequestSignal(() =>
+      Promise.resolve(
+        createMockResponse({
+          body: { ok: true },
+          status: 200,
+          headers: new Headers({ "content-type": "application/json" }),
+        }),
+      ),
+    );
+
+    await apiClient.get("/fast", { signal: externalController.signal, validate: isOkResponse });
+    externalController.abort();
+
+    expect(getRequestSignal()?.aborted).toBe(false);
+  });
+
+  it("should detach from the external signal after an HTTP error", async () => {
+    const externalController = new AbortController();
+    const getRequestSignal = captureRequestSignal(() =>
+      Promise.resolve(
+        createMockResponse({
+          body: { message: "Server error" },
+          status: 500,
+          headers: new Headers({ "content-type": "application/json" }),
+        }),
+      ),
+    );
+
+    await expect(
+      apiClient.get("/broken", { signal: externalController.signal, validate: acceptUnknown }),
+    ).rejects.toMatchObject({ name: "ApiError", status: 500 });
+    externalController.abort();
+
+    expect(getRequestSignal()?.aborted).toBe(false);
+  });
+
+  it("should detach from the external signal after a timeout", async () => {
+    const externalController = new AbortController();
+    const addListener = vi.spyOn(externalController.signal, "addEventListener");
+    const removeListener = vi.spyOn(externalController.signal, "removeEventListener");
+    vi.spyOn(globalThis, "fetch").mockResolvedValueOnce(createStalledJsonResponse());
+
+    const requestPromise = apiClient.get("/stalled", {
+      timeoutMs: 10,
+      signal: externalController.signal,
+      validate: acceptUnknown,
+    });
+    const assertion = expect(requestPromise).rejects.toBeInstanceOf(TimeoutError);
+    await vi.advanceTimersByTimeAsync(10);
+    await assertion;
+
+    const abortListener = addListener.mock.calls.find(([type]) => type === "abort")?.[1];
+    expect(abortListener).toBeDefined();
+    expect(removeListener).toHaveBeenCalledWith("abort", abortListener);
+  });
+});
+
 describe("apiClient response passthrough", () => {
   beforeEach(() => {
     vi.restoreAllMocks();

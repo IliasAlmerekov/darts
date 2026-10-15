@@ -3,6 +3,7 @@ import type { ApiRequestConfig, QueryParams } from "./types";
 import { isRecord } from "@/lib/guards/guards";
 
 const DEFAULT_TIMEOUT_MS = 30_000;
+const TIMEOUT_REASON = "timeout";
 
 const ENV_API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 type AuthRedirectHandler = () => void;
@@ -100,6 +101,21 @@ async function parseResponseData(response: Response): Promise<unknown> {
     : await response.text().catch(() => null);
 }
 
+// parseResponseData maps any read failure to null, so an abort while the body is
+// still streaming would look like a malformed body. Racing the signal keeps the
+// abort reason, and also settles a stalled body that never reacts to the abort.
+function readResponseData(response: Response, signal: AbortSignal): Promise<unknown> {
+  const aborted = new Promise<never>((_resolve, reject) => {
+    if (signal.aborted) {
+      reject(signal.reason);
+      return;
+    }
+    signal.addEventListener("abort", () => reject(signal.reason), { once: true });
+  });
+
+  return Promise.race([parseResponseData(response), aborted]);
+}
+
 function isAcceptedStatus(status: number, acceptedStatuses?: number[]): boolean {
   return acceptedStatuses?.includes(status) ?? false;
 }
@@ -130,15 +146,15 @@ async function request<T>(
   const controller = new AbortController();
   const externalSignal = rest.signal;
 
+  const abortFromExternal = (): void => controller.abort(externalSignal?.reason);
+
   if (externalSignal?.aborted) {
     controller.abort(externalSignal.reason);
   } else {
-    externalSignal?.addEventListener("abort", () => controller.abort(externalSignal.reason), {
-      once: true,
-    });
+    externalSignal?.addEventListener("abort", abortFromExternal, { once: true });
   }
 
-  const timeoutId = window.setTimeout(() => controller.abort("timeout"), timeoutDuration);
+  const timeoutId = window.setTimeout(() => controller.abort(TIMEOUT_REASON), timeoutDuration);
 
   const fetchConfig: RequestInit = {
     method,
@@ -158,13 +174,14 @@ async function request<T>(
 
   const url = buildUrl(endpoint, query);
   let response: Response;
+  let data: unknown;
 
   try {
     response = await fetch(url, fetchConfig);
+    data = await readResponseData(response, controller.signal);
   } catch (error) {
-    clearTimeout(timeoutId);
-    if (error instanceof DOMException && error.name === "AbortError") {
-      if (controller.signal.reason === "timeout") {
+    if (controller.signal.aborted) {
+      if (controller.signal.reason === TIMEOUT_REASON) {
         throw new TimeoutError(`Request timed out after ${timeoutDuration}ms`, url);
       }
       throw error;
@@ -172,9 +189,8 @@ async function request<T>(
     throw new NetworkError("Network request failed", error);
   } finally {
     clearTimeout(timeoutId);
+    externalSignal?.removeEventListener("abort", abortFromExternal);
   }
-
-  const data = await parseResponseData(response);
 
   if (response.status === 401) {
     if (!skipAuthRedirect) {
