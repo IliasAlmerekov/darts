@@ -4,6 +4,8 @@ import { ApiError, UnauthorizedError } from "./errors";
 import { integerSchema } from "./schemas";
 import { queryClient } from "@/shared/query/queryClient";
 import { ROUTES } from "@/shared/lib/router/routes";
+import { resetRoomStore } from "@/shared/store/game-session";
+import { resetGameStore } from "@/shared/store/game-state";
 
 // ---------------------------------------------------------------------------
 // Schemas
@@ -25,7 +27,8 @@ const csrfTokensResponseSchema = v.object({
   tokens: v.record(v.string(), v.string()),
 });
 
-// The contract documents no logout body; the backend answers with its redirect page as text.
+// The contract documents no logout body. The backend answers with a 302 that `logout` does
+// not follow, so the body is the opaque redirect's empty text.
 const logoutResponseSchema = v.string();
 
 const authenticatedUserProfileSchema = v.object({
@@ -164,13 +167,27 @@ export async function loginWithCredentials(credentials: LoginCredentials): Promi
 }
 
 /**
- * Logs out the current user and drops every cached read of the old session.
+ * Drops everything the client holds for the current session: cached reads, the room
+ * store with its stored game id, and the game store. Logout and the 401 handler share it.
+ */
+export function clearClientSession(): void {
+  queryClient.clear();
+  resetRoomStore();
+  resetGameStore();
+}
+
+/**
+ * Logs out the current user, then clears the client session. A failed request throws
+ * before anything is cleared, because the remember-me cookie would still be valid.
  */
 export async function logout(onSuccess?: () => void): Promise<void> {
+  // The 302 points at the backend's own origin. Following it from the app's origin fails
+  // CORS after the cookies are already gone, and a retry would hit the same wall.
   await apiClient.post(LOGOUT_ENDPOINT, undefined, {
+    redirect: "manual",
     validate: logoutResponseSchema,
   });
-  queryClient.clear();
+  clearClientSession();
   onSuccess?.();
 }
 
