@@ -128,6 +128,13 @@
   color: var(--color-text-muted);
 }
 
+.connectionLost {
+  margin: 0;
+  font-size: var(--font-size-14);
+  font-weight: var(--font-weight-bold);
+  color: var(--color-danger);
+}
+
 .statusText {
   display: flex;
   flex-direction: column;

@@ -31,7 +31,7 @@ function GameStatus({ hasStarted, isConnectionLost }: GameStatusProps): React.JS
           <p className={styles.waitingText}>Waiting for the game to start...</p>
         )}
         {isConnectionLost && !hasStarted ? (
-          <p className={styles.waitingText}>Connection lost. Trying again…</p>
+          <p className={styles.connectionLost}>Connection lost. Trying again…</p>
         ) : null}
       </div>
     </div>

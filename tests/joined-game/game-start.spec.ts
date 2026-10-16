@@ -51,4 +51,31 @@ test.describe("Waiting room", () => {
 
     await expect(page).toHaveURL("/playerprofile");
   });
+
+  test("shows a red lost-connection line while requests fail", async ({ page }) => {
+    let isDown = false;
+    await page.route("**/api/player/current-game", async (route) => {
+      if (isDown) {
+        await route.abort("internetdisconnected");
+        return;
+      }
+      await route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify(lobbyCurrentGame(42)),
+      });
+    });
+
+    await page.goto("/joined");
+    await expect(page.getByText("Game #42")).toBeVisible();
+
+    isDown = true;
+    const lostConnection = page.getByText("Connection lost. Trying again…");
+    await expect(lostConnection).toBeVisible({ timeout: 15_000 });
+    // --color-danger
+    await expect(lostConnection).toHaveCSS("color", "rgb(255, 32, 1)");
+
+    isDown = false;
+    await expect(lostConnection).toHaveCount(0, { timeout: 5_000 });
+  });
 });
