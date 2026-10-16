@@ -29,6 +29,7 @@
     "typecheck": "tsc --noEmit && tsc -p tsconfig.eslint.json --noEmit",
     "test": "vitest run",
     "coverage": "vitest run --coverage",
+    "test:red-on-base": "node ./scripts/red-on-base.mjs",
     "test:e2e": "playwright test --project=mocked",
     "test:e2e:live": "playwright test --project=live",
     "secrets:check": "node ./scripts/check-secrets.mjs",
