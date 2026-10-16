@@ -46,9 +46,11 @@ describe("RegisterForm login entry", () => {
     expect(submit.compareDocumentPosition(signIn) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
   });
 
-  it("shows the prompt line as its own element", () => {
+  it("puts the prompt and the Sign in link in one line of text", () => {
     renderForm(null);
+    const line = screen.getByRole("link", { name: "Sign in" }).parentElement;
 
-    expect(screen.getByText("Already have an account?").tagName).toBe("P");
+    expect(line?.tagName).toBe("P");
+    expect(line?.textContent).toBe("Already have an account? Sign in");
   });
 });

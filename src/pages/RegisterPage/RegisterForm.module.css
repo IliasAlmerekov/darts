@@ -139,41 +139,21 @@
 
 /* Login entry */
 .login {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-xs);
-  margin-top: var(--space-md);
-}
-
-.loginPrompt {
-  margin: 0;
+  margin: var(--space-md) 0 0;
   text-align: center;
   font-size: var(--font-size-14);
-  color: var(--blue);
+  color: var(--darkgrey);
 }
 
-.loginBtn {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  box-sizing: border-box;
-  width: 100%;
-  height: var(--button-height);
+.loginLink {
   font-size: var(--font-size-16);
-  font-weight: 500;
+  font-weight: var(--font-weight-bold);
   color: var(--blue);
   text-decoration: none;
-  background-color: transparent;
-  border: 1px solid var(--blue);
-  border-radius: var(--radius-sm);
-  transition:
-    background-color var(--transition-base),
-    color var(--transition-base);
 }
 
-.loginBtn:hover {
-  color: var(--white);
-  background-color: var(--blue);
+.loginLink:hover {
+  text-decoration: underline;
 }
 
 @media (width <= 600px) {
