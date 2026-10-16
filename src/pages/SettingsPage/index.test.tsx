@@ -751,6 +751,52 @@ describe("SettingsPage", () => {
     expect(isPressed("Double-out")).toBe(true);
   });
 
+  it("should show a load error with Retry when the first settings read fails, then show the saved values after a successful retry", async () => {
+    getGameSettingsMock.mockRejectedValueOnce(new Error("Network down"));
+
+    renderSettingsPage("/settings/42");
+
+    const alert = await screen.findByRole("alert");
+    expect(alert.textContent).toContain("Could not load settings");
+    expect(alert.textContent).not.toContain("Could not update settings");
+    for (const name of ["Single-out", "Double-out", "Triple-out", "101", "301", "501"]) {
+      expect(isPressed(name)).toBe(false);
+    }
+
+    getGameSettingsMock.mockResolvedValueOnce(
+      createSettingsResponse({ startScore: 501, doubleOut: true }),
+    );
+    fireEvent.click(screen.getByRole("button", { name: "Retry" }));
+
+    await waitFor(() => {
+      expect(isPressed("501")).toBe(true);
+    });
+    expect(isPressed("Double-out")).toBe(true);
+    expect(screen.queryByRole("alert")).toBeNull();
+    expect(screen.getByRole("button", { name: "501" }).getAttribute("disabled")).toBeNull();
+    expect(screen.getByRole("button", { name: "Double-out" }).getAttribute("disabled")).toBeNull();
+  });
+
+  it("should show no load error after the route moves from a failed game to a game with available settings", async () => {
+    getGameSettingsMock.mockImplementation((gameId: number) =>
+      gameId === 1
+        ? Promise.reject(new Error("Network down"))
+        : Promise.resolve(createSettingsResponse({ gameId: 2, startScore: 401, doubleOut: true })),
+    );
+    const router = renderSettingsRouter("/settings/1");
+    await screen.findByRole("alert");
+
+    await act(async () => {
+      await router.navigate("/settings/2");
+    });
+
+    await waitFor(() => {
+      expect(isPressed("401")).toBe(true);
+    });
+    expect(isPressed("Double-out")).toBe(true);
+    expect(screen.queryByRole("alert")).toBeNull();
+  });
+
   describe.each(SETTINGS_SAVE_CASES)(
     "when a $setting save for game 1 settles after the route moved to game 2",
     ({ gameOneClick, gameOneResponse, gameTwoSelected, gameTwoClick, gameTwoPayload }) => {

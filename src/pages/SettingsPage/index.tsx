@@ -110,11 +110,18 @@ function SettingsPage(): React.JSX.Element {
   const hasRouteGameInStore =
     routeGameId !== null && gameData?.id === routeGameId && gameSettings !== null;
   // Read the route game's settings unless the game store already holds them.
-  const { data: routeGameSettings } = useQuery({
+  const {
+    data: routeGameSettings,
+    error: routeSettingsLoadError,
+    refetch: refetchRouteGameSettings,
+  } = useQuery({
     ...gameQueries.settings(routeGameId ?? 0),
     enabled: routeGameId !== null && !hasRouteGameInStore,
   });
   const activeGameSettings = hasRouteGameInStore ? gameSettings : (routeGameSettings ?? null);
+  // Without settings for the route game, its options have no saved values to show.
+  const hasRouteSettingsLoadFailed =
+    routeGameId !== null && activeGameSettings === null && routeSettingsLoadError !== null;
   const preCreateGameMode = useMemo(
     () => resolveGameMode(preCreateGameSettings.doubleOut, preCreateGameSettings.tripleOut),
     [preCreateGameSettings.doubleOut, preCreateGameSettings.tripleOut],
@@ -149,7 +156,11 @@ function SettingsPage(): React.JSX.Element {
   const currentPoints = activeGameSettings?.startScore ?? DEFAULT_START_SCORE;
   const effectiveGameId = routeGameId;
   const isHydratingRouteSettings =
-    routeGameId !== null && !hasHydratedSelection && activeGameSettings === null;
+    routeGameId !== null &&
+    !hasHydratedSelection &&
+    activeGameSettings === null &&
+    !hasRouteSettingsLoadFailed;
+  const areOptionsLocked = isHydratingRouteSettings || hasRouteSettingsLoadFailed;
   const selectedGameModeId =
     hasHydratedSelection || routeGameId === null
       ? selectedGameMode
@@ -346,6 +357,14 @@ function SettingsPage(): React.JSX.Element {
     <div className={styles.settings}>
       <h1>Settings</h1>
       <section className={styles.settingsSection}>
+        {hasRouteSettingsLoadFailed ? (
+          <ErrorState
+            {...(styles.settingsError ? { className: styles.settingsError } : {})}
+            title="Could not load settings"
+            message={toUserErrorMessage(routeSettingsLoadError, "Please try again.")}
+            primaryAction={{ label: "Retry", onClick: () => void refetchRouteGameSettings() }}
+          />
+        ) : null}
         {saveErrorMessage ? (
           <ErrorState
             {...(styles.settingsError ? { className: styles.settingsError } : {})}
@@ -359,14 +378,14 @@ function SettingsPage(): React.JSX.Element {
             options={GAME_MODE_OPTIONS}
             selectedId={selectedGameModeId}
             onChange={handleGameModeClick}
-            disabled={isHydratingRouteSettings || isSavingRouteGame("game-mode")}
+            disabled={areOptionsLocked || isSavingRouteGame("game-mode")}
           />
           <SettingsTabs
             title="Points"
             options={POINTS_OPTIONS}
             selectedId={selectedPointsId}
             onChange={handlePointsClick}
-            disabled={isHydratingRouteSettings || isSavingRouteGame("points")}
+            disabled={areOptionsLocked || isSavingRouteGame("points")}
             mobileLayout="grid"
           />
         </div>
