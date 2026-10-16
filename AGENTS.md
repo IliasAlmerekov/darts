@@ -33,6 +33,14 @@ When most mocked specs fail on the login page, read `test-results/*/error-contex
 import error there means the dev server on :5173 runs stale `node_modules`; Playwright reuses
 it. Run `docker compose -f compose.dev.yaml restart frontend`.
 
+Locally the app runs as one Compose stack, the project `darts`: frontend on :5173, backend
+nginx on :8001, php and mysql. Both repos' compose files carry `name: darts`, so any
+`docker compose` command joins that stack; start it with `docker compose up -d` in the
+workspace folder that holds both repos. The frontend container serves the main checkout, so
+browser checks and `npm run test:e2e` see the main checkout's code. To show or test a branch
+in the browser, check that branch out in the main checkout. A worktree is for unit tests,
+lint and typecheck, and reuses the running stack for everything else.
+
 A fresh clone has no `node_modules`: run `npm install` first, or the hook fails.
 
 ## Commits and pull requests

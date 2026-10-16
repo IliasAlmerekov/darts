@@ -1,5 +1,8 @@
 # Vite dev server with hot reload. The API proxy targets the backend nginx
-# published on the host at :8001, so this file runs alone or next to the backend.
+# published on the host at :8001. The project name matches the workspace compose.yaml,
+# so this file and the backend file join the same local stack.
+name: darts
+
 services:
   frontend:
     image: node:22-alpine
