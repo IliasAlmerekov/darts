@@ -10,6 +10,7 @@ import {
   mkdirSync,
   mkdtempSync,
   readFileSync,
+  rmSync,
   symlinkSync,
 } from "node:fs";
 import { tmpdir } from "node:os";
@@ -19,18 +20,21 @@ const base = process.argv[2] ?? "origin/main";
 
 const git = (...args) => execFileSync("git", args, { encoding: "utf-8" }).trim();
 
-// Test files, plus the test helpers they may depend on.
+// Test files, plus the test helpers and shared fixtures they may depend on.
 const isTestSupport = (path) =>
   /\.test\.tsx?$/.test(path) ||
+  /\.test-support\.tsx?$/.test(path) ||
   /(^|\/)test-utils\.tsx?$/.test(path) ||
   path.startsWith("src/test/");
 const isTestFile = (path) => /\.test\.tsx?$/.test(path);
 
 const repoRoot = git("rev-parse", "--show-toplevel");
 const mergeBase = git("merge-base", base, "HEAD");
-const changedFiles = git("diff", "--name-only", mergeBase)
-  .split("\n")
-  .filter((path) => path !== "" && existsSync(join(repoRoot, path)));
+// Committed and uncommitted changes since the merge base, plus new files not yet added.
+const changedFiles = [
+  ...git("diff", "--name-only", mergeBase).split("\n"),
+  ...git("ls-files", "--others", "--exclude-standard").split("\n"),
+].filter((path) => path !== "" && existsSync(join(repoRoot, path)));
 const testSupport = changedFiles.filter(isTestSupport);
 const testFiles = testSupport.filter(isTestFile);
 
@@ -39,11 +43,12 @@ if (testFiles.length === 0) {
   process.exit(0);
 }
 
-const worktree = join(mkdtempSync(join(tmpdir(), "red-on-base-")), "repo");
-const reportPath = join(dirname(worktree), "report.json");
-git("worktree", "add", "--detach", worktree, mergeBase);
+const tempDir = mkdtempSync(join(tmpdir(), "red-on-base-"));
+const worktree = join(tempDir, "repo");
+const reportPath = join(tempDir, "report.json");
 
 try {
+  git("worktree", "add", "--detach", worktree, mergeBase);
   symlinkSync(join(repoRoot, "node_modules"), join(worktree, "node_modules"), "dir");
   for (const path of testSupport) {
     mkdirSync(dirname(join(worktree, path)), { recursive: true });
@@ -80,5 +85,8 @@ try {
     }
   }
 } finally {
-  git("worktree", "remove", "--force", worktree);
+  if (existsSync(worktree)) {
+    git("worktree", "remove", "--force", worktree);
+  }
+  rmSync(tempDir, { recursive: true, force: true });
 }
