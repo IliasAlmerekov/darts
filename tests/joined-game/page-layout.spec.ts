@@ -2,7 +2,7 @@
 // seed: seed.spec.ts
 
 import { test, expect } from "../shared/test";
-import { mockQuietRoomStream } from "../shared/room-stream-mocks";
+import { lobbyCurrentGame, mockCurrentGame } from "../shared/current-game-mocks";
 
 const viewports = [
   { name: "phone-360", width: 360, height: 800 },
@@ -11,7 +11,7 @@ const viewports = [
 ];
 
 test("Verify page layout and styling", async ({ page }) => {
-  await mockQuietRoomStream(page);
+  await mockCurrentGame(page, lobbyCurrentGame(42));
   // Mock the login success check to return authenticated user with roles
   await page.route("**/api/login/success", async (route) => {
     await route.fulfill({

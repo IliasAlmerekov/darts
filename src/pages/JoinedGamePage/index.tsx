@@ -1,26 +1,53 @@
-import React, { useEffect, useState } from "react";
-import { useStore } from "@nanostores/react";
+import React from "react";
+import { Navigate, useNavigate } from "react-router-dom";
 import { useAuthenticatedUser } from "@/shared/hooks/useAuthenticatedUser";
-import { useRoomStream } from "@/shared/hooks/useRoomStream";
-import { $currentGameId } from "@/shared/store";
+import { ROUTES } from "@/lib/router/routes";
+import { ErrorState } from "@/shared/ui/error-state";
 import { LogoutButton } from "@/shared/ui/logout-button";
+import { gameIdOf } from "./lib/waitingRoomView";
+import { useWaitingRoom } from "./useWaitingRoom";
 import styles from "./JoinedGamePage.module.css";
+
+interface GameStatusProps {
+  hasStarted: boolean;
+  isConnectionLost: boolean;
+}
+
+function GameStatus({ hasStarted, isConnectionLost }: GameStatusProps): React.JSX.Element {
+  return (
+    <div className={styles.waiting}>
+      {hasStarted ? (
+        <span className={styles.startedMark} aria-hidden="true" />
+      ) : (
+        <span className={styles.spinner} aria-hidden="true" />
+      )}
+      <div role="status" className={styles.statusText}>
+        {hasStarted ? (
+          <>
+            <p className={styles.startedTitle}>The game has started</p>
+            <p className={styles.waitingText}>Follow your score on the tablet</p>
+          </>
+        ) : (
+          <p className={styles.waitingText}>Waiting for the game to start...</p>
+        )}
+        {isConnectionLost && !hasStarted ? (
+          <p className={styles.connectionLost}>Connection lost. Trying again…</p>
+        ) : null}
+      </div>
+    </div>
+  );
+}
 
 function JoinedGamePage(): React.JSX.Element {
   const { user } = useAuthenticatedUser();
-  const currentGameId = useStore($currentGameId);
-  const { event } = useRoomStream(currentGameId);
-  const [hasGameStarted, setHasGameStarted] = useState(false);
+  const { view, isConnectionLost } = useWaitingRoom();
+  const navigate = useNavigate();
 
-  useEffect(() => {
-    setHasGameStarted(false);
-  }, [currentGameId]);
+  if (view.kind === "no-game") {
+    return <Navigate to={ROUTES.playerProfile} replace />;
+  }
 
-  useEffect(() => {
-    if (event?.type === "game-started") {
-      setHasGameStarted(true);
-    }
-  }, [event?.type]);
+  const gameId = gameIdOf(view);
 
   return (
     <div className={styles.container}>
@@ -37,20 +64,23 @@ function JoinedGamePage(): React.JSX.Element {
                 <p className={styles.welcome}>
                   Welcome{user?.username != null ? `, ${user.username}` : ""}!
                 </p>
-                {currentGameId !== null && <p className={styles.gameId}>Game #{currentGameId}</p>}
+                {gameId !== null && <p className={styles.gameId}>Game #{gameId}</p>}
               </div>
 
-              {hasGameStarted ? (
-                <p className={styles.waitingText}>Game has started.</p>
+              {view.kind === "removed" ? (
+                <ErrorState
+                  title="You are no longer in this game"
+                  message="Ask the admin for a new invite link to join again."
+                  primaryAction={{
+                    label: "Go to my profile",
+                    onClick: () => navigate(ROUTES.playerProfile),
+                  }}
+                />
               ) : (
-                <div className={styles.waiting}>
-                  <span
-                    className={styles.spinner}
-                    role="status"
-                    aria-label="Waiting for game start"
-                  />
-                  <p className={styles.waitingText}>Waiting for the game to start...</p>
-                </div>
+                <GameStatus
+                  hasStarted={view.kind === "started"}
+                  isConnectionLost={isConnectionLost}
+                />
               )}
 
               <LogoutButton />

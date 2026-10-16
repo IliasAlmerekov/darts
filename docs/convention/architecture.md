@@ -32,7 +32,7 @@ src/shared/
   api/         # apiClient, endpoints, typed errors, mappers
   hooks/       # cross-page hooks
   lib/         # pure helpers (guards, router, error mapping, game logic, etc.)
-  query/       # the QueryClient and query options per resource (auth, statistics, game)
+  query/       # the QueryClient and query options per resource (auth, statistics, game, player)
   services/    # browser-side services (logger, sound, storage)
   store/       # Nanostores atoms and actions
   types/       # cross-page type definitions, including `*.test-support.ts`
@@ -105,7 +105,7 @@ The API layer has a **two-level public surface**:
 - `@/shared/api` (the `index.ts` barrel) exposes cross-cutting symbols: `apiClient`,
   `setUnauthorizedHandler`, `ApiError`, `ForbiddenError`, `NetworkError`,
   `UnauthorizedError`, `TimeoutError`, endpoint constants.
-- `@/shared/api/<domain>` (`auth`, `game`, `room`, `statistics`) is the per-domain public
+- `@/shared/api/<domain>` (`auth`, `game`, `room`, `statistics`, `player`) is the per-domain public
   surface. Pages and other shared code import resource calls and DTO types directly from
   these modules: `import { getGameThrows } from "@/shared/api/game"`.
 
@@ -171,7 +171,10 @@ Rules:
   loader, not `useEffect` after mount. The loader fills the query cache with
   `queryClient.ensureQueryData(...)` and the page reads the same key with `useQuery`
   ([ADR 0001](../adr/0001-tanstack-query-for-server-reads.md)). Data whose key changes
-  inside the page, such as pagination, uses `useQuery` alone.
+  inside the page, such as pagination, uses `useQuery` alone. So does polled data that
+  depends on no route param and must show its own loading state before the first answer,
+  such as the Waiting room's current game: ADR 0001 keeps loaders for data that depends on
+  route params, and a loader would hold the navigation instead.
 - Optional URL parameters use `:id?` (e.g. `/start/:id?`, `/settings/:id?`). Do not
   declare two parallel routes for the same page.
 - Role-restricted routes are nested inside a `<ProtectedRoutes allowedRoles={[...]}>`

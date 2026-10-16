@@ -4,7 +4,7 @@ import {
   REMEMBERED_PLAYER_JOINED_RESPONSE,
   REMEMBERED_PLAYER_RESPONSE,
 } from "../shared/auth-route-mocks";
-import { mockQuietRoomStream } from "../shared/room-stream-mocks";
+import { lobbyCurrentGame, mockCurrentGame } from "../shared/current-game-mocks";
 import type { Page } from "@playwright/test";
 
 async function mockRegistration(page: Page, body: unknown): Promise<void> {
@@ -31,7 +31,7 @@ test.describe("Registration after scanning an invitation", () => {
   });
 
   test("scan → register → Waiting room shows the joined game", async ({ page }) => {
-    await mockQuietRoomStream(page);
+    await mockCurrentGame(page, lobbyCurrentGame(42));
     await mockRegistration(page, REMEMBERED_PLAYER_JOINED_RESPONSE);
 
     await fillAndSubmit(page);

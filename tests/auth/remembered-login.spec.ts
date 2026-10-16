@@ -5,7 +5,7 @@ import {
   REMEMBERED_PLAYER_JOINED_RESPONSE,
   REMEMBERED_PLAYER_RESPONSE,
 } from "../shared/auth-route-mocks";
-import { mockQuietRoomStream } from "../shared/room-stream-mocks";
+import { lobbyCurrentGame, mockCurrentGame } from "../shared/current-game-mocks";
 
 test.describe("Remembered login", () => {
   test("shows the login check until the auth check answers, then the form", async ({ page }) => {
@@ -23,7 +23,7 @@ test.describe("Remembered login", () => {
   });
 
   test("a remembered player who scans an invite lands in the Waiting room", async ({ page }) => {
-    await mockQuietRoomStream(page);
+    await mockCurrentGame(page, lobbyCurrentGame(42));
     await mockRememberedPlayerSession(page);
 
     await page.goto("/");
