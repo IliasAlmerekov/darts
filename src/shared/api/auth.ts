@@ -8,21 +8,15 @@ import { ROUTES } from "@/shared/lib/router/routes";
 // Schemas
 // ---------------------------------------------------------------------------
 
-// Login behaviour is out of scope for #158, so the login and auth-check schemas keep the
-// rules of the old guards. The PR for #158 lists where they differ from the contract.
-
 const roleSchema = v.picklist(["ROLE_USER", "ROLE_ADMIN", "ROLE_PLAYER"]);
 
-/** `POST /api/login`. At least one of the known fields must be present. */
-const loginResponseSchema = v.pipe(
-  v.object({
-    redirect: v.optional(v.string()),
-    success: v.optional(v.boolean()),
-    error: v.optional(v.nullable(v.string())),
-    last_username: v.optional(v.nullable(v.string())),
-  }),
-  v.check((login) => Object.keys(login).length > 0),
-);
+/** Why the backend could not join the invitation held in the session. The login still worked. */
+const invitationErrorSchema = v.picklist([
+  "GAME_ALREADY_STARTED",
+  "GAME_ROOM_FULL",
+  "GAME_NOT_FOUND",
+  "GAME_JOIN_NOT_ALLOWED",
+]);
 
 /** Contract response of `GET /api/csrf`. */
 const csrfTokensResponseSchema = v.object({
@@ -51,8 +45,22 @@ const authenticatedUserSchema = v.object({
   username: v.optional(v.nullable(v.string())),
   redirect: v.string(),
   gameId: v.optional(v.nullable(v.number())),
+  invitationError: v.optional(invitationErrorSchema),
   profile: v.optional(authenticatedUserProfileSchema),
 });
+
+/**
+ * `POST /api/login`. A successful login answers with the `/api/login/success` body; the
+ * controller fallback answers with `redirect: "/api/login/success"` instead of the target.
+ */
+const loginResponseSchema = v.union([
+  authenticatedUserSchema,
+  v.object({
+    success: v.literal(false),
+    error: v.optional(v.nullable(v.string())),
+    last_username: v.optional(v.nullable(v.string())),
+  }),
+]);
 
 /**
  * Contract response of `POST /api/register`, 201. The backend logs the new player in and
@@ -74,6 +82,7 @@ export type RegistrationResponse = v.InferOutput<typeof registrationResponseSche
 export type Role = v.InferOutput<typeof roleSchema>;
 type AuthenticatedUserProfile = v.InferOutput<typeof authenticatedUserProfileSchema>;
 export type AuthenticatedUser = v.InferOutput<typeof authenticatedUserSchema>;
+export type InvitationError = v.InferOutput<typeof invitationErrorSchema>;
 
 interface LoginCredentials {
   email: string;

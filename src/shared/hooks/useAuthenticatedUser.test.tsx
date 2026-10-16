@@ -135,6 +135,20 @@ describe("useAuthenticatedUser", () => {
     expect(result.current.error).toBeNull();
   });
 
+  it("should store the joined game of a remembered player as the current game", async () => {
+    getAuthenticatedUserMock.mockResolvedValue(
+      buildAuthenticatedUser({ roles: ["ROLE_PLAYER"], redirect: "/joined", gameId: 42 }),
+    );
+
+    const { result } = renderHook(() => useAuthenticatedUser(), { wrapper });
+
+    await waitFor(() => {
+      expect(result.current.loading).toBe(false);
+    });
+
+    expect(setCurrentGameIdMock).toHaveBeenCalledWith(42);
+  });
+
   it("should mark auth as unauthenticated when the auth API resolves null", async () => {
     getAuthenticatedUserMock.mockResolvedValue(null);
 

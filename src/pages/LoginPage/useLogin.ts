@@ -1,17 +1,20 @@
 import { useState } from "react";
-import { useLocation, useNavigate } from "react-router-dom";
 import { ApiError } from "@/shared/api";
-import { loginWithCredentials, getAuthenticatedUser } from "@/shared/api/auth";
+import {
+  loginWithCredentials,
+  getAuthenticatedUser,
+  type AuthenticatedUser,
+} from "@/shared/api/auth";
 import { clientLogger } from "@/shared/services/browser/clientLogger";
 import { authQueries } from "@/shared/query/auth.queries";
 import { queryClient } from "@/shared/query/queryClient";
+import { setCurrentGameId } from "@/shared/store";
 import { mapAuthErrorMessage } from "@/lib/error/auth-error-handling";
-import { ROUTES } from "@/lib/router/routes";
-import { resolveSafeRedirect } from "@/lib/router/safeRedirect";
-import { parseLocationState } from "@/lib/router/locationState";
 
 /**
  * Provides login flow state and action.
+ * A successful login puts the user into the auth query, where the login page reads it the
+ * same way as after a Remembered login check.
  */
 interface LoginReturn {
   login: (email: string, password: string) => Promise<void>;
@@ -19,38 +22,22 @@ interface LoginReturn {
   error: string | null;
 }
 
-function isLoginLocationState(s: unknown): s is { from?: string } {
-  if (typeof s !== "object" || s === null) {
-    return false;
-  }
-  if ("from" in s) {
-    const record = s as Record<string, unknown>;
-    return typeof record["from"] === "string";
-  }
-  return true;
-}
+const LOGIN_SUCCESS_REDIRECT_PREFIX = "/api/";
 
 function getAuthErrorRawMessage(error: unknown): string | undefined {
   return error instanceof ApiError && error.status === 401 ? "unauthorized" : undefined;
 }
 
+function acceptLoggedInUser(user: AuthenticatedUser): void {
+  if (typeof user.gameId === "number") {
+    setCurrentGameId(user.gameId);
+  }
+  queryClient.setQueryData(authQueries.me().queryKey, user);
+}
+
 export function useLogin(): LoginReturn {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const navigate = useNavigate();
-  const location = useLocation();
-
-  const from = resolveSafeRedirect(
-    parseLocationState(location.state, isLoginLocationState)?.from,
-    ROUTES.start(),
-  );
-
-  const navigateToRedirect = (redirect: string): void => {
-    const safeRedirect = resolveSafeRedirect(redirect, from);
-    const redirectPath = safeRedirect === ROUTES.start() ? from : safeRedirect;
-
-    navigate(redirectPath);
-  };
 
   const login = async (email: string, password: string): Promise<void> => {
     setLoading(true);
@@ -59,12 +46,11 @@ export function useLogin(): LoginReturn {
     try {
       const response = await loginWithCredentials({ email, password });
 
-      if (response?.success === false) {
+      if (response.success === false) {
         if (!response.error) {
           const authenticatedUser = await getAuthenticatedUser();
-          if (authenticatedUser?.redirect) {
-            queryClient.setQueryData(authQueries.me().queryKey, authenticatedUser);
-            navigateToRedirect(authenticatedUser.redirect);
+          if (authenticatedUser) {
+            acceptLoggedInUser(authenticatedUser);
             return;
           }
         }
@@ -78,19 +64,18 @@ export function useLogin(): LoginReturn {
         return;
       }
 
-      if (response?.redirect) {
-        if (response.redirect.startsWith("/api/")) {
-          const authenticatedUser = await getAuthenticatedUser();
-          if (authenticatedUser?.redirect) {
-            queryClient.setQueryData(authQueries.me().queryKey, authenticatedUser);
-            navigateToRedirect(authenticatedUser.redirect);
-            return;
-          }
+      if (response.redirect.startsWith(LOGIN_SUCCESS_REDIRECT_PREFIX)) {
+        const authenticatedUser = await getAuthenticatedUser();
+        if (authenticatedUser) {
+          acceptLoggedInUser(authenticatedUser);
+          return;
         }
 
-        void queryClient.resetQueries({ queryKey: authQueries.me().queryKey });
-        navigateToRedirect(response.redirect);
+        setError(mapAuthErrorMessage({ flow: "login", rawMessage: "unauthorized" }));
+        return;
       }
+
+      acceptLoggedInUser(response);
     } catch (error) {
       clientLogger.error("auth.login.failed", {
         error,
@@ -98,9 +83,8 @@ export function useLogin(): LoginReturn {
       if (!(error instanceof ApiError && error.status === 401)) {
         try {
           const authenticatedUser = await getAuthenticatedUser();
-          if (authenticatedUser?.redirect) {
-            queryClient.setQueryData(authQueries.me().queryKey, authenticatedUser);
-            navigateToRedirect(authenticatedUser.redirect);
+          if (authenticatedUser) {
+            acceptLoggedInUser(authenticatedUser);
             return;
           }
         } catch (sessionCheckError) {

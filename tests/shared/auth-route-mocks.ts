@@ -117,7 +117,58 @@ async function mockLoginFlow(
     await route.fulfill({
       status: 200,
       contentType: "application/json",
-      body: JSON.stringify({ redirect: "/api/login/success" }),
+      // The controller fallback: the user is logged in, the target comes from /api/login/success.
+      body: JSON.stringify({
+        success: true,
+        id: 1,
+        roles: ["ROLE_PLAYER"],
+        redirect: "/api/login/success",
+      }),
+    });
+  });
+}
+
+type InvitationError =
+  | "GAME_ALREADY_STARTED"
+  | "GAME_ROOM_FULL"
+  | "GAME_NOT_FOUND"
+  | "GAME_JOIN_NOT_ALLOWED";
+
+interface RememberedPlayerSessionResponse {
+  success: true;
+  roles: string[];
+  id: number;
+  username: string;
+  redirect: string;
+  gameId?: number;
+  invitationError?: InvitationError;
+}
+
+/** A player with a Remembered login; the backend redirects players to the Waiting room. */
+export const REMEMBERED_PLAYER_RESPONSE: RememberedPlayerSessionResponse = {
+  success: true,
+  roles: ["ROLE_PLAYER"],
+  id: 23,
+  username: "Captain Double",
+  redirect: "/joined",
+};
+
+/** A player with a Remembered login whose invite link the backend joined to `gameId`. */
+export const REMEMBERED_PLAYER_JOINED_RESPONSE: RememberedPlayerSessionResponse = {
+  ...REMEMBERED_PLAYER_RESPONSE,
+  gameId: 42,
+};
+
+/** Answers the auth check with a remembered player. */
+export async function mockRememberedPlayerSession(
+  page: Page,
+  response: RememberedPlayerSessionResponse = REMEMBERED_PLAYER_JOINED_RESPONSE,
+): Promise<void> {
+  await page.route("**/api/login/success", async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify(response),
     });
   });
 }
