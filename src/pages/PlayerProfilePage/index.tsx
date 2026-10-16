@@ -1,5 +1,6 @@
 import { useAuthenticatedUser } from "@/shared/hooks/useAuthenticatedUser";
 import React from "react";
+import { LogoutButton } from "@/shared/ui/logout-button";
 
 const ROLE_LABELS: Record<string, string> = {
   ROLE_ADMIN: "Administrator",
@@ -73,6 +74,8 @@ const PlayerProfilePage = (): React.JSX.Element => {
           </section>
         </>
       )}
+
+      <LogoutButton />
     </main>
   );
 };
