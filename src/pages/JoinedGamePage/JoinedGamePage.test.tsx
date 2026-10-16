@@ -24,7 +24,7 @@ import { onlineManager, QueryClientProvider } from "@tanstack/react-query";
 import { createMemoryRouter, RouterProvider } from "react-router-dom";
 import { logout, type AuthenticatedUser } from "@/shared/api/auth";
 import { getCurrentGame } from "@/shared/api/player";
-import type { CurrentGame } from "@/shared/lib/player/currentGame";
+import type { CurrentGame } from "@/lib/player/currentGame";
 import { ApiError, NetworkError, UnauthorizedError } from "@/shared/api";
 import { clientLogger } from "@/shared/services/browser/clientLogger";
 import { ROUTES } from "@/lib/router/routes";

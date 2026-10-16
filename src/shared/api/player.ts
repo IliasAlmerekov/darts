@@ -1,5 +1,5 @@
 import * as v from "valibot";
-import { toCurrentGame, type CurrentGame } from "@/shared/lib/player/currentGame";
+import { toCurrentGame, type CurrentGame } from "@/lib/player/currentGame";
 import { apiClient } from "./client";
 import { integerSchema } from "./schemas";
 
@@ -7,6 +7,8 @@ const currentGameResponseSchema = v.object({
   gameId: v.nullable(integerSchema),
   status: v.nullable(v.picklist(["lobby", "started"])),
 });
+
+export type CurrentGameResponse = v.InferOutput<typeof currentGameResponseSchema>;
 
 // ---------------------------------------------------------------------------
 // Endpoints

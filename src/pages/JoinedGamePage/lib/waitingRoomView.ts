@@ -1,4 +1,4 @@
-import type { CurrentGame } from "@/shared/lib/player/currentGame";
+import type { CurrentGame } from "@/lib/player/currentGame";
 
 /**
  * What the Waiting room shows. A player who had a game in this visit and lost it was

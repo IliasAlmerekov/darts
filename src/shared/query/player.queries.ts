@@ -1,7 +1,7 @@
 import { queryOptions, type Query } from "@tanstack/react-query";
 import { NetworkError, TimeoutError, UnauthorizedError } from "@/shared/api";
 import { getCurrentGame } from "@/shared/api/player";
-import type { CurrentGame } from "@/shared/lib/player/currentGame";
+import type { CurrentGame } from "@/lib/player/currentGame";
 import { clientLogger } from "@/shared/services/browser/clientLogger";
 import { setServerCurrentGameId } from "@/shared/store";
 
