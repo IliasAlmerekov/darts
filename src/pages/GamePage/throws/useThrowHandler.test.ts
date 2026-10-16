@@ -43,6 +43,7 @@ import {
   undoLastThrow,
 } from "@/shared/api/game";
 import { isThrowNotAllowedConflict, useThrowHandler } from "./useThrowHandler";
+import { applyGameScoreboardDelta } from "@/shared/lib/game/gameStateNormalizer";
 
 type Deferred<T> = {
   promise: Promise<T>;
@@ -143,45 +144,6 @@ function buildUndoAck(overrides: Partial<UndoAckResponse> = {}): UndoAckResponse
   };
 }
 
-function applyScoreboardDelta(
-  currentGameState: GameThrowsResponse,
-  scoreboardDelta: ScoreboardDelta,
-) {
-  const changedPlayerById = new Map(
-    scoreboardDelta.changedPlayers.map((playerDelta) => [playerDelta.playerId, playerDelta]),
-  );
-  const players = currentGameState.players.map((player) => {
-    const playerDelta = changedPlayerById.get(player.id);
-    if (!playerDelta) {
-      return player;
-    }
-
-    return {
-      ...player,
-      score: playerDelta.score,
-      position: playerDelta.position === undefined ? player.position : playerDelta.position,
-      isActive: playerDelta.isActive,
-      isBust: typeof playerDelta.isBust === "boolean" ? playerDelta.isBust : player.isBust,
-    };
-  });
-  const activePlayerId =
-    scoreboardDelta.changedPlayers.find((playerDelta) => playerDelta.isActive)?.playerId ??
-    currentGameState.activePlayerId;
-  const activePlayer = players.find((player) => player.id === activePlayerId);
-
-  return {
-    ...currentGameState,
-    players,
-    activePlayerId,
-    currentRound: scoreboardDelta.currentRound,
-    status: scoreboardDelta.status,
-    winnerId: scoreboardDelta.winnerId,
-    currentThrowCount: activePlayer
-      ? Math.max(activePlayer.currentRoundThrows.length, activePlayer.throwsInCurrentRound)
-      : currentGameState.currentThrowCount,
-  };
-}
-
 describe("isThrowNotAllowedConflict", () => {
   it("should return true when error is 409 GAME_THROW_NOT_ALLOWED", () => {
     const error = new ApiError("Request failed", {
@@ -222,7 +184,10 @@ describe("useThrowHandler", () => {
       currentGameState = nextState as GameThrowsResponse;
     });
     vi.mocked(setGameScoreboardDelta).mockImplementation((scoreboardDelta) => {
-      currentGameState = applyScoreboardDelta(currentGameState, scoreboardDelta as ScoreboardDelta);
+      currentGameState = applyGameScoreboardDelta(
+        currentGameState,
+        scoreboardDelta as ScoreboardDelta,
+      );
     });
   });
 

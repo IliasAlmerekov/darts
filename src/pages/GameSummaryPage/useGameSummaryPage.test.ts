@@ -15,6 +15,7 @@ import {
   buildExpectedStandings,
   buildFinishedPlayerResponses,
 } from "@/shared/types/game.test-support";
+import { applyGameScoreboardDelta } from "@/shared/lib/game/gameStateNormalizer";
 
 const navigateMock = vi.fn();
 const getFinishedGameMock = vi.fn();
@@ -168,42 +169,6 @@ function buildUndoAck(overrides: Partial<UndoAckResponse> = {}): UndoAckResponse
   };
 }
 
-function applyScoreboardDelta(currentState: GameThrowsResponse, scoreboardDelta: ScoreboardDelta) {
-  const changedPlayerById = new Map(
-    scoreboardDelta.changedPlayers.map((playerDelta) => [playerDelta.playerId, playerDelta]),
-  );
-  const players = currentState.players.map((player) => {
-    const playerDelta = changedPlayerById.get(player.id);
-    if (!playerDelta) {
-      return player;
-    }
-
-    return {
-      ...player,
-      score: playerDelta.score,
-      position: playerDelta.position === undefined ? player.position : playerDelta.position,
-      isActive: playerDelta.isActive,
-      isBust: typeof playerDelta.isBust === "boolean" ? playerDelta.isBust : player.isBust,
-    };
-  });
-  const activePlayerId =
-    scoreboardDelta.changedPlayers.find((playerDelta) => playerDelta.isActive)?.playerId ??
-    currentState.activePlayerId;
-  const activePlayer = players.find((player) => player.id === activePlayerId);
-
-  return {
-    ...currentState,
-    players,
-    activePlayerId,
-    currentRound: scoreboardDelta.currentRound,
-    status: scoreboardDelta.status,
-    winnerId: scoreboardDelta.winnerId,
-    currentThrowCount: activePlayer
-      ? Math.max(activePlayer.currentRoundThrows.length, activePlayer.throwsInCurrentRound)
-      : currentState.currentThrowCount,
-  };
-}
-
 function wrapper({ children }: { children: ReactNode }): ReactNode {
   return createElement(QueryClientProvider, { client: testQueryClient }, children);
 }
@@ -263,7 +228,7 @@ describe("useGameSummaryPage", () => {
         return;
       }
 
-      currentGameState = applyScoreboardDelta(currentGameState, scoreboardDelta);
+      currentGameState = applyGameScoreboardDelta(currentGameState, scoreboardDelta);
     });
   });
 
