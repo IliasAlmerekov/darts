@@ -54,3 +54,18 @@ describe("RegisterForm login entry", () => {
     expect(line?.textContent).toBe("Already have an account? Sign in");
   });
 });
+
+describe("RegisterForm pending state", () => {
+  it("disables Create account and shows a spinner instead of text while loading", () => {
+    render(
+      <MemoryRouter>
+        <RegisterForm error={null} loading={true} onSubmit={vi.fn()} />
+      </MemoryRouter>,
+    );
+
+    const button = screen.getByRole("button", { name: "Create account" });
+    expect(button.hasAttribute("disabled")).toBe(true);
+    expect(button.textContent).toBe("");
+    expect(screen.getByRole("status").textContent).toBe("Creating your account…");
+  });
+});

@@ -13,6 +13,8 @@ and this project does **not** yet follow [Semantic Versioning](https://semver.or
 - Login: the login page shows a full-screen spinner with "Checking your login…" while it checks for a Remembered login, and the form only when nobody is logged in or the check gets no answer within 5 seconds. A remembered player who scans an invite goes straight to the Waiting room. When the backend cannot join the invitation, the player sees why ("This game has already started", "This game is full", "This game no longer exists" or "This game can no longer be joined") and a button to their profile. The check also runs while the browser counts as offline, so its timeout still brings up the form. After the button, the login page no longer shows that error again (#151)
 - Waiting room and player profile: a "Log out" button ends the Remembered login on this phone and opens the login page. The button stays disabled while the request runs. On success the app clears the query cache, the room store with its stored game id, and the game store, the same cleanup a 401 runs. On failure the page stays as it was and shows an error with a "Retry" button (#154)
 
+- Registration: a new player is taken over like a login. The app stores the joined `gameId`, goes to the Waiting room while "Joining the game…" shows, and shows the same invitation error text with a button to the profile when the backend cannot join the invitation. The "Create account" button is disabled and shows a spinner while the request runs (#152)
+
 ### Changed
 
 - API: each response is checked once by a Valibot schema, and its type is inferred from that schema. The hand-written response guards and interfaces are gone, and ADR 0002 records the choice (#158)

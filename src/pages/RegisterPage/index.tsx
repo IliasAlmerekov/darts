@@ -2,10 +2,22 @@ import React from "react";
 import styles from "./RegistrationPage.module.css";
 import { useRegistrationPage } from "./useRegistrationPage";
 import { RegisterForm } from "./RegisterForm";
+import { InvitationErrorScreen } from "@/shared/ui/invitation-error-screen";
+import JoiningScreen from "./JoiningScreen";
 import deepblueLogo from "@/assets/icons/madeByDeepblue.svg";
 
 function RegisterPage(): React.JSX.Element {
-  const { error, loading, handleSubmit } = useRegistrationPage();
+  const { screen, error, loading, handleSubmit, goToPlayerProfile } = useRegistrationPage();
+
+  if (screen.type === "joining") {
+    return <JoiningScreen />;
+  }
+
+  if (screen.type === "invitation-error") {
+    return (
+      <InvitationErrorScreen message={screen.message} onGoToPlayerProfile={goToPlayerProfile} />
+    );
+  }
 
   return (
     <div className={styles.loginContainer}>

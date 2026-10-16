@@ -6,6 +6,10 @@ import { ApiError } from "@/shared/api";
 import { isRecord } from "@/lib/guards/guards";
 import { ROUTES } from "@/lib/router/routes";
 import { toSafeRedirectPath } from "@/lib/router/safeRedirect";
+import { acceptLoggedInUser } from "@/shared/query/acceptLoggedInUser";
+import { authQueries } from "@/shared/query/auth.queries";
+import { queryClient } from "@/shared/query/queryClient";
+import { setCurrentGameId } from "@/shared/store";
 import { clientLogger } from "@/shared/services/browser/clientLogger";
 
 /**
@@ -19,6 +23,8 @@ interface RegistrationReturn {
   ) => Promise<RegistrationResponse | null>;
   loading: boolean;
   error: string | null;
+  /** The accepted registration response; the page decides between joining and the invitation error. */
+  registered: RegistrationResponse | null;
 }
 
 function hasErrorsRecord(data: unknown): data is { errors: Record<string, unknown> } {
@@ -28,6 +34,7 @@ function hasErrorsRecord(data: unknown): data is { errors: Record<string, unknow
 export function useRegistration(): RegistrationReturn {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [registered, setRegistered] = useState<RegistrationResponse | null>(null);
   const navigate = useNavigate();
 
   const register = async (
@@ -54,7 +61,20 @@ export function useRegistration(): RegistrationReturn {
         response = await registerUser({ username, email, password }, true);
       }
 
-      if (response?.redirect) {
+      // A game id from an earlier session must not leak into the new account.
+      if (typeof response.gameId !== "number") {
+        setCurrentGameId(null);
+      }
+      // A session check still running would overwrite the new user with its late answer.
+      await queryClient.cancelQueries({ queryKey: authQueries.me().queryKey });
+      acceptLoggedInUser(response);
+      setRegistered(response);
+
+      if (response.invitationError !== undefined) {
+        return response;
+      }
+
+      if (response.redirect) {
         const safeRedirect = toSafeRedirectPath(response.redirect);
         if (safeRedirect === null) {
           // The URL itself stays out of the log: it may carry a token.
@@ -79,5 +99,5 @@ export function useRegistration(): RegistrationReturn {
     }
   };
 
-  return { register, loading, error };
+  return { register, loading, error, registered };
 }
