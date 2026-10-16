@@ -12,10 +12,16 @@ import {
 } from "@/shared/store";
 import { saveGameSettings } from "@/shared/api/game";
 import { gameQueries } from "@/shared/query/game.queries";
+import useIsomorphicLayoutEffect from "@/lib/useIsomorphicLayoutEffect";
 import { clientLogger } from "@/shared/services/browser/clientLogger";
 import { toUserErrorMessage } from "@/lib/error/error-to-user-message";
 import { ErrorState } from "@/shared/ui/error-state";
-import type { CreateGameSettingsPayload, GameMode, GameSettingsResponse } from "@/types";
+import type {
+  CreateGameSettingsPayload,
+  GameMode,
+  GameSettingsResponse,
+  UpdateGameSettingsPayload,
+} from "@/types";
 import styles from "./Settings.module.css";
 import { SettingsTabs } from "./components/SettingsTabs";
 
@@ -45,6 +51,31 @@ function isGameMode(id: string | number): id is GameMode {
   return GAME_MODE_OPTIONS.some((option) => option.id === id);
 }
 
+type SaveScope = "game-mode" | "points";
+
+const SAVE_FAILURE = {
+  "game-mode": {
+    message: "Could not update the game mode. Please try again.",
+    logEvent: "settings.save-game-mode.failed",
+  },
+  points: {
+    message: "Could not update the points. Please try again.",
+    logEvent: "settings.save-points.failed",
+  },
+} as const satisfies Record<SaveScope, { message: string; logEvent: string }>;
+
+interface PendingSave {
+  scope: SaveScope;
+}
+
+interface RouteGameSaveRequest {
+  gameId: number;
+  scope: SaveScope;
+  payload: UpdateGameSettingsPayload;
+  rollback: () => void;
+  logContext: Record<string, unknown>;
+}
+
 function parseRouteGameId(gameIdParam: string | undefined): number | null {
   if (!gameIdParam) {
     return null;
@@ -62,8 +93,9 @@ function SettingsPage(): React.JSX.Element {
   const preCreateGameSettings = useStore($preCreateGameSettings);
 
   const routeGameId = useMemo(() => parseRouteGameId(gameIdParam), [gameIdParam]);
-  const [isSaving, setIsSaving] = useState(false);
-  const [savingScope, setSavingScope] = useState<"game-mode" | "points" | null>(null);
+  const [pendingSaves, setPendingSaves] = useState<ReadonlyMap<number, PendingSave>>(
+    () => new Map(),
+  );
   const [selectedGameMode, setSelectedGameMode] = useState<GameMode>("single-out");
   const [selectedPoints, setSelectedPoints] = useState<number>(DEFAULT_START_SCORE);
   const [saveErrorMessage, setSaveErrorMessage] = useState<string | null>(null);
@@ -71,7 +103,10 @@ function SettingsPage(): React.JSX.Element {
   const selectedGameModeRef = useRef(selectedGameMode);
   const selectedPointsRef = useRef(selectedPoints);
   const effectiveGameIdRef = useRef<number | null>(null);
-  const isSavingRef = useRef(false);
+  // The game the selection refs hold, so a click never mixes in a previous game's values.
+  const selectionGameIdRef = useRef<number | null>(null);
+  // One pending save per game: it locks only that game's buttons.
+  const pendingSavesRef = useRef(new Map<number, PendingSave>());
   const hasRouteGameInStore =
     routeGameId !== null && gameData?.id === routeGameId && gameSettings !== null;
   // Read the route game's settings unless the game store already holds them.
@@ -95,6 +130,7 @@ function SettingsPage(): React.JSX.Element {
     setHasHydratedSelection(false);
     setSaveErrorMessage(null);
     if (routeGameId === null) {
+      selectionGameIdRef.current = null;
       setSelectedGameMode(preCreateGameMode);
       setSelectedPoints(preCreateGameSettings.startScore);
       setHasHydratedSelection(true);
@@ -135,13 +171,10 @@ function SettingsPage(): React.JSX.Element {
     selectedPointsRef.current = selectedPoints;
   }, [selectedPoints]);
 
-  useEffect(() => {
+  // A save settling after a route commit must already see the new game, so this is not a passive effect.
+  useIsomorphicLayoutEffect(() => {
     effectiveGameIdRef.current = effectiveGameId;
   }, [effectiveGameId]);
-
-  useEffect(() => {
-    isSavingRef.current = isSaving;
-  }, [isSaving]);
 
   useEffect(() => {
     if (routeGameId === null) {
@@ -161,6 +194,7 @@ function SettingsPage(): React.JSX.Element {
     // The tabs already show these values, so a click before the next render must read them.
     selectedGameModeRef.current = currentGameMode;
     selectedPointsRef.current = currentPoints;
+    selectionGameIdRef.current = routeGameId;
     setHasHydratedSelection(true);
   }, [
     activeGameSettings,
@@ -186,9 +220,51 @@ function SettingsPage(): React.JSX.Element {
     [queryClient],
   );
 
+  // Between the route commit and the hydration effects the selection still holds the previous game.
+  const isSettingsChangeBlocked = useCallback((): boolean => {
+    const gameId = effectiveGameIdRef.current;
+    if (selectionGameIdRef.current !== gameId) return true;
+    return gameId !== null && pendingSavesRef.current.has(gameId);
+  }, []);
+
+  const saveRouteGameSettings = useCallback(
+    async ({
+      gameId,
+      scope,
+      payload,
+      rollback,
+      logContext,
+    }: RouteGameSaveRequest): Promise<void> => {
+      const pendingSavesByGame = pendingSavesRef.current;
+      const syncPendingSaves = (): void => setPendingSaves(new Map(pendingSavesByGame));
+      pendingSavesByGame.set(gameId, { scope });
+      syncPendingSaves();
+      setSaveErrorMessage(null);
+
+      try {
+        const response = await saveGameSettings(payload, gameId);
+        storeSavedSettings(response, gameId);
+      } catch (error) {
+        // The route can move to another game while the save is pending.
+        if (effectiveGameIdRef.current === gameId) {
+          rollback();
+          setSaveErrorMessage(toUserErrorMessage(error, SAVE_FAILURE[scope].message));
+        }
+        clientLogger.error(SAVE_FAILURE[scope].logEvent, {
+          context: { gameId, ...logContext },
+          error,
+        });
+      } finally {
+        pendingSavesByGame.delete(gameId);
+        syncPendingSaves();
+      }
+    },
+    [storeSavedSettings],
+  );
+
   const handleGameModeClick = useCallback(
     async (id: string | number) => {
-      if (isSavingRef.current) return;
+      if (isSettingsChangeBlocked()) return;
       if (!isGameMode(id)) return;
 
       const mode = id;
@@ -207,48 +283,26 @@ function SettingsPage(): React.JSX.Element {
         return;
       }
 
-      // The route can move to another game while the save is pending.
-      const gameId = effectiveGameIdRef.current;
-      setSaveErrorMessage(null);
-      setIsSaving(true);
-      setSavingScope("game-mode");
-      isSavingRef.current = true;
-
-      try {
-        const response = await saveGameSettings(
-          {
-            doubleOut: isDoubleOut,
-            tripleOut: isTripleOut,
-          },
-          gameId,
-        );
-        storeSavedSettings(response, gameId);
-        setSaveErrorMessage(null);
-      } catch (error) {
-        setSelectedGameMode(previousMode);
-        selectedGameModeRef.current = previousMode;
-        setSaveErrorMessage(
-          toUserErrorMessage(error, "Could not update the game mode. Please try again."),
-        );
-        clientLogger.error("settings.save-game-mode.failed", {
-          context: {
-            gameId,
-            requestedMode: mode,
-          },
-          error,
-        });
-      } finally {
-        setIsSaving(false);
-        setSavingScope(null);
-        isSavingRef.current = false;
-      }
+      await saveRouteGameSettings({
+        gameId: effectiveGameIdRef.current,
+        scope: "game-mode",
+        payload: {
+          doubleOut: isDoubleOut,
+          tripleOut: isTripleOut,
+        },
+        rollback: () => {
+          setSelectedGameMode(previousMode);
+          selectedGameModeRef.current = previousMode;
+        },
+        logContext: { requestedMode: mode },
+      });
     },
-    [storeSavedSettings, updatePreCreateSettings],
+    [isSettingsChangeBlocked, saveRouteGameSettings, updatePreCreateSettings],
   );
 
   const handlePointsClick = useCallback(
     async (id: string | number) => {
-      if (isSavingRef.current) return;
+      if (isSettingsChangeBlocked()) return;
 
       const points = Number(id);
       const currentMode = selectedGameModeRef.current;
@@ -267,45 +321,26 @@ function SettingsPage(): React.JSX.Element {
         return;
       }
 
-      // The route can move to another game while the save is pending.
-      const gameId = effectiveGameIdRef.current;
-      setSaveErrorMessage(null);
-      setIsSaving(true);
-      setSavingScope("points");
-      isSavingRef.current = true;
-
-      try {
-        const response = await saveGameSettings(
-          {
-            startScore: points,
-            doubleOut: isDoubleOut,
-            tripleOut: isTripleOut,
-          },
-          gameId,
-        );
-        storeSavedSettings(response, gameId);
-        setSaveErrorMessage(null);
-      } catch (error) {
-        setSelectedPoints(previousPoints);
-        selectedPointsRef.current = previousPoints;
-        setSaveErrorMessage(
-          toUserErrorMessage(error, "Could not update the points. Please try again."),
-        );
-        clientLogger.error("settings.save-points.failed", {
-          context: {
-            gameId,
-            requestedPoints: points,
-          },
-          error,
-        });
-      } finally {
-        setIsSaving(false);
-        setSavingScope(null);
-        isSavingRef.current = false;
-      }
+      await saveRouteGameSettings({
+        gameId: effectiveGameIdRef.current,
+        scope: "points",
+        payload: {
+          startScore: points,
+          doubleOut: isDoubleOut,
+          tripleOut: isTripleOut,
+        },
+        rollback: () => {
+          setSelectedPoints(previousPoints);
+          selectedPointsRef.current = previousPoints;
+        },
+        logContext: { requestedPoints: points },
+      });
     },
-    [storeSavedSettings, updatePreCreateSettings],
+    [isSettingsChangeBlocked, saveRouteGameSettings, updatePreCreateSettings],
   );
+
+  const isSavingRouteGame = (scope: SaveScope): boolean =>
+    routeGameId !== null && pendingSaves.get(routeGameId)?.scope === scope;
 
   return (
     <div className={styles.settings}>
@@ -324,14 +359,14 @@ function SettingsPage(): React.JSX.Element {
             options={GAME_MODE_OPTIONS}
             selectedId={selectedGameModeId}
             onChange={handleGameModeClick}
-            disabled={isHydratingRouteSettings || (isSaving && savingScope === "game-mode")}
+            disabled={isHydratingRouteSettings || isSavingRouteGame("game-mode")}
           />
           <SettingsTabs
             title="Points"
             options={POINTS_OPTIONS}
             selectedId={selectedPointsId}
             onChange={handlePointsClick}
-            disabled={isHydratingRouteSettings || (isSaving && savingScope === "points")}
+            disabled={isHydratingRouteSettings || isSavingRouteGame("points")}
             mobileLayout="grid"
           />
         </div>
