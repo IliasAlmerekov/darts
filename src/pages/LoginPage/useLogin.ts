@@ -1,14 +1,8 @@
 import { useState } from "react";
 import { ApiError } from "@/shared/api";
-import {
-  loginWithCredentials,
-  getAuthenticatedUser,
-  type AuthenticatedUser,
-} from "@/shared/api/auth";
+import { loginWithCredentials, getAuthenticatedUser } from "@/shared/api/auth";
 import { clientLogger } from "@/shared/services/browser/clientLogger";
-import { authQueries } from "@/shared/query/auth.queries";
-import { queryClient } from "@/shared/query/queryClient";
-import { setCurrentGameId } from "@/shared/store";
+import { acceptLoggedInUser } from "@/shared/query/acceptLoggedInUser";
 import { mapAuthErrorMessage } from "@/lib/error/auth-error-handling";
 
 interface LoginReturn {
@@ -23,13 +17,6 @@ const API_REDIRECT_PREFIX = "/api/";
 
 function getAuthErrorRawMessage(error: unknown): string | undefined {
   return error instanceof ApiError && error.status === 401 ? "unauthorized" : undefined;
-}
-
-function acceptLoggedInUser(user: AuthenticatedUser): void {
-  if (typeof user.gameId === "number") {
-    setCurrentGameId(user.gameId);
-  }
-  queryClient.setQueryData(authQueries.me().queryKey, user);
 }
 
 /** Reads the session user and accepts it; false when there is no session. */

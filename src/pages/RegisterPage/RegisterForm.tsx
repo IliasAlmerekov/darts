@@ -104,8 +104,13 @@ export function RegisterForm({
           </div>
         </div>
 
-        <button type="submit" className={styles.submitBtn} disabled={loading}>
-          {loading ? "Creating..." : "Create account"}
+        <button
+          type="submit"
+          className={styles.submitBtn}
+          disabled={loading}
+          aria-label="Create account"
+        >
+          {loading ? <span className={styles.spinner} aria-hidden="true" /> : "Create account"}
         </button>
       </form>
 

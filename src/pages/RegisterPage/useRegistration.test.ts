@@ -16,6 +16,9 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { ApiError } from "@/shared/api";
 import { clientLogger } from "@/shared/services/browser/clientLogger";
 import { useRegistration } from "./useRegistration";
+import { queryClient } from "@/shared/query/queryClient";
+import { authQueries } from "@/shared/query/auth.queries";
+import { getActiveGameId, setCurrentGameId } from "@/shared/store";
 
 const navigateMock = vi.fn();
 const registerUserMock = vi.fn();
@@ -23,6 +26,8 @@ const registerUserMock = vi.fn();
 describe("useRegistration", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    queryClient.clear();
+    setCurrentGameId(null);
   });
 
   it("should set mapped validation errors when registration fails with 422", async () => {
@@ -120,5 +125,58 @@ describe("useRegistration", () => {
 
     expect(navigateMock).toHaveBeenCalledWith("/start");
     expect(vi.mocked(clientLogger.warn)).not.toHaveBeenCalled();
+  });
+  const joinedPlayer = {
+    success: true,
+    roles: ["ROLE_PLAYER"],
+    id: 23,
+    username: "Ton Eighty",
+    redirect: "/joined",
+  };
+
+  it("should store the game id, cache the user and navigate when registration joins a game", async () => {
+    registerUserMock.mockResolvedValueOnce({ ...joinedPlayer, gameId: 42 });
+
+    const { result } = renderHook(() => useRegistration());
+
+    await act(async () => {
+      await result.current.register("john", "john@example.com", "Password123!");
+    });
+
+    expect(getActiveGameId()).toBe(42);
+    expect(queryClient.getQueryData(authQueries.me().queryKey)).toEqual({
+      ...joinedPlayer,
+      gameId: 42,
+    });
+    expect(navigateMock).toHaveBeenCalledWith("/joined");
+    expect(result.current.registered).toEqual({ ...joinedPlayer, gameId: 42 });
+  });
+
+  it("should store no game id when registration has no invitation", async () => {
+    registerUserMock.mockResolvedValueOnce({ ...joinedPlayer, redirect: "/start" });
+
+    const { result } = renderHook(() => useRegistration());
+
+    await act(async () => {
+      await result.current.register("john", "john@example.com", "Password123!");
+    });
+
+    expect(getActiveGameId()).toBeNull();
+    expect(navigateMock).toHaveBeenCalledWith("/start");
+  });
+
+  it("should cache the user and not navigate when the invitation failed", async () => {
+    const failed = { ...joinedPlayer, invitationError: "GAME_ALREADY_STARTED" };
+    registerUserMock.mockResolvedValueOnce(failed);
+
+    const { result } = renderHook(() => useRegistration());
+
+    await act(async () => {
+      await result.current.register("john", "john@example.com", "Password123!");
+    });
+
+    expect(queryClient.getQueryData(authQueries.me().queryKey)).toEqual(failed);
+    expect(navigateMock).not.toHaveBeenCalled();
+    expect(getActiveGameId()).toBeNull();
   });
 });

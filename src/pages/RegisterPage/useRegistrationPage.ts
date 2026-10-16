@@ -1,17 +1,46 @@
 import { FormEvent } from "react";
+import { useNavigate } from "react-router-dom";
 import { useRegistration } from "./useRegistration";
+import { mapInvitationErrorMessage } from "@/lib/error/auth-error-handling";
+import { ROUTES } from "@/lib/router/routes";
+
+/** What the registration page shows: the form, the joining state, or a failed invitation. */
+type RegistrationScreen =
+  | { type: "form" }
+  | { type: "joining" }
+  | { type: "invitation-error"; message: string };
 
 /**
  * Orchestrates registration page state and submission handling.
  */
 interface RegistrationPageReturn {
+  screen: RegistrationScreen;
   error: string | null;
   loading: boolean;
   handleSubmit: (e: FormEvent<HTMLFormElement>) => Promise<void>;
+  goToPlayerProfile: () => void;
 }
 
 export function useRegistrationPage(): RegistrationPageReturn {
-  const { register, loading, error } = useRegistration();
+  const { register, loading, error, registered } = useRegistration();
+  const navigate = useNavigate();
+
+  // A registered player without an invitation error is about to leave the page.
+  let screen: RegistrationScreen;
+  if (registered?.invitationError !== undefined) {
+    screen = {
+      type: "invitation-error",
+      message: mapInvitationErrorMessage(registered.invitationError),
+    };
+  } else if (registered !== null) {
+    screen = { type: "joining" };
+  } else {
+    screen = { type: "form" };
+  }
+
+  const goToPlayerProfile = (): void => {
+    navigate(ROUTES.playerProfile);
+  };
 
   const handleSubmit = async (e: FormEvent<HTMLFormElement>): Promise<void> => {
     e.preventDefault();
@@ -33,8 +62,10 @@ export function useRegistrationPage(): RegistrationPageReturn {
   };
 
   return {
+    screen,
     error,
     loading,
     handleSubmit,
+    goToPlayerProfile,
   };
 }

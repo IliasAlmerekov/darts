@@ -137,6 +137,29 @@
   cursor: not-allowed;
 }
 
+.spinner {
+  display: inline-block;
+  width: 20px;
+  height: 20px;
+  vertical-align: middle;
+  border: 3px solid var(--white);
+  border-top-color: transparent;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .spinner {
+    animation-duration: 3s;
+  }
+}
+
 /* Login entry */
 .login {
   margin: var(--space-md) 0 0;
