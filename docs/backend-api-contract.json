@@ -1450,7 +1450,7 @@
     "/api/register": {
       "post": {
         "tags": ["Registration"],
-        "summary": "Registers a user from JSON payload.",
+        "summary": "Registers a player from JSON payload and logs them in.",
         "operationId": "post_app_register",
         "requestBody": {
           "required": true,
@@ -1481,28 +1481,62 @@
         },
         "responses": {
           "201": {
-            "description": "Registrierung erfolgreich.",
+            "description": "Registrierung erfolgreich. Der Spieler ist angemeldet, der Body entspricht `/api/login/success`. Mit einer Einladung in der Session tritt er dem Spiel bei, die Einladung wird verbraucht.",
+            "headers": {
+              "Set-Cookie": {
+                "description": "Session-Cookie und `REMEMBERME`-Cookie: der Spieler bleibt 7 Tage nach dem letzten Besuch angemeldet.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
             "content": {
               "application/json": {
                 "schema": {
-                  "required": ["success", "message", "status"],
+                  "required": ["success", "roles", "id", "email", "username", "redirect"],
                   "properties": {
                     "success": {
                       "type": "boolean",
                       "example": true
                     },
-                    "message": {
+                    "roles": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      },
+                      "example": ["ROLE_PLAYER"]
+                    },
+                    "id": {
+                      "type": "integer",
+                      "example": 1
+                    },
+                    "email": {
                       "type": "string",
-                      "example": "Registrierung erfolgreich"
+                      "example": "alice@example.com"
+                    },
+                    "username": {
+                      "type": "string",
+                      "example": "alice"
                     },
                     "redirect": {
                       "type": "string",
-                      "example": "/",
-                      "nullable": true
+                      "example": "http://localhost:5173/joined"
                     },
-                    "status": {
+                    "gameId": {
+                      "description": "Nur mit Einladung: ID des beigetretenen Spiels.",
                       "type": "integer",
-                      "example": 201
+                      "example": 42
+                    },
+                    "invitationError": {
+                      "description": "Nur wenn die gespeicherte Einladung nicht mehr nutzbar ist. Konto und Login bestehen trotzdem, `gameId` fehlt in diesem Fall.",
+                      "type": "string",
+                      "example": "GAME_ALREADY_STARTED",
+                      "enum": [
+                        "GAME_ALREADY_STARTED",
+                        "GAME_JOIN_NOT_ALLOWED",
+                        "GAME_ROOM_FULL",
+                        "GAME_NOT_FOUND"
+                      ]
                     }
                   },
                   "type": "object"
@@ -1515,7 +1549,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "required": ["success", "message", "status"],
+                  "required": ["success", "message"],
                   "properties": {
                     "success": {
                       "type": "boolean",
@@ -1523,10 +1557,6 @@
                     },
                     "message": {
                       "type": "string"
-                    },
-                    "status": {
-                      "type": "integer",
-                      "example": 400
                     },
                     "errors": {
                       "type": "object",

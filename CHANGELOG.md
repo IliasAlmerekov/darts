@@ -10,6 +10,7 @@ and this project does **not** yet follow [Semantic Versioning](https://semver.or
 ### Changed
 
 - API: each response is checked once by a Valibot schema, and its type is inferred from that schema. The hand-written response guards and interfaces are gone, and ADR 0002 records the choice (#158)
+
 ### Fixed
 
 - API: the request timeout covers reading the response body, so a body that stalls after the headers rejects with `TimeoutError` instead of hanging. An external abort while the body streams rejects with `AbortError`, and the client removes its listener from the caller's signal once the request settles (#109)

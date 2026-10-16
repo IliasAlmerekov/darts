@@ -316,7 +316,7 @@ describe("apiClient external signal cleanup", () => {
       ),
     );
 
-    await apiClient.get("/fast", { signal: externalController.signal, validate: isOkResponse });
+    await apiClient.get("/fast", { signal: externalController.signal, validate: okResponseSchema });
     externalController.abort();
 
     expect(getRequestSignal()?.aborted).toBe(false);

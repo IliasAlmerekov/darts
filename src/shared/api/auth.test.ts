@@ -258,12 +258,15 @@ describe("loginWithCredentials", () => {
   });
 });
 
-// Contract example: POST /api/register, 201, without `status`: the backend moves it into the
-// HTTP status.
+// Contract example: POST /api/register, 201. The body is the `/api/login/success` body.
 const registrationExample = {
   success: true,
-  message: "Registrierung erfolgreich",
-  redirect: "/",
+  roles: ["ROLE_PLAYER"],
+  id: 1,
+  email: "alice@example.com",
+  username: "alice",
+  redirect: "http://localhost:5173/joined",
+  gameId: 42,
 };
 
 describe("registerUser", () => {
@@ -353,9 +356,33 @@ describe("registerUser", () => {
     expect(result).toEqual(registrationExample);
   });
 
-  it("rejects with ApiValidationError when registration has no contract message", async () => {
+  it("resolves when registration answers without a game, as after a stale invitation", async () => {
+    const response = {
+      success: true,
+      roles: ["ROLE_PLAYER"],
+      id: 1,
+      email: "alice@example.com",
+      username: "alice",
+      redirect: "http://localhost:5173/start",
+      invitationError: "GAME_ALREADY_STARTED",
+    };
+    vi.spyOn(apiClient, "post").mockImplementationOnce(respondWith(response));
+
+    await expect(
+      registerUser({ username: "alice", email: "alice@example.com", password: "s3cr3t" }),
+    ).resolves.toEqual({
+      success: true,
+      roles: ["ROLE_PLAYER"],
+      id: 1,
+      email: "alice@example.com",
+      username: "alice",
+      redirect: "http://localhost:5173/start",
+    });
+  });
+
+  it("rejects with ApiValidationError when registration answers with the old message body", async () => {
     vi.spyOn(apiClient, "post").mockImplementationOnce(
-      respondWith({ success: true, redirect: "/", status: 201 }),
+      respondWith({ success: true, message: "Registrierung erfolgreich", redirect: "/" }),
     );
 
     await expect(

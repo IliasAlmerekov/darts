@@ -24,16 +24,6 @@ const loginResponseSchema = v.pipe(
   v.check((login) => Object.keys(login).length > 0),
 );
 
-/**
- * Contract response of `POST /api/register`, 201. The contract requires `status`, but the
- * backend moves it into the HTTP status and drops it from the body, so the schema omits it.
- */
-const registrationResponseSchema = v.object({
-  success: v.boolean(),
-  message: v.string(),
-  redirect: v.optional(v.nullable(v.string())),
-});
-
 /** Contract response of `GET /api/csrf`. */
 const csrfTokensResponseSchema = v.object({
   success: v.boolean(),
@@ -63,6 +53,12 @@ const authenticatedUserSchema = v.object({
   gameId: v.optional(v.nullable(v.number())),
   profile: v.optional(authenticatedUserProfileSchema),
 });
+
+/**
+ * Contract response of `POST /api/register`, 201. The backend logs the new player in and
+ * answers with the `/api/login/success` body.
+ */
+const registrationResponseSchema = authenticatedUserSchema;
 
 // The backend also answers with a user envelope, a player profile envelope, or
 // `{ success: false }`; the contract does not document these yet.
