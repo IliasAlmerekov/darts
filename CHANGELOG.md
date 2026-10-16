@@ -19,6 +19,7 @@ and this project does **not** yet follow [Semantic Versioning](https://semver.or
 ### Changed
 
 - Waiting room: the page reads its game from the server instead of session storage, so a reload keeps working. It no longer subscribes to the admin-only room stream (#153)
+- Deploy: releases build `darts-backend` at `57c1908`, which adds `GET /api/player/current-game` for the Waiting room. The pin also brings registration that logs in and joins the invited room, the 7-day Remembered login and Symfony 8.1 (#153)
 - API: each response is checked once by a Valibot schema, and its type is inferred from that schema. The hand-written response guards and interfaces are gone, and ADR 0002 records the choice (#158)
 - API: game start and rematch start send the settings as `startScore`, `doubleOut` and `tripleOut`, the same camelCase keys as every other request. The backend accepts them since darts-backend#97 (#161)
 - Login and registration: the prompt under the submit button is one line of grey text with a bold blue "Sign up" or "Sign in" link. The full-width outline button is gone (#187)
