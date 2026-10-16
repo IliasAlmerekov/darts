@@ -1,11 +1,11 @@
 import { useState, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
-import type { InvitationError } from "@/shared/api/auth";
 import { useAuthenticatedUser } from "@/shared/hooks/useAuthenticatedUser";
 import { useLogin } from "./useLogin";
 import { resolveLoginDestination } from "./lib/loginDestination";
+import { isLoginLocationState } from "./lib/loginLocationState";
 import { getActiveGameId } from "@/shared/store";
-import { mapAuthErrorMessage } from "@/lib/error/auth-error-handling";
+import { mapAuthErrorMessage, mapInvitationErrorMessage } from "@/lib/error/auth-error-handling";
 import { ROUTES } from "@/lib/router/routes";
 import { resolveSafeRedirect } from "@/lib/router/safeRedirect";
 import { parseLocationState } from "@/lib/router/locationState";
@@ -14,7 +14,7 @@ import { parseLocationState } from "@/lib/router/locationState";
 type LoginScreen =
   | { type: "checking" }
   | { type: "form" }
-  | { type: "invitation-error"; invitationError: InvitationError };
+  | { type: "invitation-error"; message: string };
 
 /**
  * Orchestrates login page state, submission, and redirect logic.
@@ -26,17 +26,6 @@ interface LoginPageReturn {
   successMessage: string | null;
   handleSubmit: (e: React.FormEvent<HTMLFormElement>) => Promise<void>;
   goToPlayerProfile: () => void;
-}
-
-function isLoginLocationState(s: unknown): s is { from?: string } {
-  if (typeof s !== "object" || s === null) {
-    return false;
-  }
-  if ("from" in s) {
-    const record = s as Record<string, unknown>;
-    return typeof record["from"] === "string";
-  }
-  return true;
 }
 
 export function useLoginPage(): LoginPageReturn {
@@ -62,7 +51,7 @@ export function useLoginPage(): LoginPageReturn {
   // check screen stays up instead of flashing the form.
   let screen: LoginScreen;
   if (invitationError !== undefined) {
-    screen = { type: "invitation-error", invitationError };
+    screen = { type: "invitation-error", message: mapInvitationErrorMessage(invitationError) };
   } else if (checkingLogin || user !== null) {
     screen = { type: "checking" };
   } else {
@@ -97,7 +86,7 @@ export function useLoginPage(): LoginPageReturn {
       return;
     }
 
-    navigate(resolveLoginDestination(user, { activeGameId: getActiveGameId(), from }));
+    navigate(resolveLoginDestination(user, { currentGameId: getActiveGameId(), from }));
   }, [user, from, navigate]);
 
   return {

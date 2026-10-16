@@ -3,8 +3,8 @@ import { ROUTES } from "@/lib/router/routes";
 import { resolveSafeRedirect } from "@/lib/router/safeRedirect";
 
 interface LoginDestinationContext {
-  /** The game id stored in this browser session, if any. */
-  activeGameId: number | null;
+  /** The current game id stored in this browser session, if any. */
+  currentGameId: number | null;
   /** The protected route that sent the user to the login page, or the start page. */
   from: string;
 }
@@ -15,10 +15,10 @@ interface LoginDestinationContext {
  */
 export function resolveLoginDestination(
   user: AuthenticatedUser,
-  { activeGameId, from }: LoginDestinationContext,
+  { currentGameId, from }: LoginDestinationContext,
 ): string {
-  if (activeGameId !== null && user.roles.includes("ROLE_ADMIN")) {
-    return ROUTES.start(activeGameId);
+  if (currentGameId !== null && user.roles.includes("ROLE_ADMIN")) {
+    return ROUTES.start(currentGameId);
   }
 
   const redirectPath = resolveSafeRedirect(user.redirect, ROUTES.start());

@@ -74,6 +74,30 @@ export async function mockUnauthenticatedSession(page: Page): Promise<void> {
   });
 }
 
+/**
+ * Holds the auth check until the returned function runs, then answers it with 401.
+ * Lets a spec see the login page while the check is still pending.
+ */
+export async function mockPendingUnauthenticatedSession(page: Page): Promise<() => void> {
+  let releaseAuthCheck: () => void = () => {};
+  const authCheckReleased = new Promise<void>((resolve) => {
+    releaseAuthCheck = resolve;
+  });
+
+  await page.context().clearCookies();
+
+  await page.route("**/api/login/success", async (route) => {
+    await authCheckReleased;
+    await route.fulfill({
+      status: 401,
+      contentType: "application/json",
+      body: JSON.stringify({ authenticated: false }),
+    });
+  });
+
+  return releaseAuthCheck;
+}
+
 export async function mockProfileLoginSuccessFlow(
   page: Page,
   response: ProfileLoginSuccessResponse = PROFILE_LOGIN_SUCCESS_RESPONSE,

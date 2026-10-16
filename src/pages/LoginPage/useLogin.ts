@@ -11,18 +11,14 @@ import { queryClient } from "@/shared/query/queryClient";
 import { setCurrentGameId } from "@/shared/store";
 import { mapAuthErrorMessage } from "@/lib/error/auth-error-handling";
 
-/**
- * Provides login flow state and action.
- * A successful login puts the user into the auth query, where the login page reads it the
- * same way as after a Remembered login check.
- */
 interface LoginReturn {
   login: (email: string, password: string) => Promise<void>;
   loading: boolean;
   error: string | null;
 }
 
-const LOGIN_SUCCESS_REDIRECT_PREFIX = "/api/";
+// The controller fallback answers with `/api/login/success`; the target comes from there.
+const API_REDIRECT_PREFIX = "/api/";
 
 function getAuthErrorRawMessage(error: unknown): string | undefined {
   return error instanceof ApiError && error.status === 401 ? "unauthorized" : undefined;
@@ -35,6 +31,22 @@ function acceptLoggedInUser(user: AuthenticatedUser): void {
   queryClient.setQueryData(authQueries.me().queryKey, user);
 }
 
+/** Reads the session user and accepts it; false when there is no session. */
+async function acceptSessionUser(): Promise<boolean> {
+  const authenticatedUser = await getAuthenticatedUser();
+  if (authenticatedUser === null) {
+    return false;
+  }
+
+  acceptLoggedInUser(authenticatedUser);
+  return true;
+}
+
+/**
+ * Provides login flow state and action.
+ * A successful login puts the user into the auth query, where the login page reads it the
+ * same way as after a Remembered login check.
+ */
 export function useLogin(): LoginReturn {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -47,12 +59,8 @@ export function useLogin(): LoginReturn {
       const response = await loginWithCredentials({ email, password });
 
       if (response.success === false) {
-        if (!response.error) {
-          const authenticatedUser = await getAuthenticatedUser();
-          if (authenticatedUser) {
-            acceptLoggedInUser(authenticatedUser);
-            return;
-          }
+        if (!response.error && (await acceptSessionUser())) {
+          return;
         }
 
         setError(
@@ -64,10 +72,8 @@ export function useLogin(): LoginReturn {
         return;
       }
 
-      if (response.redirect.startsWith(LOGIN_SUCCESS_REDIRECT_PREFIX)) {
-        const authenticatedUser = await getAuthenticatedUser();
-        if (authenticatedUser) {
-          acceptLoggedInUser(authenticatedUser);
+      if (response.redirect.startsWith(API_REDIRECT_PREFIX)) {
+        if (await acceptSessionUser()) {
           return;
         }
 
@@ -82,9 +88,7 @@ export function useLogin(): LoginReturn {
       });
       if (!(error instanceof ApiError && error.status === 401)) {
         try {
-          const authenticatedUser = await getAuthenticatedUser();
-          if (authenticatedUser) {
-            acceptLoggedInUser(authenticatedUser);
+          if (await acceptSessionUser()) {
             return;
           }
         } catch (sessionCheckError) {

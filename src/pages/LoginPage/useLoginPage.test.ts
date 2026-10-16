@@ -160,7 +160,7 @@ describe("useLoginPage", () => {
 
     expect(result.current.screen).toEqual({
       type: "invitation-error",
-      invitationError: "GAME_ROOM_FULL",
+      message: "This game is full",
     });
     await waitFor(() => {
       expect(navigateMock).not.toHaveBeenCalled();

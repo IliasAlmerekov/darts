@@ -1,5 +1,6 @@
 import { test, expect } from "../shared/test";
 import {
+  mockPendingUnauthenticatedSession,
   mockRememberedPlayerSession,
   REMEMBERED_PLAYER_JOINED_RESPONSE,
   REMEMBERED_PLAYER_RESPONSE,
@@ -8,19 +9,7 @@ import { mockQuietRoomStream } from "../shared/room-stream-mocks";
 
 test.describe("Remembered login", () => {
   test("shows the login check until the auth check answers, then the form", async ({ page }) => {
-    let releaseAuthCheck: () => void = () => {};
-    const authCheckReleased = new Promise<void>((resolve) => {
-      releaseAuthCheck = resolve;
-    });
-
-    await page.route("**/api/login/success", async (route) => {
-      await authCheckReleased;
-      await route.fulfill({
-        status: 401,
-        contentType: "application/json",
-        body: JSON.stringify({ authenticated: false }),
-      });
-    });
+    const releaseAuthCheck = await mockPendingUnauthenticatedSession(page);
 
     await page.goto("/");
 
@@ -40,7 +29,7 @@ test.describe("Remembered login", () => {
     await page.goto("/");
 
     await expect(page).toHaveURL("/joined");
-    await expect(page.locator("h1")).toContainText("Joined game");
+    await expect(page.getByRole("heading", { name: /Joined game/ })).toBeVisible();
     await expect(page.getByRole("textbox", { name: "Email *" })).toHaveCount(0);
     const storedGameId = await page.evaluate(() =>
       window.sessionStorage.getItem("darts_current_game_id"),

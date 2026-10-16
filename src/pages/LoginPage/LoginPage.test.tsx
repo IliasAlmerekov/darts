@@ -55,17 +55,12 @@ describe("LoginPage", () => {
     expect(screen.queryByText("Checking your login…")).toBeNull();
   });
 
-  it.each([
-    ["GAME_ALREADY_STARTED", "This game has already started"],
-    ["GAME_ROOM_FULL", "This game is full"],
-    ["GAME_NOT_FOUND", "This game no longer exists"],
-    ["GAME_JOIN_NOT_ALLOWED", "This game can no longer be joined"],
-  ])("shows %s as %s with a button to the player profile", (code, text) => {
-    givenScreen({ type: "invitation-error", invitationError: code });
+  it("shows the invitation error with a button to the player profile", () => {
+    givenScreen({ type: "invitation-error", message: "This game has already started" });
 
     renderPage();
 
-    expect(screen.getByRole("heading", { name: text })).toBeTruthy();
+    expect(screen.getByRole("heading", { name: "This game has already started" })).toBeTruthy();
     expect(screen.queryByTestId("login-form")).toBeNull();
 
     fireEvent.click(screen.getByRole("button", { name: "Go to my profile" }));

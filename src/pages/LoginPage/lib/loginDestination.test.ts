@@ -18,7 +18,7 @@ const player: AuthenticatedUser = {
   gameId: 42,
 };
 
-const noContext = { activeGameId: null, from: "/start" };
+const noContext = { currentGameId: null, from: "/start" };
 
 describe("resolveLoginDestination", () => {
   it("sends a player to the in-app form of a same-origin redirect", () => {
@@ -26,15 +26,15 @@ describe("resolveLoginDestination", () => {
   });
 
   it("ignores a stale stored game for a player", () => {
-    expect(resolveLoginDestination(player, { activeGameId: 99, from: "/start" })).toBe("/joined");
+    expect(resolveLoginDestination(player, { currentGameId: 99, from: "/start" })).toBe("/joined");
   });
 
   it("sends an admin with a stored game back to that game's start page", () => {
-    expect(resolveLoginDestination(admin, { activeGameId: 99, from: "/start" })).toBe("/start/99");
+    expect(resolveLoginDestination(admin, { currentGameId: 99, from: "/start" })).toBe("/start/99");
   });
 
   it("sends an admin to the protected source route instead of the generic start page", () => {
-    expect(resolveLoginDestination(admin, { activeGameId: null, from: "/statistics" })).toBe(
+    expect(resolveLoginDestination(admin, { currentGameId: null, from: "/statistics" })).toBe(
       "/statistics",
     );
   });
