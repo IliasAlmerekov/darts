@@ -24,7 +24,8 @@ import { QueryClientProvider } from "@tanstack/react-query";
 import { createMemoryRouter, RouterProvider } from "react-router-dom";
 import { logout, type AuthenticatedUser } from "@/shared/api/auth";
 import { getCurrentGame, type CurrentGameResponse } from "@/shared/api/player";
-import { NetworkError } from "@/shared/api";
+import { ApiError, NetworkError } from "@/shared/api";
+import { clientLogger } from "@/shared/services/browser/clientLogger";
 import { ROUTES } from "@/lib/router/routes";
 import { createQueryClient } from "@/shared/query/queryClient";
 import { CURRENT_GAME_POLL_INTERVAL_MS } from "@/shared/query/player.queries";
@@ -76,13 +77,19 @@ function renderPage(): { unmount: () => void } {
 async function advancePolling(times = 1): Promise<void> {
   await act(async () => {
     await vi.advanceTimersByTimeAsync(CURRENT_GAME_POLL_INTERVAL_MS * times);
+    // Query results reach React through zero-delay timeouts; this one runs after them.
+    await new Promise((resolve) => setTimeout(resolve, 0));
   });
 }
 
 describe("JoinedGamePage", () => {
   beforeEach(() => {
-    vi.useFakeTimers({ shouldAdvanceTime: true });
+    // Only the poll interval and the clock are fake, so polling moves only when a test
+    // advances it. Zero-delay timers stay real for React and Testing Library.
+    vi.useFakeTimers({ toFake: ["setInterval", "clearInterval", "Date"] });
+    setCurrentGameId(null);
     vi.mocked(logout).mockReset();
+    vi.mocked(clientLogger.error).mockReset();
     vi.mocked(getCurrentGame).mockReset();
     respondWithCurrentGames(lobby(42));
     mockUseAuthenticatedUser.mockReset();
@@ -115,6 +122,15 @@ describe("JoinedGamePage", () => {
     renderPage();
 
     expect(screen.getByText("Welcome, Alice!")).toBeTruthy();
+  });
+
+  it("should show the spinner until the first answer arrives", async () => {
+    vi.mocked(getCurrentGame).mockReturnValue(new Promise(() => {}));
+    renderPage();
+
+    expect(screen.getByRole("status").textContent).toContain("Waiting for the game to start...");
+    expect(screen.queryByText(/Game #/)).toBeNull();
+    expect(screen.queryByText("The game has started")).toBeNull();
   });
 
   it("should wait in the lobby and ask for the current game every 3 seconds", async () => {
@@ -188,14 +204,16 @@ describe("JoinedGamePage", () => {
   });
 
   it("should follow a changed game id and keep polling", async () => {
+    setCurrentGameId(42);
     respondWithCurrentGames(lobby(42), lobby(43));
     renderPage();
     await screen.findByText("Game #42");
 
     await advancePolling();
 
-    expect(screen.getByText("Game #43")).toBeTruthy();
+    expect(await screen.findByText("Game #43")).toBeTruthy();
     expect(screen.queryByText("Game #42")).toBeNull();
+    expect($currentGameId.get()).toBe(43);
 
     await advancePolling();
 
@@ -228,6 +246,28 @@ describe("JoinedGamePage", () => {
 
     expect(getCurrentGame).toHaveBeenCalledTimes(5);
     expect(screen.queryByText("Connection lost. Trying again…")).toBeNull();
+  });
+
+  it("should log a failed request that is not a lost connection", async () => {
+    const serverError = new ApiError("Server error", { status: 500 });
+    respondWithCurrentGames(serverError);
+    renderPage();
+
+    await advancePolling(0);
+
+    expect(clientLogger.error).toHaveBeenCalledWith("player.current-game.fetch.failed", {
+      error: serverError,
+    });
+  });
+
+  it("should not log a lost connection", async () => {
+    respondWithCurrentGames(new NetworkError("Failed to fetch"));
+    renderPage();
+
+    await advancePolling(2);
+
+    expect(getCurrentGame).toHaveBeenCalledTimes(3);
+    expect(clientLogger.error).not.toHaveBeenCalled();
   });
 
   it("should stop polling when the page closes", async () => {

@@ -37,6 +37,15 @@ describe("getCurrentGame", () => {
     await expect(getCurrentGame()).resolves.toEqual(noneExample);
   });
 
+  it.each([
+    { gameId: 12, status: null },
+    { gameId: null, status: "lobby" },
+  ])("rejects with ApiValidationError when only one field is null: %o", async (payload) => {
+    vi.mocked(apiClient.get).mockImplementationOnce(respondWith(payload));
+
+    await expect(getCurrentGame()).rejects.toBeInstanceOf(ApiValidationError);
+  });
+
   it("rejects with ApiValidationError for an unknown status", async () => {
     vi.mocked(apiClient.get).mockImplementationOnce(
       respondWith({ gameId: 12, status: "finished" }),
