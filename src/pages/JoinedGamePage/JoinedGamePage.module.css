@@ -125,6 +125,59 @@
   color: var(--color-text-muted);
 }
 
+.statusText {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xs);
+}
+
+.startedTitle {
+  margin: 0;
+  font-size: var(--font-size-16);
+  font-weight: var(--font-weight-bold);
+  color: var(--color-text);
+}
+
+/* ── Started mark ────────────────────────────────────────────────────────── */
+
+.startedMark {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background-color: var(--color-success);
+  animation: scale-in 300ms ease-out;
+}
+
+.startedMark::after {
+  content: "";
+  display: block;
+  width: 8px;
+  height: 14px;
+  border-right: 3px solid var(--white);
+  border-bottom: 3px solid var(--white);
+  transform: rotate(45deg) translate(-1px, -2px);
+}
+
+@keyframes scale-in {
+  from {
+    transform: scale(0);
+  }
+
+  to {
+    transform: scale(1);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .startedMark {
+    animation: none;
+  }
+}
+
 /* ── Responsive ──────────────────────────────────────────────────────────── */
 
 @media (width <= 600px) {

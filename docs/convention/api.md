@@ -19,6 +19,7 @@ src/shared/api/
   game.ts              # per-domain public surface (game flows + ETag cache)
   room.ts              # per-domain public surface (room flows)
   statistics.ts        # per-domain public surface (stats flows)
+  player.ts            # per-domain public surface (the player's current game)
   *.test.ts            # co-located tests
 ```
 

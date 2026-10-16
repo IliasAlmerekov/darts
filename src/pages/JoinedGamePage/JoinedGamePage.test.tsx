@@ -1,18 +1,7 @@
 // @vitest-environment jsdom
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-// ── Nanostores ──────────────────────────────────────────────────────────────
-const mockUseStore = vi.fn();
-const mockUseRoomStream = vi.fn();
 const mockUseAuthenticatedUser = vi.fn();
-
-vi.mock("@nanostores/react", () => ({
-  useStore: (store: unknown) => mockUseStore(store),
-}));
-
-vi.mock("@/shared/store", () => ({
-  $currentGameId: { key: "$currentGameId" },
-}));
 
 vi.mock("@/shared/hooks/useAuthenticatedUser", () => ({
   useAuthenticatedUser: () => mockUseAuthenticatedUser(),
@@ -22,20 +11,30 @@ vi.mock("@/shared/api/auth", () => ({
   logout: vi.fn(),
 }));
 
+vi.mock("@/shared/api/player", () => ({
+  getCurrentGame: vi.fn(),
+}));
+
 vi.mock("@/shared/services/browser/clientLogger", () => ({
   clientLogger: { error: vi.fn() },
 }));
 
-vi.mock("@/shared/hooks/useRoomStream", () => ({
-  useRoomStream: (gameId: number | null) => mockUseRoomStream(gameId),
-}));
-
-import { fireEvent, render, screen } from "@testing-library/react";
+import { act, fireEvent, render, screen } from "@testing-library/react";
+import { QueryClientProvider } from "@tanstack/react-query";
 import { createMemoryRouter, RouterProvider } from "react-router-dom";
 import { logout, type AuthenticatedUser } from "@/shared/api/auth";
+import { getCurrentGame, type CurrentGameResponse } from "@/shared/api/player";
 import { NetworkError } from "@/shared/api";
 import { ROUTES } from "@/lib/router/routes";
+import { createQueryClient } from "@/shared/query/queryClient";
+import { $currentGameId, setCurrentGameId } from "@/shared/store";
 import JoinedGamePage from "./index";
+
+const POLL_INTERVAL_MS = 3000;
+
+const lobby = (gameId: number): CurrentGameResponse => ({ gameId, status: "lobby" });
+const started = (gameId: number): CurrentGameResponse => ({ gameId, status: "started" });
+const noCurrentGame: CurrentGameResponse = { gameId: null, status: null };
 
 function buildAuthenticatedUser(overrides: Partial<AuthenticatedUser> = {}): AuthenticatedUser {
   return {
@@ -47,30 +46,52 @@ function buildAuthenticatedUser(overrides: Partial<AuthenticatedUser> = {}): Aut
   };
 }
 
-function renderPage(): void {
+/** Answers the current-game requests in order; the last answer repeats. */
+function respondWithCurrentGames(
+  ...responses: [CurrentGameResponse | Error, ...Array<CurrentGameResponse | Error>]
+): void {
+  let call = 0;
+  vi.mocked(getCurrentGame).mockImplementation(() => {
+    const response = responses[Math.min(call, responses.length - 1)] ?? responses[0];
+    call += 1;
+    return response instanceof Error ? Promise.reject(response) : Promise.resolve(response);
+  });
+}
+
+function renderPage(): { unmount: () => void } {
   const router = createMemoryRouter(
     [
       { path: ROUTES.login, element: <p>Login form</p> },
+      { path: ROUTES.playerProfile, element: <p>Player profile</p> },
       { path: ROUTES.joined, element: <JoinedGamePage /> },
     ],
     { initialEntries: [ROUTES.joined] },
   );
-  render(<RouterProvider router={router} />);
+  return render(
+    <QueryClientProvider client={createQueryClient()}>
+      <RouterProvider router={router} />
+    </QueryClientProvider>,
+  );
+}
+
+async function advancePolling(times = 1): Promise<void> {
+  await act(async () => {
+    await vi.advanceTimersByTimeAsync(POLL_INTERVAL_MS * times);
+  });
 }
 
 describe("JoinedGamePage", () => {
   beforeEach(() => {
+    vi.useFakeTimers({ shouldAdvanceTime: true });
     vi.mocked(logout).mockReset();
-    mockUseStore.mockReset();
-    mockUseStore.mockReturnValue(null);
+    vi.mocked(getCurrentGame).mockReset();
+    respondWithCurrentGames(lobby(42));
     mockUseAuthenticatedUser.mockReset();
     mockUseAuthenticatedUser.mockReturnValue({ user: null, loading: false, error: null });
-    mockUseRoomStream.mockReset();
-    mockUseRoomStream.mockReturnValue({
-      event: null,
-      error: null,
-      isConnected: false,
-    });
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
   });
 
   it("should render the page title", () => {
@@ -97,42 +118,127 @@ describe("JoinedGamePage", () => {
     expect(screen.getByText("Welcome, Alice!")).toBeTruthy();
   });
 
-  it("should not render game id when currentGameId is null", () => {
+  it("should wait in the lobby and ask for the current game every 3 seconds", async () => {
     renderPage();
 
-    expect(screen.queryByText(/Game #/)).toBeNull();
-  });
+    expect(await screen.findByText("Game #42")).toBeTruthy();
+    expect(screen.getByRole("status").textContent).toContain("Waiting for the game to start...");
+    expect(getCurrentGame).toHaveBeenCalledTimes(1);
 
-  it("should render game id when currentGameId is set", () => {
-    const storeMap = new Map<string, unknown>([["$currentGameId", 42]]);
-    mockUseStore.mockImplementation((store: { key: string }) => storeMap.get(store.key) ?? null);
+    await advancePolling(2);
 
-    renderPage();
-
+    expect(getCurrentGame).toHaveBeenCalledTimes(3);
     expect(screen.getByText("Game #42")).toBeTruthy();
   });
 
-  it("should show the waiting indicator", () => {
+  it("should show the start and stop polling when the game starts while waiting", async () => {
+    respondWithCurrentGames(lobby(42), started(42));
     renderPage();
+    await screen.findByText("Game #42");
 
-    expect(screen.getByRole("status")).toBeTruthy();
-    expect(screen.getByText("Waiting for the game to start...")).toBeTruthy();
+    await advancePolling();
+
+    const status = screen.getByRole("status");
+    expect(status.textContent).toContain("The game has started");
+    expect(status.textContent).toContain("Follow your score on the tablet");
+    expect(screen.queryByText("Waiting for the game to start...")).toBeNull();
+
+    await advancePolling(3);
+
+    expect(getCurrentGame).toHaveBeenCalledTimes(2);
   });
 
-  it("should show started message and hide waiting indicator when game-started event arrives", () => {
-    const storeMap = new Map<string, unknown>([["$currentGameId", 42]]);
-    mockUseStore.mockImplementation((store: { key: string }) => storeMap.get(store.key) ?? null);
-    mockUseRoomStream.mockReturnValue({
-      event: { type: "game-started", data: null },
-      error: null,
-      isConnected: true,
-    });
-
+  it("should show the start without polling when the game has already started on load", async () => {
+    respondWithCurrentGames(started(42));
     renderPage();
 
-    expect(screen.getByText("Game has started.")).toBeTruthy();
-    expect(screen.queryByRole("status")).toBeNull();
-    expect(screen.queryByText("Waiting for the game to start...")).toBeNull();
+    expect(await screen.findByText("The game has started")).toBeTruthy();
+    expect(screen.getByText("Game #42")).toBeTruthy();
+
+    await advancePolling(2);
+
+    expect(getCurrentGame).toHaveBeenCalledTimes(1);
+  });
+
+  it("should tell a removed player and clear the current game when the game is gone", async () => {
+    setCurrentGameId(42);
+    respondWithCurrentGames(lobby(42), noCurrentGame);
+    renderPage();
+    await screen.findByText("Game #42");
+
+    await advancePolling();
+
+    expect(screen.getByText("You are no longer in this game")).toBeTruthy();
+    expect(screen.queryByText("Game #42")).toBeNull();
+    expect($currentGameId.get()).toBeNull();
+
+    await advancePolling(2);
+    expect(getCurrentGame).toHaveBeenCalledTimes(2);
+
+    fireEvent.click(screen.getByRole("button", { name: "Go to my profile" }));
+
+    expect(await screen.findByText("Player profile")).toBeTruthy();
+  });
+
+  it("should open the player profile when there is no current game on load", async () => {
+    respondWithCurrentGames(noCurrentGame);
+    renderPage();
+
+    expect(await screen.findByText("Player profile")).toBeTruthy();
+    expect(screen.queryByText("You are no longer in this game")).toBeNull();
+  });
+
+  it("should follow a changed game id and keep polling", async () => {
+    respondWithCurrentGames(lobby(42), lobby(43));
+    renderPage();
+    await screen.findByText("Game #42");
+
+    await advancePolling();
+
+    expect(screen.getByText("Game #43")).toBeTruthy();
+    expect(screen.queryByText("Game #42")).toBeNull();
+
+    await advancePolling();
+
+    expect(getCurrentGame).toHaveBeenCalledTimes(3);
+  });
+
+  it("should show the lost connection after 3 failed requests in a row and hide it on success", async () => {
+    const failure = new NetworkError("Failed to fetch");
+    respondWithCurrentGames(lobby(42), failure, failure, failure, lobby(42));
+    renderPage();
+    await screen.findByText("Game #42");
+
+    await advancePolling(2);
+    expect(screen.queryByText("Connection lost. Trying again…")).toBeNull();
+
+    await advancePolling();
+    expect(screen.getByRole("status").textContent).toContain("Connection lost. Trying again…");
+
+    await advancePolling();
+    expect(screen.queryByText("Connection lost. Trying again…")).toBeNull();
+    expect(screen.getByText("Game #42")).toBeTruthy();
+  });
+
+  it("should count failures again from zero after a success", async () => {
+    const failure = new NetworkError("Failed to fetch");
+    respondWithCurrentGames(failure, failure, lobby(42), failure, failure, lobby(42));
+    renderPage();
+
+    await advancePolling(4);
+
+    expect(getCurrentGame).toHaveBeenCalledTimes(5);
+    expect(screen.queryByText("Connection lost. Trying again…")).toBeNull();
+  });
+
+  it("should stop polling when the page closes", async () => {
+    const { unmount } = renderPage();
+    await screen.findByText("Game #42");
+
+    unmount();
+    await advancePolling(2);
+
+    expect(getCurrentGame).toHaveBeenCalledTimes(1);
   });
 
   it("should open the login page when the player logs out", async () => {

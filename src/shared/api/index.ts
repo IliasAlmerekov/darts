@@ -15,3 +15,4 @@ export * from "./game";
 export * from "./room";
 export * from "./auth";
 export * from "./statistics";
+export * from "./player";

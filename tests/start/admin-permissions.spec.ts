@@ -2,6 +2,7 @@
 // seed: tests/start/create-game.spec.ts
 
 import { test, expect, type Page } from "../shared/test";
+import { lobbyCurrentGame, mockCurrentGame } from "../shared/current-game-mocks";
 
 async function mockAuthenticatedUser(page: Page, roles: string[]): Promise<void> {
   await page.context().clearCookies();
@@ -36,6 +37,7 @@ test.describe("User Permissions and Security", () => {
 
   test("Player role cannot access game creation", async ({ page }) => {
     await mockAuthenticatedUser(page, ["ROLE_PLAYER"]);
+    await mockCurrentGame(page, lobbyCurrentGame(42));
 
     await page.goto("/start");
 
