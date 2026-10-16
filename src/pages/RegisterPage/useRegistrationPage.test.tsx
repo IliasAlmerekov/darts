@@ -1,16 +1,4 @@
 // @vitest-environment jsdom
-import { act, renderHook } from "@testing-library/react";
-import { beforeEach, describe, expect, it, vi } from "vitest";
-import { useRegistrationPage } from "./useRegistrationPage";
-import { ROUTES } from "@/lib/router/routes";
-import type { AuthenticatedUser } from "@/shared/api/auth";
-import { authQueries } from "@/shared/query/auth.queries";
-import { queryClient } from "@/shared/query/queryClient";
-
-const navigateMock = vi.fn();
-const useRegistrationMock = vi.fn();
-const useAuthenticatedUserMock = vi.fn();
-
 vi.mock("react-router-dom", () => ({
   useNavigate: () => navigateMock,
 }));
@@ -22,6 +10,18 @@ vi.mock("@/shared/hooks/useAuthenticatedUser", () => ({
 vi.mock("./useRegistration", () => ({
   useRegistration: () => useRegistrationMock(),
 }));
+
+import { act, renderHook } from "@testing-library/react";
+import { beforeEach, describe, expect, it, vi } from "vitest";
+import { useRegistrationPage } from "./useRegistrationPage";
+import { ROUTES } from "@/lib/router/routes";
+import type { AuthenticatedUser } from "@/shared/api/auth";
+import { authQueries } from "@/shared/query/auth.queries";
+import { queryClient } from "@/shared/query/queryClient";
+
+const navigateMock = vi.fn();
+const useRegistrationMock = vi.fn();
+const useAuthenticatedUserMock = vi.fn();
 
 const player: AuthenticatedUser = {
   success: true,

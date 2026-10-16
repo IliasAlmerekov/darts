@@ -5,6 +5,7 @@ vi.mock("react-router-dom", () => ({
 
 vi.mock("@/shared/api/auth", () => ({
   registerUser: (...args: unknown[]) => registerUserMock(...args),
+  getAuthenticatedUser: (...args: unknown[]) => getAuthenticatedUserMock(...args),
 }));
 
 vi.mock("@/shared/services/browser/clientLogger", () => ({
@@ -22,6 +23,7 @@ import { getActiveGameId, setCurrentGameId } from "@/shared/store";
 
 const navigateMock = vi.fn();
 const registerUserMock = vi.fn();
+const getAuthenticatedUserMock = vi.fn();
 
 describe("useRegistration", () => {
   beforeEach(() => {
@@ -191,5 +193,29 @@ describe("useRegistration", () => {
     });
 
     expect(getActiveGameId()).toBeNull();
+  });
+
+  it("should keep the registered user when a pending session check answers late with no user", async () => {
+    let answerSessionCheck: (user: null) => void = () => {};
+    getAuthenticatedUserMock.mockReturnValueOnce(
+      new Promise((resolve) => {
+        answerSessionCheck = resolve;
+      }),
+    );
+    const sessionCheck = queryClient.prefetchQuery(authQueries.me());
+    registerUserMock.mockResolvedValueOnce({ ...joinedPlayer, gameId: 42 });
+
+    const { result } = renderHook(() => useRegistration());
+
+    await act(async () => {
+      await result.current.register("john", "john@example.com", "Password123!");
+    });
+    answerSessionCheck(null);
+    await sessionCheck;
+
+    expect(queryClient.getQueryData(authQueries.me().queryKey)).toEqual({
+      ...joinedPlayer,
+      gameId: 42,
+    });
   });
 });

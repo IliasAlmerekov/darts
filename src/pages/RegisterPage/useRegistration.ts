@@ -7,6 +7,8 @@ import { isRecord } from "@/lib/guards/guards";
 import { ROUTES } from "@/lib/router/routes";
 import { toSafeRedirectPath } from "@/lib/router/safeRedirect";
 import { acceptLoggedInUser } from "@/shared/query/acceptLoggedInUser";
+import { authQueries } from "@/shared/query/auth.queries";
+import { queryClient } from "@/shared/query/queryClient";
 import { setCurrentGameId } from "@/shared/store";
 import { clientLogger } from "@/shared/services/browser/clientLogger";
 
@@ -63,6 +65,8 @@ export function useRegistration(): RegistrationReturn {
       if (typeof response.gameId !== "number") {
         setCurrentGameId(null);
       }
+      // A session check still running would overwrite the new user with its late answer.
+      await queryClient.cancelQueries({ queryKey: authQueries.me().queryKey });
       acceptLoggedInUser(response);
       setRegistered(response);
 
