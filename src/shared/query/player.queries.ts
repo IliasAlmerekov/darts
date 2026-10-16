@@ -30,6 +30,9 @@ export const playerQueries = {
       queryKey: ["player", "currentGame"] as const,
       // Every visit to the Waiting room starts with a fresh answer, never a cached one.
       gcTime: 0,
+      // Offline the default mode would pause the request instead of failing it, so the page
+      // would never count failures and never show the lost connection.
+      networkMode: "always",
       refetchInterval: (query: Query<CurrentGameResponse>) =>
         isWaitingForStart(query.state.data) ? CURRENT_GAME_POLL_INTERVAL_MS : false,
       queryFn: async ({ signal }): Promise<CurrentGameResponse> => {

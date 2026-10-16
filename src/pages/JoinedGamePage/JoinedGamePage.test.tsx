@@ -20,7 +20,7 @@ vi.mock("@/shared/services/browser/clientLogger", () => ({
 }));
 
 import { act, fireEvent, render, screen } from "@testing-library/react";
-import { QueryClientProvider } from "@tanstack/react-query";
+import { onlineManager, QueryClientProvider } from "@tanstack/react-query";
 import { createMemoryRouter, RouterProvider } from "react-router-dom";
 import { logout, type AuthenticatedUser } from "@/shared/api/auth";
 import { getCurrentGame, type CurrentGameResponse } from "@/shared/api/player";
@@ -98,6 +98,7 @@ describe("JoinedGamePage", () => {
 
   afterEach(() => {
     vi.useRealTimers();
+    onlineManager.setOnline(true);
   });
 
   it("should render the page title", () => {
@@ -235,6 +236,19 @@ describe("JoinedGamePage", () => {
     await advancePolling();
     expect(screen.queryByText("Connection lost. Trying again…")).toBeNull();
     expect(screen.getByText("Game #42")).toBeTruthy();
+  });
+
+  it("should show the lost connection while the phone is offline", async () => {
+    const failure = new NetworkError("Failed to fetch");
+    respondWithCurrentGames(lobby(42), failure);
+    renderPage();
+    await screen.findByText("Game #42");
+
+    onlineManager.setOnline(false);
+    await advancePolling(3);
+
+    expect(getCurrentGame).toHaveBeenCalledTimes(4);
+    expect(screen.getByRole("status").textContent).toContain("Connection lost. Trying again…");
   });
 
   it("should count failures again from zero after a success", async () => {
