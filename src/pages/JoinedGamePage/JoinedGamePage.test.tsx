@@ -1,8 +1,5 @@
 // @vitest-environment jsdom
-import { render, screen } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import type { AuthenticatedUser } from "@/shared/api/auth";
-import JoinedGamePage from "./index";
 
 // ── Nanostores ──────────────────────────────────────────────────────────────
 const mockUseStore = vi.fn();
@@ -21,9 +18,24 @@ vi.mock("@/shared/hooks/useAuthenticatedUser", () => ({
   useAuthenticatedUser: () => mockUseAuthenticatedUser(),
 }));
 
+vi.mock("@/shared/api/auth", () => ({
+  logout: vi.fn(),
+}));
+
+vi.mock("@/shared/services/browser/clientLogger", () => ({
+  clientLogger: { error: vi.fn() },
+}));
+
 vi.mock("@/shared/hooks/useRoomStream", () => ({
   useRoomStream: (gameId: number | null) => mockUseRoomStream(gameId),
 }));
+
+import { fireEvent, render, screen } from "@testing-library/react";
+import { createMemoryRouter, RouterProvider } from "react-router-dom";
+import { logout, type AuthenticatedUser } from "@/shared/api/auth";
+import { NetworkError } from "@/shared/api";
+import { ROUTES } from "@/lib/router/routes";
+import JoinedGamePage from "./index";
 
 function buildAuthenticatedUser(overrides: Partial<AuthenticatedUser> = {}): AuthenticatedUser {
   return {
@@ -36,11 +48,19 @@ function buildAuthenticatedUser(overrides: Partial<AuthenticatedUser> = {}): Aut
 }
 
 function renderPage(): void {
-  render(<JoinedGamePage />);
+  const router = createMemoryRouter(
+    [
+      { path: ROUTES.login, element: <p>Login form</p> },
+      { path: ROUTES.joined, element: <JoinedGamePage /> },
+    ],
+    { initialEntries: [ROUTES.joined] },
+  );
+  render(<RouterProvider router={router} />);
 }
 
 describe("JoinedGamePage", () => {
   beforeEach(() => {
+    vi.mocked(logout).mockReset();
     mockUseStore.mockReset();
     mockUseStore.mockReturnValue(null);
     mockUseAuthenticatedUser.mockReset();
@@ -113,5 +133,38 @@ describe("JoinedGamePage", () => {
     expect(screen.getByText("Game has started.")).toBeTruthy();
     expect(screen.queryByRole("status")).toBeNull();
     expect(screen.queryByText("Waiting for the game to start...")).toBeNull();
+  });
+
+  it("should open the login page when the player logs out", async () => {
+    vi.mocked(logout).mockResolvedValueOnce(undefined);
+    renderPage();
+
+    fireEvent.click(screen.getByRole("button", { name: "Log out" }));
+
+    expect(await screen.findByText("Login form")).toBeTruthy();
+    expect(logout).toHaveBeenCalledTimes(1);
+  });
+
+  it("should keep the Waiting room with an error and log out on Retry when logout fails", async () => {
+    vi.mocked(logout)
+      .mockRejectedValueOnce(new NetworkError("Failed to fetch"))
+      .mockResolvedValueOnce(undefined);
+    renderPage();
+
+    fireEvent.click(screen.getByRole("button", { name: "Log out" }));
+    fireEvent.click(await screen.findByRole("button", { name: "Retry" }));
+
+    expect(await screen.findByText("Login form")).toBeTruthy();
+    expect(logout).toHaveBeenCalledTimes(2);
+  });
+
+  it("should show the logout error inside the Waiting room", async () => {
+    vi.mocked(logout).mockRejectedValueOnce(new NetworkError("Failed to fetch"));
+    renderPage();
+
+    fireEvent.click(screen.getByRole("button", { name: "Log out" }));
+
+    expect(await screen.findByRole("alert")).toBeTruthy();
+    expect(screen.getByRole("heading", { level: 1 }).textContent).toBe("Joined game");
   });
 });

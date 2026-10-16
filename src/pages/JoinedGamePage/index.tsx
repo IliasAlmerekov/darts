@@ -3,6 +3,7 @@ import { useStore } from "@nanostores/react";
 import { useAuthenticatedUser } from "@/shared/hooks/useAuthenticatedUser";
 import { useRoomStream } from "@/shared/hooks/useRoomStream";
 import { $currentGameId } from "@/shared/store";
+import { LogoutButton } from "@/shared/ui/logout-button";
 import styles from "./JoinedGamePage.module.css";
 
 function JoinedGamePage(): React.JSX.Element {
@@ -51,6 +52,8 @@ function JoinedGamePage(): React.JSX.Element {
                   <p className={styles.waitingText}>Waiting for the game to start...</p>
                 </div>
               )}
+
+              <LogoutButton />
             </div>
           </div>
         </div>

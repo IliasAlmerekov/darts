@@ -4,6 +4,16 @@ import { getAuthenticatedUser, loginWithCredentials, logout, registerUser } from
 import { apiClient, ApiValidationError } from "./client";
 import { TimeoutError } from "./errors";
 import { queryClient } from "@/shared/query/queryClient";
+import {
+  $currentGameId,
+  $invitation,
+  GAME_ID_STORAGE_KEY,
+  resetRoomStore,
+  setCurrentGameId,
+  setInvitation,
+} from "@/shared/store/game-session";
+import { $gameData, resetGameStore, setGameData } from "@/shared/store/game-state";
+import { buildGameThrowsResponse } from "@/shared/types/game.test-support";
 import { createMockResponse, respondWith } from "./test-utils";
 
 describe("getAuthenticatedUser", () => {
@@ -476,6 +486,8 @@ describe("registerUser", () => {
 describe("logout", () => {
   beforeEach(() => {
     vi.restoreAllMocks();
+    resetRoomStore();
+    resetGameStore();
   });
 
   it("should call the success callback when logout succeeds", async () => {
@@ -487,7 +499,7 @@ describe("logout", () => {
     expect(apiClient.post).toHaveBeenCalledWith(
       "/logout",
       undefined,
-      expect.objectContaining({ validate: expect.any(Object) }),
+      expect.objectContaining({ redirect: "manual", validate: expect.any(Object) }),
     );
     expect(onSuccess).toHaveBeenCalledTimes(1);
   });
@@ -501,7 +513,33 @@ describe("logout", () => {
     expect(queryClient.getQueryCache().getAll()).toHaveLength(0);
   });
 
-  it("rejects with ApiValidationError when logout answers with JSON instead of the redirect page", async () => {
+  it("should clear the room store, the stored game id and the game store when logout succeeds", async () => {
+    setCurrentGameId(7);
+    setInvitation({ gameId: 7, invitationLink: "/invite/7" });
+    setGameData(buildGameThrowsResponse());
+    vi.spyOn(apiClient, "post").mockImplementationOnce(respondWith(""));
+
+    await logout();
+
+    expect($currentGameId.get()).toBeNull();
+    expect($invitation.get()).toBeNull();
+    expect(window.sessionStorage.getItem(GAME_ID_STORAGE_KEY)).toBeNull();
+    expect($gameData.get()).toBeNull();
+  });
+
+  it("should keep the room store and the game store when logout fails", async () => {
+    setCurrentGameId(7);
+    setGameData(buildGameThrowsResponse());
+    vi.spyOn(apiClient, "post").mockRejectedValueOnce(new Error("Network error"));
+
+    await expect(logout()).rejects.toThrow("Network error");
+
+    expect($currentGameId.get()).toBe(7);
+    expect(window.sessionStorage.getItem(GAME_ID_STORAGE_KEY)).toBe("7");
+    expect($gameData.get()).not.toBeNull();
+  });
+
+  it("rejects with ApiValidationError when logout answers with a JSON body", async () => {
     vi.spyOn(apiClient, "post").mockImplementationOnce(respondWith({ success: true }));
 
     await expect(logout()).rejects.toBeInstanceOf(ApiValidationError);
