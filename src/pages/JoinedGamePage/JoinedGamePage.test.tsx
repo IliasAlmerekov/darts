@@ -27,10 +27,9 @@ import { getCurrentGame, type CurrentGameResponse } from "@/shared/api/player";
 import { NetworkError } from "@/shared/api";
 import { ROUTES } from "@/lib/router/routes";
 import { createQueryClient } from "@/shared/query/queryClient";
+import { CURRENT_GAME_POLL_INTERVAL_MS } from "@/shared/query/player.queries";
 import { $currentGameId, setCurrentGameId } from "@/shared/store";
 import JoinedGamePage from "./index";
-
-const POLL_INTERVAL_MS = 3000;
 
 const lobby = (gameId: number): CurrentGameResponse => ({ gameId, status: "lobby" });
 const started = (gameId: number): CurrentGameResponse => ({ gameId, status: "started" });
@@ -76,7 +75,7 @@ function renderPage(): { unmount: () => void } {
 
 async function advancePolling(times = 1): Promise<void> {
   await act(async () => {
-    await vi.advanceTimersByTimeAsync(POLL_INTERVAL_MS * times);
+    await vi.advanceTimersByTimeAsync(CURRENT_GAME_POLL_INTERVAL_MS * times);
   });
 }
 

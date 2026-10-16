@@ -32,7 +32,7 @@ src/shared/
   api/         # apiClient, endpoints, typed errors, mappers
   hooks/       # cross-page hooks
   lib/         # pure helpers (guards, router, error mapping, game logic, etc.)
-  query/       # the QueryClient and query options per resource (auth, statistics, game)
+  query/       # the QueryClient and query options per resource (auth, statistics, game, player)
   services/    # browser-side services (logger, sound, storage)
   store/       # Nanostores atoms and actions
   types/       # cross-page type definitions, including `*.test-support.ts`
@@ -105,7 +105,7 @@ The API layer has a **two-level public surface**:
 - `@/shared/api` (the `index.ts` barrel) exposes cross-cutting symbols: `apiClient`,
   `setUnauthorizedHandler`, `ApiError`, `ForbiddenError`, `NetworkError`,
   `UnauthorizedError`, `TimeoutError`, endpoint constants.
-- `@/shared/api/<domain>` (`auth`, `game`, `room`, `statistics`) is the per-domain public
+- `@/shared/api/<domain>` (`auth`, `game`, `room`, `statistics`, `player`) is the per-domain public
   surface. Pages and other shared code import resource calls and DTO types directly from
   these modules: `import { getGameThrows } from "@/shared/api/game"`.
 

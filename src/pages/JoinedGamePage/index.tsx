@@ -4,7 +4,8 @@ import { useAuthenticatedUser } from "@/shared/hooks/useAuthenticatedUser";
 import { ROUTES } from "@/lib/router/routes";
 import { ErrorState } from "@/shared/ui/error-state";
 import { LogoutButton } from "@/shared/ui/logout-button";
-import { useWaitingRoom, type WaitingRoomStatus } from "./useWaitingRoom";
+import type { WaitingRoomStatus } from "./lib/waitingRoomStatus";
+import { useWaitingRoom } from "./useWaitingRoom";
 import styles from "./JoinedGamePage.module.css";
 
 interface GameStatusProps {

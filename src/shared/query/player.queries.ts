@@ -2,7 +2,7 @@ import { queryOptions, type Query } from "@tanstack/react-query";
 import { getCurrentGame, type CurrentGameResponse } from "@/shared/api/player";
 import { setCurrentGameId } from "@/shared/store";
 
-const CURRENT_GAME_POLL_INTERVAL_MS = 3000;
+export const CURRENT_GAME_POLL_INTERVAL_MS = 3000;
 
 /** Polling goes on until the game has started or the player has no current game. */
 function isWaitingForStart(currentGame: CurrentGameResponse | undefined): boolean {
