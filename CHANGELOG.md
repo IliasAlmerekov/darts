@@ -7,6 +7,10 @@ and this project does **not** yet follow [Semantic Versioning](https://semver.or
 
 ## [Unreleased]
 
+### Added
+
+- Tooling: `npm run test:red-on-base` runs the tests a branch changed against the base ref's code and lists the ones that fail (#185)
+
 ### Changed
 
 - API: each response is checked once by a Valibot schema, and its type is inferred from that schema. The hand-written response guards and interfaces are gone, and ADR 0002 records the choice (#158)

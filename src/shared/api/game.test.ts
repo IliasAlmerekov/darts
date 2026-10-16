@@ -11,6 +11,7 @@ import {
   reopenGame,
   startGame,
   undoLastThrow,
+  updateGameSettings,
 } from "./game";
 import { respondWith } from "./test-utils";
 
@@ -23,6 +24,31 @@ const minimalGamePayload = {
   currentRound: 1,
   currentThrowCount: 0,
   players: [{ id: 7, name: "P1", score: 301, isActive: false, isBust: false, isGuest: true }],
+  settings: { startScore: 301, doubleOut: false, tripleOut: false },
+};
+
+/** Contract `GameResponseDto` with every player field. */
+const fullGamePayload = {
+  id: 42,
+  status: "started",
+  currentRound: 2,
+  activePlayerId: 7,
+  currentThrowCount: 1,
+  winnerId: null,
+  players: [
+    {
+      id: 7,
+      name: "P1",
+      score: 261,
+      isActive: true,
+      isBust: false,
+      isGuest: false,
+      position: null,
+      throwsInCurrentRound: 1,
+      currentRoundThrows: [{ value: 20, isDouble: true, isTriple: false, isBust: false }],
+      roundHistory: [],
+    },
+  ],
   settings: { startScore: 301, doubleOut: false, tripleOut: false },
 };
 
@@ -97,6 +123,30 @@ const minimalUndoAckPayload = {
   stateVersion: "v-3",
   scoreboardDelta: minimalScoreboardDelta,
   serverTs: "2026-03-10T10:00:01.000Z",
+};
+
+/** Contract `UndoAckDto` with every scoreboard key; `undoneThrow` is out of scope (#101). */
+const fullUndoAckPayload = {
+  success: true,
+  gameId: 42,
+  stateVersion: "v-undo-1",
+  scoreboardDelta: {
+    changedPlayers: [
+      {
+        playerId: 7,
+        name: "P1",
+        score: 281,
+        position: null,
+        isActive: true,
+        isGuest: false,
+        isBust: false,
+      },
+    ],
+    winnerId: null,
+    status: "started",
+    currentRound: 2,
+  },
+  serverTs: "2026-03-10T10:00:00.000Z",
 };
 
 /**
@@ -214,6 +264,18 @@ describe("game api contract payloads", () => {
   });
 
   describe("finishGame and getFinishedGame", () => {
+    it("returns the standings from a summary without finishedAt and winner", async () => {
+      const summaryResponse = {
+        gameId: 42,
+        winnerRoundsPlayed: 8,
+        winnerRoundAverage: 57.3,
+        finishedPlayers: summaryPayload.finishedPlayers,
+      };
+      vi.spyOn(apiClient, "post").mockImplementationOnce(respondWith(summaryResponse));
+
+      await expect(finishGame(42)).resolves.toEqual(summaryPayload.finishedPlayers);
+    });
+
     it("maps a summary without the optional finishedAt and winner", async () => {
       vi.spyOn(apiClient, "get").mockImplementationOnce(
         respondWith({
@@ -257,6 +319,31 @@ describe("game api contract payloads", () => {
       );
 
       await expect(getGameSettings(42)).rejects.toBeInstanceOf(ApiValidationError);
+    });
+  });
+
+  describe("updateGameSettings", () => {
+    it("returns the contract GameSettingsResponseDto", async () => {
+      const settingsResponse = {
+        gameId: 42,
+        startScore: 501,
+        doubleOut: true,
+        tripleOut: false,
+        status: "lobby",
+      };
+      vi.spyOn(apiClient, "patch").mockImplementationOnce(respondWith(settingsResponse));
+
+      await expect(updateGameSettings(42, { doubleOut: true, tripleOut: false })).resolves.toEqual(
+        settingsResponse,
+      );
+    });
+
+    it("rejects a full game state, which the contract does not document for PATCH /settings", async () => {
+      vi.spyOn(apiClient, "patch").mockImplementationOnce(respondWith(fullGamePayload));
+
+      await expect(
+        updateGameSettings(42, { doubleOut: true, tripleOut: false }),
+      ).rejects.toBeInstanceOf(ApiValidationError);
     });
   });
 
@@ -321,6 +408,24 @@ describe("game api contract payloads", () => {
   });
 
   describe("undoLastThrow", () => {
+    it("tags a full game state response as full-state", async () => {
+      vi.spyOn(apiClient, "delete").mockImplementationOnce(respondWith(fullGamePayload));
+
+      await expect(undoLastThrow(42)).resolves.toEqual({ type: "full-state", ...fullGamePayload });
+    });
+
+    it("tags a contract UndoAckDto, which has no type field, as an ack", async () => {
+      const deleteSpy = vi
+        .spyOn(apiClient, "delete")
+        .mockImplementationOnce(respondWith(fullUndoAckPayload));
+
+      await expect(undoLastThrow(42)).resolves.toEqual({ type: "ack", ...fullUndoAckPayload });
+      expect(deleteSpy).toHaveBeenCalledWith(
+        "/game/42/throw",
+        expect.objectContaining({ validate: expect.any(Object) }),
+      );
+    });
+
     it("tags an ack with only the required keys and fills null for a missing winnerId", async () => {
       vi.spyOn(apiClient, "delete").mockImplementationOnce(respondWith(minimalUndoAckPayload));
 
