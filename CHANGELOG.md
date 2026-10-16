@@ -25,6 +25,7 @@ and this project does **not** yet follow [Semantic Versioning](https://semver.or
 
 ### Fixed
 
+- Settings: a save that answers after the route moved to another game's settings no longer changes that game's screen. It stays out of the selected button, the rollback and the error message. A pending save of one game no longer blocks the buttons of the next (#99)
 - Registration: on phones the form has the same width and side spacing as the login form (#187)
 - Auth: logout no longer follows the backend's 302, which points at the backend origin and failed CORS after the cookies were already deleted. `apiClient` treats an opaque redirect as success when the caller sets `redirect: "manual"` (#154)
 - API: the request timeout covers reading the response body, so a body that stalls after the headers rejects with `TimeoutError` instead of hanging. An external abort while the body streams rejects with `AbortError`, and the client removes its listener from the caller's signal once the request settles (#109)

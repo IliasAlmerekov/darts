@@ -68,21 +68,83 @@ function createSettingsResponse(
 type Deferred<T> = {
   promise: Promise<T>;
   resolve: (value: T) => void;
+  reject: (reason: unknown) => void;
 };
 
 function createDeferred<T>(): Deferred<T> {
   let resolvePromise: (value: T) => void = () => {};
-  const promise = new Promise<T>((resolve) => {
+  let rejectPromise: (reason: unknown) => void = () => {};
+  const promise = new Promise<T>((resolve, reject) => {
     resolvePromise = resolve;
+    rejectPromise = reject;
   });
 
   return {
     promise,
     resolve: resolvePromise,
+    reject: rejectPromise,
   };
 }
 
 let testQueryClient: QueryClient;
+
+const GAME_ONE_SETTINGS = createSettingsResponse({ gameId: 1, startScore: 301 });
+const GAME_TWO_SETTINGS = createSettingsResponse({ gameId: 2, startScore: 401, doubleOut: true });
+
+const SETTINGS_SAVE_CASES = [
+  {
+    setting: "Game Mode",
+    gameOneClick: "Triple-out",
+    gameOneResponse: createSettingsResponse({ gameId: 1, startScore: 301, tripleOut: true }),
+    gameTwoSelected: "Double-out",
+    gameTwoClick: "Single-out",
+    gameTwoPayload: { doubleOut: false, tripleOut: false },
+  },
+  {
+    setting: "Points",
+    gameOneClick: "501",
+    gameOneResponse: createSettingsResponse({ gameId: 1, startScore: 501 }),
+    gameTwoSelected: "401",
+    gameTwoClick: "101",
+    gameTwoPayload: { startScore: 101, doubleOut: true, tripleOut: false },
+  },
+] as const;
+
+function isPressed(name: string): boolean {
+  return screen.getByRole("button", { name }).getAttribute("aria-pressed") === "true";
+}
+
+// Game 1 is read from the server; game 2 is the game in the store and in the cache.
+async function startSaveOnGameOneThenMoveToGameTwo(
+  gameOneClick: string,
+): Promise<Deferred<GameSettingsResponse>> {
+  const pendingSave = createDeferred<GameSettingsResponse>();
+  saveGameSettingsMock.mockImplementationOnce(() => pendingSave.promise);
+  getGameSettingsMock.mockResolvedValue(GAME_ONE_SETTINGS);
+  setGameData({ ...createGameResponse(), id: 2, settings: GAME_TWO_SETTINGS });
+  testQueryClient.setQueryData(gameQueries.settings(2).queryKey, GAME_TWO_SETTINGS);
+  const router = renderSettingsRouter("/settings/1");
+  await waitFor(() => {
+    expect(isPressed("301")).toBe(true);
+  });
+
+  fireEvent.click(screen.getByRole("button", { name: gameOneClick }));
+  expect(saveGameSettingsMock).toHaveBeenCalledWith(expect.anything(), 1);
+  await act(async () => {
+    await router.navigate("/settings/2");
+  });
+  await waitFor(() => {
+    expect(isPressed("401")).toBe(true);
+  });
+  return pendingSave;
+}
+
+function expectGameTwoUnchanged(gameTwoSelected: string): void {
+  expect(isPressed(gameTwoSelected)).toBe(true);
+  expect(testQueryClient.getQueryData(gameQueries.settings(2).queryKey)).toEqual(GAME_TWO_SETTINGS);
+  expect($gameData.get()).toEqual(expect.objectContaining({ id: 2, settings: GAME_TWO_SETTINGS }));
+  expect(screen.queryByRole("alert")).toBeNull();
+}
 
 function renderSettingsPage(initialEntry: string): ReturnType<typeof render> {
   return render(
@@ -632,4 +694,48 @@ describe("SettingsPage", () => {
     });
     expect(screen.getByRole("button", { name: "401" }).getAttribute("aria-pressed")).toBe("true");
   });
+
+  describe.each(SETTINGS_SAVE_CASES)(
+    "when a $setting save for game 1 settles after the route moved to game 2",
+    ({ gameOneClick, gameOneResponse, gameTwoSelected, gameTwoClick, gameTwoPayload }) => {
+      it("should leave game 2's screen, cache and game store unchanged when the save fails", async () => {
+        const pendingSave = await startSaveOnGameOneThenMoveToGameTwo(gameOneClick);
+
+        await act(async () => {
+          pendingSave.reject(new Error("Network down"));
+          await pendingSave.promise.catch(() => undefined);
+        });
+
+        expectGameTwoUnchanged(gameTwoSelected);
+        expect(testQueryClient.getQueryData(gameQueries.settings(1).queryKey)).toEqual(
+          GAME_ONE_SETTINGS,
+        );
+      });
+
+      it("should store the response under game 1 and leave game 2's screen and cache unchanged", async () => {
+        const pendingSave = await startSaveOnGameOneThenMoveToGameTwo(gameOneClick);
+
+        await act(async () => {
+          pendingSave.resolve(gameOneResponse);
+          await pendingSave.promise;
+        });
+
+        expect(testQueryClient.getQueryData(gameQueries.settings(1).queryKey)).toEqual(
+          gameOneResponse,
+        );
+        expectGameTwoUnchanged(gameTwoSelected);
+      });
+
+      it("should let game 2 save right away while game 1's save is pending", async () => {
+        await startSaveOnGameOneThenMoveToGameTwo(gameOneClick);
+        const gameTwoButton = screen.getByRole("button", { name: gameTwoClick });
+
+        expect(gameTwoButton.getAttribute("disabled")).toBeNull();
+        fireEvent.click(gameTwoButton);
+
+        expect(saveGameSettingsMock).toHaveBeenLastCalledWith(gameTwoPayload, 2);
+        expect(isPressed(gameTwoClick)).toBe(true);
+      });
+    },
+  );
 });
