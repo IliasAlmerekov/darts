@@ -18,6 +18,7 @@ and this project does **not** yet follow [Semantic Versioning](https://semver.or
 
 ### Changed
 
+- Agent rules: each issue gets its own branch, cut from the latest `main` after a pull. Once the PR is open, the agent removes its worktree and scratch files and keeps only the branch. The rematch invite fallback test now mocks the invite response without a body `status`, as the backend sends it (#162)
 - Waiting room: the page reads its game from the server instead of session storage, so a reload keeps working. It no longer subscribes to the admin-only room stream (#153)
 - Deploy: releases build `darts-backend` at `57c1908`, which adds `GET /api/player/current-game` for the Waiting room. The pin also brings registration that logs in and joins the invited room, the 7-day Remembered login and Symfony 8.1 (#153)
 - API: each response is checked once by a Valibot schema, and its type is inferred from that schema. The hand-written response guards and interfaces are gone, and ADR 0002 records the choice (#158)
