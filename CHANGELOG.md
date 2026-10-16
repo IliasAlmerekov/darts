@@ -10,7 +10,7 @@ and this project does **not** yet follow [Semantic Versioning](https://semver.or
 ### Added
 
 - Tooling: `npm run test:red-on-base` runs the tests a branch changed against the base ref's code and lists the ones that fail (#185)
-- Login: the login page shows a full-screen spinner with "Checking your login…" while it checks for a Remembered login, and the form only when nobody is logged in or the check gets no answer within 5 seconds. A remembered player who scans an invite goes straight to the Waiting room. When the backend cannot join the invitation, the player sees why ("This game has already started", "This game is full", "This game no longer exists" or "This game can no longer be joined") and a button to their profile (#151)
+- Login: the login page shows a full-screen spinner with "Checking your login…" while it checks for a Remembered login, and the form only when nobody is logged in or the check gets no answer within 5 seconds. A remembered player who scans an invite goes straight to the Waiting room. When the backend cannot join the invitation, the player sees why ("This game has already started", "This game is full", "This game no longer exists" or "This game can no longer be joined") and a button to their profile. The check also runs while the browser counts as offline, so its timeout still brings up the form. After the button, the login page no longer shows that error again (#151)
 
 ### Changed
 

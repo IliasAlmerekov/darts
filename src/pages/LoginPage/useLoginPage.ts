@@ -1,6 +1,8 @@
 import { useState, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useAuthenticatedUser } from "@/shared/hooks/useAuthenticatedUser";
+import { authQueries } from "@/shared/query/auth.queries";
+import { queryClient } from "@/shared/query/queryClient";
 import { useLogin } from "./useLogin";
 import { resolveLoginDestination } from "./lib/loginDestination";
 import { isLoginLocationState } from "./lib/loginLocationState";
@@ -77,8 +79,18 @@ export function useLoginPage(): LoginPageReturn {
     }
   };
 
+  // The handled error leaves the cached user, so a later visit to the login page redirects
+  // instead of showing it again. The redirect effect below then opens the profile.
   const goToPlayerProfile = (): void => {
-    navigate(ROUTES.playerProfile);
+    queryClient.setQueryData(authQueries.me().queryKey, (current) => {
+      if (!current) {
+        return current;
+      }
+
+      const handledUser = { ...current, redirect: ROUTES.playerProfile };
+      delete handledUser.invitationError;
+      return handledUser;
+    });
   };
 
   useEffect(() => {

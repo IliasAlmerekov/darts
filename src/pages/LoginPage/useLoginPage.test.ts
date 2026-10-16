@@ -3,6 +3,7 @@ import { act, renderHook, waitFor } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { useLoginPage } from "./useLoginPage";
 import { ROUTES } from "@/lib/router/routes";
+import { queryClient } from "@/shared/query/queryClient";
 
 const navigateMock = vi.fn();
 const useLoginMock = vi.fn();
@@ -48,6 +49,7 @@ function givenAuthCheck(user: unknown, loading = false): void {
 describe("useLoginPage", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    queryClient.clear();
     Object.defineProperty(window, "location", {
       configurable: true,
       value: {
@@ -154,7 +156,8 @@ describe("useLoginPage", () => {
   });
 
   it("shows the invitation error instead of navigating", async () => {
-    givenAuthCheck({ ...loggedInPlayer, invitationError: "GAME_ROOM_FULL" });
+    const rejectedInvitation = { ...loggedInPlayer, invitationError: "GAME_ROOM_FULL" };
+    givenAuthCheck(rejectedInvitation);
 
     const { result } = renderHook(() => useLoginPage());
 
@@ -165,11 +168,22 @@ describe("useLoginPage", () => {
     await waitFor(() => {
       expect(navigateMock).not.toHaveBeenCalled();
     });
+  });
+
+  it("drops the handled invitation error and sends the player to the profile", () => {
+    const rejectedInvitation = { ...loggedInPlayer, invitationError: "GAME_ROOM_FULL" };
+    givenAuthCheck(rejectedInvitation);
+    queryClient.setQueryData(["auth", "me"], rejectedInvitation);
+
+    const { result } = renderHook(() => useLoginPage());
 
     act(() => {
       result.current.goToPlayerProfile();
     });
 
-    expect(navigateMock).toHaveBeenCalledWith(ROUTES.playerProfile);
+    expect(queryClient.getQueryData(["auth", "me"])).toEqual({
+      ...loggedInPlayer,
+      redirect: ROUTES.playerProfile,
+    });
   });
 });

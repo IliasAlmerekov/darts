@@ -14,11 +14,11 @@ vi.mock("@/shared/services/browser/clientLogger", () => ({
 }));
 
 import { renderHook, waitFor } from "@testing-library/react";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { ApiError, TimeoutError } from "@/shared/api";
 import { useAuthenticatedUser } from "./useAuthenticatedUser";
 import type { AuthenticatedUser } from "@/shared/api/auth";
-import { QueryClientProvider } from "@tanstack/react-query";
+import { onlineManager, QueryClientProvider } from "@tanstack/react-query";
 import type { ReactNode } from "react";
 import { queryClient } from "@/shared/query/queryClient";
 
@@ -61,6 +61,26 @@ describe("useAuthenticatedUser", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     queryClient.clear();
+  });
+
+  afterEach(() => {
+    onlineManager.setOnline(true);
+  });
+
+  it("should run the auth check while the browser counts as offline", async () => {
+    onlineManager.setOnline(false);
+    getAuthenticatedUserMock.mockRejectedValue(
+      new TimeoutError("Request timed out after 5000ms", "/api/login/success"),
+    );
+
+    const { result } = renderHook(() => useAuthenticatedUser(), { wrapper });
+
+    await waitFor(() => {
+      expect(result.current.loading).toBe(false);
+    });
+
+    expect(getAuthenticatedUserMock).toHaveBeenCalledTimes(1);
+    expect(result.current.user).toBeNull();
   });
 
   it("should pass a live signal and timeoutMs 5000 when starting auth check", async () => {
