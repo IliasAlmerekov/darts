@@ -7,7 +7,7 @@ interface InvitationErrorScreenProps {
   onGoToPlayerProfile: () => void;
 }
 
-/** Shown after a login whose invitation the backend could not join. */
+/** Shown after a login or registration whose invitation the backend could not join. */
 export function InvitationErrorScreen({
   message,
   onGoToPlayerProfile,
