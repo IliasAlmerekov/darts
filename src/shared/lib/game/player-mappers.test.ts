@@ -12,6 +12,7 @@ function buildPlayer(
     score: 301,
     isActive: false,
     isBust: false,
+    isGuest: false,
     position: 1,
     throwsInCurrentRound: 0,
     currentRoundThrows: [],
@@ -28,8 +29,19 @@ describe("player-mappers", () => {
         name: "Alice",
         score: 200,
         isActive: true,
-        roundHistory: [{ throws: [{ value: 20 }, { value: 5, isBust: true }] }],
-        currentRoundThrows: [{ value: 10 }, { value: 15 }, { value: 5 }],
+        roundHistory: [
+          {
+            throws: [
+              { value: 20, isDouble: false, isTriple: false, isBust: false },
+              { value: 5, isBust: true, isDouble: false, isTriple: false },
+            ],
+          },
+        ],
+        currentRoundThrows: [
+          { value: 10, isDouble: false, isTriple: false, isBust: false },
+          { value: 15, isDouble: false, isTriple: false, isBust: false },
+          { value: 5, isDouble: false, isTriple: false, isBust: false },
+        ],
       }),
     ];
 
@@ -51,14 +63,14 @@ describe("player-mappers", () => {
       throw2IsBust: true,
       isRoundBust: true,
     });
-    expect(mapped[0]?.rounds[0]).not.toHaveProperty("throw1IsBust");
+    expect(mapped[0]?.rounds[0]).toHaveProperty("throw1IsBust", false);
     expect(mapped[0]?.rounds[0]).not.toHaveProperty("throw3");
     expect(mapped[0]?.rounds[1]).toMatchObject({
       throw1: 10,
       throw2: 15,
       throw3: 5,
     });
-    expect(mapped[0]?.rounds[1]).not.toHaveProperty("throw1IsBust");
+    expect(mapped[0]?.rounds[1]).toHaveProperty("throw1IsBust", false);
   });
 
   it("should return finished players sorted by position with null positions at the end when positions are mixed", () => {
@@ -83,7 +95,11 @@ describe("player-mappers", () => {
         isActive: false,
         roundHistory: [
           {
-            throws: [{ value: 10, isDouble: true }, { value: 20, isTriple: true }, { value: 5 }],
+            throws: [
+              { value: 10, isDouble: true, isTriple: false, isBust: false },
+              { value: 20, isTriple: true, isDouble: false, isBust: false },
+              { value: 5, isDouble: false, isTriple: false, isBust: false },
+            ],
           },
         ],
         currentRoundThrows: [],
@@ -113,8 +129,8 @@ describe("player-mappers", () => {
         score: 26,
         isActive: false,
         roundHistory: [
-          { round: 1, throws: [{ value: 20 }] },
-          { round: 4, throws: [{ value: 25, isBust: true }] },
+          { round: 1, throws: [{ value: 20, isDouble: false, isTriple: false, isBust: false }] },
+          { round: 4, throws: [{ value: 25, isBust: true, isDouble: false, isTriple: false }] },
         ],
         currentRoundThrows: [],
       }),

@@ -22,8 +22,12 @@ function createGameData(): GameThrowsResponse {
         isBust: false,
         position: null,
         throwsInCurrentRound: 2,
-        currentRoundThrows: [{ value: 20 }, { value: 20, isDouble: true }],
+        currentRoundThrows: [
+          { value: 20, isDouble: false, isTriple: false, isBust: false },
+          { value: 20, isDouble: true, isTriple: false, isBust: false },
+        ],
         roundHistory: [],
+        isGuest: false,
       },
     ],
     settings: {

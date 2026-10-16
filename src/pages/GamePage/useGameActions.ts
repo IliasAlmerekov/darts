@@ -5,7 +5,7 @@ import { clientLogger } from "@/shared/services/browser/clientLogger";
 import { toUserErrorMessage } from "@/lib/error/error-to-user-message";
 import { ROUTES } from "@/lib/router/routes";
 import { resetRoomStore, setInvitation } from "@/shared/store";
-import type { GameSettingsResponse, GameThrowsResponse } from "@/types";
+import type { GameSettings, GameThrowsResponse } from "@/types";
 
 interface GameSettingsFormValues {
   doubleOut: boolean;
@@ -15,7 +15,7 @@ interface GameSettingsFormValues {
 interface UseGameSettingsFlowOptions {
   gameData: GameThrowsResponse | null;
   gameId: number | null;
-  updateGameSettings: (settings: GameSettingsResponse) => void;
+  updateGameSettings: (settings: GameSettings) => void;
 }
 
 interface UseGameSettingsFlowResult {

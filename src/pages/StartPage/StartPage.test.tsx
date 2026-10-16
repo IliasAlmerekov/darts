@@ -127,7 +127,7 @@ describe("StartPage", () => {
     vi.mocked(getInvitation).mockResolvedValue({ gameId: 0, invitationLink: "" });
     vi.mocked(updatePlayerOrder).mockResolvedValue(undefined);
     vi.mocked(leaveRoom).mockResolvedValue(undefined);
-    vi.mocked(addGuestPlayer).mockResolvedValue({ id: 99, name: "Guest" });
+    vi.mocked(addGuestPlayer).mockResolvedValue({ id: 99, name: "Guest", position: null });
   });
 
   afterEach(() => {

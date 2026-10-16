@@ -1,8 +1,8 @@
-import type { GameSettingsResponse, GameThrowsResponse } from "@/types";
+import type { GameSettings, GameThrowsResponse } from "@/types";
 
 export function mergeGameSettings(
   gameData: GameThrowsResponse | null,
-  settings: GameSettingsResponse,
+  settings: GameSettings,
   expectedGameId?: number,
 ): GameThrowsResponse | null {
   if (gameData === null) {

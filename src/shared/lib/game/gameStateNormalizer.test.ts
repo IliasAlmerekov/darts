@@ -18,6 +18,7 @@ function buildPlayer(overrides: Partial<GamePlayer> = {}): GamePlayer {
     isActive: false,
     position: null,
     isBust: false,
+    isGuest: false,
     throwsInCurrentRound: 0,
     roundHistory: [],
     currentRoundThrows: [],
@@ -272,7 +273,10 @@ describe("gameStateNormalizer", () => {
             ...firstPlayer,
             score: 40,
             throwsInCurrentRound: 2,
-            currentRoundThrows: [{ value: 20 }, { value: 20 }],
+            currentRoundThrows: [
+              { value: 20, isDouble: false, isTriple: false, isBust: false },
+              { value: 20, isDouble: false, isTriple: false, isBust: false },
+            ],
           },
           {
             ...secondPlayer,
@@ -322,7 +326,10 @@ describe("gameStateNormalizer", () => {
             isActive: false,
             position: null,
             throwsInCurrentRound: 2,
-            currentRoundThrows: [{ value: 20 }, { value: 20 }],
+            currentRoundThrows: [
+              { value: 20, isDouble: false, isTriple: false, isBust: false },
+              { value: 20, isDouble: false, isTriple: false, isBust: false },
+            ],
           },
           {
             ...secondPlayer,

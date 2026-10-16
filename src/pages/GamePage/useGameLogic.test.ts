@@ -34,6 +34,7 @@ function buildGameData(overrides?: Partial<GameThrowsResponse>): GameThrowsRespo
         throwsInCurrentRound: 0,
         currentRoundThrows: [],
         roundHistory: [],
+        isGuest: false,
       },
       {
         id: 2,
@@ -45,6 +46,7 @@ function buildGameData(overrides?: Partial<GameThrowsResponse>): GameThrowsRespo
         throwsInCurrentRound: 0,
         currentRoundThrows: [],
         roundHistory: [],
+        isGuest: false,
       },
     ],
     ...overrides,
@@ -74,6 +76,7 @@ describe("areAllPlayersAtStartScore", () => {
           throwsInCurrentRound: 1,
           currentRoundThrows: [],
           roundHistory: [],
+          isGuest: false,
         },
         {
           id: 2,
@@ -85,6 +88,7 @@ describe("areAllPlayersAtStartScore", () => {
           throwsInCurrentRound: 0,
           currentRoundThrows: [],
           roundHistory: [],
+          isGuest: false,
         },
       ],
     });
@@ -111,7 +115,10 @@ describe("shouldAutoFinishGame", () => {
           position: null,
           throwsInCurrentRound: 0,
           currentRoundThrows: [],
-          roundHistory: [{ throws: [{ value: 20 }] }],
+          roundHistory: [
+            { throws: [{ value: 20, isDouble: false, isTriple: false, isBust: false }] },
+          ],
+          isGuest: false,
         },
         {
           id: 2,
@@ -122,7 +129,10 @@ describe("shouldAutoFinishGame", () => {
           position: 1,
           throwsInCurrentRound: 0,
           currentRoundThrows: [],
-          roundHistory: [{ throws: [{ value: 20 }] }],
+          roundHistory: [
+            { throws: [{ value: 20, isDouble: false, isTriple: false, isBust: false }] },
+          ],
+          isGuest: false,
         },
       ],
     });
@@ -143,7 +153,10 @@ describe("shouldAutoFinishGame", () => {
           position: null,
           throwsInCurrentRound: 0,
           currentRoundThrows: [],
-          roundHistory: [{ throws: [{ value: 20 }] }],
+          roundHistory: [
+            { throws: [{ value: 20, isDouble: false, isTriple: false, isBust: false }] },
+          ],
+          isGuest: false,
         },
         {
           id: 2,
@@ -154,7 +167,10 @@ describe("shouldAutoFinishGame", () => {
           position: 1,
           throwsInCurrentRound: 0,
           currentRoundThrows: [],
-          roundHistory: [{ throws: [{ value: 20 }] }],
+          roundHistory: [
+            { throws: [{ value: 20, isDouble: false, isTriple: false, isBust: false }] },
+          ],
+          isGuest: false,
         },
       ],
     });
@@ -175,6 +191,7 @@ describe("shouldAutoFinishGame", () => {
           throwsInCurrentRound: 0,
           currentRoundThrows: [],
           roundHistory: [],
+          isGuest: false,
         },
         {
           id: 2,
@@ -186,6 +203,7 @@ describe("shouldAutoFinishGame", () => {
           throwsInCurrentRound: 0,
           currentRoundThrows: [],
           roundHistory: [],
+          isGuest: false,
         },
       ],
     });
@@ -207,6 +225,7 @@ describe("shouldAutoFinishGame", () => {
           throwsInCurrentRound: 0,
           currentRoundThrows: [],
           roundHistory: [],
+          isGuest: false,
         },
         {
           id: 2,
@@ -218,6 +237,7 @@ describe("shouldAutoFinishGame", () => {
           throwsInCurrentRound: 0,
           currentRoundThrows: [],
           roundHistory: [],
+          isGuest: false,
         },
       ],
     });
@@ -271,7 +291,10 @@ describe("calculateShouldShowFinishOverlay", () => {
           position: null,
           throwsInCurrentRound: 0,
           currentRoundThrows: [],
-          roundHistory: [{ throws: [{ value: 20 }] }],
+          roundHistory: [
+            { throws: [{ value: 20, isDouble: false, isTriple: false, isBust: false }] },
+          ],
+          isGuest: false,
         },
         {
           id: 2,
@@ -282,7 +305,10 @@ describe("calculateShouldShowFinishOverlay", () => {
           position: null,
           throwsInCurrentRound: 0,
           currentRoundThrows: [],
-          roundHistory: [{ throws: [{ value: 20 }] }],
+          roundHistory: [
+            { throws: [{ value: 20, isDouble: false, isTriple: false, isBust: false }] },
+          ],
+          isGuest: false,
         },
         {
           id: 3,
@@ -293,7 +319,10 @@ describe("calculateShouldShowFinishOverlay", () => {
           position: 1,
           throwsInCurrentRound: 0,
           currentRoundThrows: [],
-          roundHistory: [{ throws: [{ value: 20 }] }],
+          roundHistory: [
+            { throws: [{ value: 20, isDouble: false, isTriple: false, isBust: false }] },
+          ],
+          isGuest: false,
         },
       ],
     });
@@ -321,7 +350,10 @@ describe("calculateShouldShowFinishOverlay", () => {
           position: null,
           throwsInCurrentRound: 0,
           currentRoundThrows: [],
-          roundHistory: [{ throws: [{ value: 20 }] }],
+          roundHistory: [
+            { throws: [{ value: 20, isDouble: false, isTriple: false, isBust: false }] },
+          ],
+          isGuest: false,
         },
         {
           id: 2,
@@ -332,7 +364,10 @@ describe("calculateShouldShowFinishOverlay", () => {
           position: null,
           throwsInCurrentRound: 0,
           currentRoundThrows: [],
-          roundHistory: [{ throws: [{ value: 20 }] }],
+          roundHistory: [
+            { throws: [{ value: 20, isDouble: false, isTriple: false, isBust: false }] },
+          ],
+          isGuest: false,
         },
         {
           id: 3,
@@ -343,7 +378,10 @@ describe("calculateShouldShowFinishOverlay", () => {
           position: 1,
           throwsInCurrentRound: 0,
           currentRoundThrows: [],
-          roundHistory: [{ throws: [{ value: 20 }] }],
+          roundHistory: [
+            { throws: [{ value: 20, isDouble: false, isTriple: false, isBust: false }] },
+          ],
+          isGuest: false,
         },
       ],
     });
@@ -371,7 +409,10 @@ describe("calculateShouldShowFinishOverlay", () => {
           position: null,
           throwsInCurrentRound: 0,
           currentRoundThrows: [],
-          roundHistory: [{ throws: [{ value: 20 }] }],
+          roundHistory: [
+            { throws: [{ value: 20, isDouble: false, isTriple: false, isBust: false }] },
+          ],
+          isGuest: false,
         },
         {
           id: 2,
@@ -382,7 +423,10 @@ describe("calculateShouldShowFinishOverlay", () => {
           position: 1,
           throwsInCurrentRound: 0,
           currentRoundThrows: [],
-          roundHistory: [{ throws: [{ value: 20 }] }],
+          roundHistory: [
+            { throws: [{ value: 20, isDouble: false, isTriple: false, isBust: false }] },
+          ],
+          isGuest: false,
         },
       ],
     });

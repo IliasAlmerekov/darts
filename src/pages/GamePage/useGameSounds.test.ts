@@ -47,6 +47,7 @@ function createPlayer(overrides: PlayerOverrides): GameThrowsResponse["players"]
     score: 301,
     isActive: false,
     isBust: false,
+    isGuest: false,
     position: null,
     throwsInCurrentRound: throws?.length ?? 0,
     currentRoundThrows: throws ?? [],
@@ -134,7 +135,12 @@ describe("useGameSounds", () => {
     const initialGame = createGame({
       currentThrowCount: 1,
       players: [
-        createPlayer({ id: 1, name: "Alice", isActive: true, throws: [{ value: 20 }] }),
+        createPlayer({
+          id: 1,
+          name: "Alice",
+          isActive: true,
+          throws: [{ value: 20, isDouble: false, isTriple: false, isBust: false }],
+        }),
         createPlayer({ id: 2, name: "Bob" }),
       ],
     });
@@ -145,7 +151,10 @@ describe("useGameSounds", () => {
           id: 1,
           name: "Alice",
           isActive: true,
-          throws: [{ value: 20 }, { value: 18 }],
+          throws: [
+            { value: 20, isDouble: false, isTriple: false, isBust: false },
+            { value: 18, isDouble: false, isTriple: false, isBust: false },
+          ],
         }),
         createPlayer({ id: 2, name: "Bob" }),
       ],
@@ -205,7 +214,10 @@ describe("useGameSounds", () => {
           id: 1,
           name: "Alice",
           isActive: true,
-          throws: [{ value: 20 }, { value: 20 }],
+          throws: [
+            { value: 20, isDouble: false, isTriple: false, isBust: false },
+            { value: 20, isDouble: false, isTriple: false, isBust: false },
+          ],
         }),
         createPlayer({ id: 2, name: "Bob" }),
       ],
@@ -215,7 +227,12 @@ describe("useGameSounds", () => {
       activePlayerId: 1,
       currentRound: 1,
       players: [
-        createPlayer({ id: 1, name: "Alice", isActive: true, throws: [{ value: 20 }] }),
+        createPlayer({
+          id: 1,
+          name: "Alice",
+          isActive: true,
+          throws: [{ value: 20, isDouble: false, isTriple: false, isBust: false }],
+        }),
         createPlayer({ id: 2, name: "Bob" }),
       ],
     });

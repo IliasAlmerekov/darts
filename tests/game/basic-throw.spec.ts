@@ -6,9 +6,9 @@ import { mockQuietRoomStream } from "../shared/room-stream-mocks";
 
 type PlayerThrow = {
   value: number;
-  isDouble?: boolean;
-  isTriple?: boolean;
-  isBust?: boolean;
+  isDouble: boolean;
+  isTriple: boolean;
+  isBust: boolean;
 };
 
 type RoundHistory = {
@@ -22,6 +22,7 @@ type MockPlayer = {
   score: number;
   isActive: boolean;
   isBust: boolean;
+  isGuest: boolean;
   position: number | null;
   throwsInCurrentRound: number;
   currentRoundThrows: PlayerThrow[];
@@ -74,6 +75,7 @@ const createPlayer = (
   score,
   isActive,
   isBust: false,
+  isGuest: false,
   position: null,
   throwsInCurrentRound: 0,
   currentRoundThrows: [],
@@ -251,7 +253,11 @@ const installGameRoutes = async (page: Page, options: RouteOptions): Promise<voi
     await route.fulfill({
       status: 200,
       contentType: "application/json",
-      body: JSON.stringify(currentState),
+      body: JSON.stringify({
+        gameId,
+        ...currentState.settings,
+        status: currentState.status,
+      }),
     });
   });
 };

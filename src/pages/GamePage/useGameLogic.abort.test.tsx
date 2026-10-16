@@ -121,7 +121,10 @@ function buildAutoFinishGameData(): GameThrowsResponse {
         position: null,
         throwsInCurrentRound: 0,
         currentRoundThrows: [],
-        roundHistory: [{ throws: [{ value: 20 }] }],
+        roundHistory: [
+          { throws: [{ value: 20, isDouble: false, isTriple: false, isBust: false }] },
+        ],
+        isGuest: false,
       },
       {
         id: 2,
@@ -132,7 +135,10 @@ function buildAutoFinishGameData(): GameThrowsResponse {
         position: 1,
         throwsInCurrentRound: 0,
         currentRoundThrows: [],
-        roundHistory: [{ throws: [{ value: 20 }] }],
+        roundHistory: [
+          { throws: [{ value: 20, isDouble: false, isTriple: false, isBust: false }] },
+        ],
+        isGuest: false,
       },
     ],
   };

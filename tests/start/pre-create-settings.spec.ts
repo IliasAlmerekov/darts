@@ -28,7 +28,11 @@ test.describe("Pre-create game settings", () => {
       await route.fulfill({
         status: 200,
         contentType: "application/json",
-        body: JSON.stringify({ gameId: 520, invitationLink: "/invite/520" }),
+        body: JSON.stringify({
+          success: true,
+          gameId: 520,
+          invitationLink: "/invite/520",
+        }),
       });
     });
 

@@ -56,6 +56,8 @@ function createSettingsResponse(
   overrides: Partial<GameSettingsResponse> = {},
 ): GameSettingsResponse {
   return {
+    gameId: 1,
+    status: "lobby",
     startScore: 301,
     doubleOut: false,
     tripleOut: false,

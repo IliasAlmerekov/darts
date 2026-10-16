@@ -1,5 +1,6 @@
 // @vitest-environment jsdom
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import * as v from "valibot";
 import {
   ApiValidationError,
   apiClient,
@@ -9,21 +10,11 @@ import {
 import { NetworkError, TimeoutError } from "./errors";
 import { createMockResponse } from "./test-utils";
 
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === "object" && value !== null;
-}
+const acceptUnknown = v.unknown();
 
-function acceptUnknown(_data: unknown): _data is unknown {
-  return true;
-}
+const okResponseSchema = v.object({ ok: v.boolean() });
 
-function isOkResponse(data: unknown): data is { ok: boolean } {
-  return isRecord(data) && typeof data.ok === "boolean";
-}
-
-function isNullResponse(data: unknown): data is null {
-  return data === null;
-}
+const nullResponseSchema = v.null();
 
 describe("apiClient unauthorized handling", () => {
   beforeEach(() => {
@@ -127,7 +118,7 @@ describe("apiClient request timeout", () => {
 
     const result = await apiClient.get("/fast", {
       timeoutMs: 5000,
-      validate: isOkResponse,
+      validate: okResponseSchema,
     });
     expect(result).toEqual({ ok: true });
   });
@@ -325,7 +316,7 @@ describe("apiClient external signal cleanup", () => {
       ),
     );
 
-    await apiClient.get("/fast", { signal: externalController.signal, validate: isOkResponse });
+    await apiClient.get("/fast", { signal: externalController.signal, validate: okResponseSchema });
     externalController.abort();
 
     expect(getRequestSignal()?.aborted).toBe(false);
@@ -387,10 +378,10 @@ describe("apiClient response passthrough", () => {
 
     vi.spyOn(globalThis, "fetch").mockResolvedValueOnce(response);
 
-    const result = await apiClient.request<{ ok: boolean }>("/game/520", {
+    const result = await apiClient.request("/game/520", {
       method: "GET",
       returnResponse: true,
-      validate: isOkResponse,
+      validate: okResponseSchema,
     });
 
     expect(result).toEqual({
@@ -408,16 +399,49 @@ describe("apiClient response passthrough", () => {
 
     vi.spyOn(globalThis, "fetch").mockResolvedValueOnce(response);
 
-    const result = await apiClient.request<null>("/game/520", {
+    const result = await apiClient.request("/game/520", {
       method: "GET",
       acceptedStatuses: [304],
       returnResponse: true,
-      validate: isNullResponse,
+      validate: nullResponseSchema,
     });
 
     expect(result).toEqual({
       data: null,
       response,
+    });
+  });
+
+  it("returns the schema output, with defaults filled in and unknown keys dropped", async () => {
+    vi.spyOn(globalThis, "fetch").mockResolvedValueOnce(
+      createMockResponse({
+        body: { ok: true, extra: "ignored" },
+        status: 200,
+        headers: new Headers({ "content-type": "application/json" }),
+        url: "http://localhost/api/fast",
+      }),
+    );
+
+    const result = await apiClient.get("/fast", {
+      validate: v.object({ ok: v.boolean(), retries: v.optional(v.number(), 0) }),
+    });
+
+    expect(result).toEqual({ ok: true, retries: 0 });
+  });
+
+  it("keeps the raw payload on ApiValidationError", async () => {
+    vi.spyOn(globalThis, "fetch").mockResolvedValueOnce(
+      createMockResponse({
+        body: { ok: "yes" },
+        status: 200,
+        headers: new Headers({ "content-type": "application/json" }),
+        url: "http://localhost/api/protected",
+      }),
+    );
+
+    await expect(apiClient.get("/fast", { validate: okResponseSchema })).rejects.toMatchObject({
+      message: "API response failed validation",
+      raw: { ok: "yes" },
     });
   });
 
@@ -432,9 +456,9 @@ describe("apiClient response passthrough", () => {
     );
 
     await expect(
-      apiClient.get<{ ok: boolean }>("/fast", {
+      apiClient.get("/fast", {
         timeoutMs: 5000,
-        validate: isOkResponse,
+        validate: okResponseSchema,
       }),
     ).rejects.toBeInstanceOf(ApiValidationError);
   });

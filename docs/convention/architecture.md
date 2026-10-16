@@ -109,7 +109,7 @@ The API layer has a **two-level public surface**:
   surface. Pages and other shared code import resource calls and DTO types directly from
   these modules: `import { getGameThrows } from "@/shared/api/game"`.
 
-Internals -- `client.ts`, `errors.ts`, `types.ts`, `endpoints.ts` -- must **not** be
+Internals -- `client.ts`, `errors.ts`, `types.ts`, `endpoints.ts`, `schemas.ts` -- must **not** be
 imported directly outside `shared/api/`. They are reachable only via the `@/shared/api`
 barrel.
 

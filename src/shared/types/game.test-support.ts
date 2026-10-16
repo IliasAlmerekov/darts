@@ -1,5 +1,5 @@
-import type { FinishedPlayerResponse, GameSettingsResponse, GameThrowsResponse } from "./api";
-import type { FinishedGameProps, WinnerPlayerProps } from "./game";
+import type { FinishedPlayerResponse, GameSettingsResponse } from "./api";
+import type { FinishedGameProps, GameThrowsResponse, WinnerPlayerProps } from "./game";
 import type { BackendPlayer } from "./player";
 
 export function buildFinishedGame(overrides: Partial<FinishedGameProps> = {}): FinishedGameProps {
@@ -20,6 +20,7 @@ export function buildBackendPlayer(overrides: Partial<BackendPlayer> = {}): Back
     score: 501,
     isActive: false,
     isBust: false,
+    isGuest: false,
     position: 0,
     throwsInCurrentRound: 0,
     currentRoundThrows: [],
@@ -32,6 +33,8 @@ export function buildGameSettingsResponse(
   overrides: Partial<GameSettingsResponse> = {},
 ): GameSettingsResponse {
   return {
+    gameId: 1,
+    status: "lobby",
     startScore: 501,
     doubleOut: false,
     tripleOut: false,
@@ -51,7 +54,7 @@ export function buildGameThrowsResponse(
     currentThrowCount: 0,
     players: [],
     winnerId: null,
-    settings: buildGameSettingsResponse(),
+    settings: { startScore: 501, doubleOut: false, tripleOut: false },
     ...overrides,
   };
 }

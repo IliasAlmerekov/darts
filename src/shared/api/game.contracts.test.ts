@@ -1,11 +1,11 @@
 // @vitest-environment node
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { apiClient } from "./client";
+import { apiClient, ApiValidationError } from "./client";
 import { finishGame, undoLastThrow, updateGameSettings } from "./game";
+import { respondWith } from "./test-utils";
 
 function createLegacyGameResponse() {
   return {
-    type: "full-state" as const,
     id: 42,
     status: "started" as const,
     currentRound: 2,
@@ -19,6 +19,7 @@ function createLegacyGameResponse() {
         score: 261,
         isActive: true,
         isBust: false,
+        isGuest: false,
         position: null,
         throwsInCurrentRound: 1,
         currentRoundThrows: [{ value: 20, isDouble: true, isTriple: false, isBust: false }],
@@ -38,34 +39,16 @@ describe("game api contract adapters", () => {
     vi.restoreAllMocks();
   });
 
-  it("returns compact settings when PATCH /settings already responds with GameSettingsResponse", async () => {
-    vi.spyOn(apiClient, "patch").mockResolvedValueOnce({
-      startScore: 501,
-      doubleOut: true,
-      tripleOut: false,
-    });
-
-    const response = await updateGameSettings(42, {
-      doubleOut: true,
-      tripleOut: false,
-    });
-
-    expect(response).toEqual({
-      startScore: 501,
-      doubleOut: true,
-      tripleOut: false,
-    });
-  });
-
-  it("extracts settings from the legacy full game response for PATCH /settings", async () => {
-    vi.spyOn(apiClient, "patch").mockResolvedValueOnce({
-      ...createLegacyGameResponse(),
-      settings: {
+  it("returns the contract GameSettingsResponseDto from PATCH /settings", async () => {
+    vi.spyOn(apiClient, "patch").mockImplementationOnce(
+      respondWith({
+        gameId: 42,
         startScore: 501,
         doubleOut: true,
         tripleOut: false,
-      },
-    });
+        status: "lobby",
+      }),
+    );
 
     const response = await updateGameSettings(42, {
       doubleOut: true,
@@ -73,10 +56,23 @@ describe("game api contract adapters", () => {
     });
 
     expect(response).toEqual({
+      gameId: 42,
       startScore: 501,
       doubleOut: true,
       tripleOut: false,
+      status: "lobby",
     });
+  });
+
+  it("rejects a full game state from PATCH /settings, which the contract does not document", async () => {
+    vi.spyOn(apiClient, "patch").mockImplementationOnce(respondWith(createLegacyGameResponse()));
+
+    await expect(
+      updateGameSettings(42, {
+        doubleOut: true,
+        tripleOut: false,
+      }),
+    ).rejects.toBeInstanceOf(ApiValidationError);
   });
 
   it("treats finishGame as summary-ready and returns standings DTO", async () => {
@@ -94,7 +90,7 @@ describe("game api contract adapters", () => {
         },
       ],
     };
-    vi.spyOn(apiClient, "post").mockResolvedValueOnce(summaryResponse);
+    vi.spyOn(apiClient, "post").mockImplementationOnce(respondWith(summaryResponse));
 
     const response = await finishGame(42);
 
@@ -103,16 +99,15 @@ describe("game api contract adapters", () => {
 
   it("keeps supporting the legacy full undo response during phased rollout", async () => {
     const fullResponse = createLegacyGameResponse();
-    vi.spyOn(apiClient, "delete").mockResolvedValueOnce(fullResponse);
+    vi.spyOn(apiClient, "delete").mockImplementationOnce(respondWith(fullResponse));
 
     const response = await undoLastThrow(42);
 
-    expect(response).toEqual(fullResponse);
+    expect(response).toEqual({ type: "full-state", ...fullResponse });
   });
 
-  it("returns compact undo acknowledgement without refetching game state", async () => {
+  it("tags a contract UndoAckDto, which has no type field, as an ack", async () => {
     const compactUndoAck = {
-      type: "ack" as const,
       success: true,
       gameId: 42,
       stateVersion: "v-undo-1",
@@ -134,14 +129,16 @@ describe("game api contract adapters", () => {
       },
       serverTs: "2026-03-10T10:00:00.000Z",
     };
-    const deleteSpy = vi.spyOn(apiClient, "delete").mockResolvedValueOnce(compactUndoAck);
+    const deleteSpy = vi
+      .spyOn(apiClient, "delete")
+      .mockImplementationOnce(respondWith(compactUndoAck));
 
     const response = await undoLastThrow(42);
 
     expect(deleteSpy).toHaveBeenCalledWith(
       "/game/42/throw",
-      expect.objectContaining({ validate: expect.any(Function) }),
+      expect.objectContaining({ validate: expect.any(Object) }),
     );
-    expect(response).toEqual(compactUndoAck);
+    expect(response).toEqual({ type: "ack", ...compactUndoAck });
   });
 });

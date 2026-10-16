@@ -108,10 +108,14 @@ function buildGameData(status: GameThrowsResponse["status"]): GameThrowsResponse
         score: 301,
         isActive: true,
         isBust: false,
+        isGuest: false,
         position: null,
         throwsInCurrentRound: 0,
         currentRoundThrows: [],
-        roundHistory: status === "started" ? [{ throws: [{ value: 20 }] }] : [],
+        roundHistory:
+          status === "started"
+            ? [{ throws: [{ value: 20, isDouble: false, isTriple: false, isBust: false }] }]
+            : [],
       },
       {
         id: 2,
@@ -119,10 +123,14 @@ function buildGameData(status: GameThrowsResponse["status"]): GameThrowsResponse
         score: status === "finished" ? 0 : 281,
         isActive: false,
         isBust: false,
+        isGuest: false,
         position: status === "finished" ? 1 : null,
         throwsInCurrentRound: 0,
         currentRoundThrows: [],
-        roundHistory: status === "started" ? [{ throws: [{ value: 20 }] }] : [],
+        roundHistory:
+          status === "started"
+            ? [{ throws: [{ value: 20, isDouble: false, isTriple: false, isBust: false }] }]
+            : [],
       },
     ],
   };

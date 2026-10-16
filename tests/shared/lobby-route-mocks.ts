@@ -7,6 +7,7 @@ interface LobbyPlayer {
   score: number;
   isActive: boolean;
   isBust: boolean;
+  isGuest: boolean;
   position: number | null;
   throwsInCurrentRound: number;
   currentRoundThrows: [];
@@ -71,7 +72,11 @@ export async function mockLobbyApi(page: Page): Promise<void> {
 
   await page.route(matchPath(/^\/api\/invite\/create\/\d+$/), async (route) => {
     const gameId = lastPathSegmentAsId(route);
-    await jsonResponse(route, { gameId, invitationLink: `/invite/${gameId}` });
+    await jsonResponse(route, {
+      success: true,
+      gameId,
+      invitationLink: `/invite/${gameId}`,
+    });
   });
 
   await page.route(matchPath(/^\/api\/game\/\d+$/), async (route) => {
@@ -101,6 +106,7 @@ data: ${JSON.stringify({ players })}
       score: settings.startScore,
       isActive: false,
       isBust: false,
+      isGuest: true,
       position: players.length + 1,
       throwsInCurrentRound: 0,
       currentRoundThrows: [],
@@ -119,7 +125,8 @@ data: ${JSON.stringify({ players })}
     if (route.request().method() === "PATCH" && typeof payload === "object" && payload !== null) {
       settings = { ...settings, ...payload };
     }
-    await jsonResponse(route, settings);
+    const gameId = Number(new URL(route.request().url()).pathname.split("/").at(-2));
+    await jsonResponse(route, { gameId, ...settings, status });
   });
 
   await page.route(matchPath(/^\/api\/game\/\d+\/start$/), async (route) => {
