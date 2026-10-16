@@ -49,6 +49,7 @@ Every PR body is the filled `.github/pull_request_template.md`, whoever opens th
    - `Closes #N`. Write `No issue: <reason>` instead only when `CONTRIBUTING.md` allows a PR without an issue.
    - What changed and why, in 1 or 2 sentences.
    - `Evidence:` bullets, each a command and its result, or a test that failed before the fix and passes after.
+     `npm run test:red-on-base` lists the changed tests that fail on `origin/main`'s code.
    - `Confidence:` high, medium, or low, plus one sentence on the risk left.
 3. Delete the template's `<!-- -->` comments. The body has at most 10 non-empty lines.
 
@@ -67,7 +68,8 @@ Commits, PR titles and bodies, and issue comments carry the human author only: n
 Ask the user first before you:
 
 - add, remove, or upgrade a dependency;
-- touch auth, validation, CSRF, roles, tokens, or credentials;
+- touch auth, input or request validation, CSRF, roles, tokens, or credentials. Response
+  schemas in `src/shared/api/` are not on this list: the contract decides them;
 - run a destructive command.
 
 Keep `.env` values out of prompts, logs, commits, and issues. Work on a branch; `main`
