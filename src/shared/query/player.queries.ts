@@ -1,6 +1,7 @@
 import { queryOptions, type Query } from "@tanstack/react-query";
 import { NetworkError, TimeoutError, UnauthorizedError } from "@/shared/api";
-import { getCurrentGame, type CurrentGameResponse } from "@/shared/api/player";
+import { getCurrentGame } from "@/shared/api/player";
+import type { CurrentGame } from "@/shared/lib/player/currentGame";
 import { clientLogger } from "@/shared/services/browser/clientLogger";
 import { setCurrentGameId } from "@/shared/store";
 
@@ -19,8 +20,8 @@ function isExpectedFailure(error: unknown): boolean {
 }
 
 /** Polling goes on until the game has started or the player has no current game. */
-function isWaitingForStart(currentGame: CurrentGameResponse | undefined): boolean {
-  return currentGame === undefined || currentGame.status === "lobby";
+function isWaitingForStart(currentGame: CurrentGame | undefined): boolean {
+  return currentGame === undefined || currentGame.kind === "lobby";
 }
 
 export const playerQueries = {
@@ -33,14 +34,14 @@ export const playerQueries = {
       // Offline the default mode would pause the request instead of failing it, so the page
       // would never count failures and never show the lost connection.
       networkMode: "always",
-      refetchInterval: (query: Query<CurrentGameResponse>) =>
+      refetchInterval: (query: Query<CurrentGame>) =>
         isWaitingForStart(query.state.data) ? CURRENT_GAME_POLL_INTERVAL_MS : false,
-      queryFn: async ({ signal }): Promise<CurrentGameResponse> => {
+      queryFn: async ({ signal }): Promise<CurrentGame> => {
         try {
           const currentGame = await getCurrentGame(signal);
           // The server decides the current game; other pages read it from the store.
           if (!signal.aborted) {
-            setCurrentGameId(currentGame.gameId);
+            setCurrentGameId(currentGame.kind === "none" ? null : currentGame.gameId);
           }
           return currentGame;
         } catch (error: unknown) {

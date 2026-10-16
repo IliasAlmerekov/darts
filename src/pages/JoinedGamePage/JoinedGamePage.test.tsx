@@ -23,7 +23,8 @@ import { act, fireEvent, render, screen } from "@testing-library/react";
 import { onlineManager, QueryClientProvider } from "@tanstack/react-query";
 import { createMemoryRouter, RouterProvider } from "react-router-dom";
 import { logout, type AuthenticatedUser } from "@/shared/api/auth";
-import { getCurrentGame, type CurrentGameResponse } from "@/shared/api/player";
+import { getCurrentGame } from "@/shared/api/player";
+import type { CurrentGame } from "@/shared/lib/player/currentGame";
 import { ApiError, NetworkError, UnauthorizedError } from "@/shared/api";
 import { clientLogger } from "@/shared/services/browser/clientLogger";
 import { ROUTES } from "@/lib/router/routes";
@@ -32,9 +33,9 @@ import { CURRENT_GAME_POLL_INTERVAL_MS } from "@/shared/query/player.queries";
 import { $currentGameId, setCurrentGameId } from "@/shared/store";
 import JoinedGamePage from "./index";
 
-const lobby = (gameId: number): CurrentGameResponse => ({ gameId, status: "lobby" });
-const started = (gameId: number): CurrentGameResponse => ({ gameId, status: "started" });
-const noCurrentGame: CurrentGameResponse = { gameId: null, status: null };
+const lobby = (gameId: number): CurrentGame => ({ kind: "lobby", gameId });
+const started = (gameId: number): CurrentGame => ({ kind: "started", gameId });
+const noCurrentGame: CurrentGame = { kind: "none" };
 
 function buildAuthenticatedUser(overrides: Partial<AuthenticatedUser> = {}): AuthenticatedUser {
   return {
@@ -48,7 +49,7 @@ function buildAuthenticatedUser(overrides: Partial<AuthenticatedUser> = {}): Aut
 
 /** Answers the current-game requests in order; the last answer repeats. */
 function respondWithCurrentGames(
-  ...responses: [CurrentGameResponse | Error, ...Array<CurrentGameResponse | Error>]
+  ...responses: [CurrentGame | Error, ...Array<CurrentGame | Error>]
 ): void {
   let call = 0;
   vi.mocked(getCurrentGame).mockImplementation(() => {

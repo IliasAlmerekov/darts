@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { playerQueries } from "@/shared/query/player.queries";
-import { toWaitingRoomView, type WaitingRoomView } from "./lib/waitingRoomView";
+import type { WaitingRoomView } from "./lib/waitingRoomView";
 
 const FAILURES_BEFORE_CONNECTION_LOST = 3;
 
@@ -28,7 +28,7 @@ export function useWaitingRoom(): UseWaitingRoomReturn {
   });
 
   // Both updates run during render, so the screen never shows a stale value first.
-  if (!hasSeenGame && typeof data?.gameId === "number") {
+  if (!hasSeenGame && data !== undefined && data.kind !== "none") {
     setHasSeenGame(true);
   }
   if (dataUpdatedAt !== failureBaseline.dataUpdatedAt) {
@@ -36,9 +36,17 @@ export function useWaitingRoom(): UseWaitingRoomReturn {
   }
 
   const failuresInARow = errorUpdateCount - failureBaseline.errorUpdateCount;
+  let view: WaitingRoomView;
+  if (data === undefined) {
+    view = { kind: "loading" };
+  } else if (data.kind === "none") {
+    view = { kind: hasSeenGame ? "removed" : "no-game" };
+  } else {
+    view = data;
+  }
 
   return {
-    view: toWaitingRoomView(data, hasSeenGame),
+    view,
     isConnectionLost: failuresInARow >= FAILURES_BEFORE_CONNECTION_LOST,
   };
 }

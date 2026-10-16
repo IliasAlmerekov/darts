@@ -161,7 +161,7 @@ Rules:
 
 - They live in `src/shared/lib/<domain>/` (see `shared/lib/game/`: `gameStateNormalizer`,
   `applyOptimisticUndo`, `mergeGameSettings`, `player-mappers`, `roundAverage`,
-  `parseThrowValue`, `finishedGameStandings`).
+  `parseThrowValue`, `finishedGameStandings`; `shared/lib/player/`: `currentGame`).
 - Every mapper has a co-located `*.test.ts` (`gameStateNormalizer.test.ts`,
   `player-mappers.test.ts`, ...).
 - Mappers are called from any of: an API domain function (e.g. inside

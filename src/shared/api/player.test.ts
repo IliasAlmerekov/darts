@@ -24,26 +24,30 @@ describe("getCurrentGame", () => {
     const controller = new AbortController();
     vi.mocked(apiClient.get).mockImplementationOnce(respondWith(lobbyExample));
 
-    await expect(getCurrentGame(controller.signal)).resolves.toEqual(lobbyExample);
+    await expect(getCurrentGame(controller.signal)).resolves.toEqual({
+      kind: "lobby",
+      gameId: 12,
+    });
     expect(apiClient.get).toHaveBeenCalledWith("/player/current-game", {
       signal: controller.signal,
       validate: expect.any(Object),
     });
   });
 
-  it("returns nulls when the player has no current game", async () => {
+  it("returns no game when the player has no current game", async () => {
     vi.mocked(apiClient.get).mockImplementationOnce(respondWith(noneExample));
 
-    await expect(getCurrentGame()).resolves.toEqual(noneExample);
+    await expect(getCurrentGame()).resolves.toEqual({ kind: "none" });
   });
 
+  // The contract makes each field nullable on its own.
   it.each([
-    { gameId: 12, status: null },
-    { gameId: null, status: "lobby" },
-  ])("rejects with ApiValidationError when only one field is null: %o", async (payload) => {
+    { payload: { gameId: 12, status: null }, expected: { kind: "lobby", gameId: 12 } },
+    { payload: { gameId: null, status: "lobby" }, expected: { kind: "none" } },
+  ])("accepts a response where only one field is null: $payload", async ({ payload, expected }) => {
     vi.mocked(apiClient.get).mockImplementationOnce(respondWith(payload));
 
-    await expect(getCurrentGame()).rejects.toBeInstanceOf(ApiValidationError);
+    await expect(getCurrentGame()).resolves.toEqual(expected);
   });
 
   it("rejects with ApiValidationError for an unknown status", async () => {

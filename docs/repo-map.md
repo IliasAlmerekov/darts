@@ -196,6 +196,7 @@ Domains:
 error/
 game/
 guards/
+player/
 router/
 ```
 
