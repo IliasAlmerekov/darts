@@ -235,7 +235,11 @@ async function request<TSchema extends ResponseSchema>(
     throw new ForbiddenError(getErrorMessage(data, "Access denied"), data, response.url);
   }
 
-  if (!response.ok && !isAcceptedStatus(response.status, acceptedStatuses)) {
+  // Under `redirect: "manual"` a 3xx arrives as an opaque redirect with status 0. The
+  // caller opted out of following it, so the redirect is the answer.
+  const isOpaqueRedirect = response.type === "opaqueredirect";
+
+  if (!response.ok && !isOpaqueRedirect && !isAcceptedStatus(response.status, acceptedStatuses)) {
     throw new ApiError(getErrorMessage(data, "Request failed"), {
       status: response.status,
       data,
