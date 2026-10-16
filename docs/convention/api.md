@@ -94,6 +94,12 @@ ADR 0002 records why responses are described by Valibot schemas.
   field.
 - A schema may be narrower than the contract where the contract is untyped (for example
   a `status` string becomes `v.picklist`). It must not be looser.
+- One exception is open: `POST /api/game/{id}/start` validates with `v.unknown()`
+  (`unvalidatedStartGameResponseSchema` in `game.ts`), and its tests assert that `[]` and
+  `{}` resolve, with no invalid-payload test. The backend sends `[]` instead of `Game`
+  until darts-backend#46 ships, and `startGame` never reads the body. Once #46 ships,
+  give start a contract schema and an invalid-payload test. Any other unvalidated
+  response needs the user's approval and an entry here.
 - A client-side discriminant the backend does not send is added with `v.transform` in the
   schema (`type: "full-state"`), so the type matches the runtime value.
 - A schema used by 2+ domain files lives in `schemas.ts`, like a shared endpoint in
