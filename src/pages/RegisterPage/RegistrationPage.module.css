@@ -41,11 +41,12 @@
 
 @media (width <= 600px) {
   .loginRow {
-    padding: var(--padding-xs);
+    padding: var(--padding-sm);
   }
 
   .loginCol {
     max-width: 360px;
+    padding: var(--padding-sm);
   }
 
   .loginCardBody {

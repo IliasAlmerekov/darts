@@ -104,12 +104,12 @@ export function LoginForm({
         </button>
       </form>
 
-      <div className={styles.signup}>
-        <p className={styles.signupPrompt}>Don&apos;t have an account?</p>
-        <Link to={ROUTES.register} className={styles.signupBtn}>
+      <p className={styles.signup}>
+        Don&apos;t have an account?{" "}
+        <Link to={ROUTES.register} className={styles.signupLink}>
           Sign up
         </Link>
-      </div>
+      </p>
     </>
   );
 }

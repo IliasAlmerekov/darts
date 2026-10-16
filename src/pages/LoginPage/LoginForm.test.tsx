@@ -45,10 +45,12 @@ describe("LoginForm login and registration controls", () => {
     expect(signIn.compareDocumentPosition(signUp) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
   });
 
-  it("shows the prompt line as its own element", () => {
+  it("puts the prompt and the Sign up link in one line of text", () => {
     renderForm({});
+    const line = screen.getByRole("link", { name: "Sign up" }).parentElement;
 
-    expect(screen.getByText("Don't have an account?")).toBeTruthy();
+    expect(line?.tagName).toBe("P");
+    expect(line?.textContent).toBe("Don't have an account? Sign up");
   });
 });
 
