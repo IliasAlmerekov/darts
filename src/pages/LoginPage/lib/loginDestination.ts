@@ -11,19 +11,25 @@ interface LoginDestinationContext {
 
 /**
  * Picks the route a logged-in user goes to from the login page.
- * Only an admin returns to a stored game: a player's stored id may belong to an old game.
+ * A redirect away from the start page, such as the Waiting room after an invitation, wins.
+ * Otherwise only an admin returns to a stored game: a player's stored id may belong to an
+ * old game.
  */
 export function resolveLoginDestination(
   user: AuthenticatedUser,
   { currentGameId, from }: LoginDestinationContext,
 ): string {
-  if (currentGameId !== null && user.roles.includes("ROLE_ADMIN")) {
-    return ROUTES.start(currentGameId);
-  }
-
   const redirectPath = resolveSafeRedirect(user.redirect, ROUTES.start());
   const isStartPage =
     redirectPath === ROUTES.start() || redirectPath.startsWith(`${ROUTES.start()}/`);
 
-  return isStartPage ? from : redirectPath;
+  if (!isStartPage) {
+    return redirectPath;
+  }
+
+  if (currentGameId !== null && user.roles.includes("ROLE_ADMIN")) {
+    return ROUTES.start(currentGameId);
+  }
+
+  return from;
 }

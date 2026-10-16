@@ -46,7 +46,7 @@ describe("useLogin", () => {
   });
 
   it("stores the logged-in user and the joined game from the login response", async () => {
-    loginWithCredentialsMock.mockResolvedValueOnce(joinedPlayer);
+    loginWithCredentialsMock.mockResolvedValueOnce({ type: "user", user: joinedPlayer });
 
     const state = await submitLogin();
 
@@ -59,7 +59,7 @@ describe("useLogin", () => {
   it("stores the user with the invitation error and keeps the current game", async () => {
     setCurrentGameId(7);
     const rejectedInvitation = { ...loggedInPlayer, invitationError: "GAME_ALREADY_STARTED" };
-    loginWithCredentialsMock.mockResolvedValueOnce(rejectedInvitation);
+    loginWithCredentialsMock.mockResolvedValueOnce({ type: "user", user: rejectedInvitation });
 
     const state = await submitLogin();
 
@@ -70,10 +70,8 @@ describe("useLogin", () => {
 
   it("reads the session user when the login answers with the login-success redirect", async () => {
     loginWithCredentialsMock.mockResolvedValueOnce({
-      success: true,
-      roles: ["ROLE_PLAYER"],
-      id: 23,
-      redirect: "/api/login/success",
+      type: "user",
+      user: { success: true, roles: ["ROLE_PLAYER"], id: 23, redirect: "/api/login/success" },
     });
     getAuthenticatedUserMock.mockResolvedValueOnce(joinedPlayer);
 
@@ -82,6 +80,27 @@ describe("useLogin", () => {
     expect(getAuthenticatedUserMock).toHaveBeenCalledTimes(1);
     expect(queryClient.getQueryData(AUTH_KEY)).toEqual(joinedPlayer);
     expect($currentGameId.get()).toBe(42);
+    expect(state.error).toBeNull();
+  });
+
+  it("reads the session user when the login answers without the user", async () => {
+    loginWithCredentialsMock.mockResolvedValueOnce({ type: "session" });
+    getAuthenticatedUserMock.mockResolvedValueOnce(joinedPlayer);
+
+    const state = await submitLogin();
+
+    expect(queryClient.getQueryData(AUTH_KEY)).toEqual(joinedPlayer);
+    expect($currentGameId.get()).toBe(42);
+    expect(state.error).toBeNull();
+  });
+
+  it("reads the session user when the login fails without a reason", async () => {
+    loginWithCredentialsMock.mockResolvedValueOnce({ type: "failure", error: null });
+    getAuthenticatedUserMock.mockResolvedValueOnce(joinedPlayer);
+
+    const state = await submitLogin();
+
+    expect(queryClient.getQueryData(AUTH_KEY)).toEqual(joinedPlayer);
     expect(state.error).toBeNull();
   });
 
@@ -108,7 +127,7 @@ describe("useLogin", () => {
   });
 
   it("maps an unsuccessful login response without exposing the raw message", async () => {
-    loginWithCredentialsMock.mockResolvedValueOnce({ success: false, error: "unauthorized" });
+    loginWithCredentialsMock.mockResolvedValueOnce({ type: "failure", error: "unauthorized" });
 
     const state = await submitLogin();
 
@@ -118,12 +137,7 @@ describe("useLogin", () => {
   });
 
   it("maps an authorization failure from login-success without exposing the raw error", async () => {
-    loginWithCredentialsMock.mockResolvedValueOnce({
-      success: true,
-      roles: ["ROLE_PLAYER"],
-      id: 23,
-      redirect: "/api/login/success",
-    });
+    loginWithCredentialsMock.mockResolvedValueOnce({ type: "session" });
     getAuthenticatedUserMock.mockRejectedValueOnce(
       new ApiError("Authorization failed for authenticated user", {
         status: 401,

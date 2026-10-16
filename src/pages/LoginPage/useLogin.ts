@@ -17,7 +17,8 @@ interface LoginReturn {
   error: string | null;
 }
 
-// The controller fallback answers with `/api/login/success`; the target comes from there.
+// A user whose redirect points into the API came from the controller fallback; the
+// target comes from `/api/login/success`.
 const API_REDIRECT_PREFIX = "/api/";
 
 function getAuthErrorRawMessage(error: unknown): string | undefined {
@@ -58,8 +59,8 @@ export function useLogin(): LoginReturn {
     try {
       const response = await loginWithCredentials({ email, password });
 
-      if (response.success === false) {
-        if (!response.error && (await acceptSessionUser())) {
+      if (response.type === "failure") {
+        if (response.error === null && (await acceptSessionUser())) {
           return;
         }
 
@@ -72,7 +73,7 @@ export function useLogin(): LoginReturn {
         return;
       }
 
-      if (response.redirect.startsWith(API_REDIRECT_PREFIX)) {
+      if (response.type === "session" || response.user.redirect.startsWith(API_REDIRECT_PREFIX)) {
         if (await acceptSessionUser()) {
           return;
         }
@@ -81,7 +82,7 @@ export function useLogin(): LoginReturn {
         return;
       }
 
-      acceptLoggedInUser(response);
+      acceptLoggedInUser(response.user);
     } catch (error) {
       clientLogger.error("auth.login.failed", {
         error,

@@ -33,6 +33,14 @@ describe("resolveLoginDestination", () => {
     expect(resolveLoginDestination(admin, { currentGameId: 99, from: "/start" })).toBe("/start/99");
   });
 
+  it("sends an invited admin to the Waiting room instead of the stored game", () => {
+    const invitedAdmin = { ...admin, redirect: "http://localhost:3000/joined", gameId: 42 };
+
+    expect(resolveLoginDestination(invitedAdmin, { currentGameId: 42, from: "/start" })).toBe(
+      "/joined",
+    );
+  });
+
   it("sends an admin to the protected source route instead of the generic start page", () => {
     expect(resolveLoginDestination(admin, { currentGameId: null, from: "/statistics" })).toBe(
       "/statistics",

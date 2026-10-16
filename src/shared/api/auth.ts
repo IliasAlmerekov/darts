@@ -1,6 +1,7 @@
 import * as v from "valibot";
 import { apiClient, ApiValidationError } from "./client";
 import { ApiError, UnauthorizedError } from "./errors";
+import { integerSchema } from "./schemas";
 import { queryClient } from "@/shared/query/queryClient";
 import { ROUTES } from "@/shared/lib/router/routes";
 
@@ -50,16 +51,44 @@ const authenticatedUserSchema = v.object({
 });
 
 /**
- * `POST /api/login`. A successful login answers with the `/api/login/success` body; the
- * controller fallback answers with `redirect: "/api/login/success"` instead of the target.
+ * The rest of the `POST /api/login` contract: every field is optional. The controller
+ * fallback answers like this, with `redirect: "/api/login/success"` and no target.
+ */
+const loginStatusSchema = v.pipe(
+  v.object({
+    success: v.optional(v.boolean()),
+    id: v.optional(v.nullable(integerSchema)),
+    email: v.optional(v.nullable(v.string())),
+    username: v.optional(v.nullable(v.string())),
+    roles: v.optional(v.array(v.string())),
+    redirect: v.optional(v.nullable(v.string())),
+    gameId: v.optional(integerSchema),
+    invitationError: v.optional(invitationErrorSchema),
+    last_username: v.optional(v.nullable(v.string())),
+    error: v.optional(v.nullable(v.string())),
+    status: v.optional(v.nullable(integerSchema)),
+  }),
+  v.check((login) => Object.keys(login).length > 0),
+);
+
+/**
+ * `POST /api/login`. A successful login answers with the `/api/login/success` body and
+ * becomes `user`. Any other answer is a `failure` when it says so, and otherwise means
+ * the user is logged in but the body lacks them, so the caller reads the `session`.
  */
 const loginResponseSchema = v.union([
-  authenticatedUserSchema,
-  v.object({
-    success: v.literal(false),
-    error: v.optional(v.nullable(v.string())),
-    last_username: v.optional(v.nullable(v.string())),
-  }),
+  v.pipe(
+    authenticatedUserSchema,
+    v.transform((user) => ({ type: "user" as const, user })),
+  ),
+  v.pipe(
+    loginStatusSchema,
+    v.transform((login) =>
+      login.success === false || typeof login.error === "string"
+        ? { type: "failure" as const, error: login.error ?? null }
+        : { type: "session" as const },
+    ),
+  ),
 ]);
 
 /**

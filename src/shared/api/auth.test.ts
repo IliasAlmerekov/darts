@@ -269,7 +269,7 @@ describe("loginWithCredentials", () => {
 
     await expect(
       loginWithCredentials({ email: "alice@example.com", password: "s3cr3t" }),
-    ).resolves.toEqual(loginSuccessExample);
+    ).resolves.toEqual({ type: "user", user: loginSuccessExample });
   });
 
   it("keeps the invitation error when the stored invitation could not be joined", async () => {
@@ -278,16 +278,37 @@ describe("loginWithCredentials", () => {
 
     await expect(
       loginWithCredentials({ email: "alice@example.com", password: "s3cr3t" }),
-    ).resolves.toEqual(response);
+    ).resolves.toEqual({ type: "user", user: response });
   });
 
   it("returns the login error when the backend answers without a user", async () => {
-    const response = { success: false, last_username: "alice", error: "Invalid credentials." };
-    vi.spyOn(apiClient, "post").mockImplementationOnce(respondWith(response));
+    vi.spyOn(apiClient, "post").mockImplementationOnce(
+      respondWith({ success: false, last_username: "alice", error: "Invalid credentials." }),
+    );
 
     await expect(
       loginWithCredentials({ email: "alice@example.com", password: "s3cr3t" }),
-    ).resolves.toEqual(response);
+    ).resolves.toEqual({ type: "failure", error: "Invalid credentials." });
+  });
+
+  it("returns the login error when the backend answers with only an error", async () => {
+    vi.spyOn(apiClient, "post").mockImplementationOnce(
+      respondWith({ error: "Invalid credentials." }),
+    );
+
+    await expect(
+      loginWithCredentials({ email: "alice@example.com", password: "s3cr3t" }),
+    ).resolves.toEqual({ type: "failure", error: "Invalid credentials." });
+  });
+
+  it("asks for the session user when the backend answers with only the login-success redirect", async () => {
+    vi.spyOn(apiClient, "post").mockImplementationOnce(
+      respondWith({ redirect: "/api/login/success" }),
+    );
+
+    await expect(
+      loginWithCredentials({ email: "alice@example.com", password: "s3cr3t" }),
+    ).resolves.toEqual({ type: "session" });
   });
 
   it("rejects with ApiValidationError when the invitation error is not a known code", async () => {
