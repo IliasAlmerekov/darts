@@ -9,9 +9,14 @@ import { queryClient } from "@/shared/query/queryClient";
 
 const navigateMock = vi.fn();
 const useRegistrationMock = vi.fn();
+const useAuthenticatedUserMock = vi.fn();
 
 vi.mock("react-router-dom", () => ({
   useNavigate: () => navigateMock,
+}));
+
+vi.mock("@/shared/hooks/useAuthenticatedUser", () => ({
+  useAuthenticatedUser: () => useAuthenticatedUserMock(),
 }));
 
 vi.mock("./useRegistration", () => ({
@@ -39,6 +44,7 @@ describe("useRegistrationPage", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     queryClient.clear();
+    useAuthenticatedUserMock.mockReturnValue({ user: null, loading: false, error: null });
   });
 
   it("should show the form before registration", () => {
@@ -84,5 +90,19 @@ describe("useRegistrationPage", () => {
       redirect: ROUTES.playerProfile,
     });
     expect(navigateMock).toHaveBeenCalledWith(ROUTES.playerProfile);
+  });
+
+  it("should show the invitation error screen after a reload from the cached session user", () => {
+    givenRegistration(null);
+    useAuthenticatedUserMock.mockReturnValue({
+      user: { ...player, invitationError: "GAME_ROOM_FULL" },
+      loading: false,
+      error: null,
+    });
+    const { result } = renderHook(() => useRegistrationPage());
+    expect(result.current.screen).toEqual({
+      type: "invitation-error",
+      message: "This game is full",
+    });
   });
 });

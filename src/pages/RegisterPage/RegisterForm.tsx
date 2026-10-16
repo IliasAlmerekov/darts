@@ -112,6 +112,11 @@ export function RegisterForm({
         >
           {loading ? <span className={styles.spinner} aria-hidden="true" /> : "Create account"}
         </button>
+        {loading && (
+          <span role="status" className={styles.srOnly}>
+            Creating your account…
+          </span>
+        )}
       </form>
 
       <p className={styles.login}>

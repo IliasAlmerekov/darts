@@ -66,5 +66,6 @@ describe("RegisterForm pending state", () => {
     const button = screen.getByRole("button", { name: "Create account" });
     expect(button.hasAttribute("disabled")).toBe(true);
     expect(button.textContent).toBe("");
+    expect(screen.getByRole("status").textContent).toBe("Creating your account…");
   });
 });

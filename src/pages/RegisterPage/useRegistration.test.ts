@@ -179,4 +179,17 @@ describe("useRegistration", () => {
     expect(navigateMock).not.toHaveBeenCalled();
     expect(getActiveGameId()).toBeNull();
   });
+
+  it("should clear a game id left over from an earlier session when registration joins none", async () => {
+    setCurrentGameId(7);
+    registerUserMock.mockResolvedValueOnce({ ...joinedPlayer, redirect: "/start" });
+
+    const { result } = renderHook(() => useRegistration());
+
+    await act(async () => {
+      await result.current.register("john", "john@example.com", "Password123!");
+    });
+
+    expect(getActiveGameId()).toBeNull();
+  });
 });

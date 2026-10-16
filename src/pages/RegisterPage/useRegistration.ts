@@ -7,6 +7,7 @@ import { isRecord } from "@/lib/guards/guards";
 import { ROUTES } from "@/lib/router/routes";
 import { toSafeRedirectPath } from "@/lib/router/safeRedirect";
 import { acceptLoggedInUser } from "@/shared/query/acceptLoggedInUser";
+import { setCurrentGameId } from "@/shared/store";
 import { clientLogger } from "@/shared/services/browser/clientLogger";
 
 /**
@@ -58,6 +59,10 @@ export function useRegistration(): RegistrationReturn {
         response = await registerUser({ username, email, password }, true);
       }
 
+      // A game id from an earlier session must not leak into the new account.
+      if (typeof response.gameId !== "number") {
+        setCurrentGameId(null);
+      }
       acceptLoggedInUser(response);
       setRegistered(response);
 

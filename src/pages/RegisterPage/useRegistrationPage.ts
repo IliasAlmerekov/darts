@@ -1,6 +1,7 @@
 import { FormEvent } from "react";
 import { useNavigate } from "react-router-dom";
 import { useRegistration } from "./useRegistration";
+import { useAuthenticatedUser } from "@/shared/hooks/useAuthenticatedUser";
 import { mapInvitationErrorMessage } from "@/lib/error/auth-error-handling";
 import { markInvitationErrorHandled } from "@/shared/query/acceptLoggedInUser";
 import { ROUTES } from "@/lib/router/routes";
@@ -24,15 +25,15 @@ interface RegistrationPageReturn {
 
 export function useRegistrationPage(): RegistrationPageReturn {
   const { register, loading, error, registered } = useRegistration();
+  const { user } = useAuthenticatedUser();
   const navigate = useNavigate();
 
   // A registered player without an invitation error is about to leave the page.
   let screen: RegistrationScreen;
-  if (registered?.invitationError !== undefined) {
-    screen = {
-      type: "invitation-error",
-      message: mapInvitationErrorMessage(registered.invitationError),
-    };
+  // After a reload the session user still carries the invitation error.
+  const invitationError = (registered ?? user)?.invitationError;
+  if (invitationError !== undefined) {
+    screen = { type: "invitation-error", message: mapInvitationErrorMessage(invitationError) };
   } else if (registered !== null) {
     screen = { type: "joining" };
   } else {
