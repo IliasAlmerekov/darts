@@ -51,6 +51,15 @@ function buildGameData(overrides: Partial<GameThrowsResponse> = {}): GameThrowsR
   };
 }
 
+function buildGameDataWithFirstPlayerAtPosition(position: number): GameThrowsResponse {
+  const gameState = buildGameData();
+  const [firstPlayer, ...otherPlayers] = gameState.players;
+  if (firstPlayer === undefined) {
+    throw new Error("Expected buildGameData to include a player.");
+  }
+  return { ...gameState, players: [{ ...firstPlayer, position }, ...otherPlayers] };
+}
+
 describe("throwStateService", () => {
   it("should apply optimistic undo by restoring the removed throw score when the active player has throws in the current round", () => {
     const gameState = buildGameData({
@@ -322,5 +331,33 @@ describe("throwStateService", () => {
         throws: [{ value: 20, isDouble: false, isTriple: false, isBust: false }],
       },
     ]);
+  });
+
+  it("keeps a player's position when the scoreboard delta omits it", () => {
+    const gameState = buildGameDataWithFirstPlayerAtPosition(2);
+
+    const nextState = applyScoreboardDeltaToGameState(gameState, {
+      changedPlayers: [{ playerId: 1, name: "P1", score: 281, isActive: true, isGuest: false }],
+      winnerId: null,
+      status: "started",
+      currentRound: 1,
+    });
+
+    expect(nextState.players[0]?.position).toBe(2);
+  });
+
+  it("clears a player's position when the scoreboard delta sets it to null", () => {
+    const gameState = buildGameDataWithFirstPlayerAtPosition(2);
+
+    const nextState = applyScoreboardDeltaToGameState(gameState, {
+      changedPlayers: [
+        { playerId: 1, name: "P1", score: 281, position: null, isActive: true, isGuest: false },
+      ],
+      winnerId: null,
+      status: "started",
+      currentRound: 1,
+    });
+
+    expect(nextState.players[0]?.position).toBeNull();
   });
 });

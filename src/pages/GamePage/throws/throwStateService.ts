@@ -255,7 +255,9 @@ export function applyScoreboardDeltaToGameState(
     }
 
     player.score = playerDelta.score;
-    player.position = playerDelta.position;
+    if (playerDelta.position !== undefined) {
+      player.position = playerDelta.position;
+    }
     player.isActive = playerDelta.isActive;
     if (typeof playerDelta.isBust === "boolean") {
       player.isBust = playerDelta.isBust;

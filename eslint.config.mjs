@@ -114,8 +114,10 @@ export default [
   {
     // A later block replaces the rule options of the pages block above, so it repeats them.
     files: ["src/pages/**/*.tsx", "src/pages/**/use*.ts"],
-    // Existing debt: these hooks call a mapper inside an event handler.
     ignores: [
+      // Tests run mappers as the real store does, so their expectations follow the mapper.
+      "src/pages/**/*.test.{ts,tsx}",
+      // Existing debt: these hooks call a mapper inside an event handler.
       "src/pages/GamePage/throws/useThrowHandler.ts",
       "src/pages/GamePage/throws/useUndoFlow.ts",
       "src/pages/GameSummaryPage/useGameSummaryPage.ts",

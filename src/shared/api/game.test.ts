@@ -74,6 +74,88 @@ const throwAckPayload = {
   serverTs: "2026-03-10T10:00:00.000Z",
 };
 
+/** Contract `ScoreboardDeltaDto` with only the required keys, also on the changed player. */
+const minimalScoreboardDelta = {
+  changedPlayers: [{ playerId: 7, name: "P1", score: 281, isActive: true, isGuest: false }],
+  status: "started",
+  currentRound: 1,
+};
+
+/** Contract `ThrowAckDto` with only the required keys. */
+const minimalThrowAckPayload = {
+  success: true,
+  gameId: 42,
+  stateVersion: "v-2",
+  scoreboardDelta: minimalScoreboardDelta,
+  serverTs: "2026-03-10T10:00:00.000Z",
+};
+
+/** Contract `UndoAckDto` with only the required keys. */
+const minimalUndoAckPayload = {
+  success: true,
+  gameId: 42,
+  stateVersion: "v-3",
+  scoreboardDelta: minimalScoreboardDelta,
+  serverTs: "2026-03-10T10:00:01.000Z",
+};
+
+/**
+ * Every key the contract requires in a throw or undo ack, with a value of the wrong type.
+ * A path into the delta's first changed player goes through `changedPlayers.0`.
+ */
+const requiredAckKeys: ReadonlyArray<[path: string, wrongValue: unknown]> = [
+  ["success", "yes"],
+  ["gameId", "42"],
+  ["stateVersion", 2],
+  ["scoreboardDelta", null],
+  ["serverTs", 0],
+  ["scoreboardDelta.changedPlayers", "P1"],
+  ["scoreboardDelta.status", 1],
+  ["scoreboardDelta.currentRound", "1"],
+  ["scoreboardDelta.changedPlayers.0.playerId", "7"],
+  ["scoreboardDelta.changedPlayers.0.name", 7],
+  ["scoreboardDelta.changedPlayers.0.score", "281"],
+  ["scoreboardDelta.changedPlayers.0.isActive", "yes"],
+  ["scoreboardDelta.changedPlayers.0.isGuest", 1],
+];
+
+/** Copies `payload` and returns the copy with the object that holds the key at `path`. */
+function copyWithParentOf(
+  payload: object,
+  path: string,
+): [copy: unknown, parent: Record<string, unknown>, key: string] {
+  const copy: unknown = structuredClone(payload);
+  const keys = path.split(".");
+  const key = keys.pop();
+  if (key === undefined) {
+    throw new Error("copyWithParentOf: empty path");
+  }
+  let parent: unknown = copy;
+  for (const segment of keys) {
+    parent = (parent as Record<string, unknown>)[segment];
+  }
+  return [copy, parent as Record<string, unknown>, key];
+}
+
+function withoutKey(payload: object, path: string): unknown {
+  const [copy, parent, key] = copyWithParentOf(payload, path);
+  delete parent[key];
+  return copy;
+}
+
+function withValueAt(payload: object, path: string, value: unknown): unknown {
+  const [copy, parent, key] = copyWithParentOf(payload, path);
+  parent[key] = value;
+  return copy;
+}
+
+/** One case per required ack key left out, and one per key given the wrong type. */
+const malformedAckCases: ReadonlyArray<[label: string, malform: (ack: object) => unknown]> =
+  requiredAckKeys.flatMap(([path, wrongValue]) => [
+    [`${path} is missing`, (ack: object) => withoutKey(ack, path)],
+    [`${path} has the wrong type`, (ack: object) => withValueAt(ack, path, wrongValue)],
+  ]);
+
 describe("game api contract payloads", () => {
   beforeEach(() => {
     vi.restoreAllMocks();
@@ -121,12 +203,13 @@ describe("game api contract payloads", () => {
       ).resolves.toBeUndefined();
     });
 
-    it("rejects with ApiValidationError when the response is not an object", async () => {
-      vi.spyOn(apiClient, "post").mockImplementationOnce(respondWith("started"));
+    // The backend answers with [] until darts-backend#46 is fixed.
+    it.each([[[]], [{}]])("resolves for the response body %j", async (body) => {
+      vi.spyOn(apiClient, "post").mockImplementationOnce(respondWith(body));
 
       await expect(
         startGame(42, { startScore: 301, doubleOut: false, tripleOut: false }),
-      ).rejects.toBeInstanceOf(ApiValidationError);
+      ).resolves.toBeUndefined();
     });
   });
 
@@ -196,6 +279,33 @@ describe("game api contract payloads", () => {
       await expect(recordThrow(42, { playerId: 7, value: 20 })).resolves.toEqual(throwAckPayload);
     });
 
+    it("fills null for a missing throw and winnerId and leaves position and isBust absent", async () => {
+      vi.spyOn(apiClient, "post").mockImplementationOnce(respondWith(minimalThrowAckPayload));
+
+      const ack = await recordThrow(42, { playerId: 7, value: 20 });
+
+      expect(ack).toEqual({
+        ...minimalThrowAckPayload,
+        throw: null,
+        scoreboardDelta: { ...minimalScoreboardDelta, winnerId: null },
+      });
+      expect(ack.scoreboardDelta.changedPlayers[0]).not.toHaveProperty("position");
+      expect(ack.scoreboardDelta.changedPlayers[0]).not.toHaveProperty("isBust");
+    });
+
+    it.each(malformedAckCases)(
+      "rejects with ApiValidationError when %s",
+      async (_label, malform) => {
+        vi.spyOn(apiClient, "post").mockImplementationOnce(
+          respondWith(malform(minimalThrowAckPayload)),
+        );
+
+        await expect(recordThrow(42, { playerId: 7, value: 20 })).rejects.toBeInstanceOf(
+          ApiValidationError,
+        );
+      },
+    );
+
     it("rejects with ApiValidationError when the scoreboard delta has an unknown status", async () => {
       vi.spyOn(apiClient, "post").mockImplementationOnce(
         respondWith({
@@ -211,6 +321,27 @@ describe("game api contract payloads", () => {
   });
 
   describe("undoLastThrow", () => {
+    it("tags an ack with only the required keys and fills null for a missing winnerId", async () => {
+      vi.spyOn(apiClient, "delete").mockImplementationOnce(respondWith(minimalUndoAckPayload));
+
+      await expect(undoLastThrow(42)).resolves.toEqual({
+        type: "ack",
+        ...minimalUndoAckPayload,
+        scoreboardDelta: { ...minimalScoreboardDelta, winnerId: null },
+      });
+    });
+
+    it.each(malformedAckCases)(
+      "rejects with ApiValidationError when %s",
+      async (_label, malform) => {
+        vi.spyOn(apiClient, "delete").mockImplementationOnce(
+          respondWith(malform(minimalUndoAckPayload)),
+        );
+
+        await expect(undoLastThrow(42)).rejects.toBeInstanceOf(ApiValidationError);
+      },
+    );
+
     it("rejects with ApiValidationError when the response is neither a game nor an ack", async () => {
       vi.spyOn(apiClient, "delete").mockImplementationOnce(respondWith({ success: true }));
 
