@@ -10,7 +10,21 @@ _Avoid_: active game
 
 **Lobby**:
 A game that players are joining and that has not started yet.
-_Avoid_: room, waiting room, start page
+_Avoid_: room, start page
+
+**Waiting room**:
+The screen a player sees after joining a game, until that game starts.
+_Avoid_: joined page, lobby
+
+## Accounts
+
+**Remembered login**:
+A player's login that stays valid for 7 days after their last visit, so the app skips the login form.
+_Avoid_: remember me, persistent session
+
+**Player profile**:
+The page a player lands on after logging in without an invitation.
+_Avoid_: player page, default page
 
 ## Finished game
 
