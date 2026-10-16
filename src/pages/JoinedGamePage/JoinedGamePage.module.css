@@ -96,6 +96,8 @@
 
 /* ── Waiting indicator ───────────────────────────────────────────────────── */
 
+/* The spinner and the started mark share one size, so the row keeps its height at the start. */
+
 .waiting {
   display: flex;
   align-items: center;
@@ -105,8 +107,9 @@
 .spinner {
   flex-shrink: 0;
   display: inline-block;
-  width: 18px;
-  height: 18px;
+  box-sizing: border-box;
+  width: 24px;
+  height: 24px;
   border: 2px solid rgb(0 0 219 / 20%);
   border-top-color: var(--color-primary);
   border-radius: 50%;
@@ -145,8 +148,8 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 32px;
-  height: 32px;
+  width: 24px;
+  height: 24px;
   border-radius: 50%;
   background-color: var(--color-success);
   animation: scale-in 300ms ease-out;
@@ -155,11 +158,11 @@
 .startedMark::after {
   content: "";
   display: block;
-  width: 8px;
-  height: 14px;
-  border-right: 3px solid var(--white);
-  border-bottom: 3px solid var(--white);
-  transform: rotate(45deg) translate(-1px, -2px);
+  width: 6px;
+  height: 11px;
+  border-right: 2px solid var(--white);
+  border-bottom: 2px solid var(--white);
+  transform: rotate(45deg) translate(-1px, -1px);
 }
 
 @keyframes scale-in {
