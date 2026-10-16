@@ -30,7 +30,7 @@ import { clientLogger } from "@/shared/services/browser/clientLogger";
 import { ROUTES } from "@/lib/router/routes";
 import { createQueryClient } from "@/shared/query/queryClient";
 import { CURRENT_GAME_POLL_INTERVAL_MS } from "@/shared/query/player.queries";
-import { $currentGameId, setCurrentGameId } from "@/shared/store";
+import { $currentGameId, $invitation, setCurrentGameId, setInvitation } from "@/shared/store";
 import JoinedGamePage from "./index";
 
 const lobby = (gameId: number): CurrentGame => ({ kind: "lobby", gameId });
@@ -88,6 +88,7 @@ describe("JoinedGamePage", () => {
     // Only the poll interval and the clock are fake, so polling moves only when a test
     // advances it. Zero-delay timers stay real for React and Testing Library.
     vi.useFakeTimers({ toFake: ["setInterval", "clearInterval", "Date"] });
+    setInvitation(null);
     setCurrentGameId(null);
     vi.mocked(logout).mockReset();
     vi.mocked(clientLogger.error).mockReset();
@@ -220,6 +221,17 @@ describe("JoinedGamePage", () => {
     await advancePolling();
 
     expect(getCurrentGame).toHaveBeenCalledTimes(3);
+  });
+
+  it("should drop an invitation for another game when the server moves the player", async () => {
+    setInvitation({ gameId: 42, invitationLink: "/invite/42" });
+    respondWithCurrentGames(lobby(43));
+    renderPage();
+
+    await screen.findByText("Game #43");
+
+    expect($invitation.get()).toBeNull();
+    expect($currentGameId.get()).toBe(43);
   });
 
   it("should show the lost connection after 3 failed requests in a row and hide it on success", async () => {

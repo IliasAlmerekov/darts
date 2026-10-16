@@ -3,7 +3,7 @@ import { NetworkError, TimeoutError, UnauthorizedError } from "@/shared/api";
 import { getCurrentGame } from "@/shared/api/player";
 import type { CurrentGame } from "@/shared/lib/player/currentGame";
 import { clientLogger } from "@/shared/services/browser/clientLogger";
-import { setCurrentGameId } from "@/shared/store";
+import { setServerCurrentGameId } from "@/shared/store";
 
 export const CURRENT_GAME_POLL_INTERVAL_MS = 3000;
 
@@ -41,7 +41,7 @@ export const playerQueries = {
           const currentGame = await getCurrentGame(signal);
           // The server decides the current game; other pages read it from the store.
           if (!signal.aborted) {
-            setCurrentGameId(currentGame.kind === "none" ? null : currentGame.gameId);
+            setServerCurrentGameId(currentGame.kind === "none" ? null : currentGame.gameId);
           }
           return currentGame;
         } catch (error: unknown) {
