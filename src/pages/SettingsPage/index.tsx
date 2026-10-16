@@ -12,7 +12,7 @@ import {
 } from "@/shared/store";
 import { saveGameSettings } from "@/shared/api/game";
 import { gameQueries } from "@/shared/query/game.queries";
-import useIsomorphicLayoutEffect from "@/shared/lib/useIsomorphicLayoutEffect";
+import useIsomorphicLayoutEffect from "@/lib/useIsomorphicLayoutEffect";
 import { clientLogger } from "@/shared/services/browser/clientLogger";
 import { toUserErrorMessage } from "@/lib/error/error-to-user-message";
 import { ErrorState } from "@/shared/ui/error-state";
