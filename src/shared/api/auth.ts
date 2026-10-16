@@ -1,6 +1,7 @@
 import * as v from "valibot";
 import { apiClient, ApiValidationError } from "./client";
 import { ApiError, UnauthorizedError } from "./errors";
+import { integerSchema } from "./schemas";
 import { queryClient } from "@/shared/query/queryClient";
 import { ROUTES } from "@/shared/lib/router/routes";
 
@@ -8,21 +9,15 @@ import { ROUTES } from "@/shared/lib/router/routes";
 // Schemas
 // ---------------------------------------------------------------------------
 
-// Login behaviour is out of scope for #158, so the login and auth-check schemas keep the
-// rules of the old guards. The PR for #158 lists where they differ from the contract.
-
 const roleSchema = v.picklist(["ROLE_USER", "ROLE_ADMIN", "ROLE_PLAYER"]);
 
-/** `POST /api/login`. At least one of the known fields must be present. */
-const loginResponseSchema = v.pipe(
-  v.object({
-    redirect: v.optional(v.string()),
-    success: v.optional(v.boolean()),
-    error: v.optional(v.nullable(v.string())),
-    last_username: v.optional(v.nullable(v.string())),
-  }),
-  v.check((login) => Object.keys(login).length > 0),
-);
+/** Why the backend could not join the invitation held in the session. The login still worked. */
+const invitationErrorSchema = v.picklist([
+  "GAME_ALREADY_STARTED",
+  "GAME_ROOM_FULL",
+  "GAME_NOT_FOUND",
+  "GAME_JOIN_NOT_ALLOWED",
+]);
 
 /** Contract response of `GET /api/csrf`. */
 const csrfTokensResponseSchema = v.object({
@@ -51,8 +46,50 @@ const authenticatedUserSchema = v.object({
   username: v.optional(v.nullable(v.string())),
   redirect: v.string(),
   gameId: v.optional(v.nullable(v.number())),
+  invitationError: v.optional(invitationErrorSchema),
   profile: v.optional(authenticatedUserProfileSchema),
 });
+
+/**
+ * The rest of the `POST /api/login` contract: every field is optional. The controller
+ * fallback answers like this, with `redirect: "/api/login/success"` and no target.
+ */
+const loginStatusSchema = v.pipe(
+  v.object({
+    success: v.optional(v.boolean()),
+    id: v.optional(v.nullable(integerSchema)),
+    email: v.optional(v.nullable(v.string())),
+    username: v.optional(v.nullable(v.string())),
+    roles: v.optional(v.array(v.string())),
+    redirect: v.optional(v.nullable(v.string())),
+    gameId: v.optional(integerSchema),
+    invitationError: v.optional(invitationErrorSchema),
+    last_username: v.optional(v.nullable(v.string())),
+    error: v.optional(v.nullable(v.string())),
+    status: v.optional(v.nullable(integerSchema)),
+  }),
+  v.check((login) => Object.keys(login).length > 0),
+);
+
+/**
+ * `POST /api/login`. A successful login answers with the `/api/login/success` body and
+ * becomes `user`. Any other answer is a `failure` when it says so, and otherwise means
+ * the user is logged in but the body lacks them, so the caller reads the `session`.
+ */
+const loginResponseSchema = v.union([
+  v.pipe(
+    authenticatedUserSchema,
+    v.transform((user) => ({ type: "user" as const, user })),
+  ),
+  v.pipe(
+    loginStatusSchema,
+    v.transform((login) =>
+      login.success === false || typeof login.error === "string"
+        ? { type: "failure" as const, error: login.error ?? null }
+        : { type: "session" as const },
+    ),
+  ),
+]);
 
 /**
  * Contract response of `POST /api/register`, 201. The backend logs the new player in and
@@ -74,6 +111,7 @@ export type RegistrationResponse = v.InferOutput<typeof registrationResponseSche
 export type Role = v.InferOutput<typeof roleSchema>;
 type AuthenticatedUserProfile = v.InferOutput<typeof authenticatedUserProfileSchema>;
 export type AuthenticatedUser = v.InferOutput<typeof authenticatedUserSchema>;
+export type InvitationError = v.InferOutput<typeof invitationErrorSchema>;
 
 interface LoginCredentials {
   email: string;

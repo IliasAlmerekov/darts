@@ -1,20 +1,33 @@
 import { useState, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useAuthenticatedUser } from "@/shared/hooks/useAuthenticatedUser";
+import { authQueries } from "@/shared/query/auth.queries";
+import { queryClient } from "@/shared/query/queryClient";
 import { useLogin } from "./useLogin";
+import { resolveLoginDestination } from "./lib/loginDestination";
+import { isLoginLocationState } from "./lib/loginLocationState";
 import { getActiveGameId } from "@/shared/store";
-import { mapAuthErrorMessage } from "@/lib/error/auth-error-handling";
+import { mapAuthErrorMessage, mapInvitationErrorMessage } from "@/lib/error/auth-error-handling";
 import { ROUTES } from "@/lib/router/routes";
 import { resolveSafeRedirect } from "@/lib/router/safeRedirect";
+import { parseLocationState } from "@/lib/router/locationState";
+
+/** What the login page shows: the login check, the form, or a failed invitation. */
+type LoginScreen =
+  | { type: "checking" }
+  | { type: "form" }
+  | { type: "invitation-error"; message: string };
 
 /**
  * Orchestrates login page state, submission, and redirect logic.
  */
 interface LoginPageReturn {
+  screen: LoginScreen;
   error: string | null;
   loading: boolean;
   successMessage: string | null;
   handleSubmit: (e: React.FormEvent<HTMLFormElement>) => Promise<void>;
+  goToPlayerProfile: () => void;
 }
 
 export function useLoginPage(): LoginPageReturn {
@@ -22,12 +35,30 @@ export function useLoginPage(): LoginPageReturn {
   const { login, loading, error: loginError } = useLogin();
   const navigate = useNavigate();
   const location = useLocation();
-  const { user } = useAuthenticatedUser();
+  const { user, loading: checkingLogin } = useAuthenticatedUser();
+
+  const from = resolveSafeRedirect(
+    parseLocationState(location.state, isLoginLocationState)?.from,
+    ROUTES.start(),
+  );
 
   const successMessage =
     new URLSearchParams(location.search).get("left") === "1"
       ? "You have successfully left the game"
       : null;
+
+  const invitationError = user?.invitationError;
+
+  // A logged-in user without an invitation error is about to leave the page, so the
+  // check screen stays up instead of flashing the form.
+  let screen: LoginScreen;
+  if (invitationError !== undefined) {
+    screen = { type: "invitation-error", message: mapInvitationErrorMessage(invitationError) };
+  } else if (checkingLogin || user !== null) {
+    screen = { type: "checking" };
+  } else {
+    screen = { type: "form" };
+  }
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>): Promise<void> => {
     e.preventDefault();
@@ -48,28 +79,34 @@ export function useLoginPage(): LoginPageReturn {
     }
   };
 
-  useEffect(() => {
-    if (user) {
-      const activeGameId = getActiveGameId();
-
-      if (activeGameId) {
-        navigate(ROUTES.start(activeGameId));
-        return;
+  // The handled error leaves the cached user, so a later visit to the login page redirects
+  // instead of showing it again. The redirect effect below then opens the profile.
+  const goToPlayerProfile = (): void => {
+    queryClient.setQueryData(authQueries.me().queryKey, (current) => {
+      if (!current) {
+        return current;
       }
 
-      const redirectPath =
-        user.redirect?.startsWith(`${ROUTES.start()}/`) === true
-          ? ROUTES.start()
-          : resolveSafeRedirect(user.redirect, ROUTES.start());
+      const handledUser = { ...current, redirect: ROUTES.playerProfile };
+      delete handledUser.invitationError;
+      return handledUser;
+    });
+  };
 
-      navigate(redirectPath);
+  useEffect(() => {
+    if (user === null || user.invitationError !== undefined) {
+      return;
     }
-  }, [user, navigate]);
+
+    navigate(resolveLoginDestination(user, { currentGameId: getActiveGameId(), from }));
+  }, [user, from, navigate]);
 
   return {
+    screen,
     error: submitError ?? loginError,
     loading,
     successMessage,
     handleSubmit,
+    goToPlayerProfile,
   };
 }

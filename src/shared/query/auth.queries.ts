@@ -17,6 +17,9 @@ export const authQueries = {
       queryKey: ["auth", "me"] as const,
       // The session check ran once per session before; 401 and logout clear the cache.
       staleTime: Infinity,
+      // The login page waits on this check. Offline the default mode would pause it before
+      // the request starts, so its 5 s timeout never fires and the spinner stays up.
+      networkMode: "always",
       queryFn: async ({ signal }) => {
         try {
           const user = await getAuthenticatedUser({

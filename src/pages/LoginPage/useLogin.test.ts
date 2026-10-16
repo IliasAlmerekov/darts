@@ -3,23 +3,11 @@ import { act, renderHook } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { useLogin } from "./useLogin";
 import { ApiError } from "@/shared/api";
-import { ROUTES } from "@/lib/router/routes";
 import { queryClient } from "@/shared/query/queryClient";
+import { $currentGameId, setCurrentGameId } from "@/shared/store";
 
-const navigateMock = vi.fn();
-const useLocationMock = vi.fn();
 const loginWithCredentialsMock = vi.fn();
 const getAuthenticatedUserMock = vi.fn();
-const assignMock = vi.fn();
-
-vi.mock("react-router-dom", async (importOriginal) => {
-  const actual = await importOriginal<typeof import("react-router-dom")>();
-  return {
-    ...actual,
-    useNavigate: () => navigateMock,
-    useLocation: () => useLocationMock(),
-  };
-});
 
 vi.mock("@/shared/api/auth", () => ({
   loginWithCredentials: (...args: unknown[]) => loginWithCredentialsMock(...args),
@@ -29,164 +17,127 @@ vi.mock("@/shared/api/auth", () => ({
 const AUTH_KEY = ["auth", "me"] as const;
 const SEEDED_USER = { success: true, roles: ["ROLE_ADMIN"], id: 99, redirect: "/start" };
 
+const loggedInPlayer = {
+  success: true,
+  roles: ["ROLE_PLAYER"],
+  id: 23,
+  email: "player@test.com",
+  username: "Ton Eighty",
+  redirect: "http://localhost:3000/joined",
+};
+const joinedPlayer = { ...loggedInPlayer, gameId: 42 };
+
+async function submitLogin(): Promise<ReturnType<typeof useLogin>> {
+  const { result } = renderHook(() => useLogin());
+
+  await act(async () => {
+    await result.current.login("player@test.com", "password");
+  });
+
+  return result.current;
+}
+
 describe("useLogin", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     queryClient.clear();
     queryClient.setQueryData(AUTH_KEY, SEEDED_USER);
-    Object.defineProperty(window, "location", {
-      configurable: true,
-      value: {
-        ...window.location,
-        assign: assignMock,
-      },
-    });
-    useLocationMock.mockReturnValue({
-      pathname: "/",
-      search: "",
-      hash: "",
-      key: "test",
-      state: null,
-    });
+    setCurrentGameId(null);
   });
 
-  it("navigates when login request fails but authenticated session already exists", async () => {
-    loginWithCredentialsMock.mockRejectedValueOnce(new Error("Network request failed"));
-    getAuthenticatedUserMock.mockResolvedValueOnce({
-      success: true,
-      roles: ["ROLE_ADMIN"],
-      id: 1,
-      redirect: "/start",
-    });
+  it("stores the logged-in user and the joined game from the login response", async () => {
+    loginWithCredentialsMock.mockResolvedValueOnce({ type: "user", user: joinedPlayer });
 
-    const { result } = renderHook(() => useLogin());
+    const state = await submitLogin();
 
-    await act(async () => {
-      await result.current.login("admin@test.com", "password");
+    expect(queryClient.getQueryData(AUTH_KEY)).toEqual(joinedPlayer);
+    expect($currentGameId.get()).toBe(42);
+    expect(getAuthenticatedUserMock).not.toHaveBeenCalled();
+    expect(state.error).toBeNull();
+  });
+
+  it("stores the user with the invitation error and keeps the current game", async () => {
+    setCurrentGameId(7);
+    const rejectedInvitation = { ...loggedInPlayer, invitationError: "GAME_ALREADY_STARTED" };
+    loginWithCredentialsMock.mockResolvedValueOnce({ type: "user", user: rejectedInvitation });
+
+    const state = await submitLogin();
+
+    expect(queryClient.getQueryData(AUTH_KEY)).toEqual(rejectedInvitation);
+    expect($currentGameId.get()).toBe(7);
+    expect(state.error).toBeNull();
+  });
+
+  it("reads the session user when the login answers with the login-success redirect", async () => {
+    loginWithCredentialsMock.mockResolvedValueOnce({
+      type: "user",
+      user: { success: true, roles: ["ROLE_PLAYER"], id: 23, redirect: "/api/login/success" },
     });
+    getAuthenticatedUserMock.mockResolvedValueOnce(joinedPlayer);
+
+    const state = await submitLogin();
 
     expect(getAuthenticatedUserMock).toHaveBeenCalledTimes(1);
-    expect(queryClient.getQueryData(AUTH_KEY)).toEqual(
-      expect.objectContaining({ id: 1, redirect: "/start" }),
-    );
-    expect(navigateMock).toHaveBeenCalledWith("/start");
-    expect(result.current.error).toBeNull();
+    expect(queryClient.getQueryData(AUTH_KEY)).toEqual(joinedPlayer);
+    expect($currentGameId.get()).toBe(42);
+    expect(state.error).toBeNull();
   });
 
-  it("sets login error when network request fails and no session is available", async () => {
+  it("reads the session user when the login answers without the user", async () => {
+    loginWithCredentialsMock.mockResolvedValueOnce({ type: "session" });
+    getAuthenticatedUserMock.mockResolvedValueOnce(joinedPlayer);
+
+    const state = await submitLogin();
+
+    expect(queryClient.getQueryData(AUTH_KEY)).toEqual(joinedPlayer);
+    expect($currentGameId.get()).toBe(42);
+    expect(state.error).toBeNull();
+  });
+
+  it("reads the session user when the login fails without a reason", async () => {
+    loginWithCredentialsMock.mockResolvedValueOnce({ type: "failure", error: null });
+    getAuthenticatedUserMock.mockResolvedValueOnce(joinedPlayer);
+
+    const state = await submitLogin();
+
+    expect(queryClient.getQueryData(AUTH_KEY)).toEqual(joinedPlayer);
+    expect(state.error).toBeNull();
+  });
+
+  it("stores the session user when the login request fails but the session exists", async () => {
+    loginWithCredentialsMock.mockRejectedValueOnce(new Error("Network request failed"));
+    getAuthenticatedUserMock.mockResolvedValueOnce(joinedPlayer);
+
+    const state = await submitLogin();
+
+    expect(queryClient.getQueryData(AUTH_KEY)).toEqual(joinedPlayer);
+    expect($currentGameId.get()).toBe(42);
+    expect(state.error).toBeNull();
+  });
+
+  it("sets the network error when the login request fails and no session exists", async () => {
     loginWithCredentialsMock.mockRejectedValueOnce(new Error("Network request failed"));
     getAuthenticatedUserMock.mockResolvedValueOnce(null);
 
-    const { result } = renderHook(() => useLogin());
-
-    await act(async () => {
-      await result.current.login("admin@test.com", "password");
-    });
+    const state = await submitLogin();
 
     expect(getAuthenticatedUserMock).toHaveBeenCalledTimes(1);
-    expect(navigateMock).not.toHaveBeenCalled();
-    expect(result.current.error).toBe("Network error. Please check your connection and try again.");
+    expect(queryClient.getQueryData(AUTH_KEY)).toEqual(SEEDED_USER);
+    expect(state.error).toBe("Network error. Please check your connection and try again.");
   });
 
-  it("resets the cached auth user before navigating by redirect response", async () => {
-    loginWithCredentialsMock.mockResolvedValueOnce({
-      success: true,
-      redirect: "/start/42",
-    });
+  it("maps an unsuccessful login response without exposing the raw message", async () => {
+    loginWithCredentialsMock.mockResolvedValueOnce({ type: "failure", error: "unauthorized" });
 
-    const { result } = renderHook(() => useLogin());
-
-    await act(async () => {
-      await result.current.login("admin@test.com", "password");
-    });
-
-    expect(queryClient.getQueryData(AUTH_KEY)).toBeUndefined();
-    expect(navigateMock).toHaveBeenCalledWith("/start/42");
-    expect(getAuthenticatedUserMock).not.toHaveBeenCalled();
-  });
-
-  it("preserves invite source redirects after a successful login redirect", async () => {
-    useLocationMock.mockReturnValue({
-      pathname: "/",
-      search: "",
-      hash: "",
-      key: "test",
-      state: { from: ROUTES.joined },
-    });
-    loginWithCredentialsMock.mockResolvedValueOnce({
-      success: true,
-      redirect: "/start",
-    });
-
-    const { result } = renderHook(() => useLogin());
-
-    await act(async () => {
-      await result.current.login("player@test.com", "password");
-    });
-
-    expect(queryClient.getQueryData(AUTH_KEY)).toBeUndefined();
-    expect(navigateMock).toHaveBeenCalledWith(ROUTES.joined);
-    expect(getAuthenticatedUserMock).not.toHaveBeenCalled();
-  });
-
-  it("stores a profile-backed user and navigates to the player profile after an API redirect", async () => {
-    const profileBackedUser = {
-      success: true,
-      roles: ["ROLE_PLAYER"],
-      id: 23,
-      username: "Ton Eighty",
-      redirect: "/playerprofile",
-      profile: {
-        id: 23,
-        nickname: "Ton Eighty",
-        stats: {
-          gamesPlayed: 12,
-          scoreAverage: 58.4,
-        },
-      },
-    };
-    loginWithCredentialsMock.mockResolvedValueOnce({
-      success: true,
-      redirect: "/api/login/success",
-    });
-    getAuthenticatedUserMock.mockResolvedValueOnce(profileBackedUser);
-
-    const { result } = renderHook(() => useLogin());
-
-    await act(async () => {
-      await result.current.login("player@test.com", "password");
-    });
-
-    expect(getAuthenticatedUserMock).toHaveBeenCalledTimes(1);
-    expect(queryClient.getQueryData(AUTH_KEY)).toEqual(profileBackedUser);
-    expect(queryClient.getQueryData(AUTH_KEY)).toBeDefined();
-    expect(navigateMock).toHaveBeenCalledWith("/playerprofile");
-    expect(result.current.error).toBeNull();
-  });
-
-  it("maps direct unsuccessful login responses without exposing the raw message", async () => {
-    loginWithCredentialsMock.mockResolvedValueOnce({
-      success: false,
-      error: "unauthorized",
-    });
-
-    const { result } = renderHook(() => useLogin());
-
-    await act(async () => {
-      await result.current.login("player@test.com", "password");
-    });
+    const state = await submitLogin();
 
     expect(getAuthenticatedUserMock).not.toHaveBeenCalled();
     expect(queryClient.getQueryData(AUTH_KEY)).toEqual(SEEDED_USER);
-    expect(navigateMock).not.toHaveBeenCalled();
-    expect(result.current.error).toBe("Incorrect email or password.");
+    expect(state.error).toBe("Incorrect email or password.");
   });
 
-  it("maps authorization failures from login-success without exposing the raw error", async () => {
-    loginWithCredentialsMock.mockResolvedValueOnce({
-      success: true,
-      redirect: "/api/login/success",
-    });
+  it("maps an authorization failure from login-success without exposing the raw error", async () => {
+    loginWithCredentialsMock.mockResolvedValueOnce({ type: "session" });
     getAuthenticatedUserMock.mockRejectedValueOnce(
       new ApiError("Authorization failed for authenticated user", {
         status: 401,
@@ -194,55 +145,10 @@ describe("useLogin", () => {
       }),
     );
 
-    const { result } = renderHook(() => useLogin());
-
-    await act(async () => {
-      await result.current.login("player@test.com", "password");
-    });
+    const state = await submitLogin();
 
     expect(getAuthenticatedUserMock).toHaveBeenCalledTimes(1);
     expect(queryClient.getQueryData(AUTH_KEY)).toEqual(SEEDED_USER);
-    expect(navigateMock).not.toHaveBeenCalled();
-    expect(result.current.error).toBe("Incorrect email or password.");
-  });
-
-  it("redirects to the protected source route after a successful login redirect", async () => {
-    useLocationMock.mockReturnValue({
-      pathname: "/",
-      search: "",
-      hash: "",
-      key: "test",
-      state: { from: "/statistics" },
-    });
-    loginWithCredentialsMock.mockResolvedValueOnce({
-      success: true,
-      redirect: "/start",
-    });
-
-    const { result } = renderHook(() => useLogin());
-
-    await act(async () => {
-      await result.current.login("admin@test.com", "password");
-    });
-
-    expect(queryClient.getQueryData(AUTH_KEY)).toBeUndefined();
-    expect(navigateMock).toHaveBeenCalledWith("/statistics");
-  });
-
-  it("falls back to the internal start route when login returns an external redirect", async () => {
-    loginWithCredentialsMock.mockResolvedValueOnce({
-      success: true,
-      redirect: "https://evil.example/phishing",
-    });
-
-    const { result } = renderHook(() => useLogin());
-
-    await act(async () => {
-      await result.current.login("admin@test.com", "password");
-    });
-
-    expect(queryClient.getQueryData(AUTH_KEY)).toBeUndefined();
-    expect(assignMock).not.toHaveBeenCalled();
-    expect(navigateMock).toHaveBeenCalledWith(ROUTES.start());
+    expect(state.error).toBe("Incorrect email or password.");
   });
 });

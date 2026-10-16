@@ -41,6 +41,28 @@ describe("getAuthenticatedUser", () => {
     });
   });
 
+  it("keeps the invitation error from the auth check", async () => {
+    vi.spyOn(globalThis, "fetch").mockResolvedValueOnce(
+      createMockResponse({
+        body: {
+          success: true,
+          roles: ["ROLE_PLAYER"],
+          id: 7,
+          redirect: "http://localhost:5173/joined",
+          invitationError: "GAME_ROOM_FULL",
+        },
+        status: 200,
+        headers: new Headers({ "content-type": "application/json" }),
+        url: "/api/login/success",
+      }),
+    );
+
+    await expect(getAuthenticatedUser()).resolves.toMatchObject({
+      id: 7,
+      invitationError: "GAME_ROOM_FULL",
+    });
+  });
+
   it("should return authenticated user when the response is a direct user shape", async () => {
     vi.spyOn(globalThis, "fetch").mockResolvedValueOnce(
       createMockResponse({
@@ -226,19 +248,77 @@ describe("getAuthenticatedUser", () => {
   });
 });
 
+// Contract example: POST /api/login, 200 after a form login that joined an invitation.
+const loggedInExample = {
+  success: true,
+  roles: ["ROLE_PLAYER"],
+  id: 1,
+  email: "alice@example.com",
+  username: "alice",
+  redirect: "http://localhost:5173/joined",
+};
+const loginSuccessExample = { ...loggedInExample, gameId: 42 };
+
 describe("loginWithCredentials", () => {
   beforeEach(() => {
     vi.restoreAllMocks();
   });
 
-  it("returns the login status for a contract example", async () => {
+  it("returns the logged-in user with the redirect and the joined game", async () => {
+    vi.spyOn(apiClient, "post").mockImplementationOnce(respondWith(loginSuccessExample));
+
+    await expect(
+      loginWithCredentials({ email: "alice@example.com", password: "s3cr3t" }),
+    ).resolves.toEqual({ type: "user", user: loginSuccessExample });
+  });
+
+  it("keeps the invitation error when the stored invitation could not be joined", async () => {
+    const response = { ...loggedInExample, invitationError: "GAME_ALREADY_STARTED" };
+    vi.spyOn(apiClient, "post").mockImplementationOnce(respondWith(response));
+
+    await expect(
+      loginWithCredentials({ email: "alice@example.com", password: "s3cr3t" }),
+    ).resolves.toEqual({ type: "user", user: response });
+  });
+
+  it("returns the login error when the backend answers without a user", async () => {
     vi.spyOn(apiClient, "post").mockImplementationOnce(
-      respondWith({ success: true, redirect: "/api/login/success", last_username: "alice" }),
+      respondWith({ success: false, last_username: "alice", error: "Invalid credentials." }),
     );
 
     await expect(
       loginWithCredentials({ email: "alice@example.com", password: "s3cr3t" }),
-    ).resolves.toEqual({ success: true, redirect: "/api/login/success", last_username: "alice" });
+    ).resolves.toEqual({ type: "failure", error: "Invalid credentials." });
+  });
+
+  it("returns the login error when the backend answers with only an error", async () => {
+    vi.spyOn(apiClient, "post").mockImplementationOnce(
+      respondWith({ error: "Invalid credentials." }),
+    );
+
+    await expect(
+      loginWithCredentials({ email: "alice@example.com", password: "s3cr3t" }),
+    ).resolves.toEqual({ type: "failure", error: "Invalid credentials." });
+  });
+
+  it("asks for the session user when the backend answers with only the login-success redirect", async () => {
+    vi.spyOn(apiClient, "post").mockImplementationOnce(
+      respondWith({ redirect: "/api/login/success" }),
+    );
+
+    await expect(
+      loginWithCredentials({ email: "alice@example.com", password: "s3cr3t" }),
+    ).resolves.toEqual({ type: "session" });
+  });
+
+  it("rejects with ApiValidationError when the invitation error is not a known code", async () => {
+    vi.spyOn(apiClient, "post").mockImplementationOnce(
+      respondWith({ ...loginSuccessExample, invitationError: "GAME_ON_FIRE" }),
+    );
+
+    await expect(
+      loginWithCredentials({ email: "alice@example.com", password: "s3cr3t" }),
+    ).rejects.toBeInstanceOf(ApiValidationError);
   });
 
   it("rejects with ApiValidationError when login returns a malformed response shape", async () => {
@@ -370,14 +450,7 @@ describe("registerUser", () => {
 
     await expect(
       registerUser({ username: "alice", email: "alice@example.com", password: "s3cr3t" }),
-    ).resolves.toEqual({
-      success: true,
-      roles: ["ROLE_PLAYER"],
-      id: 1,
-      email: "alice@example.com",
-      username: "alice",
-      redirect: "http://localhost:5173/start",
-    });
+    ).resolves.toEqual(response);
   });
 
   it("rejects with ApiValidationError when registration answers with the old message body", async () => {

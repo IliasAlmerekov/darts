@@ -10,12 +10,14 @@ and this project does **not** yet follow [Semantic Versioning](https://semver.or
 ### Added
 
 - Tooling: `npm run test:red-on-base` runs the tests a branch changed against the base ref's code and lists the ones that fail (#185)
+- Login: the login page shows a full-screen spinner with "Checking your login…" while it checks for a Remembered login, and the form only when nobody is logged in or the check gets no answer within 5 seconds. A remembered player who scans an invite goes straight to the Waiting room. When the backend cannot join the invitation, the player sees why ("This game has already started", "This game is full", "This game no longer exists" or "This game can no longer be joined") and a button to their profile. The check also runs while the browser counts as offline, so its timeout still brings up the form. After the button, the login page no longer shows that error again (#151)
 
 ### Changed
 
 - API: each response is checked once by a Valibot schema, and its type is inferred from that schema. The hand-written response guards and interfaces are gone, and ADR 0002 records the choice (#158)
 - API: game start and rematch start send the settings as `startScore`, `doubleOut` and `tripleOut`, the same camelCase keys as every other request. The backend accepts them since darts-backend#97 (#161)
 - Login and registration: the prompt under the submit button is one line of grey text with a bold blue "Sign up" or "Sign in" link. The full-width outline button is gone (#187)
+- Login: a form login reads the user, `redirect`, `gameId` and `invitationError` from the `POST /api/login` response, stores `gameId` as the current game, and redirects the same way as the login check. A player with an old stored game id is no longer sent to the host start page (#151)
 - Tooling: `compose.dev.yaml` uses the Compose project name `darts`, the same as the workspace stack, so `docker compose` run in this repo reaches the running containers instead of starting a second project (#187)
 
 ### Fixed
