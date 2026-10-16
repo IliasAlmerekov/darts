@@ -323,4 +323,42 @@ describe("throwStateService", () => {
       },
     ]);
   });
+
+  it("keeps a player's position when the scoreboard delta omits it", () => {
+    const gameState = buildGameData();
+    const [firstPlayer, secondPlayer] = gameState.players;
+    if (firstPlayer === undefined || secondPlayer === undefined) {
+      throw new Error("Expected buildGameData to include two players.");
+    }
+    gameState.players = [{ ...firstPlayer, position: 2 }, secondPlayer];
+
+    const nextState = applyScoreboardDeltaToGameState(gameState, {
+      changedPlayers: [{ playerId: 1, name: "P1", score: 281, isActive: true, isGuest: false }],
+      winnerId: null,
+      status: "started",
+      currentRound: 1,
+    });
+
+    expect(nextState.players[0]?.position).toBe(2);
+  });
+
+  it("clears a player's position when the scoreboard delta sets it to null", () => {
+    const gameState = buildGameData();
+    const [firstPlayer, secondPlayer] = gameState.players;
+    if (firstPlayer === undefined || secondPlayer === undefined) {
+      throw new Error("Expected buildGameData to include two players.");
+    }
+    gameState.players = [{ ...firstPlayer, position: 2 }, secondPlayer];
+
+    const nextState = applyScoreboardDeltaToGameState(gameState, {
+      changedPlayers: [
+        { playerId: 1, name: "P1", score: 281, position: null, isActive: true, isGuest: false },
+      ],
+      winnerId: null,
+      status: "started",
+      currentRound: 1,
+    });
+
+    expect(nextState.players[0]?.position).toBeNull();
+  });
 });

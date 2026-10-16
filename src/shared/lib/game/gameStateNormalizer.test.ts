@@ -257,6 +257,30 @@ describe("gameStateNormalizer", () => {
   });
 
   describe("applyGameScoreboardDelta", () => {
+    it("keeps a player's position when the delta omits it", () => {
+      const nextGameData = applyGameScoreboardDelta(mockGameData, {
+        changedPlayers: [{ playerId: 2, name: "Bob", score: 341, isActive: true, isGuest: false }],
+        winnerId: null,
+        status: "started",
+        currentRound: 3,
+      });
+
+      expect(nextGameData.players[1]?.position).toBe(1);
+    });
+
+    it("clears a player's position when the delta sets it to null", () => {
+      const nextGameData = applyGameScoreboardDelta(mockGameData, {
+        changedPlayers: [
+          { playerId: 2, name: "Bob", score: 341, position: null, isActive: true, isGuest: false },
+        ],
+        winnerId: null,
+        status: "started",
+        currentRound: 3,
+      });
+
+      expect(nextGameData.players[1]?.position).toBeNull();
+    });
+
     it("should apply scoreboard changes and recompute the active player when the delta updates the turn", () => {
       const [firstPlayer, secondPlayer] = mockGameData.players;
 

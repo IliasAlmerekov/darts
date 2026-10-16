@@ -181,7 +181,7 @@ function applyScoreboardDelta(currentState: GameThrowsResponse, scoreboardDelta:
     return {
       ...player,
       score: playerDelta.score,
-      position: playerDelta.position,
+      position: playerDelta.position === undefined ? player.position : playerDelta.position,
       isActive: playerDelta.isActive,
       isBust: typeof playerDelta.isBust === "boolean" ? playerDelta.isBust : player.isBust,
     };

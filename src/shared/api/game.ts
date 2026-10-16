@@ -124,10 +124,6 @@ const gameSummaryEnvelopeSchema = v.object({
   ),
 });
 
-// #121 owns aligning the delta schemas with the contract. Until then they keep the old
-// guard rules: position, isBust, winnerId and throw are required keys here although the
-// contract makes them optional.
-
 /** Contract `ThrowDeltaDto`. */
 const throwDeltaSchema = v.object({
   id: integerSchema,
@@ -142,21 +138,24 @@ const throwDeltaSchema = v.object({
   timestamp: v.string(),
 });
 
-/** Contract `ScoreboardPlayerDeltaDto`. */
+/**
+ * Contract `ScoreboardPlayerDeltaDto`. A missing `position` or `isBust` stays absent: it
+ * means the field is unchanged, while an explicit `null` position clears it.
+ */
 const scoreboardPlayerDeltaSchema = v.object({
   playerId: integerSchema,
   name: v.string(),
   score: integerSchema,
-  position: v.nullable(integerSchema),
+  position: v.optional(v.nullable(integerSchema)),
   isActive: v.boolean(),
   isGuest: v.boolean(),
-  isBust: v.nullable(v.boolean()),
+  isBust: v.optional(v.nullable(v.boolean())),
 });
 
 /** Contract `ScoreboardDeltaDto`. */
 const scoreboardDeltaSchema = v.object({
   changedPlayers: v.array(scoreboardPlayerDeltaSchema),
-  winnerId: v.nullable(integerSchema),
+  winnerId: v.optional(v.nullable(integerSchema), null),
   status: gameStatusSchema,
   currentRound: integerSchema,
 });
@@ -166,7 +165,7 @@ const throwAckResponseSchema = v.object({
   success: v.boolean(),
   gameId: integerSchema,
   stateVersion: v.string(),
-  throw: v.nullable(throwDeltaSchema),
+  throw: v.optional(v.nullable(throwDeltaSchema), null),
   scoreboardDelta: scoreboardDeltaSchema,
   serverTs: v.string(),
 });
@@ -187,8 +186,9 @@ const undoAckResponseSchema = v.pipe(
 // UndoAckDto during the compact-delta rollout. #101 owns that union.
 const undoThrowResponseSchema = v.union([gameThrowsResponseSchema, undoAckResponseSchema]);
 
-// #121 owns validating the start response against the contract; any object passes here.
-const startGameResponseSchema = v.looseObject({});
+// The start response goes unvalidated: the backend sends [] instead of the game
+// (darts-backend#46), and startGame never reads the body.
+const unvalidatedStartGameResponseSchema = v.unknown();
 
 /** Contract response of `POST /api/room/{id}/rematch`. */
 const rematchResponseSchema = v.object({
@@ -339,7 +339,7 @@ export async function startGame(gameId: number, config: StartGameRequest): Promi
       tripleout: config.tripleOut,
     },
     {
-      validate: startGameResponseSchema,
+      validate: unvalidatedStartGameResponseSchema,
     },
   );
 }
