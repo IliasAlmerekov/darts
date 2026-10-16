@@ -52,16 +52,26 @@ function isGameMode(id: string | number): id is GameMode {
 
 type SaveScope = "game-mode" | "points";
 
+const SAVE_FAILURE = {
+  "game-mode": {
+    message: "Could not update the game mode. Please try again.",
+    logEvent: "settings.save-game-mode.failed",
+  },
+  points: {
+    message: "Could not update the points. Please try again.",
+    logEvent: "settings.save-points.failed",
+  },
+} as const satisfies Record<SaveScope, { message: string; logEvent: string }>;
+
 interface PendingSave {
-  gameId: number;
   scope: SaveScope;
 }
 
-interface RouteGameSave extends PendingSave {
+interface RouteGameSaveRequest {
+  gameId: number;
+  scope: SaveScope;
   payload: UpdateGameSettingsPayload;
   rollback: () => void;
-  fallbackErrorMessage: string;
-  logEvent: string;
   logContext: Record<string, unknown>;
 }
 
@@ -82,7 +92,9 @@ function SettingsPage(): React.JSX.Element {
   const preCreateGameSettings = useStore($preCreateGameSettings);
 
   const routeGameId = useMemo(() => parseRouteGameId(gameIdParam), [gameIdParam]);
-  const [pendingSave, setPendingSave] = useState<PendingSave | null>(null);
+  const [pendingSaves, setPendingSaves] = useState<ReadonlyMap<number, PendingSave>>(
+    () => new Map(),
+  );
   const [selectedGameMode, setSelectedGameMode] = useState<GameMode>("single-out");
   const [selectedPoints, setSelectedPoints] = useState<number>(DEFAULT_START_SCORE);
   const [saveErrorMessage, setSaveErrorMessage] = useState<string | null>(null);
@@ -90,8 +102,8 @@ function SettingsPage(): React.JSX.Element {
   const selectedGameModeRef = useRef(selectedGameMode);
   const selectedPointsRef = useRef(selectedPoints);
   const effectiveGameIdRef = useRef<number | null>(null);
-  // The save the screen still waits for. A route move drops it, so its result skips the screen.
-  const pendingSaveRef = useRef<PendingSave | null>(null);
+  // One pending save per game: it locks only that game's buttons.
+  const pendingSavesRef = useRef(new Map<number, PendingSave>());
   const hasRouteGameInStore =
     routeGameId !== null && gameData?.id === routeGameId && gameSettings !== null;
   // Read the route game's settings unless the game store already holds them.
@@ -109,11 +121,6 @@ function SettingsPage(): React.JSX.Element {
     if (routeGameId !== null) {
       setCurrentGameId(routeGameId);
     }
-  }, [routeGameId]);
-
-  useEffect(() => {
-    pendingSaveRef.current = null;
-    setPendingSave(null);
   }, [routeGameId]);
 
   useEffect(() => {
@@ -207,38 +214,41 @@ function SettingsPage(): React.JSX.Element {
     [queryClient],
   );
 
+  const isRouteGameSaving = useCallback((): boolean => {
+    const gameId = effectiveGameIdRef.current;
+    return gameId !== null && pendingSavesRef.current.has(gameId);
+  }, []);
+
   const saveRouteGameSettings = useCallback(
     async ({
       gameId,
       scope,
       payload,
       rollback,
-      fallbackErrorMessage,
-      logEvent,
       logContext,
-    }: RouteGameSave): Promise<void> => {
-      const save: PendingSave = { gameId, scope };
-      pendingSaveRef.current = save;
-      setPendingSave(save);
+    }: RouteGameSaveRequest): Promise<void> => {
+      const pendingSavesByGame = pendingSavesRef.current;
+      const syncPendingSaves = (): void => setPendingSaves(new Map(pendingSavesByGame));
+      pendingSavesByGame.set(gameId, { scope });
+      syncPendingSaves();
       setSaveErrorMessage(null);
 
       try {
         const response = await saveGameSettings(payload, gameId);
         storeSavedSettings(response, gameId);
-        if (pendingSaveRef.current === save) {
-          setSaveErrorMessage(null);
-        }
       } catch (error) {
-        if (pendingSaveRef.current === save) {
+        // The route can move to another game while the save is pending.
+        if (effectiveGameIdRef.current === gameId) {
           rollback();
-          setSaveErrorMessage(toUserErrorMessage(error, fallbackErrorMessage));
+          setSaveErrorMessage(toUserErrorMessage(error, SAVE_FAILURE[scope].message));
         }
-        clientLogger.error(logEvent, { context: { gameId, ...logContext }, error });
+        clientLogger.error(SAVE_FAILURE[scope].logEvent, {
+          context: { gameId, ...logContext },
+          error,
+        });
       } finally {
-        if (pendingSaveRef.current === save) {
-          pendingSaveRef.current = null;
-          setPendingSave(null);
-        }
+        pendingSavesByGame.delete(gameId);
+        syncPendingSaves();
       }
     },
     [storeSavedSettings],
@@ -246,7 +256,7 @@ function SettingsPage(): React.JSX.Element {
 
   const handleGameModeClick = useCallback(
     async (id: string | number) => {
-      if (pendingSaveRef.current) return;
+      if (isRouteGameSaving()) return;
       if (!isGameMode(id)) return;
 
       const mode = id;
@@ -276,17 +286,15 @@ function SettingsPage(): React.JSX.Element {
           setSelectedGameMode(previousMode);
           selectedGameModeRef.current = previousMode;
         },
-        fallbackErrorMessage: "Could not update the game mode. Please try again.",
-        logEvent: "settings.save-game-mode.failed",
         logContext: { requestedMode: mode },
       });
     },
-    [saveRouteGameSettings, updatePreCreateSettings],
+    [isRouteGameSaving, saveRouteGameSettings, updatePreCreateSettings],
   );
 
   const handlePointsClick = useCallback(
     async (id: string | number) => {
-      if (pendingSaveRef.current) return;
+      if (isRouteGameSaving()) return;
 
       const points = Number(id);
       const currentMode = selectedGameModeRef.current;
@@ -317,17 +325,14 @@ function SettingsPage(): React.JSX.Element {
           setSelectedPoints(previousPoints);
           selectedPointsRef.current = previousPoints;
         },
-        fallbackErrorMessage: "Could not update the points. Please try again.",
-        logEvent: "settings.save-points.failed",
         logContext: { requestedPoints: points },
       });
     },
-    [saveRouteGameSettings, updatePreCreateSettings],
+    [isRouteGameSaving, saveRouteGameSettings, updatePreCreateSettings],
   );
 
-  // Until the route-move effect drops it, a save of the previous game must not lock this one.
   const isSavingRouteGame = (scope: SaveScope): boolean =>
-    pendingSave?.gameId === routeGameId && pendingSave.scope === scope;
+    routeGameId !== null && pendingSaves.get(routeGameId)?.scope === scope;
 
   return (
     <div className={styles.settings}>

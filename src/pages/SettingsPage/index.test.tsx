@@ -115,9 +115,10 @@ function isPressed(name: string): boolean {
 }
 
 // Game 1 is read from the server; game 2 is the game in the store and in the cache.
-async function startSaveOnGameOneThenMoveToGameTwo(
-  gameOneClick: string,
-): Promise<Deferred<GameSettingsResponse>> {
+async function startSaveOnGameOneThenMoveToGameTwo(gameOneClick: string): Promise<{
+  pendingSave: Deferred<GameSettingsResponse>;
+  router: ReturnType<typeof createMemoryRouter>;
+}> {
   const pendingSave = createDeferred<GameSettingsResponse>();
   saveGameSettingsMock.mockImplementationOnce(() => pendingSave.promise);
   getGameSettingsMock.mockResolvedValue(GAME_ONE_SETTINGS);
@@ -136,7 +137,7 @@ async function startSaveOnGameOneThenMoveToGameTwo(
   await waitFor(() => {
     expect(isPressed("401")).toBe(true);
   });
-  return pendingSave;
+  return { pendingSave, router };
 }
 
 function expectGameTwoUnchanged(gameTwoSelected: string): void {
@@ -699,7 +700,7 @@ describe("SettingsPage", () => {
     "when a $setting save for game 1 settles after the route moved to game 2",
     ({ gameOneClick, gameOneResponse, gameTwoSelected, gameTwoClick, gameTwoPayload }) => {
       it("should leave game 2's screen, cache and game store unchanged when the save fails", async () => {
-        const pendingSave = await startSaveOnGameOneThenMoveToGameTwo(gameOneClick);
+        const { pendingSave } = await startSaveOnGameOneThenMoveToGameTwo(gameOneClick);
 
         await act(async () => {
           pendingSave.reject(new Error("Network down"));
@@ -713,7 +714,7 @@ describe("SettingsPage", () => {
       });
 
       it("should store the response under game 1 and leave game 2's screen and cache unchanged", async () => {
-        const pendingSave = await startSaveOnGameOneThenMoveToGameTwo(gameOneClick);
+        const { pendingSave } = await startSaveOnGameOneThenMoveToGameTwo(gameOneClick);
 
         await act(async () => {
           pendingSave.resolve(gameOneResponse);
@@ -735,6 +736,44 @@ describe("SettingsPage", () => {
 
         expect(saveGameSettingsMock).toHaveBeenLastCalledWith(gameTwoPayload, 2);
         expect(isPressed(gameTwoClick)).toBe(true);
+      });
+
+      it("should keep game 2's save locked when game 1's save settles first", async () => {
+        const { pendingSave: pendingGameOneSave } =
+          await startSaveOnGameOneThenMoveToGameTwo(gameOneClick);
+        fireEvent.click(screen.getByRole("button", { name: gameTwoClick }));
+
+        await act(async () => {
+          pendingGameOneSave.resolve(gameOneResponse);
+          await pendingGameOneSave.promise;
+        });
+
+        expect(screen.getByRole("button", { name: gameTwoClick }).getAttribute("disabled")).toBe(
+          "",
+        );
+        expect(isPressed(gameTwoClick)).toBe(true);
+      });
+
+      it("should keep game 1 locked when the route returns to game 1 before its save settles", async () => {
+        const { pendingSave, router } = await startSaveOnGameOneThenMoveToGameTwo(gameOneClick);
+
+        await act(async () => {
+          await router.navigate("/settings/1");
+        });
+        expect(screen.getByRole("button", { name: gameOneClick }).getAttribute("disabled")).toBe(
+          "",
+        );
+
+        await act(async () => {
+          pendingSave.reject(new Error("Network down"));
+          await pendingSave.promise.catch(() => undefined);
+        });
+
+        expect(screen.getByRole("alert")).not.toBeNull();
+        expect(isPressed("301")).toBe(true);
+        expect(
+          screen.getByRole("button", { name: gameOneClick }).getAttribute("disabled"),
+        ).toBeNull();
       });
     },
   );
