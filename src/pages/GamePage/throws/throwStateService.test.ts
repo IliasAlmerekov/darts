@@ -51,6 +51,15 @@ function buildGameData(overrides: Partial<GameThrowsResponse> = {}): GameThrowsR
   };
 }
 
+function buildGameDataWithFirstPlayerAtPosition(position: number): GameThrowsResponse {
+  const gameState = buildGameData();
+  const [firstPlayer, ...otherPlayers] = gameState.players;
+  if (firstPlayer === undefined) {
+    throw new Error("Expected buildGameData to include a player.");
+  }
+  return { ...gameState, players: [{ ...firstPlayer, position }, ...otherPlayers] };
+}
+
 describe("throwStateService", () => {
   it("should apply optimistic undo by restoring the removed throw score when the active player has throws in the current round", () => {
     const gameState = buildGameData({
@@ -325,12 +334,7 @@ describe("throwStateService", () => {
   });
 
   it("keeps a player's position when the scoreboard delta omits it", () => {
-    const gameState = buildGameData();
-    const [firstPlayer, secondPlayer] = gameState.players;
-    if (firstPlayer === undefined || secondPlayer === undefined) {
-      throw new Error("Expected buildGameData to include two players.");
-    }
-    gameState.players = [{ ...firstPlayer, position: 2 }, secondPlayer];
+    const gameState = buildGameDataWithFirstPlayerAtPosition(2);
 
     const nextState = applyScoreboardDeltaToGameState(gameState, {
       changedPlayers: [{ playerId: 1, name: "P1", score: 281, isActive: true, isGuest: false }],
@@ -343,12 +347,7 @@ describe("throwStateService", () => {
   });
 
   it("clears a player's position when the scoreboard delta sets it to null", () => {
-    const gameState = buildGameData();
-    const [firstPlayer, secondPlayer] = gameState.players;
-    if (firstPlayer === undefined || secondPlayer === undefined) {
-      throw new Error("Expected buildGameData to include two players.");
-    }
-    gameState.players = [{ ...firstPlayer, position: 2 }, secondPlayer];
+    const gameState = buildGameDataWithFirstPlayerAtPosition(2);
 
     const nextState = applyScoreboardDeltaToGameState(gameState, {
       changedPlayers: [

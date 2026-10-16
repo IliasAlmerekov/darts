@@ -119,26 +119,42 @@ const requiredAckKeys: ReadonlyArray<[path: string, wrongValue: unknown]> = [
   ["scoreboardDelta.changedPlayers.0.isGuest", 1],
 ];
 
-/** Copies `payload`, then deletes the key at `path`, or sets it to `value` when one is given. */
-function withKeyAt(payload: object, path: string, ...value: [] | [unknown]): unknown {
+/** Copies `payload` and returns the copy with the object that holds the key at `path`. */
+function copyWithParentOf(
+  payload: object,
+  path: string,
+): [copy: unknown, parent: Record<string, unknown>, key: string] {
   const copy: unknown = structuredClone(payload);
   const keys = path.split(".");
-  const lastKey = keys.pop();
+  const key = keys.pop();
+  if (key === undefined) {
+    throw new Error("copyWithParentOf: empty path");
+  }
   let parent: unknown = copy;
-  for (const key of keys) {
-    parent = (parent as Record<string, unknown>)[key];
+  for (const segment of keys) {
+    parent = (parent as Record<string, unknown>)[segment];
   }
-  const target = parent as Record<string, unknown>;
-  if (lastKey === undefined) {
-    throw new Error("withKeyAt: empty path");
-  }
-  if (value.length === 0) {
-    delete target[lastKey];
-  } else {
-    target[lastKey] = value[0];
-  }
+  return [copy, parent as Record<string, unknown>, key];
+}
+
+function withoutKey(payload: object, path: string): unknown {
+  const [copy, parent, key] = copyWithParentOf(payload, path);
+  delete parent[key];
   return copy;
 }
+
+function withValueAt(payload: object, path: string, value: unknown): unknown {
+  const [copy, parent, key] = copyWithParentOf(payload, path);
+  parent[key] = value;
+  return copy;
+}
+
+/** One case per required ack key left out, and one per key given the wrong type. */
+const malformedAckCases: ReadonlyArray<[label: string, malform: (ack: object) => unknown]> =
+  requiredAckKeys.flatMap(([path, wrongValue]) => [
+    [`${path} is missing`, (ack: object) => withoutKey(ack, path)],
+    [`${path} has the wrong type`, (ack: object) => withValueAt(ack, path, wrongValue)],
+  ]);
 
 describe("game api contract payloads", () => {
   beforeEach(() => {
@@ -277,16 +293,13 @@ describe("game api contract payloads", () => {
       expect(ack.scoreboardDelta.changedPlayers[0]).not.toHaveProperty("isBust");
     });
 
-    it.each(requiredAckKeys)(
-      "rejects with ApiValidationError when %s is missing or has the wrong type",
-      async (path, wrongValue) => {
-        vi.spyOn(apiClient, "post")
-          .mockImplementationOnce(respondWith(withKeyAt(minimalThrowAckPayload, path)))
-          .mockImplementationOnce(respondWith(withKeyAt(minimalThrowAckPayload, path, wrongValue)));
-
-        await expect(recordThrow(42, { playerId: 7, value: 20 })).rejects.toBeInstanceOf(
-          ApiValidationError,
+    it.each(malformedAckCases)(
+      "rejects with ApiValidationError when %s",
+      async (_label, malform) => {
+        vi.spyOn(apiClient, "post").mockImplementationOnce(
+          respondWith(malform(minimalThrowAckPayload)),
         );
+
         await expect(recordThrow(42, { playerId: 7, value: 20 })).rejects.toBeInstanceOf(
           ApiValidationError,
         );
@@ -318,14 +331,13 @@ describe("game api contract payloads", () => {
       });
     });
 
-    it.each(requiredAckKeys)(
-      "rejects with ApiValidationError when %s is missing or has the wrong type",
-      async (path, wrongValue) => {
-        vi.spyOn(apiClient, "delete")
-          .mockImplementationOnce(respondWith(withKeyAt(minimalUndoAckPayload, path)))
-          .mockImplementationOnce(respondWith(withKeyAt(minimalUndoAckPayload, path, wrongValue)));
+    it.each(malformedAckCases)(
+      "rejects with ApiValidationError when %s",
+      async (_label, malform) => {
+        vi.spyOn(apiClient, "delete").mockImplementationOnce(
+          respondWith(malform(minimalUndoAckPayload)),
+        );
 
-        await expect(undoLastThrow(42)).rejects.toBeInstanceOf(ApiValidationError);
         await expect(undoLastThrow(42)).rejects.toBeInstanceOf(ApiValidationError);
       },
     );
