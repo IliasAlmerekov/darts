@@ -23,9 +23,8 @@ import { gameSummaryLoader } from "@/pages/GameSummaryPage/useGameSummaryPage";
 import { gamesOverviewLoader } from "@/pages/GamesOverviewPage/useGamesOverview";
 import { clearUnauthorizedHandler, setUnauthorizedHandler } from "@/shared/api";
 import { ROUTES } from "@/lib/router/routes";
+import { clearClientSession } from "@/shared/api/auth";
 import { queryClient } from "@/shared/query/queryClient";
-import { resetRoomStore } from "@/shared/store/game-session";
-import { resetGameStore } from "@/shared/store/game-state";
 import { UniversalSkeleton } from "@/shared/ui/skeletons";
 
 const LoginPage = lazy(() => import("@/pages/LoginPage"));
@@ -64,9 +63,7 @@ function UnauthorizedNavigationBridge(): null {
 
   useEffect(() => {
     setUnauthorizedHandler(() => {
-      queryClient.clear();
-      resetRoomStore();
-      resetGameStore();
+      clearClientSession();
       navigate(ROUTES.login, { state: { from: window.location.pathname }, replace: true });
     });
 

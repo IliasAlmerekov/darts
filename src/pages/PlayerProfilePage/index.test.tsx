@@ -1,7 +1,10 @@
 // @vitest-environment jsdom
-import { render, screen, within } from "@testing-library/react";
+import { fireEvent, render, screen, within } from "@testing-library/react";
+import { createMemoryRouter, RouterProvider } from "react-router-dom";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import type { AuthenticatedUser } from "@/shared/api/auth";
+import { logout, type AuthenticatedUser } from "@/shared/api/auth";
+import { NetworkError } from "@/shared/api";
+import { ROUTES } from "@/lib/router/routes";
 
 const useAuthenticatedUserMock = vi.hoisted(() => vi.fn());
 
@@ -9,7 +12,26 @@ vi.mock("@/shared/hooks/useAuthenticatedUser", () => ({
   useAuthenticatedUser: () => useAuthenticatedUserMock(),
 }));
 
+vi.mock("@/shared/api/auth", () => ({
+  logout: vi.fn(),
+}));
+
+vi.mock("@/shared/services/browser/clientLogger", () => ({
+  clientLogger: { error: vi.fn() },
+}));
+
 import PlayerProfilePage from ".";
+
+function renderPage(): void {
+  const router = createMemoryRouter(
+    [
+      { path: ROUTES.login, element: <p>Login form</p> },
+      { path: ROUTES.playerProfile, element: <PlayerProfilePage /> },
+    ],
+    { initialEntries: [ROUTES.playerProfile] },
+  );
+  render(<RouterProvider router={router} />);
+}
 
 function createUser(overrides: Partial<AuthenticatedUser> = {}): AuthenticatedUser {
   return {
@@ -25,6 +47,7 @@ function createUser(overrides: Partial<AuthenticatedUser> = {}): AuthenticatedUs
 
 describe("PlayerProfilePage", () => {
   beforeEach(() => {
+    vi.mocked(logout).mockReset();
     useAuthenticatedUserMock.mockReset();
     useAuthenticatedUserMock.mockReturnValue({
       user: null,
@@ -40,7 +63,7 @@ describe("PlayerProfilePage", () => {
       error: null,
     });
 
-    render(<PlayerProfilePage />);
+    renderPage();
 
     expect(screen.getByRole("heading", { level: 1, name: "Spielerprofil" })).toBeTruthy();
     const identitySection = screen.getByRole("region", { name: "Identität" });
@@ -64,7 +87,7 @@ describe("PlayerProfilePage", () => {
       error: null,
     });
 
-    render(<PlayerProfilePage />);
+    renderPage();
 
     const identitySection = screen.getByRole("region", { name: "Identität" });
     expect(within(identitySection).getByText("Benutzername: alice@example.com")).toBeTruthy();
@@ -87,7 +110,7 @@ describe("PlayerProfilePage", () => {
       error: null,
     });
 
-    render(<PlayerProfilePage />);
+    renderPage();
 
     const identitySection = screen.getByRole("region", { name: "Identität" });
     expect(within(identitySection).getByText("Benutzername: Captain Double")).toBeTruthy();
@@ -109,7 +132,7 @@ describe("PlayerProfilePage", () => {
       error: null,
     });
 
-    render(<PlayerProfilePage />);
+    renderPage();
 
     const statsSection = screen.getByRole("region", { name: "Statistiken" });
     expect(within(statsSection).getByText("Spiele gespielt: 18")).toBeTruthy();
@@ -131,7 +154,7 @@ describe("PlayerProfilePage", () => {
       error: null,
     });
 
-    render(<PlayerProfilePage />);
+    renderPage();
 
     const statsSection = screen.getByRole("region", { name: "Statistiken" });
     expect(within(statsSection).getByText("Durchschnittspunktzahl: 56.4")).toBeTruthy();
@@ -153,7 +176,7 @@ describe("PlayerProfilePage", () => {
       error: null,
     });
 
-    render(<PlayerProfilePage />);
+    renderPage();
 
     expect(screen.getByRole("region", { name: "Identität" })).toBeTruthy();
     expect(screen.getByRole("region", { name: "Statistiken" })).toBeTruthy();
@@ -167,8 +190,35 @@ describe("PlayerProfilePage", () => {
       error: "Profil konnte nicht geladen werden",
     });
 
-    render(<PlayerProfilePage />);
+    renderPage();
 
     expect(screen.getByText("Fehler: Profil konnte nicht geladen werden")).toBeTruthy();
+  });
+
+  it("opens the login page when the player logs out", async () => {
+    vi.mocked(logout).mockResolvedValueOnce(undefined);
+    renderPage();
+
+    fireEvent.click(screen.getByRole("button", { name: "Log out" }));
+
+    expect(await screen.findByText("Login form")).toBeTruthy();
+    expect(logout).toHaveBeenCalledTimes(1);
+  });
+
+  it("keeps the profile with an error and logs out on Retry when logout fails", async () => {
+    vi.mocked(logout)
+      .mockRejectedValueOnce(new NetworkError("Failed to fetch"))
+      .mockResolvedValueOnce(undefined);
+    renderPage();
+
+    fireEvent.click(screen.getByRole("button", { name: "Log out" }));
+
+    expect(await screen.findByRole("alert")).toBeTruthy();
+    expect(screen.getByRole("heading", { level: 1, name: "Spielerprofil" })).toBeTruthy();
+
+    fireEvent.click(screen.getByRole("button", { name: "Retry" }));
+
+    expect(await screen.findByText("Login form")).toBeTruthy();
+    expect(logout).toHaveBeenCalledTimes(2);
   });
 });
