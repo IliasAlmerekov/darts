@@ -12,10 +12,17 @@ vi.mock("@/shared/ui/admin-layout", () => ({
   AdminLayout: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
 }));
 
-import React from "react";
+import React, { useLayoutEffect } from "react";
 import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { QueryClientProvider, type QueryClient } from "@tanstack/react-query";
-import { createMemoryRouter, MemoryRouter, Route, RouterProvider, Routes } from "react-router-dom";
+import {
+  createMemoryRouter,
+  MemoryRouter,
+  Route,
+  RouterProvider,
+  Routes,
+  useParams,
+} from "react-router-dom";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { ApiError } from "@/shared/api";
 import { gameQueries } from "@/shared/query/game.queries";
@@ -694,6 +701,54 @@ describe("SettingsPage", () => {
       );
     });
     expect(screen.getByRole("button", { name: "401" }).getAttribute("aria-pressed")).toBe("true");
+  });
+
+  it("should not send game 1's game mode in a points save for game 2 made right after the route commit", async () => {
+    getGameSettingsMock.mockResolvedValue(createSettingsResponse({ gameId: 1, tripleOut: true }));
+    setGameData({ ...createGameResponse(), id: 2, settings: GAME_TWO_SETTINGS });
+    testQueryClient.setQueryData(gameQueries.settings(2).queryKey, GAME_TWO_SETTINGS);
+    // Its layout effect runs after the page's and before the passive effects that hydrate game 2.
+    function ClickPointsOnGameTwoCommit(): null {
+      const { id } = useParams<{ id: string }>();
+      useLayoutEffect(() => {
+        if (id === "2") {
+          screen.getByRole("button", { name: "101" }).click();
+        }
+      }, [id]);
+      return null;
+    }
+    const router = createMemoryRouter(
+      [
+        {
+          path: "/settings/:id",
+          element: (
+            <>
+              <SettingsPage />
+              <ClickPointsOnGameTwoCommit />
+            </>
+          ),
+        },
+      ],
+      { initialEntries: ["/settings/1"] },
+    );
+    render(
+      <QueryClientProvider client={testQueryClient}>
+        <RouterProvider router={router} />
+      </QueryClientProvider>,
+    );
+    await waitFor(() => {
+      expect(isPressed("Triple-out")).toBe(true);
+    });
+
+    await act(async () => {
+      await router.navigate("/settings/2");
+    });
+
+    expect(saveGameSettingsMock).not.toHaveBeenCalledWith(
+      expect.objectContaining({ tripleOut: true }),
+      2,
+    );
+    expect(isPressed("Double-out")).toBe(true);
   });
 
   describe.each(SETTINGS_SAVE_CASES)(

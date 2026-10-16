@@ -103,6 +103,8 @@ function SettingsPage(): React.JSX.Element {
   const selectedGameModeRef = useRef(selectedGameMode);
   const selectedPointsRef = useRef(selectedPoints);
   const effectiveGameIdRef = useRef<number | null>(null);
+  // The game the selection refs hold, so a click never mixes in a previous game's values.
+  const selectionGameIdRef = useRef<number | null>(null);
   // One pending save per game: it locks only that game's buttons.
   const pendingSavesRef = useRef(new Map<number, PendingSave>());
   const hasRouteGameInStore =
@@ -128,6 +130,7 @@ function SettingsPage(): React.JSX.Element {
     setHasHydratedSelection(false);
     setSaveErrorMessage(null);
     if (routeGameId === null) {
+      selectionGameIdRef.current = null;
       setSelectedGameMode(preCreateGameMode);
       setSelectedPoints(preCreateGameSettings.startScore);
       setHasHydratedSelection(true);
@@ -191,6 +194,7 @@ function SettingsPage(): React.JSX.Element {
     // The tabs already show these values, so a click before the next render must read them.
     selectedGameModeRef.current = currentGameMode;
     selectedPointsRef.current = currentPoints;
+    selectionGameIdRef.current = routeGameId;
     setHasHydratedSelection(true);
   }, [
     activeGameSettings,
@@ -216,8 +220,10 @@ function SettingsPage(): React.JSX.Element {
     [queryClient],
   );
 
-  const isRouteGameSaving = useCallback((): boolean => {
+  // Between the route commit and the hydration effects the selection still holds the previous game.
+  const isSettingsChangeBlocked = useCallback((): boolean => {
     const gameId = effectiveGameIdRef.current;
+    if (selectionGameIdRef.current !== gameId) return true;
     return gameId !== null && pendingSavesRef.current.has(gameId);
   }, []);
 
@@ -258,7 +264,7 @@ function SettingsPage(): React.JSX.Element {
 
   const handleGameModeClick = useCallback(
     async (id: string | number) => {
-      if (isRouteGameSaving()) return;
+      if (isSettingsChangeBlocked()) return;
       if (!isGameMode(id)) return;
 
       const mode = id;
@@ -291,12 +297,12 @@ function SettingsPage(): React.JSX.Element {
         logContext: { requestedMode: mode },
       });
     },
-    [isRouteGameSaving, saveRouteGameSettings, updatePreCreateSettings],
+    [isSettingsChangeBlocked, saveRouteGameSettings, updatePreCreateSettings],
   );
 
   const handlePointsClick = useCallback(
     async (id: string | number) => {
-      if (isRouteGameSaving()) return;
+      if (isSettingsChangeBlocked()) return;
 
       const points = Number(id);
       const currentMode = selectedGameModeRef.current;
@@ -330,7 +336,7 @@ function SettingsPage(): React.JSX.Element {
         logContext: { requestedPoints: points },
       });
     },
-    [isRouteGameSaving, saveRouteGameSettings, updatePreCreateSettings],
+    [isSettingsChangeBlocked, saveRouteGameSettings, updatePreCreateSettings],
   );
 
   const isSavingRouteGame = (scope: SaveScope): boolean =>
