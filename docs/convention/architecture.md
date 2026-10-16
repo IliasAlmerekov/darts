@@ -171,7 +171,10 @@ Rules:
   loader, not `useEffect` after mount. The loader fills the query cache with
   `queryClient.ensureQueryData(...)` and the page reads the same key with `useQuery`
   ([ADR 0001](../adr/0001-tanstack-query-for-server-reads.md)). Data whose key changes
-  inside the page, such as pagination, uses `useQuery` alone.
+  inside the page, such as pagination, uses `useQuery` alone. So does polled data that
+  depends on no route param and must show its own loading state before the first answer,
+  such as the Waiting room's current game: ADR 0001 keeps loaders for data that depends on
+  route params, and a loader would hold the navigation instead.
 - Optional URL parameters use `:id?` (e.g. `/start/:id?`, `/settings/:id?`). Do not
   declare two parallel routes for the same page.
 - Role-restricted routes are nested inside a `<ProtectedRoutes allowedRoles={[...]}>`
