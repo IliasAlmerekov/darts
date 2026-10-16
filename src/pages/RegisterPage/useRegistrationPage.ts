@@ -2,6 +2,7 @@ import { FormEvent } from "react";
 import { useNavigate } from "react-router-dom";
 import { useRegistration } from "./useRegistration";
 import { mapInvitationErrorMessage } from "@/lib/error/auth-error-handling";
+import { markInvitationErrorHandled } from "@/shared/query/acceptLoggedInUser";
 import { ROUTES } from "@/lib/router/routes";
 
 /** What the registration page shows: the form, the joining state, or a failed invitation. */
@@ -39,6 +40,7 @@ export function useRegistrationPage(): RegistrationPageReturn {
   }
 
   const goToPlayerProfile = (): void => {
+    markInvitationErrorHandled();
     navigate(ROUTES.playerProfile);
   };
 

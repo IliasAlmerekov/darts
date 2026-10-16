@@ -3,6 +3,9 @@ import { act, renderHook } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { useRegistrationPage } from "./useRegistrationPage";
 import { ROUTES } from "@/lib/router/routes";
+import type { AuthenticatedUser } from "@/shared/api/auth";
+import { authQueries } from "@/shared/query/auth.queries";
+import { queryClient } from "@/shared/query/queryClient";
 
 const navigateMock = vi.fn();
 const useRegistrationMock = vi.fn();
@@ -15,7 +18,13 @@ vi.mock("./useRegistration", () => ({
   useRegistration: () => useRegistrationMock(),
 }));
 
-const player = { success: true, roles: ["ROLE_PLAYER"], id: 1, username: "a", redirect: "/joined" };
+const player: AuthenticatedUser = {
+  success: true,
+  roles: ["ROLE_PLAYER"],
+  id: 1,
+  username: "a",
+  redirect: "/joined",
+};
 
 function givenRegistration(registered: unknown): void {
   useRegistrationMock.mockReturnValue({
@@ -29,6 +38,7 @@ function givenRegistration(registered: unknown): void {
 describe("useRegistrationPage", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    queryClient.clear();
   });
 
   it("should show the form before registration", () => {
@@ -58,6 +68,21 @@ describe("useRegistrationPage", () => {
     givenRegistration({ ...player, invitationError: "GAME_ROOM_FULL" });
     const { result } = renderHook(() => useRegistrationPage());
     act(() => result.current.goToPlayerProfile());
+    expect(navigateMock).toHaveBeenCalledWith(ROUTES.playerProfile);
+  });
+
+  it("should clear the handled invitation error from the cached user before navigating", () => {
+    const failed: AuthenticatedUser = { ...player, invitationError: "GAME_ROOM_FULL" };
+    queryClient.setQueryData(authQueries.me().queryKey, failed);
+    givenRegistration(failed);
+    const { result } = renderHook(() => useRegistrationPage());
+
+    act(() => result.current.goToPlayerProfile());
+
+    expect(queryClient.getQueryData(authQueries.me().queryKey)).toEqual({
+      ...player,
+      redirect: ROUTES.playerProfile,
+    });
     expect(navigateMock).toHaveBeenCalledWith(ROUTES.playerProfile);
   });
 });
