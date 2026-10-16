@@ -12,6 +12,7 @@ import {
 } from "@/shared/store";
 import { saveGameSettings } from "@/shared/api/game";
 import { gameQueries } from "@/shared/query/game.queries";
+import useIsomorphicLayoutEffect from "@/shared/lib/useIsomorphicLayoutEffect";
 import { clientLogger } from "@/shared/services/browser/clientLogger";
 import { toUserErrorMessage } from "@/lib/error/error-to-user-message";
 import { ErrorState } from "@/shared/ui/error-state";
@@ -167,7 +168,8 @@ function SettingsPage(): React.JSX.Element {
     selectedPointsRef.current = selectedPoints;
   }, [selectedPoints]);
 
-  useEffect(() => {
+  // A save settling after a route commit must already see the new game, so this is not a passive effect.
+  useIsomorphicLayoutEffect(() => {
     effectiveGameIdRef.current = effectiveGameId;
   }, [effectiveGameId]);
 
