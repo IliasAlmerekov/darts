@@ -334,9 +334,9 @@ export async function startGame(gameId: number, config: StartGameRequest): Promi
   await apiClient.post(
     START_GAME_ENDPOINT(gameId),
     {
-      startscore: config.startScore,
-      doubleout: config.doubleOut,
-      tripleout: config.tripleOut,
+      startScore: config.startScore,
+      doubleOut: config.doubleOut,
+      tripleOut: config.tripleOut,
     },
     {
       validate: unvalidatedStartGameResponseSchema,

@@ -10,6 +10,7 @@ and this project does **not** yet follow [Semantic Versioning](https://semver.or
 ### Changed
 
 - API: each response is checked once by a Valibot schema, and its type is inferred from that schema. The hand-written response guards and interfaces are gone, and ADR 0002 records the choice (#158)
+- API: game start and rematch start send the settings as `startScore`, `doubleOut` and `tripleOut`, the same camelCase keys as every other request. The backend accepts them since darts-backend#97 (#161)
 
 ### Fixed
 
