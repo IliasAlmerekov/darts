@@ -1,12 +1,12 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { playerQueries } from "@/shared/query/player.queries";
-import { toWaitingRoomStatus, type WaitingRoomStatus } from "./lib/waitingRoomStatus";
+import { toWaitingRoomView, type WaitingRoomView } from "./lib/waitingRoomView";
 
 const FAILURES_BEFORE_CONNECTION_LOST = 3;
 
 interface UseWaitingRoomReturn {
-  status: WaitingRoomStatus;
+  view: WaitingRoomView;
   isConnectionLost: boolean;
 }
 
@@ -38,7 +38,7 @@ export function useWaitingRoom(): UseWaitingRoomReturn {
   const failuresInARow = errorUpdateCount - failureBaseline.errorUpdateCount;
 
   return {
-    status: toWaitingRoomStatus(data, hasSeenGame),
+    view: toWaitingRoomView(data, hasSeenGame),
     isConnectionLost: failuresInARow >= FAILURES_BEFORE_CONNECTION_LOST,
   };
 }

@@ -4,18 +4,16 @@ import { useAuthenticatedUser } from "@/shared/hooks/useAuthenticatedUser";
 import { ROUTES } from "@/lib/router/routes";
 import { ErrorState } from "@/shared/ui/error-state";
 import { LogoutButton } from "@/shared/ui/logout-button";
-import type { WaitingRoomStatus } from "./lib/waitingRoomStatus";
+import { gameIdOf } from "./lib/waitingRoomView";
 import { useWaitingRoom } from "./useWaitingRoom";
 import styles from "./JoinedGamePage.module.css";
 
 interface GameStatusProps {
-  status: WaitingRoomStatus;
+  hasStarted: boolean;
   isConnectionLost: boolean;
 }
 
-function GameStatus({ status, isConnectionLost }: GameStatusProps): React.JSX.Element {
-  const hasStarted = status.kind === "started";
-
+function GameStatus({ hasStarted, isConnectionLost }: GameStatusProps): React.JSX.Element {
   return (
     <div className={styles.waiting}>
       {hasStarted ? (
@@ -42,14 +40,14 @@ function GameStatus({ status, isConnectionLost }: GameStatusProps): React.JSX.El
 
 function JoinedGamePage(): React.JSX.Element {
   const { user } = useAuthenticatedUser();
-  const { status, isConnectionLost } = useWaitingRoom();
+  const { view, isConnectionLost } = useWaitingRoom();
   const navigate = useNavigate();
 
-  if (status.kind === "no-game") {
+  if (view.kind === "no-game") {
     return <Navigate to={ROUTES.playerProfile} replace />;
   }
 
-  const gameId = status.kind === "waiting" || status.kind === "started" ? status.gameId : null;
+  const gameId = gameIdOf(view);
 
   return (
     <div className={styles.container}>
@@ -69,7 +67,7 @@ function JoinedGamePage(): React.JSX.Element {
                 {gameId !== null && <p className={styles.gameId}>Game #{gameId}</p>}
               </div>
 
-              {status.kind === "removed" ? (
+              {view.kind === "removed" ? (
                 <ErrorState
                   title="You are no longer in this game"
                   message="Ask the admin for a new invite link to join again."
@@ -79,7 +77,10 @@ function JoinedGamePage(): React.JSX.Element {
                   }}
                 />
               ) : (
-                <GameStatus status={status} isConnectionLost={isConnectionLost} />
+                <GameStatus
+                  hasStarted={view.kind === "started"}
+                  isConnectionLost={isConnectionLost}
+                />
               )}
 
               <LogoutButton />
