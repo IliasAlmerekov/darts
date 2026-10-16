@@ -2,7 +2,7 @@
 // seed: tests/shared/seed.spec.ts
 
 import { test, expect } from "../shared/test";
-import { mockFailedLogin } from "../shared/auth-route-mocks";
+import { mockFailedLogin, mockUnauthenticatedSession } from "../shared/auth-route-mocks";
 
 test.describe("Cross-Browser and Responsive Tests", () => {
   test("Mobile Responsive Layout", async ({ page }) => {
@@ -58,5 +58,30 @@ test.describe("Cross-Browser and Responsive Tests", () => {
       () => document.documentElement.scrollWidth > document.documentElement.clientWidth,
     );
     expect(hasHorizontalScrollAfter).toBe(false);
+  });
+
+  test("Register card keeps the login card's side gutters on mobile", async ({ page }) => {
+    await mockUnauthenticatedSession(page);
+    await page.setViewportSize({ width: 375, height: 667 });
+
+    const cardGutters = async (path: string): Promise<[number, number]> => {
+      await page.goto(path);
+      const form = page.locator("form");
+      await expect(form).toBeVisible();
+      return form.evaluate((el) => {
+        const card = el.parentElement?.parentElement;
+        if (!card) {
+          throw new Error("form has no card");
+        }
+        const box = card.getBoundingClientRect();
+        return [box.left, document.documentElement.clientWidth - box.right];
+      });
+    };
+
+    const [loginLeft, loginRight] = await cardGutters("/");
+    const [registerLeft, registerRight] = await cardGutters("/register");
+
+    expect(registerLeft).toBeCloseTo(loginLeft, 0);
+    expect(registerRight).toBeCloseTo(loginRight, 0);
   });
 });
