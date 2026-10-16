@@ -2311,16 +2311,16 @@
     "schemas": {
       "StartGameRequest": {
         "properties": {
-          "startscore": {
+          "startScore": {
             "type": "integer",
             "nullable": true,
             "enum": [101, 201, 301, 401, 501]
           },
-          "doubleout": {
+          "doubleOut": {
             "type": "boolean",
             "nullable": true
           },
-          "tripleout": {
+          "tripleOut": {
             "type": "boolean",
             "nullable": true
           },

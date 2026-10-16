@@ -116,9 +116,9 @@ describe("game/rematch api", () => {
       2,
       "/game/777/start",
       {
-        startscore: 501,
-        doubleout: true,
-        tripleout: false,
+        startScore: 501,
+        doubleOut: true,
+        tripleOut: false,
       },
       expect.objectContaining({ validate: expect.any(Object) }),
     );

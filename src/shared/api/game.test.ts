@@ -245,6 +245,18 @@ describe("game api contract payloads", () => {
   });
 
   describe("startGame", () => {
+    it("sends the settings with camelCase keys", async () => {
+      const post = vi.spyOn(apiClient, "post").mockImplementationOnce(respondWith({}));
+
+      await startGame(42, { startScore: 501, doubleOut: true, tripleOut: false });
+
+      expect(post).toHaveBeenCalledWith(
+        "/game/42/start",
+        { startScore: 501, doubleOut: true, tripleOut: false },
+        expect.objectContaining({ validate: expect.any(Object) }),
+      );
+    });
+
     it("resolves for a game state response", async () => {
       vi.spyOn(apiClient, "post").mockImplementationOnce(respondWith(minimalGamePayload));
 
