@@ -29,6 +29,7 @@ and this project does **not** yet follow [Semantic Versioning](https://semver.or
 
 ### Fixed
 
+- Settings: when the first settings read for a game fails, the page shows "Could not load settings" with a "Retry" button instead of leaving every option disabled with no message. The options stay disabled and unselected until a retry loads the game's saved values (#108)
 - Settings: a save that answers after the route moved to another game's settings no longer changes that game's screen. It stays out of the selected button, the rollback and the error message. A pending save of one game no longer blocks the buttons of the next (#99)
 - Registration: on phones the form has the same width and side spacing as the login form (#187)
 - Auth: logout no longer follows the backend's 302, which points at the backend origin and failed CORS after the cookies were already deleted. `apiClient` treats an opaque redirect as success when the caller sets `redirect: "manual"` (#154)

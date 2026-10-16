@@ -121,6 +121,19 @@ function isPressed(name: string): boolean {
   return screen.getByRole("button", { name }).getAttribute("aria-pressed") === "true";
 }
 
+// The Game Mode and Points buttons carry aria-pressed; Retry does not.
+function getOptionButtons(): HTMLElement[] {
+  return screen
+    .getAllByRole("button")
+    .filter((button) => button.getAttribute("aria-pressed") !== null);
+}
+
+function expectOptionsEnabled(): void {
+  for (const button of getOptionButtons()) {
+    expect(button.getAttribute("disabled")).toBeNull();
+  }
+}
+
 // Game 1 is read from the server; game 2 is the game in the store and in the cache.
 async function startSaveOnGameOneThenMoveToGameTwo(gameOneClick: string): Promise<{
   pendingSave: Deferred<GameSettingsResponse>;
@@ -749,6 +762,74 @@ describe("SettingsPage", () => {
       2,
     );
     expect(isPressed("Double-out")).toBe(true);
+  });
+
+  it("should show a load error with Retry when the first settings read fails, then show the saved values after a successful retry", async () => {
+    getGameSettingsMock.mockRejectedValueOnce(new Error("Network down"));
+
+    renderSettingsPage("/settings/42");
+
+    const alert = await screen.findByRole("alert");
+    expect(alert.textContent).toContain("Could not load settings");
+    expect(alert.textContent).not.toContain("Could not update settings");
+    const optionButtons = getOptionButtons();
+    expect(optionButtons).toHaveLength(8);
+    for (const button of optionButtons) {
+      expect(button.getAttribute("aria-pressed")).toBe("false");
+      expect(button.getAttribute("disabled")).not.toBeNull();
+    }
+
+    getGameSettingsMock.mockResolvedValueOnce(
+      createSettingsResponse({ startScore: 501, doubleOut: true }),
+    );
+    fireEvent.click(screen.getByRole("button", { name: "Retry" }));
+
+    await waitFor(() => {
+      expect(isPressed("501")).toBe(true);
+    });
+    expect(isPressed("Double-out")).toBe(true);
+    expect(screen.queryByRole("alert")).toBeNull();
+    expectOptionsEnabled();
+  });
+
+  it("should show no load error after the route moves from a failed game to a game with available settings", async () => {
+    getGameSettingsMock.mockImplementation((gameId: number) =>
+      gameId === 1
+        ? Promise.reject(new Error("Network down"))
+        : Promise.resolve(createSettingsResponse({ gameId: 2, startScore: 401, doubleOut: true })),
+    );
+    const router = renderSettingsRouter("/settings/1");
+    await screen.findByRole("alert");
+
+    await act(async () => {
+      await router.navigate("/settings/2");
+    });
+
+    await waitFor(() => {
+      expect(isPressed("401")).toBe(true);
+    });
+    expect(isPressed("Double-out")).toBe(true);
+    expect(screen.queryByRole("alert")).toBeNull();
+    expectOptionsEnabled();
+  });
+
+  it("should show no load error after the route moves from a failed game to the game in the store", async () => {
+    getGameSettingsMock.mockRejectedValueOnce(new Error("Network down"));
+    setGameData({ ...createGameResponse(), id: 2, settings: GAME_TWO_SETTINGS });
+    const router = renderSettingsRouter("/settings/1");
+    await screen.findByRole("alert");
+
+    await act(async () => {
+      await router.navigate("/settings/2");
+    });
+
+    await waitFor(() => {
+      expect(isPressed("401")).toBe(true);
+    });
+    expect(isPressed("Double-out")).toBe(true);
+    expect(screen.queryByRole("alert")).toBeNull();
+    expectOptionsEnabled();
+    expect(getGameSettingsMock).not.toHaveBeenCalledWith(2, expect.anything());
   });
 
   describe.each(SETTINGS_SAVE_CASES)(
