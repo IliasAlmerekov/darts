@@ -24,7 +24,7 @@ import { QueryClientProvider } from "@tanstack/react-query";
 import { createMemoryRouter, RouterProvider } from "react-router-dom";
 import { logout, type AuthenticatedUser } from "@/shared/api/auth";
 import { getCurrentGame, type CurrentGameResponse } from "@/shared/api/player";
-import { ApiError, NetworkError } from "@/shared/api";
+import { ApiError, NetworkError, UnauthorizedError } from "@/shared/api";
 import { clientLogger } from "@/shared/services/browser/clientLogger";
 import { ROUTES } from "@/lib/router/routes";
 import { createQueryClient } from "@/shared/query/queryClient";
@@ -260,8 +260,11 @@ describe("JoinedGamePage", () => {
     });
   });
 
-  it("should not log a lost connection", async () => {
-    respondWithCurrentGames(new NetworkError("Failed to fetch"));
+  it.each([
+    ["a lost connection", new NetworkError("Failed to fetch")],
+    ["an expired session", new UnauthorizedError("Unauthorized")],
+  ])("should not log %s", async (_case, error) => {
+    respondWithCurrentGames(error);
     renderPage();
 
     await advancePolling(2);

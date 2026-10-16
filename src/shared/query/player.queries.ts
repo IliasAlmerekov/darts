@@ -1,14 +1,21 @@
 import { queryOptions, type Query } from "@tanstack/react-query";
-import { NetworkError, TimeoutError } from "@/shared/api";
+import { NetworkError, TimeoutError, UnauthorizedError } from "@/shared/api";
 import { getCurrentGame, type CurrentGameResponse } from "@/shared/api/player";
 import { clientLogger } from "@/shared/services/browser/clientLogger";
 import { setCurrentGameId } from "@/shared/store";
 
 export const CURRENT_GAME_POLL_INTERVAL_MS = 3000;
 
-/** A lost connection is expected on a phone. The page shows it, so it is not logged. */
-function isLostConnection(error: unknown): boolean {
-  return error instanceof NetworkError || error instanceof TimeoutError;
+/**
+ * A lost connection is expected on a phone and the page shows it. An expired session goes
+ * to the API client's 401 handling. Neither is logged.
+ */
+function isExpectedFailure(error: unknown): boolean {
+  return (
+    error instanceof NetworkError ||
+    error instanceof TimeoutError ||
+    error instanceof UnauthorizedError
+  );
 }
 
 /** Polling goes on until the game has started or the player has no current game. */
@@ -34,7 +41,7 @@ export const playerQueries = {
           }
           return currentGame;
         } catch (error: unknown) {
-          if (!signal.aborted && !isLostConnection(error)) {
+          if (!signal.aborted && !isExpectedFailure(error)) {
             clientLogger.error("player.current-game.fetch.failed", { error });
           }
           throw error;
