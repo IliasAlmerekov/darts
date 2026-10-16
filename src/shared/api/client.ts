@@ -236,7 +236,8 @@ async function request<TSchema extends ResponseSchema>(
   }
 
   // Under `redirect: "manual"` a 3xx arrives as an opaque redirect with status 0. The
-  // caller opted out of following it, so the redirect is the answer.
+  // caller opted out of following it, so the redirect is the answer. The status and target
+  // stay hidden, so the caller accepts that any redirect counts as success.
   const isOpaqueRedirect = response.type === "opaqueredirect";
 
   if (!response.ok && !isOpaqueRedirect && !isAcceptedStatus(response.status, acceptedStatuses)) {

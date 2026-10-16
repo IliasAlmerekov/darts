@@ -10,7 +10,7 @@ const LOGOUT_FAILED_MESSAGE = "Could not log out. Please try again.";
 interface UseLogoutReturn {
   isPending: boolean;
   errorMessage: string | null;
-  logOut: () => void;
+  requestLogout: () => void;
 }
 
 /**
@@ -23,7 +23,7 @@ export function useLogout(): UseLogoutReturn {
   const [isPending, setIsPending] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
-  const logOut = useCallback((): void => {
+  const requestLogout = useCallback((): void => {
     if (isPendingRef.current) {
       return;
     }
@@ -46,5 +46,5 @@ export function useLogout(): UseLogoutReturn {
     })();
   }, [navigate]);
 
-  return { isPending, errorMessage, logOut };
+  return { isPending, errorMessage, requestLogout };
 }

@@ -539,7 +539,7 @@ describe("logout", () => {
     expect($gameData.get()).not.toBeNull();
   });
 
-  it("rejects with ApiValidationError when logout answers with JSON instead of the redirect page", async () => {
+  it("rejects with ApiValidationError when logout answers with a JSON body", async () => {
     vi.spyOn(apiClient, "post").mockImplementationOnce(respondWith({ success: true }));
 
     await expect(logout()).rejects.toBeInstanceOf(ApiValidationError);

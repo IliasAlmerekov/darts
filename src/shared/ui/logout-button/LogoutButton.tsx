@@ -5,7 +5,7 @@ import { ErrorState } from "@/shared/ui/error-state";
 import styles from "./LogoutButton.module.css";
 
 export function LogoutButton(): React.JSX.Element {
-  const { isPending, errorMessage, logOut } = useLogout();
+  const { isPending, errorMessage, requestLogout } = useLogout();
 
   return (
     <div className={styles.root}>
@@ -13,10 +13,10 @@ export function LogoutButton(): React.JSX.Element {
         <ErrorState
           title="Could not log out"
           message={errorMessage}
-          primaryAction={{ label: "Retry", onClick: logOut }}
+          primaryAction={{ label: "Retry", onClick: requestLogout }}
         />
       ) : (
-        <Button type="secondary" label="Log out" handleClick={logOut} disabled={isPending} />
+        <Button type="secondary" label="Log out" handleClick={requestLogout} disabled={isPending} />
       )}
     </div>
   );

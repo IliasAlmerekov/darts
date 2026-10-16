@@ -1,11 +1,5 @@
 // @vitest-environment jsdom
-import { fireEvent, render, screen } from "@testing-library/react";
-import { createMemoryRouter, RouterProvider } from "react-router-dom";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { logout, type AuthenticatedUser } from "@/shared/api/auth";
-import { NetworkError } from "@/shared/api";
-import { ROUTES } from "@/lib/router/routes";
-import JoinedGamePage from "./index";
 
 // ── Nanostores ──────────────────────────────────────────────────────────────
 const mockUseStore = vi.fn();
@@ -35,6 +29,13 @@ vi.mock("@/shared/services/browser/clientLogger", () => ({
 vi.mock("@/shared/hooks/useRoomStream", () => ({
   useRoomStream: (gameId: number | null) => mockUseRoomStream(gameId),
 }));
+
+import { fireEvent, render, screen } from "@testing-library/react";
+import { createMemoryRouter, RouterProvider } from "react-router-dom";
+import { logout, type AuthenticatedUser } from "@/shared/api/auth";
+import { NetworkError } from "@/shared/api";
+import { ROUTES } from "@/lib/router/routes";
+import JoinedGamePage from "./index";
 
 function buildAuthenticatedUser(overrides: Partial<AuthenticatedUser> = {}): AuthenticatedUser {
   return {
