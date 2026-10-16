@@ -353,13 +353,15 @@ function SettingsPage(): React.JSX.Element {
   const isSavingRouteGame = (scope: SaveScope): boolean =>
     routeGameId !== null && pendingSaves.get(routeGameId)?.scope === scope;
 
+  const errorStateClassProps = styles.settingsError ? { className: styles.settingsError } : {};
+
   return (
     <div className={styles.settings}>
       <h1>Settings</h1>
       <section className={styles.settingsSection}>
         {hasRouteSettingsLoadFailed ? (
           <ErrorState
-            {...(styles.settingsError ? { className: styles.settingsError } : {})}
+            {...errorStateClassProps}
             title="Could not load settings"
             message={toUserErrorMessage(routeSettingsLoadError, "Please try again.")}
             primaryAction={{ label: "Retry", onClick: () => void refetchRouteGameSettings() }}
@@ -367,7 +369,7 @@ function SettingsPage(): React.JSX.Element {
         ) : null}
         {saveErrorMessage ? (
           <ErrorState
-            {...(styles.settingsError ? { className: styles.settingsError } : {})}
+            {...errorStateClassProps}
             title="Could not update settings"
             message={saveErrorMessage}
           />

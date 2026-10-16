@@ -759,7 +759,16 @@ describe("SettingsPage", () => {
     const alert = await screen.findByRole("alert");
     expect(alert.textContent).toContain("Could not load settings");
     expect(alert.textContent).not.toContain("Could not update settings");
-    for (const name of ["Single-out", "Double-out", "Triple-out", "101", "301", "501"]) {
+    for (const name of [
+      "Single-out",
+      "Double-out",
+      "Triple-out",
+      "101",
+      "201",
+      "301",
+      "401",
+      "501",
+    ]) {
       expect(isPressed(name)).toBe(false);
     }
 
