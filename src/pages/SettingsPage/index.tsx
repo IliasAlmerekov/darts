@@ -119,7 +119,7 @@ function SettingsPage(): React.JSX.Element {
     enabled: routeGameId !== null && !hasRouteGameInStore,
   });
   const activeGameSettings = hasRouteGameInStore ? gameSettings : (routeGameSettings ?? null);
-  // Without settings for the route game, its options have no saved values to show.
+  // The read failed and neither the query cache nor the game store holds the route game's settings.
   const hasRouteSettingsLoadFailed =
     routeGameId !== null && activeGameSettings === null && routeSettingsLoadError !== null;
   const preCreateGameMode = useMemo(
@@ -155,12 +155,9 @@ function SettingsPage(): React.JSX.Element {
 
   const currentPoints = activeGameSettings?.startScore ?? DEFAULT_START_SCORE;
   const effectiveGameId = routeGameId;
-  const isHydratingRouteSettings =
-    routeGameId !== null &&
-    !hasHydratedSelection &&
-    activeGameSettings === null &&
-    !hasRouteSettingsLoadFailed;
-  const areOptionsLocked = isHydratingRouteSettings || hasRouteSettingsLoadFailed;
+  // Covers both a pending read and a failed one: the options have no saved values to show.
+  const isRouteSelectionUnavailable =
+    routeGameId !== null && !hasHydratedSelection && activeGameSettings === null;
   const selectedGameModeId =
     hasHydratedSelection || routeGameId === null
       ? selectedGameMode
@@ -353,7 +350,8 @@ function SettingsPage(): React.JSX.Element {
   const isSavingRouteGame = (scope: SaveScope): boolean =>
     routeGameId !== null && pendingSaves.get(routeGameId)?.scope === scope;
 
-  const errorStateClassProps = styles.settingsError ? { className: styles.settingsError } : {};
+  const errorStateClassProps =
+    styles.settingsError !== undefined ? { className: styles.settingsError } : {};
 
   return (
     <div className={styles.settings}>
@@ -380,14 +378,14 @@ function SettingsPage(): React.JSX.Element {
             options={GAME_MODE_OPTIONS}
             selectedId={selectedGameModeId}
             onChange={handleGameModeClick}
-            disabled={areOptionsLocked || isSavingRouteGame("game-mode")}
+            disabled={isRouteSelectionUnavailable || isSavingRouteGame("game-mode")}
           />
           <SettingsTabs
             title="Points"
             options={POINTS_OPTIONS}
             selectedId={selectedPointsId}
             onChange={handlePointsClick}
-            disabled={areOptionsLocked || isSavingRouteGame("points")}
+            disabled={isRouteSelectionUnavailable || isSavingRouteGame("points")}
             mobileLayout="grid"
           />
         </div>
