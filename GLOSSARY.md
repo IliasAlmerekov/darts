@@ -9,7 +9,7 @@ The game a player takes part in right now. A player has at most one; joining ano
 _Avoid_: active game
 
 **Lobby**:
-A game that players are joining and that has not started yet.
+A game that players are joining and that has not started yet. There is at most one lobby at a time.
 _Avoid_: room, start page
 
 **Waiting room**:

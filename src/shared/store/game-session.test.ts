@@ -286,6 +286,38 @@ describe("game-session store — Ticket 4: store is cache, not authority", () =>
     expect(window.sessionStorage.getItem(GAME_ID_STORAGE_KEY)).toBe("0");
   });
 
+  it("should keep the invitation when the server reports the same current game", async () => {
+    const roomStore = await import("./game-session");
+    const invitation = buildInvitation({ gameId: 8, invitationLink: "/invite/8" });
+    roomStore.setInvitation(invitation);
+
+    roomStore.setServerCurrentGameId(8);
+
+    expect(roomStore.$invitation.get()).toEqual(invitation);
+    expect(roomStore.$currentGameId.get()).toBe(8);
+  });
+
+  it("should drop the invitation when the server reports another current game", async () => {
+    const roomStore = await import("./game-session");
+    roomStore.setInvitation(buildInvitation({ gameId: 8, invitationLink: "/invite/8" }));
+
+    roomStore.setServerCurrentGameId(9);
+
+    expect(roomStore.$invitation.get()).toBeNull();
+    expect(window.sessionStorage.getItem(INVITATION_STORAGE_KEY)).toBeNull();
+    expect(roomStore.$currentGameId.get()).toBe(9);
+  });
+
+  it("should drop the invitation when the server reports no current game", async () => {
+    const roomStore = await import("./game-session");
+    roomStore.setInvitation(buildInvitation({ gameId: 8, invitationLink: "/invite/8" }));
+
+    roomStore.setServerCurrentGameId(null);
+
+    expect(roomStore.$invitation.get()).toBeNull();
+    expect(roomStore.$currentGameId.get()).toBeNull();
+  });
+
   it("should clear invitation store and sessionStorage when setInvitation receives null", async () => {
     const roomStore = await import("./game-session");
     roomStore.setInvitation(buildInvitation({ gameId: 8, invitationLink: "/invite/8" }));

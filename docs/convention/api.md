@@ -19,6 +19,7 @@ src/shared/api/
   game.ts              # per-domain public surface (game flows + ETag cache)
   room.ts              # per-domain public surface (room flows)
   statistics.ts        # per-domain public surface (stats flows)
+  player.ts            # per-domain public surface (the player's current game)
   *.test.ts            # co-located tests
 ```
 
@@ -160,7 +161,7 @@ Rules:
 
 - They live in `src/shared/lib/<domain>/` (see `shared/lib/game/`: `gameStateNormalizer`,
   `applyOptimisticUndo`, `mergeGameSettings`, `player-mappers`, `roundAverage`,
-  `parseThrowValue`, `finishedGameStandings`).
+  `parseThrowValue`, `finishedGameStandings`; `shared/lib/player/`: `currentGame`).
 - Every mapper has a co-located `*.test.ts` (`gameStateNormalizer.test.ts`,
   `player-mappers.test.ts`, ...).
 - Mappers are called from any of: an API domain function (e.g. inside
