@@ -43,6 +43,17 @@ lint and typecheck, and reuses the running stack for everything else.
 
 A fresh clone has no `node_modules`: run `npm install` first, or the hook fails.
 
+## Branches
+
+Each issue gets its own branch, cut from the latest `main`. Before the first edit, run
+`git switch main && git pull --ff-only`, then `git switch -c <type>/<issue>-<topic>`.
+`main` changes only through a pull request.
+
+Once the PR is open, clean up after the work and keep only the branch: remove the issue's
+worktree (`git worktree remove <path>`, then `git worktree prune`), delete the scratch files
+the work created (PR and comment body files, temp scripts, logs), and stop the processes it
+started.
+
 ## Commits and pull requests
 
 Commit messages follow [Conventional Commits 1.0.0](https://www.conventionalcommits.org/en/v1.0.0/):
@@ -80,8 +91,7 @@ Ask the user first before you:
   schemas in `src/shared/api/` are not on this list: the contract decides them;
 - run a destructive command.
 
-Keep `.env` values out of prompts, logs, commits, and issues. Work on a branch; `main`
-changes only through a merge request.
+Keep `.env` values out of prompts, logs, commits, and issues.
 
 ## Agent skills
 

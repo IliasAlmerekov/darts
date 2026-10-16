@@ -43,7 +43,7 @@ describe("game/rematch api", () => {
     vi.mocked(apiClient.post)
       .mockImplementationOnce(respondWith({ gameId: 777, success: true }))
       .mockImplementationOnce(
-        respondWith({ success: true, status: 200, gameId: 777, invitationLink: "/invite/777" }),
+        respondWith({ success: true, gameId: 777, invitationLink: "/invite/777" }),
       );
 
     const response = await createRematch(520);

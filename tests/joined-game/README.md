@@ -5,6 +5,7 @@
 This folder now contains only the specs for the dedicated joined-game feature:
 
 - `display-confirmation.spec.ts`
+- `game-start.spec.ts`
 - `page-layout.spec.ts`
 - `unauthenticated-access.spec.ts`
 
@@ -59,6 +60,7 @@ npx playwright test --ui
 ## Joined-game Test Files
 
 - `display-confirmation.spec.ts` - Verifies joined-game confirmation content and headings
+- `game-start.spec.ts` - Waiting room shows the game start, a removed player, and no current game
 - `page-layout.spec.ts` - Tests joined-game layout structure and overflow behavior
 - `unauthenticated-access.spec.ts` - Tests redirect behavior for unauthorized users
 

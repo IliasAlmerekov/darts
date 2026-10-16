@@ -795,6 +795,47 @@
         }
       }
     },
+    "/api/player/current-game": {
+      "get": {
+        "tags": ["Player"],
+        "summary": "Returns the Lobby or Started game the player joined most recently and still sits in.",
+        "operationId": "get_app_player_current_game",
+        "responses": {
+          "200": {
+            "description": "Aktuelles Spiel des Spielers (`lobby` oder `started`); `gameId` und `status` sind `null`, wenn es keins gibt.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CurrentGameResponseDto"
+                },
+                "examples": {
+                  "lobby": {
+                    "summary": "Spieler ist in einer Lobby",
+                    "value": {
+                      "gameId": 12,
+                      "status": "lobby"
+                    }
+                  },
+                  "none": {
+                    "summary": "Kein aktuelles Spiel",
+                    "value": {
+                      "gameId": null,
+                      "status": null
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Nicht angemeldet."
+          },
+          "403": {
+            "description": "Angemeldet ohne `ROLE_PLAYER` (z. B. der Admin)."
+          }
+        }
+      }
+    },
     "/api/players/stats": {
       "get": {
         "tags": ["Statistics"],
@@ -3131,6 +3172,22 @@
           }
         },
         "type": "object"
+      },
+      "CurrentGameResponseDto": {
+        "required": ["gameId", "status"],
+        "properties": {
+          "gameId": {
+            "type": "integer",
+            "nullable": true
+          },
+          "status": {
+            "type": "string",
+            "enum": ["lobby", "started"],
+            "nullable": true,
+            "description": "GameStatus value, `lobby` or `started`"
+          }
+        },
+        "type": "object"
       }
     },
     "securitySchemes": {
@@ -3167,6 +3224,9 @@
     },
     {
       "name": "Authentication"
+    },
+    {
+      "name": "Player"
     }
   ]
 }

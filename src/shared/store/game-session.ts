@@ -211,6 +211,18 @@ export function setCurrentGameId(gameId: number | null): void {
 }
 
 /**
+ * Takes the server's current game as the truth. An invitation for another game is stale,
+ * and the start page would show its room instead of following the current game.
+ */
+export function setServerCurrentGameId(gameId: number | null): void {
+  const invitation = invitationAtom.get();
+  if (invitation !== null && invitation.gameId !== gameId) {
+    setInvitation(null);
+  }
+  setCurrentGameId(gameId);
+}
+
+/**
  * Stores the current invitation and updates the game id if provided.
  */
 export function setInvitation(invitation: Invitation | null): void {

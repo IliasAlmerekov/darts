@@ -170,6 +170,7 @@ auth.ts
 game.ts
 room.ts
 statistics.ts
+player.ts
 ```
 
 Do not import `client.ts`, `errors.ts`, `types.ts`, or `endpoints.ts` directly from
@@ -195,6 +196,7 @@ Domains:
 error/
 game/
 guards/
+player/
 router/
 ```
 
