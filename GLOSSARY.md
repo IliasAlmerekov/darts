@@ -23,7 +23,7 @@ A player's login that stays valid for 7 days after their last visit, so the app 
 _Avoid_: remember me, persistent session
 
 **Player profile**:
-The page a player lands on after logging in without an invitation.
+The page a player lands on after logging in without an invitation and without a current game.
 _Avoid_: player page, default page
 
 ## Finished game
