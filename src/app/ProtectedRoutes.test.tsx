@@ -33,7 +33,7 @@ function renderProtectedRoutes(initialPath: string): ReturnType<typeof render> {
         <Route element={<ProtectedRoutes allowedRoles={["ROLE_ADMIN"]} />}>
           <Route path="*" element={<div data-testid="outlet-content">Protected Content</div>} />
         </Route>
-        <Route path="/" element={<div data-testid="home-page">Home</div>} />
+        <Route path="/" element={<div>Login page</div>} />
       </Routes>
     </MemoryRouter>,
   );
@@ -79,7 +79,7 @@ describe("ProtectedRoutes", () => {
 
     renderProtectedRoutes("/game/42");
 
-    expect(screen.getByTestId("home-page")).toBeDefined();
+    expect(screen.getByText("Login page")).toBeDefined();
     expect(screen.queryByTestId("outlet-content")).toBeNull();
   });
 
@@ -99,17 +99,14 @@ describe("ProtectedRoutes", () => {
               element={<div data-testid="outlet-content">Protected Content</div>}
             />
           </Route>
-          <Route path="/joined" element={<div data-testid="joined-page">Joined</div>} />
-          <Route
-            path="/playerprofile"
-            element={<div data-testid="player-profile-page">Player profile</div>}
-          />
+          <Route path="/joined" element={<div>Waiting room</div>} />
+          <Route path="/playerprofile" element={<div>Player profile</div>} />
         </Routes>
       </MemoryRouter>,
     );
 
-    expect(screen.getByTestId("player-profile-page")).toBeDefined();
-    expect(screen.queryByTestId("joined-page")).toBeNull();
+    expect(screen.getByText("Player profile")).toBeDefined();
+    expect(screen.queryByText("Waiting room")).toBeNull();
     expect(screen.queryByTestId("outlet-content")).toBeNull();
   });
 
@@ -147,7 +144,7 @@ describe("ProtectedRoutes", () => {
 
     renderProtectedRoutes("/game/42");
 
-    expect(screen.getByTestId("home-page")).toBeDefined();
+    expect(screen.getByText("Login page")).toBeDefined();
     expect(screen.queryByTestId("outlet-content")).toBeNull();
   });
 
@@ -161,6 +158,6 @@ describe("ProtectedRoutes", () => {
     renderProtectedRoutes("/game/42");
 
     expect(screen.getByTestId("outlet-content")).toBeDefined();
-    expect(screen.queryByTestId("home-page")).toBeNull();
+    expect(screen.queryByText("Login page")).toBeNull();
   });
 });
