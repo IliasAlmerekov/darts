@@ -18,7 +18,7 @@ function getFallbackRouteForAuthenticatedUser(roles: Role[] | undefined): string
   }
 
   if (Array.isArray(roles) && roles.includes(PLAYER_ROLE)) {
-    return ROUTES.joined;
+    return ROUTES.playerProfile;
   }
 
   return ROUTES.login;

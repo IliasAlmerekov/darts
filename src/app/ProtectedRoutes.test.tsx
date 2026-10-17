@@ -83,7 +83,7 @@ describe("ProtectedRoutes", () => {
     expect(screen.queryByTestId("outlet-content")).toBeNull();
   });
 
-  it("should redirect player users to /joined when they lack admin permissions", () => {
+  it("should redirect player users to the Player profile when they lack admin permissions", () => {
     mockUseAuthenticatedUser.mockReturnValue({
       user: buildAuthenticatedUser({ roles: ["ROLE_PLAYER"] }),
       loading: false,
@@ -100,11 +100,16 @@ describe("ProtectedRoutes", () => {
             />
           </Route>
           <Route path="/joined" element={<div data-testid="joined-page">Joined</div>} />
+          <Route
+            path="/playerprofile"
+            element={<div data-testid="player-profile-page">Player profile</div>}
+          />
         </Routes>
       </MemoryRouter>,
     );
 
-    expect(screen.getByTestId("joined-page")).toBeDefined();
+    expect(screen.getByTestId("player-profile-page")).toBeDefined();
+    expect(screen.queryByTestId("joined-page")).toBeNull();
     expect(screen.queryByTestId("outlet-content")).toBeNull();
   });
 
@@ -130,6 +135,19 @@ describe("ProtectedRoutes", () => {
     );
 
     expect(screen.getByTestId("start-page")).toBeDefined();
+    expect(screen.queryByTestId("outlet-content")).toBeNull();
+  });
+
+  it("should redirect users without a known role to the login page", () => {
+    mockUseAuthenticatedUser.mockReturnValue({
+      user: buildAuthenticatedUser({ roles: ["ROLE_USER"] }),
+      loading: false,
+      error: null,
+    });
+
+    renderProtectedRoutes("/game/42");
+
+    expect(screen.getByTestId("home-page")).toBeDefined();
     expect(screen.queryByTestId("outlet-content")).toBeNull();
   });
 
