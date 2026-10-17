@@ -29,7 +29,7 @@ and this project does **not** yet follow [Semantic Versioning](https://semver.or
 
 ### Fixed
 
-- Auth: a player who opens a route their role may not use, such as the start page, goes to the Player profile instead of the Waiting room. The admin still goes to the start page and a user without a known role to the login page (#199)
+- Auth: a player who opens a route their role may not use, such as the start page, goes to the Player profile instead of the Waiting room (#199)
 - Settings: when the first settings read for a game fails, the page shows "Could not load settings" with a "Retry" button instead of leaving every option disabled with no message. The options stay disabled and unselected until a retry loads the game's saved values (#108)
 - Settings: a save that answers after the route moved to another game's settings no longer changes that game's screen. It stays out of the selected button, the rollback and the error message. A pending save of one game no longer blocks the buttons of the next (#99)
 - Registration: on phones the form has the same width and side spacing as the login form (#187)
