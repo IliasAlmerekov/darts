@@ -1,6 +1,7 @@
 import { ApiError, NetworkError, UnauthorizedError } from "@/shared/api";
 import type { InvitationError } from "@/shared/api/auth";
 import { isRecord } from "@/lib/guards/guards";
+import { PASSWORD_MIN_LENGTH } from "@/lib/auth/password";
 
 type AuthFlow = "login" | "registration";
 
@@ -12,7 +13,7 @@ const AUTH_ERROR_MESSAGES = {
   invalidEmailRegistration: "Please enter a valid email address.",
   invalidPasswordLogin: "Incorrect password.",
   invalidPasswordRegistration: "Password is invalid.",
-  passwordTooShort: "Password must be at least 8 characters.",
+  passwordTooShort: `Password must be at least ${PASSWORD_MIN_LENGTH} characters.`,
   loginRateLimited: "Too many login attempts. Please try again later.",
   registrationRateLimited: "Too many registration attempts. Please try again later.",
   invalidUsername: "Username is invalid.",

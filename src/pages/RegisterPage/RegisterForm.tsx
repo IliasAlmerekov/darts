@@ -4,9 +4,7 @@ import { Mail, Lock, Eye, EyeOff, User } from "lucide-react";
 import clsx from "clsx";
 import styles from "./RegisterForm.module.css";
 import { ROUTES } from "@/lib/router/routes";
-
-// darts-backend rejects shorter passwords with a 400.
-const PASSWORD_MIN_LENGTH = 8;
+import { PASSWORD_MIN_LENGTH } from "@/lib/auth/password";
 
 interface RegistrationFormProps {
   error: string | null;
