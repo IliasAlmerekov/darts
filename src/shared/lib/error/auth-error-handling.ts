@@ -19,6 +19,7 @@ const AUTH_ERROR_MESSAGES = {
   invalidUsername: "Username is invalid.",
   usernameTaken: "Username is already taken.",
   emailTaken: "This email is already registered.",
+  accountExists: "Email or username is already taken.",
   csrf: "Security token is invalid or expired. Please try again.",
   server: "Server error. Please try again later.",
   network: "Network error. Please check your connection and try again.",
@@ -32,6 +33,8 @@ const INVITATION_ERROR_MESSAGES: Record<InvitationError, string> = {
 };
 
 const TOO_MANY_REQUESTS = 429;
+// The backend hides which field clashed, so the text names neither (darts-backend#33).
+const REGISTRATION_ACCOUNT_EXISTS = "REGISTRATION_ACCOUNT_EXISTS";
 // Matches "Your password should be at least 8 characters long." but not rules such as
 // "at least one digit".
 const PASSWORD_MIN_LENGTH_PATTERN = /password.*at least \d+ characters/;
@@ -337,6 +340,10 @@ export function mapAuthErrorMessage({ flow, error, rawMessage }: AuthErrorInput)
   }
 
   const payload = toApiErrorPayload(error);
+  if ("registration" === flow && payload?.error === REGISTRATION_ACCOUNT_EXISTS) {
+    return AUTH_ERROR_MESSAGES.accountExists;
+  }
+
   if (payload) {
     const validationMessages = mapValidationErrors(payload, flow);
     if (validationMessages.length > 0) {
