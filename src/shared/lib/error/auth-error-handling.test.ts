@@ -89,6 +89,36 @@ describe("mapAuthErrorMessage", () => {
   });
 });
 
+describe("mapAuthErrorMessage existing account", () => {
+  it("says the email or username is taken when registration hits an existing account", () => {
+    const result = mapAuthErrorMessage({
+      flow: "registration",
+      error: new ApiError("Conflict", {
+        status: 409,
+        data: {
+          success: false,
+          error: "REGISTRATION_ACCOUNT_EXISTS",
+          message: "Ein Konto mit diesen Daten existiert bereits.",
+        },
+      }),
+    });
+
+    expect(result).toBe("Email or username is already taken.");
+  });
+
+  it("matches the existing-account code without a message", () => {
+    const result = mapAuthErrorMessage({
+      flow: "registration",
+      error: new ApiError("Conflict", {
+        status: 409,
+        data: { success: false, error: "REGISTRATION_ACCOUNT_EXISTS" },
+      }),
+    });
+
+    expect(result).toBe("Email or username is already taken.");
+  });
+});
+
 describe("mapAuthErrorMessage password minimum", () => {
   it("shows the 8-character minimum when registration rejects a short password", () => {
     const result = mapAuthErrorMessage({
