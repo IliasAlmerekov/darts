@@ -3,10 +3,18 @@ export class ApiError extends Error {
   data?: unknown;
   url?: string | undefined;
   originalError?: unknown;
+  /** Seconds from the `Retry-After` header of a 429; undefined when absent or unparseable. */
+  retryAfterSeconds?: number | undefined;
 
   constructor(
     message: string,
-    options: { status: number; data?: unknown; url?: string | undefined; originalError?: unknown },
+    options: {
+      status: number;
+      data?: unknown;
+      url?: string | undefined;
+      originalError?: unknown;
+      retryAfterSeconds?: number | undefined;
+    },
   ) {
     super(message);
     this.name = "ApiError";
@@ -14,6 +22,7 @@ export class ApiError extends Error {
     this.data = options.data;
     this.url = options.url;
     this.originalError = options.originalError;
+    this.retryAfterSeconds = options.retryAfterSeconds;
   }
 }
 

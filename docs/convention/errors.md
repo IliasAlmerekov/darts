@@ -40,8 +40,9 @@ Rules:
 
 - Import HTTP error classes from `@/shared/api`, not from `@/shared/api/errors`.
 - Throw HTTP failures as `new ApiError(message, { status, data, url })`.
-- Use the existing `data`, `url`, and `originalError` fields instead of creating
-  per-domain `ApiError` subclasses.
+- Use the existing `data`, `url`, `originalError`, and `retryAfterSeconds` fields instead
+  of creating per-domain `ApiError` subclasses. `apiClient` sets `retryAfterSeconds` from
+  the `Retry-After` header of a 429 when it holds whole seconds.
 - Keep `ApiValidationError` separate from `ApiError`; do not catch it by `ApiError`.
 - Re-wrap `ApiValidationError` to `ApiError` only when a domain function intentionally
   reports a 200 response with an invalid contract.

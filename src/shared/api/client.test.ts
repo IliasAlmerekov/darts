@@ -7,7 +7,7 @@ import {
   clearUnauthorizedHandler,
   setUnauthorizedHandler,
 } from "./client";
-import { NetworkError, TimeoutError } from "./errors";
+import { ApiError, NetworkError, TimeoutError } from "./errors";
 import { createMockResponse } from "./test-utils";
 
 const acceptUnknown = v.unknown();
@@ -282,6 +282,52 @@ describe("apiClient error body parsing", () => {
       status: 502,
       data: null,
     });
+  });
+});
+
+describe("apiClient Retry-After", () => {
+  beforeEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  async function rejectionFor(status: number, retryAfter?: string): Promise<unknown> {
+    const headers = new Headers({ "content-type": "application/json" });
+    if (retryAfter !== undefined) {
+      headers.set("Retry-After", retryAfter);
+    }
+    vi.spyOn(globalThis, "fetch").mockResolvedValueOnce(
+      createMockResponse({ body: { error: "limited" }, status, headers }),
+    );
+
+    return apiClient.post("/login", undefined, { validate: acceptUnknown }).catch((error) => error);
+  }
+
+  it("puts the seconds from Retry-After on the ApiError of a 429", async () => {
+    const error = await rejectionFor(429, "120");
+
+    expect(error).toBeInstanceOf(ApiError);
+    expect(error).toMatchObject({ status: 429, retryAfterSeconds: 120 });
+  });
+
+  it("leaves retryAfterSeconds undefined on a 429 without Retry-After", async () => {
+    const error = await rejectionFor(429);
+
+    expect(error).toMatchObject({ status: 429, retryAfterSeconds: undefined });
+  });
+
+  it.each(["soon", "0", "-5", "1.5", "Wed, 21 Oct 2026 07:28:00 GMT"])(
+    "leaves retryAfterSeconds undefined when Retry-After is %s",
+    async (retryAfter) => {
+      const error = await rejectionFor(429, retryAfter);
+
+      expect(error).toMatchObject({ status: 429, retryAfterSeconds: undefined });
+    },
+  );
+
+  it("ignores Retry-After on statuses other than 429", async () => {
+    const error = await rejectionFor(503, "30");
+
+    expect(error).toMatchObject({ status: 503, retryAfterSeconds: undefined });
   });
 });
 
