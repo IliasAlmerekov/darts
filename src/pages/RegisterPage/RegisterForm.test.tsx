@@ -69,3 +69,22 @@ describe("RegisterForm pending state", () => {
     expect(screen.getByRole("status").textContent).toBe("Creating your account…");
   });
 });
+
+describe("RegisterForm password minimum", () => {
+  it("describes the password field with the 8-character minimum", () => {
+    renderForm(null);
+
+    const description = screen.getByText("At least 8 characters.");
+
+    expect(screen.getByLabelText(/^password/i).getAttribute("aria-describedby")).toBe(
+      description.id,
+    );
+  });
+
+  // jsdom skips the length check on submit; tests/auth/password-minimum.spec.ts covers it.
+  it("constrains the password to at least 8 characters", () => {
+    renderForm(null);
+
+    expect(screen.getByLabelText<HTMLInputElement>(/^password/i).minLength).toBe(8);
+  });
+});

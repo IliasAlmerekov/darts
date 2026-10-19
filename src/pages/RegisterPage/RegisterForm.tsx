@@ -5,6 +5,9 @@ import clsx from "clsx";
 import styles from "./RegisterForm.module.css";
 import { ROUTES } from "@/lib/router/routes";
 
+// darts-backend rejects shorter passwords with a 400.
+const PASSWORD_MIN_LENGTH = 8;
+
 interface RegistrationFormProps {
   error: string | null;
   loading: boolean;
@@ -86,6 +89,8 @@ export function RegisterForm({
               placeholder="Create a password..."
               className={clsx(styles.formControl, styles.passwordInput)}
               required
+              minLength={PASSWORD_MIN_LENGTH}
+              aria-describedby="password-hint"
               disabled={loading}
               autoComplete="new-password"
             />
@@ -102,6 +107,9 @@ export function RegisterForm({
               )}
             </button>
           </div>
+          <p id="password-hint" className={styles.fieldHint}>
+            At least {PASSWORD_MIN_LENGTH} characters.
+          </p>
         </div>
 
         <button
