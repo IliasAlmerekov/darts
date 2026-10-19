@@ -4,6 +4,7 @@ import { Mail, Lock, Eye, EyeOff, User } from "lucide-react";
 import clsx from "clsx";
 import styles from "./RegisterForm.module.css";
 import { ROUTES } from "@/lib/router/routes";
+import { PASSWORD_MIN_LENGTH } from "@/lib/auth/password";
 
 interface RegistrationFormProps {
   error: string | null;
@@ -86,6 +87,8 @@ export function RegisterForm({
               placeholder="Create a password..."
               className={clsx(styles.formControl, styles.passwordInput)}
               required
+              minLength={PASSWORD_MIN_LENGTH}
+              aria-describedby="password-hint"
               disabled={loading}
               autoComplete="new-password"
             />
@@ -102,6 +105,9 @@ export function RegisterForm({
               )}
             </button>
           </div>
+          <p id="password-hint" className={styles.fieldHint}>
+            At least {PASSWORD_MIN_LENGTH} characters.
+          </p>
         </div>
 
         <button

@@ -1,6 +1,7 @@
 import { ApiError, NetworkError, UnauthorizedError } from "@/shared/api";
 import type { InvitationError } from "@/shared/api/auth";
 import { isRecord } from "@/lib/guards/guards";
+import { PASSWORD_MIN_LENGTH } from "@/lib/auth/password";
 
 type AuthFlow = "login" | "registration";
 
@@ -12,6 +13,9 @@ const AUTH_ERROR_MESSAGES = {
   invalidEmailRegistration: "Please enter a valid email address.",
   invalidPasswordLogin: "Incorrect password.",
   invalidPasswordRegistration: "Password is invalid.",
+  passwordTooShort: `Password must be at least ${PASSWORD_MIN_LENGTH} characters.`,
+  loginRateLimited: "Too many login attempts. Please try again later.",
+  registrationRateLimited: "Too many registration attempts. Please try again later.",
   invalidUsername: "Username is invalid.",
   usernameTaken: "Username is already taken.",
   emailTaken: "This email is already registered.",
@@ -26,6 +30,12 @@ const INVITATION_ERROR_MESSAGES: Record<InvitationError, string> = {
   GAME_NOT_FOUND: "This game no longer exists",
   GAME_JOIN_NOT_ALLOWED: "This game can no longer be joined",
 };
+
+const TOO_MANY_REQUESTS = 429;
+// Matches "Your password should be at least 8 characters long." but not rules such as
+// "at least one digit".
+const PASSWORD_MIN_LENGTH_PATTERN = /password.*at least \d+ characters/;
+const SECONDS_PER_MINUTE = 60;
 
 interface ApiErrorPayload {
   error?: unknown;
@@ -172,6 +182,10 @@ function mapMessageToUserText(message: string, flow: AuthFlow): string | null {
     return AUTH_ERROR_MESSAGES.usernameTaken;
   }
 
+  if ("registration" === flow && PASSWORD_MIN_LENGTH_PATTERN.test(normalized)) {
+    return AUTH_ERROR_MESSAGES.passwordTooShort;
+  }
+
   if (
     includesAny(normalized, [
       "invalid password",
@@ -222,6 +236,31 @@ function mapMessageToUserText(message: string, flow: AuthFlow): string | null {
   }
 
   return null;
+}
+
+function pluralize(count: number, unit: string): string {
+  return `${count} ${unit}${count === 1 ? "" : "s"}`;
+}
+
+// Rounds up, so the player does not retry before the limit ends.
+function formatWait(seconds: number): string {
+  if (seconds < SECONDS_PER_MINUTE) {
+    return pluralize(seconds, "second");
+  }
+
+  return pluralize(Math.ceil(seconds / SECONDS_PER_MINUTE), "minute");
+}
+
+function mapRateLimitMessage(error: ApiError, flow: AuthFlow): string {
+  if ("registration" === flow) {
+    return AUTH_ERROR_MESSAGES.registrationRateLimited;
+  }
+
+  if (error.retryAfterSeconds === undefined) {
+    return AUTH_ERROR_MESSAGES.loginRateLimited;
+  }
+
+  return `Too many login attempts. Please try again in about ${formatWait(error.retryAfterSeconds)}.`;
 }
 
 function mapValidationErrors(payload: ApiErrorPayload, flow: AuthFlow): string[] {
@@ -291,6 +330,10 @@ export function mapAuthErrorMessage({ flow, error, rawMessage }: AuthErrorInput)
 
   if (error instanceof ApiError && error.status >= 500) {
     return AUTH_ERROR_MESSAGES.server;
+  }
+
+  if (error instanceof ApiError && error.status === TOO_MANY_REQUESTS) {
+    return mapRateLimitMessage(error, flow);
   }
 
   const payload = toApiErrorPayload(error);

@@ -138,6 +138,25 @@ function readResponseData(response: Response, signal: AbortSignal): Promise<unkn
   return Promise.race([parseResponseData(response), abortRejection]);
 }
 
+const TOO_MANY_REQUESTS = 429;
+
+// The backend sends Retry-After as whole seconds. The HTTP-date form is not used, so it
+// and any other value count as absent.
+function readRetryAfterSeconds(response: Response): number | undefined {
+  if (response.status !== TOO_MANY_REQUESTS) {
+    return undefined;
+  }
+
+  const value = response.headers.get("Retry-After")?.trim() ?? "";
+  if (!/^\d+$/.test(value)) {
+    return undefined;
+  }
+
+  const seconds = parseInt(value, 10);
+  // A long digit string parses to an imprecise number or Infinity.
+  return Number.isSafeInteger(seconds) && seconds > 0 ? seconds : undefined;
+}
+
 function isAcceptedStatus(status: number, acceptedStatuses?: number[]): boolean {
   return acceptedStatuses?.includes(status) ?? false;
 }
@@ -245,6 +264,7 @@ async function request<TSchema extends ResponseSchema>(
       status: response.status,
       data,
       url: response.url,
+      retryAfterSeconds: readRetryAfterSeconds(response),
     });
   }
 
