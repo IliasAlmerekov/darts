@@ -153,7 +153,8 @@ function readRetryAfterSeconds(response: Response): number | undefined {
   }
 
   const seconds = parseInt(value, 10);
-  return seconds > 0 ? seconds : undefined;
+  // A long digit string parses to an imprecise number or Infinity.
+  return Number.isSafeInteger(seconds) && seconds > 0 ? seconds : undefined;
 }
 
 function isAcceptedStatus(status: number, acceptedStatuses?: number[]): boolean {

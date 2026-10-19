@@ -315,7 +315,7 @@ describe("apiClient Retry-After", () => {
     expect(error).toMatchObject({ status: 429, retryAfterSeconds: undefined });
   });
 
-  it.each(["soon", "0", "-5", "1.5", "Wed, 21 Oct 2026 07:28:00 GMT"])(
+  it.each(["soon", "0", "-5", "1.5", "Wed, 21 Oct 2026 07:28:00 GMT", "99999999999999999999"])(
     "leaves retryAfterSeconds undefined when Retry-After is %s",
     async (retryAfter) => {
       const error = await rejectionFor(429, retryAfter);
