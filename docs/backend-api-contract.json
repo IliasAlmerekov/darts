@@ -1512,7 +1512,8 @@
                   "plainPassword": {
                     "type": "string",
                     "format": "password",
-                    "example": "secret"
+                    "example": "secret123",
+                    "minLength": 8
                   }
                 },
                 "type": "object"
@@ -1607,6 +1608,38 @@
                           "type": "string"
                         }
                       }
+                    }
+                  },
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Zu viele Registrierungsversuche von dieser IP-Adresse (h\u00f6chstens 20 pro Stunde, jede Anfrage z\u00e4hlt). Es wird kein Konto angelegt, kein Login gestartet und keine Einladung verbraucht.",
+            "headers": {
+              "Retry-After": {
+                "description": "Sekunden bis zum n\u00e4chsten erlaubten Versuch.",
+                "schema": {
+                  "type": "integer"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "required": ["success", "error", "message"],
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": false
+                    },
+                    "error": {
+                      "type": "string",
+                      "example": "REGISTRATION_RATE_LIMITED"
+                    },
+                    "message": {
+                      "type": "string"
                     }
                   },
                   "type": "object"
@@ -1722,6 +1755,45 @@
                 }
               }
             }
+          },
+          "429": {
+            "description": "Zu viele fehlgeschlagene Anmeldungen (5 pro Minute je E-Mail und IP-Adresse, dazu ein weiteres Limit pro IP). Nur bei POST.",
+            "headers": {
+              "Retry-After": {
+                "description": "Sekunden bis zum n\u00e4chsten erlaubten Versuch, wenn der Limiter sie nennt.",
+                "schema": {
+                  "type": "integer"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "required": ["success", "error", "status"],
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": false
+                    },
+                    "last_username": {
+                      "type": "string",
+                      "example": "alice@example.com",
+                      "nullable": true
+                    },
+                    "error": {
+                      "type": "string",
+                      "example": "Too many failed login attempts, please try again in 1 minute."
+                    },
+                    "status": {
+                      "description": "Nur bei POST: ApiAuthenticationFailureHandler antwortet direkt und l\u00e4sst `status` im Body.",
+                      "type": "integer",
+                      "example": 429
+                    }
+                  },
+                  "type": "object"
+                }
+              }
+            }
           }
         },
         "security": []
@@ -1823,6 +1895,45 @@
                       "type": "integer",
                       "example": 401,
                       "nullable": true
+                    }
+                  },
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Zu viele fehlgeschlagene Anmeldungen (5 pro Minute je E-Mail und IP-Adresse, dazu ein weiteres Limit pro IP). Nur bei POST.",
+            "headers": {
+              "Retry-After": {
+                "description": "Sekunden bis zum n\u00e4chsten erlaubten Versuch, wenn der Limiter sie nennt.",
+                "schema": {
+                  "type": "integer"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "required": ["success", "error", "status"],
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": false
+                    },
+                    "last_username": {
+                      "type": "string",
+                      "example": "alice@example.com",
+                      "nullable": true
+                    },
+                    "error": {
+                      "type": "string",
+                      "example": "Too many failed login attempts, please try again in 1 minute."
+                    },
+                    "status": {
+                      "description": "Nur bei POST: ApiAuthenticationFailureHandler antwortet direkt und l\u00e4sst `status` im Body.",
+                      "type": "integer",
+                      "example": 429
                     }
                   },
                   "type": "object"
