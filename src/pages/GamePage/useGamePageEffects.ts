@@ -6,7 +6,7 @@ import { unlockSounds } from "@/shared/services/browser/soundPlayer";
 import { gameQueries } from "@/shared/query/game.queries";
 import { queryClient } from "@/shared/query/queryClient";
 import { clientLogger } from "@/shared/services/browser/clientLogger";
-import type { GameThrowsResponse, RoomStreamEventType } from "@/types";
+import type { GameThrowsResponse } from "@/types";
 import { shouldAutoFinishGame, shouldNavigateToSummary } from "./lib/gameLogic.helpers";
 
 interface UseGameSummaryNavigationOptions {
@@ -14,14 +14,6 @@ interface UseGameSummaryNavigationOptions {
   gameId: number | null;
   navigate: (to: string, options?: { state?: { finishedGameId: number } }) => void;
 }
-
-interface UseRoomEventRefetchOptions {
-  event: { type: RoomStreamEventType } | null;
-  refetch: () => Promise<void>;
-}
-
-const GAME_STARTED_EVENT_TYPE: RoomStreamEventType = "game-started";
-const GAME_FINISHED_EVENT_TYPE: RoomStreamEventType = "game-finished";
 
 interface UseAutoFinishGameOptions {
   gameData: GameThrowsResponse | null;
@@ -61,18 +53,6 @@ export function useGameSummaryNavigation({
       navigate(ROUTES.summary(gameId), { state: { finishedGameId: gameId } });
     }
   }, [gameData, gameId, navigate]);
-}
-
-export function useRoomEventRefetch({ event, refetch }: UseRoomEventRefetchOptions): void {
-  useEffect(() => {
-    if (!event) {
-      return;
-    }
-
-    if (event.type === GAME_STARTED_EVENT_TYPE || event.type === GAME_FINISHED_EVENT_TYPE) {
-      void refetch();
-    }
-  }, [event, refetch]);
 }
 
 export function useAutoFinishGame({

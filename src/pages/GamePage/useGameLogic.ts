@@ -1,6 +1,5 @@
 import { useCallback, useMemo, useState } from "react";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
-import { useRoomStream } from "@/shared/hooks/useRoomStream";
 import { useGameState } from "./useGameState";
 import { useThrowHandler } from "./throws/useThrowHandler";
 import { useGameSounds } from "./useGameSounds";
@@ -12,7 +11,6 @@ import {
   useAutoFinishGame,
   useGameSummaryNavigation,
   useInteractionSoundUnlock,
-  useRoomEventRefetch,
 } from "./useGamePageEffects";
 import { useGamePlayersState } from "./useGamePlayersState";
 import { parseLocationState } from "@/lib/router/locationState";
@@ -80,7 +78,6 @@ export function useGameLogic(): UseGameLogicResult {
 
   const { gameData, isLoading, error, refetch, updateGameSettings } = useGameState({ gameId });
   const { handleThrow, handleUndo, isUndoPending } = useThrowHandler({ gameId });
-  const { event } = useRoomStream(gameId);
   const isGameActive = gameData?.status === "started";
   const skipFinishOverlay =
     parseLocationState(location.state, isGameLocationState)?.skipFinishOverlay === true;
@@ -128,7 +125,6 @@ export function useGameLogic(): UseGameLogicResult {
     });
 
   useGameSummaryNavigation({ gameData, gameId, navigate });
-  useRoomEventRefetch({ event, refetch });
   useAutoFinishGame({
     gameData,
     gameId,

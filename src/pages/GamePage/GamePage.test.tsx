@@ -37,6 +37,7 @@ class MockEventSource implements EventSource {
   static CONNECTING = 0 as const;
   static OPEN = 1 as const;
   static CLOSED = 2 as const;
+  static instances: MockEventSource[] = [];
 
   readonly CONNECTING = 0 as const;
   readonly OPEN = 1 as const;
@@ -52,6 +53,7 @@ class MockEventSource implements EventSource {
   constructor(url: string | URL, eventSourceInitDict?: EventSourceInit) {
     this.url = String(url);
     this.withCredentials = eventSourceInitDict?.withCredentials ?? false;
+    MockEventSource.instances.push(this);
   }
 
   addEventListener(): void {}
@@ -154,6 +156,7 @@ afterAll(() => {
 describe("GamePage", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    MockEventSource.instances = [];
     window.sessionStorage.clear();
     gameStore.resetGameStore();
     roomStore.resetRoomStore();
@@ -169,6 +172,15 @@ describe("GamePage", () => {
       doubleOut: false,
       tripleOut: false,
     });
+  });
+
+  it("should open no EventSource while the game is running", async () => {
+    getGameThrowsIfChangedMock.mockResolvedValue(buildGameData({ id: 3 }));
+
+    renderGamePage("/game/3");
+
+    expect(await screen.findByRole("button", { name: "Back to Home" })).toBeTruthy();
+    expect(MockEventSource.instances).toHaveLength(0);
   });
 
   it("should render the missing game identifier error when the route param is absent", () => {

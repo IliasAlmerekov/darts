@@ -29,6 +29,10 @@ and this project does **not** yet follow [Semantic Versioning](https://semver.or
 - Login: a form login reads the user, `redirect`, `gameId` and `invitationError` from the `POST /api/login` response, stores `gameId` as the current game, and redirects the same way as the login check. A player with an old stored game id is no longer sent to the host start page (#151)
 - Tooling: `compose.dev.yaml` uses the Compose project name `darts`, the same as the workspace stack, so `docker compose` run in this repo reaches the running containers instead of starting a second project (#187)
 
+### Removed
+
+- Game page: the page no longer opens the room stream. The backend never sent the `game-started` or `game-finished` events it waited for, and the tablet gets the scoreboard from its own throw and undo responses. Only the start page subscribes to the room stream now, for its `players` events. `useRoomStream`, `useRoomEventRefetch` and the `RoomStreamEventType` and `RoomStreamEvent` types are gone (#165)
+
 ### Fixed
 
 - Auth: a player who opens a route their role may not use, such as the start page, goes to the Player profile instead of the Waiting room (#199)
