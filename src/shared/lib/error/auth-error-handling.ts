@@ -19,6 +19,7 @@ const AUTH_ERROR_MESSAGES = {
   invalidUsername: "Username is invalid.",
   usernameTaken: "Username is already taken.",
   emailTaken: "This email is already registered.",
+  // The backend hides which field clashed, so the text names neither (darts-backend#33).
   accountExists: "Email or username is already taken.",
   csrf: "Security token is invalid or expired. Please try again.",
   server: "Server error. Please try again later.",
@@ -33,7 +34,6 @@ const INVITATION_ERROR_MESSAGES: Record<InvitationError, string> = {
 };
 
 const TOO_MANY_REQUESTS = 429;
-// The backend hides which field clashed, so the text names neither (darts-backend#33).
 const REGISTRATION_ACCOUNT_EXISTS = "REGISTRATION_ACCOUNT_EXISTS";
 // Matches "Your password should be at least 8 characters long." but not rules such as
 // "at least one digit".
