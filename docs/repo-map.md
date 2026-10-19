@@ -14,7 +14,7 @@ Do not use hand-written endpoint inventories as backend API source of truth.
 
 ## Project shape
 
-PWA darts game with room creation, SSE room updates, real-time throw flow, settings,
+PWA darts game with room creation, SSE lobby player updates, throw flow, settings,
 statistics, auth, and responsive/admin layouts.
 
 Tech stack:
