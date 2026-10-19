@@ -1615,6 +1615,31 @@
               }
             }
           },
+          "409": {
+            "description": "E-Mail oder Benutzername ist bereits vergeben. Die Antwort nennt das Feld absichtlich nicht (darts-backend#33, kommt mit darts-backend#52).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "required": ["success", "error", "message"],
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": false
+                    },
+                    "error": {
+                      "type": "string",
+                      "example": "REGISTRATION_ACCOUNT_EXISTS"
+                    },
+                    "message": {
+                      "type": "string",
+                      "example": "Ein Konto mit diesen Daten existiert bereits."
+                    }
+                  },
+                  "type": "object"
+                }
+              }
+            }
+          },
           "429": {
             "description": "Zu viele Registrierungsversuche von dieser IP-Adresse (h\u00f6chstens 20 pro Stunde, jede Anfrage z\u00e4hlt). Es wird kein Konto angelegt, kein Login gestartet und keine Einladung verbraucht.",
             "headers": {
