@@ -132,6 +132,8 @@ Rules:
   unless you specifically need the numeric value.
 - Do not extend `ApiError` further per-domain. Add response-shape data to the existing
   hierarchy via the `data` field instead.
+- A 429 carries the `Retry-After` header as whole seconds in `retryAfterSeconds`. The
+  value comes from a header, not the body, so it has its own field instead of `data`.
 
 ## Endpoints
 
