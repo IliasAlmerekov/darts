@@ -96,7 +96,7 @@ describe("mapAuthErrorMessage password minimum", () => {
       error: new ApiError("Validation failed", {
         status: 400,
         data: {
-          errors: { plainPassword: "Your password should be at least 8 characters long." },
+          errors: { plainPassword: ["Your password should be at least 8 characters long."] },
         },
       }),
     });
@@ -109,7 +109,19 @@ describe("mapAuthErrorMessage password minimum", () => {
       flow: "registration",
       error: new ApiError("Validation failed", {
         status: 400,
-        data: { errors: { plainPassword: "This value should not be blank." } },
+        data: { errors: { plainPassword: ["This value should not be blank."] } },
+      }),
+    });
+
+    expect(result).toBe("Password is invalid.");
+  });
+
+  it("keeps the generic text for a password rule that is not the length", () => {
+    const result = mapAuthErrorMessage({
+      flow: "registration",
+      error: new ApiError("Validation failed", {
+        status: 400,
+        data: { errors: { plainPassword: ["Your password must contain at least one digit."] } },
       }),
     });
 

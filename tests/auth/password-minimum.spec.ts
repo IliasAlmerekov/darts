@@ -32,7 +32,7 @@ test.describe("Registration password minimum", () => {
         status: 400,
         contentType: "application/json",
         body: JSON.stringify({
-          errors: { plainPassword: "Your password should be at least 8 characters long." },
+          errors: { plainPassword: ["Your password should be at least 8 characters long."] },
         }),
       });
     });

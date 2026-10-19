@@ -31,6 +31,9 @@ const INVITATION_ERROR_MESSAGES: Record<InvitationError, string> = {
 };
 
 const TOO_MANY_REQUESTS = 429;
+// Matches "Your password should be at least 8 characters long." but not rules such as
+// "at least one digit".
+const PASSWORD_MIN_LENGTH_PATTERN = /password.*at least \d+ characters/;
 const SECONDS_PER_MINUTE = 60;
 
 interface ApiErrorPayload {
@@ -178,11 +181,7 @@ function mapMessageToUserText(message: string, flow: AuthFlow): string | null {
     return AUTH_ERROR_MESSAGES.usernameTaken;
   }
 
-  if (
-    "registration" === flow &&
-    normalized.includes("password") &&
-    normalized.includes("at least")
-  ) {
+  if ("registration" === flow && PASSWORD_MIN_LENGTH_PATTERN.test(normalized)) {
     return AUTH_ERROR_MESSAGES.passwordTooShort;
   }
 
