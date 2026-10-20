@@ -16,10 +16,12 @@ authorization error.
 
 ## Relevant Project Rules
 
-- `docs/convention/coding-standards.md`: backend API contract source-of-truth is
+Line citations below point at the docs as of commit `e94cbef`.
+
+- `AGENTS.md` ("Backend contract"): backend API contract source-of-truth is
   `docs/backend-api-contract.json`; use `docs/convention/api.md` for frontend API
-  conventions. Evidence: `docs/convention/coding-standards.md:5`,
-  `docs/convention/coding-standards.md:8`.
+  conventions. `docs/convention/coding-standards.md` held this rule when this research
+  was written; #211 removed it.
 - `docs/convention/architecture.md`: the app is pages-based with dependency direction
   `app -> pages -> shared`; routing is centralized in `src/app/App.tsx` and route paths
   come from `ROUTES`. Evidence: `docs/convention/architecture.md:31`,

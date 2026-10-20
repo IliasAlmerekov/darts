@@ -95,7 +95,8 @@ Rules:
 - Log unexpected caught failures with `clientLogger.error`, failures the app recovers from
   with `clientLogger.warn`. Application code calls no `console.*`.
 - Event names are stable `domain.action.failed` strings (`game.undo.failed`). Older files use
-  underscore style (`wake_lock_release_failed`); keep a file's existing style.
+  underscore style (`wake_lock_release_failed`); keep a file's existing style. One call
+  uses neither: the CSRF prefetch warning in `src/shared/api/auth.ts`, which #218 renames.
 - Put structured metadata under `context` and pass the caught value as `error`, so
   `clientLogger` can serialize it.
 - `clientLogger` redacts values by key name only (`SENSITIVE_KEY_PATTERN`: authorization,

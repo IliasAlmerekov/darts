@@ -3,11 +3,17 @@
 Rules for the HTTP layer in `src/shared/api/`, the query layer in `src/shared/query/`, and
 DTO -> UI mapping in `src/shared/lib/<domain>/`.
 
-A server read passes through three layers:
+A cached server read passes through three layers:
 
 1. `src/shared/api/<domain>.ts`: calls `apiClient` and returns the parsed response.
 2. `src/shared/query/<domain>.queries.ts`: wraps the domain function in a cache entry.
 3. Route loaders, page hooks, and components: read the cache entry.
+
+Imperative workflows call the domain function directly and skip the cache: the StartPage
+loader (`getGameThrows` and `getInvitation` in `src/pages/StartPage/useRoomRestore.ts`,
+which fill Nanostores), the settings read before a game starts
+(`getGameSettings` in `useCreateStartFlow.ts`), and the throw, undo, and reconciliation
+flows in `src/pages/GamePage/throws/`.
 
 ## Layout
 
@@ -153,8 +159,11 @@ game id, room store, game store) stays in Nanostores (`state.md`).
   `["finishedGame", gameId]` (`FINISHED_GAME_KEY` in `game.queries.ts`).
 - Callers take keys and options from the builder (`gameQueries.lobbyPlayers(id).queryKey`,
   `useQuery({ ...gameQueries.finished(id), enabled })`), never from an inline array.
-- `queryFn` passes its `signal` to the domain function. On failure it logs through
-  `clientLogger.error` unless `signal.aborted`, then rethrows.
+- `queryFn` passes its `signal` to the domain function. On an unexpected failure it logs
+  through `clientLogger.error` unless `signal.aborted`, then rethrows. A factory may treat
+  failures it expects as quiet branches: `authQueries.me` returns `null` on a timeout or
+  abort, and `playerQueries.currentGame` rethrows network, timeout, and 401 errors without
+  logging, because it polls.
 - When the UI needs another shape, `queryFn` runs the mapper, so the cache holds the mapped
   value (`toLobbyPlayers` in `gameQueries.lobbyPlayers`).
 - `queryClient.ts` keeps the old fetch behaviour: no retry, no refetch on focus or
@@ -201,7 +210,9 @@ Mappers are pure functions that turn backend DTO shapes into UI types.
   `toCurrentGame`), a `queryFn` in `src/shared/query/`, a store action (`setGameData(data)`
   calls `normalizeGameData(data)`), or a page-private logic file under `src/pages/<Page>/lib/`.
 - JSX files (`src/pages/**/*.tsx`) and render-flow hooks (`src/pages/**/use*.ts`) receive the
-  mapped result and import no mapper. Type imports are fine.
+  mapped result and import no mapper. Type imports are fine. Known exception:
+  `useRoomRestore.ts` imports `toLobbyPlayers` and `useGamePlayers.ts` imports
+  `sortLobbyPlayers`; #194 decides them.
 
 ## ETag / conditional fetches
 
@@ -264,10 +275,10 @@ rg -n 'function is\w+Response\(|: unknown = await apiClient|v\.custom\(' src/sha
 **5. Inline query keys outside `src/shared/query/`:**
 
 ```bash
-rg -n 'queryKey:\s*\[' src --glob '!src/shared/query/**' --glob '!**/*.test.{ts,tsx}'
+rg -n 'queryKey:\s*\[|(get|set|remove|cancel|invalidate|refetch|reset)Quer(y|ies)(Data)?\(\s*\[|(ensure|fetch|prefetch)Query(Data)?\(\s*\[' src --glob '!src/shared/query/**' --glob '!**/*.test.{ts,tsx}'
 ```
 
 **6. Mappers imported by render-flow files:** `npm run eslint` passes. The
 `no-restricted-imports` rule for `src/pages/**/*.tsx` and `src/pages/**/use*.ts` in
 `eslint.config.mjs` lists the mapper modules by file, so a new mapper module is added to its
-regex.
+regex. `lobbyPlayers` is not in it yet; #194 adds it or records the exception.

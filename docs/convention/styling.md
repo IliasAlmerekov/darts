@@ -120,8 +120,9 @@ Rules:
 
 - Define `@keyframes` in the CSS Module that uses the animation.
 - Full-screen fixed overlays sit on `z-index: 2000` (`Overlay`, `SettingsOverlay`,
-  `Game`). Everything else uses small local layers (`0`, `1`, `15`). The `1000` on
-  `QRCode.module.css` `.qrCodeOverlay` has no positioning and so no effect.
+  `Game`). Everything else uses small local layers (`0`, `1`, `15`), plus `1000` on
+  `.qrCodeOverlay` in `QRCode.module.css`. That element is a flex item inside
+  `.qrCodeStack`, so its z-index applies without `position`.
 - Use `position: fixed` only for overlays, mobile navigation, and full-screen
   loading or skeleton states.
 - `!important` exists only as legacy overrides for StartPage mobile buttons and the
