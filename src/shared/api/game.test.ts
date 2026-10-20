@@ -27,8 +27,9 @@ const minimalGamePayload = {
   settings: { startScore: 301, doubleOut: false, tripleOut: false },
 };
 
-/** Contract `GameResponseDto` with every player field. */
+/** Contract `GameResponseDto` with every field. */
 const fullGamePayload = {
+  type: "full-state",
   id: 42,
   status: "started",
   currentRound: 2,
@@ -66,6 +67,7 @@ const summaryPayload = {
 
 /** Contract `ThrowAckDto`. */
 const throwAckPayload = {
+  type: "ack",
   success: true,
   gameId: 42,
   stateVersion: "v-2",
@@ -127,6 +129,7 @@ const minimalUndoAckPayload = {
 
 /** Contract `UndoAckDto` with every scoreboard key; `undoneThrow` is out of scope (#101). */
 const fullUndoAckPayload = {
+  type: "ack",
   success: true,
   gameId: 42,
   stateVersion: "v-undo-1",
@@ -378,12 +381,13 @@ describe("game api contract payloads", () => {
       await expect(recordThrow(42, { playerId: 7, value: 20 })).resolves.toEqual(throwAckPayload);
     });
 
-    it("fills null for a missing throw and winnerId and leaves position and isBust absent", async () => {
+    it("fills the type default, null for a missing throw and winnerId, and leaves position and isBust absent", async () => {
       vi.spyOn(apiClient, "post").mockImplementationOnce(respondWith(minimalThrowAckPayload));
 
       const ack = await recordThrow(42, { playerId: 7, value: 20 });
 
       expect(ack).toEqual({
+        type: "ack",
         ...minimalThrowAckPayload,
         throw: null,
         scoreboardDelta: { ...minimalScoreboardDelta, winnerId: null },
@@ -405,6 +409,16 @@ describe("game api contract payloads", () => {
       },
     );
 
+    it("rejects with ApiValidationError when the type is not ack", async () => {
+      vi.spyOn(apiClient, "post").mockImplementationOnce(
+        respondWith({ ...throwAckPayload, type: "full-state" }),
+      );
+
+      await expect(recordThrow(42, { playerId: 7, value: 20 })).rejects.toBeInstanceOf(
+        ApiValidationError,
+      );
+    });
+
     it("rejects with ApiValidationError when the scoreboard delta has an unknown status", async () => {
       vi.spyOn(apiClient, "post").mockImplementationOnce(
         respondWith({
@@ -420,25 +434,31 @@ describe("game api contract payloads", () => {
   });
 
   describe("undoLastThrow", () => {
-    it("tags a full game state response as full-state", async () => {
+    it("returns a full game state response as full-state", async () => {
       vi.spyOn(apiClient, "delete").mockImplementationOnce(respondWith(fullGamePayload));
 
-      await expect(undoLastThrow(42)).resolves.toEqual({ type: "full-state", ...fullGamePayload });
+      await expect(undoLastThrow(42)).resolves.toEqual(fullGamePayload);
     });
 
-    it("tags a contract UndoAckDto, which has no type field, as an ack", async () => {
+    it("fills the full-state type default for a game state without type", async () => {
+      vi.spyOn(apiClient, "delete").mockImplementationOnce(respondWith(minimalGamePayload));
+
+      await expect(undoLastThrow(42)).resolves.toMatchObject({ type: "full-state", id: 42 });
+    });
+
+    it("returns a contract UndoAckDto as an ack", async () => {
       const deleteSpy = vi
         .spyOn(apiClient, "delete")
         .mockImplementationOnce(respondWith(fullUndoAckPayload));
 
-      await expect(undoLastThrow(42)).resolves.toEqual({ type: "ack", ...fullUndoAckPayload });
+      await expect(undoLastThrow(42)).resolves.toEqual(fullUndoAckPayload);
       expect(deleteSpy).toHaveBeenCalledWith(
         "/game/42/throw",
         expect.objectContaining({ validate: expect.any(Object) }),
       );
     });
 
-    it("tags an ack with only the required keys and fills null for a missing winnerId", async () => {
+    it("fills the ack type default and null winnerId for an ack with only the required keys", async () => {
       vi.spyOn(apiClient, "delete").mockImplementationOnce(respondWith(minimalUndoAckPayload));
 
       await expect(undoLastThrow(42)).resolves.toEqual({
@@ -454,6 +474,18 @@ describe("game api contract payloads", () => {
         vi.spyOn(apiClient, "delete").mockImplementationOnce(
           respondWith(malform(minimalUndoAckPayload)),
         );
+
+        await expect(undoLastThrow(42)).rejects.toBeInstanceOf(ApiValidationError);
+      },
+    );
+
+    it.each([
+      ["a game state", "ack", fullGamePayload],
+      ["an ack", "full-state", fullUndoAckPayload],
+    ])(
+      "rejects with ApiValidationError when %s carries the type %s",
+      async (_label, type, payload) => {
+        vi.spyOn(apiClient, "delete").mockImplementationOnce(respondWith({ ...payload, type }));
 
         await expect(undoLastThrow(42)).rejects.toBeInstanceOf(ApiValidationError);
       },

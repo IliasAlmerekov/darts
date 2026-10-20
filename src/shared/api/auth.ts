@@ -69,7 +69,6 @@ const loginStatusSchema = v.pipe(
     invitationError: v.optional(invitationErrorSchema),
     last_username: v.optional(v.nullable(v.string())),
     error: v.optional(v.nullable(v.string())),
-    status: v.optional(v.nullable(integerSchema)),
   }),
   v.check((login) => Object.keys(login).length > 0),
 );
