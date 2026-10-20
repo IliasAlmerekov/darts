@@ -38,45 +38,11 @@ vi.mock("@/shared/services/browser/soundPlayer", () => ({
 }));
 
 import { act, renderHook, waitFor } from "@testing-library/react";
-import { beforeAll, beforeEach, afterAll, describe, expect, it, vi } from "vitest";
+import { afterAll, beforeEach, describe, expect, it, vi } from "vitest";
 import type { GameThrowsResponse } from "@/types";
 import * as gameStore from "@/shared/store/game-state";
 import * as roomStore from "@/shared/store/game-session";
 import { useGameLogic } from "./useGameLogic";
-
-class MockEventSource implements EventSource {
-  static CONNECTING = 0 as const;
-  static OPEN = 1 as const;
-  static CLOSED = 2 as const;
-
-  readonly CONNECTING = 0 as const;
-  readonly OPEN = 1 as const;
-  readonly CLOSED = 2 as const;
-
-  onerror: ((this: EventSource, event: Event) => unknown) | null = null;
-  onmessage: ((this: EventSource, event: MessageEvent<string>) => unknown) | null = null;
-  onopen: ((this: EventSource, event: Event) => unknown) | null = null;
-  readyState: 0 | 1 | 2 = MockEventSource.CONNECTING;
-  url: string;
-  withCredentials: boolean;
-
-  constructor(url: string | URL, eventSourceInitDict?: EventSourceInit) {
-    this.url = String(url);
-    this.withCredentials = eventSourceInitDict?.withCredentials ?? false;
-  }
-
-  addEventListener(): void {}
-
-  close(): void {
-    this.readyState = MockEventSource.CLOSED;
-  }
-
-  dispatchEvent(): boolean {
-    return true;
-  }
-
-  removeEventListener(): void {}
-}
 
 function setNavigatorWakeLock(request: (type?: WakeLockType) => Promise<WakeLockSentinel>): void {
   Object.defineProperty(navigator, "wakeLock", {
@@ -163,8 +129,6 @@ async function flushMicrotasks(): Promise<void> {
 
 let initialWakeLockDescriptor: PropertyDescriptor | undefined;
 let hasOwnWakeLockDescriptor = false;
-let originalEventSource: typeof globalThis.EventSource | undefined;
-
 function restoreNavigatorWakeLock(): void {
   if (hasOwnWakeLockDescriptor && initialWakeLockDescriptor) {
     Object.defineProperty(navigator, "wakeLock", initialWakeLockDescriptor);
@@ -174,20 +138,8 @@ function restoreNavigatorWakeLock(): void {
   Reflect.deleteProperty(navigator, "wakeLock");
 }
 
-beforeAll(() => {
-  originalEventSource = globalThis.EventSource;
-  vi.stubGlobal("EventSource", MockEventSource);
-});
-
 afterAll(() => {
   restoreNavigatorWakeLock();
-
-  if (originalEventSource !== undefined) {
-    vi.stubGlobal("EventSource", originalEventSource);
-    return;
-  }
-
-  Reflect.deleteProperty(globalThis, "EventSource");
 });
 
 describe("useGameLogic wake-lock wiring", () => {

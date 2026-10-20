@@ -39,45 +39,11 @@ vi.mock("@/shared/services/browser/soundPlayer", () => ({
 
 import { act, renderHook, waitFor } from "@testing-library/react";
 import { queryClient } from "@/shared/query/queryClient";
-import { beforeAll, beforeEach, afterAll, describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { GameSummaryResponse, GameThrowsResponse } from "@/types";
 import * as gameStore from "@/shared/store/game-state";
 import * as roomStore from "@/shared/store/game-session";
 import { useGameLogic } from "./useGameLogic";
-
-class MockEventSource implements EventSource {
-  static CONNECTING = 0 as const;
-  static OPEN = 1 as const;
-  static CLOSED = 2 as const;
-
-  readonly CONNECTING = 0 as const;
-  readonly OPEN = 1 as const;
-  readonly CLOSED = 2 as const;
-
-  onerror: ((this: EventSource, event: Event) => unknown) | null = null;
-  onmessage: ((this: EventSource, event: MessageEvent<string>) => unknown) | null = null;
-  onopen: ((this: EventSource, event: Event) => unknown) | null = null;
-  readyState: 0 | 1 | 2 = MockEventSource.CONNECTING;
-  url: string;
-  withCredentials: boolean;
-
-  constructor(url: string | URL, eventSourceInitDict?: EventSourceInit) {
-    this.url = String(url);
-    this.withCredentials = eventSourceInitDict?.withCredentials ?? false;
-  }
-
-  addEventListener(): void {}
-
-  close(): void {
-    this.readyState = MockEventSource.CLOSED;
-  }
-
-  dispatchEvent(): boolean {
-    return true;
-  }
-
-  removeEventListener(): void {}
-}
 
 type Deferred<T> = {
   promise: Promise<T>;
@@ -143,22 +109,6 @@ function buildAutoFinishGameData(): GameThrowsResponse {
     ],
   };
 }
-
-let originalEventSource: typeof globalThis.EventSource | undefined;
-
-beforeAll(() => {
-  originalEventSource = globalThis.EventSource;
-  vi.stubGlobal("EventSource", MockEventSource);
-});
-
-afterAll(() => {
-  if (originalEventSource !== undefined) {
-    vi.stubGlobal("EventSource", originalEventSource);
-    return;
-  }
-
-  Reflect.deleteProperty(globalThis, "EventSource");
-});
 
 describe("useGameLogic auto-finish abort handling", () => {
   beforeEach(() => {

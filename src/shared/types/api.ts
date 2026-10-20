@@ -61,16 +61,3 @@ export interface CreateGameSettingsPayload {
 }
 
 export type UpdateGameSettingsPayload = Partial<CreateGameSettingsPayload>;
-
-export type RoomStreamEventType =
-  | "player-joined"
-  | "player-left"
-  | "game-started"
-  | "throw"
-  | "throw-recorded"
-  | "game-finished";
-
-export interface RoomStreamEvent<T = unknown> {
-  type: RoomStreamEventType;
-  data: T;
-}

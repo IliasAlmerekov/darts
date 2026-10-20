@@ -1,6 +1,6 @@
 # Darts App (frontend)
 
-PWA darts game: rooms, SSE live throws, player statistics. React 18, TypeScript, Vite,
+PWA darts game: rooms, SSE lobby player list, player statistics. React 18, TypeScript, Vite,
 Nanostores, CSS Modules. Backend lives in a separate repository; its API contract is
 `docs/backend-api-contract.json`.
 

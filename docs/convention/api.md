@@ -32,7 +32,7 @@ The API layer has two levels (also documented in `architecture.md`):
 
 - `@/shared/api` (the `index.ts` barrel) -- cross-cutting symbols only: `apiClient`,
   `setUnauthorizedHandler`, `clearUnauthorizedHandler`, `ApiError`, `UnauthorizedError`,
-  `ForbiddenError`, `NetworkError`, `TimeoutError`, `API_BASE_URL`, plus everything
+  `ForbiddenError`, `NetworkError`, `TimeoutError`, plus everything
   re-exported from `endpoints.ts` and the per-domain modules.
 - `@/shared/api/<domain>` -- the domain module is the public entry for its DTO types,
   resource functions, guards (when needed externally) and any per-domain caches.

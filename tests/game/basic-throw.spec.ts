@@ -2,7 +2,6 @@
 // seed: tests/shared/seed.spec.ts
 
 import { test, expect, type Locator, type Page, type Route, type Request } from "../shared/test";
-import { mockQuietRoomStream } from "../shared/room-stream-mocks";
 
 type PlayerThrow = {
   value: number;
@@ -147,7 +146,6 @@ const jsonFromRequest = <T>(request: Request): T => {
 };
 
 const installGameRoutes = async (page: Page, options: RouteOptions): Promise<void> => {
-  await mockQuietRoomStream(page);
   const gameId = options.gameId ?? 1;
   let currentState: MockGameState = options.initialState;
   const throwStates = [...(options.throwStates ?? [])];

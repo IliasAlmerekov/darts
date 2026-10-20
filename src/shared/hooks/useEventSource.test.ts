@@ -66,11 +66,11 @@ describe("useEventSource", () => {
 
   it("should subscribe with default credentials and forward matching events when initialized", () => {
     const handler = vi.fn();
-    const listeners = [{ event: "throw", handler }] as const;
+    const listeners = [{ event: "players", handler }] as const;
     renderHook(() => useEventSource("/stream", listeners));
 
     act(() => {
-      MockEventSource.instances[0]?.emit("throw", JSON.stringify({ score: 20 }));
+      MockEventSource.instances[0]?.emit("players", JSON.stringify({ players: [] }));
     });
 
     expect(MockEventSource.instances[0]?.withCredentials).toBe(false);
@@ -78,7 +78,7 @@ describe("useEventSource", () => {
   });
 
   it("should expose an explicit connection error and reconnect after 1000ms when the stream fails", () => {
-    const listeners = [{ event: "throw", handler: vi.fn() }] as const;
+    const listeners = [{ event: "players", handler: vi.fn() }] as const;
     const { result } = renderHook(() =>
       useEventSource("/stream", listeners, { withCredentials: true }),
     );
@@ -111,7 +111,7 @@ describe("useEventSource", () => {
   });
 
   it("should reset the explicit error when reconnect succeeds", () => {
-    const listeners = [{ event: "throw", handler: vi.fn() }] as const;
+    const listeners = [{ event: "players", handler: vi.fn() }] as const;
     const { result } = renderHook(() => useEventSource("/stream", listeners));
 
     act(() => {
@@ -130,7 +130,7 @@ describe("useEventSource", () => {
 
   it("should use the explicit credentials option and clean up listeners when unmounted", () => {
     const handler = vi.fn();
-    const listeners = [{ event: "player-joined", handler }] as const;
+    const listeners = [{ event: "players", handler }] as const;
     const { unmount } = renderHook(() =>
       useEventSource("/secure-stream", listeners, { withCredentials: true }),
     );
@@ -143,7 +143,7 @@ describe("useEventSource", () => {
   });
 
   it("should cancel a pending reconnect when unmounted", () => {
-    const listeners = [{ event: "throw", handler: vi.fn() }] as const;
+    const listeners = [{ event: "players", handler: vi.fn() }] as const;
     const { unmount } = renderHook(() => useEventSource("/stream", listeners));
 
     act(() => {

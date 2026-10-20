@@ -1,5 +1,5 @@
 // Core HTTP client
-export { API_BASE_URL, clearUnauthorizedHandler, setUnauthorizedHandler } from "./client";
+export { clearUnauthorizedHandler, setUnauthorizedHandler } from "./client";
 export {
   ApiError,
   /** @public Documented in docs/convention/api.md. */
