@@ -62,12 +62,12 @@ describe("getGameThrowsIfChanged", () => {
   });
 
   it("returns data for valid getGameThrows response", async () => {
-    const response = createValidGameResponse();
+    const response = { type: "full-state", ...createValidGameResponse() };
     vi.spyOn(apiClient, "get").mockImplementationOnce(respondWith(response));
 
     const data = await getGameThrows(520);
 
-    expect(data).toEqual({ type: "full-state", ...response });
+    expect(data).toEqual(response);
     expect(apiClient.get).toHaveBeenCalledWith(
       "/game/520",
       expect.objectContaining({ validate: expect.any(Object) }),

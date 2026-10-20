@@ -112,8 +112,11 @@ ADR 0002 records why responses are described by Valibot schemas.
   until darts-backend#46 ships, and `startGame` never reads the body. Once #46 ships, give
   start a contract schema and an invalid-payload test. Any other unvalidated response needs
   the user's approval and an entry here.
-- A client-side discriminant the backend does not send is added with `v.transform` in the
-  schema (`type: "full-state"` in `game.ts`), so the type matches the runtime value.
+- A discriminant the contract documents is read from the payload like any other field. The
+  `type` of `GameResponseDto`, `ThrowAckDto` and `UndoAckDto` has a contract `default`, so it
+  is `v.optional(v.picklist([...]), default)` and the undo union narrows on it. A schema may
+  still map a parsed response to a client-side result with `v.transform`
+  (`loginResponseSchema` in `auth.ts`).
 - A schema used by 2+ domain files lives in `schemas.ts`, like a shared endpoint in
   `endpoints.ts`.
 - Shared guards in `@/lib/guards/guards` are for code outside the API layer. `shared/api/`

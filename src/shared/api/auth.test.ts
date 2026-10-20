@@ -301,6 +301,16 @@ describe("loginWithCredentials", () => {
     ).resolves.toEqual({ type: "failure", error: "Invalid credentials." });
   });
 
+  it("ignores a status in the body, which the contract no longer documents", async () => {
+    vi.spyOn(apiClient, "post").mockImplementationOnce(
+      respondWith({ success: false, error: "Invalid credentials.", status: "401" }),
+    );
+
+    await expect(
+      loginWithCredentials({ email: "alice@example.com", password: "s3cr3t" }),
+    ).resolves.toEqual({ type: "failure", error: "Invalid credentials." });
+  });
+
   it("returns the login error when the backend answers with only an error", async () => {
     vi.spyOn(apiClient, "post").mockImplementationOnce(
       respondWith({ error: "Invalid credentials." }),

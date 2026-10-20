@@ -73,11 +73,12 @@ describe("game/rematch api", () => {
         success: false,
         gameId: null,
         message: "Vorheriges Spiel nicht gefunden",
-        status: 404,
+        // Not in the contract: the backend moves `status` into the HTTP status.
+        status: "404",
       }),
     );
 
-    await expect(createRematchGame(520)).rejects.toMatchObject({ name: "ApiError", status: 404 });
+    await expect(createRematchGame(520)).rejects.toMatchObject({ name: "ApiError", status: 200 });
   });
 
   it("rejects with ApiValidationError when the rematch response has no success flag", async () => {

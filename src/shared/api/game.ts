@@ -70,25 +70,23 @@ const gamePlayerSchema = v.object({
   isGuest: v.boolean(),
 });
 
-/** Contract `GameResponseDto`, tagged `type: "full-state"` for the undo union. */
-const gameThrowsResponseSchema = v.pipe(
-  v.object({
-    id: integerSchema,
-    status: gameStatusSchema,
-    currentRound: integerSchema,
-    activePlayerId: v.optional(v.nullable(integerSchema), null),
-    currentThrowCount: integerSchema,
-    players: v.array(gamePlayerSchema),
-    winnerId: v.optional(v.nullable(integerSchema), null),
-    // The contract types settings as an open map; the game reads these three keys.
-    settings: v.object({
-      startScore: integerSchema,
-      doubleOut: v.boolean(),
-      tripleOut: v.boolean(),
-    }),
+/** Contract `GameResponseDto`. */
+const gameThrowsResponseSchema = v.object({
+  type: v.optional(v.picklist(["full-state"]), "full-state"),
+  id: integerSchema,
+  status: gameStatusSchema,
+  currentRound: integerSchema,
+  activePlayerId: v.optional(v.nullable(integerSchema), null),
+  currentThrowCount: integerSchema,
+  players: v.array(gamePlayerSchema),
+  winnerId: v.optional(v.nullable(integerSchema), null),
+  // The contract types settings as an open map; the game reads these three keys.
+  settings: v.object({
+    startScore: integerSchema,
+    doubleOut: v.boolean(),
+    tripleOut: v.boolean(),
   }),
-  v.transform((game) => ({ type: "full-state" as const, ...game })),
-);
+});
 
 /** Contract `GameSettingsResponseDto`. */
 const gameSettingsResponseSchema = v.object({
@@ -162,6 +160,7 @@ const scoreboardDeltaSchema = v.object({
 
 /** Contract `ThrowAckDto`. */
 const throwAckResponseSchema = v.object({
+  type: v.optional(v.picklist(["ack"]), "ack"),
   success: v.boolean(),
   gameId: integerSchema,
   stateVersion: v.string(),
@@ -170,17 +169,15 @@ const throwAckResponseSchema = v.object({
   serverTs: v.string(),
 });
 
-/** Contract `UndoAckDto`, tagged `type: "ack"` for the undo union. */
-const undoAckResponseSchema = v.pipe(
-  v.object({
-    success: v.boolean(),
-    gameId: integerSchema,
-    stateVersion: v.string(),
-    scoreboardDelta: scoreboardDeltaSchema,
-    serverTs: v.string(),
-  }),
-  v.transform((ack) => ({ type: "ack" as const, ...ack })),
-);
+/** Contract `UndoAckDto`. */
+const undoAckResponseSchema = v.object({
+  type: v.optional(v.picklist(["ack"]), "ack"),
+  success: v.boolean(),
+  gameId: integerSchema,
+  stateVersion: v.string(),
+  scoreboardDelta: scoreboardDeltaSchema,
+  serverTs: v.string(),
+});
 
 // The contract documents GameResponseDto for DELETE /throw; the backend also answers with
 // UndoAckDto during the compact-delta rollout. #101 owns that union.
@@ -196,7 +193,6 @@ const rematchResponseSchema = v.object({
   gameId: v.optional(v.nullable(integerSchema)),
   invitationLink: v.optional(v.nullable(v.string())),
   message: v.optional(v.nullable(v.string())),
-  status: v.optional(v.nullable(integerSchema)),
 });
 
 export type GameStatus = v.InferOutput<typeof gameStatusSchema>;
@@ -401,7 +397,7 @@ export async function createRematchGame(previousGameId: number): Promise<Rematch
   // The contract allows a null game id, for example when the previous game does not exist.
   if (typeof rematch.gameId !== "number") {
     throw new ApiError("Rematch response has no game id", {
-      status: rematch.status ?? 200,
+      status: 200,
       data: rematch,
     });
   }

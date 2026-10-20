@@ -112,6 +112,7 @@ function buildGameData(overrides: Partial<GameThrowsResponse> = {}): GameThrowsR
 
 function buildThrowAck(overrides: Partial<ThrowAckResponse> = {}): ThrowAckResponse {
   return {
+    type: "ack",
     success: true,
     gameId: 1,
     stateVersion: "v1",
