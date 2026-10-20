@@ -4,7 +4,7 @@
 
 - Research: `docs/player-profile-login-success/research/research.md`
 - Approved design: `docs/player-profile-login-success/design/design.md`
-- Coding standards: `docs/convention/coding-standards.md`
+- Coding standards: the Conventions table in `AGENTS.md`
 - API conventions: `docs/convention/api.md`
 - Architecture conventions: `docs/convention/architecture.md`
 - React conventions: `docs/convention/react.md`

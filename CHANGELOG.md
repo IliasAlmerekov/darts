@@ -20,6 +20,7 @@ and this project does **not** yet follow [Semantic Versioning](https://semver.or
 
 ### Changed
 
+- Docs: the convention files match the code again. `api.md` describes the TanStack Query layer in `src/shared/query/`, false claims about store symbols, the store barrel, Playwright paths and breakpoints are fixed, advice that is not specific to this project is cut, and the verification commands that used `rg -nP` now run with the installed ripgrep. `AGENTS.md` carries the table of which convention file to read for which change (#211)
 - Agent rules: branches live in the main checkout, without worktrees. `AGENTS.md` names the backend checkout in `../dartsapp-backend`, documents how to refresh `docs/backend-api-contract.json`, a fast test loop and a scope rule, and drops the Tickets section. A domain without a convention file follows the neighbouring code, and the agent asks only when there is no precedent (#208)
 - Agent rules: each issue gets its own branch, cut from the latest `main` after a pull. Once the PR is open, the agent removes its worktree and scratch files and keeps only the branch. The rematch invite fallback test now mocks the invite response without a body `status`, as the backend sends it (#162)
 - Waiting room: the page reads its game from the server instead of session storage, so a reload keeps working. It no longer subscribes to the admin-only room stream (#153)
@@ -32,6 +33,7 @@ and this project does **not** yet follow [Semantic Versioning](https://semver.or
 
 ### Removed
 
+- Docs: `docs/convention/coding-standards.md` and `docs/repo-map.md` are gone. The first repeated `AGENTS.md` apart from its table, which moved there, and the second restated the directory tree and had fallen behind it (#211)
 - Docs: `CONTRIBUTING.md` is gone. The README now carries the setup steps, and the rest already lived in `AGENTS.md` and `docs/convention/` (#208)
 - Game page: the page no longer opens the room stream. The backend never sent the `game-started` or `game-finished` events it waited for, and the tablet gets the scoreboard from its own throw and undo responses. Only the start page subscribes to the room stream now, for its `players` events. `useRoomStream`, `useRoomEventRefetch` and the `RoomStreamEventType` and `RoomStreamEvent` types are gone (#165)
 

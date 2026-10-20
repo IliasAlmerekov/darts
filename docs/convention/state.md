@@ -1,28 +1,22 @@
 # State (Nanostores)
 
-Rules for shared state in `src/shared/store/`. Source-of-truth: must be checked against
-`src/shared/store/` before changing.
+Rules for shared state in `src/shared/store/`. Check them against `src/shared/store/`
+before changing.
 
 ## Layout
 
 ```
 src/shared/store/
-  game-session.ts          # combined: internal atoms + public surface in one file
+  game-session.ts          # internal atoms + public surface in one file
   game-session.test.ts
-  game-state.ts            # combined layout
+  game-state.ts
   game-state.test.ts
-  index.ts                 # barrel: re-exports public surface from each domain
+  index.ts                 # barrel: re-exports every domain
 ```
 
-Two file layouts coexist and both are accepted:
-
-- **Split** (`<name>.ts` + `<name>.state.ts`): mutable atoms live in `*.state.ts`; the public
-  module imports them and never re-exports them. No store uses this layout today.
-- **Combined** (`game-state.ts`, `game-session.ts`): mutable atoms are declared as
-  module-scoped `const`s inside the same file as the public surface, never exported.
-
-Pick whichever the existing domain already uses. Adding a new file requires updating this
-section.
+Each domain is one file: its mutable atoms are module-scoped `const`s next to the public
+surface, never exported. A new domain gets its own file and an `export *` line in
+`index.ts`; update this section when you add one.
 
 ## Atom anatomy
 
@@ -44,19 +38,23 @@ export function setCurrentGameId(gameId: number | null): void {
 Rules:
 
 - The `ReadableAtom<T>` annotation on the public export is **required**. It strips
-  `.set()` from the type, so `$currentGameId.set(...)` outside the store file fails to typecheck.
+  `.set()` from the type, so `$currentGameId.set(...)` outside the store file fails to
+  typecheck. Never cast that typing away.
 - Mutable atoms (the bare `xAtom` form) are never exported.
-- All writes go through action functions exported from the same file.
+- All writes go through action functions exported from the same file. `<name>Atom.set(...)`
+  appears only inside the store file that declares the atom.
+- Persist side effects (sessionStorage, listeners) belong in the action, not the caller.
+  See `setCurrentGameId` in `game-session.ts`.
 
 ## Naming
 
-| Concept            | Form                                     | Example                                              |
-| ------------------ | ---------------------------------------- | ---------------------------------------------------- |
-| Internal mutable   | `<name>Atom` (camelCase, no prefix)      | `currentGameIdAtom`, `gameDataAtom`, `errorAtom`     |
-| Public readable    | `$<name>` (`$` prefix)                   | `$currentGameId`, `$gameData`, `$lastFinishedGameId` |
-| Computed atom      | `$<name>` (`$` prefix, same as readable) | `$gameSettings`, `$lastFinishedGameId`               |
-| Action function    | verb-first, imperative                   | `setGameData`, `clearError`, `resetGameStore`        |
-| Pure read function | verb-first, returns plain value          | `getCachedGameSettings(gameId)`                      |
+| Concept            | Form                                     | Example                                                    |
+| ------------------ | ---------------------------------------- | ---------------------------------------------------------- |
+| Internal mutable   | `<name>Atom` (camelCase, no prefix)      | `currentGameIdAtom`, `gameDataAtom`, `errorAtom`           |
+| Public readable    | `$<name>` (`$` prefix)                   | `$currentGameId`, `$gameData`, `$lastFinishedGameId`       |
+| Computed atom      | `$<name>` (`$` prefix, same as readable) | `$gameSettings`                                            |
+| Action function    | verb-first, imperative, named by intent  | `setGameData`, `clearLastFinishedGameId`, `resetGameStore` |
+| Pure read function | verb-first, returns plain value          | `getCachedGameSettings(gameId)`, `getActiveGameId()`       |
 
 ## Reading
 
@@ -81,106 +79,74 @@ function useGameState({ gameId }) {
 Forbidden:
 
 - `$atom.get()` inside `useMemo` -- it produces a stale snapshot bound to the memo
-  closure. Use `useStore($atom)` and let the reactive subscription drive memo deps.
+  closure. Use `useStore($atom)` and let the subscription drive memo deps.
 - Returning JSX whose values came from `.get()` instead of `useStore` -- the component
   will not re-render on store changes.
 - Subscribing to both a base atom and a `computed` derived from it in the same component
-  (e.g. `useStore($gameData)` + `useStore($gameSettings)` where the latter is
+  (e.g. `useStore($gameData)` + `useStore($gameSettings)`, where the latter is
   `computed(gameDataAtom, ...)`). Pick one.
-
-## Writing
-
-- The only legal place for `<name>Atom.set(...)` is **inside the same store file** that
-  declares the atom. Action functions live there.
-- Outside the store file, `$atom.set(...)` is a type error and must stay one. Do not
-  cast away the `ReadableAtom` typing.
-- Action functions are the API: name them by intent (`setGameData`, `resetRoomStore`)
-  and keep them in the public surface file, not in a `*.state.ts` file.
-- Persist side effects (sessionStorage, listeners) belong in the action, not the caller.
-  See `setCurrentGameId` in `game-session.ts` for the pattern.
 
 ## Computed atoms
 
 Use `computed(...)` for any value that is a pure function of other atoms:
 
 ```ts
-export const $gameSettings = computed(gameDataAtom, (gameData) => gameData?.settings ?? null);
+export const $gameSettings = computed(gameDataAtom, (gameData) => ...);
 ```
 
-- A `computed` atom uses the `$` prefix like a readable atom -- it has no `.set()`.
-- Do not duplicate `computed` outputs in component memoization. Subscribe to the
-  `computed` directly via `useStore`.
+Subscribe to the `computed` directly via `useStore`; do not recompute its output in
+component memoization.
 
 ## Cache atoms
 
 Per-id caches must have a **bounded** shape. Two accepted forms:
 
-- Single-slot cache (`{ id, value } | null`) -- replaced atomically. Example:
-  `$gameSettingsByGameId` in `game-state.ts` keeps the latest one entry only.
-- Bounded `Map`/`Record` with explicit eviction. If you need this, the eviction policy
-  must live next to the atom in the store file.
+- Single-slot cache (`{ id, value } | null`), replaced atomically. Example: the internal
+  `gameSettingsByGameIdAtom` in `game-state.ts` keeps the latest entry only, read through
+  `getCachedGameSettings(gameId)`.
+- Bounded `Map`/`Record` with explicit eviction, the policy living next to the atom in the
+  store file.
 
 An unbounded `Record<id, data>` cache that grows on every fetch is forbidden.
 
 ## Error atoms
 
-- An error atom is cleared **only** by:
-  1. The success branch of the operation that originally set it
-     (`setGameData` clears `errorAtom`, since it is the success counterpart of
-     `setError`), or
-  2. A dedicated clearer named for the action (`clearError`).
-- Unconditional `errorAtom.set(null)` from unrelated code paths or effects is forbidden.
+An error atom is cleared **only** by:
+
+1. The success branch of the operation that set it (`setGameData` clears `errorAtom`, as
+   the success counterpart of `setError`),
+2. a dedicated clearer named for the action, or
+3. the domain reset (`resetGameStore`).
+
+Unconditional `errorAtom.set(null)` from unrelated code paths or effects is forbidden.
 
 ## When to use a store
 
-Nanostores is for **cross-page** or **truly shared** client state -- current game id,
-game data the player is currently in, room state, etc.
+Nanostores is for **cross-page** client state: current game id, invitation, room state.
 
 Data read from the server lives in the TanStack Query cache, not in a store
 ([ADR 0001](../adr/0001-tanstack-query-for-server-reads.md)). The authenticated user is
 server data and lives under the `['auth', 'me']` query key. Do not add new server data
 to Nanostores.
 
-Local UI state (open/closed toggles, form inputs, hover state, ephemeral selection)
-stays in `useState` inside the component. Do not promote local state to a store unless
-two unrelated pages need it.
+Promote component state to a store only when two unrelated pages need it.
 
 ## Test patterns
 
-- Unit tests assert via `expect($atom.get()).toBe(...)`. This is fine -- imperative reads
-  in tests are the convention.
-- Do not `vi.spyOn($atom, "set")`. Atoms are exported as `ReadableAtom` and have no `.set`
-  in the public type. Spy on observable behavior (rendered output, store final state) instead.
-- Test-only seed/reset helpers live in `<name>.test-support.ts` . They may import the internal mutable atoms via the same
-  module structure as the public surface uses.
-- `*.test-support.ts` files must be imported **only** from test files (`*.test.ts`,
-  `*.test.tsx`). Importing them from production code is forbidden -- it would pull
-  test-only fixtures into the runtime bundle.
+- Assert on store state with `expect($atom.get()).toBe(...)`.
+- Do not `vi.spyOn($atom, "set")`: public atoms are `ReadableAtom` and have no `.set` in
+  their type. Assert on observable behavior (rendered output, final store state) instead.
+- Reset between tests with the public reset actions (`resetGameStore`, `resetRoomStore`).
+- Test fixtures follow the `*.test-support.ts` rule in `architecture.md`.
 
 ## Verification
 
 ESLint and TypeScript catch most violations because `ReadableAtom` removes `.set` from
-the public type. Three extra checks for things types do not enforce:
-
-**1. No `.set()` on `$`-atoms outside `src/shared/store/`** -- this guards against the
-case where someone bypasses the `ReadableAtom` typing via `as` casts:
+the public type. This check covers the case where someone bypasses that typing with an
+`as` cast -- `.set()` on a `$`-atom outside `src/shared/store/`:
 
 ```bash
-rg -nP '\$[A-Za-z_][\w]*\.set\(' src --glob '!src/shared/store/**'
+rg -n '\$[A-Za-z_]\w*\.set\(' src --glob '!src/shared/store/**'
 ```
 
-**2. No imports of `*.state` modules outside `src/shared/store/`** -- internal mutable
-atoms must be reached only through the public surface file in the same store domain:
-
-```bash
-rg -nP "from ['\"][^'\"]*\.state['\"]" src --glob '!src/shared/store/**'
-```
-
-**3. No imports of `*.test-support` modules outside test files** -- prevents test-only
-fixtures from leaking into production bundles:
-
-```bash
-rg -nP "from ['\"][^'\"]*\.test-support['\"]" src --glob '!**/*.test.{ts,tsx}'
-```
-
-A clean run of all three prints nothing.
+A clean run prints nothing.

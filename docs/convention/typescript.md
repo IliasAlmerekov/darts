@@ -1,17 +1,16 @@
 # TypeScript
 
-These rules are source-of-truth for TypeScript and must be checked against `src` before changing them.
+Rules for TypeScript code. Check them against `src` before changing.
 
-## Compiler flags (tsconfig.json)
+## Compiler flags
 
-Must be enabled and not disabled:
+`tsconfig.json` enables `strict`, `noUnusedLocals`, `noUnusedParameters`,
+`noFallthroughCasesInSwitch`, `noUncheckedIndexedAccess`, and `exactOptionalPropertyTypes`.
+Keep all six on. Two of them change how code is written:
 
-- `strict: true`
-- `noUnusedLocals: true`
-- `noUnusedParameters: true`
-- `noFallthroughCasesInSwitch: true`
-- `noUncheckedIndexedAccess: true` (index access can produce `T | undefined`)
-- `exactOptionalPropertyTypes: true` (`foo?: string` != `foo: string | undefined`)
+- `noUncheckedIndexedAccess`: index access yields `T | undefined`; narrow before use.
+- `exactOptionalPropertyTypes`: `foo?: string` is not `foo: string | undefined`; omit the
+  key instead of assigning `undefined`.
 
 ## Forbidden
 
@@ -19,23 +18,25 @@ Must be enabled and not disabled:
 - `@ts-ignore`, `@ts-nocheck`, `@ts-expect-error`
 - non-null assertions (`value!.prop`)
 - `as X as Y`
-- `as T` where no full preceding runtime validation proves type shape
-- `as unknown` in production code (test files may use it for mock construction)
-- bare `JSX.Element` in production code — use `React.JSX.Element` (test helpers may keep `JSX.Element`)
-- `Dispatch<SetStateAction<T>>` in public interfaces — use `(value: T) => void`
-- prefixed interfaces (`IGameState` style)
-- domain `string[]` when domain members are known -> prefer literal union
+- `as T` without full preceding runtime validation of the shape (see `as` casts below)
+- `as unknown` in production code; replace it with runtime validation (test files may use
+  it to build mocks)
+- bare `JSX.Element` in production code; use `React.JSX.Element` (test helpers may keep
+  `JSX.Element`)
+- `React.FC` / `React.FunctionComponent`
+- `Dispatch<SetStateAction<T>>` in public interfaces; use `(value: T) => void`
+- `I`-prefixed interfaces (`IGameState`); the ESLint `naming-convention` rule rejects them
+- `string[]` for a domain whose members are known; use a literal union
 
 ## Required
 
 - All exported functions have explicit return types.
 - All exported components return `React.JSX.Element` / `React.JSX.Element | null`.
 - Async inner functions (including in `useEffect`) have explicit return types.
-- `parseInt(value, 10)` always uses explicit radix 10.
 
-## `as` casts — when allowed
+## `as` casts -- when allowed
 
-Allowed only in these cases:
+Only in these cases:
 
 1. After a full local type guard in the same function:
 
@@ -44,68 +45,61 @@ if (!isRecord(value)) return null;
 const obj = value as Record<string, unknown>;
 ```
 
-2. API adapter boundary with an explicit inline rationale comment.
+2. At the API adapter boundary, with an inline rationale comment:
 
 ```ts
 fetchConfig.body = isJsonBody(body) ? JSON.stringify(body) : (body as BodyInit); // safe: BodyInit accepts any serializable value
 ```
 
-3. Tests (`*.test.ts`, `*.test.tsx`) where casts are isolated to test mocks.
-
-In production code, any `as unknown` should be replaced with runtime validation before use.
+3. In tests (`*.test.ts`, `*.test.tsx`), isolated to mock construction.
 
 ## Type guards
 
-Shared guards live in `src/shared/lib/guards/guards.ts`. API responses are not checked by
-guards: each has a Valibot schema in its `src/shared/api/` domain file (see `api.md`).
+Shared guards live in `src/shared/lib/guards/guards.ts` (`isRecord(value): value is
+Record<string, unknown>`). API responses are not checked by guards: each has a Valibot
+schema in its `src/shared/api/` domain file (see `api.md`).
 
-- `isRecord(value): value is Record<string, unknown>`
-
-Validation rules:
-
-- Guards must validate full shape, not only `isRecord` alone.
-- Shared guards used in 2+ files must stay in `src/shared/lib/guards/guards.ts`.
-- `apiClient` calls must pass `validate: <Valibot schema>`; the result type is inferred from it.
-- `location.state` is validated via `parseLocationState<T>(state, validate)` from `src/shared/lib/router/locationState.ts`. Direct `as` casts on `location.state` are forbidden; the call site provides the page-local type guard.
+- A guard validates the full shape; `isRecord` alone is not enough.
+- A guard used in 2+ files lives in `src/shared/lib/guards/guards.ts`.
+- `apiClient` calls pass `validate: <Valibot schema>`; the result type is inferred from it.
+- `location.state` goes through `parseLocationState<T>(state, validate)` from
+  `src/shared/lib/router/locationState.ts`, with a page-local type guard as `validate`.
+  Never cast `location.state` with `as`.
 
 ## Naming
 
 - `interface` for object shapes, except API response types: they are
   `type XResponse = v.InferOutput<typeof xResponseSchema>`.
-- `type` for unions/intersections/computed aliases.
-- Component props as `FooProps` local interfaces.
+- Component props are local `FooProps` interfaces.
 - No `.types.ts` files.
-- No `export type Alias = ExistingType` style aliases without added meaning.
-
-### API suffixes
-
-- response DTOs: `Response`
-- request DTOs: `Request` / `Payload`
-- component props: `Props`
-- `Dto` suffix is not used.
-
-## Discriminated unions
-
-Use explicit discriminants (`type: "full-state" | "ack"`) and avoid `type: string`.
+- No `export type Alias = ExistingType` aliases that add no meaning.
+- DTO suffixes: `Response` for responses, `Request` / `Payload` for requests. The `Dto`
+  suffix is not used in type names; it appears only in comments that cite a backend
+  contract name (`/** Contract \`GameResponseDto\`. \*/`).
 
 ## Environment variables
 
-All env vars must be declared in `src/vite-env.d.ts` and referenced directly via `import.meta.env`.
-
-No `as string | undefined` casts should be used to bypass typing.
+Declare every env var in `src/vite-env.d.ts` (`ImportMetaEnv`) and read it directly via
+`import.meta.env`, with no `as string | undefined` casts.
 
 ## Numeric inputs
 
-`Number(...)` and `parseInt(...)` must be validated before use.
+Validate `Number(...)` and `parseInt(..., 10)` results before use.
 
-- route params: validate numeric conversions and allow `0` when valid
-- avoid truthy checks for numbers (`if (value)`); use `value !== undefined` / `value !== null`
-- `??` defaults allowed only for constant fallbacks with explicit meaning; domain data should usually flow as error/loading state first
+- Route params: validate the numeric conversion and accept `0` when valid.
+- Check numbers with `value !== undefined` / `value !== null`, not truthiness, so `0`
+  survives.
+- `??` defaults only for constant fallbacks with explicit meaning; missing domain data
+  flows as an error or loading state.
 
 ## Verification
 
-One compact command — `typecheck` + `eslint` cover most rules, the trailing `rg` catches what lint does not (chained `as`, `as unknown`, `JSX.Element`, `React.FC`, `Dispatch<SetStateAction>`, non-null `!.`), with test files excluded:
+`typecheck` and `eslint` cover most rules; the trailing `grep` catches what lint does not
+(chained `as`, `as unknown`, bare `JSX.Element`, `React.FC`, `Dispatch<SetStateAction>`,
+non-null `!.`), with tests excluded:
 
 ```bash
-npm run typecheck && npm run eslint && rg -nP 'as .+ as |\bas unknown\b|(?<!React\.)JSX\.Element|React\.(FC|FunctionComponent)|Dispatch<SetStateAction|[A-Za-z_)\]]!\.' src -g '!**/*.test.{ts,tsx}' -g '!src/test/**'
+npm run typecheck && npm run eslint && grep -rnP --include='*.ts' --include='*.tsx' --exclude='*.test.ts' --exclude='*.test.tsx' --exclude-dir=test 'as .+ as |\bas unknown\b|(?<!React\.)JSX\.Element|React\.(FC|FunctionComponent)\b|Dispatch<SetStateAction|[A-Za-z_)\]]!\.' src
 ```
+
+A clean run prints nothing after the typecheck and lint output.

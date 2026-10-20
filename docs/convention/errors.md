@@ -1,31 +1,22 @@
 # Errors
 
-Rules for error classes, catch handling, route errors, user-facing messages, and logging
-handoff. Source-of-truth: must be checked against `src/` before changing.
+Rules for error classes, catch handling, route errors, user-facing messages, and logging.
 
 ## Error layers
-
-The project has four distinct error layers:
 
 ```
 src/shared/api/errors.ts                      # HTTP error hierarchy
 src/shared/api/client.ts                      # ApiValidationError + apiClient throw sites
 src/shared/lib/error/error-to-user-message.ts # generic user-safe message mapping
 src/shared/lib/error/auth-error-handling.ts   # auth-specific user-safe message mapping
+src/shared/services/browser/clientLogger.ts   # logging and key-based redaction
 src/app/ErrorBoundary.tsx                     # React Router errorElement logging + fallback UI
 ```
 
-Rules:
-
-- Keep HTTP transport errors in `src/shared/api/errors.ts`.
-- Keep `ApiValidationError` in `src/shared/api/client.ts`.
-- Keep user-facing message mapping in `src/shared/lib/error/*`.
-- Keep route-error normalization in `src/app/ErrorBoundary.tsx`.
-- Do not add parallel error sanitizer helpers in pages.
+Each concern stays in its file above. User-facing message mapping lives only in
+`src/shared/lib/error/*`; pages call it instead of writing their own sanitizer.
 
 ## HTTP errors
-
-The API hierarchy is:
 
 | Class                | Extends    | Status          | Meaning                                             |
 | -------------------- | ---------- | --------------- | --------------------------------------------------- |
@@ -34,54 +25,36 @@ The API hierarchy is:
 | `ForbiddenError`     | `ApiError` | 403             | authenticated user lacks permission                 |
 | `NetworkError`       | `ApiError` | 0               | fetch rejected before a response                    |
 | `TimeoutError`       | `ApiError` | 0               | apiClient timeout aborted the request               |
-| `ApiValidationError` | `Error`    | none            | response body failed `validate(...)`                |
-
-Rules:
+| `ApiValidationError` | `Error`    | none            | response body failed the `validate` schema          |
 
 - Import HTTP error classes from `@/shared/api`, not from `@/shared/api/errors`.
 - Throw HTTP failures as `new ApiError(message, { status, data, url })`.
-- Use the existing `data`, `url`, `originalError`, and `retryAfterSeconds` fields instead
-  of creating per-domain `ApiError` subclasses. `apiClient` sets `retryAfterSeconds` from
-  the `Retry-After` header of a 429 when it holds whole seconds.
-- Keep `ApiValidationError` separate from `ApiError`; do not catch it by `ApiError`.
-- Re-wrap `ApiValidationError` to `ApiError` only when a domain function intentionally
-  reports a 200 response with an invalid contract.
+- Use the existing `data`, `url`, `originalError`, and `retryAfterSeconds` fields instead of
+  per-domain `ApiError` subclasses. `apiClient` sets `retryAfterSeconds` from the
+  `Retry-After` header of a 429 when it holds whole seconds.
+- `ApiValidationError` is not an `ApiError`, so `instanceof ApiError` does not catch it.
+- Re-wrap `ApiValidationError` as `ApiError` only when a domain function deliberately reports
+  a 200 response with an invalid contract (`getAuthenticatedUser` in `auth.ts`).
 
 ## Domain errors
 
-Domain-specific `Error` subclasses are allowed when they model control flow, not HTTP:
+Domain-specific `Error` subclasses model control flow, not HTTP. `ThrowRejectedError` in
+`src/pages/GamePage/throws/throwErrors.ts` is the pattern:
 
-```ts
-export class ThrowRejectedError extends Error {
-  constructor(message = "Throw request was not accepted by server") {
-    super(message);
-    this.name = "ThrowRejectedError";
-  }
-}
-```
-
-Rules:
-
-- Place domain error classes next to the domain flow that owns them.
-- Set `this.name` in the constructor.
-- Keep the class small: no transport fields, no response payload parsing.
-- Do not extend `ApiError` for domain-specific cases.
+- It sits next to the flow that owns it.
+- It sets `this.name` in the constructor.
+- It carries no transport fields and parses no response payload.
+- It extends `Error`, never `ApiError`.
 
 ## Catch blocks
 
-Rules:
-
-- Catch values as `unknown` unless TypeScript infers `unknown` already.
-- Handle aborts first and silently return when the operation was intentionally cancelled.
+- Return silently on an abort: the operation was cancelled on purpose. Effects check
+  `error.name === "AbortError"`; a `queryFn` checks `signal.aborted`.
 - Log unexpected failures through `clientLogger.error(event, { context, error })`.
-- Store the original `Error` object in state only when the UI or store explicitly models
-  technical error state (`$error: Error | null`).
-- Store strings in page-level UI error state only after mapping through a user-safe
-  function or after local validation produced the string.
-- Do not leave an empty `catch` unless the failure is an intentionally ignored browser
-  fallback.
-
-Canonical async shape:
+- Keep the original `Error` object in state only when the UI or store models technical error
+  state (`$error: Error | null`).
+- Page-level UI error state holds strings that came from a user-safe mapper or from local
+  validation.
 
 ```ts
 try {
@@ -101,81 +74,72 @@ try {
 
 ## User-facing messages
 
-Two message mappers are canonical:
+Two mappers are canonical:
 
-- `toUserErrorMessage(error, fallback?)` for general app/API failures.
+- `toUserErrorMessage(error, fallback?)` for caught errors outside auth flows. It recognises
+  `NetworkError`, `ApiError` (by status and by payload `error` / `message` fields), generic
+  `Error`, and bare strings.
 - `mapAuthErrorMessage({ flow, error, rawMessage })` for login and registration.
 
 Rules:
 
-- Do not render `error.message` directly in JSX.
-- Do not render `ApiError.data.message` directly in JSX.
-- Use `toUserErrorMessage` for caught `unknown` errors outside auth flows.
-- Use `mapAuthErrorMessage` for login and registration errors.
+- JSX renders the mapper's output, never `error.message` or `ApiError.data.message`.
 - Local validation strings may be assigned directly (`"Please create a game first."`).
-- Typed backend business payloads may supply a user message only after a runtime guard
-  proves the payload shape (`AddGuestErrorResponse` is the current example).
-- Extend the mapper in `src/shared/lib/error/*` when a new backend phrase needs a safer
-  user message.
+- A typed backend business payload may supply a user message only after a runtime guard
+  proves its shape (`isAddGuestErrorResponse` in `src/pages/StartPage/useGuestFlow.ts`).
+- When a new backend phrase needs a safer message, extend the mapper in
+  `src/shared/lib/error/*`.
 
-## Logging handoff
+## Logging
 
-`errors.md` defines when to log; the detailed logger/redaction contract belongs to
-`logging.md`.
-
-Rules:
-
-- Use `clientLogger.error` for unexpected caught failures.
-- Include stable event names (`domain.action.failed` or existing underscore style in
-  legacy files).
-- Put structured metadata under `context`.
-- Pass the caught value as `error` so `clientLogger` can serialize it.
-- Do not call `console.error`, `console.warn`, `console.log`, or `console.info` from
-  application code.
-- Do not log secrets, tokens, passwords, cookies, CSRF values, session data, or invitation
-  links.
+- Log unexpected caught failures with `clientLogger.error`, failures the app recovers from
+  with `clientLogger.warn`. Application code calls no `console.*`.
+- Event names are stable `domain.action.failed` strings (`game.undo.failed`). Older files use
+  underscore style (`wake_lock_release_failed`); keep a file's existing style.
+- Put structured metadata under `context` and pass the caught value as `error`, so
+  `clientLogger` can serialize it.
+- `clientLogger` redacts values by key name only (`SENSITIVE_KEY_PATTERN`: authorization,
+  cookie, csrf, invitationlink, password, secret, session, token). Put such values under a
+  matching key or leave them out; never inside a message string or an unrelated key.
 
 ## Route errors
 
-React Router route errors are handled by `src/app/ErrorBoundary.tsx`.
+`src/app/ErrorBoundary.tsx` handles React Router route errors.
 
-Rules:
-
-- Use `throw new Response(..., { status })` in loaders for expected route failures such
-  as invalid route params.
-- Use `isRouteErrorResponse(error)` before reading route response fields.
+- Loaders throw `new Response(..., { status })` for expected route failures such as an
+  invalid route param (`gameDetailLoader`).
+- Read route response fields only after `isRouteErrorResponse(error)`.
 - Normalize non-`Error` route failures to `Error` before logging.
-- Keep the rendered route fallback generic; log details, do not show internals.
-- Do not introduce class-based React error boundaries.
+- The rendered fallback stays generic; details go to the log.
+- Error boundaries are function components built on `useRouteError()`; the project has no
+  class-based boundary.
 
 ## Browser capability errors
 
-Rules:
-
-- Browser API availability checks must catch known failure modes (`SecurityError` for
-  storage access).
-- Log unexpected browser API failures when the app can continue with degraded behavior.
-- Ignore failures only when the user-visible fallback is already explicit and no useful
-  telemetry exists (clipboard fallback is the current pattern).
+- Browser API availability checks catch known failure modes (`SecurityError` for storage
+  access in `src/shared/store/game-session.ts`).
+- Log unexpected browser API failures when the app can continue with degraded behaviour.
+- Ignore a failure only when the user-visible fallback is explicit and no useful telemetry
+  exists (the clipboard fallback in `QRCode.tsx`).
 
 ## Verification
 
-**1. No raw console calls in production source**:
+A clean run of each command prints nothing.
+
+**1. No raw console calls in production source:**
 
 ```bash
 rg -n 'console\.(error|warn|log|info)' src --glob '*.{ts,tsx}' --glob '!**/*.test.{ts,tsx}'
 ```
 
-**2. No deep imports from the HTTP error internals**:
+**2. No deep imports from the HTTP error internals:**
 
 ```bash
 rg -n -F '@/shared/api/errors' src --glob '*.{ts,tsx}' --glob '!**/*.test.{ts,tsx}'
 ```
 
-**3. No new `ApiError` subclasses outside the API hierarchy**:
+**3. No `ApiError` subclasses outside the API hierarchy:**
 
 ```bash
 rg -n 'extends ApiError' src --glob '*.{ts,tsx}' --glob '!src/shared/api/errors.ts' --glob '!**/*.test.{ts,tsx}'
 ```
-
-A clean run of all three prints nothing.
