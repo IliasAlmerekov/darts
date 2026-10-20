@@ -130,7 +130,7 @@ A clean run of each command prints nothing.
 **1. No raw console calls in production source:**
 
 ```bash
-rg -n 'console\.(error|warn|log|info)' src --glob '*.{ts,tsx}' --glob '!**/*.test.{ts,tsx}'
+rg -n '\bconsole\.\w+' src --glob '*.{ts,tsx}' --glob '!**/*.test.{ts,tsx}'
 ```
 
 **2. No deep imports from the HTTP error internals:**

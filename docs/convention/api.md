@@ -9,11 +9,21 @@ A cached server read passes through three layers:
 2. `src/shared/query/<domain>.queries.ts`: wraps the domain function in a cache entry.
 3. Route loaders, page hooks, and components: read the cache entry.
 
-Imperative workflows call the domain function directly and skip the cache: the StartPage
-loader (`getGameThrows` and `getInvitation` in `src/pages/StartPage/useRoomRestore.ts`,
-which fill Nanostores), the settings read before a game starts
-(`getGameSettings` in `useCreateStartFlow.ts`), and the throw, undo, and reconciliation
-flows in `src/pages/GamePage/throws/`.
+A read inside an imperative workflow (a loader that fills Nanostores, a submit handler, a
+recovery after a failed patch) calls the domain function directly and skips the cache. The
+call sites today:
+
+- `src/pages/StartPage/useRoomRestore.ts`: `getGameThrows` and `getInvitation` in the
+  StartPage loader.
+- `src/pages/StartPage/useCreateStartFlow.ts`: `getGameSettings` before a game starts.
+- `src/pages/LoginPage/useLogin.ts`: `getAuthenticatedUser` in the post-login session
+  fallback, before it seeds the cache.
+- `src/pages/GameSummaryPage/useGameSummaryPage.ts` and
+  `src/pages/GamePage/throws/useThrowReconciliation.ts`: `getGameThrows` when a compact
+  undo or throw response cannot patch local state.
+
+A read that renders on its own, without such a workflow around it, goes through a query
+factory.
 
 ## Layout
 
