@@ -182,44 +182,6 @@ describe("useAuthenticatedUser", () => {
     expect(result.current.error).toBeNull();
   });
 
-  it("should retain a profile-backed authenticated user", async () => {
-    getAuthenticatedUserMock.mockResolvedValue(
-      buildAuthenticatedUser({
-        roles: ["ROLE_PLAYER"],
-        id: 23,
-        username: "Ton Eighty",
-        redirect: "/playerprofile",
-        profile: {
-          id: 23,
-          nickname: "Ton Eighty",
-          stats: {
-            gamesPlayed: 12,
-            scoreAverage: 58.4,
-          },
-        },
-      }),
-    );
-
-    const { result } = renderHook(() => useAuthenticatedUser(), { wrapper });
-
-    await waitFor(() => {
-      expect(result.current.loading).toBe(false);
-    });
-
-    expect(result.current.user).toMatchObject({
-      roles: ["ROLE_PLAYER"],
-      redirect: "/playerprofile",
-      profile: {
-        nickname: "Ton Eighty",
-        stats: {
-          gamesPlayed: 12,
-          scoreAverage: 58.4,
-        },
-      },
-    });
-    expect(result.current.error).toBeNull();
-  });
-
   it("should expose a mapped auth failure when the auth API rejects with authorization failure", async () => {
     getAuthenticatedUserMock.mockRejectedValue(
       new ApiError("Authorization failed for authenticated user", {

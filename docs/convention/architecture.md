@@ -215,6 +215,5 @@ rg -n 'from "@/shared/lib/' src -g '!**/*.test.{ts,tsx}'
 ```
 
 A clean run of (2), (3), and (4) prints nothing. Until #214 lands, (2) prints
-`src/pages/StatisticsPage/Statistics.tsx:3` and (4) prints three imports in
-`useRoomRestore.ts`, `GamePlayerItemList.tsx`, and `src/shared/api/auth.ts`; any other line is
-a new violation.
+`src/pages/StatisticsPage/Statistics.tsx:3` and (4) prints two imports in
+`useRoomRestore.ts` and `GamePlayerItemList.tsx`; any other line is a new violation.

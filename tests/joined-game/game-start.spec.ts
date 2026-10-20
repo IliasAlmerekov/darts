@@ -6,10 +6,12 @@ import {
   NO_CURRENT_GAME,
   startedCurrentGame,
 } from "../shared/current-game-mocks";
+import { mockPlayerProfile } from "../shared/player-profile-mocks";
 
 test.describe("Waiting room", () => {
   test.beforeEach(async ({ page }) => {
     await mockRememberedPlayerSession(page);
+    await mockPlayerProfile(page);
   });
 
   test("shows the start once the admin starts the game", async ({ page }) => {

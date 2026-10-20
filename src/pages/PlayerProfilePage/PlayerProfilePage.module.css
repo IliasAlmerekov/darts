@@ -1,0 +1,23 @@
+.playerProfile {
+  width: min(100%, 1200px);
+  margin: 0 auto;
+  padding: var(--page-padding);
+  box-sizing: border-box;
+}
+
+.pageTitle {
+  margin: 0 0 var(--space-md);
+}
+
+.profileLayout {
+  display: grid;
+  grid-template-columns: minmax(240px, 320px) minmax(0, 1fr);
+  align-items: start;
+  gap: var(--space-lg);
+}
+
+@media (width <= 600px) {
+  .profileLayout {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}

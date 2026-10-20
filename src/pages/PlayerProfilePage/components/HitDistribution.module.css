@@ -1,0 +1,80 @@
+.hitDistribution {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-md);
+}
+
+.board {
+  flex: 1 1 180px;
+  max-width: 260px;
+  height: auto;
+}
+
+.segment {
+  fill: var(--color-primary);
+  fill-opacity: var(--heat);
+  stroke: var(--color-bg);
+  stroke-width: 1;
+}
+
+.segmentLabel {
+  fill: var(--color-text-muted);
+  font-size: 9px;
+  text-anchor: middle;
+  dominant-baseline: central;
+}
+
+.heatVeryHigh {
+  --heat: 0.9;
+}
+
+.heatHigh {
+  --heat: 0.65;
+}
+
+.heatMedium {
+  --heat: 0.42;
+}
+
+.heatLow {
+  --heat: 0.22;
+}
+
+.heatVeryLow {
+  --heat: 0.08;
+}
+
+.legend {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xs);
+  font-size: var(--font-size-14);
+}
+
+.legendTitle {
+  font-weight: var(--font-weight-bold);
+}
+
+.legendList {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.legendItem {
+  display: flex;
+  align-items: center;
+  gap: var(--space-xs);
+}
+
+.legendSwatch {
+  width: 14px;
+  height: 14px;
+  border-radius: var(--radius-xs);
+  background: var(--color-primary);
+  opacity: var(--heat);
+}

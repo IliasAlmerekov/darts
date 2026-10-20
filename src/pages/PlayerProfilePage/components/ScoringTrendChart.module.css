@@ -1,0 +1,39 @@
+.chart {
+  display: block;
+  width: 100%;
+  height: auto;
+  max-height: 220px;
+}
+
+.largeChart {
+  max-height: 360px;
+}
+
+.axis {
+  stroke: var(--color-surface);
+  stroke-width: 1;
+}
+
+.axisLabel {
+  fill: var(--color-text-muted);
+  font-size: 10px;
+  text-anchor: end;
+}
+
+.trendLine {
+  fill: none;
+  stroke: var(--color-primary);
+  stroke-width: 2;
+  stroke-linejoin: round;
+}
+
+.trendPoint {
+  fill: var(--color-bg);
+  stroke: var(--color-primary);
+  stroke-width: 2;
+}
+
+.emptyChart {
+  margin: 0;
+  color: var(--color-text-muted);
+}

@@ -1,0 +1,31 @@
+.profileBlock {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+  min-width: 0;
+  padding: var(--padding-md);
+  border: 1px solid var(--color-surface);
+  border-radius: var(--radius-lg);
+  background: var(--color-bg);
+  box-shadow: 0 8px 24px rgb(45 57 68 / 8%);
+}
+
+.blockHeader {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-xs);
+}
+
+.blockIcon {
+  flex: none;
+  width: 28px;
+  height: 28px;
+}
+
+.blockTitle {
+  flex: 1;
+  margin: 0;
+  font-size: var(--font-size-18);
+  line-height: var(--line-height-24);
+}

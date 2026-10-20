@@ -1,0 +1,13 @@
+.averageList {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xs);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.averageItem {
+  padding: var(--space-xs) 0;
+  border-bottom: 1px solid var(--color-surface);
+}

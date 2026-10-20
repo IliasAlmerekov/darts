@@ -97,43 +97,6 @@ describe("getAuthenticatedUser", () => {
     });
   });
 
-  it("should normalize a profile envelope into a player authenticated user", async () => {
-    vi.spyOn(globalThis, "fetch").mockResolvedValueOnce(
-      createMockResponse({
-        body: {
-          success: true,
-          profile: {
-            id: 23,
-            nickname: "Ton Eighty",
-            stats: {
-              gamesPlayed: 12,
-              scoreAverage: 58.4,
-            },
-          },
-        },
-        status: 200,
-        headers: new Headers({ "content-type": "application/json" }),
-        url: "/api/login/success",
-      }),
-    );
-
-    await expect(getAuthenticatedUser()).resolves.toEqual({
-      success: true,
-      roles: ["ROLE_PLAYER"],
-      id: 23,
-      username: "Ton Eighty",
-      redirect: "/playerprofile",
-      profile: {
-        id: 23,
-        nickname: "Ton Eighty",
-        stats: {
-          gamesPlayed: 12,
-          scoreAverage: 58.4,
-        },
-      },
-    });
-  });
-
   it("should return null when the auth-check response is 401", async () => {
     vi.spyOn(globalThis, "fetch").mockResolvedValueOnce(
       createMockResponse({
@@ -230,7 +193,7 @@ describe("getAuthenticatedUser", () => {
     });
   });
 
-  it("should throw ApiError when the auth-check returns a malformed profile envelope", async () => {
+  it("should throw ApiError when the auth-check returns a profile envelope", async () => {
     vi.spyOn(globalThis, "fetch").mockResolvedValueOnce(
       createMockResponse({
         body: {
@@ -239,7 +202,7 @@ describe("getAuthenticatedUser", () => {
             id: 23,
             nickname: "Ton Eighty",
             stats: {
-              gamesPlayed: "12",
+              gamesPlayed: 12,
               scoreAverage: 58.4,
             },
           },

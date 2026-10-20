@@ -1,0 +1,10 @@
+.sampleBadge {
+  display: inline-block;
+  padding: 2px var(--space-xs);
+  border: 1px dashed var(--color-border);
+  border-radius: var(--radius-pill);
+  color: var(--color-text-muted);
+  font-size: var(--font-size-12);
+  line-height: var(--line-height-14);
+  white-space: nowrap;
+}
