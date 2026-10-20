@@ -10,7 +10,15 @@ Dart score app is an app where you can effortlessly keep track of your dart game
 git clone <repository-url>
 ```
 
-2. Set up Node.js 20, dependencies and the Playwright browser as described in [CONTRIBUTING.md → Prerequisites](CONTRIBUTING.md#prerequisites).
+2. Install Node.js 20.19+ with npm. `.nvmrc` pins the version, and Vite 7 needs `^20.19.0 || >=22.12.0`. Then install the dependencies and the Playwright browser:
+
+```bash
+nvm use
+npm install
+npx playwright install chromium
+```
+
+On a fresh Linux machine, run `npx playwright install --with-deps chromium` instead, so Playwright also installs the system libraries Chromium needs.
 
 ## Getting Started
 

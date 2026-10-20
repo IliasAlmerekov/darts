@@ -31,15 +31,14 @@ endpoint inventories as a competing source of truth.
    from the table above.
 2. **The convention wins.** If a rule conflicts with current code, fix the code (or file
    an issue) -- do not weaken the rule.
-3. **No invention.** If your task touches a domain not listed in the table, the
-   convention is not yet documented -- ask the user before deciding anything.
+3. **Follow precedent.** If your task touches a domain not listed in the table, follow
+   the neighbouring code. Ask the user only when the code has no precedent.
 4. **Verify after change.** Each domain file ends with a `## Verification` block. Run
    those commands for every file you touched.
 
 ## Domains not yet written
 
-These are planned and will be added file-by-file. Until a file exists, treat the domain
-as undocumented (rule 3 applies):
+These are planned and will be added file-by-file. Until a file exists, rule 3 applies:
 
 - `logging.md` -- `clientLogger`, redaction
 - `performance.md` -- `AbortController`, prefetch gating, lazy loading
