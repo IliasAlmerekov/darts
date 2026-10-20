@@ -11,7 +11,7 @@ Each response used to be checked by a hand-written `isXxx` guard, and its type w
 
 ## Consequences
 
-- A schema may fill in contract defaults (`v.optional(schema, default)`) and add a client-side discriminant (`type: "full-state" | "ack"`) with `v.transform`, so the inferred type is true at runtime.
+- A schema may fill in contract defaults (`v.optional(schema, default)`), so the inferred type is true at runtime. The undo union's discriminant (`type: "full-state" | "ack"`) comes from the payload with its contract default since #209; before, a `v.transform` added it on the client.
 - `v.object` drops keys the schema does not name. Code reads only what the schema describes.
 - Domain functions trust the output of `apiClient` and no longer re-check it. Mapping to UI shapes still happens in mappers, not in schemas.
 - Shared guards in `src/shared/lib/guards/` stay for code outside the API layer, such as error payloads and the game session store.
