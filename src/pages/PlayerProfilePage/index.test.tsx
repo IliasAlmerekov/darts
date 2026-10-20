@@ -328,6 +328,18 @@ describe("PlayerProfilePage", () => {
     expect(getPlayerProfile).toHaveBeenCalledTimes(2);
   });
 
+  it("does not repeat the error title as the message for an unknown failure", async () => {
+    vi.mocked(getPlayerProfile).mockRejectedValueOnce(new Error("boom"));
+
+    renderPage();
+
+    const alert = await screen.findByRole("alert");
+    expect(
+      within(alert).getByRole("heading", { name: "Could not load your profile" }),
+    ).toBeTruthy();
+    expect(within(alert).getByText("Something went wrong. Please try again.")).toBeTruthy();
+  });
+
   it("asks for the profile again on every visit", async () => {
     const router = renderPage();
     await within(statValue("Games played")).findByText("18");

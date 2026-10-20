@@ -38,7 +38,7 @@ export function usePlayerProfilePage(): UsePlayerProfilePageReturn {
     error !== null
       ? {
           status: "error",
-          message: toUserErrorMessage(error, "Could not load your profile."),
+          message: toUserErrorMessage(error),
           retry: () => void refetch(),
         }
       : data === undefined
