@@ -191,8 +191,12 @@ game id, room store, game store) stays in Nanostores (`state.md`).
   `placeholderData: keepPreviousData`).
 - Prefetch goes through `queryClient.prefetchQuery` (`src/app/routeWarmup.ts`, scheduled by
   `src/app/useStatisticsPrefetch.ts`).
-- The query cache is the single source for a server value; no store atom mirrors it. The
-  game page's throw queue, optimistic throws, and undo stay outside queries (ADR 0001).
+- The query cache is the single source for a server value that only queries hold (the
+  authenticated user has no `$user` mirror). The game store is the exception: it holds the
+  game state the client owns (ADR 0001), and two queries bridge to it. `gameQueries.settings`
+  seeds from `getCachedGameSettings`, and `gameQueries.lobbyPlayers` seeds from `$gameData`,
+  both through `initialData`. `startPageLoader` writes one response to `setGameData` and to
+  the lobby players query. The game page's throw queue, optimistic throws, and undo stay outside queries.
 
 ### Writing
 
@@ -220,9 +224,12 @@ Mappers are pure functions that turn backend DTO shapes into UI types.
   `toCurrentGame`), a `queryFn` in `src/shared/query/`, a store action (`setGameData(data)`
   calls `normalizeGameData(data)`), or a page-private logic file under `src/pages/<Page>/lib/`.
 - JSX files (`src/pages/**/*.tsx`) and render-flow hooks (`src/pages/**/use*.ts`) receive the
-  mapped result and import no mapper. Type imports are fine. Known exception:
-  `useRoomRestore.ts` imports `toLobbyPlayers` and `useGamePlayers.ts` imports
-  `sortLobbyPlayers`; #194 decides them.
+  mapped result and import no mapper. Type imports are fine. Known exceptions:
+  - `useRoomRestore.ts` imports `toLobbyPlayers` and `useGamePlayers.ts` imports
+    `sortLobbyPlayers`; #194 decides them.
+  - `useThrowHandler.ts` (`parseThrowValue`), `useUndoFlow.ts` (`normalizeGameData`) and
+    `useGameSummaryPage.ts` (`applyOptimisticUndo`) call a mapper inside an event handler.
+    `eslint.config.mjs` ignores these three files as existing debt.
 
 ## ETag / conditional fetches
 

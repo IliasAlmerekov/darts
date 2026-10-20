@@ -92,8 +92,11 @@ Rules:
 
 ## Logging
 
-- Log unexpected caught failures with `clientLogger.error`, failures the app recovers from
-  with `clientLogger.warn`. Application code calls no `console.*`.
+- Log an unexpected caught failure with `clientLogger.error`, also when the app continues
+  on a fallback (the `sessionStorage` helpers in `src/shared/store/game-session.ts`,
+  `room.restore.failed`). Log an expected condition the app handles with
+  `clientLogger.warn` (`room.restore.no_active_game`, `room.restore.access_denied`).
+  Application code calls no `console.*`.
 - Event names are stable `domain.action.failed` strings (`game.undo.failed`). Older files use
   underscore style (`wake_lock_release_failed`); keep a file's existing style. One call
   uses neither: the CSRF prefetch warning in `src/shared/api/auth.ts`, which #218 renames.
