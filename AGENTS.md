@@ -1,29 +1,70 @@
 # Darts App (frontend)
 
 PWA darts game: rooms, SSE lobby player list, player statistics. React 18, TypeScript, Vite,
-Nanostores, CSS Modules. Backend lives in a separate repository; its API contract is
-`docs/backend-api-contract.json`.
+Nanostores, CSS Modules. The backend is a separate repository, checked out next to this one
+in `../dartsapp-backend`.
+
+## Backend contract
+
+`docs/backend-api-contract.json` is the OpenAPI dump of the backend and decides what each
+Valibot schema in `src/shared/api/` accepts. Refresh it before you change a schema or a call,
+with the stack running, from the workspace folder that holds both repos:
+
+```bash
+docker compose exec -T -w /var/www/html php php bin/console nelmio:apidoc:dump > dartsapp/docs/backend-api-contract.json
+```
+
+Commit a changed dump on its own, before the code that follows it. When the dump leaves a
+question open, the controllers in `../dartsapp-backend/app/src/Controller/` show the real
+behaviour.
 
 ## Before changing code
 
 Read `docs/convention/coding-standards.md`, then every domain file its table maps to your
 change. The conventions win over current code: fix the code, keep the rule. A domain the
-table lacks is undocumented, so ask the user before deciding it.
+table lacks follows the neighbouring code; ask the user only when the code has no precedent.
 
 For navigation, start at `docs/repo-map.md`.
 
 For library APIs (React, React Router, Nanostores, Vitest, Testing Library, Playwright,
 Vite), query Context7 before writing code.
 
-## Tickets
+## Scope
 
-When a ticket names its source-of-truth files, read only those. When it asks for a
-literal-value inventory, take every member from the named source; a member the source
-lacks stays missing.
+Solve the whole task with the least new code. Before the first edit, list every place the
+change must reach: callers, tests, mocks, fixtures, route mocks for the e2e suite, Valibot
+schemas. That list is the scope; features nobody asked for are outside it, named in one
+line in the report.
+
+Reach for the first option that works: no code at all, then a component, hook, or helper
+already in `src/shared`, then React or browser built-ins, then an installed package, then
+new code.
+
+- Add no abstraction, prop, option, or "for later" code the task does not need. Deletion
+  beats addition.
+- A bug fix greps every caller of the function it touches and fixes the root cause once,
+  in the shared code.
+- Moved or merged code keeps its validation and error handling.
+- Between options of equal size, take the one correct on edge cases.
+- A known shortcut gets a comment: `shortcut: <the limit>, <when to upgrade>`.
+- Validation at trust boundaries, error handling that prevents data loss, security, and
+  accessibility are never cut.
+- Every behaviour change gets a test, however small; only changes that leave behaviour
+  untouched (a rename, docs, formatting) go without one.
+
+The final report lists each verification command with its pass or fail status, names every
+check you skipped, and ends with what you did not check and the risk left.
 
 ## Verification
 
-`npm run validate:push` runs build, ESLint, Stylelint, prettier, typecheck, knip, secret scan
+While you work, run only the tests you touch:
+
+```bash
+npx vitest run <path>
+npx playwright test --project=mocked <spec>
+```
+
+Before the commit, `npm run validate:push` runs build, ESLint, Stylelint, prettier, typecheck, knip, secret scan
 and unit tests; the `pre-push` hook runs the same script. Run `npm run test:e2e` as well when
 the change touches browser flows, routing, auth, responsive layout, or a Playwright-covered journey.
 That is the mocked suite: every `/api` request needs a route mock. `npm run test:e2e:live` runs
@@ -36,23 +77,17 @@ it. Run `docker compose -f compose.dev.yaml restart frontend`.
 Locally the app runs as one Compose stack, the project `darts`: frontend on :5173, backend
 nginx on :8001, php and mysql. Both repos' compose files carry `name: darts`, so any
 `docker compose` command joins that stack; start it with `docker compose up -d` in the
-workspace folder that holds both repos. The frontend container serves the main checkout, so
-browser checks and `npm run test:e2e` see the main checkout's code. To show or test a branch
-in the browser, check that branch out in the main checkout. A worktree is for unit tests,
-lint and typecheck, and reuses the running stack for everything else.
-
-A fresh clone has no `node_modules`: run `npm install` first, or the hook fails.
+workspace folder that holds both repos. The frontend container serves this checkout, so
+browser checks and `npm run test:e2e` see the branch that is checked out.
 
 ## Branches
 
-Each issue gets its own branch, cut from the latest `main`. Before the first edit, run
-`git switch main && git pull --ff-only`, then `git switch -c <type>/<issue>-<topic>`.
-`main` changes only through a pull request.
+Each issue gets its own branch in this checkout, cut from the latest `main`; work happens
+here, without worktrees. Before the first edit, run `git switch main && git pull --ff-only`,
+then `git switch -c <type>/<issue>-<topic>`. `main` changes only through a pull request.
 
-Once the PR is open, clean up after the work and keep only the branch: remove the issue's
-worktree (`git worktree remove <path>`, then `git worktree prune`), delete the scratch files
-the work created (PR and comment body files, temp scripts, logs), and stop the processes it
-started.
+Once the PR is open, delete the scratch files the work created (PR and comment body files,
+temp scripts, logs) and stop the processes it started.
 
 ## Commits and pull requests
 
@@ -65,7 +100,7 @@ Every PR body is the filled `.github/pull_request_template.md`, whoever opens th
 
 1. Copy the template to a file, fill it in, and pass it with `gh pr create --body-file <file>`.
 2. Keep four parts, in this order:
-   - `Closes #N`. Write `No issue: <reason>` instead only when `CONTRIBUTING.md` allows a PR without an issue.
+   - `Closes #N`.
    - What changed and why, in 1 or 2 sentences.
    - `Evidence:` bullets, each a command and its result, or a test that failed before the fix and passes after.
      `npm run test:red-on-base` lists the changed tests that fail on `origin/main`'s code.
