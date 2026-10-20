@@ -1,8 +1,29 @@
 # API
 
-Rules for the HTTP layer in `src/shared/api/` and DTO -> UI mapping in
-`src/shared/lib/<domain>/`. Source-of-truth: must be checked against `src/shared/api/`
-before changing.
+Rules for the HTTP layer in `src/shared/api/`, the query layer in `src/shared/query/`, and
+DTO -> UI mapping in `src/shared/lib/<domain>/`.
+
+A cached server read passes through three layers:
+
+1. `src/shared/api/<domain>.ts`: calls `apiClient` and returns the parsed response.
+2. `src/shared/query/<domain>.queries.ts`: wraps the domain function in a cache entry.
+3. Route loaders, page hooks, and components: read the cache entry.
+
+A read inside an imperative workflow (a loader that fills Nanostores, a submit handler, a
+recovery after a failed patch) calls the domain function directly and skips the cache. The
+call sites today:
+
+- `src/pages/StartPage/useRoomRestore.ts`: `getGameThrows` and `getInvitation` in the
+  StartPage loader.
+- `src/pages/StartPage/useCreateStartFlow.ts`: `getGameSettings` before a game starts.
+- `src/pages/LoginPage/useLogin.ts`: `getAuthenticatedUser` in the post-login session
+  fallback, before it seeds the cache.
+- `src/pages/GameSummaryPage/useGameSummaryPage.ts` and
+  `src/pages/GamePage/throws/useThrowReconciliation.ts`: `getGameThrows` when a compact
+  undo or throw response cannot patch local state.
+
+A read that renders on its own, without such a workflow around it, goes through a query
+factory.
 
 ## Layout
 
@@ -11,72 +32,64 @@ src/shared/api/
   client.ts            # apiClient + ApiValidationError + setUnauthorizedHandler
   errors.ts            # typed error classes
   endpoints.ts         # cross-domain endpoints only (currently: createInviteEndpoint)
-  schemas.ts           # Valibot schemas shared by 2+ domain files
+  schemas.ts           # Valibot schemas shared by 2+ domain files, integerSchema
   types.ts             # apiClient types (HttpMethod, ApiRequestConfig, QueryParams)
   index.ts             # barrel: cross-cutting public surface
   test-utils.ts        # createMockResponse and respondWith helpers for tests
-  auth.ts              # per-domain public surface (auth flows + DTO types)
-  game.ts              # per-domain public surface (game flows + ETag cache)
-  room.ts              # per-domain public surface (room flows)
-  statistics.ts        # per-domain public surface (stats flows)
-  player.ts            # per-domain public surface (the player's current game)
-  *.test.ts            # co-located tests
+  auth.ts              # auth flows, DTO types, clearClientSession
+  game.ts              # game flows + ETag cache
+  room.ts              # room flows
+  statistics.ts        # stats flows
+  player.ts            # the player's current game
+src/shared/query/
+  queryClient.ts       # the one QueryClient and its defaults
+  <domain>.queries.ts  # queryOptions factories: auth, game, player, statistics
+  acceptLoggedInUser.ts # writes the logged-in user into the auth key
 ```
-
-DTO -> UI mappers live in `src/shared/lib/<domain>/`, **not** under `shared/api/`. See the
-"Mappers" section below.
 
 ## Public surface
 
-The API layer has two levels (also documented in `architecture.md`):
+The API layer has two levels:
 
-- `@/shared/api` (the `index.ts` barrel) -- cross-cutting symbols only: `apiClient`,
-  `setUnauthorizedHandler`, `clearUnauthorizedHandler`, `ApiError`, `UnauthorizedError`,
-  `ForbiddenError`, `NetworkError`, `TimeoutError`, plus everything
-  re-exported from `endpoints.ts` and the per-domain modules.
-- `@/shared/api/<domain>` -- the domain module is the public entry for its DTO types,
-  resource functions, guards (when needed externally) and any per-domain caches.
+- `@/shared/api` (the `index.ts` barrel): `setUnauthorizedHandler`,
+  `clearUnauthorizedHandler`, `ApiError`, `UnauthorizedError`, `ForbiddenError`,
+  `NetworkError`, `TimeoutError`, plus everything re-exported from `endpoints.ts` and the
+  per-domain modules.
+- `@/shared/api/<domain>`: the public entry for that domain's DTO types, resource functions,
+  and per-domain caches.
 
-Internals -- `client.ts`, `errors.ts`, `types.ts`, `endpoints.ts`, `schemas.ts` -- must never be deep-
-imported from outside `shared/api/`. Always go through the barrel.
+`apiClient` stays inside `shared/api/`: only the domain files call it, and the barrel does not
+export it. Internals (`client.ts`, `errors.ts`, `types.ts`, `endpoints.ts`, `schemas.ts`) are
+never deep-imported from outside `shared/api/`.
 
-## `apiClient` -- single gateway
+## `apiClient`: single gateway
 
-`fetch()` is called in exactly **one** place: `src/shared/api/client.ts`. Every other
-network call goes through `apiClient.{get,post,put,patch,delete,request}`.
+`fetch()` is called in exactly one place: `src/shared/api/client.ts`. Every other network
+call goes through `apiClient.{get,post,put,patch,delete,request}`.
 
-Rules for callers:
-
-- Every call **must** pass `validate`: the Valibot schema of the response body. There is
-  no overload without it. Calls without `validate` are a type error.
-- The schema describes the full response shape, as `docs/backend-api-contract.json`
-  defines it. `apiClient` runs `v.safeParse` and returns the typed output, so the return
-  type is `v.InferOutput` of the schema. If parsing fails, the client throws
-  `ApiValidationError` with the raw body in `raw`.
-- `AbortSignal` is forwarded through the optional `signal` config; combine it with the
-  client's built-in 30s timeout (do not add a second timeout).
-- For 4xx/5xx the client throws a typed error (see below). The success path is reached
-  only when the response is OK and the validator passes.
-- Use `apiClient.request(..., { returnResponse: true })` only when the caller needs the
-  raw `Response` (status, headers) -- e.g. ETag flows. Otherwise the helper methods
-  (`get`/`post`/...) are the convention.
+- Every call passes `validate`: the Valibot schema of the response body. Calls without it
+  are a type error.
+- The schema describes the full response shape that `docs/backend-api-contract.json`
+  defines. `apiClient` runs `v.safeParse` and returns `v.InferOutput` of the schema. If
+  parsing fails, it throws `ApiValidationError` with the raw body in `raw`.
+- Forward `AbortSignal` through the optional `signal` config. The client has a built-in 30s
+  timeout; add no second one.
+- Use `apiClient.request(..., { returnResponse: true })` only when the caller needs the raw
+  `Response` (status, headers), as in ETag flows. Otherwise use the helper methods.
 
 ## Parse once
 
-`apiClient` parses each response once. The domain function uses the typed output directly
-and does not check it again:
+`apiClient` parses each response once. The domain function returns the typed output as is:
 
 ```ts
-const game = await apiClient.get(GAME_ENDPOINT(id), {
-  signal,
+return apiClient.get(GAME_ENDPOINT(gameId), {
+  ...(signal ? { signal } : {}),
   validate: gameThrowsResponseSchema,
 });
-
-return game;
 ```
 
-Do not re-check the result with a guard, and do not widen it to `unknown`. When the
-endpoint's data needs a UI shape, pass the output to a mapper (see "Mappers").
+The result is never re-checked with a guard or widened to `unknown`. When the UI needs
+another shape, pass the output to a mapper (see "Mappers").
 
 ## Response schemas
 
@@ -87,26 +100,24 @@ ADR 0002 records why responses are described by Valibot schemas.
   `import * as v from "valibot"`.
 - The response type is inferred from the schema:
   `export type GameSettingsResponse = v.InferOutput<typeof gameSettingsResponseSchema>`.
-  Do not write a separate interface for it. `@/types` re-exports response types that
-  pages use.
+  No separate interface. `@/types` re-exports response types that pages use.
 - Follow the contract: a required field is required, an optional field is `v.optional`,
-  `nullable: true` is `v.nullable`, `integer` is `integerSchema`. A
-  contract `default` goes into `v.optional(schema, default)`, so the output type has the
-  field.
-- A schema may be narrower than the contract where the contract is untyped (for example
-  a `status` string becomes `v.picklist`). It must not be looser.
+  `nullable: true` is `v.nullable`, `integer` is `integerSchema`. A contract `default` goes
+  into `v.optional(schema, default)`, so the output type has the field.
+- A schema may be narrower than the contract where the contract is untyped (a `status`
+  string becomes `v.picklist`). It is never looser.
 - One exception is open: `POST /api/game/{id}/start` validates with `v.unknown()`
   (`unvalidatedStartGameResponseSchema` in `game.ts`), and its tests assert that `[]` and
   `{}` resolve, with no invalid-payload test. The backend sends `[]` instead of `Game`
-  until darts-backend#46 ships, and `startGame` never reads the body. Once #46 ships,
-  give start a contract schema and an invalid-payload test. Any other unvalidated
-  response needs the user's approval and an entry here.
+  until darts-backend#46 ships, and `startGame` never reads the body. Once #46 ships, give
+  start a contract schema and an invalid-payload test. Any other unvalidated response needs
+  the user's approval and an entry here.
 - A client-side discriminant the backend does not send is added with `v.transform` in the
-  schema (`type: "full-state"`), so the type matches the runtime value.
+  schema (`type: "full-state"` in `game.ts`), so the type matches the runtime value.
 - A schema used by 2+ domain files lives in `schemas.ts`, like a shared endpoint in
-  `endpoints.ts`. `integerSchema` (contract `integer`) lives there too.
-- Shared guards in `@/lib/guards/guards` are for code outside the API layer. Do not write
-  `isXxxResponse` guards in `shared/api/`.
+  `endpoints.ts`.
+- Shared guards in `@/lib/guards/guards` are for code outside the API layer. `shared/api/`
+  has no `isXxxResponse` guards.
 
 ## Typed errors
 
@@ -120,128 +131,171 @@ All errors thrown by `apiClient` are instances of `ApiError` or its subclasses:
 | `NetworkError`      | 0      | `fetch` rejection (no response received)                                          |
 | `TimeoutError`      | 0      | Built-in 30s timeout aborted the request                                          |
 
-`ApiValidationError` (in `client.ts`) is a separate class -- it does **not** extend
-`ApiError`. It is thrown when the body does not match the `validate` schema; `raw` holds
-the body.
+`ApiValidationError` (in `client.ts`) is a separate class that does not extend `ApiError`.
+It is thrown when the body does not match the `validate` schema; `raw` holds the body.
 
-Rules:
-
-- Throw `new ApiError(message, { status, data, url })` with structured options. Never
-  `new Error(...)` for HTTP failures.
-- Catch by class (`error instanceof UnauthorizedError`) -- do not branch on `error.status`
-  unless you specifically need the numeric value.
-- Do not extend `ApiError` further per-domain. Add response-shape data to the existing
-  hierarchy via the `data` field instead.
-- A 429 carries the `Retry-After` header as whole seconds in `retryAfterSeconds`. The
-  value comes from a header, not the body, so it has its own field instead of `data`.
+- Throw HTTP failures as `new ApiError(message, { status, data, url })`.
+- Catch by class (`error instanceof UnauthorizedError`); branch on `error.status` only when
+  you need the numeric value.
+- Per-domain data goes into the `data` field of the existing hierarchy, not into a new
+  `ApiError` subclass.
+- A 429 carries the `Retry-After` header as whole seconds in `retryAfterSeconds`. The value
+  comes from a header, not the body, so it has its own field instead of `data`.
 
 ## Endpoints
 
 Three forms coexist:
 
-- **Static path constant** at the top of the domain file:
-  `const LOGIN_ENDPOINT = "/login";`
-- **Path builder** for path-with-id endpoints:
-  ```ts
-  const GAME_ENDPOINT = (id: number) => `/game/${id}`;
-  ```
-- **Cross-domain shared** in `endpoints.ts`. Only used when two or more domain files
-  reference the same path (currently: `createInviteEndpoint`).
+- **Static path constant** at the top of the domain file: `const LOGIN_ENDPOINT = "/login";`
+- **Path builder** for path-with-id endpoints: `const GAME_ENDPOINT = (id: number) => ...`
+- **Cross-domain shared** in `endpoints.ts`, only for a path that 2+ domain files use
+  (currently `createInviteEndpoint`).
 
-Rules:
+Domain endpoints stay inside the domain file until a second domain file needs the path.
 
-- Domain endpoints stay inside the domain file. Do not move them to `endpoints.ts`
-  preemptively.
-- Endpoint constants are `UPPER_SNAKE_CASE`; builders are camelCase functions.
-- A path literal that occurs in 2+ domain files moves to `endpoints.ts`.
+## Server reads: TanStack Query
+
+ADR 0001 records why server reads go through TanStack Query. State the client owns (current
+game id, room store, game store) stays in Nanostores (`state.md`).
+
+### Factories and keys
+
+- Each domain has one factory object of `queryOptions` builders in
+  `src/shared/query/<domain>.queries.ts`: `authQueries`, `gameQueries`, `playerQueries`,
+  `statsQueries`. A new read adds a builder there.
+- A key is an `as const` array that starts with the domain and ends with the params:
+  `["auth", "me"]`, `["game", gameId, "settings"]`,
+  `["stats", "players", { limit, offset, sortParam }]`. The one exception is
+  `["finishedGame", gameId]` (`FINISHED_GAME_KEY` in `game.queries.ts`).
+- Callers take keys and options from the builder (`gameQueries.lobbyPlayers(id).queryKey`,
+  `useQuery({ ...gameQueries.finished(id), enabled })`), never from an inline array.
+- `queryFn` passes its `signal` to the domain function. On an unexpected failure it logs
+  through `clientLogger.error` unless `signal.aborted`, then rethrows. A factory may treat
+  failures it expects as quiet branches: `authQueries.me` returns `null` on a timeout or
+  abort, and `playerQueries.currentGame` rethrows network, timeout, and 401 errors without
+  logging, because it polls.
+- When the UI needs another shape, `queryFn` runs the mapper, so the cache holds the mapped
+  value (`toLobbyPlayers` in `gameQueries.lobbyPlayers`).
+- `queryClient.ts` keeps the old fetch behaviour: no retry, no refetch on focus or
+  reconnect, `staleTime: 0`. A builder opts out per query with a comment giving the reason
+  (`staleTime: Infinity` for finished games, `refetchInterval` polling in
+  `playerQueries.currentGame`).
+
+### Reading
+
+- Data that depends on route params is loaded in the route loader with
+  `await queryClient.ensureQueryData(builder)`, and the page hook reads the same builder with
+  `useQuery` (`gameDetailLoader` / `useGameDetailPage`). When the page shows its own error
+  state, the loader swallows the rejection: `.catch(() => undefined)` (`gamesOverviewLoader`).
+- Data whose key changes inside the page uses `useQuery` alone (`usePlayerStats`, with
+  `placeholderData: keepPreviousData`).
+- Prefetch goes through `queryClient.prefetchQuery` (`src/app/routeWarmup.ts`, scheduled by
+  `src/app/useStatisticsPrefetch.ts`).
+- The query cache is the single source for a server value that only queries hold (the
+  authenticated user has no `$user` mirror). The game store is the exception: it holds the
+  game state the client owns (ADR 0001), and two queries bridge to it. `gameQueries.settings`
+  seeds from `getCachedGameSettings`, and `gameQueries.lobbyPlayers` seeds from `$gameData`,
+  both through `initialData`. `startPageLoader` writes one response to `setGameData` and to
+  the lobby players query. The game page's throw queue, optimistic throws, and undo stay outside queries.
+
+### Writing
+
+The project has no `useMutation` and no `invalidateQueries`. After a write, the caller puts
+the server's answer in the cache itself:
+
+- `cancelQueries({ queryKey })`, then `setQueryData(queryKey, value)`, so a read still in
+  flight cannot overwrite the new value (`SettingsPage/index.tsx`, `useGamePlayers.ts`,
+  `useRegistration.ts` with `acceptLoggedInUser`).
+- `removeQueries({ queryKey })` drops an entry the write made invalid (undo and rematch
+  in `useGameSummaryPage.ts`).
+- Logout and the 401 handler call `clearClientSession()` in `auth.ts`, which runs
+  `queryClient.clear()`: every cached read belongs to the old session.
 
 ## Mappers (DTO -> UI)
 
-Mappers are **pure functions** that translate backend DTO shapes into UI-friendly types.
+Mappers are pure functions that turn backend DTO shapes into UI types.
 
-Rules:
-
-- They live in `src/shared/lib/<domain>/` (see `shared/lib/game/`: `gameStateNormalizer`,
+- They live in `src/shared/lib/<domain>/`: `shared/lib/game/` holds `gameStateNormalizer`,
   `applyOptimisticUndo`, `mergeGameSettings`, `player-mappers`, `roundAverage`,
-  `parseThrowValue`, `finishedGameStandings`; `shared/lib/player/`: `currentGame`).
-- Every mapper has a co-located `*.test.ts` (`gameStateNormalizer.test.ts`,
-  `player-mappers.test.ts`, ...).
-- Mappers are called from any of: an API domain function (e.g. inside
-  `getGameThrows`), a store action (e.g. `setGameData(data)` calls `normalizeGameData(data)`
-  before `gameDataAtom.set(...)`), or a **page-private logic file** under
-  `src/pages/<Page>/lib/*` -- these are pure-logic layers and may transform DTOs locally.
-- Mappers must **not** be called from JSX (`*.tsx` render bodies) or from page hooks that
-  participate in the render flow (`use*.ts` directly returning derived data into render).
-  Run the transform in a `lib/` file or a store action and feed the UI the already-mapped
-  result.
-- Raw DTOs are not passed to UI components. The store / API / page-`lib` layer owns the
-  mapping; UI receives the mapped shape.
+  `parseThrowValue`, `finishedGameStandings`, `lobbyPlayers`; `shared/lib/player/` holds
+  `currentGame`.
+- Every mapper has a co-located `*.test.ts`.
+- Mappers are called from an API domain function (`getCurrentGame` in `player.ts` calls
+  `toCurrentGame`), a `queryFn` in `src/shared/query/`, a store action (`setGameData(data)`
+  calls `normalizeGameData(data)`), or a page-private logic file under `src/pages/<Page>/lib/`.
+- JSX files (`src/pages/**/*.tsx`) and render-flow hooks (`src/pages/**/use*.ts`) receive the
+  mapped result and import no mapper. Type imports are fine. Known exceptions:
+  - `useRoomRestore.ts` imports `toLobbyPlayers` and `useGamePlayers.ts` imports
+    `sortLobbyPlayers`; #194 decides them.
+  - `useThrowHandler.ts` (`parseThrowValue`), `useUndoFlow.ts` (`normalizeGameData`) and
+    `useGameSummaryPage.ts` (`applyOptimisticUndo`) call a mapper inside an event handler.
+    `eslint.config.mjs` ignores these three files as existing debt.
 
 ## ETag / conditional fetches
 
-`getGameThrowsIfChanged` in `game.ts` is the canonical pattern:
+`getGameThrowsIfChanged` in `game.ts` is the pattern; a new domain with conditional fetches
+mirrors it:
 
-- Per-id version map (`gameStateVersionById = new Map<number, string>()`) lives module-
-  scoped in the domain file.
-- Send `If-None-Match` + `query: { since }`, accept 304 via `acceptedStatuses: [304]`,
-  pull headers via `returnResponse: true`.
-- Public helpers `setGameStateVersion(gameId, version)` / `resetGameStateVersion(gameId?)`
-  let consumers (store actions, hooks) manage the cache key explicitly.
-
-If a new domain needs conditional fetches, mirror this layout.
+- A per-id version map (`gameStateVersionById = new Map<number, string>()`) lives
+  module-scoped in the domain file.
+- Send `If-None-Match` + `query: { since }`, accept 304 via `acceptedStatuses: [304]`, read
+  headers via `returnResponse: true`.
+- `setGameStateVersion(gameId, version)` / `resetGameStateVersion(gameId?)` let store
+  actions and hooks manage the cache key.
 
 ## Error -> user message
 
 User-facing messages come from `toUserErrorMessage(error, fallback?)` in
-`src/shared/lib/error/error-to-user-message.ts`.
-
-- Never put raw `error.message` or `error.data.message` in JSX. Pass the error through
-  `toUserErrorMessage` first.
-- The function recognises `NetworkError`, `ApiError` (by status and by payload `error` /
-  `message` fields), generic `Error`, and bare strings. Extend the function in place when
-  adding new sanitised messages -- do not write parallel sanitisers in pages.
+`src/shared/lib/error/error-to-user-message.ts`; `errors.md` has the rules.
 
 ## Test patterns
 
-- Use `createMockResponse({ body, headers, status, url })` from `src/shared/api/test-utils.ts`
-  to build mock `Response` objects.
-- API domain tests mock `apiClient.{get,post,...}`, **not** `fetch`. The single fetch in
+- Build mock `Response` objects with `createMockResponse({ body, headers, status, url })`
+  from `src/shared/api/test-utils.ts`.
+- API domain tests mock `apiClient.{get,post,...}`, not `fetch`. The single fetch in
   `client.ts` is exercised by `client.test.ts`.
 - Mock an `apiClient` method with `respondWith(payload)` from `test-utils.ts`. It parses
   `payload` with the schema the caller passed, as the real client does, so a malformed
   payload rejects with `ApiValidationError`.
-- Each public API function has a test with a valid payload built from the contract
-  example and one with an invalid payload.
-- Mappers are unit-tested in isolation (no API mocks needed since they are pure).
+- Each public API function has a test with a valid payload built from the contract example
+  and one with an invalid payload.
 
 ## Verification
 
-Most rules are enforced by types (`validate` is a required schema, `ReadableAtom` removes `.set`,
-typed errors). The remaining checks below catch the structural rules ESLint and TS do not
-see.
+Types enforce most rules (`validate` is a required schema, typed errors). The checks below
+catch the structural rules ESLint and TS do not see. A clean run prints nothing.
 
-**1. `fetch(` outside `src/shared/api/client.ts`** -- the gateway must stay sole:
-
-```bash
-rg -nP '\bfetch\s*\(' src --glob '!src/shared/api/client.ts' --glob '!**/*.test.{ts,tsx}'
-```
-
-**2. Bare `data as T` / `response as T` casts inside `shared/api/`**:
+**1. `fetch(` outside `src/shared/api/client.ts`:**
 
 ```bash
-rg -nP '\b(data|response)\s+as\s+[A-Za-z]' src/shared/api --glob '!**/*.test.{ts,tsx}'
+rg -n '\bfetch\s*\(' src --glob '!src/shared/api/client.ts' --glob '!**/*.test.{ts,tsx}'
 ```
 
-**3. Hand-written response guards or re-checks inside `shared/api/`**:
+**2. `apiClient` used outside `src/shared/api/`:**
 
 ```bash
-rg -nP 'function is\w+Response\(|: unknown = await apiClient|v\.custom\(' src/shared/api --glob '!**/*.test.{ts,tsx}'
+rg -n '\bapiClient\b' src --glob '!src/shared/api/**'
 ```
 
-**4. Mappers imported by render-flow files** -- mappers may live in API / store /
-`pages/<X>/lib/`, but must not appear in JSX or render-flow hooks. ESLint enforces this
-(`no-restricted-imports` for `src/pages/**/*.tsx` and `src/pages/**/use*.ts` in
-`eslint.config.mjs`). The rule lists the mapper modules named above by file, so a new
-mapper module must be added to its regex.
+**3. Bare `data as T` / `response as T` casts inside `shared/api/`:**
 
-A clean run of the `rg` checks prints nothing, and `npm run eslint` passes.
+```bash
+rg -n '\b(data|response)\s+as\s+[A-Za-z]' src/shared/api --glob '!**/*.test.{ts,tsx}'
+```
+
+**4. Hand-written response guards or re-checks inside `shared/api/`:**
+
+```bash
+rg -n 'function is\w+Response\(|: unknown = await apiClient|v\.custom\(' src/shared/api --glob '!**/*.test.{ts,tsx}'
+```
+
+**5. Inline query keys outside `src/shared/query/`:**
+
+```bash
+rg -n 'queryKey:\s*\[|(get|set|remove|cancel|invalidate|refetch|reset)Quer(y|ies)(Data)?\(\s*\[|(ensure|fetch|prefetch)Query(Data)?\(\s*\[' src --glob '!src/shared/query/**' --glob '!**/*.test.{ts,tsx}'
+```
+
+**6. Mappers imported by render-flow files:** `npm run eslint` passes. The
+`no-restricted-imports` rule for `src/pages/**/*.tsx` and `src/pages/**/use*.ts` in
+`eslint.config.mjs` lists the mapper modules by file, so a new mapper module is added to its
+regex. `lobbyPlayers` is not in it yet; #194 adds it or records the exception.

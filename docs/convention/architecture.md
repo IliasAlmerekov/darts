@@ -1,7 +1,7 @@
 # Architecture
 
-Structural rules for this project. Source-of-truth for folder layout, module boundaries,
-imports, and routing. Must be checked against `src` before changing.
+Structural rules for folder layout, module boundaries, imports, and routing. Check them
+against `src` before changing.
 
 ## Top-level layout (`src/`)
 
@@ -12,34 +12,30 @@ src/
   app/         # bootstrap: router, providers, route guards, error boundaries
   assets/      # static assets imported by code
   pages/       # route-level components, one folder per page
-  shared/      # cross-page reusable code (api, hooks, lib, services, store, types, ui)
-  test/        # test-only helpers (architecture tests, Playwright config, Vitest setup)
+  shared/      # cross-page reusable code
+  test/        # test-only helpers: architecture tests, Playwright credential helpers, Vitest setup
   index.tsx    # app entry
   vite-env.d.ts
 ```
 
-Forbidden:
-
-- `src/features/` (the project is pages-based)
-- `src/components/` at root
-- `src/utils/` at root
-- Any other top-level folder not listed above
+The project is pages-based: there is no `src/features/`, `src/components/`, or
+`src/utils/`, and no other top-level folder.
 
 ## `shared/` sub-layout
 
 ```
 src/shared/
-  api/         # apiClient, endpoints, typed errors, mappers
+  api/         # apiClient, endpoints, typed errors, Valibot schemas, per-domain calls
   hooks/       # cross-page hooks
   lib/         # pure helpers (guards, router, error mapping, game logic, etc.)
   query/       # the QueryClient and query options per resource (auth, statistics, game, player)
-  services/    # browser-side services (logger, sound, storage)
+  services/    # browser-side services (logger, sound)
   store/       # Nanostores atoms and actions
   types/       # cross-page type definitions, including `*.test-support.ts`
   ui/          # reusable presentational components (each in its own folder)
 ```
 
-Adding a new top-level subfolder under `shared/` requires updating this document.
+Adding a new subfolder under `shared/` requires updating this document.
 
 ## Dependency rule -- one direction only
 
@@ -51,11 +47,11 @@ app -> pages -> shared
 - `pages/` must not import from `app/`.
 - A page must not import from another page (no cross-page imports).
 
-These four rules are enforced by `no-restricted-imports` in `eslint.config.mjs`. Do not
-weaken or scope-exclude them.
+`no-restricted-imports` in `eslint.config.mjs` enforces these three rules. Keep them at
+full scope. The `shared/` block currently ignores `src/shared/types/game.ts` and
+`src/shared/types/player.ts`; add no further exclusions.
 
-`app/` may import from `pages/` (e.g. lazy route declarations, page loaders) and from
-`shared/`. This is the only legal direction.
+`app/` may import from `pages/` (lazy route declarations, page loaders) and from `shared/`.
 
 ## Page structure
 
@@ -73,87 +69,88 @@ src/pages/StartPage/
 
 Rules:
 
-- The page entry is either `<PageName>.tsx` or `index.tsx`. Both forms coexist in the
-  current `App.tsx` and that is intentional: the `lazy(() => import(...))` target is
-  chosen per page based on the file actually present. For example:
+- The page entry is either `<PageName>.tsx` or `index.tsx`. Both forms coexist in
+  `App.tsx` on purpose: the `lazy(() => import(...))` target follows the file actually
+  present.
 
   ```ts
   const StartPage = lazy(() => import("@/pages/StartPage/StartPage")); // direct file
   const GamePage = lazy(() => import("@/pages/GamePage")); // resolves to index.tsx
   ```
 
-  Do not invent a third form (no nested entry files, no re-export shims).
+  Use one of these two forms only: no nested entry files, no re-export shims.
 
-- `pages/<PageName>/` must not contain a barrel `index.ts` (only `index.tsx` as entry, if
-  used).
-- Page-local hooks, components, and helpers stay inside the page folder.
+- `pages/<PageName>/` has no barrel `index.ts` (only `index.tsx` as entry, if used).
 - Code reused by 2+ pages moves to `shared/`.
 
 ## Module boundaries -- public surface vs internals
 
 ### `shared/ui/<component>/`
 
-- Every component folder must expose a public `index.ts` barrel.
+- Every component folder exposes a public `index.ts` barrel.
 - Production code imports through the barrel: `import { Button } from "@/shared/ui/button"`.
-- Deep imports of component files (`@/shared/ui/button/Button` or `Button.tsx`) are
-  forbidden in production.
+  Deep imports (`@/shared/ui/button/Button`) are forbidden in production.
 
 ### `shared/api/`
 
 The API layer has a **two-level public surface**:
 
-- `@/shared/api` (the `index.ts` barrel) exposes cross-cutting symbols: `apiClient`,
-  `setUnauthorizedHandler`, `ApiError`, `ForbiddenError`, `NetworkError`,
-  `UnauthorizedError`, `TimeoutError`, endpoint constants.
-- `@/shared/api/<domain>` (`auth`, `game`, `room`, `statistics`, `player`) is the per-domain public
-  surface. Pages and other shared code import resource calls and DTO types directly from
+- `@/shared/api` (the `index.ts` barrel) exposes cross-cutting symbols:
+  `setUnauthorizedHandler`, `clearUnauthorizedHandler`, `ApiError`, `ForbiddenError`,
+  `NetworkError`, `UnauthorizedError`, `TimeoutError`, endpoint constants, and re-exports
+  every domain module. It does not export `apiClient`.
+- `@/shared/api/<domain>` (`auth`, `game`, `room`, `statistics`, `player`) is the per-domain
+  public surface. Pages and other shared code import resource calls and DTO types from
   these modules: `import { getGameThrows } from "@/shared/api/game"`.
 
-Internals -- `client.ts`, `errors.ts`, `types.ts`, `endpoints.ts`, `schemas.ts` -- must **not** be
-imported directly outside `shared/api/`. They are reachable only via the `@/shared/api`
-barrel.
+Internals -- `client.ts`, `errors.ts`, `types.ts`, `endpoints.ts`, `schemas.ts` -- are
+imported only inside `shared/api/`. Everything else uses what the barrel or a domain module
+exports; `apiClient` stays inside `shared/api/` (see `api.md`).
 
 ### `shared/types/`
 
-Two aliases exist for `src/shared/types/`:
+- Production code imports types through the `@/types` barrel
+  (`src/shared/types/index.ts`). Deep imports (`@/shared/types/game`,
+  `@/shared/types/api`, etc.) are forbidden in production.
+- Test files import test-support factories by path:
+  `import { buildBackendPlayer } from "@/shared/types/game.test-support"`.
 
-- `@/types` -- the barrel (`src/shared/types/index.ts`). **Production code** must use this
-  alias for every type import.
-- `@/types/*` -- direct path into `src/shared/types/*`. Allowed **only** for
-  `*.test-support` files imported from test code
-  (`import { buildBackendPlayer } from "@/shared/types/game.test-support"`).
+### `shared/store/`
 
-Any other deep import (`@/shared/types/game`, `@/shared/types/api`, etc.) from production
-code is forbidden -- use `@/types` instead.
+`@/shared/store` is a barrel (`index.ts`) that re-exports every store domain. Production
+code outside `shared/` imports through it:
+`import { $gameData, setGameData } from "@/shared/store"`.
 
-### `shared/{store,hooks,services,lib}/`
+### `shared/{hooks,services,lib}/`
 
-These layers do **not** have barrels. Consumers deep-import by file name:
-`@/shared/store/game-session`, `@/shared/store/game-state`,
-`@/shared/services/browser/clientLogger`, `@/lib/guards/guards`. This is the convention,
-not a violation.
+These layers have no barrels. Consumers deep-import by file name:
+`@/shared/hooks/useAuthenticatedUser`, `@/shared/services/browser/clientLogger`,
+`@/lib/guards/guards`. This is the convention, not a violation.
 
 ### Test-only files
 
-`*.test-support.ts` files are imported only from test files. Production code must not
-import them.
+Test-only factories live next to the types as `*.test-support.ts`
+(`src/shared/types/game.test-support.ts`). Only test files (`*.test.ts`, `*.test.tsx`)
+import them; an import from production code would pull fixtures into the runtime bundle.
 
 ## Path aliases
 
-Defined in `tsconfig.json`:
+Defined in `tsconfig.json` and mirrored in `vite.config.ts`:
 
 | Alias        | Resolves to                 | Use for                                     |
 | ------------ | --------------------------- | ------------------------------------------- |
 | `@/*`        | `src/*`                     | generic absolute import                     |
 | `@/app/*`    | `src/app/*`                 | only inside `app/`                          |
 | `@/pages/*`  | `src/pages/*`               | only inside `app/`                          |
-| `@/shared/*` | `src/shared/*`              | shared internals (store/hooks/services/lib) |
+| `@/shared/*` | `src/shared/*`              | shared modules (api, store, hooks, ui, ...) |
 | `@/lib/*`    | `src/shared/lib/*`          | shorthand for shared lib                    |
 | `@/types`    | `src/shared/types/index.ts` | shared types barrel (production)            |
-| `@/types/*`  | `src/shared/types/*`        | reserved for `*.test-support` (tests only)  |
 | `@/assets/*` | `src/assets/*`              | static assets                               |
 
-Use the most specific alias available. Prefer `@/lib/...` over `@/shared/lib/...`.
+`@/types/*` also exists in `tsconfig.json` but is unused; prefer the forms above.
+
+Import shared lib through `@/lib/...`, not `@/shared/lib/...`. Verification check 4 lists
+the imports that still use the long form; #214 moves them.
 
 ## Routing (`src/app/App.tsx`)
 
@@ -165,9 +162,9 @@ Rules:
 - All page components are `lazy(() => import(...))` and wrapped via the local
   `withSuspense(...)` helper. There is no single top-level `<Suspense>` for all routes.
 - Every `<Route>` carries an explicit `errorElement={<ErrorBoundary />}`. There is no
-  single global error boundary placed outside the router.
-- React Router 6 loaders are used for route data fetching (`startPageLoader`,
-  `gameDetailLoader`, `gameSummaryLoader`, `gamesOverviewLoader`). New page-level data fetches go through a
+  single global error boundary outside the router.
+- React Router 6 loaders fetch route data (`startPageLoader`, `gameDetailLoader`,
+  `gameSummaryLoader`, `gamesOverviewLoader`). New page-level data fetches go through a
   loader, not `useEffect` after mount. The loader fills the query cache with
   `queryClient.ensureQueryData(...)` and the page reads the same key with `useQuery`
   ([ADR 0001](../adr/0001-tanstack-query-for-server-reads.md)). Data whose key changes
@@ -175,28 +172,17 @@ Rules:
   depends on no route param and must show its own loading state before the first answer,
   such as the Waiting room's current game: ADR 0001 keeps loaders for data that depends on
   route params, and a loader would hold the navigation instead.
-- Optional URL parameters use `:id?` (e.g. `/start/:id?`, `/settings/:id?`). Do not
-  declare two parallel routes for the same page.
+- Optional URL parameters use `:id?` (e.g. `/start/:id?`, `/settings/:id?`). Declare one
+  route per page, not two parallel ones.
 - Role-restricted routes are nested inside a `<ProtectedRoutes allowedRoles={[...]}>`
-  wrapper. Roles are passed as a typed `Role[]` array, not `string[]`.
-- All paths are constructed via the central `ROUTES` table in
-  `src/shared/lib/router/routes.ts`. `ROUTES` exports both static patterns
-  (`gamePattern: "/game/:id"`) and builders (`game: (id) => /game/${id}`). Do not inline
-  route literals in pages.
-
-## Test infrastructure
-
-- `src/test/` holds cross-cutting test helpers: `vitest.setup.tsx`, router future-flag
-  shims, architecture tests, Playwright fixtures.
-- `*.test.ts` / `*.test.tsx` files are co-located with the source they test. No
-  `__tests__/` folders.
-- Test-only factories live next to types as `*.test-support.ts`
-  (`src/shared/types/game.test-support.ts`). They are imported only from test files.
+  wrapper. Roles are a typed `Role[]` (from `@/shared/api/auth`), not `string[]`.
+- All paths come from the central `ROUTES` table in `src/shared/lib/router/routes.ts`.
+  `ROUTES` exports both static patterns (`gamePattern: "/game/:id"`) and builders
+  (`game: (id) => /game/${id}`). Pages use `ROUTES`, never inline route literals.
 
 ## Verification
 
-ESLint already enforces the dependency rule (`shared/` not from `pages/`/`app/`, `pages/`
-not from `app/` or sibling pages). The two checks below cover what ESLint does not.
+ESLint enforces the dependency rule. The checks below cover what ESLint does not.
 
 **1. Structural integrity** -- only the documented top-level entries exist:
 
@@ -205,19 +191,30 @@ ls src/
 # expected: app  assets  index.tsx  pages  shared  test  vite-env.d.ts
 ```
 
-**2. Forbidden deep imports** -- internals reached from outside `shared/`:
+**2. Forbidden deep imports** -- API internals, `shared/ui` component files, and
+`shared/types` files reached from production code:
 
 ```bash
-rg -nF \
-  -e 'from "@/shared/api/client"' \
-  -e 'from "@/shared/api/errors"' \
-  -e 'from "@/shared/api/types"' \
-  -e 'from "@/shared/api/endpoints"' \
-  src --glob '!src/shared/**' --glob '!**/*.test.{ts,tsx}'
+rg -n -g '!**/*.test.{ts,tsx}' -g '!src/shared/api/**' \
+  -e 'from "@/shared/api/(client|errors|types|endpoints|schemas)"' \
+  -e 'from "@/shared/ui/[^/"]+/' \
+  -e 'from "@/(shared/)?types/' \
+  src
 ```
 
-A clean run of (2) prints nothing.
+**3. Test-support imports outside test files:**
 
-For the rarer `shared/ui/<X>/<File>` and non-test-support `@/shared/types/<file>` cases,
-add component or file names to the same `-e` list when needed; both patterns are
-otherwise picked up at code review.
+```bash
+rg -n 'from "[^"]*\.test-support"' src -g '!**/*.test.{ts,tsx}'
+```
+
+**4. Shared lib imported through `@/shared/lib/` instead of `@/lib/`:**
+
+```bash
+rg -n 'from "@/shared/lib/' src -g '!**/*.test.{ts,tsx}'
+```
+
+A clean run of (2), (3), and (4) prints nothing. Until #214 lands, (2) prints
+`src/pages/StatisticsPage/Statistics.tsx:3` and (4) prints three imports in
+`useRoomRestore.ts`, `GamePlayerItemList.tsx`, and `src/shared/api/auth.ts`; any other line is
+a new violation.

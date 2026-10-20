@@ -18,13 +18,23 @@ Commit a changed dump on its own, before the code that follows it. When the dump
 question open, the controllers in `../dartsapp-backend/app/src/Controller/` show the real
 behaviour.
 
-## Before changing code
+## Conventions
 
-Read `docs/convention/coding-standards.md`, then every domain file its table maps to your
+Before changing code, read every file in `docs/convention/` that the table maps to your
 change. The conventions win over current code: fix the code, keep the rule. A domain the
 table lacks follows the neighbouring code; ask the user only when the code has no precedent.
+Each file ends with a `## Verification` block; run it for every file you touched.
 
-For navigation, start at `docs/repo-map.md`.
+| File              | Read when you...                                                                    |
+| ----------------- | ----------------------------------------------------------------------------------- |
+| `architecture.md` | add or move files, change imports, touch `App.tsx`, add or change routes            |
+| `typescript.md`   | write or change any TS code                                                         |
+| `state.md`        | touch `src/shared/store/` or a consumer (`useStore`, `$atom.get()`)                 |
+| `api.md`          | add or change API calls, Valibot schemas, mappers, or `src/shared/query/` factories |
+| `react.md`        | write or change a component, hook, `useEffect`, or routing helper                   |
+| `styling.md`      | write or change CSS, class names, `className`, or style props                       |
+| `errors.md`       | throw, catch, log, display, or map errors                                           |
+| `testing.md`      | add or change tests, test helpers, mocks, fixtures, or E2E specs                    |
 
 For library APIs (React, React Router, Nanostores, Vitest, Testing Library, Playwright,
 Vite), query Context7 before writing code.
