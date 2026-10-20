@@ -65,6 +65,23 @@ new code.
 The final report lists each verification command with its pass or fail status, names every
 check you skipped, and ends with what you did not check and the risk left.
 
+## Workflow
+
+Size the task before the first edit. When the size is unclear, treat the task as large.
+
+- **Small**: one change with nothing to decide, such as a typo, a config value, or a bug
+  whose cause you already know. Cut the branch, write one failing test at the interface the
+  change touches, make the change under `## Scope`, and run the verification.
+- **Large**: open design decisions, more than one module, or an area under `## Guardrails`.
+  Grill the plan with the user through `/grill-with-docs`; when you start the grill
+  yourself, call the `grilling` and `domain-modeling` skills. Once every decision is
+  settled, write the plan as numbered subtasks, each with acceptance criteria. Build each
+  subtask with the `tdd` skill; its acceptance criteria are the agreed seams. Finish with
+  the `code-review` skill against `main`.
+
+`code-review` treats `## Scope` as a repo standard: a smell whose fix adds an abstraction
+the task does not need goes in the report as a note, not as a finding.
+
 ## Verification
 
 While you work, run only the tests you touch:
@@ -125,7 +142,8 @@ Every PR adds its change to `CHANGELOG.md` under `## [Unreleased]`, in the group
 (Added, Changed, Removed, Fixed), as `Area: change (#N)`.
 
 Commits, PR titles and bodies, and issue comments carry the human author only: no
-`Co-Authored-By` trailer and no Claude or agent footer.
+`Co-Authored-By` trailer and no Claude or agent footer. This rule outranks the
+`triage` skill's AI disclaimer.
 
 ## Guardrails
 
