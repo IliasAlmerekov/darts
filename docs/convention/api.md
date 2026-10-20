@@ -40,7 +40,7 @@ src/shared/api/
   game.ts              # game flows + ETag cache
   room.ts              # room flows
   statistics.ts        # stats flows
-  player.ts            # the player's current game
+  player.ts            # the player's current game and profile
 src/shared/query/
   queryClient.ts       # the one QueryClient and its defaults
   <domain>.queries.ts  # queryOptions factories: auth, game, player, statistics

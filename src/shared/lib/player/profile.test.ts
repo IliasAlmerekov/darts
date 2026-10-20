@@ -1,6 +1,9 @@
 // @vitest-environment node
 import { describe, expect, it, vi } from "vitest";
-import type { PlayerProfileGame, PlayerProfileResponse } from "@/shared/api/player";
+import {
+  buildPlayerProfile as buildProfile,
+  buildPlayerProfileGame as buildGame,
+} from "@/shared/types/player.test-support";
 import { toPlayerProfile } from "./profile";
 
 // Dates show in the browser's time zone; the formatter reads it when the module loads.
@@ -8,30 +11,15 @@ vi.hoisted(() => {
   process.env.TZ = "UTC";
 });
 
-function buildGame(overrides: Partial<PlayerProfileGame> = {}): PlayerProfileGame {
-  return {
-    gameId: 31,
-    finishedAt: "2026-10-20T18:42:00+00:00",
-    placement: 2,
-    roundAverage: 45.25,
-    participantsCount: 4,
-    participants: [
-      { playerId: 7, displayName: "Anna", placement: 1, isSelf: false },
-      { playerId: 42, displayName: "test2", placement: 2, isSelf: true },
-      { playerId: null, displayName: "Guest", placement: 3, isSelf: false },
-      { playerId: 9, displayName: "Ben", placement: 4, isSelf: false },
-    ],
-    ...overrides,
-  };
-}
-
-function buildProfile(overrides: Partial<PlayerProfileResponse> = {}): PlayerProfileResponse {
-  return {
-    stats: { gamesPlayed: 18, scoreAverage: 56.4 },
-    recentGames: [buildGame()],
-    ...overrides,
-  };
-}
+const FOUR_PLAYER_GAME = {
+  participantsCount: 4,
+  participants: [
+    { playerId: 7, displayName: "Anna", placement: 1, isSelf: false },
+    { playerId: 42, displayName: "test2", placement: 2, isSelf: true },
+    { playerId: null, displayName: "Guest", placement: 3, isSelf: false },
+    { playerId: 9, displayName: "Ben", placement: 4, isSelf: false },
+  ],
+};
 
 describe("toPlayerProfile", () => {
   it("formats the stats with two decimals for the average", () => {
@@ -52,7 +40,7 @@ describe("toPlayerProfile", () => {
     const profile = toPlayerProfile(
       buildProfile({
         recentGames: [
-          buildGame(),
+          buildGame(FOUR_PLAYER_GAME),
           buildGame({
             gameId: 30,
             finishedAt: "2026-10-19T09:05:00+00:00",
@@ -71,7 +59,9 @@ describe("toPlayerProfile", () => {
   });
 
   it("lists every participant in order and marks the player's own entry", () => {
-    const [row] = toPlayerProfile(buildProfile()).history;
+    const [row] = toPlayerProfile(
+      buildProfile({ recentGames: [buildGame(FOUR_PLAYER_GAME)] }),
+    ).history;
 
     expect(row?.participants.map((participant) => participant.label)).toEqual([
       "1. Anna",

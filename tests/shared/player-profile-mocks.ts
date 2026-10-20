@@ -40,16 +40,13 @@ export const PLAYER_PROFILE: PlayerProfileBody = {
   ],
 };
 
-/** Answers the Player profile's request with `body`. */
-export async function mockPlayerProfile(
-  page: Page,
-  body: PlayerProfileBody = PLAYER_PROFILE,
-): Promise<void> {
+/** Answers the Player profile's request with `PLAYER_PROFILE`. */
+export async function mockPlayerProfile(page: Page): Promise<void> {
   await page.route("**/api/player/profile", async (route) => {
     await route.fulfill({
       status: 200,
       contentType: "application/json",
-      body: JSON.stringify(body),
+      body: JSON.stringify(PLAYER_PROFILE),
     });
   });
 }

@@ -36,11 +36,8 @@ import { QueryClientProvider } from "@tanstack/react-query";
 import { createMemoryRouter, RouterProvider } from "react-router-dom";
 import { logout, type AuthenticatedUser } from "@/shared/api/auth";
 import { NetworkError } from "@/shared/api";
-import {
-  getPlayerProfile,
-  type PlayerProfileGame,
-  type PlayerProfileResponse,
-} from "@/shared/api/player";
+import { getPlayerProfile, type PlayerProfileResponse } from "@/shared/api/player";
+import { buildPlayerProfile, buildPlayerProfileGame } from "@/shared/types/player.test-support";
 import { ROUTES } from "@/lib/router/routes";
 import { createQueryClient } from "@/shared/query/queryClient";
 import PlayerProfilePage from ".";
@@ -76,27 +73,11 @@ function createUser(overrides: Partial<AuthenticatedUser> = {}): AuthenticatedUs
   };
 }
 
-function buildGame(overrides: Partial<PlayerProfileGame> = {}): PlayerProfileGame {
-  return {
-    gameId: 31,
-    finishedAt: "2026-10-20T18:42:00+00:00",
-    placement: 2,
-    roundAverage: 45.25,
-    participantsCount: 2,
-    participants: [
-      { playerId: 7, displayName: "Anna", placement: 1, isSelf: false },
-      { playerId: 42, displayName: "Alice", placement: 2, isSelf: true },
-    ],
-    ...overrides,
-  };
-}
-
 function buildProfile(overrides: Partial<PlayerProfileResponse> = {}): PlayerProfileResponse {
-  return {
-    stats: { gamesPlayed: 18, scoreAverage: 56.4 },
+  return buildPlayerProfile({
     recentGames: [
-      buildGame(),
-      buildGame({
+      buildPlayerProfileGame(),
+      buildPlayerProfileGame({
         gameId: 30,
         finishedAt: "2026-10-19T09:05:00+00:00",
         placement: 1,
@@ -108,7 +89,7 @@ function buildProfile(overrides: Partial<PlayerProfileResponse> = {}): PlayerPro
       }),
     ],
     ...overrides,
-  };
+  });
 }
 
 function statValue(name: string): HTMLElement {
