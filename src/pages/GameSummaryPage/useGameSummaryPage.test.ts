@@ -15,12 +15,14 @@ import {
   buildExpectedPodiumPlaceholder,
   buildExpectedStandings,
   buildFinishedPlayerResponses,
+  buildGameSettingsResponse,
 } from "@/shared/types/game.test-support";
 import { applyGameScoreboardDelta } from "@/shared/lib/game/gameStateNormalizer";
 
 const navigateMock = vi.fn();
 const getFinishedGameMock = vi.fn();
 const getGameThrowsMock = vi.fn();
+const getGameSettingsMock = vi.fn();
 const createRematchGameMock = vi.fn();
 const startRematchMock = vi.fn();
 const undoLastThrowMock = vi.fn();
@@ -47,6 +49,7 @@ vi.mock("@nanostores/react", () => ({
 vi.mock("@/shared/api/game", () => ({
   getFinishedGame: (...args: unknown[]) => getFinishedGameMock(...args),
   getGameThrows: (...args: unknown[]) => getGameThrowsMock(...args),
+  getGameSettings: (...args: unknown[]) => getGameSettingsMock(...args),
   createRematchGame: (...args: unknown[]) => createRematchGameMock(...args),
   startRematch: (...args: unknown[]) => startRematchMock(...args),
   undoLastThrow: (...args: unknown[]) => undoLastThrowMock(...args),
@@ -70,6 +73,12 @@ vi.mock("@/shared/store", async (importOriginal) => {
 vi.mock("@/shared/services/browser/soundPlayer", () => ({
   playSound: vi.fn(),
 }));
+
+const SETTINGS_RESPONSE = buildGameSettingsResponse({
+  gameId: 42,
+  status: "finished",
+  startScore: 301,
+});
 
 function buildFinishedGameState(): GameThrowsResponse {
   return {
@@ -203,6 +212,7 @@ describe("useGameSummaryPage", () => {
     routeParams = { id: "42" };
     testQueryClient = createQueryClient();
     currentGameState = buildFinishedGameState();
+    getGameSettingsMock.mockResolvedValue(SETTINGS_RESPONSE);
 
     getFinishedGameMock.mockResolvedValue([]);
     getGameThrowsMock.mockResolvedValue(buildStartedGameState());
@@ -724,6 +734,26 @@ describe("useGameSummaryPage", () => {
       ]);
     });
 
+    it("should fill the game settings cache before the page renders", async () => {
+      getFinishedGameMock.mockResolvedValueOnce([finishedPlayer(3, "Carol")]);
+      getGameSettingsMock.mockResolvedValueOnce(SETTINGS_RESPONSE);
+
+      await gameSummaryLoader({ params: { id: "42" }, request: new Request("http://x/") });
+
+      expect(appQueryClient.getQueryData(gameQueries.settings(42).queryKey)).toEqual(
+        SETTINGS_RESPONSE,
+      );
+    });
+
+    it("should not throw when the settings fetch fails, so the page can show its Retry action", async () => {
+      getFinishedGameMock.mockResolvedValueOnce([finishedPlayer(3, "Carol")]);
+      getGameSettingsMock.mockRejectedValueOnce(new Error("network down"));
+
+      await expect(
+        gameSummaryLoader({ params: { id: "42" }, request: new Request("http://x/") }),
+      ).resolves.toBeNull();
+    });
+
     it("should make the summary's game the rematch source for the next room", async () => {
       getFinishedGameMock.mockResolvedValueOnce([finishedPlayer(3, "Carol")]);
 
@@ -754,6 +784,7 @@ describe("useGameSummaryPage", () => {
       ).resolves.toBeNull();
 
       expect(getFinishedGameMock).not.toHaveBeenCalled();
+      expect(getGameSettingsMock).not.toHaveBeenCalled();
     });
   });
 

@@ -49,6 +49,7 @@ and this project does **not** yet follow [Semantic Versioning](https://semver.or
 
 ### Fixed
 
+- Summary: reloading `/summary/<id>` or opening it in a new tab shows the podium and leaderboard instead of "start score is missing". The page reads the start score through `GET /api/game/{id}/settings` and its loader prefetches it. Coming from the game page sends no extra request. A failed settings read shows an error with Retry (#229)
 - Buttons: the red Log out, Cancel (game exit) and mobile Start buttons show white text at 4.9:1 contrast instead of 3.84:1 (#198)
 - Auth: a player who opens a route their role may not use, such as the start page, goes to the Player profile instead of the Waiting room (#199)
 - Settings: when the first settings read for a game fails, the page shows "Could not load settings" with a "Retry" button instead of leaving every option disabled with no message. The options stay disabled and unselected until a retry loads the game's saved values (#108)
