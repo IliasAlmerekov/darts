@@ -24,6 +24,7 @@ and this project does **not** yet follow [Semantic Versioning](https://semver.or
 
 ### Changed
 
+- Backend contract: `docs/backend-api-contract.json` is refreshed. It marks `previousGameId` in `POST /api/room/create` as deprecated and ignored, documents `GET /api/tablet/game` and the 409 `GAME_NOT_NEWEST` answers of undo, reopen and rematch (IliasAlmerekov/darts-backend#133)
 - Docs: `docs/convention/architecture.md` and the README name React Router 7, the version since the `react-router-dom` 7.18.4 update (#155)
 - Dependencies: knip is 6.41.0. It reports an exported type that no file imports, even when another export uses it, so `ThrowDisplayValue`, `HttpMethod`, `QueryValue`, `ProfileHistoryRow` and `Round` are no longer exported (#243)
 - Dependencies: `eslint-plugin-react-hooks` is 7.1.1. ESLint runs its `rules-of-hooks` and `exhaustive-deps` rules, as with version 5. The React Compiler rules that version 7 adds to `recommended` stay off until #241 (#238)

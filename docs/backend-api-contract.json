@@ -105,6 +105,9 @@
                     },
                     "403": {
                         "description": "Zugriff verweigert: `/api` ist per Firewall nur f\u00fcr ROLE_ADMIN offen, und der Code pr\u00fcft zus\u00e4tzlich die Spielteilnahme."
+                    },
+                    "409": {
+                        "description": "Das alte Spiel ist nicht das neueste Spiel, oder es ist weder beendet noch abgebrochen (`GAME_NOT_NEWEST`). Eine offene Lobby ist immer das neueste Spiel."
                     }
                 }
             }
@@ -286,7 +289,7 @@
                 ],
                 "responses": {
                     "200": {
-                        "description": "Spiel wurde wieder ge\u00f6ffnet und befindet sich erneut im started-Status.",
+                        "description": "Spiel wurde wieder ge\u00f6ffnet und befindet sich erneut im started-Status. Ein bereits gestartetes Spiel bleibt unver\u00e4ndert.",
                         "content": {
                             "application/json": {
                                 "schema": {
@@ -297,6 +300,9 @@
                     },
                     "403": {
                         "description": "Zugriff verweigert: `/api` ist per Firewall nur f\u00fcr ROLE_ADMIN offen, und der Code pr\u00fcft zus\u00e4tzlich die Spielteilnahme."
+                    },
+                    "409": {
+                        "description": "Das Spiel ist weder beendet noch gestartet (`GAME_REOPEN_NOT_ALLOWED`), oder es ist beendet, aber nicht das neueste Spiel (`GAME_NOT_NEWEST`)."
                     }
                 }
             }
@@ -469,7 +475,7 @@
                     "Game Rooms"
                 ],
                 "summary": "Spielraum erstellen oder die offene Lobby zur\u00fcckgeben",
-                "description": "Es ist h\u00f6chstens ein Spiel in der Lobby. Ist ein Spiel in der Lobby, liefert der Endpoint dessen `gameId` und legt kein Spiel an. Die Lobby \u00fcbernimmt `startScore`, `doubleOut` und `tripleOut` aus dem Request und beh\u00e4lt ihre Spieler; `previousGameId`, `playerIds` und `excludePlayerIds` werden dann ignoriert. Ohne offene Lobby wird eine neue Lobby angelegt.",
+                "description": "Es ist h\u00f6chstens ein Spiel in der Lobby. Ist ein Spiel in der Lobby, liefert der Endpoint dessen `gameId` und legt kein Spiel an. Die Lobby \u00fcbernimmt `startScore`, `doubleOut` und `tripleOut` aus dem Request und beh\u00e4lt ihre Spieler; `playerIds` und `excludePlayerIds` werden dann ignoriert. Ohne offene Lobby wird eine neue Lobby mit den Spielern aus `playerIds` ohne `excludePlayerIds` angelegt. `previousGameId` ist veraltet und wird immer ignoriert.",
                 "operationId": "post_room_create",
                 "requestBody": {
                     "required": false,
@@ -511,7 +517,7 @@
                         "description": "Der Request-Body ist ung\u00fcltig und besteht die Validierung nicht."
                     },
                     "403": {
-                        "description": "Zugriff verweigert: `/api` ist per Firewall nur f\u00fcr ROLE_ADMIN offen, und der Code pr\u00fcft zus\u00e4tzlich die Spielteilnahme."
+                        "description": "Angemeldet ohne `ROLE_ADMIN` (z. B. ein Spieler)."
                     }
                 }
             }
@@ -844,6 +850,9 @@
                     },
                     "403": {
                         "description": "Zugriff verweigert: `/api` ist per Firewall nur f\u00fcr ROLE_ADMIN offen, und der Code pr\u00fcft zus\u00e4tzlich die Spielteilnahme."
+                    },
+                    "409": {
+                        "description": "Das alte Spiel ist nicht das neueste Spiel, oder es ist weder beendet noch abgebrochen (`GAME_NOT_NEWEST`). Eine offene Lobby ist immer das neueste Spiel."
                     }
                 }
             }
@@ -1068,6 +1077,9 @@
                     },
                     "403": {
                         "description": "Zugriff verweigert: `/api` ist per Firewall nur f\u00fcr ROLE_ADMIN offen, und der Code pr\u00fcft zus\u00e4tzlich die Spielteilnahme."
+                    },
+                    "409": {
+                        "description": "Der letzte Wurf hat das Spiel beendet, und das Spiel ist nicht das neueste Spiel (`GAME_NOT_NEWEST`). Das R\u00fcckg\u00e4ngigmachen w\u00fcrde das laufende Spiel abbrechen."
                     }
                 },
                 "deprecated": true
@@ -1153,6 +1165,9 @@
                     },
                     "403": {
                         "description": "Zugriff verweigert: `/api` ist per Firewall nur f\u00fcr ROLE_ADMIN offen, und der Code pr\u00fcft zus\u00e4tzlich die Spielteilnahme."
+                    },
+                    "409": {
+                        "description": "Der letzte Wurf hat das Spiel beendet, und das Spiel ist nicht das neueste Spiel (`GAME_NOT_NEWEST`). Das R\u00fcckg\u00e4ngigmachen w\u00fcrde das laufende Spiel abbrechen."
                     }
                 }
             }
@@ -2227,6 +2242,52 @@
                 },
                 "security": []
             }
+        },
+        "/api/tablet/game": {
+            "get": {
+                "tags": [
+                    "Game"
+                ],
+                "summary": "Returns the tablet game and the last finished game.",
+                "operationId": "get_app_tablet_game",
+                "responses": {
+                    "200": {
+                        "description": "Das Tablet-Spiel (`lobby` oder `started`) und das zuletzt beendete Spiel nach `finishedAt`; `game` und `lastFinishedGameId` sind `null`, wenn es keins gibt.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/TabletGameResponseDto"
+                                },
+                                "examples": {
+                                    "started": {
+                                        "summary": "Ein Spiel l\u00e4uft",
+                                        "value": {
+                                            "game": {
+                                                "id": 57,
+                                                "status": "started"
+                                            },
+                                            "lastFinishedGameId": 56
+                                        }
+                                    },
+                                    "none": {
+                                        "summary": "Kein Tablet-Spiel",
+                                        "value": {
+                                            "game": null,
+                                            "lastFinishedGameId": 56
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Nicht angemeldet."
+                    },
+                    "403": {
+                        "description": "Angemeldet ohne `ROLE_ADMIN` (z. B. ein Spieler)."
+                    }
+                }
+            }
         }
     },
     "components": {
@@ -2304,8 +2365,10 @@
             "RoomCreateRequest": {
                 "properties": {
                     "previousGameId": {
+                        "description": "Veraltet und ignoriert. Der Server \u00fcbernimmt keine Spieler aus diesem Spiel.",
                         "type": "integer",
                         "nullable": true,
+                        "deprecated": true,
                         "default": null,
                         "minimum": 0,
                         "exclusiveMinimum": true
@@ -3166,6 +3229,46 @@
                     }
                 },
                 "type": "object"
+            },
+            "TabletGameDto": {
+                "required": [
+                    "id",
+                    "status"
+                ],
+                "properties": {
+                    "id": {
+                        "type": "integer"
+                    },
+                    "status": {
+                        "type": "string",
+                        "enum": [
+                            "lobby",
+                            "started"
+                        ]
+                    }
+                },
+                "type": "object"
+            },
+            "TabletGameResponseDto": {
+                "required": [
+                    "game",
+                    "lastFinishedGameId"
+                ],
+                "properties": {
+                    "game": {
+                        "nullable": true,
+                        "oneOf": [
+                            {
+                                "$ref": "#/components/schemas/TabletGameDto"
+                            }
+                        ]
+                    },
+                    "lastFinishedGameId": {
+                        "type": "integer",
+                        "nullable": true
+                    }
+                },
+                "type": "object"
             }
         },
         "securitySchemes": {
@@ -3205,6 +3308,9 @@
         },
         {
             "name": "Authentication"
+        },
+        {
+            "name": "Game"
         }
     ]
 }
