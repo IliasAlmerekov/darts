@@ -1,6 +1,7 @@
 import { test, expect, type Page } from "../shared/test";
 import { mockAdminSession } from "../shared/auth-route-mocks";
 import { mockQuietRoomStream } from "../shared/room-stream-mocks";
+import { lobbyTabletGame, mockTabletGame, startedTabletGame } from "../shared/tablet-game-mocks";
 
 const viewports = [
   { name: "phone-360", width: 360, height: 800 },
@@ -43,6 +44,10 @@ const mockGame = async (
   players: MockPlayer[] = createMockPlayers(2),
 ): Promise<void> => {
   await mockQuietRoomStream(page);
+  await mockTabletGame(
+    page,
+    status === "started" ? startedTabletGame(gameId) : lobbyTabletGame(gameId),
+  );
   await page.route(`**/api/game/${gameId}`, async (route) => {
     await route.fulfill({
       status: 200,

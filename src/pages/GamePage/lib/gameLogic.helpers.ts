@@ -40,15 +40,6 @@ export function shouldNavigateToSummary(
   return gameData.id === gameId && gameData.status === "finished";
 }
 
-export function parseGameIdParam(gameIdParam: string | undefined): number | null {
-  if (!gameIdParam) {
-    return null;
-  }
-
-  const parsed = Number(gameIdParam);
-  return Number.isFinite(parsed) && parsed > 0 ? parsed : null;
-}
-
 export function getZeroScorePlayerIds(players: UIPlayer[]): number[] {
   return players.filter((player) => player.score === 0).map((player) => player.id);
 }

@@ -2,10 +2,12 @@
 
 const getGameSettingsMock = vi.hoisted(() => vi.fn());
 const saveGameSettingsMock = vi.hoisted(() => vi.fn());
+const getTabletGameMock = vi.hoisted(() => vi.fn());
 
 vi.mock("@/shared/api/game", () => ({
   getGameSettings: (...args: unknown[]) => getGameSettingsMock(...args),
   saveGameSettings: (...args: unknown[]) => saveGameSettingsMock(...args),
+  getTabletGame: (...args: unknown[]) => getTabletGameMock(...args),
 }));
 
 vi.mock("@/shared/ui/admin-layout", () => ({
@@ -26,7 +28,9 @@ import {
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { ApiError } from "@/shared/api";
 import { gameQueries } from "@/shared/query/game.queries";
+import { queryClient } from "@/shared/query/queryClient";
 import { createQueryClient } from "@/shared/query/queryClient";
+import { tabletGameLoader } from "@/shared/query/tabletGameLoader";
 import {
   $currentGameId,
   $gameData,
@@ -184,6 +188,20 @@ function renderSettingsRouter(initialEntry: string): ReturnType<typeof createMem
   const router = createMemoryRouter([{ path: "/settings/:id", element: <SettingsPage /> }], {
     initialEntries: [initialEntry],
   });
+  render(
+    <QueryClientProvider client={testQueryClient}>
+      <RouterProvider router={router} />
+    </QueryClientProvider>,
+  );
+  return router;
+}
+
+// The route of App.tsx: the loader follows the tablet game. It reads through the app's client.
+function renderTabletSettingsRouter(initialEntry: string): ReturnType<typeof createMemoryRouter> {
+  const router = createMemoryRouter(
+    [{ path: "/settings/:id?", element: <SettingsPage />, loader: tabletGameLoader("settings") }],
+    { initialEntries: [initialEntry] },
+  );
   render(
     <QueryClientProvider client={testQueryClient}>
       <RouterProvider router={router} />
@@ -369,47 +387,40 @@ describe("SettingsPage", () => {
     expect(getGameSettingsMock).not.toHaveBeenCalled();
   });
 
-  it("should treat the route gameId as authoritative and ignore stale shared game settings", async () => {
-    setCurrentGameId(99);
-    setGameData({
-      ...createGameResponse(),
-      id: 99,
-      settings: {
-        startScore: 501,
-        doubleOut: true,
-        tripleOut: false,
-      },
+  // Issue #203: a game id typed into the Settings URL changed the page and the current game.
+  it("should stay on the tablet game's settings when the URL id is changed by hand", async () => {
+    queryClient.clear();
+    setCurrentGameId(42);
+    getTabletGameMock.mockResolvedValue({
+      game: { id: 42, status: "lobby" },
+      lastFinishedGameId: 99,
     });
-    getGameSettingsMock.mockResolvedValueOnce(
-      createSettingsResponse({
-        startScore: 401,
-        doubleOut: false,
-        tripleOut: true,
-      }),
+    getGameSettingsMock.mockImplementation((gameId: number) =>
+      Promise.resolve(createSettingsResponse({ gameId, startScore: gameId === 42 ? 401 : 501 })),
     );
-
-    renderSettingsPage("/settings/42");
-
-    expect(screen.getByRole("button", { name: "Single-out" }).getAttribute("aria-pressed")).toBe(
-      "false",
-    );
-    expect(screen.getByRole("button", { name: "501" }).getAttribute("aria-pressed")).toBe("false");
-
+    const router = renderTabletSettingsRouter("/settings/42");
     await waitFor(() => {
-      expect(getGameSettingsMock).toHaveBeenCalledWith(42, expect.any(AbortSignal));
-      expect($currentGameId.get()).toBe(42);
+      expect(isPressed("401")).toBe(true);
+    });
+
+    await act(async () => {
+      await router.navigate("/settings/99");
     });
 
     await waitFor(() => {
-      expect(screen.getByRole("button", { name: "Triple-out" }).getAttribute("aria-pressed")).toBe(
-        "true",
-      );
-      expect(screen.getByRole("button", { name: "401" }).getAttribute("aria-pressed")).toBe("true");
+      expect(router.state.location.pathname).toBe("/settings/42");
     });
+    expect(isPressed("401")).toBe(true);
+    expect(getGameSettingsMock).not.toHaveBeenCalledWith(99, expect.anything());
+    expect($currentGameId.get()).toBe(42);
   });
 
-  it("should save settings for the route gameId even when another page left a different game in the store", async () => {
-    setCurrentGameId(99);
+  it("should save settings for the tablet game even when another page left a different game in the store", async () => {
+    queryClient.clear();
+    getTabletGameMock.mockResolvedValue({
+      game: { id: 42, status: "lobby" },
+      lastFinishedGameId: null,
+    });
     setGameData({
       ...createGameResponse(),
       id: 99,
@@ -421,49 +432,35 @@ describe("SettingsPage", () => {
     });
     getGameSettingsMock.mockResolvedValueOnce(
       createSettingsResponse({
+        gameId: 42,
         startScore: 401,
         doubleOut: false,
         tripleOut: true,
       }),
     );
-    saveGameSettingsMock.mockResolvedValueOnce({
-      startScore: 401,
-      doubleOut: true,
-      tripleOut: false,
-    });
+    saveGameSettingsMock.mockResolvedValueOnce(
+      createSettingsResponse({ gameId: 42, startScore: 401, doubleOut: true }),
+    );
 
-    renderSettingsPage("/settings/42");
+    renderTabletSettingsRouter("/settings/99");
 
     await waitFor(() => {
-      expect(screen.getByRole("button", { name: "Triple-out" }).getAttribute("aria-pressed")).toBe(
-        "true",
-      );
+      expect(isPressed("Triple-out")).toBe(true);
     });
 
     fireEvent.click(screen.getByRole("button", { name: "Double-out" }));
 
     await waitFor(() => {
-      expect(saveGameSettingsMock).toHaveBeenCalledWith(
-        {
-          doubleOut: true,
-          tripleOut: false,
-        },
-        42,
-      );
-      expect($gameData.get()).toEqual(
-        expect.objectContaining({
-          id: 99,
-          settings: {
-            startScore: 501,
-            doubleOut: true,
-            tripleOut: false,
-          },
-        }),
-      );
-      expect(screen.getByRole("button", { name: "Double-out" }).getAttribute("aria-pressed")).toBe(
-        "true",
-      );
+      expect(saveGameSettingsMock).toHaveBeenCalledWith({ doubleOut: true, tripleOut: false }, 42);
+      expect(isPressed("Double-out")).toBe(true);
     });
+    expect(saveGameSettingsMock).not.toHaveBeenCalledWith(expect.anything(), 99);
+    expect($gameData.get()).toEqual(
+      expect.objectContaining({
+        id: 99,
+        settings: { startScore: 501, doubleOut: true, tripleOut: false },
+      }),
+    );
   });
 
   it("should not send startScore when changing only the game mode for an existing game", async () => {

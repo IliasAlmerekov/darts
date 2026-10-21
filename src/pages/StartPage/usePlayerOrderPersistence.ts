@@ -1,9 +1,10 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useRef, useState } from "react";
 import { DragEndEvent } from "@dnd-kit/core";
 import { arrayMove } from "@dnd-kit/sortable";
 import { updatePlayerOrder } from "@/shared/api/room";
 import { toUserErrorMessage } from "@/lib/error/error-to-user-message";
 import { clientLogger } from "@/shared/services/browser/clientLogger";
+import { mergePlayerOrder, orderByPosition, type OrderedPlayer } from "./lib/playerOrder";
 import type { SetStartPageError } from "./useStartPageError";
 
 type UpdatePlayerOrderFn = (
@@ -19,11 +20,6 @@ interface PersistPlayerOrderParams {
   onError: (error: unknown) => void;
   onRollback: (order: number[]) => void;
   shouldRollback: () => boolean;
-}
-
-interface OrderedPlayer {
-  id: number;
-  position: number | null;
 }
 
 interface UsePlayerOrderPersistenceParams {
@@ -69,41 +65,15 @@ export function usePlayerOrderPersistence({
   players,
   setPageError,
 }: UsePlayerOrderPersistenceParams): UsePlayerOrderPersistenceResult {
-  const [playerOrder, setPlayerOrder] = useState<number[]>([]);
+  const [playerOrder, setPlayerOrder] = useState<number[]>(() => orderByPosition(players));
+  const [orderedPlayers, setOrderedPlayers] = useState(players);
   const playerOrderRequestIdRef = useRef(0);
 
-  useEffect(() => {
-    if (players.length <= 0) {
-      setPlayerOrder([]);
-      return;
-    }
-
-    const idsByPosition = [...players]
-      .sort(
-        (a, b) => (a.position ?? Number.MAX_SAFE_INTEGER) - (b.position ?? Number.MAX_SAFE_INTEGER),
-      )
-      .map((player) => player.id);
-
-    setPlayerOrder((previousOrder) => {
-      if (previousOrder.length <= 0) {
-        return idsByPosition;
-      }
-
-      const knownIds = new Set(idsByPosition);
-      const preservedOrder = previousOrder.filter((playerId) => knownIds.has(playerId));
-      const newIds = idsByPosition.filter((playerId) => !preservedOrder.includes(playerId));
-      const nextOrder = [...preservedOrder, ...newIds];
-
-      if (
-        nextOrder.length === previousOrder.length &&
-        nextOrder.every((playerId, index) => playerId === previousOrder[index])
-      ) {
-        return previousOrder;
-      }
-
-      return nextOrder;
-    });
-  }, [players]);
+  // A new players list adjusts the order during render, so the list never shows a stale order.
+  if (orderedPlayers !== players) {
+    setOrderedPlayers(players);
+    setPlayerOrder((previousOrder) => mergePlayerOrder(previousOrder, players));
+  }
 
   const handleDragEnd = useCallback(
     (event: DragEndEvent): void => {

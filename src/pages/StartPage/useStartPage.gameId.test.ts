@@ -2,8 +2,8 @@
 /**
  * TDD — Ticket 4: Single source of truth for gameId
  *
- * Rule: the route param /:id is the ONLY authoritative source.
- * The store ($currentGameId, $invitation) is cache/preload only.
+ * Rule: the page reads the game id from the route param. The route loader has already
+ * matched it to the tablet game; the store ($invitation) is cache/preload only.
  */
 
 // ─── shared mocks ────────────────────────────────────────────────────────────
@@ -31,13 +31,12 @@ vi.mock("@/shared/api/room", () => ({
   addGuestPlayer: vi.fn(),
 }));
 
-import { act, renderHook } from "@testing-library/react";
+import { renderHook } from "@testing-library/react";
 import { MemoryRouter, Routes, Route } from "react-router-dom";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { createQueryClient } from "@/shared/query/queryClient";
 import React from "react";
-import { resolveGameId } from "./useStartPage";
 import { useStartPage } from "./useStartPage";
 import { queryClient } from "@/shared/query/queryClient";
 import { getGameThrows } from "@/shared/api/game";
@@ -46,7 +45,6 @@ import {
   resetRoomStore,
   resetGameStore,
   resetPreCreateGameSettings,
-  setCurrentGameId,
   setInvitation,
 } from "@/shared/store";
 import { buildGameThrowsResponse } from "@/shared/types/game.test-support";
@@ -137,64 +135,6 @@ function makeWrapper(
   };
 }
 
-/** Stable lobby response to prevent restore-effect re-runs during tests. */
-function mockLobbyGame(gameId: number): void {
-  vi.mocked(getGameThrows).mockResolvedValue(
-    buildGameThrowsResponse({ id: gameId, status: "lobby" }),
-  );
-  vi.mocked(getInvitation).mockResolvedValue({
-    gameId,
-    invitationLink: `/invite/${gameId}`,
-  });
-}
-
-// ─── resolveGameId (pure function) ───────────────────────────────────────────
-
-describe("resolveGameId", () => {
-  it("should parse valid numeric URL param as gameId", () => {
-    expect(resolveGameId("42")).toBe(42);
-  });
-
-  it("should return null for non-numeric URL param", () => {
-    expect(resolveGameId("abc")).toBeNull();
-  });
-
-  it("should return null when URL param is undefined", () => {
-    expect(resolveGameId(undefined)).toBeNull();
-  });
-
-  it("should return null for empty string URL param", () => {
-    expect(resolveGameId("")).toBeNull();
-  });
-
-  it("should return null for floating-point string that could be confused as valid", () => {
-    expect(resolveGameId("3.7")).toBeNull();
-  });
-
-  it("should return null for negative number string", () => {
-    expect(resolveGameId("-1")).toBeNull();
-  });
-
-  it("should return null for zero", () => {
-    // 0 is not a valid game ID
-    expect(resolveGameId("0")).toBeNull();
-  });
-
-  it("should treat scientific-notation string as numeric when it resolves to a positive integer", () => {
-    // Number("1e2") === 100 — isInteger passes, so this is accepted.
-    // React Router won't produce such params in practice; documenting the behaviour.
-    expect(resolveGameId("1e2")).toBe(100);
-  });
-
-  it("should return null for 'NaN' string", () => {
-    expect(resolveGameId("NaN")).toBeNull();
-  });
-
-  it("should return null for 'Infinity' string", () => {
-    expect(resolveGameId("Infinity")).toBeNull();
-  });
-});
-
 // ─── shared beforeEach/afterEach ─────────────────────────────────────────────
 
 function sharedBeforeEach(): void {
@@ -261,51 +201,5 @@ describe("useStartPage — gameId is derived exclusively from URL param", () => 
     });
 
     expect(result.current.gameId).toBeNull();
-  });
-});
-
-// ─── useStartPage — redirect behaviour ───────────────────────────────────────
-
-describe("useStartPage — redirect when URL has no gameId", () => {
-  beforeEach(sharedBeforeEach);
-  afterEach(sharedAfterEach);
-
-  it("should redirect to active game route when no URL param but store has currentGameId", async () => {
-    setCurrentGameId(55);
-
-    await act(async () => {
-      renderHook(() => useStartPage(), {
-        wrapper: makeWrapper("/start"),
-      });
-    });
-
-    expect(navigateMock).toHaveBeenCalledWith("/start/55", { replace: true });
-  });
-
-  it("should NOT redirect when URL param already contains the currentGameId", async () => {
-    setCurrentGameId(55);
-    // Provide mocks so the restore-effect completes cleanly without looping
-    mockLobbyGame(55);
-
-    await act(async () => {
-      renderHook(() => useStartPage(), {
-        wrapper: makeWrapper("/start/55"),
-      });
-    });
-
-    expect(navigateMock).not.toHaveBeenCalledWith(
-      expect.stringContaining("/start/55"),
-      expect.objectContaining({ replace: true }),
-    );
-  });
-
-  it("should NOT redirect when there is neither URL param nor stored gameId", async () => {
-    await act(async () => {
-      renderHook(() => useStartPage(), {
-        wrapper: makeWrapper("/start"),
-      });
-    });
-
-    expect(navigateMock).not.toHaveBeenCalled();
   });
 });

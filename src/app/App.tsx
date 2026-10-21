@@ -14,17 +14,19 @@ import ScrollToTop from "@/app/ScrollToTop";
 import AdminLayoutRoute from "@/app/routes/AdminLayoutRoute";
 import NotFoundPage from "@/app/routes/NotFoundPage";
 import ProtectedRoutes from "@/app/ProtectedRoutes";
+import TabletGameGate from "@/app/routes/TabletGameGate";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { scheduleSelectiveRouteWarmUp } from "@/app/routeWarmup";
 import { useStatisticsPrefetch } from "@/app/useStatisticsPrefetch";
 import { gameDetailLoader } from "@/pages/GameDetailPage/useGameDetailPage";
-import { startPageLoader } from "@/pages/StartPage/useRoomRestore";
+import { startPageLoader } from "@/pages/StartPage/startPageLoader";
 import { gameSummaryLoader } from "@/pages/GameSummaryPage/useGameSummaryPage";
 import { gamesOverviewLoader } from "@/pages/GamesOverviewPage/useGamesOverview";
 import { clearUnauthorizedHandler, setUnauthorizedHandler } from "@/shared/api";
 import { ROUTES } from "@/lib/router/routes";
 import { clearClientSession } from "@/shared/api/auth";
 import { queryClient } from "@/shared/query/queryClient";
+import { tabletGameLoader } from "@/shared/query/tabletGameLoader";
 import { UniversalSkeleton } from "@/shared/ui/skeletons";
 
 const LoginPage = lazy(() => import("@/pages/LoginPage"));
@@ -41,6 +43,11 @@ const PlayerProfile = lazy(() => import("@/pages/PlayerProfilePage"));
 
 function withSuspense(element: React.ReactNode): React.JSX.Element {
   return <Suspense fallback={<UniversalSkeleton />}>{element}</Suspense>;
+}
+
+/** An admin page that follows the tablet game; its route loader reads the tablet game. */
+function withTabletGame(element: React.ReactNode): React.JSX.Element {
+  return withSuspense(<TabletGameGate>{element}</TabletGameGate>);
 }
 
 function AppShell(): React.JSX.Element {
@@ -96,7 +103,9 @@ function createAppRouter(): ReturnType<typeof createBrowserRouter> {
         >
           <Route
             path={ROUTES.gamePattern}
-            element={withSuspense(<GamePage />)}
+            element={withTabletGame(<GamePage />)}
+            loader={tabletGameLoader("game")}
+            hydrateFallbackElement={<UniversalSkeleton />}
             errorElement={<ErrorBoundary />}
           />
           <Route
@@ -108,8 +117,9 @@ function createAppRouter(): ReturnType<typeof createBrowserRouter> {
           <Route element={<AdminLayoutRoute />} errorElement={<ErrorBoundary />}>
             <Route
               path={`${ROUTES.start()}/:id?`}
-              element={withSuspense(<StartPage />)}
+              element={withTabletGame(<StartPage />)}
               loader={startPageLoader}
+              hydrateFallbackElement={<UniversalSkeleton />}
               errorElement={<ErrorBoundary />}
             />
             <Route
@@ -126,7 +136,9 @@ function createAppRouter(): ReturnType<typeof createBrowserRouter> {
             />
             <Route
               path={`${ROUTES.settings()}/:id?`}
-              element={withSuspense(<SettingsPage />)}
+              element={withTabletGame(<SettingsPage />)}
+              loader={tabletGameLoader("settings")}
+              hydrateFallbackElement={<UniversalSkeleton />}
               errorElement={<ErrorBoundary />}
             />
             <Route

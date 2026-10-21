@@ -7,6 +7,7 @@ import {
   finishGame,
   getFinishedGame,
   getGameSettings,
+  getTabletGame,
   recordThrow,
   reopenGame,
   startGame,
@@ -334,6 +335,29 @@ describe("game api contract payloads", () => {
       );
 
       await expect(getGameSettings(42)).rejects.toBeInstanceOf(ApiValidationError);
+    });
+  });
+
+  describe("getTabletGame", () => {
+    it("returns the contract examples of TabletGameResponseDto", async () => {
+      const started = { game: { id: 57, status: "started" }, lastFinishedGameId: 56 };
+      const none = { game: null, lastFinishedGameId: 56 };
+      const get = vi
+        .spyOn(apiClient, "get")
+        .mockImplementationOnce(respondWith(started))
+        .mockImplementationOnce(respondWith(none));
+
+      await expect(getTabletGame()).resolves.toEqual(started);
+      await expect(getTabletGame()).resolves.toEqual(none);
+      expect(get).toHaveBeenCalledWith("/tablet/game", expect.anything());
+    });
+
+    it("rejects with ApiValidationError when the game has a finished status", async () => {
+      vi.spyOn(apiClient, "get").mockImplementationOnce(
+        respondWith({ game: { id: 57, status: "finished" }, lastFinishedGameId: null }),
+      );
+
+      await expect(getTabletGame()).rejects.toBeInstanceOf(ApiValidationError);
     });
   });
 

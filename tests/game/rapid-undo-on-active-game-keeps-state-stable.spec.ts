@@ -1,6 +1,7 @@
 // seed: tests/seed.spec.ts
 
 import { expect, test, type Locator, type Page, type Request, type Route } from "../shared/test";
+import { mockTabletGame, startedTabletGame } from "../shared/tablet-game-mocks";
 
 type PlayerThrow = {
   value: number;
@@ -170,6 +171,8 @@ const installGameRoutes = async (page: Page, options: RouteOptions): Promise<voi
   const throwStates = [...(options.throwStates ?? [])];
   const undoStates = [...(options.undoStates ?? [])];
   let throwSequence = 0;
+
+  await mockTabletGame(page, startedTabletGame(gameId));
 
   await page.route(`**/api/game/${gameId}*`, async (route: Route, request: Request) => {
     if (request.method() !== "GET") {

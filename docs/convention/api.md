@@ -13,7 +13,7 @@ A read inside an imperative workflow (a loader that fills Nanostores, a submit h
 recovery after a failed patch) calls the domain function directly and skips the cache. The
 call sites today:
 
-- `src/pages/StartPage/useRoomRestore.ts`: `getGameThrows` and `getInvitation` in the
+- `src/pages/StartPage/startPageLoader.ts`: `getGameThrows` and `getInvitation` in the
   StartPage loader.
 - `src/pages/StartPage/useCreateStartFlow.ts`: `getGameSettings` before a game starts.
 - `src/pages/LoginPage/useLogin.ts`: `getAuthenticatedUser` in the post-login session
@@ -45,6 +45,7 @@ src/shared/query/
   queryClient.ts       # the one QueryClient and its defaults
   <domain>.queries.ts  # queryOptions factories: auth, game, player, statistics
   acceptLoggedInUser.ts # writes the logged-in user into the auth key
+  tabletGameLoader.ts  # loader builder for the admin routes that follow the tablet game
 ```
 
 ## Public surface
@@ -190,6 +191,9 @@ game id, room store, game store) stays in Nanostores (`state.md`).
   `await queryClient.ensureQueryData(builder)`, and the page hook reads the same builder with
   `useQuery` (`gameDetailLoader` / `useGameDetailPage`). When the page shows its own error
   state, the loader swallows the rejection: `.catch(() => undefined)` (`gamesOverviewLoader`).
+- One exception: the admin routes read the tablet game with `queryClient.fetchQuery`, so it
+  is fresh on every navigation, and the target of a redirect reuses that read
+  (`tabletGameLoader`, `startPageLoader`, [ADR 0004](../adr/0004-tablet-game-from-server.md)).
 - Data whose key changes inside the page uses `useQuery` alone (`usePlayerStats`, with
   `placeholderData: keepPreviousData`).
 - Prefetch goes through `queryClient.prefetchQuery` (`src/app/routeWarmup.ts`, scheduled by
@@ -229,7 +233,7 @@ Mappers are pure functions that turn backend DTO shapes into UI types.
   calls `normalizeGameData(data)`), or a page-private logic file under `src/pages/<Page>/lib/`.
 - JSX files (`src/pages/**/*.tsx`) and render-flow hooks (`src/pages/**/use*.ts`) receive the
   mapped result and import no mapper. Type imports are fine. Known exceptions:
-  - `useRoomRestore.ts` imports `toLobbyPlayers` and `useGamePlayers.ts` imports
+  - `startPageLoader.ts` imports `toLobbyPlayers` and `useGamePlayers.ts` imports
     `sortLobbyPlayers`; #194 decides them.
   - `useThrowHandler.ts` (`parseThrowValue`), `useUndoFlow.ts` (`normalizeGameData`) and
     `useGameSummaryPage.ts` (`applyOptimisticUndo`) call a mapper inside an event handler.

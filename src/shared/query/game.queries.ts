@@ -1,5 +1,5 @@
 import { queryOptions } from "@tanstack/react-query";
-import { getFinishedGame, getGameSettings, getGameThrows } from "@/shared/api/game";
+import { getFinishedGame, getGameSettings, getGameThrows, getTabletGame } from "@/shared/api/game";
 import { toLobbyPlayers } from "@/lib/game/lobbyPlayers";
 import { clientLogger } from "@/shared/services/browser/clientLogger";
 import { $gameData, getCachedGameSettings } from "@/shared/store";
@@ -22,6 +22,22 @@ export const gameQueries = {
               context: { finishedGameId: gameId },
               error,
             });
+          }
+          throw error;
+        }
+      },
+    }),
+
+  /** The tablet game, the one in the lobby or started. The admin routes follow it. */
+  tablet: () =>
+    queryOptions({
+      queryKey: ["game", "tablet"] as const,
+      queryFn: async ({ signal }) => {
+        try {
+          return await getTabletGame(signal);
+        } catch (error: unknown) {
+          if (!signal.aborted) {
+            clientLogger.error("tablet-game.fetch.failed", { error });
           }
           throw error;
         }

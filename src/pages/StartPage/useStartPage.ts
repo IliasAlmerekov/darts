@@ -1,25 +1,19 @@
-import { useCallback, useMemo, useRef } from "react";
+import { useCallback, useMemo } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useStore } from "@nanostores/react";
 import { useGamePlayers } from "./useGamePlayers";
 import { useCreateStartFlow } from "./useCreateStartFlow";
 import { useGuestFlow } from "./useGuestFlow";
 import { persistPlayerOrder, usePlayerOrderPersistence } from "./usePlayerOrderPersistence";
-import { resolveGameId, shouldRedirectToCurrentGame, useRoomRestore } from "./useRoomRestore";
 import { useStartPageError } from "./useStartPageError";
-import { $currentGameId, $invitation } from "@/shared/store";
+import { parseRouteGameId } from "@/lib/router/tabletGameRoute";
+import { $invitation } from "@/shared/store";
 import { leaveRoom } from "@/shared/api/room";
 import { toUserErrorMessage } from "@/lib/error/error-to-user-message";
 
 type GamePlayersResult = ReturnType<typeof useGamePlayers>;
 
-interface StartPageLatestState {
-  players: GamePlayersResult["players"];
-  appendOptimisticPlayer: GamePlayersResult["appendOptimisticPlayer"];
-  removeOptimisticPlayer: GamePlayersResult["removeOptimisticPlayer"];
-}
-
-export { persistPlayerOrder, resolveGameId, shouldRedirectToCurrentGame };
+export { persistPlayerOrder };
 
 interface UseStartPageResult {
   invitation: ReturnType<typeof useStore<typeof $invitation>>;
@@ -56,9 +50,8 @@ export function useStartPage(): UseStartPageResult {
   const { id: gameIdParam } = useParams<{ id?: string }>();
 
   const invitation = useStore($invitation);
-  const currentGameId = useStore($currentGameId);
 
-  const gameId = useMemo(() => resolveGameId(gameIdParam), [gameIdParam]);
+  const gameId = useMemo(() => parseRouteGameId(gameIdParam), [gameIdParam]);
   const {
     players,
     count: playerCount,
@@ -67,12 +60,6 @@ export function useStartPage(): UseStartPageResult {
   } = useGamePlayers(gameId);
 
   const { pageError, setPageError, clearPageError } = useStartPageError();
-  useRoomRestore({
-    gameIdParam,
-    invitationGameId: invitation?.gameId,
-    currentGameId,
-    navigate,
-  });
   const { playerOrder, handleDragEnd } = usePlayerOrderPersistence({
     gameId,
     players,
@@ -102,21 +89,8 @@ export function useStartPage(): UseStartPageResult {
     appendOptimisticPlayer,
   });
 
-  const latestStateRef = useRef<StartPageLatestState>({
-    players,
-    appendOptimisticPlayer,
-    removeOptimisticPlayer,
-  });
-
-  latestStateRef.current = {
-    players,
-    appendOptimisticPlayer,
-    removeOptimisticPlayer,
-  };
-
   const handleRemovePlayer = useCallback(
     async (playerId: number, activeGameId: number): Promise<void> => {
-      const { players, removeOptimisticPlayer, appendOptimisticPlayer } = latestStateRef.current;
       const removedPlayer = players.find((player) => player.id === playerId);
       removeOptimisticPlayer(playerId);
 
@@ -129,7 +103,7 @@ export function useStartPage(): UseStartPageResult {
         setPageError(toUserErrorMessage(error, "Could not remove player. Please try again."));
       }
     },
-    [setPageError],
+    [appendOptimisticPlayer, players, removeOptimisticPlayer, setPageError],
   );
 
   return {

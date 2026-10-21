@@ -8,6 +8,10 @@ A darts scoring app: players join a game, throw until they check out, and see wh
 The game a player takes part in right now. A player has at most one; joining another game replaces it.
 _Avoid_: active game
 
+**Tablet game**:
+The one game on the tablet that is in the lobby or started. A finished or aborted game is never the tablet game.
+_Avoid_: current game (for the tablet's game), active game
+
 **Lobby**:
 A game that players are joining and that has not started yet. There is at most one lobby at a time.
 _Avoid_: room, start page
