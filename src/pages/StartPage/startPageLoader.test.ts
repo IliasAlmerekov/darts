@@ -1,5 +1,7 @@
 // @vitest-environment jsdom
+import type { LoaderFunctionArgs } from "react-router-dom";
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { makeLoaderArgs } from "@/test/loaderArgs";
 import { gameQueries } from "@/shared/query/game.queries";
 import { queryClient } from "@/shared/query/queryClient";
 import { startPageLoader } from "./useRoomRestore";
@@ -42,14 +44,11 @@ vi.mock("@/shared/services/browser/clientLogger", () => ({
 
 // ── helpers ───────────────────────────────────────────────────────────────────
 
-function makeArgs(
-  id?: string,
-  signal?: AbortSignal,
-): { params: Record<string, string | undefined>; request: Request } {
-  return {
-    params: { id },
-    request: new Request(`http://localhost/start${id ? `/${id}` : ""}`, signal ? { signal } : {}),
-  };
+function makeArgs(id?: string, signal?: AbortSignal): LoaderFunctionArgs {
+  return makeLoaderArgs(
+    new Request(`http://localhost/start${id ? `/${id}` : ""}`, signal ? { signal } : {}),
+    { id },
+  );
 }
 
 function lobbyGame(gameId: number) {
