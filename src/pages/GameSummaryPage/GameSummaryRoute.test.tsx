@@ -40,7 +40,7 @@ function renderSummaryRoute(path = "/summary/42"): ReturnType<typeof render> {
 
 describe("GameSummaryPage route", () => {
   beforeEach(() => {
-    vi.clearAllMocks();
+    vi.resetAllMocks();
     queryClient.clear();
     resetGameStore();
   });
