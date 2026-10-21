@@ -7,12 +7,8 @@ import { act, renderHook } from "@testing-library/react";
 import type { DragEndEvent } from "@dnd-kit/core";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { updatePlayerOrder } from "@/shared/api/room";
+import type { OrderedPlayer } from "./lib/playerOrder";
 import { usePlayerOrderPersistence } from "./usePlayerOrderPersistence";
-
-interface OrderedPlayer {
-  id: number;
-  position: number | null;
-}
 
 function renderOrder(players: OrderedPlayer[]) {
   return renderHook(
