@@ -120,18 +120,18 @@ describe("mapAuthErrorMessage existing account", () => {
 });
 
 describe("mapAuthErrorMessage password minimum", () => {
-  it("shows the 8-character minimum when registration rejects a short password", () => {
+  it("shows the 6-character minimum when registration rejects a short password", () => {
     const result = mapAuthErrorMessage({
       flow: "registration",
       error: new ApiError("Validation failed", {
         status: 400,
         data: {
-          errors: { plainPassword: ["Your password should be at least 8 characters long."] },
+          errors: { plainPassword: ["Your password should be at least 6 characters long."] },
         },
       }),
     });
 
-    expect(result).toBe("Password must be at least 8 characters.");
+    expect(result).toBe("Password must be at least 6 characters.");
   });
 
   it("keeps the generic text for other registration password errors", () => {
