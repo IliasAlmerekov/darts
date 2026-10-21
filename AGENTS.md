@@ -145,6 +145,45 @@ Commits, PR titles and bodies, and issue comments carry the human author only: n
 `Co-Authored-By` trailer and no Claude or agent footer. This rule outranks the
 `triage` skill's AI disclaimer.
 
+## Review guidelines
+
+Review like the senior engineer who owns this app and gets paged when a game night breaks.
+Read the linked issue, every ADR the diff touches, and each `docs/convention/` file the
+table in `## Conventions` maps to the diff, then hold the change to them: a broken rule from
+those files, `## Backend contract`, or `## Scope` is a finding. Security review follows
+`SECURITY.md`.
+
+A finding names the file and line, the input or state that triggers it, and the wrong
+result the player or the tablet sees. A suspicion without that path goes in as a question.
+Report only what ESLint, Stylelint, TypeScript, knip, and the tests cannot catch; a short
+list of real defects is the goal.
+
+- **P0**: a lost or corrupted throw or game result, an access bypass, a leaked secret, or a
+  crash that blocks a running game.
+- **P1**: a wrong screen or score a user can reach, a contract break with the backend, a
+  behaviour change without a test, a lost accessibility path, or a weakened gate.
+- **P2**: a needless re-render or request, dead code left behind, a fix in one caller while
+  the defect sits in shared code.
+
+Check these on every diff:
+
+- **Contract.** A Valibot schema in `src/shared/api/` matches
+  `docs/backend-api-contract.json` at the same commit. A schema widened to `v.any()`,
+  `v.unknown()`, or an optional field the contract requires, so that a response passes, is
+  a P1. `docs/convention/api.md` lists the one open exception.
+- **Async lifecycle.** An effect that subscribes, starts a timer, opens an `EventSource`, or
+  sends a request cleans up on unmount and on dependency change. A request passes its
+  `signal`. A late response for a previous game or player never overwrites the current one.
+- **Tests prove the change.** Each changed test fails on the base code
+  (`npm run test:red-on-base`). It asserts what the user sees through Testing Library
+  queries by role and name. A new `/api` call has a route mock in the mocked e2e suite. A
+  test that only replays its own mocks proves nothing.
+- **Error paths.** Every failure reaches the user as a message or a recovery path, or goes
+  to `clientLogger`. A `catch` that drops the error is a P1.
+- **Gates.** A new `eslint-disable`, `@ts-ignore`, `@ts-expect-error`, a knip ignore, an
+  `as` cast on API data, or a loosened ESLint, Stylelint, TypeScript, or Vitest config is a
+  P1.
+
 ## Guardrails
 
 Ask the user first before you:
