@@ -224,6 +224,22 @@ describe("admin routes follow the tablet game", () => {
     expect(router.state.location.pathname).toBe("/game/3");
   });
 
+  it("should not let the admin layout retry a failed read on its own", async () => {
+    getTabletGameMock.mockRejectedValueOnce(new Error("network down"));
+    getTabletGameMock.mockRejectedValueOnce(new Error("network down"));
+    getTabletGameMock.mockResolvedValue(LOBBY_7);
+    const router = renderAdminRoutes(["/game/3"]);
+    expect(await screen.findByRole("button", { name: "Retry" })).toBeTruthy();
+
+    await act(async () => {
+      await router.navigate("/settings/3");
+    });
+
+    expect(await screen.findByRole("button", { name: "Retry" })).toBeTruthy();
+    expect(screen.queryByRole("heading", { name: /^Settings/ })).toBeNull();
+    expect(getTabletGameMock).toHaveBeenCalledTimes(2);
+  });
+
   it("should follow the tablet game once Retry succeeds", async () => {
     getTabletGameMock.mockRejectedValueOnce(new Error("network down"));
     getTabletGameMock.mockResolvedValue(STARTED_7);
