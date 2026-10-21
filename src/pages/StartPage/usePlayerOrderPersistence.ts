@@ -4,6 +4,7 @@ import { arrayMove } from "@dnd-kit/sortable";
 import { updatePlayerOrder } from "@/shared/api/room";
 import { toUserErrorMessage } from "@/lib/error/error-to-user-message";
 import { clientLogger } from "@/shared/services/browser/clientLogger";
+import { mergePlayerOrder, orderByPosition, type OrderedPlayer } from "./lib/playerOrder";
 import type { SetStartPageError } from "./useStartPageError";
 
 type UpdatePlayerOrderFn = (
@@ -19,11 +20,6 @@ interface PersistPlayerOrderParams {
   onError: (error: unknown) => void;
   onRollback: (order: number[]) => void;
   shouldRollback: () => boolean;
-}
-
-interface OrderedPlayer {
-  id: number;
-  position: number | null;
 }
 
 interface UsePlayerOrderPersistenceParams {
@@ -59,36 +55,6 @@ export async function persistPlayerOrder({
       onRollback(previousOrder);
     }
   }
-}
-
-function orderByPosition(players: OrderedPlayer[]): number[] {
-  return [...players]
-    .sort(
-      (a, b) => (a.position ?? Number.MAX_SAFE_INTEGER) - (b.position ?? Number.MAX_SAFE_INTEGER),
-    )
-    .map((player) => player.id);
-}
-
-/** Keeps the order the admin dragged, drops players who left, and appends new players. */
-function mergePlayerOrder(previousOrder: number[], players: OrderedPlayer[]): number[] {
-  const idsByPosition = orderByPosition(players);
-  if (previousOrder.length <= 0 || idsByPosition.length <= 0) {
-    return idsByPosition;
-  }
-
-  const knownIds = new Set(idsByPosition);
-  const preservedOrder = previousOrder.filter((playerId) => knownIds.has(playerId));
-  const newIds = idsByPosition.filter((playerId) => !preservedOrder.includes(playerId));
-  const nextOrder = [...preservedOrder, ...newIds];
-
-  if (
-    nextOrder.length === previousOrder.length &&
-    nextOrder.every((playerId, index) => playerId === previousOrder[index])
-  ) {
-    return previousOrder;
-  }
-
-  return nextOrder;
 }
 
 /**
