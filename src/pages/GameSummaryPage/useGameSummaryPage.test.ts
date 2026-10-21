@@ -7,7 +7,7 @@ import { createElement } from "react";
 import { QueryClientProvider, type QueryClient } from "@tanstack/react-query";
 import { createQueryClient, queryClient as appQueryClient } from "@/shared/query/queryClient";
 import { gameQueries } from "@/shared/query/game.queries";
-import { $lastFinishedGameId, setLastFinishedGameId } from "@/shared/store";
+import { ApiError } from "@/shared/api";
 import { gameSummaryLoader, useGameSummaryPage } from "./useGameSummaryPage";
 import { playSound } from "@/shared/services/browser/soundPlayer";
 import type { GameThrowsResponse, ScoreboardDelta, UndoAckResponse } from "@/types";
@@ -567,6 +567,22 @@ describe("useGameSummaryPage", () => {
     expect(navigateMock).toHaveBeenCalledWith("/start/77");
   });
 
+  it("should keep the room store when the rematch is rejected because the game is not the newest", async () => {
+    createRematchGameMock.mockRejectedValueOnce(
+      new ApiError("Conflict", { status: 409, data: { error: "GAME_NOT_NEWEST" } }),
+    );
+    const { result } = renderSummaryHook();
+
+    await act(async () => {
+      await result.current.handleBackToStart();
+    });
+
+    expect(resetRoomStoreMock).not.toHaveBeenCalled();
+    expect(setCurrentGameIdMock).not.toHaveBeenCalled();
+    expect(navigateMock).not.toHaveBeenCalled();
+    expect(result.current.error).not.toBeNull();
+  });
+
   it("should keep action handlers referentially stable when dependencies do not change", async () => {
     const { result } = renderSummaryHook();
     const initialHandleUndo = result.current.handleUndo;
@@ -674,17 +690,6 @@ describe("useGameSummaryPage", () => {
     expect(testQueryClient.getQueryData(["finishedGame", 42])).toBeUndefined();
   });
 
-  it("should stop offering the game as rematch source when undo succeeds", async () => {
-    setLastFinishedGameId(42);
-    const { result } = renderSummaryHook();
-
-    await act(async () => {
-      await result.current.handleUndo();
-    });
-
-    expect($lastFinishedGameId.get()).toBeNull();
-  });
-
   it("should keep the finishedGame entry when undo fails", async () => {
     testQueryClient.setQueryData(["finishedGame", 42], [finishedPlayer(1, "Alice")]);
     undoLastThrowMock.mockRejectedValueOnce(new Error("boom"));
@@ -752,14 +757,6 @@ describe("useGameSummaryPage", () => {
       await expect(
         gameSummaryLoader(makeLoaderArgs(new Request("http://x/"), { id: "42" })),
       ).resolves.toBeNull();
-    });
-
-    it("should make the summary's game the rematch source for the next room", async () => {
-      getFinishedGameMock.mockResolvedValueOnce([finishedPlayer(3, "Carol")]);
-
-      await gameSummaryLoader(makeLoaderArgs(new Request("http://x/"), { id: "42" }));
-
-      expect($lastFinishedGameId.get()).toBe(42);
     });
 
     it("should not fetch again when the game page already seeded the cache", async () => {

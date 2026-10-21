@@ -48,13 +48,13 @@ Rules:
 
 ## Naming
 
-| Concept            | Form                                     | Example                                                    |
-| ------------------ | ---------------------------------------- | ---------------------------------------------------------- |
-| Internal mutable   | `<name>Atom` (camelCase, no prefix)      | `currentGameIdAtom`, `gameDataAtom`, `errorAtom`           |
-| Public readable    | `$<name>` (`$` prefix)                   | `$currentGameId`, `$gameData`, `$lastFinishedGameId`       |
-| Computed atom      | `$<name>` (`$` prefix, same as readable) | `$gameSettings`                                            |
-| Action function    | verb-first, imperative, named by intent  | `setGameData`, `clearLastFinishedGameId`, `resetGameStore` |
-| Pure read function | verb-first, returns plain value          | `getCachedGameSettings(gameId)`, `getActiveGameId()`       |
+| Concept            | Form                                     | Example                                              |
+| ------------------ | ---------------------------------------- | ---------------------------------------------------- |
+| Internal mutable   | `<name>Atom` (camelCase, no prefix)      | `currentGameIdAtom`, `gameDataAtom`, `errorAtom`     |
+| Public readable    | `$<name>` (`$` prefix)                   | `$currentGameId`, `$gameData`, `$invitation`         |
+| Computed atom      | `$<name>` (`$` prefix, same as readable) | `$gameSettings`                                      |
+| Action function    | verb-first, imperative, named by intent  | `setGameData`, `resetRoomStore`, `resetGameStore`    |
+| Pure read function | verb-first, returns plain value          | `getCachedGameSettings(gameId)`, `getActiveGameId()` |
 
 ## Reading
 

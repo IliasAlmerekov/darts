@@ -61,7 +61,6 @@ const ADD_GUEST_ENDPOINT = (id: number) => `/room/${id}/guest`;
 // ---------------------------------------------------------------------------
 
 type CreateGamePayload = Partial<CreateGameSettingsPayload> & {
-  previousGameId?: number | undefined;
   playerIds?: number[];
   excludePlayerIds?: number[];
 };
@@ -83,8 +82,7 @@ export async function getInvitation(gameId: number, signal?: AbortSignal): Promi
 export async function createRoom(payload?: CreateGamePayload): Promise<RoomInvitation> {
   const hasPayload =
     payload !== undefined &&
-    (typeof payload.previousGameId === "number" ||
-      (Array.isArray(payload.playerIds) && payload.playerIds.length > 0) ||
+    ((Array.isArray(payload.playerIds) && payload.playerIds.length > 0) ||
       (Array.isArray(payload.excludePlayerIds) && payload.excludePlayerIds.length > 0) ||
       typeof payload.startScore === "number" ||
       typeof payload.doubleOut === "boolean" ||

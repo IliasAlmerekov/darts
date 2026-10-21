@@ -107,41 +107,6 @@ describe("game-session store: finished game summary", () => {
   );
 });
 
-// ─── Last finished game: the rematch source for the next room ───────────────
-
-describe("game-session store: last finished game", () => {
-  beforeEach(() => {
-    window.sessionStorage.clear();
-    vi.resetModules();
-  });
-
-  it("should start with no last finished game", async () => {
-    const roomStore = await import("./game-session");
-
-    expect(roomStore.$lastFinishedGameId.get()).toBeNull();
-  });
-
-  it("should keep the game set last", async () => {
-    const roomStore = await import("./game-session");
-
-    roomStore.setLastFinishedGameId(9);
-    roomStore.setLastFinishedGameId(5);
-
-    expect(roomStore.$lastFinishedGameId.get()).toBe(5);
-  });
-
-  it("should clear the last finished game only for the same game id", async () => {
-    const roomStore = await import("./game-session");
-    roomStore.setLastFinishedGameId(9);
-
-    roomStore.clearLastFinishedGameId(5);
-    expect(roomStore.$lastFinishedGameId.get()).toBe(9);
-
-    roomStore.clearLastFinishedGameId(9);
-    expect(roomStore.$lastFinishedGameId.get()).toBeNull();
-  });
-});
-
 // ─── Ticket 4 — store-as-cache contract ──────────────────────────────────────
 // $currentGameId is cache/preload only; setting the same value must be a no-op
 // so that URL-derived gameId always remains the authoritative source.

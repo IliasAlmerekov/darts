@@ -42,12 +42,10 @@ import {
 import { useStartPage } from "./useStartPage";
 import { queryClient } from "@/shared/query/queryClient";
 import {
-  clearLastFinishedGameId,
   resetRoomStore,
   resetGameStore,
   resetPreCreateGameSettings,
   setInvitation,
-  setLastFinishedGameId,
   setPreCreateGameSettings,
 } from "@/shared/store";
 import {
@@ -180,7 +178,6 @@ describe("useStartPage action guards", () => {
 
   afterEach(() => {
     vi.unstubAllGlobals();
-    clearLastFinishedGameId(77);
     sessionStorage.clear();
     resetRoomStore();
     resetGameStore();
@@ -251,7 +248,6 @@ describe("useStartPage action guards", () => {
   });
 
   it("should prevent duplicate createRoom calls while first request is pending", async () => {
-    setLastFinishedGameId(77);
     setPreCreateGameSettings(buildGameSettingsResponse({ doubleOut: true }));
     const pending = deferred<{ gameId: number; invitationLink: string }>();
     vi.mocked(createRoom).mockReturnValueOnce(pending.promise);
@@ -269,7 +265,6 @@ describe("useStartPage action guards", () => {
 
     expect(createRoom).toHaveBeenCalledTimes(1);
     expect(createRoom).toHaveBeenCalledWith({
-      previousGameId: 77,
       startScore: 501,
       doubleOut: true,
       tripleOut: false,
@@ -286,20 +281,6 @@ describe("useStartPage action guards", () => {
       invitationLink: "/invite/55",
     });
     expect(navigateMock).toHaveBeenCalledWith("/start/55");
-  });
-
-  it("should not offer a finished game the admin only viewed as the rematch source", async () => {
-    queryClient.setQueryData(["finishedGame", 60], []);
-    vi.mocked(createRoom).mockResolvedValueOnce({ gameId: 61, invitationLink: "/invite/61" });
-
-    const { result } = renderHook(() => useStartPage(), {
-      wrapper: makeWrapper("/start"),
-    });
-    await act(async () => {
-      await result.current.handleCreateRoom();
-    });
-
-    expect(createRoom).toHaveBeenCalledWith(expect.objectContaining({ previousGameId: undefined }));
   });
 
   it("should show username taken suggestions when guest nickname already exists in current game", async () => {
