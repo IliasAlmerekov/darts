@@ -12,6 +12,7 @@ import { act, renderHook, waitFor } from "@testing-library/react";
 import { createElement, type ReactNode } from "react";
 import { QueryClientProvider, type QueryClient } from "@tanstack/react-query";
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { makeLoaderArgs } from "@/test/loaderArgs";
 import type { FinishedPlayerResponse } from "@/types";
 import {
   buildExpectedPodiumPlaceholder,
@@ -70,7 +71,7 @@ describe("gameDetailLoader", () => {
     const players = [buildFinishedPlayer({ username: "Alice", roundAverage: 75 })];
     getFinishedGameMock.mockResolvedValue(players);
 
-    await gameDetailLoader({ params: { id: "42" }, request: new Request("http://localhost/") });
+    await gameDetailLoader(makeLoaderArgs(new Request("http://localhost/"), { id: "42" }));
 
     expect(getFinishedGameMock).toHaveBeenCalledWith(42, expect.any(AbortSignal));
     expect(appQueryClient.getQueryData(gameQueries.finished(42).queryKey)).toEqual(players);
@@ -79,7 +80,7 @@ describe("gameDetailLoader", () => {
   it("should make no request when the summary page already cached the finished game", async () => {
     appQueryClient.setQueryData(gameQueries.finished(42).queryKey, [buildFinishedPlayer()]);
 
-    await gameDetailLoader({ params: { id: "42" }, request: new Request("http://localhost/") });
+    await gameDetailLoader(makeLoaderArgs(new Request("http://localhost/"), { id: "42" }));
 
     expect(getFinishedGameMock).not.toHaveBeenCalled();
   });
@@ -88,7 +89,7 @@ describe("gameDetailLoader", () => {
     setLastFinishedGameId(7);
     getFinishedGameMock.mockResolvedValue([buildFinishedPlayer()]);
 
-    await gameDetailLoader({ params: { id: "42" }, request: new Request("http://localhost/") });
+    await gameDetailLoader(makeLoaderArgs(new Request("http://localhost/"), { id: "42" }));
 
     expect($lastFinishedGameId.get()).toBe(7);
     clearLastFinishedGameId(7);
@@ -96,7 +97,7 @@ describe("gameDetailLoader", () => {
 
   it("should throw a 400 Response when the route id is invalid", async () => {
     await expect(
-      gameDetailLoader({ params: { id: "invalid" }, request: new Request("http://localhost/") }),
+      gameDetailLoader(makeLoaderArgs(new Request("http://localhost/"), { id: "invalid" })),
     ).rejects.toBeInstanceOf(Response);
 
     expect(getFinishedGameMock).not.toHaveBeenCalled();
@@ -106,7 +107,7 @@ describe("gameDetailLoader", () => {
     getFinishedGameMock.mockRejectedValueOnce(new Error("network down"));
 
     await expect(
-      gameDetailLoader({ params: { id: "42" }, request: new Request("http://localhost/") }),
+      gameDetailLoader(makeLoaderArgs(new Request("http://localhost/"), { id: "42" })),
     ).rejects.toThrow("network down");
   });
 });
