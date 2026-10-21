@@ -4,9 +4,12 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import styles from "./GameSummaryPage.module.css";
 import type { WinnerPlayerProps } from "@/types";
 import GameSummaryPage from ".";
+import type { SummarySettings } from "./useGameSummaryPage";
 
 type GameSummaryHookMockResult = {
   error: string | null;
+  settings: SummarySettings;
+  loadSettings: () => Promise<void>;
   starting: boolean;
   podiumData: WinnerPlayerProps[];
   standings: WinnerPlayerProps[];
@@ -21,6 +24,8 @@ const buildSummaryHookMockResult = (
   overrides: Partial<GameSummaryHookMockResult> = {},
 ): GameSummaryHookMockResult => ({
   error: null,
+  settings: { status: "ready", startScore: 301 },
+  loadSettings: vi.fn(async () => {}),
   starting: false,
   podiumData: [],
   standings: [],
@@ -36,10 +41,6 @@ const useGameSummaryPageMock = vi.fn(() => buildSummaryHookMockResult());
 
 vi.mock("./useGameSummaryPage", () => ({
   useGameSummaryPage: () => useGameSummaryPageMock(),
-}));
-
-vi.mock("@nanostores/react", () => ({
-  useStore: () => ({ startScore: 301 }),
 }));
 
 vi.mock("@/shared/ui/overview-player-item", () => ({

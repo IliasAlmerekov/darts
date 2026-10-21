@@ -23,8 +23,16 @@ import { gameQueries } from "@/shared/query/game.queries";
 import { queryClient } from "@/shared/query/queryClient";
 import { buildGameSummaryStandings } from "./lib/gameSummaryStandings";
 
+/** Settings the summary needs before it can render the standings. */
+export type SummarySettings =
+  | { status: "loading" }
+  | { status: "error"; message: string }
+  | { status: "ready"; startScore: number };
+
 interface UseGameSummaryPageResult extends FinishedGameStandings {
   error: string | null;
+  settings: SummarySettings;
+  loadSettings: () => Promise<void>;
   starting: boolean;
   loadSummary: () => Promise<void>;
   handleUndo: () => Promise<void>;
@@ -45,8 +53,8 @@ function parseGameId(param: string | undefined): number | null {
  * React Router 6 loader
  * Registers the route: loader: gameSummaryLoader
  * Returns null without fetching when the route has no valid game id.
- * Fills the `['finishedGame', id]` query before the page renders and records the game as
- * the session's last finished game.
+ * Fills the `['finishedGame', id]` and the game settings queries before the page renders and
+ * records the game as the session's last finished game.
  */
 export async function gameSummaryLoader({ params }: LoaderFunctionArgs): Promise<null> {
   const gameId = parseGameId(params.id);
@@ -57,7 +65,10 @@ export async function gameSummaryLoader({ params }: LoaderFunctionArgs): Promise
 
   // A failed fetch is logged by the query function. The page then mounts, fetches again and
   // shows its Retry action, so the failure does not reach the route error boundary.
-  await queryClient.ensureQueryData(gameQueries.finished(gameId)).catch(() => undefined);
+  await Promise.all([
+    queryClient.ensureQueryData(gameQueries.finished(gameId)).catch(() => undefined),
+    queryClient.ensureQueryData(gameQueries.settings(gameId)).catch(() => undefined),
+  ]);
   // The summary only follows a game the session played, unlike game detail.
   setLastFinishedGameId(gameId);
   return null;
@@ -97,11 +108,45 @@ export function useGameSummaryPage(): UseGameSummaryPageResult {
     [finishedGameIdFromRoute],
   );
 
+  const isRouteGameQueryEnabled =
+    finishedGameIdFromRoute !== null && finishedGameIdFromRoute !== releasedGameId;
   const summaryQuery = useQuery({
     ...gameQueries.finished(finishedGameIdFromRoute ?? 0),
-    enabled: finishedGameIdFromRoute !== null && finishedGameIdFromRoute !== releasedGameId,
+    enabled: isRouteGameQueryEnabled,
   });
   const { refetch } = summaryQuery;
+  const settingsQuery = useQuery({
+    ...gameQueries.settings(finishedGameIdFromRoute ?? 0),
+    enabled: isRouteGameQueryEnabled,
+    // A finished game's settings do not change, so the copy the game page left in the game
+    // store is used without a second request.
+    staleTime: Infinity,
+  });
+  const { refetch: refetchSettings } = settingsQuery;
+  const startScore = settingsQuery.data?.startScore;
+
+  let settings: SummarySettings;
+  if (typeof startScore === "number" && Number.isFinite(startScore) && startScore > 0) {
+    settings = { status: "ready", startScore };
+  } else if (settingsQuery.fetchStatus === "fetching") {
+    settings = { status: "loading" };
+  } else if (settingsQuery.error) {
+    settings = {
+      status: "error",
+      message: toUserErrorMessage(settingsQuery.error, "Could not load game settings."),
+    };
+  } else {
+    settings = {
+      status: "error",
+      message: "Could not render summary because start score is missing.",
+    };
+  }
+
+  const loadSettings = useCallback(async (): Promise<void> => {
+    // refetch() runs even on a disabled query, so an invalid route id must not reach it.
+    if (finishedGameIdFromRoute === null) return;
+    await refetchSettings();
+  }, [finishedGameIdFromRoute, refetchSettings]);
 
   const error =
     actionError ??
@@ -253,6 +298,8 @@ export function useGameSummaryPage(): UseGameSummaryPageResult {
 
   return {
     error,
+    settings,
+    loadSettings,
     starting,
     podiumData,
     standings,
