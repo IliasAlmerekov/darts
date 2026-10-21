@@ -123,6 +123,7 @@ describe("runJulesReview", () => {
     });
     expect(create.body.prompt).toContain("+const c = 4;");
     expect(create.body.prompt).toContain('"evidence"');
+    expect(create.body.prompt).toContain(".jules/review.json");
     expect(create.body).not.toHaveProperty("automationMode");
 
     const posted = calls.find((call) => call.key.endsWith("/pulls/7/reviews"));
@@ -152,6 +153,7 @@ describe("runJulesReview", () => {
       findings: [
         finding("Not run", 11, { command: "npx vitest run src/fake.test.ts", exitCode: 1 }),
         finding("Wrong exit code", 11, { command: "npm test", exitCode: 2 }),
+        finding("Part of a run", 11, { command: "npx vitest run a.test.ts", exitCode: 1 }),
         finding("Passing command", 11, { command: "npm run lint", exitCode: 0 }),
         finding("Wrong quote", 10, { quote: "const a = 2;" }),
         finding("No evidence", 13),
@@ -166,6 +168,7 @@ describe("runJulesReview", () => {
     };
     const runs = [
       { command: "npm test", output: "", exitCode: 1 },
+      { command: "npx vitest run a.test.ts b.test.ts", output: "", exitCode: 1 },
       { command: "npm run lint", output: "", exitCode: 0 },
       { command: "npm run typecheck", output: "TS2345", exitCode: 2 },
     ];
@@ -184,7 +187,7 @@ describe("runJulesReview", () => {
       status: "reviewed",
       inline: 0,
       general: 1,
-      unverified: 5,
+      unverified: 6,
     });
 
     const posted = calls.find((call) => call.key.endsWith("/pulls/7/reviews"));
@@ -195,6 +198,7 @@ describe("runJulesReview", () => {
     for (const title of [
       "Not run",
       "Wrong exit code",
+      "Part of a run",
       "Passing command",
       "Wrong quote",
       "No evidence",
@@ -299,7 +303,10 @@ describe("runJulesReview", () => {
       [`POST ${GITHUB}/repos/acme/darts/issues/7/comments`]: () => json({ id: 2 }),
     });
 
-    await expect(run(fetch, { maxPolls: 3 })).resolves.toMatchObject({ status: "failed" });
+    await expect(run(fetch, { maxPolls: 3 })).resolves.toMatchObject({
+      status: "failed",
+      reason: expect.stringContaining("last state IN_PROGRESS"),
+    });
     expect(fetch.mock.calls.filter(([url]) => url === `${JULES}/sessions/42`)).toHaveLength(3);
   });
 
@@ -380,21 +387,37 @@ describe("extractReview", () => {
     });
   });
 
-  it("reads a review that Jules wrote into a change set", () => {
+  it("reads the review file from a change set and ignores other changed files", () => {
     const patch = [
+      "diff --git a/src/score.ts b/src/score.ts",
+      "--- a/src/score.ts",
+      "+++ b/src/score.ts",
+      "@@ -1,1 +1,1 @@",
+      '-{"summary": "Not this one.", "findings": []}',
+      '+{"summary": "Nor this one.", "findings": []}',
+      "diff --git a/.jules/review.json b/.jules/review.json",
+      "new file mode 100644",
       "--- /dev/null",
-      "+++ b/review.md",
-      "@@ -0,0 +1,3 @@",
-      "+<jules-review>",
-      '+{"summary": "From patch.", "findings": []}',
-      "+</jules-review>",
+      "+++ b/.jules/review.json",
+      "@@ -0,0 +1,4 @@",
+      "+{",
+      '+  "summary": "From the file.",',
+      '+  "findings": []',
+      "+}",
     ].join("\n");
 
     const review = extractReview([
+      {
+        agentMessaged: {
+          agentMessage:
+            '<jules-review>{"summary": "Older message.", "findings": []}</jules-review>',
+        },
+      },
       { artifacts: [{ changeSet: { gitPatch: { unidiffPatch: patch } } }] },
+      { agentMessaged: { agentMessage: "Done." } },
     ]);
 
-    expect(review).toEqual({ summary: "From patch.", findings: [], dropped: 0 });
+    expect(review).toEqual({ summary: "From the file.", findings: [], dropped: 0 });
   });
 
   it("returns null when no block parses", () => {

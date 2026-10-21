@@ -1,9 +1,13 @@
 name: Jules review
 
-# One review per PR: when it opens, reopens, or leaves draft. Later pushes to the branch
-# do not start a new session.
+# A review when a PR opens, reopens, or leaves draft. Later pushes to the branch do not start
+# a new session; reopening the PR asks for a fresh review.
+#
+# pull_request_target runs this file and scripts/jules-review.mjs from the base branch, so a
+# PR cannot change the code that holds JULES_API_KEY and the write token. The job reads the PR
+# only through git diff and never runs its code.
 on:
-  pull_request:
+  pull_request_target:
     types:
       - opened
       - reopened
@@ -17,11 +21,12 @@ permissions: {}
 
 jobs:
   review:
-    # Secrets are not passed to PRs from forks or to Dependabot runs, so skip both.
+    # Jules starts from a branch of this repository, so fork PRs are skipped. Dependabot PRs
+    # are skipped by author, since a human who reopens one becomes the actor.
     if: >-
       github.event.pull_request.draft == false &&
       github.event.pull_request.head.repo.full_name == github.repository &&
-      github.actor != 'dependabot[bot]'
+      github.event.pull_request.user.login != 'dependabot[bot]'
     runs-on: ubuntu-latest
     timeout-minutes: 60
     permissions:
@@ -43,7 +48,9 @@ jobs:
         env:
           BASE_SHA: ${{ github.event.pull_request.base.sha }}
           HEAD_SHA: ${{ github.event.pull_request.head.sha }}
-        run: git diff --no-color --no-ext-diff "$BASE_SHA...$HEAD_SHA" > "$RUNNER_TEMP/pr.diff"
+        run: |
+          git fetch --no-tags origin "$HEAD_SHA"
+          git diff --no-color --no-ext-diff "$BASE_SHA...$HEAD_SHA" > "$RUNNER_TEMP/pr.diff"
 
       - name: Review with Jules
         env:

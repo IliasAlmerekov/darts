@@ -4,7 +4,7 @@
 // does not reliably rebuild the PR's exact diff.
 // Jules API: https://developers.google.com/jules/api/reference/rest
 // The script creates a session, polls GET /v1alpha/sessions/{id} until it ends, reads the
-// review block from the session's activities, and checks each finding's evidence against the
+// review Jules wrote to .jules/review.json from the session's activities, and checks each finding's evidence against the
 // session's command log and the diff. It posts a PR review: verified findings on diff lines
 // become inline comments, the rest go into the review body, unverified ones in their own list.
 import { readFileSync } from "node:fs";
@@ -13,6 +13,7 @@ import { pathToFileURL } from "node:url";
 
 const JULES_API = "https://jules.googleapis.com/v1alpha";
 const GITHUB_API = "https://api.github.com";
+const REVIEW_FILE = ".jules/review.json";
 const REVIEW_START = "<jules-review>";
 const REVIEW_END = "</jules-review>";
 const COMMENT_MARKER = "<!-- jules-review -->";
@@ -98,15 +99,15 @@ const buildPrompt = ({ repository, prNumber, baseRef, headRef, diff }) => {
 
   return `Review pull request #${prNumber} in ${repository}. The branch \`${headRef}\` is checked out; it merges into \`${baseRef}\`.
 
-Review only the changes in the diff below. Read other files in the repository when a change depends on them. You may install dependencies, run commands and tests, and write temporary test files to reproduce a problem; delete those files before you finish. Do not commit, do not open a pull request, and do not ask questions: nobody will answer.
+This task is a code review, not a fix. Your deliverable is one new file, \`${REVIEW_FILE}\`, and nothing else: do not edit any existing file, even to fix a bug you find; report the bug instead. Do not ask questions: nobody will answer.
+
+Review only the changes in the diff below. Read other files in the repository when a change depends on them. You may install dependencies, run commands and tests, and write temporary test files to reproduce a problem. Delete every temporary file before you finish, so the only change left is \`${REVIEW_FILE}\`.
 
 Report bugs, security problems, broken edge cases, missing tests, and breaches of the rules in AGENTS.md and docs/convention/. Skip points a linter or formatter catches.
 
-Finish with one message that holds only this block, with valid JSON inside:
+Write the review to \`${REVIEW_FILE}\` as JSON of this shape, then end the session:
 
-${REVIEW_START}
 {"summary": "Two sentences at most.", "findings": [{"path": "src/a.ts", "line": 12, "severity": "major", "title": "One line", "body": "What breaks, when, and the fix.", "evidence": {"command": "npx vitest run src/a.test.ts", "exitCode": 1}}]}
-${REVIEW_END}
 
 - "path" is relative to the repository root, as in the diff header.
 - "line" is the line number in the new version of the file, on a line the diff adds or shows as context.
@@ -147,20 +148,17 @@ export const parseNewLines = (diff) => {
   return lines;
 };
 
-// Text fields where Jules may have written the review block. A change set counts too, in
-// case Jules wrote the block to a file despite the prompt; only its added lines are read.
-const activityTexts = (activity) =>
-  [
-    activity.agentMessaged?.agentMessage,
-    activity.progressUpdated?.description,
-    ...(activity.artifacts ?? []).map((artifact) =>
-      artifact.changeSet?.gitPatch?.unidiffPatch
-        ?.split("\n")
-        .filter((row) => row.startsWith("+") && !row.startsWith("+++"))
-        .map((row) => row.slice(1))
-        .join("\n"),
-    ),
-  ].filter((text) => typeof text === "string");
+// The review file's content in a change set, read from the patch's new-file lines.
+const reviewFileContent = (patch) => {
+  const lines = parseNewLines(patch).get(REVIEW_FILE);
+  return lines === undefined ? null : [...lines.values()].join("\n");
+};
+
+// Messages where Jules may have put a <jules-review> block instead of writing the file.
+const activityMessages = (activity) =>
+  [activity.agentMessaged?.agentMessage, activity.progressUpdated?.description].filter(
+    (text) => typeof text === "string",
+  );
 
 const normalizeEvidence = (raw) => ({
   command:
@@ -181,18 +179,10 @@ const normalizeFinding = (raw) => {
   };
 };
 
-const parseReviewBlock = (text) => {
-  const start = text.lastIndexOf(REVIEW_START);
-  const end = text.indexOf(REVIEW_END, start);
-  if (start === -1 || end === -1) return null;
-
-  const inner = text
-    .slice(start + REVIEW_START.length, end)
-    .trim()
-    .replace(/^```(?:json)?\s*|\s*```$/g, "");
+const parseReviewJson = (text) => {
   let parsed;
   try {
-    parsed = JSON.parse(inner);
+    parsed = JSON.parse(text.trim().replace(/^```(?:json)?\s*|\s*```$/g, ""));
   } catch {
     return null;
   }
@@ -206,10 +196,28 @@ const parseReviewBlock = (text) => {
   };
 };
 
-// Returns the newest review block that parses, or null when Jules wrote none.
+const parseReviewBlock = (text) => {
+  const start = text.lastIndexOf(REVIEW_START);
+  const end = text.indexOf(REVIEW_END, start);
+  return start === -1 || end === -1
+    ? null
+    : parseReviewJson(text.slice(start + REVIEW_START.length, end));
+};
+
+// Returns the newest review that parses, or null when Jules wrote none. The review file in a
+// change set comes first; a <jules-review> block in a message is the fallback.
 export const extractReview = (activities) => {
-  for (const activity of [...activities].reverse()) {
-    for (const text of activityTexts(activity)) {
+  const newestFirst = [...activities].reverse();
+  for (const activity of newestFirst) {
+    for (const artifact of activity.artifacts ?? []) {
+      const patch = artifact.changeSet?.gitPatch?.unidiffPatch;
+      const content = typeof patch === "string" ? reviewFileContent(patch) : null;
+      const review = content === null ? null : parseReviewJson(content);
+      if (review) return review;
+    }
+  }
+  for (const activity of newestFirst) {
+    for (const text of activityMessages(activity)) {
       const review = parseReviewBlock(text);
       if (review) return review;
     }
@@ -217,7 +225,14 @@ export const extractReview = (activities) => {
   return null;
 };
 
-const squashSpaces = (text) => text.trim().replace(/\s+/g, " ");
+// Jules runs commands from its checkout, sometimes behind `cd <dir> &&` or `cd <dir>;`. Only
+// those prefixes are stripped; the rest must match exactly, so evidence naming one test file
+// does not match a run that covered more.
+const normalizeCommand = (text) =>
+  text
+    .trim()
+    .replace(/\s+/g, " ")
+    .replace(/^(?:cd \S+ ?(?:&&|;) ?)+/, "");
 
 // A fence longer than any backtick run in the text, so command output cannot close it.
 const codeBlock = (text) => {
@@ -232,7 +247,7 @@ const outputTail = (output) => {
 
 // Returns the proof text for a finding, or null when its evidence does not check out. A
 // command counts only if this session's log holds a run of it with the same non-zero exit
-// code; Jules may wrap a command (for example with `cd`), so the logged one may contain it.
+// code.
 // A quote counts only if its lines match the diff's new-file lines from the finding's line on.
 const verifyFinding = (finding, newLines, runs) => {
   const { command, exitCode, quote } = finding.evidence;
@@ -240,7 +255,7 @@ const verifyFinding = (finding, newLines, runs) => {
     const run = runs.find(
       (candidate) =>
         candidate.exitCode === exitCode &&
-        squashSpaces(candidate.command).includes(squashSpaces(command)),
+        normalizeCommand(candidate.command) === normalizeCommand(command),
     );
     if (run) {
       const output = outputTail(run.output);
@@ -308,6 +323,7 @@ const requireEnv = (env, names) => {
 
 const waitForSession = async ({ jules, name, sleep, pollMs, maxPolls, log }) => {
   let failures = 0;
+  let lastState;
   for (let poll = 0; poll < maxPolls; poll += 1) {
     await sleep(pollMs);
     let session;
@@ -320,10 +336,12 @@ const waitForSession = async ({ jules, name, sleep, pollMs, maxPolls, log }) => 
       log(`Polling ${name} failed (${failures}/${MAX_POLL_FAILURES}): ${error.message}`);
       continue;
     }
-    if (DONE_STATES.has(session.state)) return session;
+    if (session.state !== lastState) log(`Session state: ${session.state}`);
+    lastState = session.state;
+    if (DONE_STATES.has(session.state)) return { finished: session, lastState };
     if (session.state === "AWAITING_PLAN_APPROVAL") await jules.approvePlan(name);
   }
-  return null;
+  return { finished: null, lastState };
 };
 
 export const runJulesReview = async ({
@@ -372,7 +390,7 @@ export const runJulesReview = async ({
   });
   log(`Jules session ${session.name} started: ${session.url ?? "no URL returned"}`);
 
-  const finished = await waitForSession({
+  const { finished, lastState } = await waitForSession({
     jules,
     name: session.name,
     sleep,
@@ -386,7 +404,7 @@ export const runJulesReview = async ({
   if (finished === null || finished.state === "FAILED") {
     const reason =
       finished === null
-        ? `no result after ${Math.round((pollMs * maxPolls) / 60_000)} minutes`
+        ? `no result after ${Math.round((pollMs * maxPolls) / 60_000)} minutes, last state ${lastState ?? "unknown"}`
         : ((await jules.listActivities(session.name)).findLast((activity) => activity.sessionFailed)
             ?.sessionFailed.reason ?? "the session failed without a reason");
     await github.postComment(
