@@ -86,7 +86,9 @@ Declare every env var in `src/vite-env.d.ts` (`ImportMetaEnv`) and read it direc
 
 Validate `Number(...)` and `parseInt(..., 10)` results before use.
 
-- Route params: validate the numeric conversion and accept `0` when valid.
+- Route params: validate the numeric conversion and accept `0` when valid. A game id in an
+  admin route goes through `parseRouteGameId`, which accepts positive safe integers only
+  ([ADR 0004](../adr/0004-tablet-game-from-server.md)).
 - Check numbers with `value !== undefined` / `value !== null`, not truthiness, so `0`
   survives.
 - `??` defaults only for constant fallbacks with explicit meaning; missing domain data

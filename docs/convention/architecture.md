@@ -163,11 +163,13 @@ Rules:
   `withSuspense(...)` helper. There is no single top-level `<Suspense>` for all routes.
 - Every `<Route>` carries an explicit `errorElement={<ErrorBoundary />}`. There is no
   single global error boundary outside the router.
-- React Router 7 loaders fetch route data (`startPageLoader`, `gameDetailLoader`,
-  `gameSummaryLoader`, `gamesOverviewLoader`). New page-level data fetches go through a
+- React Router 7 loaders fetch route data (`startPageLoader`, `tabletGameLoader`,
+  `gameDetailLoader`, `gameSummaryLoader`, `gamesOverviewLoader`). New page-level data fetches go through a
   loader, not `useEffect` after mount. The loader fills the query cache with
   `queryClient.ensureQueryData(...)` and the page reads the same key with `useQuery`
-  ([ADR 0001](../adr/0001-tanstack-query-for-server-reads.md)). Data whose key changes
+  ([ADR 0001](../adr/0001-tanstack-query-for-server-reads.md)). The tablet game is the
+  exception: its loaders call `fetchQuery` to read it fresh
+  ([ADR 0004](../adr/0004-tablet-game-from-server.md)). Data whose key changes
   inside the page, such as pagination, uses `useQuery` alone. So does data that
   depends on no route param and must show its own loading state before the first answer,
   such as the Waiting room's polled current game and the Player profile: ADR 0001 keeps
