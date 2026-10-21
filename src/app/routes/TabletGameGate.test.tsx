@@ -13,7 +13,7 @@ vi.mock("@/shared/api/room", () => ({
 import { act, fireEvent, render, screen } from "@testing-library/react";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { createMemoryRouter, RouterProvider, useLocation } from "react-router-dom";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { getGameThrows, getTabletGame, type TabletGameResponse } from "@/shared/api/game";
 import { getInvitation } from "@/shared/api/room";
 import { startPageLoader } from "@/pages/StartPage/startPageLoader";
@@ -77,6 +77,7 @@ function renderAdminRoutes(entries: string[]): ReturnType<typeof createMemoryRou
         hydrateFallbackElement: <UniversalSkeleton />,
         element: gated("Game"),
       },
+      { path: "/summary/:id", element: <StubPage name="Summary" /> },
     ],
     { initialEntries: entries, initialIndex: entries.length - 1 },
   );
@@ -151,12 +152,13 @@ describe("admin routes follow the tablet game", () => {
       await expectPage(page);
     });
 
-    // #202: a game id in the URL never leaves the started game.
-    it("should land /start on the started game and offer no Start action", async () => {
+    // #202: a game id in the URL never leaves the started game. The start page, and with it
+    // the Start action, never renders: its loader redirects before loading the lobby.
+    it("should land /start on the started game without loading the lobby", async () => {
       renderAdminRoutes(["/start"]);
 
       await expectPage("Game /game/7");
-      expect(screen.queryByRole("button", { name: "Start" })).toBeNull();
+      expect(screen.queryByRole("heading", { name: /^Start/ })).toBeNull();
       expect(getGameThrowsMock).not.toHaveBeenCalled();
     });
   });
@@ -272,5 +274,54 @@ describe("navigation after a hand-typed settings URL", () => {
 
     expect(screen.getByRole("link", { name: "Game" }).getAttribute("href")).toBe("/game/7");
     expect(screen.getByRole("link", { name: "Settings" }).getAttribute("href")).toBe("/settings/7");
+  });
+});
+
+describe("nav links after the tablet game changed outside the admin layout", () => {
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  it("should read the tablet game again when the layout comes back", async () => {
+    vi.useFakeTimers({ toFake: ["Date"] });
+    getTabletGameMock.mockResolvedValue(STARTED_7);
+    const router = renderAdminRoutes(["/statistics"]);
+    await expectPage("Statistics /statistics");
+    await vi.waitFor(() => {
+      expect(screen.getByRole("link", { name: "Game" }).getAttribute("href")).toBe("/game/7");
+    });
+
+    await act(async () => {
+      await router.navigate("/summary/7");
+    });
+    await expectPage("Summary /summary/7");
+    getTabletGameMock.mockResolvedValue(NO_TABLET_GAME);
+    vi.setSystemTime(Date.now() + 60_000);
+    await act(async () => {
+      await router.navigate("/statistics");
+    });
+
+    await expectPage("Statistics /statistics");
+    await vi.waitFor(() => {
+      expect(screen.getByRole("link", { name: "Game" }).getAttribute("href")).toBe("/start");
+    });
+    expect(screen.getByRole("link", { name: "Settings" }).getAttribute("href")).toBe("/settings");
+  });
+
+  it("should not read the tablet game twice when a route loader has just read it", async () => {
+    getTabletGameMock.mockResolvedValue(LOBBY_7);
+    const router = renderAdminRoutes(["/game/3"]);
+    await expectPage("Start /start/7");
+    getTabletGameMock.mockClear();
+
+    await act(async () => {
+      await router.navigate("/summary/7");
+    });
+    await act(async () => {
+      await router.navigate("/settings/7");
+    });
+
+    await expectPage("Settings /settings/7");
+    expect(getTabletGameMock).toHaveBeenCalledTimes(1);
   });
 });
