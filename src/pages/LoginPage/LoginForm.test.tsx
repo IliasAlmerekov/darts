@@ -88,3 +88,11 @@ describe("LoginForm banners", () => {
     expect(region.textContent).toBe("Saved");
   });
 });
+
+describe("LoginForm email placeholder", () => {
+  it("shows a @db-n.com address as the email placeholder", () => {
+    renderForm({});
+
+    expect(screen.getByLabelText<HTMLInputElement>(/^email/i).placeholder).toBe("name@db-n.com");
+  });
+});

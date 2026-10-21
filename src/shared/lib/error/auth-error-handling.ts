@@ -2,6 +2,7 @@ import { ApiError, NetworkError, UnauthorizedError } from "@/shared/api";
 import type { InvitationError } from "@/shared/api/auth";
 import { isRecord } from "@/lib/guards/guards";
 import { PASSWORD_MIN_LENGTH } from "@/lib/auth/password";
+import { REGISTRATION_EMAIL_DOMAIN } from "@/lib/auth/email";
 
 type AuthFlow = "login" | "registration";
 
@@ -11,6 +12,7 @@ const AUTH_ERROR_MESSAGES = {
   invalidCredentials: "Incorrect email or password.",
   invalidEmailLogin: "Incorrect email address.",
   invalidEmailRegistration: "Please enter a valid email address.",
+  emailDomainRegistration: `Only ${REGISTRATION_EMAIL_DOMAIN} email addresses can register.`,
   invalidPasswordLogin: "Incorrect password.",
   invalidPasswordRegistration: "Password is invalid.",
   passwordTooShort: `Password must be at least ${PASSWORD_MIN_LENGTH} characters.`,
@@ -183,6 +185,12 @@ function mapMessageToUserText(message: string, flow: AuthFlow): string | null {
     ])
   ) {
     return AUTH_ERROR_MESSAGES.usernameTaken;
+  }
+
+  // Matches darts-backend's "Please register with your @db-n.com email address". The raw
+  // text is checked, because normalizeText turns the hyphen in the domain into a space.
+  if ("registration" === flow && message.toLowerCase().includes(REGISTRATION_EMAIL_DOMAIN)) {
+    return AUTH_ERROR_MESSAGES.emailDomainRegistration;
   }
 
   if ("registration" === flow && PASSWORD_MIN_LENGTH_PATTERN.test(normalized)) {

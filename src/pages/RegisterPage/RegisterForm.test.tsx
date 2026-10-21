@@ -88,3 +88,19 @@ describe("RegisterForm password minimum", () => {
     expect(screen.getByLabelText<HTMLInputElement>(/^password/i).minLength).toBe(6);
   });
 });
+
+describe("RegisterForm email domain", () => {
+  it("describes the email field with the @db-n.com rule", () => {
+    renderForm(null);
+
+    const description = screen.getByText("Use your @db-n.com email address.");
+
+    expect(screen.getByLabelText(/^email/i).getAttribute("aria-describedby")).toBe(description.id);
+  });
+
+  it("shows a @db-n.com address as the email placeholder", () => {
+    renderForm(null);
+
+    expect(screen.getByLabelText<HTMLInputElement>(/^email/i).placeholder).toBe("name@db-n.com");
+  });
+});
