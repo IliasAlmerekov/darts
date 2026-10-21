@@ -3,6 +3,7 @@ import { act, fireEvent, render, screen } from "@testing-library/react";
 import { MemoryRouter, useLocation, useNavigate } from "react-router-dom";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { ROUTES } from "@/lib/router/routes";
+import type { TabletGame } from "@/shared/api/game";
 import NavigationBar from "./NavigationBar";
 
 function LocationProbe(): React.JSX.Element {
@@ -18,14 +19,16 @@ function LocationProbe(): React.JSX.Element {
   );
 }
 
+const LOBBY_7 = { id: 7, status: "lobby" } as const;
+
 function renderAt(...history: string[]): void {
-  renderWithGameAt(7, ...history);
+  renderWithGameAt(LOBBY_7, ...history);
 }
 
-function renderWithGameAt(currentGameId: number | null, ...history: string[]): void {
+function renderWithGameAt(tabletGame: TabletGame | null, ...history: string[]): void {
   render(
     <MemoryRouter initialEntries={history} initialIndex={history.length - 1}>
-      <NavigationBar currentGameId={currentGameId} />
+      <NavigationBar tabletGame={tabletGame} />
       <LocationProbe />
     </MemoryRouter>,
   );
@@ -71,7 +74,7 @@ describe("NavigationBar", () => {
   ])("should mark $current with aria-current $value on $route", ({ route, current, value }) => {
     render(
       <MemoryRouter initialEntries={[route]}>
-        <NavigationBar currentGameId={7} />
+        <NavigationBar tabletGame={LOBBY_7} />
       </MemoryRouter>,
     );
 

@@ -1,19 +1,17 @@
 import type { ReactNode } from "react";
+import type { TabletGame } from "@/shared/api/game";
 import { NavigationBar } from "@/shared/ui/navigation-bar";
 import styles from "./AdminLayout.module.css";
 
 interface AdminLayoutProps {
   children: ReactNode;
-  currentGameId?: number | null;
+  tabletGame?: TabletGame | null;
 }
 
-export default function AdminLayout({
-  children,
-  currentGameId,
-}: AdminLayoutProps): React.JSX.Element {
+export default function AdminLayout({ children, tabletGame }: AdminLayoutProps): React.JSX.Element {
   const navigationBarProps = {
     ...(styles.navigation !== undefined ? { className: styles.navigation } : {}),
-    ...(currentGameId !== undefined ? { currentGameId } : {}),
+    ...(tabletGame !== undefined ? { tabletGame } : {}),
   };
 
   return (

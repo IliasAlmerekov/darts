@@ -13,7 +13,7 @@ A read inside an imperative workflow (a loader that fills Nanostores, a submit h
 recovery after a failed patch) calls the domain function directly and skips the cache. The
 call sites today:
 
-- `src/pages/StartPage/useRoomRestore.ts`: `getGameThrows` and `getInvitation` in the
+- `src/pages/StartPage/startPageLoader.ts`: `getGameThrows` and `getInvitation` in the
   StartPage loader.
 - `src/pages/StartPage/useCreateStartFlow.ts`: `getGameSettings` before a game starts.
 - `src/pages/LoginPage/useLogin.ts`: `getAuthenticatedUser` in the post-login session
@@ -229,7 +229,7 @@ Mappers are pure functions that turn backend DTO shapes into UI types.
   calls `normalizeGameData(data)`), or a page-private logic file under `src/pages/<Page>/lib/`.
 - JSX files (`src/pages/**/*.tsx`) and render-flow hooks (`src/pages/**/use*.ts`) receive the
   mapped result and import no mapper. Type imports are fine. Known exceptions:
-  - `useRoomRestore.ts` imports `toLobbyPlayers` and `useGamePlayers.ts` imports
+  - `startPageLoader.ts` imports `toLobbyPlayers` and `useGamePlayers.ts` imports
     `sortLobbyPlayers`; #194 decides them.
   - `useThrowHandler.ts` (`parseThrowValue`), `useUndoFlow.ts` (`normalizeGameData`) and
     `useGameSummaryPage.ts` (`applyOptimisticUndo`) call a mapper inside an event handler.

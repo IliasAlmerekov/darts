@@ -1,24 +1,6 @@
 // @vitest-environment node
 import { describe, expect, it, vi } from "vitest";
-import { persistPlayerOrder, shouldRedirectToCurrentGame } from "./useStartPage";
-
-describe("shouldRedirectToCurrentGame", () => {
-  it("should return true when route and invitation are missing but current game exists", () => {
-    expect(shouldRedirectToCurrentGame(undefined, null, 42)).toBe(true);
-  });
-
-  it("should return false when route already contains game id", () => {
-    expect(shouldRedirectToCurrentGame("42", null, 42)).toBe(false);
-  });
-
-  it("should return false when invitation already points to game", () => {
-    expect(shouldRedirectToCurrentGame(undefined, 42, 42)).toBe(false);
-  });
-
-  it("should return false when current game id is missing", () => {
-    expect(shouldRedirectToCurrentGame(undefined, null, null)).toBe(false);
-  });
-});
+import { persistPlayerOrder } from "./useStartPage";
 
 describe("persistPlayerOrder", () => {
   it("should persist reordered positions on success", async () => {

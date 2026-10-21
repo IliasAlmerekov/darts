@@ -5,7 +5,6 @@ import { useThrowHandler } from "./throws/useThrowHandler";
 import { useGameSounds } from "./useGameSounds";
 import { useWakeLock } from "./useWakeLock";
 import type { GameThrowsResponse, UIPlayer } from "@/types";
-import { parseGameIdParam } from "./lib/gameLogic.helpers";
 import { useGameExitFlow, useGameSettingsFlow } from "./useGameActions";
 import {
   useAutoFinishGame,
@@ -14,10 +13,10 @@ import {
 } from "./useGamePageEffects";
 import { useGamePlayersState } from "./useGamePlayersState";
 import { parseLocationState } from "@/lib/router/locationState";
+import { parseRouteGameId } from "@/lib/router/tabletGameRoute";
 
 export {
   areAllPlayersAtStartScore,
-  parseGameIdParam,
   shouldAutoFinishGame,
   shouldNavigateToSummary,
 } from "./lib/gameLogic.helpers";
@@ -74,7 +73,7 @@ export function useGameLogic(): UseGameLogicResult {
   const location = useLocation();
   const { id: gameIdParam } = useParams<{ id?: string }>();
 
-  const gameId = useMemo(() => parseGameIdParam(gameIdParam), [gameIdParam]);
+  const gameId = useMemo(() => parseRouteGameId(gameIdParam), [gameIdParam]);
 
   const { gameData, isLoading, error, refetch, updateGameSettings } = useGameState({ gameId });
   const { handleThrow, handleUndo, isUndoPending } = useThrowHandler({ gameId });

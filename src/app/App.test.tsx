@@ -1,4 +1,10 @@
 // @vitest-environment jsdom
+const getTabletGameMock = vi.hoisted(() => vi.fn());
+
+vi.mock("@/shared/api/game", () => ({
+  getTabletGame: (...args: unknown[]) => getTabletGameMock(...args),
+}));
+
 vi.mock("@/app/ScrollToTop", () => ({
   default: () => null,
 }));
@@ -138,6 +144,7 @@ describe("App routing", () => {
     vi.clearAllMocks();
     vi.useRealTimers();
     vi.resetModules();
+    getTabletGameMock.mockResolvedValue({ game: null, lastFinishedGameId: null });
     window.history.pushState({}, "", "/");
     ({ default: App } = await import("./App"));
   });
@@ -166,7 +173,7 @@ describe("App routing", () => {
     expect(await screen.findByText("Start Page")).toBeTruthy();
   });
 
-  it("should render the start page when the current route is /start/:id", async () => {
+  it("should send /start/:id to the start page of the tablet game", async () => {
     window.history.pushState({}, "", "/start/game-42");
 
     await renderApp();
@@ -193,6 +200,10 @@ describe("App routing", () => {
   });
 
   it("should render the settings page when the current route is /settings/:id", async () => {
+    getTabletGameMock.mockResolvedValue({
+      game: { id: 42, status: "lobby" },
+      lastFinishedGameId: null,
+    });
     window.history.pushState({}, "", "/settings/42");
 
     await renderApp();
@@ -248,6 +259,10 @@ describe("App routing", () => {
   });
 
   it("should not render the admin layout route when the current route is an active game page", async () => {
+    getTabletGameMock.mockResolvedValue({
+      game: { id: 42, status: "started" },
+      lastFinishedGameId: null,
+    });
     window.history.pushState({}, "", "/game/42");
 
     await renderApp();

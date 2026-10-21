@@ -4,21 +4,19 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { makeLoaderArgs } from "@/test/loaderArgs";
 import { gameQueries } from "@/shared/query/game.queries";
 import { queryClient } from "@/shared/query/queryClient";
-import { startPageLoader } from "./useRoomRestore";
+import { startPageLoader } from "./startPageLoader";
 
 // ── store mocks ───────────────────────────────────────────────────────────────
 
-const setCurrentGameIdMock = vi.fn();
 const setGameDataMock = vi.fn();
 const setInvitationMock = vi.fn();
 
-const $currentGameIdGet = vi.fn(() => null as number | null);
 const $invitationGet = vi.fn(() => null as { gameId: number; invitationLink: string } | null);
 
 vi.mock("@/shared/store", () => ({
-  $currentGameId: { get: () => $currentGameIdGet() },
+  $gameData: { get: () => null },
   $invitation: { get: () => $invitationGet() },
-  setCurrentGameId: (...args: unknown[]) => setCurrentGameIdMock(...args),
+  getCachedGameSettings: () => null,
   setGameData: (...args: unknown[]) => setGameDataMock(...args),
   setInvitation: (...args: unknown[]) => setInvitationMock(...args),
 }));
@@ -27,9 +25,11 @@ vi.mock("@/shared/store", () => ({
 
 const getGameThrowsMock = vi.fn();
 const getInvitationMock = vi.fn();
+const getTabletGameMock = vi.fn();
 
 vi.mock("@/shared/api/game", () => ({
   getGameThrows: (...args: unknown[]) => getGameThrowsMock(...args),
+  getTabletGame: (...args: unknown[]) => getTabletGameMock(...args),
 }));
 
 vi.mock("@/shared/api/room", () => ({
@@ -55,6 +55,10 @@ function lobbyGame(gameId: number) {
   return { status: "lobby" as const, id: gameId, players: [], settings: null };
 }
 
+function tabletGame(game: { id: number; status: "lobby" | "started" } | null) {
+  return { game, lastFinishedGameId: null };
+}
+
 function redirectLocation(result: unknown): string | null {
   if (!(result instanceof Response)) return null;
   return result.headers.get("Location");
@@ -65,23 +69,61 @@ function redirectLocation(result: unknown): string | null {
 beforeEach(() => {
   vi.resetAllMocks();
   queryClient.clear();
-  $currentGameIdGet.mockReturnValue(null);
   $invitationGet.mockReturnValue(null);
+  getTabletGameMock.mockResolvedValue(tabletGame({ id: 42, status: "lobby" }));
 });
 
 // ── tests ─────────────────────────────────────────────────────────────────────
 
-describe("startPageLoader — no gameId in URL", () => {
-  it("returns null when URL has no id param", async () => {
+describe("startPageLoader — follows the tablet game", () => {
+  it("returns null without fetching when there is no id and no tablet game", async () => {
+    getTabletGameMock.mockResolvedValue(tabletGame(null));
+
     const result = await startPageLoader(makeArgs());
+
     expect(result).toBeNull();
     expect(getGameThrowsMock).not.toHaveBeenCalled();
   });
 
-  it("returns null when URL id param is invalid", async () => {
+  it("redirects a URL without id to the lobby of the tablet game", async () => {
+    const result = await startPageLoader(makeArgs());
+
+    expect(redirectLocation(result)).toBe("/start/42");
+  });
+
+  it("redirects a foreign id to the lobby of the tablet game", async () => {
+    const result = await startPageLoader(makeArgs("77"));
+
+    expect(redirectLocation(result)).toBe("/start/42");
+    expect(getGameThrowsMock).not.toHaveBeenCalled();
+  });
+
+  it("redirects an invalid id to /start when there is no tablet game", async () => {
+    getTabletGameMock.mockResolvedValue(tabletGame(null));
+
     const result = await startPageLoader(makeArgs("abc"));
+
+    expect(redirectLocation(result)).toBe("/start");
+    expect(getGameThrowsMock).not.toHaveBeenCalled();
+  });
+
+  it("redirects to the game page when the tablet game has started", async () => {
+    getTabletGameMock.mockResolvedValue(tabletGame({ id: 42, status: "started" }));
+
+    const result = await startPageLoader(makeArgs("42"));
+
+    expect(redirectLocation(result)).toBe("/game/42");
+    expect(getGameThrowsMock).not.toHaveBeenCalled();
+  });
+
+  it("returns null without fetching when the tablet game read fails", async () => {
+    getTabletGameMock.mockRejectedValue(new Error("Network error"));
+
+    const result = await startPageLoader(makeArgs("42"));
+
     expect(result).toBeNull();
     expect(getGameThrowsMock).not.toHaveBeenCalled();
+    expect(setGameDataMock).not.toHaveBeenCalled();
   });
 });
 
@@ -107,29 +149,8 @@ describe("startPageLoader — invitation already loaded", () => {
   });
 });
 
-describe("startPageLoader — redirect cases (before fetch)", () => {
-  it("redirects to active game when URL gameId does not match currentGameId", async () => {
-    $currentGameIdGet.mockReturnValue(77);
-
-    const result = await startPageLoader(makeArgs("42"));
-
-    expect(redirectLocation(result)).toBe("/start/77");
-    expect(getGameThrowsMock).not.toHaveBeenCalled();
-  });
-
-  it("redirects to /start when URL has gameId but store has no currentGameId", async () => {
-    $currentGameIdGet.mockReturnValue(null);
-
-    const result = await startPageLoader(makeArgs("42"));
-
-    expect(redirectLocation(result)).toBe("/start");
-    expect(getGameThrowsMock).not.toHaveBeenCalled();
-  });
-});
-
 describe("startPageLoader — fetch and store update", () => {
   beforeEach(() => {
-    $currentGameIdGet.mockReturnValue(42);
     getGameThrowsMock.mockResolvedValue(lobbyGame(42));
     getInvitationMock.mockResolvedValue({ gameId: 42, invitationLink: "/invite/42" });
   });
@@ -156,11 +177,10 @@ describe("startPageLoader — fetch and store update", () => {
     expect(setGameDataMock).toHaveBeenCalledWith(lobbyGame(42));
   });
 
-  it("calls setInvitation and setCurrentGameId after successful fetch", async () => {
+  it("calls setInvitation after successful fetch", async () => {
     await startPageLoader(makeArgs("42"));
 
     expect(setInvitationMock).toHaveBeenCalledWith({ gameId: 42, invitationLink: "/invite/42" });
-    expect(setCurrentGameIdMock).toHaveBeenCalledWith(42);
   });
 
   it("writes the fetched players into the lobby players query in position order", async () => {
@@ -186,29 +206,25 @@ describe("startPageLoader — fetch and store update", () => {
   });
 });
 
-describe("startPageLoader — redirect when game not in lobby", () => {
-  it("redirects to active game route when game status is not lobby", async () => {
-    $currentGameIdGet.mockReturnValue(42);
+describe("startPageLoader — game left the lobby between the reads", () => {
+  it("returns null without storing the game", async () => {
     getGameThrowsMock.mockResolvedValue({ status: "started", id: 42, players: [], settings: null });
 
     const result = await startPageLoader(makeArgs("42"));
 
-    expect(redirectLocation(result)).toBe("/start/42");
+    expect(result).toBeNull();
     expect(setGameDataMock).not.toHaveBeenCalled();
   });
 });
 
 describe("startPageLoader — getGameThrows error handling", () => {
-  beforeEach(() => {
-    $currentGameIdGet.mockReturnValue(42);
-  });
-
-  it("redirects to active game route on network error", async () => {
+  it("returns null without storing the game on network error", async () => {
     getGameThrowsMock.mockRejectedValue(new Error("Network error"));
 
     const result = await startPageLoader(makeArgs("42"));
 
-    expect(redirectLocation(result)).toBe("/start/42");
+    expect(result).toBeNull();
+    expect(setGameDataMock).not.toHaveBeenCalled();
   });
 
   it("re-throws AbortError so React Router can handle navigation cancellation", async () => {
@@ -224,18 +240,16 @@ describe("startPageLoader — getGameThrows error handling", () => {
 
 describe("startPageLoader — getInvitation error handling", () => {
   beforeEach(() => {
-    $currentGameIdGet.mockReturnValue(42);
     getGameThrowsMock.mockResolvedValue(lobbyGame(42));
   });
 
-  it("falls back to setCurrentGameId(gameId) when getInvitation fails", async () => {
+  it("keeps the game data and stores no invitation when getInvitation fails", async () => {
     getInvitationMock.mockRejectedValue(new Error("Network error"));
 
     const result = await startPageLoader(makeArgs("42"));
 
     expect(result).toBeNull();
     expect(setGameDataMock).toHaveBeenCalled();
-    expect(setCurrentGameIdMock).toHaveBeenCalledWith(42);
     expect(setInvitationMock).not.toHaveBeenCalled();
   });
 

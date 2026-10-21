@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useRef, useState } from "react";
 import { DragEndEvent } from "@dnd-kit/core";
 import { arrayMove } from "@dnd-kit/sortable";
 import { updatePlayerOrder } from "@/shared/api/room";
@@ -61,6 +61,36 @@ export async function persistPlayerOrder({
   }
 }
 
+function orderByPosition(players: OrderedPlayer[]): number[] {
+  return [...players]
+    .sort(
+      (a, b) => (a.position ?? Number.MAX_SAFE_INTEGER) - (b.position ?? Number.MAX_SAFE_INTEGER),
+    )
+    .map((player) => player.id);
+}
+
+/** Keeps the order the admin dragged, drops players who left, and appends new players. */
+function mergePlayerOrder(previousOrder: number[], players: OrderedPlayer[]): number[] {
+  const idsByPosition = orderByPosition(players);
+  if (previousOrder.length <= 0 || idsByPosition.length <= 0) {
+    return idsByPosition;
+  }
+
+  const knownIds = new Set(idsByPosition);
+  const preservedOrder = previousOrder.filter((playerId) => knownIds.has(playerId));
+  const newIds = idsByPosition.filter((playerId) => !preservedOrder.includes(playerId));
+  const nextOrder = [...preservedOrder, ...newIds];
+
+  if (
+    nextOrder.length === previousOrder.length &&
+    nextOrder.every((playerId, index) => playerId === previousOrder[index])
+  ) {
+    return previousOrder;
+  }
+
+  return nextOrder;
+}
+
 /**
  * Tracks lobby player order and persists drag-and-drop changes to the backend.
  */
@@ -69,41 +99,15 @@ export function usePlayerOrderPersistence({
   players,
   setPageError,
 }: UsePlayerOrderPersistenceParams): UsePlayerOrderPersistenceResult {
-  const [playerOrder, setPlayerOrder] = useState<number[]>([]);
+  const [playerOrder, setPlayerOrder] = useState<number[]>(() => orderByPosition(players));
+  const [orderedPlayers, setOrderedPlayers] = useState(players);
   const playerOrderRequestIdRef = useRef(0);
 
-  useEffect(() => {
-    if (players.length <= 0) {
-      setPlayerOrder([]);
-      return;
-    }
-
-    const idsByPosition = [...players]
-      .sort(
-        (a, b) => (a.position ?? Number.MAX_SAFE_INTEGER) - (b.position ?? Number.MAX_SAFE_INTEGER),
-      )
-      .map((player) => player.id);
-
-    setPlayerOrder((previousOrder) => {
-      if (previousOrder.length <= 0) {
-        return idsByPosition;
-      }
-
-      const knownIds = new Set(idsByPosition);
-      const preservedOrder = previousOrder.filter((playerId) => knownIds.has(playerId));
-      const newIds = idsByPosition.filter((playerId) => !preservedOrder.includes(playerId));
-      const nextOrder = [...preservedOrder, ...newIds];
-
-      if (
-        nextOrder.length === previousOrder.length &&
-        nextOrder.every((playerId, index) => playerId === previousOrder[index])
-      ) {
-        return previousOrder;
-      }
-
-      return nextOrder;
-    });
-  }, [players]);
+  // A new players list adjusts the order during render, so the list never shows a stale order.
+  if (orderedPlayers !== players) {
+    setOrderedPlayers(players);
+    setPlayerOrder((previousOrder) => mergePlayerOrder(previousOrder, players));
+  }
 
   const handleDragEnd = useCallback(
     (event: DragEndEvent): void => {

@@ -4,7 +4,6 @@ import {
   areAllPlayersAtStartScore,
   shouldAutoFinishGame,
   shouldNavigateToSummary,
-  parseGameIdParam,
 } from "./useGameLogic";
 import { calculateShouldShowFinishOverlay } from "./lib/gameLogic.helpers";
 import type { GameThrowsResponse } from "@/types";
@@ -439,31 +438,5 @@ describe("calculateShouldShowFinishOverlay", () => {
         zeroScorePlayerIds: [2],
       }),
     ).toBe(false);
-  });
-});
-
-describe("parseGameIdParam", () => {
-  it("should return null when gameIdParam is undefined", () => {
-    expect(parseGameIdParam(undefined)).toBeNull();
-  });
-
-  it("should return null when gameIdParam is an empty string", () => {
-    expect(parseGameIdParam("")).toBeNull();
-  });
-
-  it("should return null when gameIdParam is a non-numeric string", () => {
-    expect(parseGameIdParam("abc")).toBeNull();
-  });
-
-  it("should return null when gameIdParam is Infinity", () => {
-    expect(parseGameIdParam("Infinity")).toBeNull();
-  });
-
-  it("should return the parsed number when gameIdParam is a valid integer string", () => {
-    expect(parseGameIdParam("42")).toBe(42);
-  });
-
-  it("should return the parsed number when gameIdParam is '1'", () => {
-    expect(parseGameIdParam("1")).toBe(1);
   });
 });

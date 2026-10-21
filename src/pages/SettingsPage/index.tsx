@@ -8,9 +8,9 @@ import {
   $preCreateGameSettings,
   setGameSettings,
   setPreCreateGameSettings,
-  setCurrentGameId,
 } from "@/shared/store";
 import { saveGameSettings } from "@/shared/api/game";
+import { parseRouteGameId } from "@/lib/router/tabletGameRoute";
 import { gameQueries } from "@/shared/query/game.queries";
 import useIsomorphicLayoutEffect from "@/lib/useIsomorphicLayoutEffect";
 import { clientLogger } from "@/shared/services/browser/clientLogger";
@@ -76,15 +76,6 @@ interface RouteGameSaveRequest {
   logContext: Record<string, unknown>;
 }
 
-function parseRouteGameId(gameIdParam: string | undefined): number | null {
-  if (!gameIdParam) {
-    return null;
-  }
-
-  const parsed = Number(gameIdParam);
-  return Number.isFinite(parsed) ? parsed : null;
-}
-
 function SettingsPage(): React.JSX.Element {
   const { id: gameIdParam } = useParams<{ id?: string }>();
   const queryClient = useQueryClient();
@@ -126,12 +117,6 @@ function SettingsPage(): React.JSX.Element {
     () => resolveGameMode(preCreateGameSettings.doubleOut, preCreateGameSettings.tripleOut),
     [preCreateGameSettings.doubleOut, preCreateGameSettings.tripleOut],
   );
-
-  useEffect(() => {
-    if (routeGameId !== null) {
-      setCurrentGameId(routeGameId);
-    }
-  }, [routeGameId]);
 
   useEffect(() => {
     setHasHydratedSelection(false);

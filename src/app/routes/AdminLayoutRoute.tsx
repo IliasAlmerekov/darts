@@ -1,13 +1,17 @@
-import { useStore } from "@nanostores/react";
+import { useQuery } from "@tanstack/react-query";
 import { Outlet } from "react-router-dom";
+import { gameQueries } from "@/shared/query/game.queries";
 import { AdminLayout } from "@/shared/ui/admin-layout";
-import { $currentGameId } from "@/shared/store";
 
 export default function AdminLayoutRoute(): React.JSX.Element {
-  const currentGameId = useStore($currentGameId);
+  const { data } = useQuery({
+    ...gameQueries.tablet(),
+    // Route loaders keep it fresh; the nav only reads it when nothing else has.
+    refetchOnMount: false,
+  });
 
   return (
-    <AdminLayout currentGameId={currentGameId}>
+    <AdminLayout tabletGame={data?.game ?? null}>
       <Outlet />
     </AdminLayout>
   );

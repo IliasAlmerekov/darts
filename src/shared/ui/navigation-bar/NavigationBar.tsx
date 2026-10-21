@@ -2,6 +2,8 @@ import React, { useEffect, useMemo, useRef, useState } from "react";
 import { Link, matchPath, useNavigate, useLocation } from "react-router-dom";
 import { isPlainLeftClick } from "@/lib/router/isPlainLeftClick";
 import { ROUTES } from "@/lib/router/routes";
+import { tabletGamePath } from "@/lib/router/tabletGameRoute";
+import type { TabletGame } from "@/shared/api/game";
 import settingsCogInactive from "@/assets/icons/settings-inactive.svg";
 import settingsCog from "@/assets/icons/settings.svg";
 import dartIcon from "@/assets/icons/dart.svg";
@@ -14,22 +16,17 @@ import clsx from "clsx";
 
 interface NavigationBarProps {
   className?: string;
-  currentGameId?: number | null;
+  tabletGame?: TabletGame | null;
 }
 
-function NavigationBar({ className, currentGameId = null }: NavigationBarProps): React.JSX.Element {
+function NavigationBar({ className, tabletGame = null }: NavigationBarProps): React.JSX.Element {
   const navigate = useNavigate();
   const location = useLocation();
   const [previewTabId, setPreviewTabId] = useState<string | null>(null);
   const navigationTimerRef = useRef<number | null>(null);
 
-  const gamePath = useMemo(() => {
-    return ROUTES.start(currentGameId ?? undefined);
-  }, [currentGameId]);
-
-  const settingsPath = useMemo(() => {
-    return ROUTES.settings(currentGameId ?? undefined);
-  }, [currentGameId]);
+  const gamePath = tabletGamePath("start", tabletGame);
+  const settingsPath = tabletGamePath("settings", tabletGame);
 
   const navItems = useMemo(
     () => [
