@@ -7,6 +7,10 @@ name: Jules review
 # PR cannot change the code that holds JULES_API_KEY and the write token. The job reads the PR
 # only through git diff and never runs its code.
 on:
+  # TEMP: lets PR #224 test this branch; revert before merge.
+  pull_request:
+    types:
+      - reopened
   pull_request_target:
     types:
       - opened
