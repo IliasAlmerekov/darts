@@ -6,7 +6,7 @@ interface TabletGameBody {
   lastFinishedGameId: number | null;
 }
 
-export const NO_TABLET_GAME: TabletGameBody = { game: null, lastFinishedGameId: null };
+const NO_TABLET_GAME: TabletGameBody = { game: null, lastFinishedGameId: null };
 
 export const lobbyTabletGame = (id: number): TabletGameBody => ({
   game: { id, status: "lobby" },

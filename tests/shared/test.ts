@@ -1,5 +1,5 @@
 import { test as base, expect } from "@playwright/test";
-import { NO_TABLET_GAME } from "./tablet-game-mocks";
+import { mockTabletGame } from "./tablet-game-mocks";
 
 interface UnmockedApiGuardFixtures {
   failOnUnmockedApi: boolean;
@@ -57,16 +57,7 @@ export const test = base.extend<UnmockedApiGuardFixtures>({
           });
         },
       );
-      await page.route(
-        (url) => url.pathname === "/api/tablet/game",
-        async (route) => {
-          await route.fulfill({
-            status: 200,
-            contentType: "application/json",
-            body: JSON.stringify(NO_TABLET_GAME),
-          });
-        },
-      );
+      await mockTabletGame(page);
 
       await use();
     },
