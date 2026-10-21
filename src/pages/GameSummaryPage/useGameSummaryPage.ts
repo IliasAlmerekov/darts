@@ -143,8 +143,10 @@ export function useGameSummaryPage(): UseGameSummaryPageResult {
   }
 
   const loadSettings = useCallback(async (): Promise<void> => {
+    // refetch() runs even on a disabled query, so an invalid route id must not reach it.
+    if (finishedGameIdFromRoute === null) return;
     await refetchSettings();
-  }, [refetchSettings]);
+  }, [finishedGameIdFromRoute, refetchSettings]);
 
   const error =
     actionError ??

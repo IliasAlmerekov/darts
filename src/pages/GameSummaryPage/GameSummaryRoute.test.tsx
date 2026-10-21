@@ -1,18 +1,16 @@
 // @vitest-environment jsdom
 
 // ── API mock (only external boundary) ────────────────────────────────────────
-const getFinishedGameMock = vi.fn();
-const getGameSettingsMock = vi.fn();
-
 vi.mock("@/shared/api/game", () => ({
-  getFinishedGame: (...args: unknown[]) => getFinishedGameMock(...args),
-  getGameSettings: (...args: unknown[]) => getGameSettingsMock(...args),
+  getFinishedGame: vi.fn(),
+  getGameSettings: vi.fn(),
 }));
 
 import { fireEvent, render, screen } from "@testing-library/react";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { createMemoryRouter, RouterProvider } from "react-router-dom";
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { getFinishedGame, getGameSettings } from "@/shared/api/game";
 import { queryClient } from "@/shared/query/queryClient";
 import { resetGameStore, setGameData } from "@/shared/store";
 import {
@@ -23,12 +21,15 @@ import {
 import GameSummaryPage from ".";
 import { gameSummaryLoader } from "./useGameSummaryPage";
 
+const getFinishedGameMock = vi.mocked(getFinishedGame);
+const getGameSettingsMock = vi.mocked(getGameSettings);
+
 const SETTINGS = buildGameSettingsResponse({ gameId: 42, status: "finished", startScore: 301 });
 
-function renderSummaryRoute(): ReturnType<typeof render> {
+function renderSummaryRoute(path = "/summary/42"): ReturnType<typeof render> {
   const router = createMemoryRouter(
     [{ path: "/summary/:id", element: <GameSummaryPage />, loader: gameSummaryLoader }],
-    { initialEntries: ["/summary/42"] },
+    { initialEntries: [path] },
   );
   return render(
     <QueryClientProvider client={queryClient}>
@@ -87,6 +88,38 @@ describe("GameSummaryPage route", () => {
     renderSummaryRoute();
 
     expect(await screen.findByRole("button", { name: "Play Again" })).toBeTruthy();
+    expect(getGameSettingsMock).not.toHaveBeenCalled();
+  });
+
+  it("should show the loading skeleton while the settings fetch runs", async () => {
+    getFinishedGameMock.mockResolvedValue(buildFinishedPlayerResponses());
+    getGameSettingsMock.mockRejectedValueOnce(new Error("network down"));
+    getGameSettingsMock.mockReturnValue(new Promise(() => {}));
+
+    renderSummaryRoute();
+
+    expect(await screen.findByRole("status", { name: "Loading page" })).toBeTruthy();
+    expect(screen.queryByRole("button", { name: "Play Again" })).toBeNull();
+  });
+
+  it("should show the settings error when the settings carry no valid start score", async () => {
+    getFinishedGameMock.mockResolvedValue(buildFinishedPlayerResponses());
+    getGameSettingsMock.mockResolvedValue({ ...SETTINGS, startScore: 0 });
+
+    renderSummaryRoute();
+
+    expect(
+      await screen.findByText("Could not render summary because start score is missing."),
+    ).toBeTruthy();
+    expect(screen.queryByRole("button", { name: "Play Again" })).toBeNull();
+  });
+
+  it("should not request settings for an invalid game id, even on Retry", async () => {
+    renderSummaryRoute("/summary/abc");
+
+    fireEvent.click(await screen.findByRole("button", { name: "Retry" }));
+
+    expect(screen.getByText("Game settings are unavailable")).toBeTruthy();
     expect(getGameSettingsMock).not.toHaveBeenCalled();
   });
 });
