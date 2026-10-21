@@ -40,6 +40,7 @@ vi.mock("@/shared/services/browser/clientLogger", () => ({
 
 vi.mock("@/shared/store/game-session", () => ({
   resetRoomStore: vi.fn(),
+  setServerCurrentGameId: vi.fn(),
 }));
 
 vi.mock("@/shared/store/game-state", () => ({

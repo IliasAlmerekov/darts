@@ -19,6 +19,7 @@ vi.mock("@/shared/store", () => ({
   getCachedGameSettings: () => null,
   setGameData: (...args: unknown[]) => setGameDataMock(...args),
   setInvitation: (...args: unknown[]) => setInvitationMock(...args),
+  setServerCurrentGameId: vi.fn(),
 }));
 
 // ── API mocks ─────────────────────────────────────────────────────────────────
@@ -207,8 +208,22 @@ describe("startPageLoader — fetch and store update", () => {
 });
 
 describe("startPageLoader — game left the lobby between the reads", () => {
-  it("returns null without storing the game", async () => {
+  it("redirects to the game page without storing the game when it has started", async () => {
     getGameThrowsMock.mockResolvedValue({ status: "started", id: 42, players: [], settings: null });
+
+    const result = await startPageLoader(makeArgs("42"));
+
+    expect(redirectLocation(result)).toBe("/game/42");
+    expect(setGameDataMock).not.toHaveBeenCalled();
+  });
+
+  it("returns null without storing the game when it has finished", async () => {
+    getGameThrowsMock.mockResolvedValue({
+      status: "finished",
+      id: 42,
+      players: [],
+      settings: null,
+    });
 
     const result = await startPageLoader(makeArgs("42"));
 

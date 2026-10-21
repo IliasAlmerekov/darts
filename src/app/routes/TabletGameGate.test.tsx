@@ -19,7 +19,14 @@ import { getInvitation } from "@/shared/api/room";
 import { startPageLoader } from "@/pages/StartPage/startPageLoader";
 import { queryClient } from "@/shared/query/queryClient";
 import { tabletGameLoader } from "@/shared/query/tabletGameLoader";
-import { $currentGameId, resetGameStore, resetRoomStore, setCurrentGameId } from "@/shared/store";
+import {
+  $currentGameId,
+  $invitation,
+  resetGameStore,
+  resetRoomStore,
+  setCurrentGameId,
+  setInvitation,
+} from "@/shared/store";
 import { UniversalSkeleton } from "@/shared/ui/skeletons";
 import { buildGameThrowsResponse } from "@/shared/types/game.test-support";
 import AdminLayoutRoute from "./AdminLayoutRoute";
@@ -322,6 +329,45 @@ describe("nav links after the tablet game changed outside the admin layout", () 
     });
 
     await expectPage("Settings /settings/7");
+    expect(getTabletGameMock).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe("room state on the start page", () => {
+  it("should drop an invitation for a game the tablet no longer has", async () => {
+    setInvitation({ gameId: 5, invitationLink: "/invite/5" });
+    getTabletGameMock.mockResolvedValue(NO_TABLET_GAME);
+    renderAdminRoutes(["/start"]);
+
+    await expectPage("Start /start");
+    expect($invitation.get()).toBeNull();
+    expect($currentGameId.get()).toBeNull();
+  });
+
+  it("should keep the invitation of the tablet game", async () => {
+    setInvitation({ gameId: 7, invitationLink: "/invite/7" });
+    getTabletGameMock.mockResolvedValue(LOBBY_7);
+    renderAdminRoutes(["/start/7"]);
+
+    await expectPage("Start /start/7");
+    expect($invitation.get()).toEqual({ gameId: 7, invitationLink: "/invite/7" });
+  });
+});
+
+describe("redirects to the tablet game", () => {
+  it("should read the tablet game once for a redirect and its target route", async () => {
+    getTabletGameMock.mockResolvedValue(LOBBY_7);
+    renderAdminRoutes(["/settings/5"]);
+
+    await expectPage("Settings /settings/7");
+    expect(getTabletGameMock).toHaveBeenCalledTimes(1);
+  });
+
+  it("should read the tablet game once when /start redirects to the started game", async () => {
+    getTabletGameMock.mockResolvedValue(STARTED_7);
+    renderAdminRoutes(["/start/3"]);
+
+    await expectPage("Game /game/7");
     expect(getTabletGameMock).toHaveBeenCalledTimes(1);
   });
 });

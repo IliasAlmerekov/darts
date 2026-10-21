@@ -192,8 +192,8 @@ game id, room store, game store) stays in Nanostores (`state.md`).
   `useQuery` (`gameDetailLoader` / `useGameDetailPage`). When the page shows its own error
   state, the loader swallows the rejection: `.catch(() => undefined)` (`gamesOverviewLoader`).
 - One exception: the admin routes read the tablet game with `queryClient.fetchQuery`, so it
-  is fresh on every navigation (`tabletGameLoader`, `startPageLoader`,
-  [ADR 0004](../adr/0004-tablet-game-from-server.md)).
+  is fresh on every navigation, and the target of a redirect reuses that read
+  (`tabletGameLoader`, `startPageLoader`, [ADR 0004](../adr/0004-tablet-game-from-server.md)).
 - Data whose key changes inside the page uses `useQuery` alone (`usePlayerStats`, with
   `placeholderData: keepPreviousData`).
 - Prefetch goes through `queryClient.prefetchQuery` (`src/app/routeWarmup.ts`, scheduled by

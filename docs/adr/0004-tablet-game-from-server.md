@@ -9,7 +9,8 @@ The server now owns the tablet game. `GET /api/tablet/game` (darts-backend#132) 
 ## Rules
 
 - No code writes the tablet game from a URL. A game id in the URL is only a request to show that game.
-- Each admin route loader reads the tablet game fresh on every navigation and passes the id param to `resolveTabletGameRoute`. When the URL shows another game, the loader redirects with `replace()`.
+- Each admin route loader reads the tablet game fresh on every navigation and passes the id param to `resolveTabletGameRoute`. When the URL shows another game, the loader redirects with `replace()`. The loader of the redirect target reuses that read instead of sending a second request.
+- `startPageLoader` takes the server's answer into the room store, so the start page never shows the invitation of a game that has finished since. When the game starts between the tablet game read and the lobby read, it redirects to `/game/<id>`.
 - `parseRouteGameId` is the one parser for route ids. It accepts positive safe integers written as plain digits. An invalid id (`-5`, `0`, `abc`, `1e3`) counts as a foreign id.
 - While the read is pending on a cold load, the route shows a skeleton. When the read fails, `TabletGameGate` shows an error with Retry and redirects nowhere.
 - The navigation bar builds its Game and Settings links from the tablet game with `tabletGamePath`. `AdminLayoutRoute` reads the tablet game again when it mounts, unless a loader read it less than a second ago or the last read failed. The game can finish on `/game` or `/summary`, outside the layout, and `/statistics`, `/games` and `/details` have no tablet game loader.

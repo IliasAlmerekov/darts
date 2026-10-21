@@ -3,12 +3,13 @@ import { replace } from "react-router-dom";
 import { getGameThrows } from "@/shared/api/game";
 import { getInvitation } from "@/shared/api/room";
 import { toLobbyPlayers } from "@/lib/game/lobbyPlayers";
+import { ROUTES } from "@/lib/router/routes";
 import { parseRouteGameId, resolveTabletGameRoute } from "@/lib/router/tabletGameRoute";
 import { gameQueries } from "@/shared/query/game.queries";
 import { queryClient } from "@/shared/query/queryClient";
-import { fetchTabletGame } from "@/shared/query/tabletGameLoader";
+import { fetchTabletGame, redirectToTabletGame } from "@/shared/query/tabletGameLoader";
 import { clientLogger } from "@/shared/services/browser/clientLogger";
-import { $invitation, setGameData, setInvitation } from "@/shared/store";
+import { $invitation, setGameData, setInvitation, setServerCurrentGameId } from "@/shared/store";
 
 function isAbortError(error: unknown): boolean {
   return error instanceof Error && error.name === "AbortError";
@@ -24,14 +25,17 @@ export async function startPageLoader({
   params,
   request,
 }: LoaderFunctionArgs): Promise<Response | null> {
-  const tabletGame = await fetchTabletGame();
+  const tabletGame = await fetchTabletGame(request);
   if (tabletGame === null) {
     return null;
   }
 
+  // The room store may still hold the invitation of a game that has finished since.
+  setServerCurrentGameId(tabletGame.game?.id ?? null);
+
   const target = resolveTabletGameRoute("start", params.id, tabletGame.game);
   if (target !== null) {
-    return replace(target);
+    return redirectToTabletGame(target);
   }
 
   const gameId = parseRouteGameId(params.id);
@@ -55,7 +59,10 @@ export async function startPageLoader({
     return null;
   }
 
-  // The game left the lobby between the two reads; the next visit follows the tablet game.
+  // The game left the lobby between the two reads.
+  if (gameData.status === "started") {
+    return replace(ROUTES.game(gameId));
+  }
   if (gameData.status !== "lobby") {
     clientLogger.warn("room.restore.access_denied", {
       context: { gameId, status: gameData.status },
