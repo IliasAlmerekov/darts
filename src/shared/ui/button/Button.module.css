@@ -21,7 +21,7 @@
 }
 
 .btnSecondary {
-  background-color: var(--red);
+  background-color: var(--red-strong);
 }
 
 .inverted {
@@ -32,8 +32,8 @@
 
 .invertedSecondary {
   background-color: transparent;
-  border: 3px solid var(--red);
-  color: var(--red);
+  border: 3px solid var(--red-strong);
+  color: var(--red-strong);
 }
 
 .disabled {
