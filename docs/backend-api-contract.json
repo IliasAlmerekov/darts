@@ -521,6 +521,9 @@
                     },
                     "404": {
                         "description": "Eine ID in `playerIds` geh\u00f6rt zu keinem Benutzer (`PLAYER_NOT_FOUND`). Es wird keine Lobby angelegt."
+                    },
+                    "409": {
+                        "description": "Die neue Lobby h\u00e4tte mehr als 10 Spieler (`GAME_ROOM_FULL`). Es wird keine Lobby angelegt. Eine offene Lobby ignoriert `playerIds`."
                     }
                 }
             }
@@ -1573,7 +1576,7 @@
                                         },
                                         "email": {
                                             "type": "string",
-                                            "example": "alice@example.com"
+                                            "example": "alice@db-n.com"
                                         },
                                         "username": {
                                             "type": "string",
@@ -1607,7 +1610,7 @@
                         }
                     },
                     "400": {
-                        "description": "Validierungsfehler.",
+                        "description": "Validierungsfehler. Eine E-Mail-Adresse au\u00dferhalb der Domain `db-n.com` ergibt eine Meldung unter `errors.email`.",
                         "content": {
                             "application/json": {
                                 "schema": {
@@ -2380,8 +2383,7 @@
                             "type": "integer"
                         },
                         "nullable": true,
-                        "default": null,
-                        "maxItems": 10
+                        "default": null
                     },
                     "excludePlayerIds": {
                         "type": "array",
@@ -2493,9 +2495,10 @@
                 ],
                 "properties": {
                     "email": {
+                        "description": "Nur Adressen der Domain `db-n.com` werden angenommen, ohne Beachtung der Gro\u00df- und Kleinschreibung und nach Entfernen der Leerzeichen am Rand. Subdomains und andere Domains ergeben 400 mit `errors.email`.",
                         "type": "string",
                         "format": "email",
-                        "example": "alice@example.com"
+                        "example": "alice@db-n.com"
                     },
                     "username": {
                         "type": "string",
