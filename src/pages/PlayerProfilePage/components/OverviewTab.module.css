@@ -1,0 +1,139 @@
+.overview {
+  container-type: inline-size;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+}
+
+/* The hit distribution sits on the panel itself, the smaller blocks are cards on it. */
+.hitDistributionBlock {
+  padding: 0;
+  border: none;
+}
+
+.firstRow,
+.secondRow {
+  display: grid;
+  gap: var(--space-sm);
+}
+
+.firstRow {
+  grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr);
+}
+
+.secondRow {
+  grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr);
+}
+
+.doublesList {
+  display: flex;
+  flex-direction: column;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.doubleItem {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: var(--space-md);
+  padding: var(--space-xs) 0;
+}
+
+.doubleItem + .doubleItem {
+  border-top: 1px solid var(--color-surface);
+}
+
+.rank {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 32px;
+  border-radius: var(--radius-pill);
+  background: var(--color-primary-soft);
+  color: var(--color-primary);
+  font-size: var(--font-size-14);
+  font-weight: var(--font-weight-bold);
+}
+
+.doubleSegment {
+  font-weight: var(--font-weight-bold);
+}
+
+.doubleRate {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+}
+
+.doublePercent {
+  font-size: var(--font-size-14);
+  font-weight: var(--font-weight-bold);
+}
+
+.doubleHits {
+  color: var(--color-text-muted);
+  font-size: var(--font-size-12);
+}
+
+.centered {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+}
+
+.bigValue {
+  margin: 0;
+  color: var(--color-text);
+  font-size: var(--font-size-48);
+  font-weight: var(--font-weight-bold);
+  line-height: var(--line-height-57);
+}
+
+.caption {
+  margin: 0;
+  color: var(--color-text-muted);
+  font-size: var(--font-size-18);
+}
+
+.throws {
+  align-self: stretch;
+  margin: var(--space-sm) 0 0;
+  padding: var(--padding-xs) var(--padding-sm);
+  border-radius: var(--radius-sm);
+  background: var(--color-primary-soft);
+  color: var(--color-primary);
+  font-size: var(--font-size-16);
+  font-weight: var(--font-weight-bold);
+  white-space: nowrap;
+}
+
+.hint {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  margin: 0;
+  padding: var(--padding-xs) var(--padding-sm);
+  border-radius: var(--radius-sm);
+  background: var(--color-surface);
+  color: var(--color-text-muted);
+  font-size: var(--font-size-12);
+  line-height: 1.5;
+}
+
+.hintIcon {
+  flex: none;
+  color: var(--color-text);
+}
+
+/* Below 640px of panel width a block title and its Sample data badge no longer fit in a column. */
+@container (width < 640px) {
+  .firstRow,
+  .secondRow {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}

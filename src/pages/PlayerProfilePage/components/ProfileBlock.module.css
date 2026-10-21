@@ -1,0 +1,50 @@
+.profileBlock {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+  min-width: 0;
+  padding: var(--padding-sm);
+  border: 1px solid var(--color-surface);
+  border-radius: var(--radius-md);
+  background: var(--color-bg);
+}
+
+.blockHeader {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-xs) var(--space-sm);
+}
+
+.blockIcon {
+  flex: none;
+  width: 28px;
+  height: 28px;
+}
+
+.blockHeading {
+  /* No min-width: 0, so the heading never shrinks below its title and the action wraps instead. */
+  flex: 1;
+}
+
+.titleRow {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--space-xs);
+}
+
+.blockTitle {
+  margin: 0;
+  white-space: nowrap;
+  color: var(--color-text);
+  font-size: var(--font-size-18);
+  line-height: var(--line-height-24);
+}
+
+.blockDescription {
+  margin: var(--space-2xs) 0 0;
+  color: var(--color-text-muted);
+  font-size: var(--font-size-14);
+  font-style: italic;
+}

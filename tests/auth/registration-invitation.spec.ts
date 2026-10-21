@@ -5,6 +5,7 @@ import {
   REMEMBERED_PLAYER_RESPONSE,
 } from "../shared/auth-route-mocks";
 import { lobbyCurrentGame, mockCurrentGame } from "../shared/current-game-mocks";
+import { mockPlayerProfile } from "../shared/player-profile-mocks";
 import type { Page } from "@playwright/test";
 
 async function mockRegistration(page: Page, body: unknown): Promise<void> {
@@ -49,6 +50,7 @@ test.describe("Registration after scanning an invitation", () => {
       ...REMEMBERED_PLAYER_RESPONSE,
       invitationError: "GAME_ALREADY_STARTED",
     });
+    await mockPlayerProfile(page);
 
     await fillAndSubmit(page);
 

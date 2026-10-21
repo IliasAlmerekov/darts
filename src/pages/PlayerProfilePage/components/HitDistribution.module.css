@@ -1,0 +1,135 @@
+.hitDistribution {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: var(--space-md);
+}
+
+.board {
+  flex: 1 1 280px;
+  max-width: 460px;
+  height: auto;
+  margin: 0 auto;
+}
+
+.surround {
+  fill: var(--darkblue);
+}
+
+.singleDark,
+.singleLight,
+.ringRed,
+.ringGreen {
+  stroke: var(--middlegrey);
+  stroke-width: 0.8;
+}
+
+.singleDark {
+  fill: var(--darkblue);
+}
+
+.singleLight {
+  fill: var(--lightgrey);
+}
+
+.ringRed {
+  fill: var(--red);
+}
+
+.ringGreen {
+  fill: var(--green);
+}
+
+.number {
+  fill: var(--white);
+  font-size: 28px;
+  font-weight: var(--font-weight-bold);
+  text-anchor: middle;
+  dominant-baseline: central;
+}
+
+.spotGlow {
+  fill: var(--color-primary);
+  fill-opacity: var(--heat);
+}
+
+.spotDot {
+  fill: var(--color-primary);
+  fill-opacity: calc(var(--heat) * 0.9);
+}
+
+.heatVeryHigh {
+  --heat: 1;
+}
+
+.heatHigh {
+  --heat: 0.75;
+}
+
+.heatMedium {
+  --heat: 0.5;
+}
+
+.heatLow {
+  --heat: 0.3;
+}
+
+.heatVeryLow {
+  --heat: 0.12;
+}
+
+.legend {
+  display: flex;
+  flex: none;
+  flex-direction: column;
+  gap: var(--space-sm);
+  padding: var(--padding-sm);
+  border: 1px solid var(--color-surface);
+  border-radius: var(--radius-md);
+  font-size: var(--font-size-14);
+}
+
+.legendTitle {
+  font-weight: var(--font-weight-bold);
+}
+
+.legendList {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.legendItem {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  color: var(--color-text-muted);
+}
+
+.legendSwatch {
+  width: 30px;
+  height: 30px;
+  border-radius: var(--radius-pill);
+  background: rgb(0 0 219 / calc(var(--heat) * 100%));
+}
+
+@media (width <= 600px) {
+  .hitDistribution {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .legendList {
+    flex-flow: row wrap;
+    gap: var(--space-xs) var(--space-sm);
+  }
+
+  .legendSwatch {
+    width: 20px;
+    height: 20px;
+  }
+}

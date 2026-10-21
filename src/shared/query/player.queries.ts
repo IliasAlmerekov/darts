@@ -1,7 +1,8 @@
 import { queryOptions, type Query } from "@tanstack/react-query";
 import { NetworkError, TimeoutError, UnauthorizedError } from "@/shared/api";
-import { getCurrentGame } from "@/shared/api/player";
+import { getCurrentGame, getPlayerProfile } from "@/shared/api/player";
 import type { CurrentGame } from "@/lib/player/currentGame";
+import { toPlayerProfile, type PlayerProfile } from "@/lib/player/profile";
 import { clientLogger } from "@/shared/services/browser/clientLogger";
 import { setServerCurrentGameId } from "@/shared/store";
 
@@ -47,6 +48,21 @@ export const playerQueries = {
         } catch (error: unknown) {
           if (!signal.aborted && !isExpectedFailure(error)) {
             clientLogger.error("player.current-game.fetch.failed", { error });
+          }
+          throw error;
+        }
+      },
+    }),
+  /** The player's own statistics and recent finished games. */
+  profile: () =>
+    queryOptions({
+      queryKey: ["player", "profile"] as const,
+      queryFn: async ({ signal }): Promise<PlayerProfile> => {
+        try {
+          return toPlayerProfile(await getPlayerProfile(signal));
+        } catch (error: unknown) {
+          if (!signal.aborted) {
+            clientLogger.error("player.profile.fetch.failed", { error });
           }
           throw error;
         }

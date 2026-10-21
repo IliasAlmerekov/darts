@@ -3,7 +3,6 @@ import { apiClient, ApiValidationError } from "./client";
 import { ApiError, UnauthorizedError } from "./errors";
 import { integerSchema } from "./schemas";
 import { queryClient } from "@/shared/query/queryClient";
-import { ROUTES } from "@/shared/lib/router/routes";
 import { resetRoomStore } from "@/shared/store/game-session";
 import { resetGameStore } from "@/shared/store/game-state";
 
@@ -31,15 +30,6 @@ const csrfTokensResponseSchema = v.object({
 // not follow, so the body is the opaque redirect's empty text.
 const logoutResponseSchema = v.string();
 
-const authenticatedUserProfileSchema = v.object({
-  id: v.number(),
-  nickname: v.string(),
-  stats: v.object({
-    gamesPlayed: v.number(),
-    scoreAverage: v.number(),
-  }),
-});
-
 /** `GET /api/login/success`, the shape the contract documents. */
 const authenticatedUserSchema = v.object({
   success: v.literal(true),
@@ -50,7 +40,6 @@ const authenticatedUserSchema = v.object({
   redirect: v.string(),
   gameId: v.optional(v.nullable(v.number())),
   invitationError: v.optional(invitationErrorSchema),
-  profile: v.optional(authenticatedUserProfileSchema),
 });
 
 /**
@@ -99,19 +88,17 @@ const loginResponseSchema = v.union([
  */
 const registrationResponseSchema = authenticatedUserSchema;
 
-// The backend also answers with a user envelope, a player profile envelope, or
-// `{ success: false }`; the contract does not document these yet.
+// The backend also answers with a user envelope or `{ success: false }`; the contract
+// does not document these yet.
 const authCheckResponseSchema = v.union([
   v.object({ success: v.literal(true), user: authenticatedUserSchema }),
   authenticatedUserSchema,
-  v.object({ success: v.literal(true), profile: authenticatedUserProfileSchema }),
   v.object({ success: v.literal(false) }),
 ]);
 
 type LoginResponse = v.InferOutput<typeof loginResponseSchema>;
 export type RegistrationResponse = v.InferOutput<typeof registrationResponseSchema>;
 export type Role = v.InferOutput<typeof roleSchema>;
-type AuthenticatedUserProfile = v.InferOutput<typeof authenticatedUserProfileSchema>;
 export type AuthenticatedUser = v.InferOutput<typeof authenticatedUserSchema>;
 export type InvitationError = v.InferOutput<typeof invitationErrorSchema>;
 
@@ -135,19 +122,6 @@ const AUTH_CHECK_TIMEOUT_MS = 8000;
 interface GetAuthenticatedUserOptions {
   signal?: AbortSignal;
   timeoutMs?: number;
-}
-
-function normalizeProfileEnvelope(response: {
-  profile: AuthenticatedUserProfile;
-}): AuthenticatedUser {
-  return {
-    success: true,
-    roles: ["ROLE_PLAYER"],
-    id: response.profile.id,
-    username: response.profile.nickname,
-    redirect: ROUTES.playerProfile,
-    profile: response.profile,
-  };
 }
 
 /**
@@ -245,10 +219,6 @@ export async function getAuthenticatedUser(
 
     if ("roles" in response) {
       return response;
-    }
-
-    if ("profile" in response) {
-      return normalizeProfileEnvelope(response);
     }
 
     throw new ApiError("Authorization failed for authenticated user", {

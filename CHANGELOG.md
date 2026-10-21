@@ -9,6 +9,7 @@ and this project does **not** yet follow [Semantic Versioning](https://semver.or
 
 ### Added
 
+- Player profile: the page reads `GET /api/player/profile` and shows a stats card next to the tabs Overview, Performance and History; the tab lives in `?tab=`. Games played and Avg. points come from the API, the Scoring trend plots each recent game's round average, and History lists the 10 newest finished games with placement, average and all participants. Blocks the API does not carry yet show sample values with a "Sample data" badge. Overview shows a dartboard heatmap, favorite doubles, highest finish, the scoring trend and the most hit segment; their blocks drop to one column when the panel is narrower than 640px. The range buttons of the hit distribution and the scoring trend open a menu with the one range the API serves. The page is in English and stacks to one column at 600px (#198)
 - Tooling: `npm run test:red-on-base` runs the tests a branch changed against the base ref's code and lists the ones that fail (#185)
 - Login: the login page shows a full-screen spinner with "Checking your login…" while it checks for a Remembered login, and the form only when nobody is logged in or the check gets no answer within 5 seconds. A remembered player who scans an invite goes straight to the Waiting room. When the backend cannot join the invitation, the player sees why ("This game has already started", "This game is full", "This game no longer exists" or "This game can no longer be joined") and a button to their profile. The check also runs while the browser counts as offline, so its timeout still brings up the form. After the button, the login page no longer shows that error again (#151)
 - Waiting room and player profile: a "Log out" button ends the Remembered login on this phone and opens the login page. The button stays disabled while the request runs. On success the app clears the query cache, the room store with its stored game id, and the game store, the same cleanup a 401 runs. On failure the page stays as it was and shows an error with a "Retry" button (#154)
@@ -35,12 +36,14 @@ and this project does **not** yet follow [Semantic Versioning](https://semver.or
 
 ### Removed
 
+- Auth: the optional `profile` field of the login response and the profile envelope of the auth check, which the backend never sends (#198)
 - Docs: `docs/convention/coding-standards.md` and `docs/repo-map.md` are gone. The first repeated `AGENTS.md` apart from its table, which moved there, and the second restated the directory tree and had fallen behind it (#211)
 - Docs: `CONTRIBUTING.md` is gone. The README now carries the setup steps, and the rest already lived in `AGENTS.md` and `docs/convention/` (#208)
 - Game page: the page no longer opens the room stream. The backend never sent the `game-started` or `game-finished` events it waited for, and the tablet gets the scoreboard from its own throw and undo responses. Only the start page subscribes to the room stream now, for its `players` events. `useRoomStream`, `useRoomEventRefetch` and the `RoomStreamEventType` and `RoomStreamEvent` types are gone (#165)
 
 ### Fixed
 
+- Buttons: the red Log out, Cancel (game exit) and mobile Start buttons show white text at 4.9:1 contrast instead of 3.84:1 (#198)
 - Auth: a player who opens a route their role may not use, such as the start page, goes to the Player profile instead of the Waiting room (#199)
 - Settings: when the first settings read for a game fails, the page shows "Could not load settings" with a "Retry" button instead of leaving every option disabled with no message. The options stay disabled and unselected until a retry loads the game's saved values (#108)
 - Settings: a save that answers after the route moved to another game's settings no longer changes that game's screen. It stays out of the selected button, the rollback and the error message. A pending save of one game no longer blocks the buttons of the next (#99)

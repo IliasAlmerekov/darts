@@ -1,3 +1,6 @@
+/* Fuji UI: component styles in cascade layers, so the unlayered rules below win. */
+@import url("@fujiui/react/styles.css");
+
 @font-face {
   font-family: circularxx;
   src: url("../../assets/fonts/circularXX/CircularXXWeb-Regular.woff") format("woff");
@@ -37,6 +40,9 @@
   --middlegrey: #a7a7a7;
   --darkgrey: #5f5f5f;
   --red: #ff2001;
+
+  /* --red darkened to 4.9:1 against white, for button fills and red text. */
+  --red-strong: #e01b00;
   --green: #15803d;
   --blue: #0000db;
   --oxfordblue: #2d3944;
@@ -50,6 +56,7 @@
   --color-accent: var(--oxfordblue);
   --color-danger: var(--red);
   --color-success: var(--green);
+  --color-primary-soft: rgb(0 0 219 / 8%);
   --padding-xs: clamp(6px, 0.6vw + 4px, 8px);
   --padding-sm: clamp(12px, 1.2vw + 8px, 16px);
   --padding-md: clamp(16px, 1.8vw + 10px, 24px);
@@ -57,6 +64,7 @@
   --padding-xl: clamp(32px, 3.5vw + 16px, 64px);
   --padding-2xl: clamp(40px, 4vw + 24px, 80px);
   --padding-3xl: clamp(48px, 4.5vw + 28px, 96px);
+  --space-2xs: 4px;
   --space-xs: var(--padding-xs);
   --space-sm: var(--padding-sm);
   --space-md: var(--padding-md);

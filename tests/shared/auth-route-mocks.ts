@@ -4,18 +4,6 @@ type MockLoginFailureOptions = {
   error?: string;
 };
 
-interface ProfileLoginSuccessResponse {
-  success: true;
-  profile: {
-    id: number;
-    nickname: string;
-    stats: {
-      gamesPlayed: number;
-      scoreAverage: number;
-    };
-  };
-}
-
 const DEFAULT_INVALID_CREDENTIALS_ERROR = "Incorrect email or password";
 
 /** Credentials typed into the login form in the mocked suite; no backend ever checks them. */
@@ -24,7 +12,7 @@ export const MOCK_LOGIN_CREDENTIALS = {
   password: "mocked-password",
 } as const;
 
-interface AdminSessionResponse {
+interface SessionResponse {
   success: true;
   roles: string[];
   id: number;
@@ -32,7 +20,7 @@ interface AdminSessionResponse {
   redirect: string;
 }
 
-const ADMIN_SESSION_RESPONSE: AdminSessionResponse = {
+const ADMIN_SESSION_RESPONSE: SessionResponse = {
   success: true,
   roles: ["ROLE_ADMIN", "ROLE_PLAYER"],
   id: 1,
@@ -40,16 +28,13 @@ const ADMIN_SESSION_RESPONSE: AdminSessionResponse = {
   redirect: "/start",
 };
 
-export const PROFILE_LOGIN_SUCCESS_RESPONSE: ProfileLoginSuccessResponse = {
+// A player without an invitation or a current game: the backend sends them to the profile.
+const PLAYER_SESSION_RESPONSE: SessionResponse = {
   success: true,
-  profile: {
-    id: 42,
-    nickname: "Captain Double",
-    stats: {
-      gamesPlayed: 18,
-      scoreAverage: 56.4,
-    },
-  },
+  roles: ["ROLE_PLAYER"],
+  id: 23,
+  username: "Captain Double",
+  redirect: "/playerprofile",
 };
 
 export async function mockAdminSession(page: Page): Promise<void> {
@@ -98,11 +83,9 @@ export async function mockPendingUnauthenticatedSession(page: Page): Promise<() 
   return releaseAuthCheck;
 }
 
-export async function mockProfileLoginSuccessFlow(
-  page: Page,
-  response: ProfileLoginSuccessResponse = PROFILE_LOGIN_SUCCESS_RESPONSE,
-): Promise<void> {
-  await mockLoginFlow(page, response);
+/** Starts signed out; after the login form posts, the session belongs to a player. */
+export async function mockPlayerLoginFlow(page: Page): Promise<void> {
+  await mockLoginFlow(page, PLAYER_SESSION_RESPONSE);
 }
 
 /** Starts signed out; after the login form posts, the session belongs to an admin. */
@@ -110,10 +93,7 @@ export async function mockAdminLoginFlow(page: Page): Promise<void> {
   await mockLoginFlow(page, ADMIN_SESSION_RESPONSE);
 }
 
-async function mockLoginFlow(
-  page: Page,
-  sessionResponse: AdminSessionResponse | ProfileLoginSuccessResponse,
-): Promise<void> {
+async function mockLoginFlow(page: Page, sessionResponse: SessionResponse): Promise<void> {
   let loginCompleted = false;
 
   await page.context().clearCookies();

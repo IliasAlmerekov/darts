@@ -168,10 +168,11 @@ Rules:
   loader, not `useEffect` after mount. The loader fills the query cache with
   `queryClient.ensureQueryData(...)` and the page reads the same key with `useQuery`
   ([ADR 0001](../adr/0001-tanstack-query-for-server-reads.md)). Data whose key changes
-  inside the page, such as pagination, uses `useQuery` alone. So does polled data that
+  inside the page, such as pagination, uses `useQuery` alone. So does data that
   depends on no route param and must show its own loading state before the first answer,
-  such as the Waiting room's current game: ADR 0001 keeps loaders for data that depends on
-  route params, and a loader would hold the navigation instead.
+  such as the Waiting room's polled current game and the Player profile: ADR 0001 keeps
+  loaders for data that depends on route params, and a loader would hold the navigation
+  instead.
 - Optional URL parameters use `:id?` (e.g. `/start/:id?`, `/settings/:id?`). Declare one
   route per page, not two parallel ones.
 - Role-restricted routes are nested inside a `<ProtectedRoutes allowedRoles={[...]}>`
@@ -215,6 +216,5 @@ rg -n 'from "@/shared/lib/' src -g '!**/*.test.{ts,tsx}'
 ```
 
 A clean run of (2), (3), and (4) prints nothing. Until #214 lands, (2) prints
-`src/pages/StatisticsPage/Statistics.tsx:3` and (4) prints three imports in
-`useRoomRestore.ts`, `GamePlayerItemList.tsx`, and `src/shared/api/auth.ts`; any other line is
-a new violation.
+`src/pages/StatisticsPage/Statistics.tsx:3` and (4) prints two imports in
+`useRoomRestore.ts` and `GamePlayerItemList.tsx`; any other line is a new violation.

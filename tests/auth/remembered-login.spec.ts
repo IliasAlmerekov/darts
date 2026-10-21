@@ -6,6 +6,7 @@ import {
   REMEMBERED_PLAYER_RESPONSE,
 } from "../shared/auth-route-mocks";
 import { lobbyCurrentGame, mockCurrentGame } from "../shared/current-game-mocks";
+import { mockPlayerProfile } from "../shared/player-profile-mocks";
 
 test.describe("Remembered login", () => {
   test("shows the login check until the auth check answers, then the form", async ({ page }) => {
@@ -42,6 +43,7 @@ test.describe("Remembered login", () => {
       ...REMEMBERED_PLAYER_RESPONSE,
       invitationError: "GAME_ALREADY_STARTED",
     });
+    await mockPlayerProfile(page);
 
     await page.goto("/");
 

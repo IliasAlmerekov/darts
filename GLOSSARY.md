@@ -23,7 +23,7 @@ A player's login that stays valid for 7 days after their last visit, so the app 
 _Avoid_: remember me, persistent session
 
 **Player profile**:
-The page a player lands on after logging in without an invitation and without a current game.
+The page a player lands on after logging in without an invitation and without a current game. It shows the player's own statistics and recent finished games.
 _Avoid_: player page, default page
 
 ## Finished game
@@ -32,9 +32,9 @@ _Avoid_: player page, default page
 Every player of a finished game, in finishing order.
 _Avoid_: newList, finished list, results
 
-**Finishing position**:
-A player's 1-based place in the standings.
-_Avoid_: rank, index
+**Placement**:
+A player's place in a finished game. The winner has placement 1.
+_Avoid_: finishing position, position, rank, index
 
 **Podium**:
 The first three players of the standings.
