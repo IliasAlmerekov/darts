@@ -207,6 +207,21 @@ describe("runJulesReview", () => {
     }
   });
 
+  it("posts the review as soon as it appears, while the session still runs", async () => {
+    const review = { summary: "Clean.", findings: [] };
+    const { fetch } = fakeFetch({
+      ...sessionRoutes(["IN_PROGRESS"], []),
+      [`GET ${JULES}/sessions/42/activities?pageSize=100`]: [
+        () => json({ activities: [{ progressUpdated: { title: "Reading" } }] }),
+        () => json({ activities: [{ agentMessaged: { agentMessage: reviewMessage(review) } }] }),
+      ],
+      [`POST ${GITHUB}/repos/acme/darts/pulls/7/reviews`]: () => json({ id: 1 }),
+    });
+
+    await expect(run(fetch)).resolves.toMatchObject({ status: "reviewed" });
+    expect(fetch.mock.calls.filter(([url]) => url === `${JULES}/sessions/42`)).toHaveLength(2);
+  });
+
   it("reads every page of activities", async () => {
     const review = { summary: "Clean.", findings: [] };
     const { fetch } = fakeFetch({
