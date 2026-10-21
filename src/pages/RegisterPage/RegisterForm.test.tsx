@@ -71,10 +71,10 @@ describe("RegisterForm pending state", () => {
 });
 
 describe("RegisterForm password minimum", () => {
-  it("describes the password field with the 8-character minimum", () => {
+  it("describes the password field with the 6-character minimum", () => {
     renderForm(null);
 
-    const description = screen.getByText("At least 8 characters.");
+    const description = screen.getByText("At least 6 characters.");
 
     expect(screen.getByLabelText(/^password/i).getAttribute("aria-describedby")).toBe(
       description.id,
@@ -82,9 +82,9 @@ describe("RegisterForm password minimum", () => {
   });
 
   // jsdom skips the length check on submit; tests/auth/password-minimum.spec.ts covers it.
-  it("constrains the password to at least 8 characters", () => {
+  it("constrains the password to at least 6 characters", () => {
     renderForm(null);
 
-    expect(screen.getByLabelText<HTMLInputElement>(/^password/i).minLength).toBe(8);
+    expect(screen.getByLabelText<HTMLInputElement>(/^password/i).minLength).toBe(6);
   });
 });
