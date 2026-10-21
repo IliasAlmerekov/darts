@@ -518,6 +518,12 @@
                     },
                     "403": {
                         "description": "Angemeldet ohne `ROLE_ADMIN` (z. B. ein Spieler)."
+                    },
+                    "404": {
+                        "description": "Eine ID in `playerIds` geh\u00f6rt zu keinem Benutzer (`PLAYER_NOT_FOUND`). Es wird keine Lobby angelegt."
+                    },
+                    "409": {
+                        "description": "Die neue Lobby h\u00e4tte mehr als 10 Spieler (`GAME_ROOM_FULL`). Es wird keine Lobby angelegt. Eine offene Lobby ignoriert `playerIds`."
                     }
                 }
             }
@@ -2369,9 +2375,7 @@
                         "type": "integer",
                         "nullable": true,
                         "deprecated": true,
-                        "default": null,
-                        "minimum": 0,
-                        "exclusiveMinimum": true
+                        "default": null
                     },
                     "playerIds": {
                         "type": "array",
