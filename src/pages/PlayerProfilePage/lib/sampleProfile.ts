@@ -47,10 +47,10 @@ export const SAMPLE_PROFILE = {
   checkout: { rate: 38, checkouts: 21, attempts: 55 },
   hitDistribution: { segments: SAMPLE_HIT_SEGMENTS, bull: SAMPLE_BULL },
   favoriteDoubles: [
-    { segment: "D20", hits: 9, attempts: 21 },
-    { segment: "D16", hits: 6, attempts: 15 },
-    { segment: "D8", hits: 3, attempts: 9 },
+    { segment: "D20", hits: 8, attempts: 19 },
+    { segment: "D16", hits: 5, attempts: 18 },
+    { segment: "D8", hits: 4, attempts: 17 },
   ],
   highestFinish: { score: 120, darts: 3, throws: ["T20", "T20", "D20"] },
-  mostHitSegment: { segment: "T20", share: 18, hint: "Your go-to target when you score." },
+  mostHitSegment: { segment: 20, share: 15 },
 };

@@ -1,5 +1,6 @@
 import React from "react";
 import type { PlayerProfile } from "@/lib/player/profile";
+import { ProfileMessage } from "./ProfileMessage";
 import styles from "./HistoryTab.module.css";
 
 interface HistoryTabProps {
@@ -9,7 +10,7 @@ interface HistoryTabProps {
 // Rows are not links: a player cannot read the game summary API.
 export function HistoryTab({ profile }: HistoryTabProps): React.JSX.Element {
   if (profile.history.length === 0) {
-    return <p className={styles.emptyHistory}>No finished games yet.</p>;
+    return <ProfileMessage>No finished games yet.</ProfileMessage>;
   }
 
   return (

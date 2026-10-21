@@ -1,23 +1,61 @@
+.page {
+  flex: 1 0 auto;
+  min-height: 100dvh;
+  background: var(--color-surface);
+}
+
+.navRow,
 .playerProfile {
   width: min(100%, 1200px);
   margin: 0 auto;
-  padding: var(--page-padding);
+  padding: 0 var(--page-padding);
   box-sizing: border-box;
 }
 
-.pageTitle {
-  margin: 0 0 var(--space-md);
+.navRow {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xs);
+  padding-top: var(--page-padding);
 }
 
-.profileLayout {
+.brand {
+  align-self: flex-end;
+}
+
+.playerProfile {
   display: grid;
-  grid-template-columns: minmax(240px, 320px) minmax(0, 1fr);
-  align-items: start;
-  gap: var(--space-lg);
+  grid-template-areas:
+    "title title"
+    "card panel";
+  grid-template-columns: minmax(260px, 320px) minmax(0, 1fr);
+  align-items: center;
+  gap: var(--space-md);
+  padding-top: var(--space-md);
+  padding-bottom: var(--page-padding);
+}
+
+.pageTitle {
+  grid-area: title;
+  margin: 0;
+}
+
+.card {
+  grid-area: card;
+  align-self: stretch;
+}
+
+.panel {
+  grid-area: panel;
+  align-self: stretch;
 }
 
 @media (width <= 600px) {
-  .profileLayout {
+  .playerProfile {
+    grid-template-areas:
+      "title"
+      "card"
+      "panel";
     grid-template-columns: minmax(0, 1fr);
   }
 }

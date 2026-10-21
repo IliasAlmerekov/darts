@@ -2,22 +2,36 @@
   display: block;
   width: 100%;
   height: auto;
-  max-height: 220px;
+  max-height: 240px;
 }
 
 .largeChart {
-  max-height: 360px;
+  max-height: 380px;
 }
 
-.axis {
+.gridLine {
   stroke: var(--color-surface);
   stroke-width: 1;
 }
 
-.axisLabel {
+.tickLabel,
+.gameLabel,
+.axisTitle {
   fill: var(--color-text-muted);
   font-size: 10px;
+}
+
+.tickLabel {
   text-anchor: end;
+}
+
+.gameLabel,
+.axisTitle {
+  text-anchor: middle;
+}
+
+.trendArea {
+  fill: var(--color-primary-soft);
 }
 
 .trendLine {
@@ -28,12 +42,5 @@
 }
 
 .trendPoint {
-  fill: var(--color-bg);
-  stroke: var(--color-primary);
-  stroke-width: 2;
-}
-
-.emptyChart {
-  margin: 0;
-  color: var(--color-text-muted);
+  fill: var(--color-primary);
 }

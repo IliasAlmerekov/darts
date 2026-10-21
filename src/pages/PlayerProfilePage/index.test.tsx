@@ -184,7 +184,10 @@ describe("PlayerProfilePage", () => {
   it("plots one point per game, oldest first, on Overview and Performance", async () => {
     renderPage();
 
-    const overviewChart = await screen.findByRole("img", { name: "Scoring trend chart" });
+    const overviewChart = await screen.findByRole("img", { name: /^Scoring trend chart/ });
+    expect(overviewChart.getAttribute("aria-label")).toBe(
+      "Scoring trend chart, 2 games, round average from 60.0 to 45.3",
+    );
     expect(pointTitles(overviewChart)).toEqual([
       "19 Oct 2026, 09:05 · Avg 60.0",
       "20 Oct 2026, 18:42 · Avg 45.3",
@@ -193,7 +196,7 @@ describe("PlayerProfilePage", () => {
     fireEvent.click(screen.getByRole("tab", { name: "Performance" }));
 
     const performance = screen.getByRole("tabpanel", { name: "Performance" });
-    const performanceChart = within(performance).getByRole("img", { name: "Scoring trend chart" });
+    const performanceChart = within(performance).getByRole("img", { name: /^Scoring trend chart/ });
     expect(pointTitles(performanceChart)).toEqual([
       "19 Oct 2026, 09:05 · Avg 60.0",
       "20 Oct 2026, 18:42 · Avg 45.3",
@@ -239,7 +242,7 @@ describe("PlayerProfilePage", () => {
 
   it("marks sample data and only sample data", async () => {
     renderPage();
-    await screen.findByRole("img", { name: "Scoring trend chart" });
+    await screen.findByRole("img", { name: /^Scoring trend chart/ });
 
     for (const name of SAMPLE_BLOCKS) {
       expect(within(screen.getByRole("region", { name })).getByText("Sample data")).toBeTruthy();
@@ -264,14 +267,26 @@ describe("PlayerProfilePage", () => {
     ).toBeNull();
   });
 
+  it("lists the four stats as list items and keeps the tabs in the banner", async () => {
+    renderPage();
+    await screen.findByRole("img", { name: /^Scoring trend chart/ });
+
+    const stats = within(screen.getByRole("region", { name: "Player stats" })).getByRole("list");
+    expect(within(stats).getAllByRole("listitem")).toHaveLength(4);
+    // The page header is a banner landmark; Testing Library also counts the block headers.
+    const tabList = screen.getByRole("tablist", { name: "Profile sections" });
+    expect(tabList.closest("header")?.closest("main")).toBeNull();
+  });
+
   it("uses the profile icons in the card and the Overview blocks", async () => {
     renderPage();
-    await screen.findByRole("img", { name: "Scoring trend chart" });
+    await screen.findByRole("img", { name: /^Scoring trend chart/ });
 
-    const iconFiles = Array.from(document.querySelectorAll("img")).map((image) =>
-      image.getAttribute("src"),
-    );
-    expect(new Set(iconFiles)).toEqual(
+    const profileImages = [
+      ...screen.getByRole("region", { name: "Player stats" }).querySelectorAll("img"),
+      ...screen.getByRole("tabpanel", { name: "Overview" }).querySelectorAll("img"),
+    ];
+    expect(new Set(profileImages.map((image) => image.getAttribute("src")))).toEqual(
       new Set(["user-blue.svg", "gamepad.svg", "trophy.svg", "bar-chart.svg", "target.svg"]),
     );
   });
@@ -283,9 +298,9 @@ describe("PlayerProfilePage", () => {
 
     expect(within(statValue("Games played")).getByText("Loading…")).toBeTruthy();
     expect(within(statValue("Avg. points")).getByText("Loading…")).toBeTruthy();
-    expect(
-      within(screen.getByRole("tabpanel", { name: "Overview" })).getByText("Loading…"),
-    ).toBeTruthy();
+    const panel = screen.getByRole("tabpanel", { name: "Overview" });
+    expect(within(panel).getByRole("status").textContent).toBe("Loading…");
+    expect(panel.getAttribute("aria-busy")).toBe("true");
     expect(screen.getByRole("heading", { level: 2, name: "Alice" })).toBeTruthy();
     expect(screen.getByRole("button", { name: "Log out" })).toBeTruthy();
   });

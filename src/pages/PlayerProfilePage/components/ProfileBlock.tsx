@@ -5,16 +5,20 @@ import styles from "./ProfileBlock.module.css";
 
 interface ProfileBlockProps {
   title: string;
-  iconSrc: string;
+  iconSrc?: string;
+  description?: string;
+  action?: React.ReactNode;
   isSample?: boolean;
   className?: string | undefined;
   children: React.ReactNode;
 }
 
-/** One titled block of the Player profile, with an icon and an optional sample badge. */
+/** One titled block of the Player profile, with an optional icon, action and sample badge. */
 export function ProfileBlock({
   title,
   iconSrc,
+  description,
+  action,
   isSample = false,
   className,
   children,
@@ -24,11 +28,19 @@ export function ProfileBlock({
   return (
     <section className={clsx(styles.profileBlock, className)} aria-labelledby={headingId}>
       <header className={styles.blockHeader}>
-        <img className={styles.blockIcon} src={iconSrc} alt="" width={28} height={28} />
-        <h3 className={styles.blockTitle} id={headingId}>
-          {title}
-        </h3>
-        {isSample ? <SampleBadge /> : null}
+        {iconSrc ? (
+          <img className={styles.blockIcon} src={iconSrc} alt="" width={28} height={28} />
+        ) : null}
+        <div className={styles.blockHeading}>
+          <div className={styles.titleRow}>
+            <h3 className={styles.blockTitle} id={headingId}>
+              {title}
+            </h3>
+            {isSample ? <SampleBadge /> : null}
+          </div>
+          {description ? <p className={styles.blockDescription}>{description}</p> : null}
+        </div>
+        {action}
       </header>
       {children}
     </section>

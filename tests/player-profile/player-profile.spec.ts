@@ -25,7 +25,7 @@ test.describe("Player profile", () => {
       String(PLAYER_PROFILE.stats.gamesPlayed),
     );
     await expect(page.getByRole("group", { name: "Avg. points" })).toContainText("56.40");
-    await expect(page.getByRole("img", { name: "Scoring trend chart" })).toBeVisible();
+    await expect(page.getByRole("img", { name: /^Scoring trend chart/ })).toBeVisible();
   });
 
   test("History lists the recent games and keeps the tab in the URL", async ({ page }) => {
@@ -45,7 +45,9 @@ test.describe("Player profile", () => {
     await expect(games).toContainText("3. Guest");
   });
 
-  test("at 600px the stats card sits above the tabs", async ({ page }) => {
+  test("at 600px the tabs lead the page and the stats card sits above the tab panel", async ({
+    page,
+  }) => {
     await page.setViewportSize({ width: 600, height: 900 });
     await mockRememberedPlayerSession(page, {
       ...REMEMBERED_PLAYER_RESPONSE,
@@ -55,14 +57,17 @@ test.describe("Player profile", () => {
 
     await page.goto("/playerprofile");
 
-    const card = await page.getByRole("region", { name: "Player stats" }).boundingBox();
     const tabs = await page.getByRole("tablist", { name: "Profile sections" }).boundingBox();
-    expect(card).not.toBeNull();
+    const card = await page.getByRole("region", { name: "Player stats" }).boundingBox();
+    const panel = await page.getByRole("tabpanel").boundingBox();
     expect(tabs).not.toBeNull();
-    if (card === null || tabs === null) {
+    expect(card).not.toBeNull();
+    expect(panel).not.toBeNull();
+    if (tabs === null || card === null || panel === null) {
       return;
     }
-    expect(tabs.y).toBeGreaterThanOrEqual(card.y + card.height);
-    expect(Math.abs(tabs.x - card.x)).toBeLessThan(1);
+    expect(card.y).toBeGreaterThanOrEqual(tabs.y + tabs.height);
+    expect(panel.y).toBeGreaterThanOrEqual(card.y + card.height);
+    expect(Math.abs(panel.x - card.x)).toBeLessThan(1);
   });
 });

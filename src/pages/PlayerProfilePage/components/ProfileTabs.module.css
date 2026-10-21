@@ -1,32 +1,52 @@
-.profileTabs {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-md);
-  min-width: 0;
+.tabList {
+  position: relative;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  min-height: var(--nav-height);
+  padding: var(--space-2xs);
+  border-radius: var(--radius-pill);
+  background: var(--color-bg);
+  box-shadow: 0 4px 20px rgb(0 0 0 / 15%);
+  box-sizing: border-box;
 }
 
-.tabList {
-  display: flex;
-  gap: var(--space-xs);
-  border-bottom: 1px solid var(--color-surface);
+.tabList::before {
+  content: "";
+  position: absolute;
+  top: var(--space-2xs);
+  bottom: var(--space-2xs);
+  left: var(--space-2xs);
+  width: calc((100% - 2 * var(--space-2xs)) / 3);
+  border-radius: var(--radius-pill);
+  background: var(--color-primary);
+  transition: transform 0.55s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.indicatorOverview::before {
+  transform: translateX(0);
+}
+
+.indicatorPerformance::before {
+  transform: translateX(100%);
+}
+
+.indicatorHistory::before {
+  transform: translateX(200%);
 }
 
 .tab {
-  padding: var(--padding-xs) var(--padding-sm);
+  position: relative;
+  z-index: 1;
+  padding: 6px var(--space-sm);
   border: none;
-  border-bottom: 3px solid transparent;
+  border-radius: var(--radius-pill);
   background: none;
-  color: var(--color-text-muted);
+  color: var(--color-text);
   font: inherit;
+  font-size: var(--font-size-16);
   font-weight: var(--font-weight-bold);
   cursor: pointer;
-  transition:
-    color var(--transition-fast),
-    border-color var(--transition-fast);
-}
-
-.tab:hover {
-  color: var(--color-text);
+  transition: color 0.55s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 .tab:focus-visible {
@@ -35,8 +55,19 @@
 }
 
 .tabActive {
-  border-bottom-color: var(--color-primary);
-  color: var(--color-primary);
+  color: var(--white);
+}
+
+.tabActive:focus-visible {
+  outline-color: var(--color-text);
+}
+
+.tabPanel {
+  min-width: 0;
+  padding: var(--padding-md);
+  border-radius: var(--radius-lg);
+  background: var(--color-bg);
+  box-sizing: border-box;
 }
 
 .tabPanel:focus-visible {
@@ -44,7 +75,20 @@
   outline-offset: 4px;
 }
 
-.loading {
-  margin: 0;
-  color: var(--color-text-muted);
+@media (width <= 600px) {
+  .tab {
+    padding: 6px var(--space-xs);
+    font-size: var(--font-size-14);
+  }
+
+  .tabPanel {
+    padding: var(--padding-sm);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tabList::before,
+  .tab {
+    transition: none;
+  }
 }

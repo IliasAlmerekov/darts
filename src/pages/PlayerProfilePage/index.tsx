@@ -1,29 +1,32 @@
-import React from "react";
-import { ErrorState } from "@/shared/ui/error-state";
-import { ProfileTabs } from "./components/ProfileTabs";
+import React, { useId } from "react";
+import madeByDeepblue from "@/assets/icons/madeByDeepblue.svg";
+import { ProfileTabList, ProfileTabPanel } from "./components/ProfileTabs";
 import { StatsCard } from "./components/StatsCard";
 import { usePlayerProfilePage } from "./usePlayerProfilePage";
 import styles from "./PlayerProfilePage.module.css";
 
 function PlayerProfilePage(): React.JSX.Element {
   const { displayName, profileState, tab, selectTab } = usePlayerProfilePage();
+  const tabsId = useId();
 
   return (
-    <main className={styles.playerProfile}>
-      <h1 className={styles.pageTitle}>Player Profile</h1>
-      <div className={styles.profileLayout}>
-        <StatsCard displayName={displayName} profileState={profileState} />
-        {profileState.status === "error" ? (
-          <ErrorState
-            title="Could not load your profile"
-            message={profileState.message}
-            primaryAction={{ label: "Retry", onClick: profileState.retry }}
-          />
-        ) : (
-          <ProfileTabs tab={tab} onSelectTab={selectTab} profileState={profileState} />
-        )}
-      </div>
-    </main>
+    <div className={styles.page}>
+      <header className={styles.navRow}>
+        <img className={styles.brand} src={madeByDeepblue} alt="" />
+        <ProfileTabList idPrefix={tabsId} tab={tab} onSelectTab={selectTab} />
+      </header>
+      <main className={styles.playerProfile}>
+        <h1 className={styles.pageTitle}>Player Profile</h1>
+        <StatsCard className={styles.card} displayName={displayName} profileState={profileState} />
+        <ProfileTabPanel
+          className={styles.panel}
+          idPrefix={tabsId}
+          tab={tab}
+          displayName={displayName}
+          profileState={profileState}
+        />
+      </main>
+    </div>
   );
 }
 
