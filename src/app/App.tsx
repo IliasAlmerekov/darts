@@ -156,11 +156,6 @@ function createAppRouter(): ReturnType<typeof createBrowserRouter> {
         <Route path="*" element={<NotFoundPage />} errorElement={<ErrorBoundary />} />
       </Route>,
     ),
-    {
-      future: {
-        v7_relativeSplatPath: true,
-      },
-    },
   );
 }
 
@@ -179,7 +174,7 @@ function App(): React.JSX.Element {
     <QueryClientProvider client={queryClient}>
       <StatisticsPrefetch />
       <div className={styles.root}>
-        <RouterProvider router={router} future={{ v7_startTransition: true }} />
+        <RouterProvider router={router} />
       </div>
     </QueryClientProvider>
   );

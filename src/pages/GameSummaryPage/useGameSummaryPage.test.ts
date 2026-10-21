@@ -1,6 +1,7 @@
 // @vitest-environment jsdom
 import { act, renderHook, waitFor } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { makeLoaderArgs } from "@/test/loaderArgs";
 import type { ReactNode } from "react";
 import { createElement } from "react";
 import { QueryClientProvider, type QueryClient } from "@tanstack/react-query";
@@ -716,7 +717,7 @@ describe("useGameSummaryPage", () => {
     it("should fill the finishedGame cache before the page renders", async () => {
       getFinishedGameMock.mockResolvedValueOnce([finishedPlayer(3, "Carol")]);
 
-      await gameSummaryLoader({ params: { id: "42" }, request: new Request("http://x/") });
+      await gameSummaryLoader(makeLoaderArgs(new Request("http://x/"), { id: "42" }));
 
       expect(appQueryClient.getQueryData(gameQueries.finished(42).queryKey)).toEqual([
         finishedPlayer(3, "Carol"),
@@ -726,7 +727,7 @@ describe("useGameSummaryPage", () => {
     it("should make the summary's game the rematch source for the next room", async () => {
       getFinishedGameMock.mockResolvedValueOnce([finishedPlayer(3, "Carol")]);
 
-      await gameSummaryLoader({ params: { id: "42" }, request: new Request("http://x/") });
+      await gameSummaryLoader(makeLoaderArgs(new Request("http://x/"), { id: "42" }));
 
       expect($lastFinishedGameId.get()).toBe(42);
     });
@@ -734,7 +735,7 @@ describe("useGameSummaryPage", () => {
     it("should not fetch again when the game page already seeded the cache", async () => {
       appQueryClient.setQueryData(gameQueries.finished(42).queryKey, [finishedPlayer(3, "Carol")]);
 
-      await gameSummaryLoader({ params: { id: "42" }, request: new Request("http://x/") });
+      await gameSummaryLoader(makeLoaderArgs(new Request("http://x/"), { id: "42" }));
 
       expect(getFinishedGameMock).not.toHaveBeenCalled();
     });
@@ -743,13 +744,13 @@ describe("useGameSummaryPage", () => {
       getFinishedGameMock.mockRejectedValueOnce(new Error("network down"));
 
       await expect(
-        gameSummaryLoader({ params: { id: "42" }, request: new Request("http://x/") }),
+        gameSummaryLoader(makeLoaderArgs(new Request("http://x/"), { id: "42" })),
       ).resolves.toBeNull();
     });
 
     it.each(["abc", "0", "-1"])("should fetch nothing for the invalid game id %s", async (id) => {
       await expect(
-        gameSummaryLoader({ params: { id }, request: new Request("http://x/") }),
+        gameSummaryLoader(makeLoaderArgs(new Request("http://x/"), { id })),
       ).resolves.toBeNull();
 
       expect(getFinishedGameMock).not.toHaveBeenCalled();

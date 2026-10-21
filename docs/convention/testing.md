@@ -6,8 +6,7 @@ Use this file when adding or changing Vitest, Testing Library, or Playwright tes
 
 ```text
 src/**/<name>.test.ts(x)            # Vitest, next to the source file
-src/test/vitest.setup.tsx           # global setup; wraps BrowserRouter/MemoryRouter with future flags
-src/test/routerFutureFlags.tsx      # the router future-flag shim used by the setup
+src/test/loaderArgs.ts              # makeLoaderArgs() for calling a route loader in a test
 src/test/architecture/              # repo-wide checks (import aliases, ESLint/Stylelint config, clientLogger adoption)
 src/test/playwright/                # Playwright helper logic that needs unit tests (credentials, live preflight)
 src/shared/types/*.test-support.ts  # shared DTO builders
