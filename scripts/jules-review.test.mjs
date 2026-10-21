@@ -69,7 +69,7 @@ describe("runJulesReview", () => {
     vi.clearAllMocks();
   });
 
-  it("sends the diff to Jules and posts verified findings on diff lines inline", async () => {
+  it("sends the diff to Jules and posts findings with a matching quote inline", async () => {
     const review = {
       summary: "One bug.",
       findings: [
@@ -79,42 +79,21 @@ describe("runJulesReview", () => {
           severity: "major",
           title: "Wrong value",
           body: "Use 2.",
-          evidence: { command: "npx vitest run src/score.test.ts", exitCode: 1 },
-        },
-        {
-          path: "src/score.ts",
-          line: 12,
-          severity: "minor",
-          title: "Unused",
-          body: "",
-          evidence: { quote: "const c = 4;" },
+          quote: "const b = 3;\nconst c = 4;",
         },
       ],
     };
     const { fetch, calls } = fakeFetch({
       ...sessionRoutes(
         ["IN_PROGRESS", "COMPLETED"],
-        [
-          {
-            artifacts: [
-              {
-                bashOutput: {
-                  command: "cd /app && npx vitest run  src/score.test.ts",
-                  output: "FAIL src/score.test.ts\nexpected 2, got 3",
-                  exitCode: 1,
-                },
-              },
-            ],
-          },
-          { agentMessaged: { agentMessage: reviewMessage(review) } },
-        ],
+        [{ agentMessaged: { agentMessage: reviewMessage(review) } }],
       ),
       [`POST ${GITHUB}/repos/acme/darts/pulls/7/reviews`]: () => json({ id: 1 }),
     });
 
     const result = await run(fetch);
 
-    expect(result).toEqual({ status: "reviewed", inline: 2, general: 0, unverified: 0 });
+    expect(result).toEqual({ status: "reviewed", inline: 1, unverified: 0 });
     const create = calls.find((call) => call.key === `POST ${JULES}/sessions`);
     expect(create.headers["X-Goog-Api-Key"]).toBe("jules-key");
     expect(create.body.sourceContext).toEqual({
@@ -122,89 +101,43 @@ describe("runJulesReview", () => {
       githubRepoContext: { startingBranch: "feat/7-score" },
     });
     expect(create.body.prompt).toContain("+const c = 4;");
-    expect(create.body.prompt).toContain('"evidence"');
-    expect(create.body.prompt).toContain(".jules/review.json");
+    expect(create.body.prompt).toContain("Do not install dependencies, run commands or tests");
     expect(create.body).not.toHaveProperty("automationMode");
 
     const posted = calls.find((call) => call.key.endsWith("/pulls/7/reviews"));
     expect(posted.headers.Authorization).toBe("Bearer gh-token");
     expect(posted.body).toMatchObject({ commit_id: "abc123", event: "COMMENT" });
-    const [bug, unused] = posted.body.comments;
-    expect(bug).toMatchObject({ path: "src/score.ts", line: 11, side: "RIGHT" });
-    expect(bug.body).toContain("**major**: Wrong value\n\nUse 2.");
-    expect(bug.body).toContain("Evidence: `npx vitest run src/score.test.ts` exited with 1.");
-    expect(bug.body).toContain("expected 2, got 3");
-    expect(unused).toMatchObject({ path: "src/score.ts", line: 12, side: "RIGHT" });
-    expect(unused.body).toContain("Evidence: the quoted code matches the diff.");
+    expect(posted.body.comments).toEqual([
+      { path: "src/score.ts", line: 11, side: "RIGHT", body: "**major**: Wrong value\n\nUse 2." },
+    ]);
     expect(posted.body.body).toContain("One bug.");
     expect(posted.body.body).toContain("https://jules.google.com/session/42");
   });
 
-  it("keeps findings without evidence that checks out out of the inline comments", async () => {
-    const finding = (title, line, evidence) => ({
-      path: "src/score.ts",
-      line,
-      severity: "major",
-      title,
-      evidence,
-    });
+  it("lists findings whose quote is missing or does not match the diff as unverified", async () => {
+    const finding = (title, path, line, quote) => ({ path, line, severity: "major", title, quote });
     const review = {
       summary: "Mixed.",
       findings: [
-        finding("Not run", 11, { command: "npx vitest run src/fake.test.ts", exitCode: 1 }),
-        finding("Wrong exit code", 11, { command: "npm test", exitCode: 2 }),
-        finding("Part of a run", 11, { command: "npx vitest run a.test.ts", exitCode: 1 }),
-        finding("Passing command", 11, { command: "npm run lint", exitCode: 0 }),
-        finding("Wrong quote", 10, { quote: "const a = 2;" }),
-        finding("No evidence", 13),
-        {
-          path: "src/other.ts",
-          line: 3,
-          severity: "major",
-          title: "Breaks a caller",
-          evidence: { command: "npm run typecheck", exitCode: 2 },
-        },
+        finding("Wrong text", "src/score.ts", 10, "const a = 2;"),
+        finding("Wrong line", "src/score.ts", 12, "const b = 3;"),
+        finding("Runs past the hunk", "src/score.ts", 13, "return a;\n}"),
+        finding("Outside the diff", "src/other.ts", 3, "const x = 1;"),
+        finding("No quote", "src/score.ts", 11),
+        finding("No line", "src/score.ts", undefined, "const b = 3;"),
       ],
     };
-    const runs = [
-      { command: "npm test", output: "", exitCode: 1 },
-      { command: "npx vitest run a.test.ts b.test.ts", output: "", exitCode: 1 },
-      { command: "npm run lint", output: "", exitCode: 0 },
-      { command: "npm run typecheck", output: "TS2345", exitCode: 2 },
-    ];
     const { fetch, calls } = fakeFetch({
-      ...sessionRoutes(
-        ["COMPLETED"],
-        [
-          { artifacts: runs.map((bashOutput) => ({ bashOutput })) },
-          { agentMessaged: { agentMessage: reviewMessage(review) } },
-        ],
-      ),
+      ...sessionRoutes(["COMPLETED"], [{ agentMessaged: { agentMessage: reviewMessage(review) } }]),
       [`POST ${GITHUB}/repos/acme/darts/pulls/7/reviews`]: () => json({ id: 1 }),
     });
 
-    await expect(run(fetch)).resolves.toEqual({
-      status: "reviewed",
-      inline: 0,
-      general: 1,
-      unverified: 6,
-    });
+    await expect(run(fetch)).resolves.toEqual({ status: "reviewed", inline: 0, unverified: 6 });
 
     const posted = calls.find((call) => call.key.endsWith("/pulls/7/reviews"));
     expect(posted.body.comments).toEqual([]);
-    const [verified, unverified] = posted.body.body.split("**Unverified findings**");
-    expect(verified).toContain("`src/other.ts:3` Breaks a caller");
-    expect(verified).toContain("`npm run typecheck` exited with 2.");
-    for (const title of [
-      "Not run",
-      "Wrong exit code",
-      "Part of a run",
-      "Passing command",
-      "Wrong quote",
-      "No evidence",
-    ]) {
-      expect(unverified).toContain(title);
-    }
+    const [, unverified] = posted.body.body.split("**Unverified findings**");
+    for (const { title } of review.findings) expect(unverified).toContain(title);
   });
 
   it("posts the review as soon as it appears, while the session still runs", async () => {
@@ -236,7 +169,6 @@ describe("runJulesReview", () => {
     await expect(run(fetch)).resolves.toEqual({
       status: "reviewed",
       inline: 0,
-      general: 0,
       unverified: 0,
     });
   });
@@ -280,7 +212,7 @@ describe("runJulesReview", () => {
           line: 11,
           severity: "major",
           title: "Wrong value",
-          evidence: { quote: "const b = 3;" },
+          quote: "const b = 3;",
         },
       ],
     };
@@ -365,7 +297,7 @@ describe("extractReview", () => {
           severity: "blocker",
           title: " Crash ",
           body: "x",
-          evidence: { command: " npm test ", exitCode: 1 },
+          quote: "  crash();",
         },
         { path: "b.ts", line: 0, severity: "huge", title: "No line" },
         { path: "c.ts", line: 4 },
@@ -387,7 +319,7 @@ describe("extractReview", () => {
           severity: "blocker",
           title: "Crash",
           body: "x",
-          evidence: { command: "npm test", exitCode: 1, quote: null },
+          quote: "  crash();",
         },
         {
           path: "b.ts",
@@ -395,7 +327,7 @@ describe("extractReview", () => {
           severity: "minor",
           title: "No line",
           body: "",
-          evidence: { command: null, exitCode: null, quote: null },
+          quote: null,
         },
       ],
       dropped: 1,
