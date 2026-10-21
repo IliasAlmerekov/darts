@@ -1,6 +1,7 @@
 import { expect, test } from "../shared/test";
 import { loginAsAdmin } from "../shared/start-page-helpers";
 import { mockLobbyApi } from "../shared/lobby-route-mocks";
+import { lobbyTabletGame, mockTabletGame } from "../shared/tablet-game-mocks";
 
 test.describe("Pre-create game settings", () => {
   test("sends selected settings when creating a room after editing /settings", async ({ page }) => {
@@ -15,8 +16,10 @@ test.describe("Pre-create game settings", () => {
 
     await page.goto("/start");
 
+    const answerTabletGame = await mockTabletGame(page);
     await page.route("**/api/room/create", async (route, request) => {
       createRoomPayload = request.postDataJSON() as Record<string, unknown>;
+      answerTabletGame(lobbyTabletGame(520));
       await route.fulfill({
         status: 200,
         contentType: "application/json",

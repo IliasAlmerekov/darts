@@ -42,11 +42,13 @@ function lastPathSegmentAsId(route: Route): number {
 /**
  * In-memory backend for the start page: create a room, add guests, start the game.
  * Every room id is served, so specs that mock `/api/room/create` with their own id still work.
+ * The tablet game is the room whose invitation the start page loaded last.
  */
 export async function mockLobbyApi(page: Page): Promise<void> {
   const players: LobbyPlayer[] = [];
   let settings: LobbySettings = { startScore: 301, doubleOut: false, tripleOut: false };
   let status: "lobby" | "started" = "lobby";
+  let tabletGameId: number | null = null;
 
   const gameState = (gameId: number) => ({
     id: gameId,
@@ -72,10 +74,18 @@ export async function mockLobbyApi(page: Page): Promise<void> {
 
   await page.route(matchPath(/^\/api\/invite\/create\/\d+$/), async (route) => {
     const gameId = lastPathSegmentAsId(route);
+    tabletGameId = gameId;
     await jsonResponse(route, {
       success: true,
       gameId,
       invitationLink: `/invite/${gameId}`,
+    });
+  });
+
+  await page.route(matchPath(/^\/api\/tablet\/game$/), async (route) => {
+    await jsonResponse(route, {
+      game: tabletGameId === null ? null : { id: tabletGameId, status },
+      lastFinishedGameId: null,
     });
   });
 

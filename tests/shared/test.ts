@@ -1,4 +1,5 @@
 import { test as base, expect } from "@playwright/test";
+import { NO_TABLET_GAME } from "./tablet-game-mocks";
 
 interface UnmockedApiGuardFixtures {
   failOnUnmockedApi: boolean;
@@ -41,7 +42,8 @@ export const test = base.extend<UnmockedApiGuardFixtures>({
     },
     { auto: true },
   ],
-  // The app shell prefetches statistics on every page; specs about statistics override this.
+  // The app shell prefetches statistics on every page, and the admin routes read the tablet
+  // game; specs about statistics or a game on the tablet override these.
   // Depending on the guard fixture registers this route after it, so this mock wins over the guard.
   backgroundApiMocks: [
     async ({ page, unmockedApiRequests: _guardRegisteredFirst }, use) => {
@@ -52,6 +54,16 @@ export const test = base.extend<UnmockedApiGuardFixtures>({
             status: 200,
             contentType: "application/json",
             body: JSON.stringify(EMPTY_PLAYER_STATS_RESPONSE),
+          });
+        },
+      );
+      await page.route(
+        (url) => url.pathname === "/api/tablet/game",
+        async (route) => {
+          await route.fulfill({
+            status: 200,
+            contentType: "application/json",
+            body: JSON.stringify(NO_TABLET_GAME),
           });
         },
       );
