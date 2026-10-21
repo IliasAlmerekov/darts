@@ -1,0 +1,42 @@
+version: 2
+updates:
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+    open-pull-requests-limit: 5
+    groups:
+      npm-minor-patch:
+        update-types: [minor, patch]
+    commit-message:
+      prefix: build
+      include: scope
+
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+    groups:
+      github-actions:
+        patterns: ["*"]
+    commit-message:
+      prefix: ci
+      include: scope
+
+  - package-ecosystem: docker
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+    ignore:
+      # A Node major also moves .nvmrc and CI, so it is done by hand.
+      - dependency-name: node
+        update-types: [version-update:semver-major]
+      # Odd nginx minors are mainline releases; stay on the 1.28 stable line.
+      - dependency-name: nginx
+        update-types: [version-update:semver-major, version-update:semver-minor]
+    commit-message:
+      prefix: build
+      include: scope
