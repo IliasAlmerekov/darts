@@ -163,7 +163,7 @@ Rules:
   `withSuspense(...)` helper. There is no single top-level `<Suspense>` for all routes.
 - Every `<Route>` carries an explicit `errorElement={<ErrorBoundary />}`. There is no
   single global error boundary outside the router.
-- React Router 6 loaders fetch route data (`startPageLoader`, `gameDetailLoader`,
+- React Router 7 loaders fetch route data (`startPageLoader`, `gameDetailLoader`,
   `gameSummaryLoader`, `gamesOverviewLoader`). New page-level data fetches go through a
   loader, not `useEffect` after mount. The loader fills the query cache with
   `queryClient.ensureQueryData(...)` and the page reads the same key with `useQuery`

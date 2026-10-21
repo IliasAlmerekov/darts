@@ -116,7 +116,7 @@ shared/
 - **React 18** — functional components only
 - **TypeScript** — strict mode
 - **Vite** — build tooling
-- **React Router 6** — client-side routing with lazy-loaded routes
+- **React Router 7** — client-side routing with lazy-loaded routes
 - **Nanostores** — lightweight state management
 - **CSS Modules** — scoped styles
 - **@dnd-kit** — drag and drop
