@@ -8,7 +8,7 @@ interface ProfileParticipant {
   label: string;
 }
 
-export interface ProfileHistoryRow {
+interface ProfileHistoryRow {
   gameId: number;
   summary: string;
   participants: ProfileParticipant[];

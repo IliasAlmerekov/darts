@@ -24,6 +24,7 @@ and this project does **not** yet follow [Semantic Versioning](https://semver.or
 
 ### Changed
 
+- Dependencies: knip is 6.41.0. It reports an exported type that no file imports, even when another export uses it, so `ThrowDisplayValue`, `HttpMethod`, `QueryValue`, `ProfileHistoryRow` and `Round` are no longer exported (#243)
 - Dependencies: `eslint-plugin-react-hooks` is 7.1.1. ESLint runs its `rules-of-hooks` and `exhaustive-deps` rules, as with version 5. The React Compiler rules that version 7 adds to `recommended` stay off until #241 (#238)
 - Dependencies: Prettier is 3.9.10, which writes a union type that fits after `=` on one line. The file table in `docs/player-profile-login-success/research/research.md` escapes the `|` in `AuthenticatedUser \| null`, so it has two columns again (#235)
 - Dependencies: `react-router-dom` is 7.18.4. The v7 future flags and the test shim that set them are gone, `ErrorBoundary.test.tsx` throws `data()` instead of the removed `json()`, and loader tests build their arguments with `makeLoaderArgs()` from `src/test/loaderArgs.ts` (#231)
