@@ -518,6 +518,9 @@
                     },
                     "403": {
                         "description": "Angemeldet ohne `ROLE_ADMIN` (z. B. ein Spieler)."
+                    },
+                    "404": {
+                        "description": "Eine ID in `playerIds` geh\u00f6rt zu keinem Benutzer (`PLAYER_NOT_FOUND`). Es wird keine Lobby angelegt."
                     }
                 }
             }
@@ -2369,9 +2372,7 @@
                         "type": "integer",
                         "nullable": true,
                         "deprecated": true,
-                        "default": null,
-                        "minimum": 0,
-                        "exclusiveMinimum": true
+                        "default": null
                     },
                     "playerIds": {
                         "type": "array",
@@ -2379,7 +2380,8 @@
                             "type": "integer"
                         },
                         "nullable": true,
-                        "default": null
+                        "default": null,
+                        "maxItems": 10
                     },
                     "excludePlayerIds": {
                         "type": "array",
