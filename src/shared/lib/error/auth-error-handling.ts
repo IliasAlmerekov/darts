@@ -35,7 +35,7 @@ const INVITATION_ERROR_MESSAGES: Record<InvitationError, string> = {
 
 const TOO_MANY_REQUESTS = 429;
 const REGISTRATION_ACCOUNT_EXISTS = "REGISTRATION_ACCOUNT_EXISTS";
-// Matches "Your password should be at least 8 characters long." but not rules such as
+// Matches "Your password should be at least 6 characters long." but not rules such as
 // "at least one digit".
 const PASSWORD_MIN_LENGTH_PATTERN = /password.*at least \d+ characters/;
 const SECONDS_PER_MINUTE = 60;
