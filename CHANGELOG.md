@@ -24,6 +24,7 @@ and this project does **not** yet follow [Semantic Versioning](https://semver.or
 
 ### Changed
 
+- Backend contract: `docs/backend-api-contract.json` is refreshed again. `POST /api/room/create` documents 404 `PLAYER_NOT_FOUND` for an unknown player id and 409 `GAME_ROOM_FULL` when a new lobby would seat more than 10 players, and no longer validates the ignored `previousGameId`. The dump also carries the `@db-n.com` registration rule from darts-backend#144 in its descriptions (IliasAlmerekov/darts-backend#133)
 - Backend contract: `docs/backend-api-contract.json` is refreshed. It marks `previousGameId` in `POST /api/room/create` as deprecated and ignored, documents `GET /api/tablet/game` and the 409 `GAME_NOT_NEWEST` answers of undo, reopen and rematch (IliasAlmerekov/darts-backend#133)
 - Registration: the password needs at least 6 characters instead of 8, the same minimum as darts-backend since darts-backend#130. The hint reads "At least 6 characters." and a short password the backend rejects shows "Password must be at least 6 characters." `docs/backend-api-contract.json` is a fresh dump of darts-backend `main` (#250)
 - Docs: `docs/convention/architecture.md` and the README name React Router 7, the version since the `react-router-dom` 7.18.4 update (#155)
