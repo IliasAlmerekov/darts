@@ -59,7 +59,7 @@ export function LoginForm({
               type="email"
               name="_username"
               id="_username"
-              placeholder="name@example.com..."
+              placeholder="name@db-n.com"
               className={styles.formControl}
               required
               disabled={loading}

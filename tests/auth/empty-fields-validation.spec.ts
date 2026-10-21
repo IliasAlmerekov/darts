@@ -24,7 +24,7 @@ test.describe("Login Form Functionality", () => {
     await expect(page.getByRole("textbox", { name: "Password *" })).toHaveValue("");
     await expect(page.getByRole("textbox", { name: "Email *" })).toHaveAttribute(
       "placeholder",
-      "name@example.com...",
+      "name@db-n.com",
     );
     await expect(page.getByRole("textbox", { name: "Password *" })).toHaveAttribute(
       "placeholder",
