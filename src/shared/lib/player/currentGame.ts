@@ -2,9 +2,7 @@ import type { CurrentGameResponse } from "@/shared/api/player";
 
 /** The game the server says a player belongs to. */
 export type CurrentGame =
-  | { kind: "none" }
-  | { kind: "lobby"; gameId: number }
-  | { kind: "started"; gameId: number };
+  { kind: "none" } | { kind: "lobby"; gameId: number } | { kind: "started"; gameId: number };
 
 /**
  * Reads the current-game answer. The contract lets either field be null on its own: without
