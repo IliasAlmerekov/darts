@@ -114,7 +114,6 @@ describe("createRoom", () => {
       .mockImplementationOnce(respondWith(invitationExample));
 
     await createRoom({
-      previousGameId: 77,
       startScore: 501,
       doubleOut: true,
       tripleOut: false,
@@ -124,7 +123,6 @@ describe("createRoom", () => {
       1,
       "/room/create",
       {
-        previousGameId: 77,
         startScore: 501,
         doubleOut: true,
         tripleOut: false,

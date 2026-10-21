@@ -475,7 +475,7 @@
                     "Game Rooms"
                 ],
                 "summary": "Spielraum erstellen oder die offene Lobby zur\u00fcckgeben",
-                "description": "Es ist h\u00f6chstens ein Spiel in der Lobby. Ist ein Spiel in der Lobby, liefert der Endpoint dessen `gameId` und legt kein Spiel an. Die Lobby \u00fcbernimmt `startScore`, `doubleOut` und `tripleOut` aus dem Request und beh\u00e4lt ihre Spieler; `previousGameId`, `playerIds` und `excludePlayerIds` werden dann ignoriert. Ohne offene Lobby wird eine neue Lobby angelegt.",
+                "description": "Es ist h\u00f6chstens ein Spiel in der Lobby. Ist ein Spiel in der Lobby, liefert der Endpoint dessen `gameId` und legt kein Spiel an. Die Lobby \u00fcbernimmt `startScore`, `doubleOut` und `tripleOut` aus dem Request und beh\u00e4lt ihre Spieler; `playerIds` und `excludePlayerIds` werden dann ignoriert. Ohne offene Lobby wird eine neue Lobby mit den Spielern aus `playerIds` ohne `excludePlayerIds` angelegt. `previousGameId` ist veraltet und wird immer ignoriert.",
                 "operationId": "post_room_create",
                 "requestBody": {
                     "required": false,
@@ -517,7 +517,7 @@
                         "description": "Der Request-Body ist ung\u00fcltig und besteht die Validierung nicht."
                     },
                     "403": {
-                        "description": "Zugriff verweigert: `/api` ist per Firewall nur f\u00fcr ROLE_ADMIN offen, und der Code pr\u00fcft zus\u00e4tzlich die Spielteilnahme."
+                        "description": "Angemeldet ohne `ROLE_ADMIN` (z. B. ein Spieler)."
                     }
                 }
             }
@@ -2365,8 +2365,10 @@
             "RoomCreateRequest": {
                 "properties": {
                     "previousGameId": {
+                        "description": "Veraltet und ignoriert. Der Server \u00fcbernimmt keine Spieler aus diesem Spiel.",
                         "type": "integer",
                         "nullable": true,
+                        "deprecated": true,
                         "default": null,
                         "minimum": 0,
                         "exclusiveMinimum": true

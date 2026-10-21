@@ -21,11 +21,6 @@ import {
 } from "@/shared/types/game.test-support";
 import { gameQueries } from "@/shared/query/game.queries";
 import { createQueryClient, queryClient as appQueryClient } from "@/shared/query/queryClient";
-import {
-  $lastFinishedGameId,
-  clearLastFinishedGameId,
-  setLastFinishedGameId,
-} from "@/shared/store";
 import { gameDetailLoader, useGameDetailPage } from "./useGameDetailPage";
 
 const getFinishedGameMock = vi.fn();
@@ -83,16 +78,6 @@ describe("gameDetailLoader", () => {
     await gameDetailLoader(makeLoaderArgs(new Request("http://localhost/"), { id: "42" }));
 
     expect(getFinishedGameMock).not.toHaveBeenCalled();
-  });
-
-  it("should not make the viewed game the rematch source for the next room", async () => {
-    setLastFinishedGameId(7);
-    getFinishedGameMock.mockResolvedValue([buildFinishedPlayer()]);
-
-    await gameDetailLoader(makeLoaderArgs(new Request("http://localhost/"), { id: "42" }));
-
-    expect($lastFinishedGameId.get()).toBe(7);
-    clearLastFinishedGameId(7);
   });
 
   it("should throw a 400 Response when the route id is invalid", async () => {

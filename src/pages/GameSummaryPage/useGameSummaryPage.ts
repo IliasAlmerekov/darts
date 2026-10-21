@@ -5,9 +5,7 @@ import { getGameThrows, createRematchGame, startRematch, undoLastThrow } from "@
 import type { UndoThrowResponse, UndoAckResponse } from "@/types";
 import {
   $gameData,
-  clearLastFinishedGameId,
   setCurrentGameId,
-  setLastFinishedGameId,
   setGameData,
   setGameScoreboardDelta,
   setInvitation,
@@ -53,8 +51,7 @@ function parseGameId(param: string | undefined): number | null {
  * React Router 6 loader
  * Registers the route: loader: gameSummaryLoader
  * Returns null without fetching when the route has no valid game id.
- * Fills the `['finishedGame', id]` and the game settings queries before the page renders and
- * records the game as the session's last finished game.
+ * Fills the `['finishedGame', id]` and the game settings queries before the page renders.
  */
 export async function gameSummaryLoader({ params }: LoaderFunctionArgs): Promise<null> {
   const gameId = parseGameId(params.id);
@@ -69,8 +66,6 @@ export async function gameSummaryLoader({ params }: LoaderFunctionArgs): Promise
     queryClient.ensureQueryData(gameQueries.finished(gameId)).catch(() => undefined),
     queryClient.ensureQueryData(gameQueries.settings(gameId)).catch(() => undefined),
   ]);
-  // The summary only follows a game the session played, unlike game detail.
-  setLastFinishedGameId(gameId);
   return null;
 }
 
@@ -162,7 +157,6 @@ export function useGameSummaryPage(): UseGameSummaryPageResult {
   const releaseFinishedGame = useCallback(
     (gameId: number): void => {
       setReleasedGameId(gameId);
-      clearLastFinishedGameId(gameId);
       client.removeQueries({ queryKey: gameQueries.finished(gameId).queryKey });
     },
     [client],
@@ -275,8 +269,6 @@ export function useGameSummaryPage(): UseGameSummaryPageResult {
   const handleBackToStart = useCallback(async (): Promise<void> => {
     if (finishedGameIdFromRoute === null) return;
 
-    resetRoomStore();
-
     try {
       setActionError(null);
       const rematch = await createRematchGame(finishedGameIdFromRoute);
@@ -284,6 +276,8 @@ export function useGameSummaryPage(): UseGameSummaryPageResult {
         throw new Error("Invalid rematch response: missing game id");
       }
 
+      // A failed rematch, such as 409 GAME_NOT_NEWEST, leaves the open room untouched.
+      resetRoomStore();
       releaseFinishedGame(finishedGameIdFromRoute);
       setCurrentGameId(rematch.gameId);
       navigate(ROUTES.start(rematch.gameId));

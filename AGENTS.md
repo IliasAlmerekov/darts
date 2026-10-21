@@ -48,7 +48,7 @@ line in the report.
 
 Reach for the first option that works: no code at all, then a component, hook, or helper
 already in `src/shared`, then React or browser built-ins, then an installed package, then
-new code.
+one line a reader gets at a glance, then new code.
 
 - Add no abstraction, prop, option, or "for later" code the task does not need. Deletion
   beats addition.

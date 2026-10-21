@@ -24,6 +24,7 @@ and this project does **not** yet follow [Semantic Versioning](https://semver.or
 
 ### Changed
 
+- Backend contract: `docs/backend-api-contract.json` is refreshed. It marks `previousGameId` in `POST /api/room/create` as deprecated and ignored, documents `GET /api/tablet/game` and the 409 `GAME_NOT_NEWEST` answers of undo, reopen and rematch (IliasAlmerekov/darts-backend#133)
 - Registration: the password needs at least 6 characters instead of 8, the same minimum as darts-backend since darts-backend#130. The hint reads "At least 6 characters." and a short password the backend rejects shows "Password must be at least 6 characters." `docs/backend-api-contract.json` is a fresh dump of darts-backend `main` (#250)
 - Docs: `docs/convention/architecture.md` and the README name React Router 7, the version since the `react-router-dom` 7.18.4 update (#155)
 - Dependencies: knip is 6.41.0. It reports an exported type that no file imports, even when another export uses it, so `ThrowDisplayValue`, `HttpMethod`, `QueryValue`, `ProfileHistoryRow` and `Round` are no longer exported (#243)
@@ -45,6 +46,7 @@ and this project does **not** yet follow [Semantic Versioning](https://semver.or
 
 ### Removed
 
+- Start page: creating a room no longer sends `previousGameId`, which the backend ignores since IliasAlmerekov/darts-backend#133. The `$lastFinishedGameId` store that fed it is gone (#252)
 - Auth: the optional `profile` field of the login response and the profile envelope of the auth check, which the backend never sends (#198)
 - Docs: `docs/convention/coding-standards.md` and `docs/repo-map.md` are gone. The first repeated `AGENTS.md` apart from its table, which moved there, and the second restated the directory tree and had fallen behind it (#211)
 - Docs: `CONTRIBUTING.md` is gone. The README now carries the setup steps, and the rest already lived in `AGENTS.md` and `docs/convention/` (#208)
@@ -52,6 +54,7 @@ and this project does **not** yet follow [Semantic Versioning](https://semver.or
 
 ### Fixed
 
+- Summary: when Back To Start fails, for example with 409 `GAME_NOT_NEWEST` on an older summary, the open room's game id and invitation stay in the store. The page now clears them only after the rematch succeeds (#252)
 - Summary: reloading `/summary/<id>` or opening it in a new tab shows the podium and leaderboard instead of "start score is missing". The page reads the start score through `GET /api/game/{id}/settings` and its loader prefetches it. Coming from the game page sends no extra request. A failed settings read shows an error with Retry (#229)
 - Buttons: the red Log out, Cancel (game exit) and mobile Start buttons show white text at 4.9:1 contrast instead of 3.84:1 (#198)
 - Auth: a player who opens a route their role may not use, such as the start page, goes to the Player profile instead of the Waiting room (#199)
