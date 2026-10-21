@@ -24,6 +24,7 @@ and this project does **not** yet follow [Semantic Versioning](https://semver.or
 
 ### Changed
 
+- Registration: the email field says "Use your @db-n.com email address." and its placeholder is `name@db-n.com`. When the backend rejects an address on another domain (darts-backend#129), the form shows "Only @db-n.com email addresses can register." instead of "Please enter a valid email address." The form still sends any address; the backend alone checks the domain. `docs/backend-api-contract.json` documents the rule on `RegistrationRequest.email` (#254)
 - Backend contract: `docs/backend-api-contract.json` is refreshed. It marks `previousGameId` in `POST /api/room/create` as deprecated and ignored, documents `GET /api/tablet/game` and the 409 `GAME_NOT_NEWEST` answers of undo, reopen and rematch (IliasAlmerekov/darts-backend#133)
 - Registration: the password needs at least 6 characters instead of 8, the same minimum as darts-backend since darts-backend#130. The hint reads "At least 6 characters." and a short password the backend rejects shows "Password must be at least 6 characters." `docs/backend-api-contract.json` is a fresh dump of darts-backend `main` (#250)
 - Docs: `docs/convention/architecture.md` and the README name React Router 7, the version since the `react-router-dom` 7.18.4 update (#155)

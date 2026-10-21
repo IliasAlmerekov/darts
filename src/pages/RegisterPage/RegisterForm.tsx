@@ -5,6 +5,7 @@ import clsx from "clsx";
 import styles from "./RegisterForm.module.css";
 import { ROUTES } from "@/lib/router/routes";
 import { PASSWORD_MIN_LENGTH } from "@/lib/auth/password";
+import { REGISTRATION_EMAIL_DOMAIN } from "@/lib/auth/email";
 
 interface RegistrationFormProps {
   error: string | null;
@@ -66,12 +67,16 @@ export function RegisterForm({
               type="email"
               name="email"
               id="email"
-              placeholder="name@example.com..."
+              placeholder={`name${REGISTRATION_EMAIL_DOMAIN}`}
               className={styles.formControl}
               required
+              aria-describedby="email-hint"
               disabled={loading}
             />
           </div>
+          <p id="email-hint" className={styles.fieldHint}>
+            Use your {REGISTRATION_EMAIL_DOMAIN} email address.
+          </p>
         </div>
 
         <div className={styles.fieldGroup}>

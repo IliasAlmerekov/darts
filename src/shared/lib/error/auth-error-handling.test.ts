@@ -159,6 +159,44 @@ describe("mapAuthErrorMessage password minimum", () => {
   });
 });
 
+describe("mapAuthErrorMessage email domain", () => {
+  it("names @db-n.com when registration rejects an address on another domain", () => {
+    const result = mapAuthErrorMessage({
+      flow: "registration",
+      error: new ApiError("Validation failed", {
+        status: 400,
+        data: { errors: { email: ["Please register with your @db-n.com email address"] } },
+      }),
+    });
+
+    expect(result).toBe("Only @db-n.com email addresses can register.");
+  });
+
+  it("keeps the generic text when registration rejects a blank email", () => {
+    const result = mapAuthErrorMessage({
+      flow: "registration",
+      error: new ApiError("Validation failed", {
+        status: 400,
+        data: { errors: { email: ["Please enter an email address"] } },
+      }),
+    });
+
+    expect(result).toBe("Please enter a valid email address.");
+  });
+
+  it("keeps the generic text when registration rejects a malformed email", () => {
+    const result = mapAuthErrorMessage({
+      flow: "registration",
+      error: new ApiError("Validation failed", {
+        status: 400,
+        data: { errors: { email: ["Please enter a valid email address"] } },
+      }),
+    });
+
+    expect(result).toBe("Please enter a valid email address.");
+  });
+});
+
 describe("mapAuthErrorMessage rate limits", () => {
   function tooManyRequests(data: unknown, retryAfterSeconds?: number): ApiError {
     return new ApiError("Too many requests", { status: 429, data, retryAfterSeconds });
