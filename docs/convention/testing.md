@@ -17,6 +17,7 @@ tests/shared/                       # reusable Playwright fixtures, route mocks,
 tests/harness/                      # self-tests for the tests/shared fixtures
 tests/live/                         # specs against a real backend, plus preflight.setup.ts
 specs/*.md                          # ticket and manual test plans
+scripts/<name>.test.mjs             # Vitest, next to the Node script it tests
 ```
 
 Rules:
@@ -24,7 +25,8 @@ Rules:
 - Use `*.test.ts` for pure logic, API, store, and non-JSX hooks; `*.test.tsx` for React
   components, JSX, and render-based hook tests.
 - Put Playwright helper logic that needs a unit test in `src/test/playwright/` and import
-  it from `tests/`; Vitest only collects `src/**/*.test.{ts,tsx}`.
+  it from `tests/`; Vitest only collects `src/**/*.test.{ts,tsx}` and
+  `scripts/**/*.test.mjs`.
 - Do not create `__tests__` folders.
 - Do not export test-only helpers from production barrels.
 

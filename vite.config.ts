@@ -37,7 +37,7 @@ export default defineConfig(({ mode }) => {
       environment: "jsdom",
       globals: true,
       setupFiles: ["./src/test/vitest.setup.tsx"],
-      include: ["src/**/*.test.{ts,tsx}"],
+      include: ["src/**/*.test.{ts,tsx}", "scripts/**/*.test.mjs"],
       exclude: ["specs/**"],
       coverage: {
         provider: "v8",
