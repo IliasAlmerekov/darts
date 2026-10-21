@@ -238,7 +238,7 @@ Line citations below point at the docs as of commit `e94cbef`.
 ## Relevant Files
 
 | Path                                               | Why It Matters                                                                                                     |
-| -------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------ | ------ |
+| -------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------ |
 | `docs/backend-api-contract.json`                   | Current repository API source-of-truth for `/api/login/success`; does not yet show the provided `profile` payload. |
 | `docs/convention/api.md`                           | Frontend API validation and error-handling conventions for any login-success DTO change.                           |
 | `docs/convention/architecture.md`                  | Route and layer-boundary rules for login/profile page changes.                                                     |
@@ -250,7 +250,7 @@ Line citations below point at the docs as of commit `e94cbef`.
 | `src/shared/api/auth.test.ts`                      | Existing API-level auth response coverage.                                                                         |
 | `src/shared/hooks/useAuthenticatedUser.ts`         | Cross-page auth bootstrap consumer of `getAuthenticatedUser`.                                                      |
 | `src/shared/store/auth.ts`                         | Central auth cache actions and state transition behavior.                                                          |
-| `src/shared/store/auth.state.ts`                   | Auth atom data shape currently tied to `AuthenticatedUser                                                          | null`. |
+| `src/shared/store/auth.state.ts`                   | Auth atom data shape currently tied to `AuthenticatedUser \| null`.                                                |
 | `src/pages/LoginPage/useLogin.ts`                  | Login action branching for direct redirects, `/api/*` redirects, fallback session checks, and auth errors.         |
 | `src/pages/LoginPage/useLoginPage.ts`              | Redirects authenticated users away from login based on active game or safe user redirect.                          |
 | `src/pages/LoginPage/lib/safeRedirect.ts`          | Internal/same-origin redirect allowlist logic.                                                                     |

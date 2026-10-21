@@ -24,6 +24,7 @@ and this project does **not** yet follow [Semantic Versioning](https://semver.or
 
 ### Changed
 
+- Dependencies: Prettier is 3.9.10, which writes a union type that fits after `=` on one line. The file table in `docs/player-profile-login-success/research/research.md` escapes the `|` in `AuthenticatedUser \| null`, so it has two columns again (#235)
 - Dependencies: `react-router-dom` is 7.18.4. The v7 future flags and the test shim that set them are gone, `ErrorBoundary.test.tsx` throws `data()` instead of the removed `json()`, and loader tests build their arguments with `makeLoaderArgs()` from `src/test/loaderArgs.ts` (#231)
 - API: `docs/backend-api-contract.json` is a fresh, unformatted dump of darts-backend `main`, and Prettier skips it. The game, throw ack and undo ack schemas read `type` from the payload, with the contract default when it is missing, instead of adding it on the client. The rematch and login schemas drop the body `status` the contract no longer documents, so a rematch without a game id fails with status 200 (#209)
 - Agent rules: `AGENTS.md` sizes each task before the first edit. A small task goes straight to a branch, one failing test and the change; a large one goes through `/grill-with-docs`, a plan of subtasks with acceptance criteria, the `tdd` skill per subtask and `code-review` against `main`. `code-review` reads the scope rules as a repo standard, and the no-agent-attribution rule outranks the `triage` disclaimer (#219)
