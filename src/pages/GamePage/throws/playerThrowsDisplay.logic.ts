@@ -1,6 +1,6 @@
 import type { ReactElement } from "react";
 
-export type ThrowDisplayValue = React.ReactNode;
+type ThrowDisplayValue = React.ReactNode;
 
 export interface PlayerThrowsDisplayOptions {
   isActive: boolean;

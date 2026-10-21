@@ -15,7 +15,7 @@ export type GameMode = "single-out" | "double-out" | "triple-out";
 
 // --- Game UI props (merged from ui-props.ts) ---
 
-export interface Round {
+interface Round {
   throw1?: number | string;
   throw2?: number | string;
   throw3?: number | string;
