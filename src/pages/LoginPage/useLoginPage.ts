@@ -13,9 +13,7 @@ import { parseLocationState } from "@/lib/router/locationState";
 
 /** What the login page shows: the login check, the form, or a failed invitation. */
 type LoginScreen =
-  | { type: "checking" }
-  | { type: "form" }
-  | { type: "invitation-error"; message: string };
+  { type: "checking" } | { type: "form" } | { type: "invitation-error"; message: string };
 
 /**
  * Orchestrates login page state, submission, and redirect logic.

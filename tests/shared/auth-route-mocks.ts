@@ -133,10 +133,7 @@ async function mockLoginFlow(page: Page, sessionResponse: SessionResponse): Prom
 }
 
 type InvitationError =
-  | "GAME_ALREADY_STARTED"
-  | "GAME_ROOM_FULL"
-  | "GAME_NOT_FOUND"
-  | "GAME_JOIN_NOT_ALLOWED";
+  "GAME_ALREADY_STARTED" | "GAME_ROOM_FULL" | "GAME_NOT_FOUND" | "GAME_JOIN_NOT_ALLOWED";
 
 interface RememberedPlayerSessionResponse {
   success: true;

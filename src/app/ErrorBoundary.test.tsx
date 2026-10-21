@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import React from "react";
-import { createMemoryRouter, json, RouterProvider } from "react-router-dom";
+import { createMemoryRouter, data, RouterProvider } from "react-router-dom";
 import { render, screen } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import ErrorBoundary from "@/app/ErrorBoundary";
@@ -56,7 +56,7 @@ describe("ErrorBoundary", () => {
       {
         path: "/",
         loader: () => {
-          throw json({ message: "No access" }, { status: 403, statusText: "Forbidden" });
+          throw data({ message: "No access" }, { status: 403, statusText: "Forbidden" });
         },
         element: <div>Protected</div>,
         errorElement: <ErrorBoundary />,

@@ -3,6 +3,7 @@ import { act, renderHook, waitFor } from "@testing-library/react";
 import { createElement, type ReactNode } from "react";
 import { QueryClientProvider, type QueryClient } from "@tanstack/react-query";
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { makeLoaderArgs } from "@/test/loaderArgs";
 import { buildFinishedGame } from "@/shared/types/game.test-support";
 import { clientLogger } from "@/shared/services/browser/clientLogger";
 import { createQueryClient, queryClient as appQueryClient } from "@/shared/query/queryClient";
@@ -76,7 +77,7 @@ describe("gamesOverviewLoader", () => {
   it("should fill the games overview query with limit=9 and offset=0 by default", async () => {
     getGamesOverviewMock.mockResolvedValue({ items: GAMES, total: 2 });
 
-    await gamesOverviewLoader({ request: new Request("http://localhost/games"), params: {} });
+    await gamesOverviewLoader(makeLoaderArgs(new Request("http://localhost/games")));
 
     expect(getGamesOverviewMock).toHaveBeenCalledWith(9, 0, expect.any(AbortSignal));
     expect(
@@ -87,10 +88,7 @@ describe("gamesOverviewLoader", () => {
   it("should read offset from URL search params", async () => {
     getGamesOverviewMock.mockResolvedValue({ items: [], total: 0 });
 
-    await gamesOverviewLoader({
-      request: new Request("http://localhost/games?offset=18"),
-      params: {},
-    });
+    await gamesOverviewLoader(makeLoaderArgs(new Request("http://localhost/games?offset=18")));
 
     expect(getGamesOverviewMock).toHaveBeenCalledWith(9, 18, expect.any(AbortSignal));
   });
@@ -100,10 +98,9 @@ describe("gamesOverviewLoader", () => {
     async (offset) => {
       getGamesOverviewMock.mockResolvedValue({ items: [], total: 0 });
 
-      await gamesOverviewLoader({
-        request: new Request(`http://localhost/games?offset=${offset}`),
-        params: {},
-      });
+      await gamesOverviewLoader(
+        makeLoaderArgs(new Request(`http://localhost/games?offset=${offset}`)),
+      );
 
       expect(getGamesOverviewMock).toHaveBeenCalledWith(9, 0, expect.any(AbortSignal));
     },
@@ -114,7 +111,7 @@ describe("gamesOverviewLoader", () => {
     getGamesOverviewMock.mockRejectedValue(failure);
 
     await expect(
-      gamesOverviewLoader({ request: new Request("http://localhost/games"), params: {} }),
+      gamesOverviewLoader(makeLoaderArgs(new Request("http://localhost/games"))),
     ).resolves.toBeNull();
 
     expect(clientLogger.error).toHaveBeenCalledWith("statistics.games-overview.fetch.failed", {

@@ -8,9 +8,7 @@ import { ROUTES } from "@/lib/router/routes";
 
 /** What the registration page shows: the form, the joining state, or a failed invitation. */
 type RegistrationScreen =
-  | { type: "form" }
-  | { type: "joining" }
-  | { type: "invitation-error"; message: string };
+  { type: "form" } | { type: "joining" } | { type: "invitation-error"; message: string };
 
 /**
  * Orchestrates registration page state and submission handling.
