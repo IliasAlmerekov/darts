@@ -738,7 +738,7 @@ describe("useGameSummaryPage", () => {
       getFinishedGameMock.mockResolvedValueOnce([finishedPlayer(3, "Carol")]);
       getGameSettingsMock.mockResolvedValueOnce(SETTINGS_RESPONSE);
 
-      await gameSummaryLoader({ params: { id: "42" }, request: new Request("http://x/") });
+      await gameSummaryLoader(makeLoaderArgs(new Request("http://x/"), { id: "42" }));
 
       expect(appQueryClient.getQueryData(gameQueries.settings(42).queryKey)).toEqual(
         SETTINGS_RESPONSE,
@@ -750,7 +750,7 @@ describe("useGameSummaryPage", () => {
       getGameSettingsMock.mockRejectedValueOnce(new Error("network down"));
 
       await expect(
-        gameSummaryLoader({ params: { id: "42" }, request: new Request("http://x/") }),
+        gameSummaryLoader(makeLoaderArgs(new Request("http://x/"), { id: "42" })),
       ).resolves.toBeNull();
     });
 
