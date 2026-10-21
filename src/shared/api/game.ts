@@ -34,10 +34,22 @@ const REMATCH_ENDPOINT = (id: number) => `/room/${id}/rematch`;
 const GAME_SETTINGS_ENDPOINT = (id: number) => `/game/${id}/settings`;
 const RECORD_THROW_ENDPOINT = (id: number) => `/game/${id}/throw/delta`;
 const UNDO_THROW_ENDPOINT = (id: number) => `/game/${id}/throw`;
+const TABLET_GAME_ENDPOINT = "/tablet/game";
 
 // ---------------------------------------------------------------------------
 // Schemas
 // ---------------------------------------------------------------------------
+
+/** Contract `TabletGameResponseDto`: the game in the lobby or started, if any. */
+const tabletGameResponseSchema = v.object({
+  game: v.nullable(
+    v.object({
+      id: integerSchema,
+      status: v.picklist(["lobby", "started"]),
+    }),
+  ),
+  lastFinishedGameId: v.nullable(integerSchema),
+});
 
 // The contract types status as a plain string; these are the values the backend sends.
 const gameStatusSchema = v.picklist(["lobby", "started", "finished"]);
@@ -198,6 +210,8 @@ const rematchResponseSchema = v.object({
 export type GameStatus = v.InferOutput<typeof gameStatusSchema>;
 export type PlayerThrow = v.InferOutput<typeof playerThrowSchema>;
 export type GameThrowsResponse = v.InferOutput<typeof gameThrowsResponseSchema>;
+export type TabletGameResponse = v.InferOutput<typeof tabletGameResponseSchema>;
+export type TabletGame = NonNullable<TabletGameResponse["game"]>;
 export type GameSettingsResponse = v.InferOutput<typeof gameSettingsResponseSchema>;
 export type ScoreboardDelta = v.InferOutput<typeof scoreboardDeltaSchema>;
 export type ThrowAckResponse = v.InferOutput<typeof throwAckResponseSchema>;
@@ -254,6 +268,16 @@ export async function getGameThrows(
   return apiClient.get(GAME_ENDPOINT(gameId), {
     ...(signal ? { signal } : {}),
     validate: gameThrowsResponseSchema,
+  });
+}
+
+/**
+ * Reads the tablet game and the last finished game. Admin only.
+ */
+export async function getTabletGame(signal?: AbortSignal): Promise<TabletGameResponse> {
+  return apiClient.get(TABLET_GAME_ENDPOINT, {
+    ...(signal ? { signal } : {}),
+    validate: tabletGameResponseSchema,
   });
 }
 
