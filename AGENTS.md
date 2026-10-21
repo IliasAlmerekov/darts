@@ -175,9 +175,11 @@ Check these on every diff:
   sends a request cleans up on unmount and on dependency change. A request passes its
   `signal`. A late response for a previous game or player never overwrites the current one.
 - **Tests prove the change.** Each changed test fails on the base code
-  (`npm run test:red-on-base`). It asserts what the user sees through Testing Library
-  queries by role and name. A new `/api` call has a route mock in the mocked e2e suite. A
-  test that only replays its own mocks proves nothing.
+  (`npm run test:red-on-base`). A component or Playwright test asserts what the user sees
+  through queries by role and name. A logic, API, store, or non-DOM hook test asserts
+  return values or the contract, as `docs/convention/testing.md` prescribes. A new `/api`
+  call has a route mock in the mocked e2e suite. A test that only replays its own mocks
+  proves nothing.
 - **Error paths.** Every failure reaches the user as a message or a recovery path, or goes
   to `clientLogger`. A `catch` that drops the error is a P1.
 - **Gates.** A new `eslint-disable`, `@ts-ignore`, `@ts-expect-error`, a knip ignore, an

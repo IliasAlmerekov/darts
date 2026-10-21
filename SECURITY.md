@@ -26,7 +26,8 @@ P1 is High, and P2 is Medium.
 - Role checks in `src/app/ProtectedRoutes.tsx` that a player can bypass in the browser.
   They choose the screen; the backend decides access. A route guard is a finding only when
   the backend leaves the same data open.
-- `VITE_API_TARGET` in `.env` and `.env.example`. It is the local dev proxy target.
+- The local default `VITE_API_TARGET=http://localhost:8001` in `.env.example` and
+  `vite.config.ts`. It is the dev proxy target.
 - The invitation link in `sessionStorage` on the admin tablet. The tablet shows it as a QR
   code to every player anyway.
 - Test credentials read from `PLAYWRIGHT_TEST_*` environment variables.
@@ -41,6 +42,12 @@ or other text a player typed reaches the screen only as a React text child.
 
 An `href`, `src`, or `action` built from data outside the bundle accepts only `http:` and
 `https:` URLs. A `javascript:` or `data:` URL that can reach one of them is a P0.
+
+The scheme check alone does not make an origin trusted. A form `action` from such data
+points at the app's own origin, or another origin can collect what the player types: a P0.
+An `href` or `src` from such data that leads to another origin matches an allowlist in the
+bundle. A link to an origin that data chose is a P1, because it opens a phishing page from
+inside the app.
 
 ### Redirects and navigation
 
@@ -73,9 +80,9 @@ env variable.
 ### Logs and errors
 
 Logs go through `clientLogger`, which redacts keys that match its `SENSITIVE_KEY_PATTERN`.
-A log field that carries a secret under a key the pattern misses, or a narrower pattern,
-is a P1. A message on screen shows the user-facing
-text from `src/shared/lib/error/`, never a raw response body or stack trace.
+A log field that carries a password, token, session id, or API key under a key the pattern
+misses is a leaked secret and a P0. A narrower pattern is a P1. A message on screen shows
+the user-facing text from `src/shared/lib/error/`, never a raw response body or stack trace.
 
 ### Deployment config
 
@@ -83,6 +90,10 @@ text from `src/shared/lib/error/`, never a raw response body or stack trace.
 decide which origin serves the app and the API. A change that serves the API from another
 origin, proxies `/api` to a host other than the backend, or exposes source maps or `.env`
 files is a P0.
+
+The Vite dev proxy forwards `/api` traffic, cookies included, to `VITE_API_TARGET`. A
+committed `.env`, or a target in `.env.example` or `vite.config.ts` that is not a local
+host, is a P0.
 
 ### Dependencies
 

@@ -1,5 +1,9 @@
 # Optimistic throw queue on the game page
 
+Status: proposed. #123 implements this decision. Until it lands, the queue in
+`src/pages/GamePage/throws/useThrowQueue.ts` follows its own rules, such as a limit of 3
+pending throws, and a review holds a queue change to the code on `main`, not to this ADR.
+
 A throw or undo tap must change the scoreboard within 200 ms, even when three throws are tapped in quick succession on slow Wi-Fi. Waiting for the server before each throw cannot meet that, so the game page keeps an optimistic queue (#123). The client applies each throw or undo to the scoreboard at once and sends the requests to the backend one at a time, in tap order.
 
 ## Rules
