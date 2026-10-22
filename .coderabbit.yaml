@@ -7,7 +7,7 @@ early_access: false
 reviews:
   profile: chill
   request_changes_workflow: false
-  high_level_summary: false
+  high_level_summary: true
   high_level_summary_in_walkthrough: true
   review_status: true
   collapse_walkthrough: true
@@ -157,7 +157,7 @@ reviews:
     checkmake:
       enabled: false
     osvScanner:
-      enabled: true
+      enabled: false
     oasdiff:
       enabled: false
     reactDoctor:
