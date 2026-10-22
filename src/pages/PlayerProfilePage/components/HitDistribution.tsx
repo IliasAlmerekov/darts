@@ -3,7 +3,7 @@ import clsx from "clsx";
 import type { PlayerProfile } from "@/lib/player/profile";
 import {
   HIT_FREQUENCY_LABELS,
-  toBoardHitFrequencies,
+  type BoardHitFrequencies,
   type HitFrequency,
 } from "../lib/hitFrequency";
 import styles from "./HitDistribution.module.css";
@@ -74,16 +74,16 @@ const SEGMENTS = BOARD_ORDER.map((segment, index) => {
 });
 
 interface HitDistributionProps {
-  hitDistribution: PlayerProfile["hitDistribution"];
+  hitFrequencies: BoardHitFrequencies;
   mostHitSegment: PlayerProfile["mostHitSegment"];
 }
 
 /** A dartboard with a heat spot where the player's darts land most. */
 export function HitDistribution({
-  hitDistribution,
+  hitFrequencies,
   mostHitSegment,
 }: HitDistributionProps): React.JSX.Element {
-  const { segments, bull } = toBoardHitFrequencies(hitDistribution);
+  const { segments, bull } = hitFrequencies;
   const blurId = useId();
 
   return (

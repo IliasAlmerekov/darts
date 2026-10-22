@@ -29,6 +29,11 @@ interface FavoriteDouble {
   checkouts: string;
 }
 
+interface FinishDart {
+  key: string;
+  label: string;
+}
+
 /** The Player profile as the page shows it. */
 export interface PlayerProfile {
   stats: {
@@ -45,7 +50,7 @@ export interface PlayerProfile {
   /** `name` reads in a sentence: `segment 20`, or `Bull`. */
   mostHitSegment: { segment: string; name: string; share: string } | null;
   favoriteDoubles: FavoriteDouble[];
-  highestFinish: { score: string; darts: string; throws: string[] } | null;
+  highestFinish: { score: string; darts: string; throws: FinishDart[] } | null;
   history: ProfileHistoryRow[];
   scoringTrend: ScoringTrendPoint[];
   /** The Registration month, such as `Feb 2026`, or null without a valid Registration date. */
@@ -218,7 +223,11 @@ export function toPlayerProfile(response: PlayerProfileResponse): PlayerProfile 
         : {
             score: String(highestFinish.score),
             darts: `in ${highestFinish.darts} ${highestFinish.darts === 1 ? "dart" : "darts"}`,
-            throws: highestFinish.throws.map(formatDart),
+            throws: highestFinish.throws.map((dart, index) => ({
+              // The same dart can repeat, such as T20, T20; its place in the finish never changes.
+              key: `dart-${index + 1}`,
+              label: formatDart(dart),
+            })),
           },
     history: response.recentGames.map(toHistoryRow),
     scoringTrend: response.recentGames.map(toScoringTrendPoint).reverse(),

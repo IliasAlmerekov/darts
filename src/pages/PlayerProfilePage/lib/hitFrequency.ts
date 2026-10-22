@@ -11,7 +11,7 @@ export const HIT_FREQUENCY_LABELS: Record<HitFrequency, string> = {
   4: "Very low",
 };
 
-interface BoardHitFrequencies {
+export interface BoardHitFrequencies {
   /** Segment `1` to `20` to its step. */
   segments: Partial<Record<string, HitFrequency>>;
   /** The centre spot, Bull and Bullseye together. */

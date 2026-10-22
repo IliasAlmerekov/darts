@@ -84,7 +84,7 @@ describe("toPlayerProfile", () => {
       }),
     );
 
-    expect(highestFinish?.throws).toEqual(["Bull", "Miss", "Bullseye"]);
+    expect(highestFinish?.throws.map((dart) => dart.label)).toEqual(["Bull", "Miss", "Bullseye"]);
     expect(favoriteDoubles.map((double) => double.double)).toEqual(["Bullseye", "D16"]);
     expect(mostHitSegment).toEqual({ segment: "Bull", name: "Bull", share: "9%" });
   });
@@ -111,7 +111,11 @@ describe("toPlayerProfile", () => {
     expect(toPlayerProfile(buildProfile()).highestFinish).toEqual({
       score: "121",
       darts: "in 3 darts",
-      throws: ["T20", "S11", "Bullseye"],
+      throws: [
+        { key: "dart-1", label: "T20" },
+        { key: "dart-2", label: "S11" },
+        { key: "dart-3", label: "Bullseye" },
+      ],
     });
   });
 

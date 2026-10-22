@@ -20,7 +20,8 @@ interface StatItemProps {
   label: string;
   value: string;
   iconSrc: string;
-  detail?: string | undefined;
+  /** Null while the stat has no detail to show. */
+  detail: string | null;
 }
 
 function StatItem({ label, value, iconSrc, detail }: StatItemProps): React.JSX.Element {
@@ -33,7 +34,7 @@ function StatItem({ label, value, iconSrc, detail }: StatItemProps): React.JSX.E
         <div className={styles.statText}>
           <span className={styles.statLabel}>{label}</span>
           <span className={styles.statValue}>{value}</span>
-          {detail ? <span className={styles.statDetail}>{detail}</span> : null}
+          {detail === null ? null : <span className={styles.statDetail}>{detail}</span>}
         </div>
       </div>
     </li>
@@ -93,23 +94,25 @@ export function StatsCard({
         <StatItem
           label="Games played"
           value={readStat(profileState, "gamesPlayed")}
+          detail={null}
           iconSrc={gamepadIcon}
         />
         <StatItem
           label="Won"
           value={readStat(profileState, "wins")}
-          detail={profile === null ? undefined : `${profile.stats.winRate} win rate`}
+          detail={profile === null ? null : `${profile.stats.winRate} win rate`}
           iconSrc={trophyIcon}
         />
         <StatItem
           label="Avg. points"
           value={readStat(profileState, "scoreAverage")}
+          detail={null}
           iconSrc={barChartIcon}
         />
         <StatItem
           label="Checkout rate"
           value={readStat(profileState, "checkoutRate")}
-          detail={profile === null ? undefined : `${profile.stats.checkouts} checkouts`}
+          detail={profile === null ? null : `${profile.stats.checkouts} checkouts`}
           iconSrc={targetIcon}
         />
       </ul>

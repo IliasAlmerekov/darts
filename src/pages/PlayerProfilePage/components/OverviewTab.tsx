@@ -3,6 +3,7 @@ import barChartIcon from "@/assets/icons/bar-chart.svg";
 import targetIcon from "@/assets/icons/target.svg";
 import trophyIcon from "@/assets/icons/trophy.svg";
 import type { PlayerProfile } from "@/lib/player/profile";
+import type { BoardHitFrequencies } from "../lib/hitFrequency";
 import { HitDistribution } from "./HitDistribution";
 import { ProfileBlock } from "./ProfileBlock";
 import { RangeSelect } from "./RangeSelect";
@@ -11,6 +12,7 @@ import styles from "./OverviewTab.module.css";
 
 interface OverviewTabProps {
   profile: PlayerProfile;
+  hitFrequencies: BoardHitFrequencies;
   displayName: string;
 }
 
@@ -46,8 +48,12 @@ function EmptyBlock({ text }: EmptyBlockProps): React.JSX.Element {
   );
 }
 
-export function OverviewTab({ profile, displayName }: OverviewTabProps): React.JSX.Element {
-  const { hitDistribution, favoriteDoubles, highestFinish, mostHitSegment } = profile;
+export function OverviewTab({
+  profile,
+  hitFrequencies,
+  displayName,
+}: OverviewTabProps): React.JSX.Element {
+  const { favoriteDoubles, highestFinish, mostHitSegment } = profile;
 
   return (
     <div className={styles.overview}>
@@ -57,7 +63,7 @@ export function OverviewTab({ profile, displayName }: OverviewTabProps): React.J
         description={`See where ${displayName} hits the dartboard most often.`}
         action={<RangeSelect label="Games in the hit distribution" option="All games" />}
       >
-        <HitDistribution hitDistribution={hitDistribution} mostHitSegment={mostHitSegment} />
+        <HitDistribution hitFrequencies={hitFrequencies} mostHitSegment={mostHitSegment} />
       </ProfileBlock>
 
       <div className={styles.firstRow}>
@@ -89,9 +95,9 @@ export function OverviewTab({ profile, displayName }: OverviewTabProps): React.J
               <p className={styles.caption}>{highestFinish.darts}</p>
               <p className={styles.throws}>
                 {highestFinish.throws.map((dart, index) => (
-                  <React.Fragment key={index}>
+                  <React.Fragment key={dart.key}>
                     {index > 0 ? <span aria-hidden="true"> • </span> : null}
-                    {dart}
+                    {dart.label}
                   </React.Fragment>
                 ))}
               </p>
