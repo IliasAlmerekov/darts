@@ -20,6 +20,7 @@ and this project does **not** yet follow [Semantic Versioning](https://semver.or
 - Agent rules: `.github/copilot-instructions.md` points to `AGENTS.md` instead of carrying its own outdated rules, so Copilot and CodeRabbit read one rule set (#265)
 - Lint: ESLint runs the full `eslint-plugin-react-hooks` 7 `recommended` preset. Only `SettingsPage` (#213) and `useGamePlayersState` (#123) are exempt from `react-hooks/set-state-in-effect`. `SettingsOverlay`, `LoginForm`, `useEventSource`, `ViewToogleBtn` and `NavigationBar` no longer set state synchronously in an effect. `useEventSource` reports a new url as disconnected from its first render, and the login status region gets its text one frame after it mounts (#247)
 
+- Dependabot: npm updates skip `eslint` and `@eslint/js` majors until `eslint-plugin-jsx-a11y` and `eslint-plugin-react` accept ESLint 10 as a peer. Minor and patch updates still arrive in the `npm-minor-patch` group. This replaces Dependabot PRs #244 and #249, which failed `npm ci` with `ERESOLVE` (#267)
 - CI: the `e2e` job and the `E2E live` workflow run in the `mcr.microsoft.com/playwright:v1.64.1-noble` image, which ships Chromium and its system libraries. They no longer install those through apt, which hung for more than 8 minutes on a slow Ubuntu mirror (#275)
 
 ### Fixed
