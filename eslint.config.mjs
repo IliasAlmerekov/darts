@@ -31,10 +31,7 @@ export default [
     },
     rules: {
       ...reactPlugin.configs.recommended.rules,
-      // Version 7 adds the React Compiler rules to its recommended preset; they stay off
-      // until the code passes them (#241).
-      "react-hooks/rules-of-hooks": "error",
-      "react-hooks/exhaustive-deps": "warn",
+      ...reactHooks.configs.recommended.rules,
       ...jsxA11y.configs.recommended.rules,
       "@typescript-eslint/no-explicit-any": "error",
       "@typescript-eslint/no-unused-vars": ["error", { argsIgnorePattern: "^_" }],
@@ -148,6 +145,18 @@ export default [
           ],
         },
       ],
+    },
+  },
+  {
+    files: [
+      // Existing debt: these files set state synchronously in an effect.
+      // #213 removes SettingsPage.
+      "src/pages/SettingsPage/index.tsx",
+      // #123 removes useGamePlayersState.
+      "src/pages/GamePage/useGamePlayersState.ts",
+    ],
+    rules: {
+      "react-hooks/set-state-in-effect": "off",
     },
   },
   {

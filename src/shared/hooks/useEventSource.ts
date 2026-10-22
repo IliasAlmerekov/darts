@@ -22,6 +22,12 @@ interface UseEventSourceResult {
   isConnected: boolean;
 }
 
+interface ConnectionState extends UseEventSourceResult {
+  url: string | null;
+}
+
+const DISCONNECTED: ConnectionState = { error: null, isConnected: false, url: null };
+
 /**
  * Subscribes to a server-sent events stream, reconnects with exponential backoff,
  * and cleans up on unmount.
@@ -35,13 +41,9 @@ export const useEventSource = (
   listeners: readonly EventSourceListener[],
   options?: UseEventSourceOptions,
 ): UseEventSourceResult => {
-  const [isConnected, setIsConnected] = useState(false);
-  const [error, setError] = useState<Error | null>(null);
+  const [connection, setConnection] = useState<ConnectionState>(DISCONNECTED);
 
   useEffect(() => {
-    setIsConnected(false);
-    setError(null);
-
     if (!url) {
       return;
     }
@@ -75,8 +77,7 @@ export const useEventSource = (
           return;
         }
 
-        setIsConnected(true);
-        setError(null);
+        setConnection({ error: null, isConnected: true, url });
         retryDelayMs = initialRetryDelayMs;
       };
 
@@ -101,8 +102,11 @@ export const useEventSource = (
           return;
         }
 
-        setIsConnected(false);
-        setError(new Error(EVENT_SOURCE_CONNECTION_ERROR_MESSAGE));
+        setConnection({
+          error: new Error(EVENT_SOURCE_CONNECTION_ERROR_MESSAGE),
+          isConnected: false,
+          url,
+        });
         dispose();
         clearRetryTimer();
 
@@ -119,6 +123,7 @@ export const useEventSource = (
       isDisposed = true;
       clearRetryTimer();
       cleanupSource?.();
+      setConnection(DISCONNECTED);
     };
   }, [
     listeners,
@@ -128,5 +133,8 @@ export const useEventSource = (
     url,
   ]);
 
-  return { error, isConnected };
+  // Until the effect for a new url runs, the state still describes the previous connection.
+  return connection.url === url
+    ? { error: connection.error, isConnected: connection.isConnected }
+    : { error: null, isConnected: false };
 };

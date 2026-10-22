@@ -3,11 +3,25 @@ import { act, fireEvent, render, screen } from "@testing-library/react";
 import { MemoryRouter, useLocation, useNavigate } from "react-router-dom";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { ROUTES } from "@/lib/router/routes";
+import useIsomorphicLayoutEffect from "@/shared/lib/useIsomorphicLayoutEffect";
 import ViewToogleButton from "./ViewToogleBtn";
+import styles from "./ViewToogleBtn.module.css";
+
+// The highlighted link at each route commit, read before passive effects run.
+let highlightAtRouteCommit: string[] = [];
 
 function LocationProbe(): React.JSX.Element {
   const location = useLocation();
   const navigate = useNavigate();
+  useIsomorphicLayoutEffect(() => {
+    highlightAtRouteCommit.push(
+      screen
+        .getAllByRole("link")
+        .filter((link) => link.classList.contains(styles.activeBtn ?? ""))
+        .map((link) => link.textContent ?? "")
+        .join(","),
+    );
+  }, [location.pathname]);
   return (
     <>
       <output data-testid="location">{location.pathname}</output>
@@ -33,6 +47,10 @@ function currentLocation(): string | null {
 
 function historyBack(): void {
   fireEvent.click(screen.getByRole("button", { name: "History back" }));
+}
+
+function isHighlighted(name: string): boolean {
+  return screen.getByRole("link", { name }).classList.contains(styles.activeBtn ?? "");
 }
 
 function currentPageName(): string | null {
@@ -179,6 +197,20 @@ describe("ViewToogleButton", () => {
       });
 
       expect(currentLocation()).toBe(ROUTES.playerProfile);
+    });
+
+    it("should drop the preview when the route changes during the preview", () => {
+      renderAt(ROUTES.playerProfile, ROUTES.statistics);
+
+      fireEvent.click(screen.getByRole("link", { name: "Games" }));
+      expect(isHighlighted("Games")).toBe(true);
+
+      highlightAtRouteCommit = [];
+      historyBack();
+
+      expect(highlightAtRouteCommit).toEqual(["Players"]);
+      expect(isHighlighted("Games")).toBe(false);
+      expect(isHighlighted("Players")).toBe(true);
     });
   });
 });
