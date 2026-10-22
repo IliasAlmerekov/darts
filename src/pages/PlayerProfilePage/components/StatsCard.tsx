@@ -6,9 +6,8 @@ import gamepadIcon from "@/assets/icons/gamepad.svg";
 import targetIcon from "@/assets/icons/target.svg";
 import trophyIcon from "@/assets/icons/trophy.svg";
 import { LogoutButton } from "@/shared/ui/logout-button";
-import { SAMPLE_PROFILE } from "../lib/sampleProfile";
+import type { PlayerProfile } from "@/lib/player/profile";
 import type { ProfileState } from "../usePlayerProfilePage";
-import { SampleBadge } from "./SampleBadge";
 import styles from "./StatsCard.module.css";
 
 interface StatsCardProps {
@@ -21,17 +20,10 @@ interface StatItemProps {
   label: string;
   value: string;
   iconSrc: string;
-  detail?: string;
-  isSample?: boolean;
+  detail?: string | undefined;
 }
 
-function StatItem({
-  label,
-  value,
-  iconSrc,
-  detail,
-  isSample = false,
-}: StatItemProps): React.JSX.Element {
+function StatItem({ label, value, iconSrc, detail }: StatItemProps): React.JSX.Element {
   return (
     <li>
       <div className={styles.statItem} role="group" aria-label={label}>
@@ -39,10 +31,7 @@ function StatItem({
           <img className={styles.statIcon} src={iconSrc} alt="" width={36} height={36} />
         </span>
         <div className={styles.statText}>
-          <span className={styles.statLabel}>
-            {label}
-            {isSample ? <SampleBadge /> : null}
-          </span>
+          <span className={styles.statLabel}>{label}</span>
           <span className={styles.statValue}>{value}</span>
           {detail ? <span className={styles.statDetail}>{detail}</span> : null}
         </div>
@@ -70,7 +59,7 @@ function CalendarIcon(): React.JSX.Element {
   );
 }
 
-function readStat(profileState: ProfileState, stat: "gamesPlayed" | "scoreAverage"): string {
+function readStat(profileState: ProfileState, stat: keyof PlayerProfile["stats"]): string {
   if (profileState.status === "pending") {
     return "Loading…";
   }
@@ -83,8 +72,7 @@ export function StatsCard({
   profileState,
   className,
 }: StatsCardProps): React.JSX.Element {
-  const { won, checkout } = SAMPLE_PROFILE;
-  const memberSince = profileState.status === "success" ? profileState.profile.memberSince : null;
+  const profile = profileState.status === "success" ? profileState.profile : null;
 
   return (
     <section className={clsx(styles.statsCard, className)} aria-label="Player stats">
@@ -93,13 +81,10 @@ export function StatsCard({
           <img className={styles.avatarIcon} src={avatarIcon} alt="" width={80} height={80} />
         </span>
         <h2 className={styles.displayName}>{displayName}</h2>
-        <p className={styles.subtitle}>
-          {SAMPLE_PROFILE.subtitle} <SampleBadge />
-        </p>
-        {memberSince === null ? null : (
+        {profile === null || profile.memberSince === null ? null : (
           <p className={styles.memberSince} role="group" aria-label="Member since">
             <CalendarIcon />
-            Member since {memberSince}
+            Member since {profile.memberSince}
           </p>
         )}
       </div>
@@ -112,10 +97,9 @@ export function StatsCard({
         />
         <StatItem
           label="Won"
-          value={String(won.games)}
-          detail={`${won.winRate}% win rate`}
+          value={readStat(profileState, "wins")}
+          detail={profile === null ? undefined : `${profile.stats.winRate} win rate`}
           iconSrc={trophyIcon}
-          isSample
         />
         <StatItem
           label="Avg. points"
@@ -124,10 +108,9 @@ export function StatsCard({
         />
         <StatItem
           label="Checkout rate"
-          value={`${checkout.rate}%`}
-          detail={`${checkout.checkouts} / ${checkout.attempts} checkouts`}
+          value={readStat(profileState, "checkoutRate")}
+          detail={profile === null ? undefined : `${profile.stats.checkouts} checkouts`}
           iconSrc={targetIcon}
-          isSample
         />
       </ul>
 

@@ -27,13 +27,6 @@
   flex: 1;
 }
 
-.titleRow {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: baseline;
-  gap: var(--space-xs);
-}
-
 .blockTitle {
   margin: 0;
   white-space: nowrap;

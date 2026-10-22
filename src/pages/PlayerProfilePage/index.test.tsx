@@ -106,12 +106,14 @@ function pointTitles(chart: HTMLElement): string[] {
   );
 }
 
-const SAMPLE_BLOCKS = [
-  "Hit distribution",
-  "Favorite doubles",
-  "Highest finish",
-  "Most hit segment",
-];
+function block(name: string): HTMLElement {
+  return screen.getByRole("region", { name });
+}
+
+/** The heat spots drawn on the board, one per spot above Very low. */
+function heatSpots(): Element[] {
+  return Array.from(block("Hit distribution").querySelectorAll("circle[filter]"));
+}
 
 describe("PlayerProfilePage", () => {
   beforeEach(() => {
@@ -249,32 +251,97 @@ describe("PlayerProfilePage", () => {
     expect(document.activeElement).toBe(screen.getByRole("tab", { name: "History" }));
   });
 
-  it("marks sample data and only sample data", async () => {
+  it("shows the throw statistics from the profile request, with no sample data", async () => {
     renderPage();
     await screen.findByRole("img", { name: /^Scoring trend chart/ });
 
-    for (const name of SAMPLE_BLOCKS) {
-      expect(within(screen.getByRole("region", { name })).getByText("Sample data")).toBeTruthy();
-    }
-    for (const name of ["Won", "Checkout rate"]) {
-      expect(within(statValue(name)).getByText("Sample data")).toBeTruthy();
-    }
-    expect(within(statValue("Member since")).queryByText("Sample data")).toBeNull();
-    expect(within(statValue("Games played")).queryByText("Sample data")).toBeNull();
-    expect(within(statValue("Avg. points")).queryByText("Sample data")).toBeNull();
-    expect(
-      within(screen.getByRole("region", { name: "Scoring trend" })).queryByText("Sample data"),
-    ).toBeNull();
+    expect(statValue("Won").textContent).toBe("Won739% win rate");
+    expect(statValue("Checkout rate").textContent).toBe("Checkout rate32%7 / 22 checkouts");
+    expect(block("Favorite doubles").textContent).toBe("Favorite doubles1D1636%4 / 11");
+    expect(block("Highest finish").textContent).toBe(
+      "Highest finish121in 3 dartsT20 • S11 • Bullseye",
+    );
+    expect(block("Most hit segment").textContent).toBe(
+      "Most hit segment207% of all throwsYou hit segment 20 more than any other segment.",
+    );
+    expect(screen.getByRole("img", { name: "Dartboard heatmap, most hits on 20" })).toBeTruthy();
+    // 20 is Very high, the centre spot's 24 hits Low, and every other segment Very low.
+    expect(heatSpots()).toHaveLength(2);
+    expect(screen.queryByText("Sample data")).toBeNull();
+    expect(screen.queryByText("Consistent finisher")).toBeNull();
+  });
 
-    fireEvent.click(screen.getByRole("tab", { name: "Performance" }));
-    expect(
-      within(screen.getByRole("tabpanel", { name: "Performance" })).queryByText("Sample data"),
-    ).toBeNull();
+  it("shows the values of another profile, with Bull and a one-dart finish", async () => {
+    vi.mocked(getPlayerProfile).mockResolvedValue(
+      buildProfile({
+        stats: buildPlayerProfileStats({
+          wins: 3,
+          winRate: 12.5,
+          checkoutRate: 38.2,
+          checkoutHits: 21,
+          checkoutAttempts: 55,
+          hitDistribution: buildPlayerProfileStats().hitDistribution.map(({ segment }) => ({
+            segment,
+            hits: segment === "BULL" ? 10 : 0,
+          })),
+          mostHitSegment: { segment: "BULL", hits: 10, share: 4.6 },
+          favoriteDoubles: [
+            { double: "BULLSEYE", hits: 2, attempts: 5, hitRate: 40 },
+            { double: "D20", hits: 1, attempts: 7, hitRate: 14.3 },
+          ],
+          highestFinish: { score: 50, darts: 1, throws: ["BULLSEYE"] },
+        }),
+      }),
+    );
 
-    fireEvent.click(screen.getByRole("tab", { name: "History" }));
-    expect(
-      within(screen.getByRole("tabpanel", { name: "History" })).queryByText("Sample data"),
-    ).toBeNull();
+    renderPage();
+    await screen.findByRole("img", { name: /^Scoring trend chart/ });
+
+    expect(statValue("Won").textContent).toBe("Won313% win rate");
+    expect(statValue("Checkout rate").textContent).toBe("Checkout rate38%21 / 55 checkouts");
+    expect(block("Favorite doubles").textContent).toBe(
+      "Favorite doubles1Bullseye40%2 / 52D2014%1 / 7",
+    );
+    expect(block("Highest finish").textContent).toBe("Highest finish50in 1 dartBullseye");
+    expect(block("Most hit segment").textContent).toBe(
+      "Most hit segmentBull5% of all throwsYou hit Bull more than any other segment.",
+    );
+    expect(screen.getByRole("img", { name: "Dartboard heatmap, most hits on Bull" })).toBeTruthy();
+    expect(heatSpots()).toHaveLength(1);
+  });
+
+  it("shows a dash for missing rates and one line for each empty block", async () => {
+    vi.mocked(getPlayerProfile).mockResolvedValue(
+      buildProfile({
+        stats: buildPlayerProfileStats({
+          wins: 0,
+          winRate: null,
+          checkoutRate: null,
+          checkoutHits: 0,
+          checkoutAttempts: 0,
+          hitDistribution: buildPlayerProfileStats().hitDistribution.map(({ segment }) => ({
+            segment,
+            hits: 0,
+          })),
+          mostHitSegment: null,
+          favoriteDoubles: [],
+          highestFinish: null,
+        }),
+      }),
+    );
+
+    renderPage();
+    await screen.findByRole("img", { name: /^Scoring trend chart/ });
+
+    expect(statValue("Won").textContent).toBe("Won0– win rate");
+    expect(statValue("Checkout rate").textContent).toBe("Checkout rate–0 / 0 checkouts");
+    expect(block("Favorite doubles").textContent).toBe(
+      "Favorite doublesNo double-out checkouts yet",
+    );
+    expect(block("Highest finish").textContent).toBe("Highest finishNo finish yet");
+    expect(block("Most hit segment").textContent).toBe("Most hit segmentNo hits yet");
+    expect(screen.getByRole("img", { name: "Dartboard heatmap" })).toBeTruthy();
+    expect(heatSpots()).toHaveLength(0);
   });
 
   it("shows the month the player registered", async () => {
@@ -328,6 +395,8 @@ describe("PlayerProfilePage", () => {
 
     expect(within(statValue("Games played")).getByText("Loading…")).toBeTruthy();
     expect(within(statValue("Avg. points")).getByText("Loading…")).toBeTruthy();
+    expect(statValue("Won").textContent).toBe("WonLoading…");
+    expect(statValue("Checkout rate").textContent).toBe("Checkout rateLoading…");
     const panel = screen.getByRole("tabpanel", { name: "Overview" });
     expect(within(panel).getByRole("status").textContent).toBe("Loading…");
     expect(panel.getAttribute("aria-busy")).toBe("true");
@@ -348,6 +417,8 @@ describe("PlayerProfilePage", () => {
     expect(screen.getByRole("heading", { level: 2, name: "Alice" })).toBeTruthy();
     expect(screen.getByRole("button", { name: "Log out" })).toBeTruthy();
     expect(screen.queryByRole("group", { name: "Member since" })).toBeNull();
+    expect(statValue("Won").textContent).toBe("Won–");
+    expect(statValue("Checkout rate").textContent).toBe("Checkout rate–");
 
     fireEvent.click(screen.getByRole("button", { name: "Retry" }));
 

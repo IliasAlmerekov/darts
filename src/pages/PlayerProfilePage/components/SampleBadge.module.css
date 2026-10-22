@@ -1,7 +1,0 @@
-.sampleBadge {
-  color: var(--color-text-muted);
-  font-size: var(--font-size-12);
-  font-weight: var(--font-weight-regular);
-  line-height: var(--line-height-14);
-  white-space: nowrap;
-}

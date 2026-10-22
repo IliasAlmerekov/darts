@@ -20,9 +20,32 @@ export interface ScoringTrendPoint {
   label: string;
 }
 
+type ProfileStats = PlayerProfileResponse["stats"];
+
+interface FavoriteDouble {
+  double: string;
+  hitRate: string;
+  /** Checkouts on the double over the darts thrown at it, such as `4 / 11`. */
+  checkouts: string;
+}
+
 /** The Player profile as the page shows it. */
 export interface PlayerProfile {
-  stats: { gamesPlayed: string; scoreAverage: string };
+  stats: {
+    gamesPlayed: string;
+    scoreAverage: string;
+    wins: string;
+    winRate: string;
+    checkoutRate: string;
+    /** Checkout hits over attempts, such as `7 / 22`. */
+    checkouts: string;
+  };
+  /** Hits per segment, `1` to `20`, `BULL` and `BULLSEYE`, as the API sends them. */
+  hitDistribution: ProfileStats["hitDistribution"];
+  /** `name` reads in a sentence: `segment 20`, or `Bull`. */
+  mostHitSegment: { segment: string; name: string; share: string } | null;
+  favoriteDoubles: FavoriteDouble[];
+  highestFinish: { score: string; darts: string; throws: string[] } | null;
   history: ProfileHistoryRow[];
   scoringTrend: ScoringTrendPoint[];
   /** The Registration month, such as `Feb 2026`, or null without a valid Registration date. */
@@ -88,6 +111,22 @@ function formatRegistrationMonth(registeredAt: string | null | undefined): strin
   return monthYearFormat.format(Date.UTC(year, month));
 }
 
+const DART_LABELS: Partial<Record<string, string>> = {
+  BULL: "Bull",
+  BULLSEYE: "Bullseye",
+  MISS: "Miss",
+};
+
+/** `Bull`, `Bullseye` and `Miss` in words; `S20`, `D16`, `T20` and segment numbers as sent. */
+function formatDart(dart: string): string {
+  return DART_LABELS[dart] ?? dart;
+}
+
+/** A 0 to 100 API rate as a whole number, such as `38%`. */
+function formatPercent(rate: number | null | undefined): string {
+  return rate === null || rate === undefined ? MISSING_VALUE : `${Math.round(rate)}%`;
+}
+
 function formatOrdinal(placement: number): string {
   return `${placement}${ORDINAL_SUFFIXES[ordinalRules.select(placement)] ?? "th"}`;
 }
@@ -144,16 +183,43 @@ function toScoringTrendPoint(game: PlayerProfileGame): ScoringTrendPoint {
  * and the scoring trend runs oldest first, left to right.
  */
 export function toPlayerProfile(response: PlayerProfileResponse): PlayerProfile {
-  const { scoreAverage } = response.stats;
+  const { stats } = response;
+  const { scoreAverage, mostHitSegment, highestFinish } = stats;
 
   return {
     stats: {
-      gamesPlayed: String(response.stats.gamesPlayed),
+      gamesPlayed: String(stats.gamesPlayed),
       scoreAverage:
         scoreAverage === null || scoreAverage === undefined
           ? MISSING_VALUE
           : scoreAverage.toFixed(2),
+      wins: String(stats.wins),
+      winRate: formatPercent(stats.winRate),
+      checkoutRate: formatPercent(stats.checkoutRate),
+      checkouts: `${stats.checkoutHits} / ${stats.checkoutAttempts}`,
     },
+    hitDistribution: stats.hitDistribution,
+    mostHitSegment:
+      mostHitSegment === null || mostHitSegment === undefined
+        ? null
+        : {
+            segment: formatDart(mostHitSegment.segment),
+            name: DART_LABELS[mostHitSegment.segment] ?? `segment ${mostHitSegment.segment}`,
+            share: formatPercent(mostHitSegment.share),
+          },
+    favoriteDoubles: stats.favoriteDoubles.map((double) => ({
+      double: formatDart(double.double),
+      hitRate: formatPercent(double.hitRate),
+      checkouts: `${double.hits} / ${double.attempts}`,
+    })),
+    highestFinish:
+      highestFinish === null || highestFinish === undefined
+        ? null
+        : {
+            score: String(highestFinish.score),
+            darts: `in ${highestFinish.darts} ${highestFinish.darts === 1 ? "dart" : "darts"}`,
+            throws: highestFinish.throws.map(formatDart),
+          },
     history: response.recentGames.map(toHistoryRow),
     scoringTrend: response.recentGames.map(toScoringTrendPoint).reverse(),
     memberSince: formatRegistrationMonth(response.registeredAt),

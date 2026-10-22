@@ -30,6 +30,10 @@ _Avoid_: remember me, persistent session
 The page a player lands on after logging in without an invitation and without a current game. It shows the player's own statistics and recent finished games.
 _Avoid_: player page, default page
 
+**Hit frequency**:
+How often a player hits a board segment compared with the segment they hit most, in five steps from Very high to Very low.
+_Avoid_: heat, hit rate
+
 ## Finished game
 
 **Standings**:
