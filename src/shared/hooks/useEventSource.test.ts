@@ -168,20 +168,30 @@ describe("useEventSource", () => {
     ]);
   });
 
-  it("should report a disconnected state when the url returns after a null url", () => {
+  it("should report a disconnected state on every render after the url turns null and returns", () => {
     const listeners = [{ event: "players", handler: vi.fn() }] as const;
-    const { result, rerender } = renderHook<ReturnType<typeof useEventSource>, StreamProps>(
-      ({ url }) => useEventSource(url, listeners),
+    const results: Array<ReturnType<typeof useEventSource>> = [];
+    const { rerender } = renderHook<ReturnType<typeof useEventSource>, StreamProps>(
+      ({ url }) => {
+        const result = useEventSource(url, listeners);
+        results.push(result);
+        return result;
+      },
       { initialProps: { url: "/stream" } },
     );
 
     act(() => {
       MockEventSource.instances[0]?.simulateOpen();
     });
+    expect(results.at(-1)).toEqual({ error: null, isConnected: true });
+
+    const rendersBeforeNull = results.length;
     rerender({ url: null });
     rerender({ url: "/stream" });
 
-    expect(result.current).toEqual({ error: null, isConnected: false });
+    for (const result of results.slice(rendersBeforeNull)) {
+      expect(result).toEqual({ error: null, isConnected: false });
+    }
   });
 
   it("should use the explicit credentials option and clean up listeners when unmounted", () => {

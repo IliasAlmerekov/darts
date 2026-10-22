@@ -3,12 +3,25 @@ import { act, fireEvent, render, screen } from "@testing-library/react";
 import { MemoryRouter, useLocation, useNavigate } from "react-router-dom";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { ROUTES } from "@/lib/router/routes";
+import useIsomorphicLayoutEffect from "@/shared/lib/useIsomorphicLayoutEffect";
 import ViewToogleButton from "./ViewToogleBtn";
 import styles from "./ViewToogleBtn.module.css";
+
+// The highlighted link at each route commit, read before passive effects run.
+let highlightAtRouteCommit: string[] = [];
 
 function LocationProbe(): React.JSX.Element {
   const location = useLocation();
   const navigate = useNavigate();
+  useIsomorphicLayoutEffect(() => {
+    highlightAtRouteCommit.push(
+      screen
+        .getAllByRole("link")
+        .filter((link) => link.classList.contains(styles.activeBtn ?? ""))
+        .map((link) => link.textContent ?? "")
+        .join(","),
+    );
+  }, [location.pathname]);
   return (
     <>
       <output data-testid="location">{location.pathname}</output>
@@ -192,8 +205,10 @@ describe("ViewToogleButton", () => {
       fireEvent.click(screen.getByRole("link", { name: "Games" }));
       expect(isHighlighted("Games")).toBe(true);
 
+      highlightAtRouteCommit = [];
       historyBack();
 
+      expect(highlightAtRouteCommit).toEqual(["Players"]);
       expect(isHighlighted("Games")).toBe(false);
       expect(isHighlighted("Players")).toBe(true);
     });
