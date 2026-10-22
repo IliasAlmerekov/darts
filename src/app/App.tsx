@@ -110,8 +110,9 @@ function createAppRouter(): ReturnType<typeof createBrowserRouter> {
           />
           <Route
             path={ROUTES.summaryPattern}
-            element={withSuspense(<GameSummaryPage />)}
+            element={withTabletGame(<GameSummaryPage />)}
             loader={gameSummaryLoader}
+            hydrateFallbackElement={<UniversalSkeleton />}
             errorElement={<ErrorBoundary />}
           />
           <Route element={<AdminLayoutRoute />} errorElement={<ErrorBoundary />}>

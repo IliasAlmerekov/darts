@@ -41,6 +41,10 @@ function mapTextToMessage(rawText: string): string | null {
     return "The start score cannot be changed for an existing game.";
   }
 
+  if (text.includes("game not newest")) {
+    return "This game can no longer be changed.";
+  }
+
   return null;
 }
 

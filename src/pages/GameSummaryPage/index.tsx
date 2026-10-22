@@ -11,6 +11,7 @@ import { useGameSummaryPage } from "./useGameSummaryPage";
 function GameSummaryPage(): React.JSX.Element {
   const {
     error,
+    leaving,
     settings,
     loadSettings,
     starting,
@@ -75,7 +76,9 @@ function GameSummaryPage(): React.JSX.Element {
           <ErrorState
             title="Summary action failed"
             message={error}
-            primaryAction={{ label: "Retry", onClick: () => void loadSummary() }}
+            {...(leaving
+              ? {}
+              : { primaryAction: { label: "Retry", onClick: () => void loadSummary() } })}
           />
         </div>
       ) : null}

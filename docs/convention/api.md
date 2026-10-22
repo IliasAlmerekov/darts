@@ -207,14 +207,17 @@ game id, room store, game store) stays in Nanostores (`state.md`).
 
 ### Writing
 
-The project has no `useMutation` and no `invalidateQueries`. After a write, the caller puts
-the server's answer in the cache itself:
+The project has no `useMutation`. After a write, the caller puts the server's answer in the
+cache itself:
 
 - `cancelQueries({ queryKey })`, then `setQueryData(queryKey, value)`, so a read still in
   flight cannot overwrite the new value (`SettingsPage/index.tsx`, `useGamePlayers.ts`,
   `useRegistration.ts` with `acceptLoggedInUser`).
 - `removeQueries({ queryKey })` drops an entry the write made invalid (undo and rematch
   in `useGameSummaryPage.ts`).
+- `invalidateQueries({ queryKey })` marks a read the write changed on the server when the
+  response does not carry its new value. Undo, rematch and room create invalidate
+  `gameQueries.tablet()` (`useGameSummaryPage.ts`, `useCreateStartFlow.ts`).
 - Logout and the 401 handler call `clearClientSession()` in `auth.ts`, which runs
   `queryClient.clear()`: every cached read belongs to the old session.
 

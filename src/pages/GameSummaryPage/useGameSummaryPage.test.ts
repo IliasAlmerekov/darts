@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { act, renderHook, waitFor } from "@testing-library/react";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { makeLoaderArgs } from "@/test/loaderArgs";
 import type { ReactNode } from "react";
 import { createElement } from "react";
@@ -26,6 +26,7 @@ const getGameSettingsMock = vi.fn();
 const createRematchGameMock = vi.fn();
 const startRematchMock = vi.fn();
 const undoLastThrowMock = vi.fn();
+const getTabletGameMock = vi.fn();
 const setCurrentGameIdMock = vi.fn();
 const setGameDataMock = vi.fn();
 const setGameScoreboardDeltaMock = vi.fn();
@@ -53,6 +54,7 @@ vi.mock("@/shared/api/game", () => ({
   createRematchGame: (...args: unknown[]) => createRematchGameMock(...args),
   startRematch: (...args: unknown[]) => startRematchMock(...args),
   undoLastThrow: (...args: unknown[]) => undoLastThrowMock(...args),
+  getTabletGame: (...args: unknown[]) => getTabletGameMock(...args),
 }));
 
 vi.mock("@/shared/store", async (importOriginal) => {
@@ -213,6 +215,7 @@ describe("useGameSummaryPage", () => {
     testQueryClient = createQueryClient();
     currentGameState = buildFinishedGameState();
     getGameSettingsMock.mockResolvedValue(SETTINGS_RESPONSE);
+    getTabletGameMock.mockResolvedValue({ game: null, lastFinishedGameId: 42 });
 
     getFinishedGameMock.mockResolvedValue([]);
     getGameThrowsMock.mockResolvedValue(buildStartedGameState());
@@ -722,6 +725,109 @@ describe("useGameSummaryPage", () => {
     });
 
     expect(testQueryClient.getQueryData(["finishedGame", 42])).toBeUndefined();
+  });
+
+  it.each([
+    { action: "Undo", run: (hook: ReturnType<typeof useGameSummaryPage>) => hook.handleUndo() },
+    {
+      action: "Play Again",
+      run: (hook: ReturnType<typeof useGameSummaryPage>) => hook.handlePlayAgain(),
+    },
+    {
+      action: "Back To Start",
+      run: (hook: ReturnType<typeof useGameSummaryPage>) => hook.handleBackToStart(),
+    },
+  ])("should make routes read the tablet game again after $action succeeds", async ({ run }) => {
+    testQueryClient.setQueryData(gameQueries.tablet().queryKey, {
+      game: null,
+      lastFinishedGameId: 42,
+    });
+    const { result } = renderSummaryHook();
+
+    await act(async () => {
+      await run(result.current);
+    });
+
+    expect(navigateMock).toHaveBeenCalled();
+    expect(testQueryClient.getQueryState(gameQueries.tablet().queryKey)?.isInvalidated).toBe(true);
+  });
+
+  describe("when the game is no longer the newest game", () => {
+    const notNewest = (): ApiError =>
+      new ApiError("Conflict", { status: 409, data: { error: "GAME_NOT_NEWEST" } });
+
+    beforeEach(() => {
+      vi.useFakeTimers();
+      testQueryClient.setQueryData(gameQueries.tablet().queryKey, {
+        game: { id: 57, status: "started" },
+        lastFinishedGameId: 56,
+      });
+      undoLastThrowMock.mockRejectedValue(notNewest());
+      startRematchMock.mockRejectedValue(notNewest());
+      createRematchGameMock.mockRejectedValue(notNewest());
+    });
+
+    afterEach(() => {
+      vi.useRealTimers();
+    });
+
+    it.each([
+      { action: "Undo", run: (hook: ReturnType<typeof useGameSummaryPage>) => hook.handleUndo() },
+      {
+        action: "Play Again",
+        run: (hook: ReturnType<typeof useGameSummaryPage>) => hook.handlePlayAgain(),
+      },
+      {
+        action: "Back To Start",
+        run: (hook: ReturnType<typeof useGameSummaryPage>) => hook.handleBackToStart(),
+      },
+    ])(
+      "should show that the game is locked, then move to the tablet game on $action",
+      async ({ run }) => {
+        const { result } = renderSummaryHook();
+
+        await act(async () => {
+          await run(result.current);
+        });
+
+        expect(result.current.error).toBe("This game can no longer be changed.");
+        expect(result.current.leaving).toBe(true);
+        expect(navigateMock).not.toHaveBeenCalled();
+
+        act(() => {
+          vi.advanceTimersByTime(2_000);
+        });
+
+        expect(navigateMock).toHaveBeenCalledWith("/game/57", { replace: true });
+      },
+    );
+
+    it("should not move away after the page unmounts", async () => {
+      const { result, unmount } = renderSummaryHook();
+      await act(async () => {
+        await result.current.handleUndo();
+      });
+
+      unmount();
+      vi.advanceTimersByTime(2_000);
+
+      expect(navigateMock).not.toHaveBeenCalled();
+    });
+
+    it("should stay on the summary when another action error happens", async () => {
+      undoLastThrowMock.mockRejectedValue(new Error("network down"));
+      const { result } = renderSummaryHook();
+
+      await act(async () => {
+        await result.current.handleUndo();
+      });
+      act(() => {
+        vi.advanceTimersByTime(2_000);
+      });
+
+      expect(result.current.leaving).toBe(false);
+      expect(navigateMock).not.toHaveBeenCalled();
+    });
   });
 
   describe("gameSummaryLoader", () => {

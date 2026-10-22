@@ -1,6 +1,7 @@
-import { useCallback, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { useNavigate, useParams, type LoaderFunctionArgs } from "react-router-dom";
+import { replace, useNavigate, useParams, type LoaderFunctionArgs } from "react-router-dom";
+import { ApiError } from "@/shared/api";
 import { getGameThrows, createRematchGame, startRematch, undoLastThrow } from "@/shared/api/game";
 import type { UndoThrowResponse, UndoAckResponse } from "@/types";
 import {
@@ -13,12 +14,15 @@ import {
 } from "@/shared/store";
 import { playSound } from "@/shared/services/browser/soundPlayer";
 import { toUserErrorMessage } from "@/lib/error/error-to-user-message";
+import { isRecord } from "@/lib/guards/guards";
 import { ROUTES } from "@/lib/router/routes";
+import { parseRouteGameId, tabletGamePath } from "@/lib/router/tabletGameRoute";
 import { applyOptimisticUndo } from "@/lib/game/applyOptimisticUndo";
 import type { FinishedGameStandings } from "@/lib/game/finishedGameStandings";
 import { clientLogger } from "@/shared/services/browser/clientLogger";
 import { gameQueries } from "@/shared/query/game.queries";
 import { queryClient } from "@/shared/query/queryClient";
+import { fetchTabletGame } from "@/shared/query/tabletGameLoader";
 import { buildGameSummaryStandings } from "./lib/gameSummaryStandings";
 
 /** Settings the summary needs before it can render the standings. */
@@ -29,6 +33,8 @@ export type SummarySettings =
 
 interface UseGameSummaryPageResult extends FinishedGameStandings {
   error: string | null;
+  /** The game is no longer the newest game; the page moves to the tablet game shortly. */
+  leaving: boolean;
   settings: SummarySettings;
   loadSettings: () => Promise<void>;
   starting: boolean;
@@ -38,26 +44,26 @@ interface UseGameSummaryPageResult extends FinishedGameStandings {
   handleBackToStart: () => Promise<void>;
 }
 
-function parseGameId(param: string | undefined): number | null {
-  if (!param) {
-    return null;
-  }
-
-  const parsed = Number(param);
-  return Number.isFinite(parsed) && parsed > 0 ? parsed : null;
-}
-
 /**
  * React Router 6 loader
  * Registers the route: loader: gameSummaryLoader
- * Returns null without fetching when the route has no valid game id.
+ * Only the last finished game has a summary: another game id moves to its details, replacing
+ * the history entry. Returns null without fetching when the tablet game read fails or the
+ * route has no valid game id.
  * Fills the `['finishedGame', id]` and the game settings queries before the page renders.
  */
-export async function gameSummaryLoader({ params }: LoaderFunctionArgs): Promise<null> {
-  const gameId = parseGameId(params.id);
-
-  if (gameId === null) {
+export async function gameSummaryLoader({
+  params,
+  request,
+}: LoaderFunctionArgs): Promise<Response | null> {
+  const tabletGame = await fetchTabletGame(request);
+  const gameId = parseRouteGameId(params.id);
+  if (tabletGame === null || gameId === null) {
     return null;
+  }
+
+  if (gameId !== tabletGame.lastFinishedGameId) {
+    return replace(ROUTES.details(gameId));
   }
 
   // A failed fetch is logged by the query function. The page then mounts, fetches again and
@@ -67,6 +73,19 @@ export async function gameSummaryLoader({ params }: LoaderFunctionArgs): Promise
     queryClient.ensureQueryData(gameQueries.settings(gameId)).catch(() => undefined),
   ]);
   return null;
+}
+
+// Time to read the message before the page moves to the tablet game.
+const LEAVE_OLD_GAME_DELAY_MS = 2_000;
+
+/** The server refused to change a game that is no longer the newest one. */
+function isGameNotNewestError(error: unknown): boolean {
+  return (
+    error instanceof ApiError &&
+    error.status === 409 &&
+    isRecord(error.data) &&
+    error.data.error === "GAME_NOT_NEWEST"
+  );
 }
 
 function isUndoAckResponse(response: UndoThrowResponse): response is UndoAckResponse {
@@ -87,9 +106,18 @@ export function useGameSummaryPage(): UseGameSummaryPageResult {
   const [starting, setStarting] = useState<boolean>(false);
   const [releasedGameId, setReleasedGameId] = useState<number | null>(null);
   const startGameInFlightRef = useRef<boolean>(false);
+  const [leavePath, setLeavePath] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (leavePath === null) return;
+    const timer = window.setTimeout(() => {
+      navigate(leavePath, { replace: true });
+    }, LEAVE_OLD_GAME_DELAY_MS);
+    return () => window.clearTimeout(timer);
+  }, [leavePath, navigate]);
 
   const finishedGameIdFromRoute = useMemo(
-    () => parseGameId(summaryGameIdParam),
+    () => parseRouteGameId(summaryGameIdParam),
     [summaryGameIdParam],
   );
 
@@ -158,8 +186,23 @@ export function useGameSummaryPage(): UseGameSummaryPageResult {
     (gameId: number): void => {
       setReleasedGameId(gameId);
       client.removeQueries({ queryKey: gameQueries.finished(gameId).queryKey });
+      // Undo and rematch change the tablet game, so the next route reads it again.
+      void client.invalidateQueries({ queryKey: gameQueries.tablet().queryKey });
     },
     [client],
+  );
+
+  // A 409 GAME_NOT_NEWEST means another game started after this one. The route loader of the
+  // target redirects again when the cached tablet game is already out of date.
+  const leaveOldGame = useCallback(
+    (action: string): void => {
+      clientLogger.warn("game-summary.game-not-newest", {
+        context: { finishedGameId: finishedGameIdFromRoute, action },
+      });
+      const tabletGame = client.getQueryData(gameQueries.tablet().queryKey);
+      setLeavePath(tabletGamePath("game", tabletGame?.game ?? null));
+    },
+    [client, finishedGameIdFromRoute],
   );
 
   const { standings, podiumData, leaderBoardList } = useMemo(
@@ -221,16 +264,20 @@ export function useGameSummaryPage(): UseGameSummaryPageResult {
       if (!serverUndoApplied && currentGameData && currentGameData.id === finishedGameIdFromRoute) {
         setGameData(currentGameData);
       }
-      clientLogger.error("game-summary.undo-reopen.failed", {
-        context: {
-          finishedGameId: finishedGameIdFromRoute,
-          serverUndoApplied,
-        },
-        error: err,
-      });
+      if (isGameNotNewestError(err)) {
+        leaveOldGame("undo");
+      } else {
+        clientLogger.error("game-summary.undo-reopen.failed", {
+          context: {
+            finishedGameId: finishedGameIdFromRoute,
+            serverUndoApplied,
+          },
+          error: err,
+        });
+      }
       setActionError(toUserErrorMessage(err, "Could not reopen game and undo throw."));
     }
-  }, [finishedGameIdFromRoute, navigate, releaseFinishedGame, setActionError]);
+  }, [finishedGameIdFromRoute, leaveOldGame, navigate, releaseFinishedGame, setActionError]);
 
   const handlePlayAgain = useCallback(async (): Promise<void> => {
     if (finishedGameIdFromRoute === null || startGameInFlightRef.current) return;
@@ -255,16 +302,20 @@ export function useGameSummaryPage(): UseGameSummaryPageResult {
       }
       navigate(ROUTES.game(rematch.gameId));
     } catch (err) {
-      clientLogger.error("game-summary.rematch.start.failed", {
-        context: { finishedGameId: finishedGameIdFromRoute },
-        error: err,
-      });
+      if (isGameNotNewestError(err)) {
+        leaveOldGame("rematch-start");
+      } else {
+        clientLogger.error("game-summary.rematch.start.failed", {
+          context: { finishedGameId: finishedGameIdFromRoute },
+          error: err,
+        });
+      }
       setActionError(toUserErrorMessage(err, "Could not start a rematch."));
     } finally {
       startGameInFlightRef.current = false;
       setStarting(false);
     }
-  }, [finishedGameIdFromRoute, navigate, releaseFinishedGame, setActionError]);
+  }, [finishedGameIdFromRoute, leaveOldGame, navigate, releaseFinishedGame, setActionError]);
 
   const handleBackToStart = useCallback(async (): Promise<void> => {
     if (finishedGameIdFromRoute === null) return;
@@ -282,16 +333,21 @@ export function useGameSummaryPage(): UseGameSummaryPageResult {
       setCurrentGameId(rematch.gameId);
       navigate(ROUTES.start(rematch.gameId));
     } catch (err) {
-      clientLogger.error("game-summary.rematch.return-to-start.failed", {
-        context: { finishedGameId: finishedGameIdFromRoute },
-        error: err,
-      });
+      if (isGameNotNewestError(err)) {
+        leaveOldGame("rematch");
+      } else {
+        clientLogger.error("game-summary.rematch.return-to-start.failed", {
+          context: { finishedGameId: finishedGameIdFromRoute },
+          error: err,
+        });
+      }
       setActionError(toUserErrorMessage(err, "Could not return to start."));
     }
-  }, [finishedGameIdFromRoute, navigate, releaseFinishedGame, setActionError]);
+  }, [finishedGameIdFromRoute, leaveOldGame, navigate, releaseFinishedGame, setActionError]);
 
   return {
     error,
+    leaving: leavePath !== null,
     settings,
     loadSettings,
     starting,

@@ -29,6 +29,7 @@ import { MemoryRouter, Routes, Route } from "react-router-dom";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { createQueryClient } from "@/shared/query/queryClient";
+import { gameQueries } from "@/shared/query/game.queries";
 import React from "react";
 import { ApiError } from "@/shared/api";
 import { getGameThrows, getGameSettings, startGame } from "@/shared/api/game";
@@ -130,8 +131,8 @@ function deferred<T>(): Deferred<T> {
 
 function makeWrapper(
   path: string,
+  queryClient = createQueryClient(),
 ): ({ children }: { children: React.ReactNode }) => React.ReactElement {
-  const queryClient = createQueryClient();
   return function Wrapper({ children }: { children: React.ReactNode }): React.ReactElement {
     return React.createElement(
       QueryClientProvider,
@@ -281,6 +282,21 @@ describe("useStartPage action guards", () => {
       invitationLink: "/invite/55",
     });
     expect(navigateMock).toHaveBeenCalledWith("/start/55");
+  });
+
+  it("should make routes read the tablet game again after a room is created", async () => {
+    const client = createQueryClient();
+    client.setQueryData(gameQueries.tablet().queryKey, { game: null, lastFinishedGameId: 54 });
+    vi.mocked(createRoom).mockResolvedValueOnce({ gameId: 55, invitationLink: "/invite/55" });
+    const { result } = renderHook(() => useStartPage(), {
+      wrapper: makeWrapper("/start", client),
+    });
+
+    await act(async () => {
+      await result.current.handleCreateRoom();
+    });
+
+    expect(client.getQueryState(gameQueries.tablet().queryKey)?.isInvalidated).toBe(true);
   });
 
   it("should show username taken suggestions when guest nickname already exists in current game", async () => {
