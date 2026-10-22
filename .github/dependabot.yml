@@ -7,8 +7,8 @@ updates:
       day: monday
     open-pull-requests-limit: 5
     ignore:
-      # eslint-plugin-jsx-a11y and eslint-plugin-react do not accept ESLint 10 as a peer yet (#267).
-      # Remove both entries once both plugins publish a release whose eslint peer range includes 10.
+      # shortcut: eslint-plugin-jsx-a11y and eslint-plugin-react reject ESLint 10 as a peer (#267),
+      # remove both entries once both plugins publish a release whose eslint peer range includes 10.
       - dependency-name: eslint
         update-types: [version-update:semver-major]
       - dependency-name: "@eslint/js"
