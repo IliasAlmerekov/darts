@@ -261,6 +261,37 @@ describe("admin routes follow the tablet game", () => {
 });
 
 // Issue #203: Settings wrote the URL id into the current game and broke the Game tab.
+describe("a navigation that replaces a pending one", () => {
+  it("should read the tablet game again instead of reusing the replaced read", async () => {
+    getTabletGameMock.mockResolvedValueOnce(NO_TABLET_GAME);
+    const router = renderAdminRoutes(["/statistics"]);
+    await expectPage("Statistics /statistics");
+
+    let answerReplacedRead!: (body: TabletGameResponse) => void;
+    getTabletGameMock.mockReturnValueOnce(
+      new Promise((resolve) => {
+        answerReplacedRead = resolve;
+      }),
+    );
+    getTabletGameMock.mockResolvedValue(STARTED_7);
+
+    await act(async () => {
+      void router.navigate("/game/3");
+      await vi.waitFor(() => expect(getTabletGameMock).toHaveBeenCalledTimes(2));
+    });
+    act(() => {
+      void router.navigate("/game/7");
+    });
+    // The replaced read answers late, with the state from before game 7 started.
+    act(() => {
+      answerReplacedRead(LOBBY_7);
+    });
+
+    await expectPage("Game /game/7");
+    expect(router.state.location.pathname).toBe("/game/7");
+  });
+});
+
 describe("navigation after a hand-typed settings URL", () => {
   it("should keep the current game and lead the Game tab to the tablet game", async () => {
     setCurrentGameId(7);

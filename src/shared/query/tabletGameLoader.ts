@@ -26,6 +26,10 @@ function takeRedirectRead(pathname: string): TabletGameResponse | null {
   return state.data;
 }
 
+// The cancel of a read whose navigation was replaced. The next loader waits for it, so it starts
+// a fresh read instead of joining the old one, which may answer with an outdated tablet game.
+let replacedReadCancel: Promise<void> = Promise.resolve();
+
 /**
  * Reads the tablet game fresh for the loader of `request`. Returns null when the read fails:
  * the query function logged it, and `TabletGameGate` shows the error with Retry.
@@ -36,7 +40,18 @@ export async function fetchTabletGame(request: Request): Promise<TabletGameRespo
     return redirectRead;
   }
 
-  return queryClient.fetchQuery(gameQueries.tablet()).catch(() => null);
+  await replacedReadCancel;
+  const cancelOnAbort = (): void => {
+    replacedReadCancel = queryClient.cancelQueries({ queryKey: gameQueries.tablet().queryKey });
+  };
+  request.signal.addEventListener("abort", cancelOnAbort, { once: true });
+  try {
+    return await queryClient.fetchQuery(gameQueries.tablet());
+  } catch {
+    return null;
+  } finally {
+    request.signal.removeEventListener("abort", cancelOnAbort);
+  }
 }
 
 /** Redirects to `target`, replacing the history entry, and hands the read to its loader. */
