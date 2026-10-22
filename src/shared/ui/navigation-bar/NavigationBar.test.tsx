@@ -3,12 +3,26 @@ import { act, fireEvent, render, screen } from "@testing-library/react";
 import { MemoryRouter, useLocation, useNavigate } from "react-router-dom";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { ROUTES } from "@/lib/router/routes";
+import useIsomorphicLayoutEffect from "@/shared/lib/useIsomorphicLayoutEffect";
 import type { TabletGame } from "@/shared/api/game";
 import NavigationBar from "./NavigationBar";
+import styles from "./NavigationBar.module.css";
+
+// The highlighted link at each route commit, read before passive effects run.
+let highlightAtRouteCommit: string[] = [];
 
 function LocationProbe(): React.JSX.Element {
   const location = useLocation();
   const navigate = useNavigate();
+  useIsomorphicLayoutEffect(() => {
+    highlightAtRouteCommit.push(
+      screen
+        .getAllByRole("link")
+        .filter((link) => link.classList.contains(styles.active ?? ""))
+        .map((link) => link.textContent ?? "")
+        .join(","),
+    );
+  }, [location.pathname]);
   return (
     <>
       <output data-testid="location">{location.pathname}</output>
@@ -40,6 +54,10 @@ function currentLocation(): string | null {
 
 function historyBack(): void {
   fireEvent.click(screen.getByRole("button", { name: "History back" }));
+}
+
+function isHighlighted(name: string): boolean {
+  return screen.getByRole("link", { name }).classList.contains(styles.active ?? "");
 }
 
 function currentPageName(): string | null {
@@ -238,6 +256,20 @@ describe("NavigationBar", () => {
       });
 
       expect(currentLocation()).toBe(ROUTES.playerProfile);
+    });
+
+    it("should drop the preview when the route changes during the preview", () => {
+      renderAt(ROUTES.playerProfile, ROUTES.statistics);
+
+      fireEvent.click(screen.getByRole("link", { name: "Game" }));
+      expect(isHighlighted("Game")).toBe(true);
+
+      highlightAtRouteCommit = [];
+      historyBack();
+
+      expect(highlightAtRouteCommit).toEqual(["Statistics"]);
+      expect(isHighlighted("Game")).toBe(false);
+      expect(isHighlighted("Statistics")).toBe(true);
     });
 
     it("should navigate to the last clicked page when clicking quickly", () => {

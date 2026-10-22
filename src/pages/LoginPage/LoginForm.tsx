@@ -18,12 +18,15 @@ export function LoginForm({
   onSubmit,
 }: LoginFormProps): React.JSX.Element {
   const [showPassword, setShowPassword] = useState(false);
-  // The status region mounts empty and receives its text after mount, because
+  // The status region mounts empty and receives its text on the next frame, because
   // screen readers announce changes to a live region, not a region that appears filled.
   const [announcedSuccess, setAnnouncedSuccess] = useState<string | null>(null);
 
   useEffect(() => {
-    setAnnouncedSuccess(success ?? null);
+    const frameId = window.requestAnimationFrame(() => {
+      setAnnouncedSuccess(success ?? null);
+    });
+    return () => window.cancelAnimationFrame(frameId);
   }, [success]);
 
   function handleTogglePassword(): void {

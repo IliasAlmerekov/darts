@@ -1,4 +1,4 @@
-import React, { useEffect, useId, useState } from "react";
+import React, { useId, useState } from "react";
 import clsx from "clsx";
 import { Overlay } from "@/shared/ui/overlay";
 import { SettingsGroupBtn, Button } from "@/shared/ui/button";
@@ -44,9 +44,13 @@ function SettingsOverlay({
   error = null,
 }: SettingsOverlayProps): React.JSX.Element {
   const titleId = useId();
-  const [gameMode, setGameMode] = useState<GameMode>(
-    resolveGameMode(initialDoubleOut, initialTripleOut),
-  );
+  const initialGameMode = resolveGameMode(initialDoubleOut, initialTripleOut);
+  const [gameMode, setGameMode] = useState<GameMode>(initialGameMode);
+  const [prevInitialProps, setPrevInitialProps] = useState({
+    initialDoubleOut,
+    initialTripleOut,
+    initialStartScore,
+  });
   const overlayProps = {
     ...(styles.settingsOverlayBackground !== undefined
       ? { backdropClassName: styles.settingsOverlayBackground }
@@ -56,9 +60,15 @@ function SettingsOverlay({
     ...(styles.settingsOverlayBtn !== undefined ? { className: styles.settingsOverlayBtn } : {}),
   };
 
-  useEffect(() => {
-    setGameMode(resolveGameMode(initialDoubleOut, initialTripleOut));
-  }, [initialDoubleOut, initialTripleOut, initialStartScore]);
+  // New initial settings replace the picked mode; any other re-render keeps it.
+  if (
+    prevInitialProps.initialDoubleOut !== initialDoubleOut ||
+    prevInitialProps.initialTripleOut !== initialTripleOut ||
+    prevInitialProps.initialStartScore !== initialStartScore
+  ) {
+    setPrevInitialProps({ initialDoubleOut, initialTripleOut, initialStartScore });
+    setGameMode(initialGameMode);
+  }
 
   const handleSave = (): void => {
     const doubleOut = gameMode === "double-out";

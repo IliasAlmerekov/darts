@@ -43,6 +43,10 @@ class MockEventSource {
   }
 }
 
+interface StreamProps {
+  url: string | null;
+}
+
 describe("useEventSource", () => {
   beforeEach(() => {
     MockEventSource.instances = [];
@@ -126,6 +130,68 @@ describe("useEventSource", () => {
     });
 
     expect(result.current).toEqual({ error: null, isConnected: true });
+  });
+
+  it("should report a disconnected state from the first render with a new url", () => {
+    const listeners = [{ event: "players", handler: vi.fn() }] as const;
+    const renders: Array<{ url: string | null; result: ReturnType<typeof useEventSource> }> = [];
+    const { rerender } = renderHook<ReturnType<typeof useEventSource>, StreamProps>(
+      ({ url }) => {
+        const result = useEventSource(url, listeners);
+        renders.push({ url, result });
+        return result;
+      },
+      { initialProps: { url: "/stream-a" } },
+    );
+
+    act(() => {
+      MockEventSource.instances[0]?.simulateError();
+    });
+    act(() => {
+      vi.advanceTimersByTime(1000);
+      MockEventSource.instances[1]?.simulateOpen();
+    });
+    expect(renders.at(-1)?.result).toEqual({ error: null, isConnected: true });
+
+    rerender({ url: "/stream-b" });
+    rerender({ url: null });
+
+    const newUrlRenders = renders.filter(({ url }) => url !== "/stream-a");
+    expect(newUrlRenders.length).toBeGreaterThan(0);
+    for (const { result } of newUrlRenders) {
+      expect(result).toEqual({ error: null, isConnected: false });
+    }
+    expect(MockEventSource.instances.map(({ url }) => url)).toEqual([
+      "/stream-a",
+      "/stream-a",
+      "/stream-b",
+    ]);
+  });
+
+  it("should report a disconnected state on every render after the url turns null and returns", () => {
+    const listeners = [{ event: "players", handler: vi.fn() }] as const;
+    const results: Array<ReturnType<typeof useEventSource>> = [];
+    const { rerender } = renderHook<ReturnType<typeof useEventSource>, StreamProps>(
+      ({ url }) => {
+        const result = useEventSource(url, listeners);
+        results.push(result);
+        return result;
+      },
+      { initialProps: { url: "/stream" } },
+    );
+
+    act(() => {
+      MockEventSource.instances[0]?.simulateOpen();
+    });
+    expect(results.at(-1)).toEqual({ error: null, isConnected: true });
+
+    const rendersBeforeNull = results.length;
+    rerender({ url: null });
+    rerender({ url: "/stream" });
+
+    for (const result of results.slice(rendersBeforeNull)) {
+      expect(result).toEqual({ error: null, isConnected: false });
+    }
   });
 
   it("should use the explicit credentials option and clean up listeners when unmounted", () => {
