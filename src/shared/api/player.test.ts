@@ -235,4 +235,12 @@ describe("getPlayerProfile", () => {
 
     await expect(getPlayerProfile()).rejects.toBeInstanceOf(ApiValidationError);
   });
+
+  it("rejects with ApiValidationError when registeredAt is not a date-time", async () => {
+    vi.mocked(apiClient.get).mockImplementationOnce(
+      respondWith({ ...profileExample, registeredAt: "not-a-date" }),
+    );
+
+    await expect(getPlayerProfile()).rejects.toBeInstanceOf(ApiValidationError);
+  });
 });
