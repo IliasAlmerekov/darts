@@ -52,18 +52,48 @@ for (const file of imageFiles) {
   }
 }
 
-// Workflows read .nvmrc, so the version lives in one file.
+const indentOf = (line) => line.length - line.trimStart().length;
+
+// Groups workflow lines into list items. A deeper "- " line, such as a list under
+// `with:`, stays in the item that holds it.
+const listItems = (lines) => {
+  const items = [];
+  let current;
+  lines.forEach((line, index) => {
+    const isItemStart = /^\s*- /.test(line);
+    if (isItemStart && (!current || indentOf(line) <= current.indent)) {
+      current = { indent: indentOf(line), line: index + 1, lines: [line] };
+      items.push(current);
+    } else if (current && (line.trim() === "" || indentOf(line) > current.indent)) {
+      current.lines.push(line);
+    } else {
+      current = undefined;
+    }
+  });
+  return items;
+};
+
+// Workflows read .nvmrc, so the version lives in one file. Without a version input
+// actions/setup-node falls back to the runner's Node.js.
 for (const name of readdirSync(workflowDir)) {
   const file = `${workflowDir}/${name}`;
-  readFileSync(file, "utf-8")
-    .split(/\r?\n/)
-    .forEach((line, index) => {
-      if (/^\s*node-version:/.test(line)) {
-        failures.push(
-          `${file}:${index + 1}: use node-version-file: .nvmrc instead of node-version.`,
-        );
-      }
-    });
+  const lines = readFileSync(file, "utf-8").split(/\r?\n/);
+  lines.forEach((line, index) => {
+    if (/^\s*node-version:/.test(line)) {
+      failures.push(`${file}:${index + 1}: use node-version-file: .nvmrc instead of node-version.`);
+    }
+  });
+  for (const step of listItems(lines)) {
+    const usesSetupNode = step.lines.some((line) => /\buses:\s*actions\/setup-node@/.test(line));
+    const readsNvmrc = step.lines.some((line) =>
+      /^\s*node-version-file:\s*["']?\.nvmrc["']?\s*(#.*)?$/.test(line),
+    );
+    if (usesSetupNode && !readsNvmrc) {
+      failures.push(
+        `${file}:${step.line}: the actions/setup-node step lacks node-version-file: .nvmrc.`,
+      );
+    }
+  }
 }
 
 if (failures.length > 0) {

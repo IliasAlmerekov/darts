@@ -109,8 +109,8 @@ browser checks and `npm run test:e2e` see the branch that is checked out.
 
 `.nvmrc` pins Node.js, and every workflow reads it. `npm run node:check` fails when `.nvmrc`
 or a `node:` image in `Dockerfile`, `deploy/frontend.Dockerfile`, `compose.dev.yaml` or
-`.gitlab-ci.yml` is older than its `MIN_NODE_VERSION` or lacks a patch version. Change all
-pins together, and raise `MIN_NODE_VERSION` with each Node.js security release.
+`.gitlab-ci.yml` is older than its `MIN_NODE_VERSION` or lacks a patch version, and when an
+`actions/setup-node` step does not set `node-version-file: .nvmrc`. Change all pins together, and raise `MIN_NODE_VERSION` with each Node.js security release.
 
 ## Branches
 
