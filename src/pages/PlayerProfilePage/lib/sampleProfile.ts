@@ -1,7 +1,7 @@
 // Sample values for the Player profile blocks the API does not carry yet: Won and the
-// checkout figures and throw statistics come with darts-backend#128, Member since with
-// darts-backend#127. Each value can move to API data on its own; the layout reads only this
-// module, and every block that shows one of these values carries a "Sample data" badge.
+// checkout figures and throw statistics come with darts-backend#128. Each value can move to
+// API data on its own; the layout reads only this module, and every block that shows one of
+// these values carries a "Sample data" badge.
 
 /** Five steps, from the most hit segments (0) to the least hit ones (4). */
 export type HitFrequency = 0 | 1 | 2 | 3 | 4;
@@ -42,7 +42,6 @@ const SAMPLE_BULL: HitFrequency = 2;
 
 export const SAMPLE_PROFILE = {
   subtitle: "Consistent finisher",
-  memberSince: "Apr 2024",
   won: { games: 11, winRate: 61 },
   checkout: { rate: 38, checkouts: 21, attempts: 55 },
   hitDistribution: { segments: SAMPLE_HIT_SEGMENTS, bull: SAMPLE_BULL },

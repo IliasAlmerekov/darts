@@ -84,6 +84,7 @@ export function StatsCard({
   className,
 }: StatsCardProps): React.JSX.Element {
   const { won, checkout } = SAMPLE_PROFILE;
+  const memberSince = profileState.status === "success" ? profileState.profile.memberSince : null;
 
   return (
     <section className={clsx(styles.statsCard, className)} aria-label="Player stats">
@@ -95,11 +96,12 @@ export function StatsCard({
         <p className={styles.subtitle}>
           {SAMPLE_PROFILE.subtitle} <SampleBadge />
         </p>
-        <p className={styles.memberSince} role="group" aria-label="Member since">
-          <CalendarIcon />
-          Member since {SAMPLE_PROFILE.memberSince}
-          <SampleBadge />
-        </p>
+        {memberSince === null ? null : (
+          <p className={styles.memberSince} role="group" aria-label="Member since">
+            <CalendarIcon />
+            Member since {memberSince}
+          </p>
+        )}
       </div>
 
       <ul className={styles.statList}>

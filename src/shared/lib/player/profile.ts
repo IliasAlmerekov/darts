@@ -25,6 +25,8 @@ export interface PlayerProfile {
   stats: { gamesPlayed: string; scoreAverage: string };
   history: ProfileHistoryRow[];
   scoringTrend: ScoringTrendPoint[];
+  /** The Registration month, such as `Feb 2026`, or null without a valid Registration date. */
+  memberSince: string | null;
 }
 
 const dateTimeFormat = new Intl.DateTimeFormat("en-US", {
@@ -34,6 +36,12 @@ const dateTimeFormat = new Intl.DateTimeFormat("en-US", {
   hour: "2-digit",
   minute: "2-digit",
   hourCycle: "h23",
+});
+
+const monthYearFormat = new Intl.DateTimeFormat("en-US", {
+  month: "short",
+  year: "numeric",
+  timeZone: "UTC",
 });
 
 const ordinalRules = new Intl.PluralRules("en-US", { type: "ordinal" });
@@ -56,6 +64,21 @@ function formatFinishedAt(finishedAt: string | null | undefined): string | null 
     dateTimeFormat.formatToParts(date).map((part) => [part.type, part.value]),
   );
   return `${parts.day} ${parts.month} ${parts.year}, ${parts.hour}:${parts.minute}`;
+}
+
+/**
+ * `Feb 2026` from the timestamp's own `YYYY-MM`, so every viewer sees the month the server
+ * wrote, whatever the browser's time zone. Null without a valid date.
+ */
+function formatRegistrationMonth(registeredAt: string | null | undefined): string | null {
+  if (registeredAt === null || registeredAt === undefined) {
+    return null;
+  }
+  const match = /^(\d{4})-(\d{2})-/.exec(registeredAt);
+  if (match === null || Number.isNaN(new Date(registeredAt).getTime())) {
+    return null;
+  }
+  return monthYearFormat.format(Date.UTC(Number(match[1]), Number(match[2]) - 1));
 }
 
 function formatOrdinal(placement: number): string {
@@ -126,5 +149,6 @@ export function toPlayerProfile(response: PlayerProfileResponse): PlayerProfile 
     },
     history: response.recentGames.map(toHistoryRow),
     scoringTrend: response.recentGames.map(toScoringTrendPoint).reverse(),
+    memberSince: formatRegistrationMonth(response.registeredAt),
   };
 }
