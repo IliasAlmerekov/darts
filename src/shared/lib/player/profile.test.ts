@@ -3,6 +3,7 @@ import { describe, expect, it, vi } from "vitest";
 import {
   buildPlayerProfile as buildProfile,
   buildPlayerProfileGame as buildGame,
+  buildPlayerProfileStats as buildStats,
 } from "@/shared/types/player.test-support";
 import { toPlayerProfile } from "./profile";
 
@@ -31,8 +32,8 @@ describe("toPlayerProfile", () => {
 
   it("shows a dash for a missing average", () => {
     expect(
-      toPlayerProfile(buildProfile({ stats: { gamesPlayed: 0, scoreAverage: null } })).stats
-        .scoreAverage,
+      toPlayerProfile(buildProfile({ stats: buildStats({ gamesPlayed: 0, scoreAverage: null }) }))
+        .stats.scoreAverage,
     ).toBe("–");
   });
 
