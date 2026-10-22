@@ -77,34 +77,47 @@ const doubleSchema = v.picklist([
   "BULLSEYE",
 ]);
 
-/** Contract `PlayerProfileStatsDto`. Rates and shares run from 0 to 100. */
+/** Contract rates and shares: 0 to 100 with one decimal. */
+const percentSchema = v.pipe(v.number(), v.minValue(0), v.maxValue(100));
+
+/** Contract `PlayerProfileStatsDto`. */
 const playerProfileStatsSchema = v.object({
   gamesPlayed: integerSchema,
   scoreAverage: v.optional(v.nullable(v.number())),
   wins: integerSchema,
-  winRate: v.optional(v.nullable(v.number())),
-  checkoutRate: v.optional(v.nullable(v.number())),
+  winRate: v.optional(v.nullable(percentSchema)),
+  checkoutRate: v.optional(v.nullable(percentSchema)),
   checkoutHits: integerSchema,
   checkoutAttempts: integerSchema,
   /** Contract `PlayerProfileSegmentHitsDto`: one entry per segment, `1` to `BULLSEYE`. */
-  hitDistribution: v.array(v.object({ segment: segmentSchema, hits: integerSchema })),
+  hitDistribution: v.pipe(
+    v.array(v.object({ segment: segmentSchema, hits: integerSchema })),
+    v.length(22),
+  ),
   /** Contract `PlayerProfileMostHitSegmentDto`. */
   mostHitSegment: v.optional(
-    v.nullable(v.object({ segment: segmentSchema, hits: integerSchema, share: v.number() })),
+    v.nullable(v.object({ segment: segmentSchema, hits: integerSchema, share: percentSchema })),
   ),
   /** Contract `PlayerProfileDoubleDto`: at most 3, Double-out games only. */
-  favoriteDoubles: v.array(
-    v.object({
-      double: doubleSchema,
-      hits: integerSchema,
-      attempts: integerSchema,
-      hitRate: v.number(),
-    }),
+  favoriteDoubles: v.pipe(
+    v.array(
+      v.object({
+        double: doubleSchema,
+        hits: integerSchema,
+        attempts: integerSchema,
+        hitRate: percentSchema,
+      }),
+    ),
+    v.maxLength(3),
   ),
-  /** Contract `PlayerProfileFinishDto`: `throws` holds the 1 to 3 darts, such as `D16`. */
+  /** Contract `PlayerProfileFinishDto`: `throws` holds the darts in order, such as `D16`. */
   highestFinish: v.optional(
     v.nullable(
-      v.object({ score: integerSchema, darts: integerSchema, throws: v.array(v.string()) }),
+      v.object({
+        score: integerSchema,
+        darts: v.pipe(integerSchema, v.minValue(1), v.maxValue(3)),
+        throws: v.pipe(v.array(v.string()), v.minLength(1), v.maxLength(3)),
+      }),
     ),
   ),
 });

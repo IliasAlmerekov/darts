@@ -166,6 +166,31 @@ describe("getPlayerProfile", () => {
     await expect(getPlayerProfile()).rejects.toBeInstanceOf(ApiValidationError);
   });
 
+  it.each([
+    ["a hit distribution without all 22 segments", { hitDistribution: [] }],
+    [
+      "more than 3 favorite doubles",
+      {
+        favoriteDoubles: ["D20", "D16", "D8", "D4"].map((double) => ({
+          double,
+          hits: 1,
+          attempts: 2,
+          hitRate: 50,
+        })),
+      },
+    ],
+    ["a win rate above 100", { winRate: 100.1 }],
+    ["a negative checkout rate", { checkoutRate: -1 }],
+    ["a highest finish with 4 darts", { highestFinish: { score: 60, darts: 4, throws: ["T20"] } }],
+    ["a highest finish without throws", { highestFinish: { score: 60, darts: 1, throws: [] } }],
+  ])("rejects with ApiValidationError for %s", async (_case, statsOverride) => {
+    vi.mocked(apiClient.get).mockImplementationOnce(
+      respondWith({ ...profileExample, stats: { ...profileStatsExample, ...statsOverride } }),
+    );
+
+    await expect(getPlayerProfile()).rejects.toBeInstanceOf(ApiValidationError);
+  });
+
   it("rejects with ApiValidationError for a favorite double that is no double", async () => {
     vi.mocked(apiClient.get).mockImplementationOnce(
       respondWith({
