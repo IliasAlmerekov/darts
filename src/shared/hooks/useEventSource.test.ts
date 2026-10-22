@@ -43,6 +43,10 @@ class MockEventSource {
   }
 }
 
+interface StreamProps {
+  url: string | null;
+}
+
 describe("useEventSource", () => {
   beforeEach(() => {
     MockEventSource.instances = [];
@@ -131,13 +135,13 @@ describe("useEventSource", () => {
   it("should report a disconnected state from the first render with a new url", () => {
     const listeners = [{ event: "players", handler: vi.fn() }] as const;
     const renders: Array<{ url: string | null; result: ReturnType<typeof useEventSource> }> = [];
-    const { rerender } = renderHook(
-      ({ url }: { url: string | null }) => {
+    const { rerender } = renderHook<ReturnType<typeof useEventSource>, StreamProps>(
+      ({ url }) => {
         const result = useEventSource(url, listeners);
         renders.push({ url, result });
         return result;
       },
-      { initialProps: { url: "/stream-a" as string | null } },
+      { initialProps: { url: "/stream-a" } },
     );
 
     act(() => {
@@ -166,9 +170,9 @@ describe("useEventSource", () => {
 
   it("should report a disconnected state when the url returns after a null url", () => {
     const listeners = [{ event: "players", handler: vi.fn() }] as const;
-    const { result, rerender } = renderHook(
-      ({ url }: { url: string | null }) => useEventSource(url, listeners),
-      { initialProps: { url: "/stream" as string | null } },
+    const { result, rerender } = renderHook<ReturnType<typeof useEventSource>, StreamProps>(
+      ({ url }) => useEventSource(url, listeners),
+      { initialProps: { url: "/stream" } },
     );
 
     act(() => {
