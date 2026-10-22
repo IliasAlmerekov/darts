@@ -7,6 +7,8 @@ and this project does **not** yet follow [Semantic Versioning](https://semver.or
 
 ## [Unreleased]
 
+## [0.1.4] - 2026-10-22
+
 ### Added
 
 - CI: Dependabot opens weekly update PRs for npm, GitHub Actions and the Docker base images. npm minor and patch updates come as one PR, Actions updates as one PR. The `node` image gets no major bumps and `nginx` stays on 1.28 (#230)
@@ -25,6 +27,7 @@ and this project does **not** yet follow [Semantic Versioning](https://semver.or
 
 ### Changed
 
+- Deploy: releases build `darts-backend` at `0981bf4`. The backend runs PHP 8.4.27, which fixes CVE-2026-109618 and CVE-2026-109619, turns off session upload progress and rejects multipart requests with 415 (IliasAlmerekov/darts-backend#146). The pin also brings the player profile and tablet game endpoints, the `@db-n.com` registration rule, the 6-character password minimum, the newest-game rule for undo, reopen and rematch, and four migrations, among them the `registeredAt` column
 - Registration: the email field says "Use your @db-n.com email address." and its placeholder is `name@db-n.com`, the same placeholder as on the login form. When the backend rejects an address on another domain (darts-backend#129), the form shows "Only @db-n.com email addresses can register." instead of "Please enter a valid email address." The form still sends any address; the backend alone checks the domain. `docs/backend-api-contract.json` documents the rule on `RegistrationRequest.email` (#254)
 - Backend contract: `docs/backend-api-contract.json` is refreshed again. `POST /api/room/create` documents 404 `PLAYER_NOT_FOUND` for an unknown player id and 409 `GAME_ROOM_FULL` when a new lobby would seat more than 10 players, and no longer validates the ignored `previousGameId`. The dump also carries the `@db-n.com` registration rule from darts-backend#144 in its descriptions (IliasAlmerekov/darts-backend#133)
 - Backend contract: `docs/backend-api-contract.json` is refreshed. It marks `previousGameId` in `POST /api/room/create` as deprecated and ignored, documents `GET /api/tablet/game` and the 409 `GAME_NOT_NEWEST` answers of undo, reopen and rematch (IliasAlmerekov/darts-backend#133)
