@@ -28,13 +28,108 @@ const playerProfileGameSchema = v.object({
   participants: v.array(playerProfileParticipantSchema),
 });
 
-/** Contract `PlayerProfileResponseDto`: own stats and the 10 newest finished games. */
+const segmentSchema = v.picklist([
+  "1",
+  "2",
+  "3",
+  "4",
+  "5",
+  "6",
+  "7",
+  "8",
+  "9",
+  "10",
+  "11",
+  "12",
+  "13",
+  "14",
+  "15",
+  "16",
+  "17",
+  "18",
+  "19",
+  "20",
+  "BULL",
+  "BULLSEYE",
+]);
+
+const doubleSchema = v.picklist([
+  "D1",
+  "D2",
+  "D3",
+  "D4",
+  "D5",
+  "D6",
+  "D7",
+  "D8",
+  "D9",
+  "D10",
+  "D11",
+  "D12",
+  "D13",
+  "D14",
+  "D15",
+  "D16",
+  "D17",
+  "D18",
+  "D19",
+  "D20",
+  "BULLSEYE",
+]);
+
+/** Contract rates and shares: 0 to 100 with one decimal. */
+const percentSchema = v.pipe(v.number(), v.minValue(0), v.maxValue(100));
+
+/** Contract `PlayerProfileStatsDto`. */
+const playerProfileStatsSchema = v.object({
+  gamesPlayed: integerSchema,
+  scoreAverage: v.optional(v.nullable(v.number())),
+  wins: integerSchema,
+  winRate: v.optional(v.nullable(percentSchema)),
+  checkoutRate: v.optional(v.nullable(percentSchema)),
+  checkoutHits: integerSchema,
+  checkoutAttempts: integerSchema,
+  /** Contract `PlayerProfileSegmentHitsDto`: one entry per segment, `1` to `BULLSEYE`. */
+  hitDistribution: v.pipe(
+    v.array(v.object({ segment: segmentSchema, hits: integerSchema })),
+    v.length(22),
+  ),
+  /** Contract `PlayerProfileMostHitSegmentDto`. */
+  mostHitSegment: v.optional(
+    v.nullable(v.object({ segment: segmentSchema, hits: integerSchema, share: percentSchema })),
+  ),
+  /** Contract `PlayerProfileDoubleDto`: at most 3, Double-out games only. */
+  favoriteDoubles: v.pipe(
+    v.array(
+      v.object({
+        double: doubleSchema,
+        hits: integerSchema,
+        attempts: integerSchema,
+        hitRate: percentSchema,
+      }),
+    ),
+    v.maxLength(3),
+  ),
+  /** Contract `PlayerProfileFinishDto`: `throws` holds the darts in order, such as `D16`. */
+  highestFinish: v.optional(
+    v.nullable(
+      v.object({
+        score: integerSchema,
+        darts: v.pipe(integerSchema, v.minValue(1), v.maxValue(3)),
+        throws: v.pipe(v.array(v.string()), v.minLength(1), v.maxLength(3)),
+      }),
+    ),
+  ),
+});
+
+/**
+ * Contract `PlayerProfileResponseDto`: own stats and the 10 newest finished games.
+ * `registeredAt` is an ATOM date, null for a player registered before the field existed.
+ */
 const playerProfileResponseSchema = v.object({
-  stats: v.object({
-    gamesPlayed: integerSchema,
-    scoreAverage: v.optional(v.nullable(v.number())),
-  }),
+  stats: playerProfileStatsSchema,
   recentGames: v.array(playerProfileGameSchema),
+  registeredAt: v.optional(v.nullable(v.pipe(v.string(), v.isoTimestamp()))),
 });
 
 export type PlayerProfileResponse = v.InferOutput<typeof playerProfileResponseSchema>;

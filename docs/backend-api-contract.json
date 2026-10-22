@@ -1498,7 +1498,7 @@
                 "operationId": "get_app_player_profile",
                 "responses": {
                     "200": {
-                        "description": "Profil des angemeldeten Spielers: eigene Statistik und die letzten 10 beendeten Spiele, neueste zuerst. Von anderen Teilnehmern nur Anzeigename, Platzierung, `playerId` (`null` f\u00fcr G\u00e4ste) und `isSelf`.",
+                        "description": "Profil des angemeldeten Spielers: eigene Statistik und die letzten 10 beendeten Spiele, neueste zuerst. Die Statistik z\u00e4hlt beendete Spiele mit mindestens einer beendeten eigenen Runde und berechnet Siege, Checkouts, Trefferverteilung, Lieblings-Doubles (nur Double-Out) und das h\u00f6chste Finish aus den eigenen W\u00fcrfen dieser Spiele; Prozentwerte 0\u2013100 mit einer Nachkommastelle. Von anderen Teilnehmern nur Anzeigename, Platzierung, `playerId` (`null` f\u00fcr G\u00e4ste) und `isSelf`.",
                         "content": {
                             "application/json": {
                                 "schema": {
@@ -3143,9 +3143,178 @@
                 },
                 "type": "object"
             },
+            "PlayerProfileSegmentHitsDto": {
+                "required": [
+                    "segment",
+                    "hits"
+                ],
+                "properties": {
+                    "segment": {
+                        "type": "string",
+                        "enum": [
+                            "1",
+                            "2",
+                            "3",
+                            "4",
+                            "5",
+                            "6",
+                            "7",
+                            "8",
+                            "9",
+                            "10",
+                            "11",
+                            "12",
+                            "13",
+                            "14",
+                            "15",
+                            "16",
+                            "17",
+                            "18",
+                            "19",
+                            "20",
+                            "BULL",
+                            "BULLSEYE"
+                        ]
+                    },
+                    "hits": {
+                        "type": "integer"
+                    }
+                },
+                "type": "object"
+            },
+            "PlayerProfileMostHitSegmentDto": {
+                "required": [
+                    "segment",
+                    "hits",
+                    "share"
+                ],
+                "properties": {
+                    "segment": {
+                        "type": "string",
+                        "enum": [
+                            "1",
+                            "2",
+                            "3",
+                            "4",
+                            "5",
+                            "6",
+                            "7",
+                            "8",
+                            "9",
+                            "10",
+                            "11",
+                            "12",
+                            "13",
+                            "14",
+                            "15",
+                            "16",
+                            "17",
+                            "18",
+                            "19",
+                            "20",
+                            "BULL",
+                            "BULLSEYE"
+                        ]
+                    },
+                    "hits": {
+                        "type": "integer"
+                    },
+                    "share": {
+                        "description": "Treffer pro 100 geworfene Darts, Fehlw\u00fcrfe eingeschlossen.",
+                        "type": "number",
+                        "format": "float",
+                        "maximum": 100,
+                        "minimum": 0
+                    }
+                },
+                "type": "object"
+            },
+            "PlayerProfileDoubleDto": {
+                "required": [
+                    "double",
+                    "hits",
+                    "attempts",
+                    "hitRate"
+                ],
+                "properties": {
+                    "double": {
+                        "type": "string",
+                        "enum": [
+                            "D1",
+                            "D2",
+                            "D3",
+                            "D4",
+                            "D5",
+                            "D6",
+                            "D7",
+                            "D8",
+                            "D9",
+                            "D10",
+                            "D11",
+                            "D12",
+                            "D13",
+                            "D14",
+                            "D15",
+                            "D16",
+                            "D17",
+                            "D18",
+                            "D19",
+                            "D20",
+                            "BULLSEYE"
+                        ]
+                    },
+                    "hits": {
+                        "type": "integer"
+                    },
+                    "attempts": {
+                        "description": "Darts, geworfen bei einem Rest von genau diesem Double.",
+                        "type": "integer"
+                    },
+                    "hitRate": {
+                        "type": "number",
+                        "format": "float",
+                        "maximum": 100,
+                        "minimum": 0
+                    }
+                },
+                "type": "object"
+            },
+            "PlayerProfileFinishDto": {
+                "required": [
+                    "score",
+                    "darts",
+                    "throws"
+                ],
+                "properties": {
+                    "score": {
+                        "description": "Restpunktzahl zu Beginn der Aufnahme.",
+                        "type": "integer"
+                    },
+                    "darts": {
+                        "type": "integer",
+                        "maximum": 3,
+                        "minimum": 1
+                    },
+                    "throws": {
+                        "description": "Die Darts der Aufnahme in Reihenfolge: `S<n>`, `D<n>`, `T<n>` mit n von 1 bis 20, `BULL`, `BULLSEYE` oder `MISS`.",
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        },
+                        "maxItems": 3,
+                        "minItems": 1
+                    }
+                },
+                "type": "object"
+            },
             "PlayerProfileStatsDto": {
                 "required": [
-                    "gamesPlayed"
+                    "gamesPlayed",
+                    "wins",
+                    "checkoutHits",
+                    "checkoutAttempts",
+                    "hitDistribution",
+                    "favoriteDoubles"
                 ],
                 "properties": {
                     "gamesPlayed": {
@@ -3155,6 +3324,69 @@
                         "type": "number",
                         "format": "float",
                         "nullable": true
+                    },
+                    "wins": {
+                        "description": "Gez\u00e4hlte Spiele mit Platzierung 1.",
+                        "type": "integer"
+                    },
+                    "winRate": {
+                        "description": "Siege pro 100 gez\u00e4hlte Spiele; `null` ohne gez\u00e4hlte Spiele.",
+                        "type": "number",
+                        "format": "float",
+                        "nullable": true,
+                        "maximum": 100,
+                        "minimum": 0
+                    },
+                    "checkoutRate": {
+                        "description": "Checkout-Treffer pro 100 Checkout-Versuche, \u00fcber alle Out-Regeln; `null` ohne Versuche.",
+                        "type": "number",
+                        "format": "float",
+                        "nullable": true,
+                        "maximum": 100,
+                        "minimum": 0
+                    },
+                    "checkoutHits": {
+                        "description": "Darts, die das Spiel f\u00fcr den Spieler beendet haben.",
+                        "type": "integer"
+                    },
+                    "checkoutAttempts": {
+                        "description": "Darts, geworfen bei einem Rest, den ein Dart nach der Out-Regel des Spiels auschecken kann; Busts eingeschlossen.",
+                        "type": "integer"
+                    },
+                    "hitDistribution": {
+                        "description": "Immer 22 Eintr\u00e4ge in der Reihenfolge `1` bis `20`, `BULL`, `BULLSEYE`. Single, Double und Triple z\u00e4hlen f\u00fcr dasselbe Segment, Busts z\u00e4hlen mit, Fehlw\u00fcrfe nicht.",
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/PlayerProfileSegmentHitsDto"
+                        },
+                        "maxItems": 22,
+                        "minItems": 22
+                    },
+                    "mostHitSegment": {
+                        "description": "Segment mit den meisten Treffern, bei Gleichstand das h\u00f6here; `null` ohne Treffer.",
+                        "nullable": true,
+                        "oneOf": [
+                            {
+                                "$ref": "#/components/schemas/PlayerProfileMostHitSegmentDto"
+                            }
+                        ]
+                    },
+                    "favoriteDoubles": {
+                        "description": "Nur Double-Out-Spiele: h\u00f6chstens 3 Doubles mit mindestens einem Checkout, nach Treffern, dann Trefferquote, dann h\u00f6herem Double.",
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/PlayerProfileDoubleDto"
+                        },
+                        "maxItems": 3
+                    },
+                    "highestFinish": {
+                        "description": "H\u00f6chstes Finish \u00fcber alle Out-Regeln, bei Gleichstand das mit weniger Darts, dann das fr\u00fchere; `null` ohne Finish.",
+                        "nullable": true,
+                        "oneOf": [
+                            {
+                                "$ref": "#/components/schemas/PlayerProfileFinishDto"
+                            }
+                        ]
                     }
                 },
                 "type": "object"
@@ -3231,6 +3463,11 @@
                         "items": {
                             "$ref": "#/components/schemas/PlayerProfileGameDto"
                         }
+                    },
+                    "registeredAt": {
+                        "type": "string",
+                        "format": "date-time",
+                        "nullable": true
                     }
                 },
                 "type": "object"

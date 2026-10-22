@@ -13,6 +13,7 @@ and this project does **not** yet follow [Semantic Versioning](https://semver.or
 
 ### Changed
 
+- API: the Player profile response follows the refreshed backend contract. It carries `registeredAt`, the Registration date, and the stats carry wins, win rate, checkout rate, checkout hits and attempts, the hit distribution, the most hit segment, favorite doubles and the highest finish from darts-backend#149. A response without the new required stats fields fails validation, so this needs the backend with darts-backend#149 deployed (#257)
 - Agent rules: `.github/copilot-instructions.md` points to `AGENTS.md` instead of carrying its own outdated rules, so Copilot and CodeRabbit read one rule set (#265)
 
 ### Fixed
