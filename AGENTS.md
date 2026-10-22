@@ -107,6 +107,10 @@ nginx on :8001, php and mysql. Both repos' compose files carry `name: darts`, so
 workspace folder that holds both repos. The frontend container serves this checkout, so
 browser checks and `npm run test:e2e` see the branch that is checked out.
 
+`.nvmrc` pins Node.js, and every workflow reads it. A Node.js update changes `.nvmrc` and
+the `node:` images in `Dockerfile`, `deploy/frontend.Dockerfile`, `compose.dev.yaml` and
+`.gitlab-ci.yml` together.
+
 ## Branches
 
 Each issue gets its own branch in this checkout, cut from the latest `main`; work happens

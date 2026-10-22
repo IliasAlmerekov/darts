@@ -10,7 +10,7 @@ Dart score app is an app where you can effortlessly keep track of your dart game
 git clone <repository-url>
 ```
 
-2. Install Node.js 20.19+ with npm. `.nvmrc` pins the version, and Vite 7 needs `^20.19.0 || >=22.12.0`. Then install the dependencies and the Playwright browser:
+2. Install Node.js 24.22.1 with npm. `.nvmrc` pins the version; older releases carry the October 2026 Node.js security bugs. Then install the dependencies and the Playwright browser:
 
 ```bash
 nvm use
