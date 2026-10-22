@@ -185,6 +185,14 @@ function wrapper({ children }: { children: ReactNode }): ReactNode {
   return createElement(QueryClientProvider, { client: testQueryClient }, children);
 }
 
+type SummaryHook = ReturnType<typeof useGameSummaryPage>;
+
+const SUMMARY_ACTIONS = [
+  { action: "Undo", run: (hook: SummaryHook) => hook.handleUndo() },
+  { action: "Play Again", run: (hook: SummaryHook) => hook.handlePlayAgain() },
+  { action: "Back To Start", run: (hook: SummaryHook) => hook.handleBackToStart() },
+];
+
 function renderSummaryHook() {
   return renderHook(() => useGameSummaryPage(), { wrapper });
 }
@@ -727,30 +735,25 @@ describe("useGameSummaryPage", () => {
     expect(testQueryClient.getQueryData(["finishedGame", 42])).toBeUndefined();
   });
 
-  it.each([
-    { action: "Undo", run: (hook: ReturnType<typeof useGameSummaryPage>) => hook.handleUndo() },
-    {
-      action: "Play Again",
-      run: (hook: ReturnType<typeof useGameSummaryPage>) => hook.handlePlayAgain(),
-    },
-    {
-      action: "Back To Start",
-      run: (hook: ReturnType<typeof useGameSummaryPage>) => hook.handleBackToStart(),
-    },
-  ])("should make routes read the tablet game again after $action succeeds", async ({ run }) => {
-    testQueryClient.setQueryData(gameQueries.tablet().queryKey, {
-      game: null,
-      lastFinishedGameId: 42,
-    });
-    const { result } = renderSummaryHook();
+  it.each(SUMMARY_ACTIONS)(
+    "should make routes read the tablet game again after $action succeeds",
+    async ({ run }) => {
+      testQueryClient.setQueryData(gameQueries.tablet().queryKey, {
+        game: null,
+        lastFinishedGameId: 42,
+      });
+      const { result } = renderSummaryHook();
 
-    await act(async () => {
-      await run(result.current);
-    });
+      await act(async () => {
+        await run(result.current);
+      });
 
-    expect(navigateMock).toHaveBeenCalled();
-    expect(testQueryClient.getQueryState(gameQueries.tablet().queryKey)?.isInvalidated).toBe(true);
-  });
+      expect(navigateMock).toHaveBeenCalled();
+      expect(testQueryClient.getQueryState(gameQueries.tablet().queryKey)?.isInvalidated).toBe(
+        true,
+      );
+    },
+  );
 
   describe("when the game is no longer the newest game", () => {
     const notNewest = (): ApiError =>
@@ -771,17 +774,7 @@ describe("useGameSummaryPage", () => {
       vi.useRealTimers();
     });
 
-    it.each([
-      { action: "Undo", run: (hook: ReturnType<typeof useGameSummaryPage>) => hook.handleUndo() },
-      {
-        action: "Play Again",
-        run: (hook: ReturnType<typeof useGameSummaryPage>) => hook.handlePlayAgain(),
-      },
-      {
-        action: "Back To Start",
-        run: (hook: ReturnType<typeof useGameSummaryPage>) => hook.handleBackToStart(),
-      },
-    ])(
+    it.each(SUMMARY_ACTIONS)(
       "should show that the game is locked, then move to the tablet game on $action",
       async ({ run }) => {
         const { result } = renderSummaryHook();

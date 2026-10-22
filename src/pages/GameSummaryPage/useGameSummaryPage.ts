@@ -1,7 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { replace, useNavigate, useParams, type LoaderFunctionArgs } from "react-router-dom";
-import { ApiError } from "@/shared/api";
 import { getGameThrows, createRematchGame, startRematch, undoLastThrow } from "@/shared/api/game";
 import type { UndoThrowResponse, UndoAckResponse } from "@/types";
 import {
@@ -14,7 +13,6 @@ import {
 } from "@/shared/store";
 import { playSound } from "@/shared/services/browser/soundPlayer";
 import { toUserErrorMessage } from "@/lib/error/error-to-user-message";
-import { isRecord } from "@/lib/guards/guards";
 import { ROUTES } from "@/lib/router/routes";
 import { parseRouteGameId, tabletGamePath } from "@/lib/router/tabletGameRoute";
 import { applyOptimisticUndo } from "@/lib/game/applyOptimisticUndo";
@@ -23,6 +21,7 @@ import { clientLogger } from "@/shared/services/browser/clientLogger";
 import { gameQueries } from "@/shared/query/game.queries";
 import { queryClient } from "@/shared/query/queryClient";
 import { fetchTabletGame } from "@/shared/query/tabletGameLoader";
+import { isGameNotNewestError } from "./lib/gameNotNewest";
 import { buildGameSummaryStandings } from "./lib/gameSummaryStandings";
 
 /** Settings the summary needs before it can render the standings. */
@@ -78,15 +77,7 @@ export async function gameSummaryLoader({
 // Time to read the message before the page moves to the tablet game.
 const LEAVE_OLD_GAME_DELAY_MS = 2_000;
 
-/** The server refused to change a game that is no longer the newest one. */
-function isGameNotNewestError(error: unknown): boolean {
-  return (
-    error instanceof ApiError &&
-    error.status === 409 &&
-    isRecord(error.data) &&
-    error.data.error === "GAME_NOT_NEWEST"
-  );
-}
+type SummaryAction = "undo" | "rematch" | "rematch-start";
 
 function isUndoAckResponse(response: UndoThrowResponse): response is UndoAckResponse {
   return response.type === "ack";
@@ -195,8 +186,8 @@ export function useGameSummaryPage(): UseGameSummaryPageResult {
   // A 409 GAME_NOT_NEWEST means another game started after this one. The route loader of the
   // target redirects again when the cached tablet game is already out of date.
   const leaveOldGame = useCallback(
-    (action: string): void => {
-      clientLogger.warn("game-summary.game-not-newest", {
+    (action: SummaryAction): void => {
+      clientLogger.warn("game-summary.action.not-newest", {
         context: { finishedGameId: finishedGameIdFromRoute, action },
       });
       const tabletGame = client.getQueryData(gameQueries.tablet().queryKey);
