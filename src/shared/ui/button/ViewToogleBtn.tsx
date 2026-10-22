@@ -17,26 +17,26 @@ function ViewToogleButton(): React.JSX.Element {
       : matchPath(ROUTES.statistics, location.pathname) !== null
         ? "players"
         : null;
-  const [previewView, setPreviewView] = useState<"players" | "games" | null>(null);
+  const [preview, setPreview] = useState<{
+    pathname: string;
+    view: "players" | "games";
+  } | null>(null);
   const timerRef = useRef<number | null>(null);
-  const displayedView = previewView ?? activeView ?? "players";
 
-  useEffect(() => {
-    // A route change (e.g. Back) during the preview wins over the pending navigation.
-    if (timerRef.current !== null) {
-      window.clearTimeout(timerRef.current);
-      timerRef.current = null;
-    }
-    setPreviewView(null);
-  }, [location.pathname]);
+  // A route change (e.g. Back) during the preview wins over the pending navigation.
+  if (preview !== null && preview.pathname !== location.pathname) {
+    setPreview(null);
+  }
+  const displayedView = preview?.view ?? activeView ?? "players";
 
   useEffect(() => {
     return () => {
       if (timerRef.current !== null) {
         window.clearTimeout(timerRef.current);
+        timerRef.current = null;
       }
     };
-  }, []);
+  }, [location.pathname]);
 
   const handleSwitch = useCallback(
     (event: React.MouseEvent<HTMLAnchorElement>, targetView: "players" | "games"): void => {
@@ -50,7 +50,7 @@ function ViewToogleButton(): React.JSX.Element {
         return;
       }
 
-      setPreviewView(targetView);
+      setPreview({ pathname: location.pathname, view: targetView });
 
       if (timerRef.current !== null) {
         window.clearTimeout(timerRef.current);
@@ -60,7 +60,7 @@ function ViewToogleButton(): React.JSX.Element {
         navigate(targetView === "players" ? ROUTES.statistics : ROUTES.gamesOverview);
       }, 180);
     },
-    [activeView, navigate],
+    [activeView, location.pathname, navigate],
   );
 
   return (

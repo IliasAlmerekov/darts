@@ -5,6 +5,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { ROUTES } from "@/lib/router/routes";
 import type { TabletGame } from "@/shared/api/game";
 import NavigationBar from "./NavigationBar";
+import styles from "./NavigationBar.module.css";
 
 function LocationProbe(): React.JSX.Element {
   const location = useLocation();
@@ -40,6 +41,10 @@ function currentLocation(): string | null {
 
 function historyBack(): void {
   fireEvent.click(screen.getByRole("button", { name: "History back" }));
+}
+
+function isHighlighted(name: string): boolean {
+  return screen.getByRole("link", { name }).classList.contains(styles.active ?? "");
 }
 
 function currentPageName(): string | null {
@@ -238,6 +243,18 @@ describe("NavigationBar", () => {
       });
 
       expect(currentLocation()).toBe(ROUTES.playerProfile);
+    });
+
+    it("should drop the preview when the route changes during the preview", () => {
+      renderAt(ROUTES.playerProfile, ROUTES.statistics);
+
+      fireEvent.click(screen.getByRole("link", { name: "Game" }));
+      expect(isHighlighted("Game")).toBe(true);
+
+      historyBack();
+
+      expect(isHighlighted("Game")).toBe(false);
+      expect(isHighlighted("Statistics")).toBe(true);
     });
 
     it("should navigate to the last clicked page when clicking quickly", () => {

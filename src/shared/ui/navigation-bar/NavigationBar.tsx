@@ -22,7 +22,7 @@ interface NavigationBarProps {
 function NavigationBar({ className, tabletGame = null }: NavigationBarProps): React.JSX.Element {
   const navigate = useNavigate();
   const location = useLocation();
-  const [previewTabId, setPreviewTabId] = useState<string | null>(null);
+  const [preview, setPreview] = useState<{ pathname: string; tabId: string } | null>(null);
   const navigationTimerRef = useRef<number | null>(null);
 
   const gamePath = tabletGamePath("start", tabletGame);
@@ -72,7 +72,11 @@ function NavigationBar({ className, tabletGame = null }: NavigationBarProps): Re
   // aria-current follows the real route only; the visual highlight may show a preview or fallback.
   // "page" when the link targets exactly this URL, "true" when we are elsewhere in its section.
   const activeTabId = navItems.find((item) => getIsActive(item.id, item.path))?.id ?? null;
-  const displayedTabId = previewTabId ?? activeTabId ?? "statistics";
+  // A route change (e.g. Back) during the preview wins over the pending navigation.
+  if (preview !== null && preview.pathname !== location.pathname) {
+    setPreview(null);
+  }
+  const displayedTabId = preview?.tabId ?? activeTabId ?? "statistics";
 
   const getAriaCurrent = (itemId: string, itemPath: string): "page" | "true" | undefined => {
     if (itemId !== activeTabId) {
@@ -82,21 +86,13 @@ function NavigationBar({ className, tabletGame = null }: NavigationBarProps): Re
   };
 
   useEffect(() => {
-    // A route change (e.g. Back) during the preview wins over the pending navigation.
-    if (navigationTimerRef.current !== null) {
-      window.clearTimeout(navigationTimerRef.current);
-      navigationTimerRef.current = null;
-    }
-    setPreviewTabId(null);
-  }, [location.pathname]);
-
-  useEffect(() => {
     return () => {
       if (navigationTimerRef.current !== null) {
         window.clearTimeout(navigationTimerRef.current);
+        navigationTimerRef.current = null;
       }
     };
-  }, []);
+  }, [location.pathname]);
 
   const handleTabClick = (
     event: React.MouseEvent<HTMLAnchorElement>,
@@ -113,7 +109,7 @@ function NavigationBar({ className, tabletGame = null }: NavigationBarProps): Re
       return;
     }
 
-    setPreviewTabId(itemId);
+    setPreview({ pathname: location.pathname, tabId: itemId });
     if (navigationTimerRef.current !== null) {
       window.clearTimeout(navigationTimerRef.current);
     }

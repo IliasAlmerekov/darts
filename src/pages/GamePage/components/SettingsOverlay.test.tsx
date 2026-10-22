@@ -42,6 +42,67 @@ describe("SettingsOverlay", () => {
     expect(onSave).toHaveBeenCalledWith({ doubleOut: false, tripleOut: true });
   });
 
+  it("should keep the picked mode when a re-render leaves the initial props unchanged", () => {
+    const onSave = vi.fn();
+    const { rerender } = render(
+      <SettingsOverlay
+        isOpen
+        onClose={vi.fn()}
+        onSave={onSave}
+        initialStartScore={301}
+        initialDoubleOut={true}
+        initialTripleOut={false}
+      />,
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "Triple-out" }));
+
+    rerender(
+      <SettingsOverlay
+        isOpen
+        onClose={vi.fn()}
+        onSave={onSave}
+        initialStartScore={301}
+        initialDoubleOut={true}
+        initialTripleOut={false}
+        error="Save failed"
+      />,
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "Save" }));
+    expect(onSave).toHaveBeenCalledWith({ doubleOut: false, tripleOut: true });
+  });
+
+  it("should reset the picked mode when only the initial start score changes", () => {
+    const onSave = vi.fn();
+    const { rerender } = render(
+      <SettingsOverlay
+        isOpen
+        onClose={vi.fn()}
+        onSave={onSave}
+        initialStartScore={301}
+        initialDoubleOut={true}
+        initialTripleOut={false}
+      />,
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "Triple-out" }));
+
+    rerender(
+      <SettingsOverlay
+        isOpen
+        onClose={vi.fn()}
+        onSave={onSave}
+        initialStartScore={501}
+        initialDoubleOut={true}
+        initialTripleOut={false}
+      />,
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "Save" }));
+    expect(onSave).toHaveBeenCalledWith({ doubleOut: true, tripleOut: false });
+  });
+
   it("should reset internal mode and show saving or error state when props change", () => {
     const onSave = vi.fn();
     const { rerender } = render(

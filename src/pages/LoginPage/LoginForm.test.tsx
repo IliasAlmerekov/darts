@@ -1,8 +1,8 @@
 // @vitest-environment jsdom
 
-import { render, screen } from "@testing-library/react";
+import { act, render, screen } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
-import { describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { ROUTES } from "@/lib/router/routes";
 import { LoginForm } from "./LoginForm";
 
@@ -17,6 +17,12 @@ function renderForm(props: { error?: string | null; success?: string | null }) {
       />
     </MemoryRouter>,
   );
+}
+
+function advanceToNextFrame(): void {
+  act(() => {
+    vi.advanceTimersToNextFrame();
+  });
 }
 
 describe("LoginForm login and registration controls", () => {
@@ -55,14 +61,33 @@ describe("LoginForm login and registration controls", () => {
 });
 
 describe("LoginForm banners", () => {
+  beforeEach(() => {
+    vi.useFakeTimers();
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
   it("announces an error through role=alert", () => {
     renderForm({ error: "Invalid credentials" });
 
     expect(screen.getByRole("alert").textContent).toBe("Invalid credentials");
   });
 
+  it("renders the status region empty first and fills it on the next frame", () => {
+    renderForm({ success: "You have successfully left the game" });
+
+    expect(screen.getByRole("status").textContent).toBe("");
+
+    advanceToNextFrame();
+
+    expect(screen.getByRole("status").textContent).toBe("You have successfully left the game");
+  });
+
   it("announces a success message through role=status", () => {
     renderForm({ success: "You have successfully left the game" });
+    advanceToNextFrame();
 
     expect(screen.getByRole("status").textContent).toBe("You have successfully left the game");
   });
@@ -83,6 +108,8 @@ describe("LoginForm banners", () => {
         <LoginForm error={null} success="Saved" loading={false} onSubmit={vi.fn()} />
       </MemoryRouter>,
     );
+
+    advanceToNextFrame();
 
     expect(screen.getByRole("status")).toBe(region);
     expect(region.textContent).toBe("Saved");
