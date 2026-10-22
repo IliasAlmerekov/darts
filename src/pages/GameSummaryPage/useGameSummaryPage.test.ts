@@ -808,6 +808,33 @@ describe("useGameSummaryPage", () => {
       expect(navigateMock).not.toHaveBeenCalled();
     });
 
+    it("should not move away from another summary when a late 409 arrives for the previous game", async () => {
+      let rejectUndo!: (error: unknown) => void;
+      undoLastThrowMock.mockReturnValueOnce(
+        new Promise((_, reject) => {
+          rejectUndo = reject;
+        }),
+      );
+      const { result, rerender } = renderSummaryHook();
+      let undo = Promise.resolve();
+      act(() => {
+        undo = result.current.handleUndo();
+      });
+
+      routeParams = { id: "43" };
+      rerender();
+      await act(async () => {
+        rejectUndo(notNewest());
+        await undo;
+      });
+      act(() => {
+        vi.advanceTimersByTime(2_000);
+      });
+
+      expect(result.current.leaving).toBe(false);
+      expect(navigateMock).not.toHaveBeenCalled();
+    });
+
     it("should stay on the summary when another action error happens", async () => {
       undoLastThrowMock.mockRejectedValue(new Error("network down"));
       const { result } = renderSummaryHook();

@@ -97,7 +97,17 @@ export function useGameSummaryPage(): UseGameSummaryPageResult {
   const [starting, setStarting] = useState<boolean>(false);
   const [releasedGameId, setReleasedGameId] = useState<number | null>(null);
   const startGameInFlightRef = useRef<boolean>(false);
-  const [leavePath, setLeavePath] = useState<string | null>(null);
+  const [leaveState, setLeaveState] = useState<{ gameId: number | null; path: string } | null>(
+    null,
+  );
+
+  const finishedGameIdFromRoute = useMemo(
+    () => parseRouteGameId(summaryGameIdParam),
+    [summaryGameIdParam],
+  );
+
+  // A late 409 for a game the route has left must not move the summary now on screen.
+  const leavePath = leaveState?.gameId === finishedGameIdFromRoute ? leaveState.path : null;
 
   useEffect(() => {
     if (leavePath === null) return;
@@ -106,11 +116,6 @@ export function useGameSummaryPage(): UseGameSummaryPageResult {
     }, LEAVE_OLD_GAME_DELAY_MS);
     return () => window.clearTimeout(timer);
   }, [leavePath, navigate]);
-
-  const finishedGameIdFromRoute = useMemo(
-    () => parseRouteGameId(summaryGameIdParam),
-    [summaryGameIdParam],
-  );
 
   // An action error belongs to the game it happened on, so it never follows a route change.
   const actionError =
@@ -192,7 +197,10 @@ export function useGameSummaryPage(): UseGameSummaryPageResult {
         context: { finishedGameId: finishedGameIdFromRoute, action },
       });
       const tabletGame = client.getQueryData(gameQueries.tablet().queryKey);
-      setLeavePath(tabletGamePath("game", tabletGame?.game ?? null));
+      setLeaveState({
+        gameId: finishedGameIdFromRoute,
+        path: tabletGamePath("game", tabletGame?.game ?? null),
+      });
     },
     [client, finishedGameIdFromRoute],
   );
