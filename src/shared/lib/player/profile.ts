@@ -68,17 +68,22 @@ function formatFinishedAt(finishedAt: string | null | undefined): string | null 
 
 /**
  * `Feb 2026` from the timestamp's own `YYYY-MM`, so every viewer sees the month the server
- * wrote, whatever the browser's time zone. Null without a valid date.
+ * wrote, whatever the browser's time zone. Null without a valid date, including a day the
+ * month lacks such as 31 April, which `Date` would roll into the next month.
  */
 function formatRegistrationMonth(registeredAt: string | null | undefined): string | null {
   if (registeredAt === null || registeredAt === undefined) {
     return null;
   }
-  const match = /^(\d{4})-(\d{2})-/.exec(registeredAt);
+  const match = /^(\d{4})-(\d{2})-(\d{2})/.exec(registeredAt);
   if (match === null || Number.isNaN(new Date(registeredAt).getTime())) {
     return null;
   }
-  return monthYearFormat.format(Date.UTC(Number(match[1]), Number(match[2]) - 1));
+  const [year, month, day] = [Number(match[1]), Number(match[2]) - 1, Number(match[3])];
+  if (new Date(Date.UTC(year, month, day)).getUTCDate() !== day) {
+    return null;
+  }
+  return monthYearFormat.format(Date.UTC(year, month));
 }
 
 function formatOrdinal(placement: number): string {
