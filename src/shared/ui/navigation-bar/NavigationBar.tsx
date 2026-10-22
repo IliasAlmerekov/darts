@@ -85,6 +85,7 @@ function NavigationBar({ className, tabletGame = null }: NavigationBarProps): Re
     return isAt(itemPath) ? "page" : "true";
   };
 
+  // The cleanup runs on every route change and on unmount, and cancels the pending navigation.
   useEffect(() => {
     return () => {
       if (navigationTimerRef.current !== null) {

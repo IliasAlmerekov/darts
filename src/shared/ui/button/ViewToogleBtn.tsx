@@ -29,6 +29,7 @@ function ViewToogleButton(): React.JSX.Element {
   }
   const displayedView = preview?.view ?? activeView ?? "players";
 
+  // The cleanup runs on every route change and on unmount, and cancels the pending navigation.
   useEffect(() => {
     return () => {
       if (timerRef.current !== null) {
