@@ -37,7 +37,11 @@ import { createMemoryRouter, RouterProvider } from "react-router-dom";
 import { logout, type AuthenticatedUser } from "@/shared/api/auth";
 import { NetworkError } from "@/shared/api";
 import { getPlayerProfile, type PlayerProfileResponse } from "@/shared/api/player";
-import { buildPlayerProfile, buildPlayerProfileGame } from "@/shared/types/player.test-support";
+import {
+  buildPlayerProfile,
+  buildPlayerProfileGame,
+  buildPlayerProfileStats,
+} from "@/shared/types/player.test-support";
 import { ROUTES } from "@/lib/router/routes";
 import { createQueryClient } from "@/shared/query/queryClient";
 import PlayerProfilePage from ".";
@@ -141,7 +145,10 @@ describe("PlayerProfilePage", () => {
 
   it("shows a dash for the average when the player has no finished game", async () => {
     vi.mocked(getPlayerProfile).mockResolvedValue(
-      buildProfile({ stats: { gamesPlayed: 0, scoreAverage: null }, recentGames: [] }),
+      buildProfile({
+        stats: buildPlayerProfileStats({ gamesPlayed: 0, scoreAverage: null }),
+        recentGames: [],
+      }),
     );
 
     renderPage();
