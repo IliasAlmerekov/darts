@@ -5,6 +5,13 @@ import { Link, matchPath, useLocation, useNavigate } from "react-router-dom";
 import { isPlainLeftClick } from "@/lib/router/isPlainLeftClick";
 import { ROUTES } from "@/lib/router/routes";
 
+type View = "players" | "games";
+
+interface Preview {
+  pathname: string;
+  view: View;
+}
+
 function ViewToogleButton(): React.JSX.Element {
   const location = useLocation();
   const navigate = useNavigate();
@@ -17,29 +24,27 @@ function ViewToogleButton(): React.JSX.Element {
       : matchPath(ROUTES.statistics, location.pathname) !== null
         ? "players"
         : null;
-  const [previewView, setPreviewView] = useState<"players" | "games" | null>(null);
+  const [preview, setPreview] = useState<Preview | null>(null);
   const timerRef = useRef<number | null>(null);
-  const displayedView = previewView ?? activeView ?? "players";
 
-  useEffect(() => {
-    // A route change (e.g. Back) during the preview wins over the pending navigation.
-    if (timerRef.current !== null) {
-      window.clearTimeout(timerRef.current);
-      timerRef.current = null;
-    }
-    setPreviewView(null);
-  }, [location.pathname]);
+  // A route change (e.g. Back) during the preview wins over the pending navigation.
+  if (preview !== null && preview.pathname !== location.pathname) {
+    setPreview(null);
+  }
+  const displayedView = preview?.view ?? activeView ?? "players";
 
+  // The cleanup runs on every route change and on unmount, and cancels the pending navigation.
   useEffect(() => {
     return () => {
       if (timerRef.current !== null) {
         window.clearTimeout(timerRef.current);
+        timerRef.current = null;
       }
     };
-  }, []);
+  }, [location.pathname]);
 
   const handleSwitch = useCallback(
-    (event: React.MouseEvent<HTMLAnchorElement>, targetView: "players" | "games"): void => {
+    (event: React.MouseEvent<HTMLAnchorElement>, targetView: View): void => {
       if (!isPlainLeftClick(event)) {
         // Let the browser open the link in a new tab or window.
         return;
@@ -50,7 +55,7 @@ function ViewToogleButton(): React.JSX.Element {
         return;
       }
 
-      setPreviewView(targetView);
+      setPreview({ pathname: location.pathname, view: targetView });
 
       if (timerRef.current !== null) {
         window.clearTimeout(timerRef.current);
@@ -60,7 +65,7 @@ function ViewToogleButton(): React.JSX.Element {
         navigate(targetView === "players" ? ROUTES.statistics : ROUTES.gamesOverview);
       }, 180);
     },
-    [activeView, navigate],
+    [activeView, location.pathname, navigate],
   );
 
   return (
