@@ -7,6 +7,10 @@ and this project does **not** yet follow [Semantic Versioning](https://semver.or
 
 ## [Unreleased]
 
+### Added
+
+- Code review: `.coderabbit.yaml` sets CodeRabbit up as a senior reviewer that follows `## Review guidelines` in `AGENTS.md`. It reviews every push of a ready PR, keeps the PR body untouched, and runs only the scanners CI lacks. Each finding has five parts (Severity, Location, Evidence, Impact, Fix), and the new `## Review feedback` tells agents to reproduce a finding before they act on it (#264)
+
 ## [0.1.4] - 2026-10-22
 
 ### Added
