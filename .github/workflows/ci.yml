@@ -61,6 +61,11 @@ jobs:
     if: github.event.pull_request.draft == false
     runs-on: ubuntu-latest
     timeout-minutes: 30
+    # The image ships Chromium and its system libraries, so no step waits on apt (#275).
+    # Keep its tag on the @playwright/test version from package-lock.json.
+    container:
+      image: mcr.microsoft.com/playwright:v1.64.1-noble
+      options: --user 1001
     steps:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -74,8 +79,10 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      # No-op while the tag matches @playwright/test. After a version bump it downloads
+      # the newer Chromium; the image already has its system libraries.
       - name: Install Playwright browsers
-        run: npx playwright install --with-deps chromium
+        run: npx playwright install chromium
 
       - name: E2E tests (mocked)
         run: npm run test:e2e
