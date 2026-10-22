@@ -76,6 +76,11 @@ describe("scripts/check-node-version.mjs", () => {
       "FAIL: compose.dev.yaml:3: Node 24.21.9 is older than 24.22.1.",
     ],
     [".gitlab-ci.yml", "image: alpine\n", "FAIL: .gitlab-ci.yml: no node image found."],
+    [
+      "Dockerfile",
+      "FROM alpine\n# was node:24.22.1-alpine\n",
+      "FAIL: Dockerfile: no node image found.",
+    ],
   ])("fails when %s holds %j", (path, content, failure) => {
     const { status, output } = runCheck({ ...validRepo(), [path]: content });
 
@@ -97,6 +102,14 @@ describe("scripts/check-node-version.mjs", () => {
     [
       "reads another version file",
       SETUP_NODE_STEP.replace(".nvmrc", ".tool-versions"),
+      "FAIL: .github/workflows/ci.yml:8: the actions/setup-node step lacks node-version-file: .nvmrc.",
+    ],
+    [
+      "sets node-version-file outside with",
+      SETUP_NODE_STEP.replace(
+        "        with:\n          node-version-file: .nvmrc\n",
+        "        env:\n          node-version-file: .nvmrc\n        with:\n",
+      ),
       "FAIL: .github/workflows/ci.yml:8: the actions/setup-node step lacks node-version-file: .nvmrc.",
     ],
   ])("fails when a setup-node step %s", (_case, step, failure) => {

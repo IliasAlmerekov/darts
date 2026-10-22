@@ -41,7 +41,9 @@ checkVersion(".nvmrc", readFileSync(".nvmrc", "utf-8").trim());
 for (const file of imageFiles) {
   const lines = readFileSync(file, "utf-8").split(/\r?\n/);
   const pins = lines.flatMap((line, index) => {
-    const match = line.match(/\bnode:([^\s-]+)/);
+    // A commented-out image is not a pin.
+    const code = line.replace(/(^|\s)#.*$/, "");
+    const match = code.match(/\bnode:([^\s-]+)/);
     return match ? [{ line: index + 1, version: match[1] }] : [];
   });
   if (pins.length === 0) {
@@ -73,6 +75,19 @@ const listItems = (lines) => {
   return items;
 };
 
+// Returns the lines nested under the step's `with:` key, the only place
+// actions/setup-node reads its inputs from.
+const withBlock = (stepLines) => {
+  const start = stepLines.findIndex((line) => /^\s*with:\s*(#.*)?$/.test(line));
+  if (start === -1) {
+    return [];
+  }
+  const withIndent = indentOf(stepLines[start]);
+  const rest = stepLines.slice(start + 1);
+  const end = rest.findIndex((line) => line.trim() !== "" && indentOf(line) <= withIndent);
+  return end === -1 ? rest : rest.slice(0, end);
+};
+
 // Workflows read .nvmrc, so the version lives in one file. Without a version input
 // actions/setup-node falls back to the runner's Node.js.
 for (const name of readdirSync(workflowDir)) {
@@ -85,7 +100,7 @@ for (const name of readdirSync(workflowDir)) {
   });
   for (const step of listItems(lines)) {
     const usesSetupNode = step.lines.some((line) => /\buses:\s*actions\/setup-node@/.test(line));
-    const readsNvmrc = step.lines.some((line) =>
+    const readsNvmrc = withBlock(step.lines).some((line) =>
       /^\s*node-version-file:\s*["']?\.nvmrc["']?\s*(#.*)?$/.test(line),
     );
     if (usesSetupNode && !readsNvmrc) {
