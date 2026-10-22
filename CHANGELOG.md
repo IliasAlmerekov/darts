@@ -18,6 +18,10 @@ and this project does **not** yet follow [Semantic Versioning](https://semver.or
 - Agent rules: `.github/copilot-instructions.md` points to `AGENTS.md` instead of carrying its own outdated rules, so Copilot and CodeRabbit read one rule set (#265)
 - Lint: ESLint runs the full `eslint-plugin-react-hooks` 7 `recommended` preset. Only `SettingsPage` (#213) and `useGamePlayersState` (#123) are exempt from `react-hooks/set-state-in-effect`. `SettingsOverlay`, `LoginForm`, `useEventSource`, `ViewToogleBtn` and `NavigationBar` no longer set state synchronously in an effect. `useEventSource` reports a new url as disconnected from its first render, and the login status region gets its text one frame after it mounts (#247)
 
+### Fixed
+
+- Node.js: build, CI, the dev container and the deploy image run Node.js 24.22.1, the October 2026 security release (CVE-2026-111497, CVE-2026-106069, CVE-2026-105482, CVE-2026-105483 and others). Node.js 20 is end of life and gets no fix. Every GitHub workflow reads the version from `.nvmrc`, and `@types/node` follows to `^24` (#271, #233)
+
 ## [0.1.4] - 2026-10-22
 
 ### Added

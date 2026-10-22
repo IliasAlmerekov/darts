@@ -14,7 +14,7 @@ workflow:
     - when: never
 
 .base_job: &base_job
-  image: node:20
+  image: node:24.22.1
   cache:
     key:
       files:
