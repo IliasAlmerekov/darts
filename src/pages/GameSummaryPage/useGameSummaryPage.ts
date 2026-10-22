@@ -183,8 +183,9 @@ export function useGameSummaryPage(): UseGameSummaryPageResult {
     [client],
   );
 
-  // A 409 GAME_NOT_NEWEST means another game started after this one. The route loader of the
-  // target redirects again when the cached tablet game is already out of date.
+  // A 409 GAME_NOT_NEWEST means another game started after this one. The cached tablet game
+  // may be out of date or missing (then the path is /start); either way the target route's
+  // loader reads it again and redirects to the real tablet game.
   const leaveOldGame = useCallback(
     (action: SummaryAction): void => {
       clientLogger.warn("game-summary.action.not-newest", {

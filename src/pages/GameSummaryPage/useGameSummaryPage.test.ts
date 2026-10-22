@@ -800,6 +800,7 @@ describe("useGameSummaryPage", () => {
       await act(async () => {
         await result.current.handleUndo();
       });
+      expect(result.current.leaving).toBe(true);
 
       unmount();
       vi.advanceTimersByTime(2_000);

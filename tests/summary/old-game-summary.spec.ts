@@ -1,34 +1,12 @@
-import { expect, test, type Page } from "../shared/test";
+import { expect, test } from "../shared/test";
 import { mockLobbyApi } from "../shared/lobby-route-mocks";
 import { loginAsAdmin } from "../shared/start-page-helpers";
+import { GAME_NOT_NEWEST_RESPONSE, mockFinishedGame } from "../shared/summary-mocks";
 import { lobbyTabletGame, mockTabletGame } from "../shared/tablet-game-mocks";
 
 const OLDER_GAME_ID = 55;
 const LAST_FINISHED_GAME_ID = 56;
 const NEW_GAME_ID = 57;
-
-async function mockFinishedGame(page: Page, gameId: number): Promise<void> {
-  await page.route(`**/api/game/${gameId}/finished`, async (route) => {
-    await route.fulfill({
-      status: 200,
-      contentType: "application/json",
-      body: JSON.stringify({
-        gameId,
-        winnerRoundsPlayed: 5,
-        winnerRoundAverage: 60.2,
-        finishedPlayers: [
-          { playerId: 1, username: "Alice", position: 1, roundsPlayed: 5, roundAverage: 60.2 },
-        ],
-      }),
-    });
-  });
-}
-
-const GAME_NOT_NEWEST = {
-  status: 409,
-  contentType: "application/json",
-  body: JSON.stringify({ success: false, error: "GAME_NOT_NEWEST", message: "Conflict" }),
-};
 
 test.describe("Summary of a game that is not the last finished game", () => {
   test("moves an older game's summary to its details, without Undo and Rematch", async ({
@@ -51,6 +29,11 @@ test.describe("Summary of a game that is not the last finished game", () => {
       action: "Undo",
       button: "Return to game",
       endpoint: `/api/game/${LAST_FINISHED_GAME_ID}/throw`,
+    },
+    {
+      action: "Play Again",
+      button: "Play Again",
+      endpoint: `/api/room/${LAST_FINISHED_GAME_ID}/rematch`,
     },
     {
       action: "Rematch",
@@ -77,7 +60,7 @@ test.describe("Summary of a game that is not the last finished game", () => {
           ...lobbyTabletGame(NEW_GAME_ID),
           lastFinishedGameId: LAST_FINISHED_GAME_ID,
         });
-        await route.fulfill(GAME_NOT_NEWEST);
+        await route.fulfill(GAME_NOT_NEWEST_RESPONSE);
       });
       await page.getByRole("button", { name: button }).click();
 

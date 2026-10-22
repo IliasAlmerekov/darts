@@ -14,7 +14,7 @@ The server now owns the tablet game. `GET /api/tablet/game` (darts-backend#132) 
 - `parseRouteGameId` is the one parser for route ids. It accepts positive safe integers written as plain digits. An invalid id (`-5`, `0`, `abc`, `1e3`) counts as a foreign id.
 - While the read is pending on a cold load, the route shows a skeleton. When the read fails, `TabletGameGate` shows an error with Retry and redirects nowhere.
 - The navigation bar builds its Game and Settings links from the tablet game with `tabletGamePath`. `AdminLayoutRoute` reads the tablet game again when it mounts, unless a loader read it less than a second ago or the last read failed. The game can finish on `/game` or `/summary`, outside the layout, and `/statistics`, `/games` and `/details` have no tablet game loader.
-- `/summary/<id>` shows only the last finished game, `lastFinishedGameId` from the same read. Another id moves to `/details/<id>` with `replace()`, so an older game never offers Undo or Rematch.
+- `/summary/<id>` shows only the last finished game, `lastFinishedGameId` from the same read. Another valid id moves to `/details/<id>` with `replace()`, so an older game never offers Undo or Rematch. An invalid id stays on the summary, which shows its settings error and sends no request for it.
 - When Undo, Rematch or rematch start answers 409 `GAME_NOT_NEWEST`, the summary shows "This game can no longer be changed." and then opens `tabletGamePath` of the cached tablet game. The target's loader redirects again if that read is out of date. A successful Undo, Rematch or room create invalidates the tablet game query.
 - A player's current game (login, `/joined`, invitation) keeps its own source and does not change here.
 

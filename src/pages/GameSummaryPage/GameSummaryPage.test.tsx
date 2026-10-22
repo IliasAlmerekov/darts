@@ -107,6 +107,16 @@ describe("GameSummaryPage", () => {
     expect(screen.queryByRole("button", { name: "Retry" })).toBeNull();
   });
 
+  it("should disable Undo and Rematch while the page moves away", () => {
+    useGameSummaryPageMock.mockReturnValue(buildSummaryHookMockResult({ leaving: true }));
+
+    render(<GameSummaryPage />);
+
+    for (const name of ["Return to game", "Play Again", "Back To Start"]) {
+      expect(screen.getByRole("button", { name }).hasAttribute("disabled")).toBe(true);
+    }
+  });
+
   it("should disable Play Again button when startGame is pending", () => {
     useGameSummaryPageMock.mockReturnValue(buildSummaryHookMockResult({ starting: true }));
 
