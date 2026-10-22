@@ -5,7 +5,7 @@ name: darts
 
 services:
   frontend:
-    image: node:22-alpine
+    image: node:24.22.1-alpine
     working_dir: /app
     command: >
       sh -c "[ node_modules/.package-lock.json -nt package-lock.json ] || npm ci;

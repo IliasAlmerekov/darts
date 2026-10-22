@@ -107,6 +107,11 @@ nginx on :8001, php and mysql. Both repos' compose files carry `name: darts`, so
 workspace folder that holds both repos. The frontend container serves this checkout, so
 browser checks and `npm run test:e2e` see the branch that is checked out.
 
+`.nvmrc` pins Node.js, and every workflow reads it. `npm run node:check` fails when `.nvmrc`
+or a `node:` image in `Dockerfile`, `deploy/frontend.Dockerfile`, `compose.dev.yaml` or
+`.gitlab-ci.yml` is older than its `MIN_NODE_VERSION` or lacks a patch version. Change all
+pins together, and raise `MIN_NODE_VERSION` with each Node.js security release.
+
 ## Branches
 
 Each issue gets its own branch in this checkout, cut from the latest `main`; work happens

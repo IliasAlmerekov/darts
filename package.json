@@ -34,7 +34,8 @@
     "test:e2e": "playwright test --project=mocked",
     "test:e2e:live": "playwright test --project=live",
     "secrets:check": "node ./scripts/check-secrets.mjs",
-    "validate:push": "npm run build && npm run eslint && npm run stylelint && npm run prettier:check && npm run typecheck && npm run knip && npm run secrets:check && npm run test",
+    "node:check": "node ./scripts/check-node-version.mjs",
+    "validate:push": "npm run build && npm run eslint && npm run stylelint && npm run prettier:check && npm run typecheck && npm run knip && npm run secrets:check && npm run node:check && npm run test",
     "prepare": "husky",
     "commitlint": "commitlint --edit",
     "knip": "knip"

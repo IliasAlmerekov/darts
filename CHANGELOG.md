@@ -15,6 +15,10 @@ and this project does **not** yet follow [Semantic Versioning](https://semver.or
 
 - Agent rules: `.github/copilot-instructions.md` points to `AGENTS.md` instead of carrying its own outdated rules, so Copilot and CodeRabbit read one rule set (#265)
 
+### Fixed
+
+- Node.js: build, CI, the dev container and the deploy image run Node.js 24.22.1, the October 2026 security release (CVE-2026-111497, CVE-2026-106069, CVE-2026-105482, CVE-2026-105483 and others). Node.js 20 is end of life and gets no fix. Every workflow reads the version from `.nvmrc`, and `npm run node:check` fails on a Node.js pin older than 24.22.1 or without a patch version (#271)
+
 ## [0.1.4] - 2026-10-22
 
 ### Added
