@@ -100,8 +100,8 @@ The router itself is in `architecture.md`. The components under `src/app/`:
 - **`ErrorBoundary`** in `src/app/ErrorBoundary.tsx` is the React Router `errorElement`, a
   function component on `useRouteError()` and `isRouteErrorResponse`. Every `<Route>`
   references it. A class-based boundary needs the user's approval first.
-- **`TabletGameGate`** in `src/app/routes/` wraps the pages of `/start`, `/game` and
-  `/settings`. It renders the page once the loader has read the tablet game and shows an
+- **`TabletGameGate`** in `src/app/routes/` wraps the pages of `/start`, `/game`,
+  `/settings` and `/summary`. It renders the page once the loader has read the tablet game and shows an
   error with Retry when that read failed.
 
 ## Verification

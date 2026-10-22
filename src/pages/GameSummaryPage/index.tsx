@@ -11,6 +11,7 @@ import { useGameSummaryPage } from "./useGameSummaryPage";
 function GameSummaryPage(): React.JSX.Element {
   const {
     error,
+    leaving,
     settings,
     loadSettings,
     starting,
@@ -58,6 +59,7 @@ function GameSummaryPage(): React.JSX.Element {
             void handleUndo();
           }}
           className={styles.undoButton}
+          disabled={leaving}
           aria-label="Return to game"
         >
           <img src={Undo} alt="" />
@@ -75,7 +77,9 @@ function GameSummaryPage(): React.JSX.Element {
           <ErrorState
             title="Summary action failed"
             message={error}
-            primaryAction={{ label: "Retry", onClick: () => void loadSummary() }}
+            {...(leaving
+              ? {}
+              : { primaryAction: { label: "Retry", onClick: () => void loadSummary() } })}
           />
         </div>
       ) : null}
@@ -86,7 +90,7 @@ function GameSummaryPage(): React.JSX.Element {
             label="Play Again"
             type="primary"
             isInverted
-            disabled={starting}
+            disabled={starting || leaving}
             handleClick={handlePlayAgain}
             {...summaryActionButtonProps}
           />
@@ -95,6 +99,7 @@ function GameSummaryPage(): React.JSX.Element {
           <Button
             label="Back To Start"
             type="primary"
+            disabled={leaving}
             handleClick={handleBackToStart}
             {...summaryActionButtonProps}
           />

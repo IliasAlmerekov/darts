@@ -8,6 +8,7 @@ import type { SummarySettings } from "./useGameSummaryPage";
 
 type GameSummaryHookMockResult = {
   error: string | null;
+  leaving: boolean;
   settings: SummarySettings;
   loadSettings: () => Promise<void>;
   starting: boolean;
@@ -24,6 +25,7 @@ const buildSummaryHookMockResult = (
   overrides: Partial<GameSummaryHookMockResult> = {},
 ): GameSummaryHookMockResult => ({
   error: null,
+  leaving: false,
   settings: { status: "ready", startScore: 301 },
   loadSettings: vi.fn(async () => {}),
   starting: false,
@@ -88,6 +90,31 @@ describe("GameSummaryPage", () => {
     expect(screen.getByRole("alert")).toBeTruthy();
     expect(screen.getByText("Summary action failed")).toBeTruthy();
     expect(screen.getByRole("button", { name: "Retry" })).toBeTruthy();
+  });
+
+  it("should show the locked game message without Retry while the page moves away", () => {
+    useGameSummaryPageMock.mockReturnValue(
+      buildSummaryHookMockResult({
+        error: "This game can no longer be changed.",
+        leaving: true,
+      }),
+    );
+
+    render(<GameSummaryPage />);
+
+    expect(screen.getByRole("alert")).toBeTruthy();
+    expect(screen.getByText("This game can no longer be changed.")).toBeTruthy();
+    expect(screen.queryByRole("button", { name: "Retry" })).toBeNull();
+  });
+
+  it("should disable Undo and Rematch while the page moves away", () => {
+    useGameSummaryPageMock.mockReturnValue(buildSummaryHookMockResult({ leaving: true }));
+
+    render(<GameSummaryPage />);
+
+    for (const name of ["Return to game", "Play Again", "Back To Start"]) {
+      expect(screen.getByRole("button", { name }).hasAttribute("disabled")).toBe(true);
+    }
   });
 
   it("should disable Play Again button when startGame is pending", () => {

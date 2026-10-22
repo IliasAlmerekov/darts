@@ -25,7 +25,8 @@ vi.mock("@/app/routes/AdminLayoutRoute", () => ({
   ),
 }));
 
-vi.mock("@/shared/api", () => ({
+vi.mock("@/shared/api", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@/shared/api")>()),
   clearUnauthorizedHandler: vi.fn(),
   setUnauthorizedHandler: vi.fn(),
 }));
@@ -270,6 +271,17 @@ describe("App routing", () => {
 
     expect(await screen.findByText("Game Page")).toBeTruthy();
     expect(screen.queryByTestId("admin-layout-route")).toBeNull();
+  });
+
+  it("should show the tablet game error with Retry on a summary when the tablet game read fails", async () => {
+    getTabletGameMock.mockRejectedValue(new Error("network down"));
+    window.history.pushState({}, "", "/summary/42");
+
+    await renderApp();
+
+    expect(await screen.findByRole("button", { name: "Retry" })).toBeTruthy();
+    expect(screen.queryByText("Game Summary")).toBeNull();
+    expect(window.location.pathname).toBe("/summary/42");
   });
 
   it("should register unauthorized navigation and clear it when the app unmounts", async () => {

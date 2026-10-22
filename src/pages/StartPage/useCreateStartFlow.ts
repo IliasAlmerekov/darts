@@ -1,5 +1,6 @@
 import { useCallback, useRef, useState } from "react";
 import { useStore } from "@nanostores/react";
+import { useQueryClient } from "@tanstack/react-query";
 import type { NavigateFunction } from "react-router-dom";
 import { createRoom } from "@/shared/api/room";
 import { getGameSettings, startGame } from "@/shared/api/game";
@@ -12,6 +13,7 @@ import {
 } from "@/shared/store";
 import { toUserErrorMessage } from "@/lib/error/error-to-user-message";
 import { ROUTES } from "@/lib/router/routes";
+import { gameQueries } from "@/shared/query/game.queries";
 import type { SetStartPageError } from "./useStartPageError";
 
 const START_SOUND_PATH = "/sounds/start-round-sound.mp3";
@@ -50,6 +52,7 @@ export function useCreateStartFlow({
   setPageError,
 }: UseCreateStartFlowParams): UseCreateStartFlowResult {
   const preCreateGameSettings = useStore($preCreateGameSettings);
+  const client = useQueryClient();
   const [creating, setCreating] = useState(false);
   const [starting, setStarting] = useState(false);
   const createRoomInFlightRef = useRef(false);
@@ -105,6 +108,8 @@ export function useCreateStartFlow({
       setGameSettings(preCreateGameSettings, response.gameId);
       setInvitation(response);
       setCurrentGameId(response.gameId);
+      // The new room is the tablet game now, so the next route reads it again.
+      void client.invalidateQueries({ queryKey: gameQueries.tablet().queryKey });
       navigate(ROUTES.start(response.gameId));
     } catch (error) {
       setPageError(toUserErrorMessage(error, "Could not create a new game. Please try again."));
@@ -112,7 +117,7 @@ export function useCreateStartFlow({
       createRoomInFlightRef.current = false;
       setCreating(false);
     }
-  }, [creating, invitationGameId, navigate, preCreateGameSettings, setPageError]);
+  }, [client, creating, invitationGameId, navigate, preCreateGameSettings, setPageError]);
 
   return {
     creating,

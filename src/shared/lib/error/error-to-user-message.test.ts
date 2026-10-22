@@ -52,6 +52,15 @@ describe("toUserErrorMessage", () => {
     ).toBe("The start score cannot be changed for an existing game.");
   });
 
+  it("should map the game not newest code to a message that the game is locked", () => {
+    expect(
+      toUserErrorMessage(
+        new ApiError("Conflict", { status: 409, data: { error: "GAME_NOT_NEWEST" } }),
+        "Could not start a rematch.",
+      ),
+    ).toBe("This game can no longer be changed.");
+  });
+
   it("should use fallback message when error is unknown", () => {
     expect(toUserErrorMessage({})).toBe("Something went wrong. Please try again.");
     expect(toUserErrorMessage({}, "Custom fallback")).toBe("Custom fallback");

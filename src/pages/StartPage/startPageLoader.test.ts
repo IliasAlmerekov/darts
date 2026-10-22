@@ -45,11 +45,8 @@ vi.mock("@/shared/services/browser/clientLogger", () => ({
 
 // ── helpers ───────────────────────────────────────────────────────────────────
 
-function makeArgs(id?: string, signal?: AbortSignal): LoaderFunctionArgs {
-  return makeLoaderArgs(
-    new Request(`http://localhost/start${id ? `/${id}` : ""}`, signal ? { signal } : {}),
-    { id },
-  );
+function makeArgs(id?: string): LoaderFunctionArgs {
+  return makeLoaderArgs(new Request(`http://localhost/start${id ? `/${id}` : ""}`), { id });
 }
 
 function lobbyGame(gameId: number) {
@@ -243,11 +240,12 @@ describe("startPageLoader — getGameThrows error handling", () => {
   });
 
   it("re-throws AbortError so React Router can handle navigation cancellation", async () => {
+    // The navigation is cancelled after the tablet game read, while this request runs.
     const controller = new AbortController();
     controller.abort();
     getGameThrowsMock.mockRejectedValue(controller.signal.reason as unknown);
 
-    await expect(startPageLoader(makeArgs("42", controller.signal))).rejects.toMatchObject({
+    await expect(startPageLoader(makeArgs("42"))).rejects.toMatchObject({
       name: "AbortError",
     });
   });
@@ -269,11 +267,12 @@ describe("startPageLoader — getInvitation error handling", () => {
   });
 
   it("re-throws AbortError from getInvitation", async () => {
+    // The navigation is cancelled after the tablet game read, while this request runs.
     const controller = new AbortController();
     controller.abort();
     getInvitationMock.mockRejectedValue(controller.signal.reason as unknown);
 
-    await expect(startPageLoader(makeArgs("42", controller.signal))).rejects.toMatchObject({
+    await expect(startPageLoader(makeArgs("42"))).rejects.toMatchObject({
       name: "AbortError",
     });
   });

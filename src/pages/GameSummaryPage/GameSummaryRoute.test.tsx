@@ -4,13 +4,14 @@
 vi.mock("@/shared/api/game", () => ({
   getFinishedGame: vi.fn(),
   getGameSettings: vi.fn(),
+  getTabletGame: vi.fn(),
 }));
 
 import { fireEvent, render, screen } from "@testing-library/react";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { createMemoryRouter, RouterProvider } from "react-router-dom";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { getFinishedGame, getGameSettings } from "@/shared/api/game";
+import { getFinishedGame, getGameSettings, getTabletGame } from "@/shared/api/game";
 import { queryClient } from "@/shared/query/queryClient";
 import { resetGameStore, setGameData } from "@/shared/store";
 import {
@@ -23,12 +24,16 @@ import { gameSummaryLoader } from "./useGameSummaryPage";
 
 const getFinishedGameMock = vi.mocked(getFinishedGame);
 const getGameSettingsMock = vi.mocked(getGameSettings);
+const getTabletGameMock = vi.mocked(getTabletGame);
 
 const SETTINGS = buildGameSettingsResponse({ gameId: 42, status: "finished", startScore: 301 });
 
 function renderSummaryRoute(path = "/summary/42"): ReturnType<typeof render> {
   const router = createMemoryRouter(
-    [{ path: "/summary/:id", element: <GameSummaryPage />, loader: gameSummaryLoader }],
+    [
+      { path: "/summary/:id", element: <GameSummaryPage />, loader: gameSummaryLoader },
+      { path: "/details/:id", element: <h1>Game details</h1> },
+    ],
     { initialEntries: [path] },
   );
   return render(
@@ -43,6 +48,28 @@ describe("GameSummaryPage route", () => {
     vi.resetAllMocks();
     queryClient.clear();
     resetGameStore();
+    getTabletGameMock.mockResolvedValue({ game: null, lastFinishedGameId: 42 });
+  });
+
+  it("should move an older game's summary to its details, without Undo and Rematch", async () => {
+    getTabletGameMock.mockResolvedValue({ game: null, lastFinishedGameId: 56 });
+
+    renderSummaryRoute("/summary/55");
+
+    expect(await screen.findByRole("heading", { name: "Game details" })).toBeTruthy();
+    expect(screen.queryByRole("button", { name: "Play Again" })).toBeNull();
+    expect(screen.queryByRole("button", { name: "Return to game" })).toBeNull();
+    expect(getFinishedGameMock).not.toHaveBeenCalled();
+  });
+
+  it("should show Undo and Rematch on the last finished game's summary", async () => {
+    getFinishedGameMock.mockResolvedValue(buildFinishedPlayerResponses());
+    getGameSettingsMock.mockResolvedValue(SETTINGS);
+
+    renderSummaryRoute("/summary/42");
+
+    expect(await screen.findByRole("button", { name: "Play Again" })).toBeTruthy();
+    expect(screen.getByRole("button", { name: "Return to game" })).toBeTruthy();
   });
 
   it("should render the summary after a reload, when the game store is empty", async () => {
