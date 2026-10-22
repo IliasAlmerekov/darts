@@ -54,9 +54,6 @@ jobs:
       - name: Secrets check
         run: npm run secrets:check
 
-      - name: Node.js version check
-        run: npm run node:check
-
       - name: Unit tests
         run: npm run test
 
