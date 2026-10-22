@@ -22,6 +22,7 @@ and this project does **not** yet follow [Semantic Versioning](https://semver.or
 ### Fixed
 
 - Node.js: build, CI, the dev container and the deploy image run Node.js 24.22.1, the October 2026 security release (CVE-2026-111497, CVE-2026-106069, CVE-2026-105482, CVE-2026-105483 and others). Node.js 20 is end of life and gets no fix. Every GitHub workflow reads the version from `.nvmrc`, and `@types/node` follows to `^24` (#271, #233)
+- Dependencies: `vitest` and `@vitest/coverage-v8` are 4.1.12, and both ranges start at 4.1.12. The lockfile no longer resolves `@vitest/mocker` 4.1.11, which Dependabot alert #4 flags for GHSA-xp26-3454-mjgp (#277)
 
 ## [0.1.4] - 2026-10-22
 
