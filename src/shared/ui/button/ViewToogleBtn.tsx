@@ -5,6 +5,13 @@ import { Link, matchPath, useLocation, useNavigate } from "react-router-dom";
 import { isPlainLeftClick } from "@/lib/router/isPlainLeftClick";
 import { ROUTES } from "@/lib/router/routes";
 
+type View = "players" | "games";
+
+interface Preview {
+  pathname: string;
+  view: View;
+}
+
 function ViewToogleButton(): React.JSX.Element {
   const location = useLocation();
   const navigate = useNavigate();
@@ -17,10 +24,7 @@ function ViewToogleButton(): React.JSX.Element {
       : matchPath(ROUTES.statistics, location.pathname) !== null
         ? "players"
         : null;
-  const [preview, setPreview] = useState<{
-    pathname: string;
-    view: "players" | "games";
-  } | null>(null);
+  const [preview, setPreview] = useState<Preview | null>(null);
   const timerRef = useRef<number | null>(null);
 
   // A route change (e.g. Back) during the preview wins over the pending navigation.
@@ -40,7 +44,7 @@ function ViewToogleButton(): React.JSX.Element {
   }, [location.pathname]);
 
   const handleSwitch = useCallback(
-    (event: React.MouseEvent<HTMLAnchorElement>, targetView: "players" | "games"): void => {
+    (event: React.MouseEvent<HTMLAnchorElement>, targetView: View): void => {
       if (!isPlainLeftClick(event)) {
         // Let the browser open the link in a new tab or window.
         return;

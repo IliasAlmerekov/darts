@@ -19,10 +19,15 @@ interface NavigationBarProps {
   tabletGame?: TabletGame | null;
 }
 
+interface Preview {
+  pathname: string;
+  tabId: string;
+}
+
 function NavigationBar({ className, tabletGame = null }: NavigationBarProps): React.JSX.Element {
   const navigate = useNavigate();
   const location = useLocation();
-  const [preview, setPreview] = useState<{ pathname: string; tabId: string } | null>(null);
+  const [preview, setPreview] = useState<Preview | null>(null);
   const navigationTimerRef = useRef<number | null>(null);
 
   const gamePath = tabletGamePath("start", tabletGame);

@@ -46,7 +46,7 @@ function SettingsOverlay({
   const titleId = useId();
   const initialGameMode = resolveGameMode(initialDoubleOut, initialTripleOut);
   const [gameMode, setGameMode] = useState<GameMode>(initialGameMode);
-  const [syncedProps, setSyncedProps] = useState({
+  const [prevInitialProps, setPrevInitialProps] = useState({
     initialDoubleOut,
     initialTripleOut,
     initialStartScore,
@@ -62,11 +62,11 @@ function SettingsOverlay({
 
   // New initial settings replace the picked mode; any other re-render keeps it.
   if (
-    syncedProps.initialDoubleOut !== initialDoubleOut ||
-    syncedProps.initialTripleOut !== initialTripleOut ||
-    syncedProps.initialStartScore !== initialStartScore
+    prevInitialProps.initialDoubleOut !== initialDoubleOut ||
+    prevInitialProps.initialTripleOut !== initialTripleOut ||
+    prevInitialProps.initialStartScore !== initialStartScore
   ) {
-    setSyncedProps({ initialDoubleOut, initialTripleOut, initialStartScore });
+    setPrevInitialProps({ initialDoubleOut, initialTripleOut, initialStartScore });
     setGameMode(initialGameMode);
   }
 
