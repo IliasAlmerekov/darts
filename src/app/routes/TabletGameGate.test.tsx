@@ -260,7 +260,6 @@ describe("admin routes follow the tablet game", () => {
   });
 });
 
-// Issue #203: Settings wrote the URL id into the current game and broke the Game tab.
 describe("a navigation that replaces a pending one", () => {
   it("should read the tablet game again instead of reusing the replaced read", async () => {
     getTabletGameMock.mockResolvedValueOnce(NO_TABLET_GAME);
@@ -292,6 +291,7 @@ describe("a navigation that replaces a pending one", () => {
   });
 });
 
+// Issue #203: Settings wrote the URL id into the current game and broke the Game tab.
 describe("navigation after a hand-typed settings URL", () => {
   it("should keep the current game and lead the Game tab to the tablet game", async () => {
     setCurrentGameId(7);

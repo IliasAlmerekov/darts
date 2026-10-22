@@ -41,6 +41,10 @@ export async function fetchTabletGame(request: Request): Promise<TabletGameRespo
   }
 
   await replacedReadCancel;
+  // A navigation replaced during the wait has no listener to fire, so it reads nothing.
+  if (request.signal.aborted) {
+    return null;
+  }
   const cancelOnAbort = (): void => {
     replacedReadCancel = queryClient.cancelQueries({ queryKey: gameQueries.tablet().queryKey });
   };
