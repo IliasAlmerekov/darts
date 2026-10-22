@@ -68,19 +68,21 @@ function formatFinishedAt(finishedAt: string | null | undefined): string | null 
 
 /**
  * `Feb 2026` from the timestamp's own `YYYY-MM`, so every viewer sees the month the server
- * wrote, whatever the browser's time zone. Null without a valid date, including a day the
- * month lacks such as 31 April, which `Date` would roll into the next month.
+ * wrote, whatever the browser's time zone. Null without a valid date, including month 13 or
+ * a day the month lacks such as 31 April, which `Date` would roll into the next month. The
+ * full value is not parsed with `Date`, which rejects offsets the schema accepts, such as `+02`.
  */
 function formatRegistrationMonth(registeredAt: string | null | undefined): string | null {
   if (registeredAt === null || registeredAt === undefined) {
     return null;
   }
   const match = /^(\d{4})-(\d{2})-(\d{2})/.exec(registeredAt);
-  if (match === null || Number.isNaN(new Date(registeredAt).getTime())) {
+  if (match === null) {
     return null;
   }
   const [year, month, day] = [Number(match[1]), Number(match[2]) - 1, Number(match[3])];
-  if (new Date(Date.UTC(year, month, day)).getUTCDate() !== day) {
+  const date = new Date(Date.UTC(year, month, day));
+  if (date.getUTCMonth() !== month || date.getUTCDate() !== day) {
     return null;
   }
   return monthYearFormat.format(Date.UTC(year, month));

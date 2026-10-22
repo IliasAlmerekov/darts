@@ -158,6 +158,13 @@ describe("toPlayerProfile", () => {
     ).toBe("Feb 2024");
   });
 
+  it.each(["2026-02-01T10:00:00+02", "2026-02-01T10:00:00 +02:00"])(
+    "shows the Registration month for registeredAt %s, which the schema accepts and Date does not",
+    (registeredAt) => {
+      expect(toPlayerProfile(buildProfile({ registeredAt })).memberSince).toBe("Feb 2026");
+    },
+  );
+
   it("returns no rows and no trend for a player without finished games", () => {
     const profile = toPlayerProfile(buildProfile({ recentGames: [] }));
 
