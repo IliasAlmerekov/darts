@@ -134,6 +134,20 @@ describe("toPlayerProfile", () => {
     ]);
   });
 
+  it("shows the Registration month in the timestamp's own offset, not the browser's", () => {
+    // The process runs in UTC, where this instant is still 28 Feb 2026.
+    expect(
+      toPlayerProfile(buildProfile({ registeredAt: "2026-03-01T00:00:00+02:00" })).memberSince,
+    ).toBe("Mar 2026");
+  });
+
+  it.each([null, undefined, "not a date", "2026-13-01T00:00:00+02:00"])(
+    "has no Registration month for registeredAt %s",
+    (registeredAt) => {
+      expect(toPlayerProfile(buildProfile({ registeredAt })).memberSince).toBeNull();
+    },
+  );
+
   it("returns no rows and no trend for a player without finished games", () => {
     const profile = toPlayerProfile(buildProfile({ recentGames: [] }));
 
