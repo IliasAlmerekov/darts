@@ -59,7 +59,13 @@ function renderPanel(
   }
   switch (tab) {
     case "overview":
-      return <OverviewTab profile={profileState.profile} displayName={displayName} />;
+      return (
+        <OverviewTab
+          profile={profileState.profile}
+          hitFrequencies={profileState.hitFrequencies}
+          displayName={displayName}
+        />
+      );
     case "performance":
       return <PerformanceTab profile={profileState.profile} />;
     case "history":

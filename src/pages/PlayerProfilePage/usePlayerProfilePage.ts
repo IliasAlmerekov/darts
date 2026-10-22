@@ -4,12 +4,13 @@ import type { PlayerProfile } from "@/lib/player/profile";
 import { toUserErrorMessage } from "@/lib/error/error-to-user-message";
 import { useAuthenticatedUser } from "@/shared/hooks/useAuthenticatedUser";
 import { playerQueries } from "@/shared/query/player.queries";
+import { toBoardHitFrequencies, type BoardHitFrequencies } from "./lib/hitFrequency";
 import { getDisplayName, parseProfileTab, type ProfileTab } from "./lib/profilePage";
 
 export type ProfileState =
   | { status: "pending" }
   | { status: "error"; message: string; retry: () => void }
-  | { status: "success"; profile: PlayerProfile };
+  | { status: "success"; profile: PlayerProfile; hitFrequencies: BoardHitFrequencies };
 
 interface UsePlayerProfilePageReturn {
   displayName: string;
@@ -43,7 +44,11 @@ export function usePlayerProfilePage(): UsePlayerProfilePageReturn {
         }
       : data === undefined
         ? { status: "pending" }
-        : { status: "success", profile: data };
+        : {
+            status: "success",
+            profile: data,
+            hitFrequencies: toBoardHitFrequencies(data.hitDistribution),
+          };
 
   return {
     displayName: getDisplayName(user),

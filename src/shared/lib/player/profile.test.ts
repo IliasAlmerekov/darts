@@ -23,11 +23,120 @@ const FOUR_PLAYER_GAME = {
 };
 
 describe("toPlayerProfile", () => {
-  it("formats the stats with two decimals for the average", () => {
+  it("formats the stats with two decimals for the average and whole-number rates", () => {
     expect(toPlayerProfile(buildProfile()).stats).toEqual({
       gamesPlayed: "18",
       scoreAverage: "56.40",
+      wins: "7",
+      winRate: "39%",
+      checkoutRate: "32%",
+      checkouts: "7 / 22",
     });
+  });
+
+  it("rounds one-decimal API rates down as well as up", () => {
+    const { stats, mostHitSegment, favoriteDoubles } = toPlayerProfile(
+      buildProfile({
+        stats: buildStats({
+          winRate: 38.2,
+          checkoutRate: 0.4,
+          mostHitSegment: { segment: "20", hits: 96, share: 15.5 },
+          favoriteDoubles: [{ double: "D20", hits: 8, attempts: 19, hitRate: 42.1 }],
+        }),
+      }),
+    );
+
+    expect([stats.winRate, stats.checkoutRate, mostHitSegment?.share]).toEqual([
+      "38%",
+      "0%",
+      "16%",
+    ]);
+    expect(favoriteDoubles).toEqual([{ double: "D20", hitRate: "42%", checkouts: "8 / 19" }]);
+  });
+
+  it("shows a dash for a missing win rate and checkout rate and keeps the counts", () => {
+    const { stats } = toPlayerProfile(
+      buildProfile({
+        stats: buildStats({
+          wins: 0,
+          winRate: null,
+          checkoutRate: null,
+          checkoutHits: 0,
+          checkoutAttempts: 0,
+        }),
+      }),
+    );
+
+    expect(stats).toMatchObject({ wins: "0", winRate: "–", checkoutRate: "–", checkouts: "0 / 0" });
+  });
+
+  it("names Bull, Bullseye and Miss in words and keeps S, D and T darts as sent", () => {
+    const { highestFinish, favoriteDoubles, mostHitSegment } = toPlayerProfile(
+      buildProfile({
+        stats: buildStats({
+          highestFinish: { score: 100, darts: 3, throws: ["BULL", "MISS", "BULLSEYE"] },
+          favoriteDoubles: [
+            { double: "BULLSEYE", hits: 3, attempts: 9, hitRate: 33.3 },
+            { double: "D16", hits: 2, attempts: 4, hitRate: 50 },
+          ],
+          mostHitSegment: { segment: "BULL", hits: 40, share: 9.1 },
+        }),
+      }),
+    );
+
+    expect(highestFinish?.throws.map((dart) => dart.label)).toEqual(["Bull", "Miss", "Bullseye"]);
+    expect(favoriteDoubles.map((double) => double.double)).toEqual(["Bullseye", "D16"]);
+    expect(mostHitSegment).toEqual({ segment: "Bull", name: "Bull", share: "9%" });
+  });
+
+  it("names a numbered most hit segment as a segment", () => {
+    expect(toPlayerProfile(buildProfile()).mostHitSegment).toEqual({
+      segment: "20",
+      name: "segment 20",
+      share: "7%",
+    });
+  });
+
+  it("counts the darts of the highest finish, one dart in the singular", () => {
+    const finish = (darts: number): string | undefined =>
+      toPlayerProfile(
+        buildProfile({
+          stats: buildStats({
+            highestFinish: { score: 50, darts, throws: ["BULLSEYE", "D20", "T20"].slice(0, darts) },
+          }),
+        }),
+      ).highestFinish?.darts;
+
+    expect([finish(1), finish(3)]).toEqual(["in 1 dart", "in 3 darts"]);
+    expect(toPlayerProfile(buildProfile()).highestFinish).toEqual({
+      score: "121",
+      darts: "in 3 darts",
+      throws: [
+        { key: "dart-1", label: "T20" },
+        { key: "dart-2", label: "S11" },
+        { key: "dart-3", label: "Bullseye" },
+      ],
+    });
+  });
+
+  it("has no favorite doubles, highest finish or most hit segment without them", () => {
+    const profile = toPlayerProfile(
+      buildProfile({
+        stats: buildStats({ favoriteDoubles: [], highestFinish: null, mostHitSegment: null }),
+      }),
+    );
+
+    expect([profile.favoriteDoubles, profile.highestFinish, profile.mostHitSegment]).toEqual([
+      [],
+      null,
+      null,
+    ]);
+  });
+
+  it("passes the hit distribution on as the API sends it", () => {
+    const stats = buildStats();
+
+    expect(toPlayerProfile(buildProfile({ stats })).hitDistribution).toEqual(stats.hitDistribution);
   });
 
   it("shows a dash for a missing average", () => {

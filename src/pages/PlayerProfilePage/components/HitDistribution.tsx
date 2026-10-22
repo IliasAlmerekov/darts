@@ -1,6 +1,11 @@
 import React, { useId } from "react";
 import clsx from "clsx";
-import { HIT_FREQUENCY_LABELS, SAMPLE_PROFILE, type HitFrequency } from "../lib/sampleProfile";
+import type { PlayerProfile } from "@/lib/player/profile";
+import {
+  HIT_FREQUENCY_LABELS,
+  type BoardHitFrequencies,
+  type HitFrequency,
+} from "../lib/hitFrequency";
 import styles from "./HitDistribution.module.css";
 
 // Clockwise from the top, as on a real board.
@@ -68,9 +73,17 @@ const SEGMENTS = BOARD_ORDER.map((segment, index) => {
   };
 });
 
+interface HitDistributionProps {
+  hitFrequencies: BoardHitFrequencies;
+  mostHitSegment: PlayerProfile["mostHitSegment"];
+}
+
 /** A dartboard with a heat spot where the player's darts land most. */
-export function HitDistribution(): React.JSX.Element {
-  const { segments, bull } = SAMPLE_PROFILE.hitDistribution;
+export function HitDistribution({
+  hitFrequencies,
+  mostHitSegment,
+}: HitDistributionProps): React.JSX.Element {
+  const { segments, bull } = hitFrequencies;
   const blurId = useId();
 
   return (
@@ -79,7 +92,11 @@ export function HitDistribution(): React.JSX.Element {
         className={styles.board}
         viewBox={`${-BOARD_RADIUS} ${-BOARD_RADIUS} ${BOARD_RADIUS * 2} ${BOARD_RADIUS * 2}`}
         role="img"
-        aria-label={`Dartboard heatmap, most hits on ${SAMPLE_PROFILE.mostHitSegment.segment}`}
+        aria-label={
+          mostHitSegment === null
+            ? "Dartboard heatmap"
+            : `Dartboard heatmap, most hits on ${mostHitSegment.segment}`
+        }
       >
         <defs>
           <filter id={blurId} x="-50%" y="-50%" width="200%" height="200%">
@@ -109,7 +126,7 @@ export function HitDistribution(): React.JSX.Element {
 
         <g>
           {SEGMENTS.map(({ segment, spotX, spotY }) => {
-            const frequency = segments[segment] ?? 4;
+            const frequency = segments[String(segment)] ?? 4;
             return SPOT_RADII[frequency] > 0 ? (
               <g key={segment} className={HEAT_CLASSES[frequency]}>
                 <circle
@@ -123,11 +140,13 @@ export function HitDistribution(): React.JSX.Element {
               </g>
             ) : null;
           })}
-          <circle
-            className={clsx(styles.spotGlow, HEAT_CLASSES[bull])}
-            r={SPOT_RADII[bull]}
-            filter={`url(#${blurId})`}
-          />
+          {SPOT_RADII[bull] > 0 ? (
+            <circle
+              className={clsx(styles.spotGlow, HEAT_CLASSES[bull])}
+              r={SPOT_RADII[bull]}
+              filter={`url(#${blurId})`}
+            />
+          ) : null}
         </g>
       </svg>
 

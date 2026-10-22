@@ -1,6 +1,5 @@
 import React, { useId } from "react";
 import clsx from "clsx";
-import { SampleBadge } from "./SampleBadge";
 import styles from "./ProfileBlock.module.css";
 
 interface ProfileBlockProps {
@@ -8,18 +7,16 @@ interface ProfileBlockProps {
   iconSrc?: string;
   description?: string;
   action?: React.ReactNode;
-  isSample?: boolean;
   className?: string | undefined;
   children: React.ReactNode;
 }
 
-/** One titled block of the Player profile, with an optional icon, action and sample badge. */
+/** One titled block of the Player profile, with an optional icon, description and action. */
 export function ProfileBlock({
   title,
   iconSrc,
   description,
   action,
-  isSample = false,
   className,
   children,
 }: ProfileBlockProps): React.JSX.Element {
@@ -32,12 +29,9 @@ export function ProfileBlock({
           <img className={styles.blockIcon} src={iconSrc} alt="" width={28} height={28} />
         ) : null}
         <div className={styles.blockHeading}>
-          <div className={styles.titleRow}>
-            <h3 className={styles.blockTitle} id={headingId}>
-              {title}
-            </h3>
-            {isSample ? <SampleBadge /> : null}
-          </div>
+          <h3 className={styles.blockTitle} id={headingId}>
+            {title}
+          </h3>
           {description ? <p className={styles.blockDescription}>{description}</p> : null}
         </div>
         {action}

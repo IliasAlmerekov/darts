@@ -38,17 +38,6 @@
   text-align: center;
 }
 
-.subtitle {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: baseline;
-  justify-content: center;
-  gap: var(--space-xs);
-  margin: var(--space-2xs) 0 0;
-  color: var(--color-text-muted);
-  font-size: var(--font-size-18);
-}
-
 .memberSince {
   display: inline-flex;
   align-items: center;
