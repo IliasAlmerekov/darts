@@ -129,7 +129,7 @@ const playerProfileStatsSchema = v.object({
 const playerProfileResponseSchema = v.object({
   stats: playerProfileStatsSchema,
   recentGames: v.array(playerProfileGameSchema),
-  registeredAt: v.optional(v.nullable(v.string())),
+  registeredAt: v.optional(v.nullable(v.pipe(v.string(), v.isoTimestamp()))),
 });
 
 export type PlayerProfileResponse = v.InferOutput<typeof playerProfileResponseSchema>;
