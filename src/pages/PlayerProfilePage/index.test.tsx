@@ -117,7 +117,9 @@ describe("PlayerProfilePage", () => {
   beforeEach(() => {
     vi.mocked(logout).mockReset();
     vi.mocked(getPlayerProfile).mockReset();
-    vi.mocked(getPlayerProfile).mockResolvedValue(buildProfile());
+    vi.mocked(getPlayerProfile).mockResolvedValue(
+      buildProfile({ registeredAt: "2026-02-14T00:00:00+02:00" }),
+    );
     useAuthenticatedUserMock.mockReset();
     useAuthenticatedUserMock.mockReturnValue({ user: createUser(), loading: false, error: null });
   });
@@ -254,9 +256,10 @@ describe("PlayerProfilePage", () => {
     for (const name of SAMPLE_BLOCKS) {
       expect(within(screen.getByRole("region", { name })).getByText("Sample data")).toBeTruthy();
     }
-    for (const name of ["Won", "Checkout rate", "Member since"]) {
+    for (const name of ["Won", "Checkout rate"]) {
       expect(within(statValue(name)).getByText("Sample data")).toBeTruthy();
     }
+    expect(within(statValue("Member since")).queryByText("Sample data")).toBeNull();
     expect(within(statValue("Games played")).queryByText("Sample data")).toBeNull();
     expect(within(statValue("Avg. points")).queryByText("Sample data")).toBeNull();
     expect(
@@ -273,6 +276,26 @@ describe("PlayerProfilePage", () => {
       within(screen.getByRole("tabpanel", { name: "History" })).queryByText("Sample data"),
     ).toBeNull();
   });
+
+  it("shows the month the player registered", async () => {
+    renderPage();
+
+    expect((await screen.findByRole("group", { name: "Member since" })).textContent).toBe(
+      "Member since Feb 2026",
+    );
+  });
+
+  it.each([null, "not a date"])(
+    "shows no Member since line for registeredAt %s",
+    async (registeredAt) => {
+      vi.mocked(getPlayerProfile).mockResolvedValue(buildProfile({ registeredAt }));
+
+      renderPage();
+
+      await within(statValue("Games played")).findByText("18");
+      expect(screen.queryByRole("group", { name: "Member since" })).toBeNull();
+    },
+  );
 
   it("lists the four stats as list items and keeps the tabs in the banner", async () => {
     renderPage();
@@ -310,6 +333,7 @@ describe("PlayerProfilePage", () => {
     expect(panel.getAttribute("aria-busy")).toBe("true");
     expect(screen.getByRole("heading", { level: 2, name: "Alice" })).toBeTruthy();
     expect(screen.getByRole("button", { name: "Log out" })).toBeTruthy();
+    expect(screen.queryByRole("group", { name: "Member since" })).toBeNull();
   });
 
   it("shows one error with Retry when the request fails, and Retry asks again", async () => {
@@ -323,6 +347,7 @@ describe("PlayerProfilePage", () => {
     expect(screen.getAllByRole("alert")).toHaveLength(1);
     expect(screen.getByRole("heading", { level: 2, name: "Alice" })).toBeTruthy();
     expect(screen.getByRole("button", { name: "Log out" })).toBeTruthy();
+    expect(screen.queryByRole("group", { name: "Member since" })).toBeNull();
 
     fireEvent.click(screen.getByRole("button", { name: "Retry" }));
 

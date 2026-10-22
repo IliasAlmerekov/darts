@@ -134,6 +134,37 @@ describe("toPlayerProfile", () => {
     ]);
   });
 
+  it("shows the Registration month in the timestamp's own offset, not the browser's", () => {
+    // The process runs in UTC, where this instant is still 28 Feb 2026.
+    expect(
+      toPlayerProfile(buildProfile({ registeredAt: "2026-03-01T00:00:00+02:00" })).memberSince,
+    ).toBe("Mar 2026");
+  });
+
+  it.each([
+    null,
+    undefined,
+    "not a date",
+    "2026-13-01T00:00:00+02:00",
+    "2026-04-31T00:00:00+02:00",
+    "2025-02-29T00:00:00+01:00",
+  ])("has no Registration month for registeredAt %s", (registeredAt) => {
+    expect(toPlayerProfile(buildProfile({ registeredAt })).memberSince).toBeNull();
+  });
+
+  it("shows the Registration month for a leap day", () => {
+    expect(
+      toPlayerProfile(buildProfile({ registeredAt: "2024-02-29T12:00:00+01:00" })).memberSince,
+    ).toBe("Feb 2024");
+  });
+
+  it.each(["2026-02-01T10:00:00+02", "2026-02-01T10:00:00 +02:00"])(
+    "shows the Registration month for registeredAt %s, which the schema accepts and Date does not",
+    (registeredAt) => {
+      expect(toPlayerProfile(buildProfile({ registeredAt })).memberSince).toBe("Feb 2026");
+    },
+  );
+
   it("returns no rows and no trend for a player without finished games", () => {
     const profile = toPlayerProfile(buildProfile({ recentGames: [] }));
 
