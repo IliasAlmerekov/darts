@@ -4,7 +4,6 @@ import { buildBackendPlayer, buildGameThrowsResponse } from "@/shared/types/game
 import type { GameThrowsResponse } from "@/types";
 import type { ThrowAckResponse, UndoAckResponse } from "@/types";
 import {
-  applyFinished,
   applyReloadedGame,
   applyThrowAck,
   applyUndoResponse,
@@ -12,11 +11,9 @@ import {
   failSession,
   markSessionOffline,
   retrySession,
-  takeFinish,
   takeNextOp,
   enqueueThrow,
   enqueueUndo,
-  failFinish,
   getSessionView,
   getShownGame,
   type GameSession,
@@ -171,7 +168,6 @@ describe("gameSession.logic", () => {
       canThrow: true,
       canUndo: true,
       isFinished: false,
-      isFinishFailed: false,
       isQueueFull: false,
       status: "idle",
     });
@@ -359,7 +355,6 @@ describe("gameSession.logic", () => {
       canThrow: false,
       canUndo: false,
       isFinished: false,
-      isFinishFailed: false,
       isQueueFull: false,
       status: "offline",
     });
@@ -373,64 +368,43 @@ describe("gameSession.logic", () => {
     expect(scores(reloaded.confirmed)).toEqual([281, 301]);
   });
 
-  it("starts the finish once the confirmed game leaves one active player", () => {
-    expect(takeFinish(createGameSession(buildGame({ alice: 20, bob: 301 })))).toBeNull();
-    expect(
-      takeFinish(throwMany(createGameSession(buildGame({ alice: 20, bob: 301 })), [20])),
-    ).toBeNull();
+  // #96: the server finishes the game with the winning throw and says so in the ack.
+  it("reports the game finished once the winning throw ack says so", () => {
+    const sent = send(throwMany(createGameSession(buildGame({ alice: 20, bob: 301 })), [20]));
+    expect(getSessionView(sent).isFinished).toBe(false);
 
-    const finishing = takeFinish(createGameSession(buildGame({ alice: 0, bob: 301 })));
-    expect(finishing).not.toBeNull();
-    if (finishing === null) return;
-    expect(getSessionView(finishing)).toMatchObject({
-      canRetry: false,
-      canThrow: false,
-      canUndo: false,
-      status: "syncing",
-    });
-    expect(takeFinish(finishing)).toBeNull();
+    const ack = buildThrowAck(0, 301, 2);
+    ack.scoreboardDelta = {
+      changedPlayers: [
+        { playerId: 1, name: "Alice", score: 0, isActive: false, isGuest: false, position: 1 },
+        { playerId: 2, name: "Bob", score: 301, isActive: true, isGuest: false, position: 2 },
+      ],
+      winnerId: 1,
+      status: "finished",
+      currentRound: 1,
+    };
+    const acknowledged = applyThrowAck(sent, ack);
+
+    expect(acknowledged).not.toBeNull();
+    if (acknowledged === null) return;
+    expect(getSessionView(acknowledged)).toMatchObject({ canThrow: false, isFinished: true });
   });
 
-  it("offers Retry and Undo after a failed finish, and Undo drops the finish", () => {
-    const finishing = takeFinish(createGameSession(buildGame({ alice: 0, bob: 301 })));
-    if (finishing === null) throw new Error("finish refused");
-    const failed = failFinish(finishing);
+  it("rolls back a rejected winning throw and reports no finished game", () => {
+    const sent = send(throwMany(createGameSession(buildGame({ alice: 20, bob: 301 })), [20]));
+    const failed = failSession(sent);
 
-    expect(getSessionView(failed)).toMatchObject({
-      canRetry: true,
-      canThrow: false,
-      canUndo: true,
-      isFinishFailed: true,
-      status: "offline",
-    });
-    expect(getSessionView(retrySession(failed))).toMatchObject({
-      canRetry: false,
-      canUndo: false,
-      isFinishFailed: false,
-      status: "syncing",
-    });
-
-    const undone = enqueueUndo(failed);
-    expect(getSessionView(undone)).toMatchObject({ isFinishFailed: false, status: "syncing" });
-    expect(takeNextOp(undone)?.op).toEqual({ kind: "undo" });
+    expect(getSessionView(failed).isFinished).toBe(false);
+    expect(scores(getShownGame(failed))).toEqual([20, 301]);
   });
 
-  it("reports the game finished after the finish, or once the server shows it finished", () => {
-    const finishing = takeFinish(createGameSession(buildGame({ alice: 0, bob: 301 })));
-    if (finishing === null) throw new Error("finish refused");
-    expect(getSessionView(finishing).isFinished).toBe(false);
-    expect(getSessionView(applyFinished(finishing))).toMatchObject({
-      canThrow: false,
-      canUndo: false,
-      isFinished: true,
-    });
-
+  it("reports a game the server already finished as finished", () => {
     const finishedGame: GameThrowsResponse = {
       ...buildGame({ alice: 0, bob: 301 }),
       status: "finished",
     };
+
     expect(getSessionView(createGameSession(finishedGame)).isFinished).toBe(true);
-    expect(takeFinish(createGameSession(finishedGame))).toBeNull();
   });
 
   it("waits for every tap to be acknowledged before it reports a finished game", () => {

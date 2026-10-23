@@ -1,11 +1,9 @@
 // @vitest-environment jsdom
 
-// Regression tests for the throw sync rules in ADR 0003. Tests marked `it.fails` describe
-// behaviour the page does not have yet; #123 turns them green one by one.
+// Regression tests for the throw sync rules in ADR 0003.
 
 vi.mock("@/shared/api/game", () => ({
   abortGame: vi.fn(),
-  finishGame: vi.fn(),
   getGameThrows: vi.fn(),
   getGameThrowsIfChanged: vi.fn(),
   recordThrow: vi.fn(),
@@ -21,11 +19,17 @@ vi.mock("@/shared/services/browser/soundPlayer", () => ({
 }));
 
 import { act, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
-import { MemoryRouter, Route, RouterProvider, Routes, createMemoryRouter } from "react-router-dom";
+import {
+  MemoryRouter,
+  Route,
+  RouterProvider,
+  Routes,
+  createMemoryRouter,
+  useLocation,
+} from "react-router-dom";
 import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import { ApiError } from "@/shared/api";
 import {
-  finishGame,
   getGameThrows,
   getGameThrowsIfChanged,
   recordThrow,
@@ -43,7 +47,6 @@ const getGameThrowsIfChangedMock = vi.mocked(getGameThrowsIfChanged);
 const getGameThrowsMock = vi.mocked(getGameThrows);
 const recordThrowMock = vi.mocked(recordThrow);
 const undoLastThrowMock = vi.mocked(undoLastThrow);
-const finishGameMock = vi.mocked(finishGame);
 const playSoundMock = vi.mocked(playSound);
 
 const GAME_ID = 4;
@@ -106,14 +109,32 @@ function buildThrowAck(scores: { alice: number; bob: number }): ThrowAckResponse
   };
 }
 
-/** The ack for Alice's checkout from 19: Bob is the one active player left. */
+/**
+ * The ack for Alice's checkout from 19, as the backend sends it: the throw leaves one active
+ * player, so the server finishes the game in the same request and normalizes the positions.
+ */
 function buildWinningAck(): ThrowAckResponse {
   const ack = buildThrowAck({ alice: 0, bob: 301 });
-  ack.scoreboardDelta.changedPlayers = [
-    { playerId: 1, name: "Alice", score: 0, isActive: false, isGuest: false, position: 1 },
-    { playerId: 2, name: "Bob", score: 301, isActive: true, isGuest: false },
-  ];
+  ack.scoreboardDelta = {
+    changedPlayers: [
+      { playerId: 1, name: "Alice", score: 0, isActive: false, isGuest: false, position: 1 },
+      { playerId: 2, name: "Bob", score: 301, isActive: true, isGuest: false, position: 2 },
+    ],
+    winnerId: 1,
+    status: "finished",
+    currentRound: 1,
+  };
   return ack;
+}
+
+/** Shows the game id the game page passed to the summary in the location state. */
+function SummaryProbe(): React.JSX.Element {
+  const state: unknown = useLocation().state;
+  const finishedGameId =
+    typeof state === "object" && state !== null && "finishedGameId" in state
+      ? String(state.finishedGameId)
+      : "none";
+  return <p>Summary page for game {finishedGameId}</p>;
 }
 
 function stateVersionConflict(): ApiError {
@@ -125,7 +146,7 @@ function renderGamePage(): void {
     <MemoryRouter initialEntries={[`/game/${GAME_ID}`]}>
       <Routes>
         <Route path="/game/:id" element={<GamePage />} />
-        <Route path="/summary/:id" element={<p>Summary page</p>} />
+        <Route path="/summary/:id" element={<SummaryProbe />} />
       </Routes>
     </MemoryRouter>,
   );
@@ -166,29 +187,26 @@ describe("GamePage throw sync", () => {
     vi.resetAllMocks();
     window.sessionStorage.clear();
     gameStore.resetGameStore();
-    finishGameMock.mockResolvedValue([]);
   });
 
   // #96
-  it("finishes the game only after the server acknowledges the winning throw", async () => {
+  it("rolls back a rejected winning throw and opens no summary", async () => {
     const winningThrow = createDeferred<ThrowAckResponse>();
     recordThrowMock.mockReturnValueOnce(winningThrow.promise);
     getGameThrowsMock.mockResolvedValue(buildGame({ alice: 19, bob: 301 }));
-    getGameThrowsIfChangedMock.mockResolvedValue(buildGame({ alice: 19, bob: 301 }));
     await openGame(buildGame({ alice: 19, bob: 301 }));
 
     tap("19");
     await waitFor(() => {
       expect(recordThrowMock).toHaveBeenCalledTimes(1);
     });
-    expect(finishGameMock).not.toHaveBeenCalled();
 
     winningThrow.reject(stateVersionConflict());
 
     await waitFor(() => {
       expect(within(playerCard("Alice")).getByText("19")).toBeTruthy();
     });
-    expect(finishGameMock).not.toHaveBeenCalled();
+    expect(screen.queryByText(/Summary page/)).toBeNull();
   });
 
   // ADR 0003: the overlay shows at once and closes again when the server rejects the checkout.
@@ -215,11 +233,11 @@ describe("GamePage throw sync", () => {
       expect(screen.queryByText("Player Finished! Continue Game?")).toBeNull();
     });
     expect(within(playerCard("Alice")).getByText("19")).toBeTruthy();
-    expect(finishGameMock).not.toHaveBeenCalled();
+    expect(screen.queryByText(/Summary page/)).toBeNull();
   });
 
-  // #96
-  it("finishes the game once and opens the summary after the winning throw ack", async () => {
+  // #96: the server finishes the game with the winning throw, so its ack is the signal.
+  it("opens the summary once the winning throw ack says the game is finished", async () => {
     const winningThrow = createDeferred<ThrowAckResponse>();
     recordThrowMock.mockReturnValueOnce(winningThrow.promise);
     await openGame(buildGame({ alice: 19, bob: 301 }));
@@ -228,17 +246,58 @@ describe("GamePage throw sync", () => {
     await waitFor(() => {
       expect(recordThrowMock).toHaveBeenCalledTimes(1);
     });
-    expect(finishGameMock).not.toHaveBeenCalled();
+    expect(screen.queryByText(/Summary page/)).toBeNull();
 
-    const ack = buildThrowAck({ alice: 0, bob: 301 });
-    ack.scoreboardDelta.changedPlayers = [
-      { playerId: 1, name: "Alice", score: 0, isActive: false, isGuest: false, position: 1 },
-      { playerId: 2, name: "Bob", score: 301, isActive: true, isGuest: false },
-    ];
-    winningThrow.resolve(ack);
+    winningThrow.resolve(buildWinningAck());
 
-    expect(await screen.findByText("Summary page")).toBeTruthy();
-    expect(finishGameMock).toHaveBeenCalledTimes(1);
+    expect(await screen.findByText(`Summary page for game ${GAME_ID}`)).toBeTruthy();
+  });
+
+  // #95
+  it("opens no summary when the winning throw ack arrives after the page moved to another game", async () => {
+    const winningThrow = createDeferred<ThrowAckResponse>();
+    recordThrowMock.mockReturnValueOnce(winningThrow.promise);
+    getGameThrowsIfChangedMock.mockImplementation((id) =>
+      Promise.resolve({ ...buildGame({ alice: 19, bob: 301 }), id }),
+    );
+    const router = createMemoryRouter(
+      [
+        { path: "/game/:id", element: <GamePage /> },
+        { path: "/summary/:id", element: <SummaryProbe /> },
+      ],
+      { initialEntries: [`/game/${GAME_ID}`] },
+    );
+    render(<RouterProvider router={router} />);
+    await screen.findByRole("group", { name: "Alice" });
+
+    tap("19");
+    await waitFor(() => {
+      expect(recordThrowMock).toHaveBeenCalledTimes(1);
+    });
+
+    await act(async () => {
+      await router.navigate("/game/5");
+    });
+    await screen.findByRole("group", { name: "Alice" });
+
+    await act(async () => {
+      winningThrow.resolve(buildWinningAck());
+      await winningThrow.promise;
+    });
+
+    expect(router.state.location.pathname).toBe("/game/5");
+    expect(screen.queryByText(/Summary page/)).toBeNull();
+  });
+
+  it("opens the summary for a game the server already finished", async () => {
+    getGameThrowsIfChangedMock.mockResolvedValue({
+      ...buildGame({ alice: 0, bob: 301 }),
+      status: "finished",
+      winnerId: 1,
+    });
+    renderGamePage();
+
+    expect(await screen.findByText(`Summary page for game ${GAME_ID}`)).toBeTruthy();
   });
 
   it("rolls back the next player's throws when a throw of the previous player is rejected", async () => {
@@ -370,8 +429,7 @@ describe("GamePage throw sync", () => {
     await waitFor(() => {
       expect(within(playerCard("Alice")).getByText("20")).toBeTruthy();
     });
-    expect(screen.queryByText("Summary page")).toBeNull();
-    expect(finishGameMock).not.toHaveBeenCalled();
+    expect(screen.queryByText(/Summary page/)).toBeNull();
   });
 
   it("keeps the sync status region on the page while idle and puts the failure in it", async () => {
@@ -396,99 +454,5 @@ describe("GamePage throw sync", () => {
     tap("Undo");
 
     expect(playSoundMock).toHaveBeenCalledWith("undo");
-  });
-
-  // #123
-  it("keeps throw and undo input disabled while /finish runs", async () => {
-    finishGameMock.mockReturnValue(new Promise(() => {}));
-    recordThrowMock.mockResolvedValueOnce(buildWinningAck());
-    await openGame(buildGame({ alice: 19, bob: 301 }));
-
-    tap("19");
-
-    await waitFor(() => {
-      expect(finishGameMock).toHaveBeenCalledTimes(1);
-    });
-    expect(screen.getByRole("button", { name: "20" }).hasAttribute("disabled")).toBe(true);
-    expect(screen.getByRole("button", { name: "Undo" }).hasAttribute("disabled")).toBe(true);
-  });
-
-  // #123
-  it("offers Retry after /finish fails and opens the summary once it works", async () => {
-    finishGameMock.mockRejectedValueOnce(new TypeError("Failed to fetch"));
-    recordThrowMock.mockResolvedValueOnce(buildWinningAck());
-    await openGame(buildGame({ alice: 19, bob: 301 }));
-
-    tap("19");
-
-    const retryButton = await screen.findByRole("button", { name: "Retry" });
-    expect(screen.getByRole("status").textContent).toMatch(/could not finish/i);
-    expect(screen.getByRole("button", { name: "20" }).hasAttribute("disabled")).toBe(true);
-    expect(screen.queryByText("Summary page")).toBeNull();
-
-    fireEvent.click(retryButton);
-
-    expect(await screen.findByText("Summary page")).toBeTruthy();
-    expect(finishGameMock).toHaveBeenCalledTimes(2);
-  });
-
-  // #95, #123
-  it("ignores a /finish answer that arrives after the page moved to another game", async () => {
-    const finish = createDeferred<Awaited<ReturnType<typeof finishGame>>>();
-    finishGameMock.mockReturnValueOnce(finish.promise);
-    recordThrowMock.mockResolvedValueOnce(buildWinningAck());
-    getGameThrowsIfChangedMock.mockImplementation((id) =>
-      Promise.resolve({ ...buildGame({ alice: 19, bob: 301 }), id }),
-    );
-    const router = createMemoryRouter(
-      [
-        { path: "/game/:id", element: <GamePage /> },
-        { path: "/summary/:id", element: <p>Summary page</p> },
-      ],
-      { initialEntries: [`/game/${GAME_ID}`] },
-    );
-    render(<RouterProvider router={router} />);
-    await screen.findByRole("group", { name: "Alice" });
-
-    tap("19");
-    await waitFor(() => {
-      expect(finishGameMock).toHaveBeenCalledTimes(1);
-    });
-
-    await act(async () => {
-      await router.navigate("/game/5");
-    });
-    await screen.findByRole("group", { name: "Alice" });
-
-    await act(async () => {
-      finish.resolve([]);
-      await finish.promise;
-    });
-
-    expect(router.state.location.pathname).toBe("/game/5");
-    expect(screen.queryByText("Summary page")).toBeNull();
-    expect(screen.getByRole("button", { name: "20" }).hasAttribute("disabled")).toBe(false);
-  });
-
-  // #123: the server acknowledged the winning throw, but the page left before /finish.
-  it("finishes a loaded game that has one active player left, once", async () => {
-    const finish = createDeferred<Awaited<ReturnType<typeof finishGame>>>();
-    finishGameMock.mockReturnValueOnce(finish.promise);
-    getGameThrowsIfChangedMock.mockResolvedValue(buildGame({ alice: 0, bob: 301 }));
-    renderGamePage();
-
-    await waitFor(() => {
-      expect(finishGameMock).toHaveBeenCalledTimes(1);
-    });
-    expect(screen.getByRole("button", { name: "Undo" }).hasAttribute("disabled")).toBe(true);
-
-    await act(async () => {
-      finish.resolve([]);
-      await finish.promise;
-    });
-
-    expect(await screen.findByText("Summary page")).toBeTruthy();
-    expect(finishGameMock).toHaveBeenCalledTimes(1);
-    expect(finishGameMock).toHaveBeenCalledWith(GAME_ID, expect.any(AbortSignal));
   });
 });

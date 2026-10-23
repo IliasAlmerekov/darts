@@ -4,7 +4,6 @@ import { apiClient, ApiValidationError } from "./client";
 import {
   abortGame,
   createRematch,
-  finishGame,
   getFinishedGame,
   getGameSettings,
   getTabletGame,
@@ -279,19 +278,7 @@ describe("game api contract payloads", () => {
     });
   });
 
-  describe("finishGame and getFinishedGame", () => {
-    it("returns the standings from a summary without finishedAt and winner", async () => {
-      const summaryResponse = {
-        gameId: 42,
-        winnerRoundsPlayed: 8,
-        winnerRoundAverage: 57.3,
-        finishedPlayers: summaryPayload.finishedPlayers,
-      };
-      vi.spyOn(apiClient, "post").mockImplementationOnce(respondWith(summaryResponse));
-
-      await expect(finishGame(42)).resolves.toEqual(summaryPayload.finishedPlayers);
-    });
-
+  describe("getFinishedGame", () => {
     it("maps a summary without the optional finishedAt and winner", async () => {
       vi.spyOn(apiClient, "get").mockImplementationOnce(
         respondWith({
@@ -306,11 +293,11 @@ describe("game api contract payloads", () => {
     });
 
     it("rejects with ApiValidationError when finishedPlayers is missing", async () => {
-      vi.spyOn(apiClient, "post").mockImplementationOnce(
+      vi.spyOn(apiClient, "get").mockImplementationOnce(
         respondWith({ gameId: 42, winnerRoundsPlayed: 8, winnerRoundAverage: 57.3 }),
       );
 
-      await expect(finishGame(42)).rejects.toBeInstanceOf(ApiValidationError);
+      await expect(getFinishedGame(42)).rejects.toBeInstanceOf(ApiValidationError);
     });
   });
 

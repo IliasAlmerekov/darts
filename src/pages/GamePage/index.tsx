@@ -151,19 +151,11 @@ interface KeyboardSectionProps {
   onRetry: () => void;
   isUndoDisabled: boolean;
   isInteractionDisabled: boolean;
-  isFinishFailed: boolean;
   isQueueFull: boolean;
   syncStatus: SyncStatus;
 }
 
-function getSyncMessage(
-  syncStatus: SyncStatus,
-  isQueueFull: boolean,
-  isFinishFailed: boolean,
-): string | null {
-  if (isFinishFailed) {
-    return "Could not finish the game.";
-  }
+function getSyncMessage(syncStatus: SyncStatus, isQueueFull: boolean): string | null {
   if (syncStatus === "failed" || syncStatus === "offline") {
     return "Your last throws were not saved.";
   }
@@ -177,11 +169,10 @@ const KeyboardSection = React.memo(function KeyboardSection({
   onRetry,
   isUndoDisabled,
   isInteractionDisabled,
-  isFinishFailed,
   isQueueFull,
   syncStatus,
 }: KeyboardSectionProps): React.JSX.Element {
-  const syncMessage = getSyncMessage(syncStatus, isQueueFull, isFinishFailed);
+  const syncMessage = getSyncMessage(syncStatus, isQueueFull);
 
   return (
     <div className={styles.keyboardAndUndo}>
@@ -212,7 +203,6 @@ function GamePage(): React.JSX.Element {
     settingsError,
     pageError,
     isExitOverlayOpen,
-    isFinishFailed,
     isQueueFull,
     syncStatus,
     handleRetry,
@@ -306,7 +296,6 @@ function GamePage(): React.JSX.Element {
           onRetry={handleRetry}
           isUndoDisabled={isUndoDisabled}
           isInteractionDisabled={isInteractionDisabled}
-          isFinishFailed={isFinishFailed}
           isQueueFull={isQueueFull}
           syncStatus={syncStatus}
         />

@@ -2,7 +2,6 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useStore } from "@nanostores/react";
 import { atom } from "nanostores";
 import {
-  finishGame,
   getGameThrows,
   getGameThrowsIfChanged,
   recordThrow,
@@ -10,8 +9,6 @@ import {
   setGameStateVersion,
   undoLastThrow,
 } from "@/shared/api/game";
-import { gameQueries } from "@/shared/query/game.queries";
-import { queryClient } from "@/shared/query/queryClient";
 import { clientLogger } from "@/shared/services/browser/clientLogger";
 import { playSound } from "@/shared/services/browser/soundPlayer";
 import {
@@ -25,7 +22,6 @@ import {
 } from "@/shared/store";
 import type { GameSettings, GameThrowsResponse } from "@/types";
 import {
-  applyFinished,
   applyReloadedGame,
   applySessionSettings,
   applyThrowAck,
@@ -33,13 +29,11 @@ import {
   createGameSession,
   enqueueThrow,
   enqueueUndo,
-  failFinish,
   failSession,
   getSessionView,
   getShownGame,
   markSessionOffline,
   retrySession,
-  takeFinish,
   takeNextOp,
   toThrowRequest,
   type GameSession,
@@ -55,10 +49,7 @@ interface GameSessionPageView extends GameSessionView {
 interface GameSessionCommands {
   throwDart: (value: string | number) => void;
   undo: () => void;
-  /**
-   * Reloads the game after a failed first load or after the server could not be reached, or
-   * sends a failed `/finish` again.
-   */
+  /** Reloads the game after a failed first load or after the server could not be reached. */
   retry: () => void;
   updateSettings: (settings: GameSettings) => void;
 }
@@ -73,10 +64,9 @@ function isAbortError(error: unknown): boolean {
 }
 
 /**
- * Owns the game on screen: it loads the game, keeps the optimistic throw queue of ADR 0003,
- * finishes the game and is the only writer of the game store while the game page is open.
- * Every response carries the session generation; one that arrives after the page left the game
- * is ignored.
+ * Owns the game on screen: it loads the game, keeps the optimistic throw queue of ADR 0003 and
+ * is the only writer of the game store while the game page is open. Every response carries the
+ * session generation; one that arrives after the page left the game is ignored.
  */
 export function useGameSession(gameId: number | null): UseGameSessionReturn {
   // Local to this hook, so each game page instance starts with its own queue.
@@ -104,40 +94,6 @@ export function useGameSession(gameId: number | null): UseGameSessionReturn {
     [],
   );
 
-  /** Sends `/finish` for a session that `takeFinish` or `retrySession` marked as sending. */
-  const sendFinish = useCallback(
-    async (id: number, generation: number): Promise<void> => {
-      try {
-        const summary = await finishGame(id, controllerRef.current?.signal);
-        if (!isCurrent(generation)) {
-          return;
-        }
-        resetGameStateVersion(id);
-        queryClient.setQueryData(gameQueries.finished(id).queryKey, summary);
-        commit(applyFinished(sessionAtom.get()));
-      } catch (finishError) {
-        if (!isCurrent(generation) || isAbortError(finishError)) {
-          return;
-        }
-        clientLogger.error("game.finish.failed", { context: { gameId: id }, error: finishError });
-        commit(failFinish(sessionAtom.get()));
-      }
-    },
-    [commit, isCurrent, sessionAtom],
-  );
-
-  /** Sends `/finish` once the confirmed game leaves one active player (#96). */
-  const finishIfOver = useCallback(
-    (id: number, generation: number): void => {
-      const next = takeFinish(sessionAtom.get());
-      if (next !== null) {
-        commit(next);
-        void sendFinish(id, generation);
-      }
-    },
-    [commit, sendFinish, sessionAtom],
-  );
-
   const loadGame = useCallback(
     async (id: number, generation: number): Promise<void> => {
       const signal = controllerRef.current?.signal;
@@ -151,7 +107,6 @@ export function useGameSession(gameId: number | null): UseGameSessionReturn {
         }
         if (data) {
           commit(createGameSession(data));
-          finishIfOver(id, generation);
         }
       } catch (loadError) {
         if (!isCurrent(generation) || isAbortError(loadError)) {
@@ -167,7 +122,7 @@ export function useGameSession(gameId: number | null): UseGameSessionReturn {
         }
       }
     },
-    [commit, finishIfOver, isCurrent],
+    [commit, isCurrent],
   );
 
   /** Reads the game from the server after a rejected request; the session is `reloading`. */
@@ -181,7 +136,6 @@ export function useGameSession(gameId: number | null): UseGameSessionReturn {
           return;
         }
         commit(applyReloadedGame(sessionAtom.get(), fresh));
-        finishIfOver(id, generation);
       } catch (reloadError) {
         if (!isCurrent(generation) || isAbortError(reloadError)) {
           return;
@@ -193,7 +147,7 @@ export function useGameSession(gameId: number | null): UseGameSessionReturn {
         commit(markSessionOffline(sessionAtom.get()));
       }
     },
-    [commit, finishIfOver, isCurrent, sessionAtom],
+    [commit, isCurrent, sessionAtom],
   );
 
   const recover = useCallback(
@@ -257,9 +211,7 @@ export function useGameSession(gameId: number | null): UseGameSessionReturn {
         return;
       }
     }
-
-    finishIfOver(gameId, generation);
-  }, [commit, finishIfOver, gameId, isCurrent, recover, sessionAtom]);
+  }, [commit, gameId, isCurrent, recover, sessionAtom]);
 
   useEffect(() => {
     generationRef.current += 1;
@@ -334,20 +286,14 @@ export function useGameSession(gameId: number | null): UseGameSessionReturn {
     }
 
     const current = sessionAtom.get();
-    const view = getSessionView(current);
-    if (view.isFinishFailed) {
-      commit(retrySession(current));
-      void sendFinish(gameId, generationRef.current);
-      return;
-    }
-    if (view.canRetry) {
+    if (getSessionView(current).canRetry) {
       commit(retrySession(current));
       void reloadAfterFailure(gameId, generationRef.current);
       return;
     }
 
     void loadGame(gameId, generationRef.current);
-  }, [commit, gameId, loadGame, reloadAfterFailure, sendFinish, sessionAtom]);
+  }, [commit, gameId, loadGame, reloadAfterFailure, sessionAtom]);
 
   const updateSettings = useCallback(
     (settings: GameSettings): void => {

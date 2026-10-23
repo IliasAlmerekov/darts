@@ -6,7 +6,6 @@ vi.mock("@/shared/services/browser/clientLogger", () => ({
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { clientLogger } from "@/shared/services/browser/clientLogger";
 import {
-  finishGame,
   getFinishedGame,
   getGameSettings,
   getGameThrows,
@@ -144,26 +143,6 @@ describe("getGameThrowsIfChanged", () => {
     );
 
     await expect(getGameThrows(520)).rejects.toBeInstanceOf(ApiValidationError);
-  });
-
-  it("forwards AbortSignal through finishGame", async () => {
-    const controller = new AbortController();
-    const response = {
-      gameId: 520,
-      winnerRoundsPlayed: 5,
-      winnerRoundAverage: 60,
-      finishedPlayers: [
-        { playerId: 1, username: "P1", position: 1, roundsPlayed: 5, roundAverage: 60 },
-      ],
-    };
-    vi.spyOn(apiClient, "post").mockImplementationOnce(respondWith(response));
-
-    await finishGame(520, controller.signal);
-
-    expect(apiClient.post).toHaveBeenCalledWith("/game/520/finish", undefined, {
-      signal: controller.signal,
-      validate: expect.any(Object),
-    });
   });
 
   it("normalizes nullable summary envelope fields from getFinishedGame", async () => {

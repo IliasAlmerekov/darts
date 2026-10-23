@@ -38,7 +38,6 @@ interface UseGameLogicResult {
   handleUndo: () => void;
   handleUndoFromOverlay: () => void;
   isExitOverlayOpen: boolean;
-  isFinishFailed: boolean;
   isInteractionDisabled: boolean;
   isLoading: boolean;
   isQueueFull: boolean;
@@ -141,7 +140,6 @@ export function useGameLogic(): UseGameLogicResult {
     settingsError,
     pageError,
     isExitOverlayOpen,
-    isFinishFailed: view.isFinishFailed,
     isQueueFull: view.isQueueFull,
     syncStatus: view.status,
     handleRetry: commands.retry,
