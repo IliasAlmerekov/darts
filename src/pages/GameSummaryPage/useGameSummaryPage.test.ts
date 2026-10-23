@@ -179,10 +179,22 @@ function wrapper({ children }: { children: ReactNode }): ReactNode {
 type SummaryHook = ReturnType<typeof useGameSummaryPage>;
 
 const SUMMARY_ACTIONS = [
-  { action: "Undo", run: (hook: SummaryHook) => hook.handleUndo() },
-  { action: "Play Again", run: (hook: SummaryHook) => hook.handlePlayAgain() },
-  { action: "Back To Start", run: (hook: SummaryHook) => hook.handleBackToStart() },
+  { action: "Undo", run: (hook: SummaryHook) => hook.handleUndo(), request: undoLastThrowMock },
+  {
+    action: "Play Again",
+    run: (hook: SummaryHook) => hook.handlePlayAgain(),
+    request: startRematchMock,
+  },
+  {
+    action: "Back To Start",
+    run: (hook: SummaryHook) => hook.handleBackToStart(),
+    request: createRematchGameMock,
+  },
 ];
+
+function countSummaryRequests(): number {
+  return SUMMARY_ACTIONS.reduce((count, { request }) => count + request.mock.calls.length, 0);
+}
 
 function renderSummaryHook() {
   return renderHook(() => useGameSummaryPage(), { wrapper });
@@ -433,7 +445,29 @@ describe("useGameSummaryPage", () => {
     expect(navigateMock).toHaveBeenCalledWith("/game/77");
   });
 
-  it("should keep the pending flag true while startRematch runs and false after completion", async () => {
+  // #100: the next route's loader runs after the navigation, and the summary stays on screen
+  // until it ends, so a tap in that window must not start a second mutation.
+  it.each(SUMMARY_ACTIONS)(
+    "should run no other summary action after $action has succeeded",
+    async ({ run }) => {
+      const { result } = renderSummaryHook();
+
+      await act(async () => {
+        await run(result.current);
+      });
+      for (const other of SUMMARY_ACTIONS) {
+        await act(async () => {
+          await other.run(result.current);
+        });
+      }
+
+      expect(countSummaryRequests()).toBe(1);
+      expect(navigateMock).toHaveBeenCalledTimes(1);
+      expect(result.current.pending).toBe(true);
+    },
+  );
+
+  it("should keep the pending flag true while startRematch runs and after it succeeds", async () => {
     let resolveStartRematch:
       | ((value: {
           success: boolean;
@@ -474,7 +508,7 @@ describe("useGameSummaryPage", () => {
       await callPromise;
     });
 
-    expect(result.current.pending).toBe(false);
+    expect(result.current.pending).toBe(true);
   });
 
   it("should not navigate when rematch response misses game id", async () => {
@@ -725,6 +759,26 @@ describe("useGameSummaryPage", () => {
         });
 
         expect(navigateMock).toHaveBeenCalledWith("/game/57", { replace: true });
+      },
+    );
+
+    // The server refuses every change to this game, and the page moves away from it.
+    it.each(SUMMARY_ACTIONS)(
+      "should run no other summary action after $action got a 409",
+      async ({ run }) => {
+        const { result } = renderSummaryHook();
+
+        await act(async () => {
+          await run(result.current);
+        });
+        for (const other of SUMMARY_ACTIONS) {
+          await act(async () => {
+            await other.run(result.current);
+          });
+        }
+
+        expect(countSummaryRequests()).toBe(1);
+        expect(result.current.pending).toBe(true);
       },
     );
 

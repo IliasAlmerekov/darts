@@ -27,7 +27,10 @@ interface UseGameSummaryPageResult extends FinishedGameStandings {
   leaving: boolean;
   settings: SummarySettings;
   loadSettings: () => Promise<void>;
-  /** Undo, Play Again or Back To Start runs; the other actions wait for it (#100). */
+  /**
+   * Undo, Play Again or Back To Start runs, or one has succeeded and the page is moving away.
+   * The other actions wait for it (#100).
+   */
   pending: boolean;
   loadSummary: () => Promise<void>;
   handleUndo: () => Promise<void>;
@@ -194,6 +197,9 @@ export function useGameSummaryPage(): UseGameSummaryPageResult {
     [client, finishedGameIdFromRoute],
   );
 
+  // The lock stays taken after a success and after a 409 GAME_NOT_NEWEST: the summary stays on
+  // screen while the page moves away, and a tap in that time must not start a second mutation.
+  // Any other failure releases it, so the player can try again.
   const lockAction = useCallback((): boolean => {
     if (actionInFlightRef.current) return false;
     actionInFlightRef.current = true;
@@ -232,10 +238,9 @@ export function useGameSummaryPage(): UseGameSummaryPageResult {
           context: { finishedGameId: finishedGameIdFromRoute },
           error: err,
         });
+        unlockAction();
       }
       setActionError(toUserErrorMessage(err, "Could not reopen game and undo throw."));
-    } finally {
-      unlockAction();
     }
   }, [
     finishedGameIdFromRoute,
@@ -274,10 +279,9 @@ export function useGameSummaryPage(): UseGameSummaryPageResult {
           context: { finishedGameId: finishedGameIdFromRoute },
           error: err,
         });
+        unlockAction();
       }
       setActionError(toUserErrorMessage(err, "Could not start a rematch."));
-    } finally {
-      unlockAction();
     }
   }, [
     finishedGameIdFromRoute,
@@ -312,10 +316,9 @@ export function useGameSummaryPage(): UseGameSummaryPageResult {
           context: { finishedGameId: finishedGameIdFromRoute },
           error: err,
         });
+        unlockAction();
       }
       setActionError(toUserErrorMessage(err, "Could not return to start."));
-    } finally {
-      unlockAction();
     }
   }, [
     finishedGameIdFromRoute,
