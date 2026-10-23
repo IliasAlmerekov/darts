@@ -11,7 +11,7 @@ type GameSummaryHookMockResult = {
   leaving: boolean;
   settings: SummarySettings;
   loadSettings: () => Promise<void>;
-  pending: boolean;
+  isActionPending: boolean;
   podiumData: WinnerPlayerProps[];
   standings: WinnerPlayerProps[];
   leaderBoardList: WinnerPlayerProps[];
@@ -28,7 +28,7 @@ const buildSummaryHookMockResult = (
   leaving: false,
   settings: { status: "ready", startScore: 301 },
   loadSettings: vi.fn(async () => {}),
-  pending: false,
+  isActionPending: false,
   podiumData: [],
   standings: [],
   leaderBoardList: [],
@@ -118,7 +118,7 @@ describe("GameSummaryPage", () => {
   });
 
   it("should disable every summary action while one is pending", () => {
-    useGameSummaryPageMock.mockReturnValue(buildSummaryHookMockResult({ pending: true }));
+    useGameSummaryPageMock.mockReturnValue(buildSummaryHookMockResult({ isActionPending: true }));
 
     render(<GameSummaryPage />);
 
@@ -128,7 +128,7 @@ describe("GameSummaryPage", () => {
   });
 
   it("should enable every summary action when none is pending", () => {
-    useGameSummaryPageMock.mockReturnValue(buildSummaryHookMockResult({ pending: false }));
+    useGameSummaryPageMock.mockReturnValue(buildSummaryHookMockResult({ isActionPending: false }));
 
     render(<GameSummaryPage />);
 

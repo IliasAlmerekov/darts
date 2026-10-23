@@ -307,7 +307,7 @@ describe("useGameSummaryPage", () => {
     expect(undoLastThrowMock).toHaveBeenCalledTimes(1);
     expect(startRematchMock).not.toHaveBeenCalled();
     expect(createRematchGameMock).not.toHaveBeenCalled();
-    expect(result.current.pending).toBe(true);
+    expect(result.current.isActionPending).toBe(true);
   });
 
   // #100: every pair of competing taps, the second while the first request still waits.
@@ -343,7 +343,7 @@ describe("useGameSummaryPage", () => {
     await act(async () => {
       await result.current.handleUndo();
     });
-    expect(result.current.pending).toBe(false);
+    expect(result.current.isActionPending).toBe(false);
 
     await act(async () => {
       await result.current.handleBackToStart();
@@ -500,11 +500,11 @@ describe("useGameSummaryPage", () => {
 
       expect(countSummaryRequests()).toBe(1);
       expect(navigateMock).toHaveBeenCalledTimes(1);
-      expect(result.current.pending).toBe(true);
+      expect(result.current.isActionPending).toBe(true);
     },
   );
 
-  it("should keep the pending flag true while startRematch runs and after it succeeds", async () => {
+  it("should keep isActionPending true while startRematch runs and after it succeeds", async () => {
     let resolveStartRematch:
       | ((value: {
           success: boolean;
@@ -527,7 +527,7 @@ describe("useGameSummaryPage", () => {
       callPromise = result.current.handlePlayAgain();
     });
 
-    expect(result.current.pending).toBe(true);
+    expect(result.current.isActionPending).toBe(true);
 
     await act(async () => {
       if (resolveStartRematch === null || callPromise === null) {
@@ -545,7 +545,7 @@ describe("useGameSummaryPage", () => {
       await callPromise;
     });
 
-    expect(result.current.pending).toBe(true);
+    expect(result.current.isActionPending).toBe(true);
   });
 
   it("should not navigate when rematch response misses game id", async () => {
@@ -815,7 +815,7 @@ describe("useGameSummaryPage", () => {
         }
 
         expect(countSummaryRequests()).toBe(1);
-        expect(result.current.pending).toBe(true);
+        expect(result.current.isActionPending).toBe(true);
       },
     );
 

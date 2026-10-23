@@ -31,7 +31,7 @@ interface UseGameSummaryPageResult extends FinishedGameStandings {
    * Undo, Play Again or Back To Start runs, or one has succeeded and the page is moving away.
    * The other actions wait for it (#100).
    */
-  pending: boolean;
+  isActionPending: boolean;
   loadSummary: () => Promise<void>;
   handleUndo: () => Promise<void>;
   handlePlayAgain: () => Promise<void>;
@@ -85,7 +85,7 @@ export function useGameSummaryPage(): UseGameSummaryPageResult {
     gameId: number | null;
     message: string;
   } | null>(null);
-  const [pending, setPending] = useState<boolean>(false);
+  const [isActionPending, setIsActionPending] = useState<boolean>(false);
   const [releasedGameId, setReleasedGameId] = useState<number | null>(null);
   // Synchronous, so a second tap before the next render finds the lock taken.
   const actionInFlightRef = useRef<boolean>(false);
@@ -203,13 +203,13 @@ export function useGameSummaryPage(): UseGameSummaryPageResult {
   const lockAction = useCallback((): boolean => {
     if (actionInFlightRef.current) return false;
     actionInFlightRef.current = true;
-    setPending(true);
+    setIsActionPending(true);
     return true;
   }, []);
 
   const unlockAction = useCallback((): void => {
     actionInFlightRef.current = false;
-    setPending(false);
+    setIsActionPending(false);
   }, []);
 
   const { standings, podiumData, leaderBoardList } = useMemo(
@@ -335,7 +335,7 @@ export function useGameSummaryPage(): UseGameSummaryPageResult {
     leaving: leavePath !== null,
     settings,
     loadSettings,
-    pending,
+    isActionPending,
     podiumData,
     standings,
     leaderBoardList,
