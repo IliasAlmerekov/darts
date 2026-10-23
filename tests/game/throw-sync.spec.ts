@@ -157,7 +157,6 @@ test.describe("Throw sync on the game page", () => {
   test("ignores a throw response of the previous game after the next game opens", async ({
     page,
   }) => {
-    test.fail();
     await mockAdminSession(page);
     const answerTabletGame = await mockTabletGame(page, startedTabletGame(1));
     await mockGameState(page, 1, gameState(1, playerScores(301, 301)));
@@ -192,7 +191,6 @@ test.describe("Throw sync on the game page", () => {
   test("changes the scoreboard within 200 ms per tap while the backend takes 1500 ms", async ({
     page,
   }) => {
-    test.fail();
     const gameId = 1;
     const delayMs = 1500;
     const acks = [playerScores(281, 301), playerScores(261, 301), playerScores(241, 301, "Bob")];

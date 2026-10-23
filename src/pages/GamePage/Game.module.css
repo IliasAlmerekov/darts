@@ -105,6 +105,23 @@
   align-self: flex-end;
 }
 
+.syncStatus {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-sm);
+}
+
+.syncStatus:empty {
+  display: none;
+}
+
+.syncMessage {
+  margin: 0;
+  text-align: center;
+}
+
 .gamePage {
   display: flex;
   flex-direction: column;
