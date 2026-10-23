@@ -10,12 +10,14 @@ import type { GameThrowsResponse } from "@/types";
 import { shouldAutoFinishGame, shouldNavigateToSummary } from "./lib/gameLogic.helpers";
 
 interface UseGameSummaryNavigationOptions {
+  canFinish: boolean;
   gameData: GameThrowsResponse | null;
   gameId: number | null;
   navigate: (to: string, options?: { state?: { finishedGameId: number } }) => void;
 }
 
 interface UseAutoFinishGameOptions {
+  canFinish: boolean;
   gameData: GameThrowsResponse | null;
   gameId: number | null;
   navigate: (to: string, options?: { state?: { finishedGameId: number } }) => void;
@@ -43,19 +45,23 @@ export function useInteractionSoundUnlock(): void {
   }, []);
 }
 
+// Both hooks wait for `canFinish`: leaving the page drops the throws the server has not
+// acknowledged yet, and a rejected winning throw must not finish the game (#96).
 export function useGameSummaryNavigation({
+  canFinish,
   gameData,
   gameId,
   navigate,
 }: UseGameSummaryNavigationOptions): void {
   useEffect(() => {
-    if (gameId !== null && shouldNavigateToSummary(gameData, gameId)) {
+    if (canFinish && gameId !== null && shouldNavigateToSummary(gameData, gameId)) {
       navigate(ROUTES.summary(gameId), { state: { finishedGameId: gameId } });
     }
-  }, [gameData, gameId, navigate]);
+  }, [canFinish, gameData, gameId, navigate]);
 }
 
 export function useAutoFinishGame({
+  canFinish,
   gameData,
   gameId,
   navigate,
@@ -65,7 +71,7 @@ export function useAutoFinishGame({
   const isAutoFinishingRef = useRef(false);
 
   useEffect(() => {
-    if (gameId === null || !shouldAutoFinishGame(gameData, shouldShowFinishOverlay)) {
+    if (!canFinish || gameId === null || !shouldAutoFinishGame(gameData, shouldShowFinishOverlay)) {
       return;
     }
 
@@ -106,5 +112,5 @@ export function useAutoFinishGame({
       controller.abort();
       isAutoFinishingRef.current = false;
     };
-  }, [gameData, gameId, navigate, setPageError, shouldShowFinishOverlay]);
+  }, [canFinish, gameData, gameId, navigate, setPageError, shouldShowFinishOverlay]);
 }

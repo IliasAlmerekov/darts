@@ -11,7 +11,7 @@ type GameSummaryHookMockResult = {
   leaving: boolean;
   settings: SummarySettings;
   loadSettings: () => Promise<void>;
-  starting: boolean;
+  pending: boolean;
   podiumData: WinnerPlayerProps[];
   standings: WinnerPlayerProps[];
   leaderBoardList: WinnerPlayerProps[];
@@ -28,7 +28,7 @@ const buildSummaryHookMockResult = (
   leaving: false,
   settings: { status: "ready", startScore: 301 },
   loadSettings: vi.fn(async () => {}),
-  starting: false,
+  pending: false,
   podiumData: [],
   standings: [],
   leaderBoardList: [],
@@ -117,21 +117,23 @@ describe("GameSummaryPage", () => {
     }
   });
 
-  it("should disable Play Again button when startGame is pending", () => {
-    useGameSummaryPageMock.mockReturnValue(buildSummaryHookMockResult({ starting: true }));
+  it("should disable Undo and Rematch while a summary action is pending", () => {
+    useGameSummaryPageMock.mockReturnValue(buildSummaryHookMockResult({ pending: true }));
 
     render(<GameSummaryPage />);
 
-    const playAgainButton = screen.getByRole("button", { name: "Play Again" });
-    expect(playAgainButton.hasAttribute("disabled")).toBe(true);
+    for (const name of ["Return to game", "Play Again", "Back To Start"]) {
+      expect(screen.getByRole("button", { name }).hasAttribute("disabled")).toBe(true);
+    }
   });
 
-  it("should enable Play Again button when rematch start is not pending", () => {
-    useGameSummaryPageMock.mockReturnValue(buildSummaryHookMockResult({ starting: false }));
+  it("should enable Undo and Rematch when no summary action is pending", () => {
+    useGameSummaryPageMock.mockReturnValue(buildSummaryHookMockResult({ pending: false }));
 
     render(<GameSummaryPage />);
 
-    const playAgainButton = screen.getByRole("button", { name: "Play Again" });
-    expect(playAgainButton.hasAttribute("disabled")).toBe(false);
+    for (const name of ["Return to game", "Play Again", "Back To Start"]) {
+      expect(screen.getByRole("button", { name }).hasAttribute("disabled")).toBe(false);
+    }
   });
 });

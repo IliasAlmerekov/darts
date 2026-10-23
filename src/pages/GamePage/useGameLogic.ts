@@ -126,8 +126,9 @@ export function useGameLogic(): UseGameLogicResult {
       setPageError,
     });
 
-  useGameSummaryNavigation({ gameData, gameId, navigate });
+  useGameSummaryNavigation({ canFinish: view.canFinish, gameData, gameId, navigate });
   useAutoFinishGame({
+    canFinish: view.canFinish,
     gameData,
     gameId,
     navigate,

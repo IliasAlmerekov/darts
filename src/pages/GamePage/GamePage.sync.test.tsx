@@ -160,7 +160,7 @@ describe("GamePage throw sync", () => {
   });
 
   // #96
-  it.fails("finishes the game only after the server acknowledges the winning throw", async () => {
+  it("finishes the game only after the server acknowledges the winning throw", async () => {
     const winningThrow = createDeferred<ThrowAckResponse>();
     recordThrowMock.mockReturnValueOnce(winningThrow.promise);
     getGameThrowsMock.mockResolvedValue(buildGame({ alice: 19, bob: 301 }));
@@ -180,6 +180,30 @@ describe("GamePage throw sync", () => {
     });
     expect(finishGameMock).not.toHaveBeenCalled();
   });
+
+  // #96
+  it("finishes the game once and opens the summary after the winning throw ack", async () => {
+    const winningThrow = createDeferred<ThrowAckResponse>();
+    recordThrowMock.mockReturnValueOnce(winningThrow.promise);
+    await openGame(buildGame({ alice: 19, bob: 301 }));
+
+    tap("19");
+    await waitFor(() => {
+      expect(recordThrowMock).toHaveBeenCalledTimes(1);
+    });
+    expect(finishGameMock).not.toHaveBeenCalled();
+
+    const ack = buildThrowAck({ alice: 0, bob: 301 });
+    ack.scoreboardDelta.changedPlayers = [
+      { playerId: 1, name: "Alice", score: 0, isActive: false, isGuest: false, position: 1 },
+      { playerId: 2, name: "Bob", score: 301, isActive: true, isGuest: false },
+    ];
+    winningThrow.resolve(ack);
+
+    expect(await screen.findByText("Summary page")).toBeTruthy();
+    expect(finishGameMock).toHaveBeenCalledTimes(1);
+  });
+
   it("rolls back the next player's throws when a throw of the previous player is rejected", async () => {
     const firstThrow = createDeferred<ThrowAckResponse>();
     recordThrowMock.mockReturnValueOnce(firstThrow.promise);
@@ -298,6 +322,19 @@ describe("GamePage throw sync", () => {
 
     expect(screen.getByRole("button", { name: "20" }).hasAttribute("disabled")).toBe(false);
     expect(screen.getByRole("button", { name: "Undo" }).hasAttribute("disabled")).toBe(false);
+  });
+
+  // The summary's Undo reopens the game on the server and leaves the finished copy in the store.
+  it("loads a game the summary reopened instead of returning to the summary", async () => {
+    setGameData({ ...buildGame({ alice: 0, bob: 40 }), status: "finished", winnerId: 1 });
+    getGameThrowsIfChangedMock.mockResolvedValue(buildGame({ alice: 20, bob: 40 }));
+    renderGamePage();
+
+    await waitFor(() => {
+      expect(within(playerCard("Alice")).getByText("20")).toBeTruthy();
+    });
+    expect(screen.queryByText("Summary page")).toBeNull();
+    expect(finishGameMock).not.toHaveBeenCalled();
   });
 
   it("keeps the sync status region on the page while idle and puts the failure in it", async () => {

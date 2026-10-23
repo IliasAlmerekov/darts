@@ -164,6 +164,7 @@ describe("gameSession.logic", () => {
 
   it("reports idle without pending requests", () => {
     expect(getSessionView(createGameSession(buildGame({ alice: 301, bob: 301 })))).toEqual({
+      canFinish: true,
       canRetry: false,
       canThrow: true,
       canUndo: true,
@@ -350,6 +351,7 @@ describe("gameSession.logic", () => {
     );
 
     expect(getSessionView(offline)).toEqual({
+      canFinish: false,
       canRetry: true,
       canThrow: false,
       canUndo: false,

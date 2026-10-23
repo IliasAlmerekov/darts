@@ -219,8 +219,10 @@ export function useGameSession(gameId: number | null): UseGameSessionReturn {
     const controller = new AbortController();
     controllerRef.current = controller;
 
+    // A finished copy is stale once the summary's Undo has reopened the game, and showing it
+    // would send the page straight back to the summary.
     const cached = $gameData.get();
-    const hasCachedGame = gameId !== null && cached?.id === gameId;
+    const hasCachedGame = gameId !== null && cached?.id === gameId && cached.status !== "finished";
     sessionAtom.set(createGameSession(hasCachedGame ? cached : null));
     if (!hasCachedGame) {
       resetGameStore();

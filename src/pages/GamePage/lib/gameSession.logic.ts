@@ -43,6 +43,8 @@ export interface GameSessionView {
   canThrow: boolean;
   canUndo: boolean;
   canRetry: boolean;
+  /** The server has acknowledged every tap, so a finished scoreboard may be finished on it. */
+  canFinish: boolean;
   isQueueFull: boolean;
 }
 
@@ -90,6 +92,7 @@ export function getSessionView(session: GameSession): GameSessionView {
     canThrow: !isBlocked && !isQueueFull && shown?.status === "started",
     canUndo: !isBlocked && shown !== null,
     canRetry: session.recovery === "offline",
+    canFinish: !isBlocked && session.pending.length === 0 && shown !== null,
     isQueueFull,
   };
 }

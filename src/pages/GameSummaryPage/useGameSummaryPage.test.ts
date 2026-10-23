@@ -10,14 +10,13 @@ import { gameQueries } from "@/shared/query/game.queries";
 import { ApiError } from "@/shared/api";
 import { gameSummaryLoader, useGameSummaryPage } from "./useGameSummaryPage";
 import { playSound } from "@/shared/services/browser/soundPlayer";
-import type { GameThrowsResponse, ScoreboardDelta, UndoAckResponse } from "@/types";
+import type { GameThrowsResponse, UndoAckResponse } from "@/types";
 import {
   buildExpectedPodiumPlaceholder,
   buildExpectedStandings,
   buildFinishedPlayerResponses,
   buildGameSettingsResponse,
 } from "@/shared/types/game.test-support";
-import { applyGameScoreboardDelta } from "@/shared/lib/game/gameStateNormalizer";
 
 const navigateMock = vi.fn();
 const getFinishedGameMock = vi.fn();
@@ -29,7 +28,6 @@ const undoLastThrowMock = vi.fn();
 const getTabletGameMock = vi.fn();
 const setCurrentGameIdMock = vi.fn();
 const setGameDataMock = vi.fn();
-const setGameScoreboardDeltaMock = vi.fn();
 const setInvitationMock = vi.fn();
 const resetRoomStoreMock = vi.fn();
 
@@ -66,7 +64,6 @@ vi.mock("@/shared/store", async (importOriginal) => {
     },
     setCurrentGameId: (...args: unknown[]) => setCurrentGameIdMock(...args),
     setGameData: (...args: unknown[]) => setGameDataMock(...args),
-    setGameScoreboardDelta: (...args: unknown[]) => setGameScoreboardDeltaMock(...args),
     setInvitation: (...args: unknown[]) => setInvitationMock(...args),
     resetRoomStore: (...args: unknown[]) => resetRoomStoreMock(...args),
   };
@@ -213,7 +210,6 @@ describe("useGameSummaryPage", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     setGameDataMock.mockReset();
-    setGameScoreboardDeltaMock.mockReset();
     setCurrentGameIdMock.mockReset();
     setInvitationMock.mockReset();
     resetRoomStoreMock.mockReset();
@@ -245,116 +241,32 @@ describe("useGameSummaryPage", () => {
     setGameDataMock.mockImplementation((nextState: GameThrowsResponse | null) => {
       currentGameState = nextState;
     });
-    setGameScoreboardDeltaMock.mockImplementation((scoreboardDelta: ScoreboardDelta) => {
-      if (!currentGameState) {
-        return;
-      }
-
-      currentGameState = applyGameScoreboardDelta(currentGameState, scoreboardDelta);
-    });
   });
 
-  it("should undo last throw and navigate back to game route when compact ack response is returned", async () => {
-    undoLastThrowMock.mockResolvedValueOnce(
-      buildUndoAck({
-        scoreboardDelta: {
-          changedPlayers: [
-            {
-              playerId: 1,
-              name: "Alice",
-              score: 20,
-              position: null,
-              isActive: true,
-              isGuest: false,
-              isBust: false,
-            },
-          ],
-          winnerId: null,
-          status: "started",
-          currentRound: 7,
-        },
-      }),
-    );
+  // #123: the game page owns the game state, so it reads the reopened game from the server.
+  it.each([
+    { response: "compact ack", undoResponse: () => buildUndoAck() },
+    { response: "full game", undoResponse: () => buildStartedGameState() },
+  ])(
+    "should undo on the server and open the game without writing the game store ($response)",
+    async ({ undoResponse }) => {
+      undoLastThrowMock.mockResolvedValueOnce(undoResponse());
 
-    const { result } = renderSummaryHook();
+      const { result } = renderSummaryHook();
 
-    await act(async () => {
-      await result.current.handleUndo();
-    });
+      await act(async () => {
+        await result.current.handleUndo();
+      });
 
-    expect(undoLastThrowMock).toHaveBeenCalledWith(42);
-    expect(setGameDataMock).toHaveBeenCalledWith(
-      expect.objectContaining({
-        id: 42,
-        status: "started",
-      }),
-    );
-    expect(setGameScoreboardDeltaMock).toHaveBeenCalledWith(
-      expect.objectContaining({
-        currentRound: 7,
-        status: "started",
-      }),
-      42,
-    );
-    expect(getGameThrowsMock).not.toHaveBeenCalledWith(42);
-    expect(playSound).toHaveBeenCalledWith("undo");
-    expect(navigateMock).toHaveBeenCalledWith("/game/42", {
-      state: { skipFinishOverlay: true },
-    });
-  });
-
-  it("should keep supporting legacy full undo response when backend does not return compact ack", async () => {
-    const legacyGameState = buildStartedGameState();
-    undoLastThrowMock.mockResolvedValueOnce(legacyGameState);
-
-    const { result } = renderSummaryHook();
-
-    await act(async () => {
-      await result.current.handleUndo();
-    });
-
-    expect(setGameScoreboardDeltaMock).not.toHaveBeenCalled();
-    expect(setGameDataMock).toHaveBeenCalledWith(legacyGameState);
-    expect(navigateMock).toHaveBeenCalledWith("/game/42", {
-      state: { skipFinishOverlay: true },
-    });
-  });
-
-  it("should refresh full game state when compact undo cannot be applied locally", async () => {
-    currentGameState = null;
-    const refreshedGameState = buildStartedGameState();
-    undoLastThrowMock.mockResolvedValueOnce(
-      buildUndoAck({
-        scoreboardDelta: {
-          changedPlayers: [
-            {
-              playerId: 1,
-              name: "Alice",
-              score: 20,
-              position: null,
-              isActive: true,
-              isGuest: false,
-              isBust: false,
-            },
-          ],
-          winnerId: null,
-          status: "started",
-          currentRound: 7,
-        },
-      }),
-    );
-    getGameThrowsMock.mockResolvedValueOnce(refreshedGameState);
-
-    const { result } = renderSummaryHook();
-
-    await act(async () => {
-      await result.current.handleUndo();
-    });
-
-    expect(setGameScoreboardDeltaMock).toHaveBeenCalledWith(expect.any(Object), 42);
-    expect(getGameThrowsMock).toHaveBeenCalledWith(42);
-    expect(setGameDataMock).toHaveBeenCalledWith(refreshedGameState);
-  });
+      expect(undoLastThrowMock).toHaveBeenCalledWith(42);
+      expect(setGameDataMock).not.toHaveBeenCalled();
+      expect(getGameThrowsMock).not.toHaveBeenCalled();
+      expect(playSound).toHaveBeenCalledWith("undo");
+      expect(navigateMock).toHaveBeenCalledWith("/game/42", {
+        state: { skipFinishOverlay: true },
+      });
+    },
+  );
 
   it("should not navigate when undo request fails", async () => {
     undoLastThrowMock.mockRejectedValueOnce(new Error("undo failed"));
@@ -366,8 +278,41 @@ describe("useGameSummaryPage", () => {
     });
 
     expect(undoLastThrowMock).toHaveBeenCalledWith(42);
-    expect(setGameScoreboardDeltaMock).not.toHaveBeenCalled();
     expect(navigateMock).not.toHaveBeenCalledWith("/game/42");
+  });
+
+  // #100
+  it("should run no other summary action while Undo is pending, even in the same tick", async () => {
+    undoLastThrowMock.mockReturnValue(new Promise(() => {}));
+    const { result } = renderSummaryHook();
+
+    await act(async () => {
+      void result.current.handleUndo();
+      void result.current.handleUndo();
+      void result.current.handlePlayAgain();
+      void result.current.handleBackToStart();
+    });
+
+    expect(undoLastThrowMock).toHaveBeenCalledTimes(1);
+    expect(startRematchMock).not.toHaveBeenCalled();
+    expect(createRematchGameMock).not.toHaveBeenCalled();
+    expect(result.current.pending).toBe(true);
+  });
+
+  it("should allow another summary action once Undo has failed", async () => {
+    undoLastThrowMock.mockRejectedValueOnce(new Error("undo failed"));
+    const { result } = renderSummaryHook();
+
+    await act(async () => {
+      await result.current.handleUndo();
+    });
+    expect(result.current.pending).toBe(false);
+
+    await act(async () => {
+      await result.current.handleBackToStart();
+    });
+
+    expect(createRematchGameMock).toHaveBeenCalledWith(42);
   });
 
   it("should navigate to game route when startRematch resolves successfully", async () => {
@@ -500,7 +445,7 @@ describe("useGameSummaryPage", () => {
     expect(navigateMock).toHaveBeenCalledWith("/game/77");
   });
 
-  it("should keep starting flag true when startRematch is pending and false after completion", async () => {
+  it("should keep the pending flag true while startRematch runs and false after completion", async () => {
     let resolveStartRematch:
       | ((value: {
           success: boolean;
@@ -523,7 +468,7 @@ describe("useGameSummaryPage", () => {
       callPromise = result.current.handlePlayAgain();
     });
 
-    expect(result.current.starting).toBe(true);
+    expect(result.current.pending).toBe(true);
 
     await act(async () => {
       if (resolveStartRematch === null || callPromise === null) {
@@ -541,7 +486,7 @@ describe("useGameSummaryPage", () => {
       await callPromise;
     });
 
-    expect(result.current.starting).toBe(false);
+    expect(result.current.pending).toBe(false);
   });
 
   it("should not navigate when rematch response misses game id", async () => {
