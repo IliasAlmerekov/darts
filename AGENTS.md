@@ -1,6 +1,6 @@
 # Darts App (frontend)
 
-PWA darts game: rooms, SSE lobby player list, player statistics. React 18, TypeScript, Vite,
+PWA darts game: rooms, SSE lobby player list, player statistics. React 19, TypeScript, Vite,
 Nanostores, CSS Modules. The backend is a separate repository, checked out next to this one
 in `../dartsapp-backend`.
 
