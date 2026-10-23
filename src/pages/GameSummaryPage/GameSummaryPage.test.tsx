@@ -96,6 +96,8 @@ describe("GameSummaryPage", () => {
     useGameSummaryPageMock.mockReturnValue(
       buildSummaryHookMockResult({
         error: "This game can no longer be changed.",
+        // The hook keeps the action lock while the page moves away.
+        isActionPending: true,
         leaving: true,
       }),
     );
@@ -105,16 +107,6 @@ describe("GameSummaryPage", () => {
     expect(screen.getByRole("alert")).toBeTruthy();
     expect(screen.getByText("This game can no longer be changed.")).toBeTruthy();
     expect(screen.queryByRole("button", { name: "Retry" })).toBeNull();
-  });
-
-  it("should disable Undo and Rematch while the page moves away", () => {
-    useGameSummaryPageMock.mockReturnValue(buildSummaryHookMockResult({ leaving: true }));
-
-    render(<GameSummaryPage />);
-
-    for (const name of ["Return to game", "Play Again", "Back To Start"]) {
-      expect(screen.getByRole("button", { name }).hasAttribute("disabled")).toBe(true);
-    }
   });
 
   it("should disable every summary action while one is pending", () => {

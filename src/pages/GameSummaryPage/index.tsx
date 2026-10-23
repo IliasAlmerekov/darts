@@ -59,7 +59,7 @@ function GameSummaryPage(): React.JSX.Element {
             void handleUndo();
           }}
           className={styles.undoButton}
-          disabled={isActionPending || leaving}
+          disabled={isActionPending}
           aria-label="Return to game"
         >
           <img src={Undo} alt="" />
@@ -90,7 +90,7 @@ function GameSummaryPage(): React.JSX.Element {
             label="Play Again"
             type="primary"
             isInverted
-            disabled={isActionPending || leaving}
+            disabled={isActionPending}
             handleClick={handlePlayAgain}
             {...summaryActionButtonProps}
           />
@@ -99,7 +99,7 @@ function GameSummaryPage(): React.JSX.Element {
           <Button
             label="Back To Start"
             type="primary"
-            disabled={isActionPending || leaving}
+            disabled={isActionPending}
             handleClick={handleBackToStart}
             {...summaryActionButtonProps}
           />

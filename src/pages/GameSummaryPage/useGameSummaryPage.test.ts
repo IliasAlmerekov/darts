@@ -794,6 +794,8 @@ describe("useGameSummaryPage", () => {
 
         expect(result.current.error).toBe("This game can no longer be changed.");
         expect(result.current.leaving).toBe(true);
+        // The page disables its actions through this lock alone while it moves away.
+        expect(result.current.isActionPending).toBe(true);
         expect(navigateMock).not.toHaveBeenCalled();
 
         act(() => {
