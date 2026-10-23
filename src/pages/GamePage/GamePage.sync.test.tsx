@@ -447,7 +447,9 @@ describe("GamePage throw sync", () => {
     renderGamePage();
 
     const retryButton = await screen.findByRole("button", { name: "Retry" });
-    expect(screen.getByRole("status").textContent).toMatch(/not saved/i);
+    // No tap was lost, so the page says the load failed instead of "not saved".
+    expect(screen.getByRole("status").textContent).toContain("Could not load the game.");
+    expect(screen.getByRole("status").textContent).not.toMatch(/not saved/i);
     expect(screen.getByRole("button", { name: "20" }).hasAttribute("disabled")).toBe(true);
 
     fireEvent.click(retryButton);

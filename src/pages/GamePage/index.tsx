@@ -160,6 +160,10 @@ function getSyncMessage(syncStatus: SyncStatus, isQueueFull: boolean): string | 
     return "Your last throws were not saved.";
   }
 
+  if (syncStatus === "loadFailed") {
+    return "Could not load the game.";
+  }
+
   return isQueueFull ? "Syncing throws…" : null;
 }
 
@@ -179,7 +183,7 @@ const KeyboardSection = React.memo(function KeyboardSection({
       <NumberButton value="Undo" handleClick={onUndo} disabled={isUndoDisabled} />
       <div role="status" className={styles.syncStatus}>
         {syncMessage !== null ? <p className={styles.syncMessage}>{syncMessage}</p> : null}
-        {syncStatus === "offline" ? (
+        {syncStatus === "offline" || syncStatus === "loadFailed" ? (
           <Button label="Retry" handleClick={onRetry} type="secondary" />
         ) : null}
       </div>

@@ -377,7 +377,7 @@ describe("gameSession.logic", () => {
       canRetry: true,
       canThrow: false,
       canUndo: false,
-      status: "offline",
+      status: "loadFailed",
     });
     expect(getSessionView(retrySession(loadFailed))).toMatchObject({
       canRetry: false,

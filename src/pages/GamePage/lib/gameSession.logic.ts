@@ -38,7 +38,12 @@ export interface GameSession {
   recovery: Recovery;
 }
 
-export type SyncStatus = "idle" | "syncing" | "failed" | "offline";
+/**
+ * `failed` and `offline` follow a rejected request, so throws were lost. `loadFailed` follows a
+ * failed first load over a cached game, which lost no tap. `offline` and `loadFailed` wait for
+ * Retry.
+ */
+export type SyncStatus = "idle" | "syncing" | "failed" | "offline" | "loadFailed";
 
 export interface GameSessionView {
   status: SyncStatus;
@@ -82,8 +87,8 @@ export function getSessionView(session: GameSession): GameSessionView {
   const shown = getShownGame(session);
 
   let status: SyncStatus = "idle";
-  if (isWaitingForRetry) {
-    status = "offline";
+  if (session.recovery === "offline" || session.recovery === "loadFailed") {
+    status = session.recovery;
   } else if (session.pending.length > 0 || session.recovery === "reloading") {
     status = "syncing";
   } else if (session.recovery === "failed") {
