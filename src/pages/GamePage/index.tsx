@@ -19,6 +19,7 @@ import styles from "./Game.module.css";
 
 const DEFAULT_START_SCORE = 301;
 import SettingsOverlay from "./components/SettingsOverlay";
+import type { SyncStatus } from "./lib/gameSession.logic";
 import { useGameLogic } from "./useGameLogic";
 
 interface OverlaysSectionProps {
@@ -31,7 +32,7 @@ interface OverlaysSectionProps {
   initialDoubleOut: boolean;
   initialTripleOut: boolean;
   handleContinueGame: () => void;
-  handleUndoFromOverlay: () => Promise<void>;
+  handleUndoFromOverlay: () => void;
   handleCloseExitOverlay: () => void;
   handleExitGame: () => Promise<void>;
   handleCloseSettings: () => void;
@@ -145,21 +146,43 @@ const HeaderSection = React.memo(function HeaderSection({
 });
 
 interface KeyboardSectionProps {
-  onUndo: () => Promise<void>;
-  onThrow: (value: string | number) => Promise<void>;
+  onUndo: () => void;
+  onThrow: (value: string | number) => void;
+  onRetry: () => void;
   isUndoDisabled: boolean;
   isInteractionDisabled: boolean;
+  isQueueFull: boolean;
+  syncStatus: SyncStatus;
+}
+
+function getSyncMessage(syncStatus: SyncStatus, isQueueFull: boolean): string | null {
+  if (syncStatus === "failed" || syncStatus === "offline") {
+    return "Your last throws were not saved.";
+  }
+
+  return isQueueFull ? "Syncing throws…" : null;
 }
 
 const KeyboardSection = React.memo(function KeyboardSection({
   onUndo,
   onThrow,
+  onRetry,
   isUndoDisabled,
   isInteractionDisabled,
+  isQueueFull,
+  syncStatus,
 }: KeyboardSectionProps): React.JSX.Element {
+  const syncMessage = getSyncMessage(syncStatus, isQueueFull);
+
   return (
     <div className={styles.keyboardAndUndo}>
       <NumberButton value="Undo" handleClick={onUndo} disabled={isUndoDisabled} />
+      <div role="status" className={styles.syncStatus}>
+        {syncMessage !== null ? <p className={styles.syncMessage}>{syncMessage}</p> : null}
+        {syncStatus === "offline" ? (
+          <Button label="Retry" handleClick={onRetry} type="secondary" />
+        ) : null}
+      </div>
       <Keyboard onThrow={onThrow} disabled={isInteractionDisabled} />
     </div>
   );
@@ -180,6 +203,9 @@ function GamePage(): React.JSX.Element {
     settingsError,
     pageError,
     isExitOverlayOpen,
+    isQueueFull,
+    syncStatus,
+    handleRetry,
     handleThrow,
     handleUndo,
     handleContinueGame,
@@ -191,7 +217,6 @@ function GamePage(): React.JSX.Element {
     handleCloseExitOverlay,
     clearPageError,
     handleExitGame,
-    refetch,
   } = useGameLogic();
 
   if (gameId === null) {
@@ -215,7 +240,7 @@ function GamePage(): React.JSX.Element {
           variant="page"
           title="Could not load game"
           message={message}
-          primaryAction={{ label: "Retry", onClick: () => void refetch() }}
+          primaryAction={{ label: "Retry", onClick: handleRetry }}
           secondaryAction={{ label: "Back to start", to: ROUTES.start() }}
         />
       </div>
@@ -268,8 +293,11 @@ function GamePage(): React.JSX.Element {
         <KeyboardSection
           onUndo={handleUndo}
           onThrow={handleThrow}
+          onRetry={handleRetry}
           isUndoDisabled={isUndoDisabled}
           isInteractionDisabled={isInteractionDisabled}
+          isQueueFull={isQueueFull}
+          syncStatus={syncStatus}
         />
       </div>
     </>

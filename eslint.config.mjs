@@ -117,9 +117,7 @@ export default [
     ignores: [
       // Tests run mappers as the real store does, so their expectations follow the mapper.
       "src/pages/**/*.test.{ts,tsx}",
-      // Existing debt: these hooks call a mapper inside an event handler.
-      "src/pages/GamePage/throws/useThrowHandler.ts",
-      "src/pages/GamePage/throws/useUndoFlow.ts",
+      // Existing debt: this hook calls a mapper inside an event handler.
       "src/pages/GameSummaryPage/useGameSummaryPage.ts",
     ],
     rules: {
@@ -149,11 +147,8 @@ export default [
   },
   {
     files: [
-      // Existing debt: these files set state synchronously in an effect.
-      // #213 removes SettingsPage.
+      // Existing debt: this file sets state synchronously in an effect. #213 removes it.
       "src/pages/SettingsPage/index.tsx",
-      // #123 removes useGamePlayersState.
-      "src/pages/GamePage/useGamePlayersState.ts",
     ],
     rules: {
       "react-hooks/set-state-in-effect": "off",

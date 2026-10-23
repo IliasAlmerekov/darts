@@ -38,8 +38,8 @@ Each concern stays in its file above. User-facing message mapping lives only in
 
 ## Domain errors
 
-Domain-specific `Error` subclasses model control flow, not HTTP. `ThrowRejectedError` in
-`src/pages/GamePage/throws/throwErrors.ts` is the pattern:
+Domain-specific `Error` subclasses model control flow, not HTTP. The app has none today. A
+new one follows these rules:
 
 - It sits next to the flow that owns it.
 - It sets `this.name` in the constructor.

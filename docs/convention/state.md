@@ -68,7 +68,7 @@ Two read paths coexist deliberately:
 Same hook can use both:
 
 ```ts
-function useGameState({ gameId }) {
+function useGameSession(gameId) {
   const gameData = useStore($gameData); // render-driving
   useEffect(() => {
     if ($gameData.get()?.id !== gameId) resetGameStore(); // imperative compare

@@ -44,7 +44,7 @@ not used.
   (`useStatisticsPrefetch.ts`).
 - **Return shape:** a hook that returns more than one value declares
   `interface Use<Name>Return { ... }` and annotates its return type with it
-  (`src/pages/GamePage/throws/useThrowQueue.ts`).
+  (`src/pages/GamePage/useGameSession.ts`).
 - **Pure helpers belong in `lib/`.** A `use*` file holds hooks; a pure function moves to
   the page's `lib/` or `src/shared/lib/`.
 

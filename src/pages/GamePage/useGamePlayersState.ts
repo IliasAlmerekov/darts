@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import type { GameThrowsResponse, UIPlayer } from "@/types";
 import {
   appendDismissedPlayerIds,
@@ -10,18 +10,26 @@ interface UseGamePlayersStateOptions {
   error: Error | null;
   gameData: GameThrowsResponse | null;
   gameId: number | null;
-  handleUndo: () => Promise<void>;
+  handleUndo: () => void;
   isLoading: boolean;
-  isUndoPending: boolean;
+  canThrow: boolean;
+  canUndo: boolean;
   skipFinishOverlay: boolean;
 }
+
+interface DismissedPlayers {
+  gameId: number | null;
+  ids: number[];
+}
+
+const NO_DISMISSED_PLAYERS: number[] = [];
 
 interface UseGamePlayersStateResult {
   activePlayer: GameThrowsResponse["players"][number] | null;
   activePlayers: UIPlayer[];
   finishedPlayers: UIPlayer[];
   handleContinueGame: () => void;
-  handleUndoFromOverlay: () => Promise<void>;
+  handleUndoFromOverlay: () => void;
   isInteractionDisabled: boolean;
   isUndoDisabled: boolean;
   shouldShowFinishOverlay: boolean;
@@ -33,10 +41,14 @@ export function useGamePlayersState({
   gameId,
   handleUndo,
   isLoading,
-  isUndoPending,
+  canThrow,
+  canUndo,
   skipFinishOverlay,
 }: UseGamePlayersStateOptions): UseGamePlayersStateResult {
-  const [dismissedZeroScorePlayerIds, setDismissedZeroScorePlayerIds] = useState<number[]>([]);
+  const [dismissed, setDismissed] = useState<DismissedPlayers>({ gameId, ids: [] });
+  // Dismissals belong to one game, so another game starts with none.
+  const dismissedZeroScorePlayerIds =
+    dismissed.gameId === gameId ? dismissed.ids : NO_DISMISSED_PLAYERS;
 
   const {
     activePlayer,
@@ -53,40 +65,43 @@ export function useGamePlayersState({
         gameData,
         hasError: !!error,
         isLoading,
-        isUndoPending,
+        canThrow,
+        canUndo,
         skipFinishOverlay,
       }),
-    [dismissedZeroScorePlayerIds, error, gameData, isLoading, isUndoPending, skipFinishOverlay],
+    [canThrow, canUndo, dismissedZeroScorePlayerIds, error, gameData, isLoading, skipFinishOverlay],
   );
 
-  useEffect(() => {
-    setDismissedZeroScorePlayerIds((previousIds) =>
-      filterDismissedPlayerIds(previousIds, zeroScorePlayerIds),
-    );
-  }, [zeroScorePlayerIds]);
+  // A player who leaves zero through undo is no longer dismissed, so finishing again shows the
+  // overlay again. State adjusts during render, as React documents for derived resets.
+  const stillDismissedIds = filterDismissedPlayerIds(
+    dismissedZeroScorePlayerIds,
+    zeroScorePlayerIds,
+  );
+  if (stillDismissedIds !== dismissedZeroScorePlayerIds) {
+    setDismissed({ gameId, ids: stillDismissedIds });
+  }
 
-  useEffect(() => {
-    setDismissedZeroScorePlayerIds([]);
-  }, [gameId]);
+  const dismissFinishedPlayers = useCallback((): void => {
+    setDismissed((previous) => ({
+      gameId,
+      ids: appendDismissedPlayerIds(
+        previous.gameId === gameId ? previous.ids : NO_DISMISSED_PLAYERS,
+        zeroScorePlayerIds,
+      ),
+    }));
+  }, [gameId, zeroScorePlayerIds]);
 
-  const handleContinueGame = useCallback(() => {
-    setDismissedZeroScorePlayerIds((previousIds) =>
-      appendDismissedPlayerIds(previousIds, zeroScorePlayerIds),
-    );
-  }, [zeroScorePlayerIds]);
-
-  const handleUndoFromOverlay = useCallback(async (): Promise<void> => {
-    await handleUndo();
-    setDismissedZeroScorePlayerIds((previousIds) =>
-      appendDismissedPlayerIds(previousIds, zeroScorePlayerIds),
-    );
-  }, [handleUndo, zeroScorePlayerIds]);
+  const handleUndoFromOverlay = useCallback((): void => {
+    handleUndo();
+    dismissFinishedPlayers();
+  }, [dismissFinishedPlayers, handleUndo]);
 
   return {
     activePlayer,
     activePlayers,
     finishedPlayers,
-    handleContinueGame,
+    handleContinueGame: dismissFinishedPlayers,
     handleUndoFromOverlay,
     isInteractionDisabled,
     isUndoDisabled,

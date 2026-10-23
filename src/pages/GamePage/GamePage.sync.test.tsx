@@ -32,6 +32,8 @@ import {
   undoLastThrow,
   type ThrowAckResponse,
 } from "@/shared/api/game";
+import { playSound } from "@/shared/services/browser/soundPlayer";
+import { setGameData } from "@/shared/store";
 import { buildBackendPlayer, buildGameThrowsResponse } from "@/shared/types/game.test-support";
 import type { GameThrowsResponse } from "@/types";
 import * as gameStore from "@/shared/store/game-state";
@@ -42,6 +44,7 @@ const getGameThrowsMock = vi.mocked(getGameThrows);
 const recordThrowMock = vi.mocked(recordThrow);
 const undoLastThrowMock = vi.mocked(undoLastThrow);
 const finishGameMock = vi.mocked(finishGame);
+const playSoundMock = vi.mocked(playSound);
 
 const GAME_ID = 4;
 
@@ -177,32 +180,29 @@ describe("GamePage throw sync", () => {
     });
     expect(finishGameMock).not.toHaveBeenCalled();
   });
-  it.fails(
-    "rolls back the next player's throws when a throw of the previous player is rejected",
-    async () => {
-      const firstThrow = createDeferred<ThrowAckResponse>();
-      recordThrowMock.mockReturnValueOnce(firstThrow.promise);
-      getGameThrowsMock.mockResolvedValue(buildGame({ alice: 301, bob: 301 }));
-      await openGame(buildGame({ alice: 301, bob: 301 }));
+  it("rolls back the next player's throws when a throw of the previous player is rejected", async () => {
+    const firstThrow = createDeferred<ThrowAckResponse>();
+    recordThrowMock.mockReturnValueOnce(firstThrow.promise);
+    getGameThrowsMock.mockResolvedValue(buildGame({ alice: 301, bob: 301 }));
+    await openGame(buildGame({ alice: 301, bob: 301 }));
 
-      tap("20");
-      tap("20");
-      tap("20");
-      tap("5");
-      expect(within(playerCard("Alice")).getByText("241")).toBeTruthy();
-      expect(within(playerCard("Bob")).getByText("296")).toBeTruthy();
+    tap("20");
+    tap("20");
+    tap("20");
+    tap("5");
+    expect(within(playerCard("Alice")).getByText("241")).toBeTruthy();
+    expect(within(playerCard("Bob")).getByText("296")).toBeTruthy();
 
-      firstThrow.reject(stateVersionConflict());
+    firstThrow.reject(stateVersionConflict());
 
-      expect(await screen.findByText(/not saved/i)).toBeTruthy();
-      expect(within(playerCard("Alice")).getByText("301")).toBeTruthy();
-      expect(within(playerCard("Bob")).getByText("301")).toBeTruthy();
-      expect(recordThrowMock).toHaveBeenCalledTimes(1);
-    },
-  );
+    expect(await screen.findByText(/not saved/i)).toBeTruthy();
+    expect(within(playerCard("Alice")).getByText("301")).toBeTruthy();
+    expect(within(playerCard("Bob")).getByText("301")).toBeTruthy();
+    expect(recordThrowMock).toHaveBeenCalledTimes(1);
+  });
 
   // #123
-  it.fails("removes a throw that has not been sent yet on undo, without a request", async () => {
+  it("removes a throw that has not been sent yet on undo, without a request", async () => {
     const firstThrow = createDeferred<ThrowAckResponse>();
     recordThrowMock.mockReturnValueOnce(firstThrow.promise);
     await openGame(buildGame({ alice: 301, bob: 301 }));
@@ -227,7 +227,7 @@ describe("GamePage throw sync", () => {
   });
 
   // #105
-  it.fails("accepts six unconfirmed throws, then disables throw input while syncing", async () => {
+  it("accepts six unconfirmed throws, then disables throw input while syncing", async () => {
     recordThrowMock.mockReturnValue(new Promise<ThrowAckResponse>(() => {}));
     await openGame(buildGame({ alice: 301, bob: 301 }));
 
@@ -242,7 +242,7 @@ describe("GamePage throw sync", () => {
   });
 
   // #98
-  it.fails("keeps input disabled after a failed sync until Retry reloads the game", async () => {
+  it("keeps input disabled after a failed sync until Retry reloads the game", async () => {
     recordThrowMock.mockRejectedValueOnce(new TypeError("Failed to fetch"));
     await openGame(buildGame({ alice: 301, bob: 301 }));
     getGameThrowsMock.mockRejectedValue(new TypeError("Failed to fetch"));
@@ -264,5 +264,63 @@ describe("GamePage throw sync", () => {
       expect(screen.getByRole("button", { name: "20" }).hasAttribute("disabled")).toBe(false);
     });
     expect(screen.queryByRole("button", { name: "Retry" })).toBeNull();
+  });
+
+  it("shows the server's game after it refuses a throw", async () => {
+    recordThrowMock.mockRejectedValueOnce(
+      new ApiError("Request failed", { status: 409, data: { error: "GAME_THROW_NOT_ALLOWED" } }),
+    );
+    getGameThrowsMock.mockResolvedValue(buildGame({ alice: 250, bob: 301 }));
+    await openGame(buildGame({ alice: 301, bob: 301 }));
+
+    tap("20");
+
+    expect(await screen.findByText(/not saved/i)).toBeTruthy();
+    expect(within(playerCard("Alice")).getByText("250")).toBeTruthy();
+    expect(screen.getByRole("button", { name: "20" }).hasAttribute("disabled")).toBe(false);
+  });
+
+  it("keeps throw and undo input disabled until the first load answers, also with a cached game", async () => {
+    const firstLoad = createDeferred<GameThrowsResponse | null>();
+    getGameThrowsIfChangedMock.mockReturnValueOnce(firstLoad.promise);
+    // A score below the start score, so Undo is enabled once the load answers.
+    setGameData(buildGame({ alice: 281, bob: 301 }));
+    renderGamePage();
+
+    expect(within(playerCard("Alice")).getByText("281")).toBeTruthy();
+    expect(screen.getByRole("button", { name: "20" }).hasAttribute("disabled")).toBe(true);
+    expect(screen.getByRole("button", { name: "Undo" }).hasAttribute("disabled")).toBe(true);
+
+    await act(async () => {
+      firstLoad.resolve(buildGame({ alice: 281, bob: 301 }));
+      await firstLoad.promise;
+    });
+
+    expect(screen.getByRole("button", { name: "20" }).hasAttribute("disabled")).toBe(false);
+    expect(screen.getByRole("button", { name: "Undo" }).hasAttribute("disabled")).toBe(false);
+  });
+
+  it("keeps the sync status region on the page while idle and puts the failure in it", async () => {
+    recordThrowMock.mockRejectedValueOnce(stateVersionConflict());
+    getGameThrowsMock.mockResolvedValue(buildGame({ alice: 301, bob: 301 }));
+    await openGame(buildGame({ alice: 301, bob: 301 }));
+
+    expect(screen.getByRole("status").textContent).toBe("");
+
+    tap("20");
+
+    await waitFor(() => {
+      expect(screen.getByRole("status").textContent).toMatch(/not saved/i);
+    });
+  });
+
+  it("plays the undo sound on the tap, before the server answers", async () => {
+    recordThrowMock.mockReturnValue(new Promise<ThrowAckResponse>(() => {}));
+    await openGame(buildGame({ alice: 301, bob: 301 }));
+
+    tap("20");
+    tap("Undo");
+
+    expect(playSoundMock).toHaveBeenCalledWith("undo");
   });
 });

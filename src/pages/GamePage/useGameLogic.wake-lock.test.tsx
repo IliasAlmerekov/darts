@@ -181,7 +181,7 @@ describe("useGameLogic wake-lock wiring", () => {
     expect(result.current.gameId).toBe(1);
     expect(result.current.handleThrow).toBeTypeOf("function");
     expect(result.current.handleUndo).toBeTypeOf("function");
-    expect(result.current.refetch).toBeTypeOf("function");
+    expect(result.current.handleRetry).toBeTypeOf("function");
   });
 
   it.each([

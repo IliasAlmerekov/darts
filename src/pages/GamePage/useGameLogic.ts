@@ -1,10 +1,10 @@
 import { useCallback, useMemo, useState } from "react";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
-import { useGameState } from "./useGameState";
-import { useThrowHandler } from "./throws/useThrowHandler";
+import { useGameSession } from "./useGameSession";
 import { useGameSounds } from "./useGameSounds";
 import { useWakeLock } from "./useWakeLock";
 import type { GameThrowsResponse, UIPlayer } from "@/types";
+import type { SyncStatus } from "./lib/gameSession.logic";
 import { useGameExitFlow, useGameSettingsFlow } from "./useGameActions";
 import {
   useAutoFinishGame,
@@ -41,19 +41,21 @@ interface UseGameLogicResult {
   handleOpenExitOverlay: () => void;
   handleOpenSettings: () => void;
   handleSaveSettings: (settings: GameSettingsFormValues) => Promise<void>;
-  handleThrow: (value: string | number) => Promise<void>;
-  handleUndo: () => Promise<void>;
-  handleUndoFromOverlay: () => Promise<void>;
+  handleRetry: () => void;
+  handleThrow: (value: string | number) => void;
+  handleUndo: () => void;
+  handleUndoFromOverlay: () => void;
   isExitOverlayOpen: boolean;
   isInteractionDisabled: boolean;
   isLoading: boolean;
+  isQueueFull: boolean;
   isSavingSettings: boolean;
   isSettingsOpen: boolean;
   isUndoDisabled: boolean;
   pageError: string | null;
-  refetch: () => Promise<void>;
   settingsError: string | null;
   shouldShowFinishOverlay: boolean;
+  syncStatus: SyncStatus;
 }
 
 function isGameLocationState(s: unknown): s is { skipFinishOverlay?: boolean } {
@@ -75,8 +77,8 @@ export function useGameLogic(): UseGameLogicResult {
 
   const gameId = useMemo(() => parseRouteGameId(gameIdParam), [gameIdParam]);
 
-  const { gameData, isLoading, error, refetch, updateGameSettings } = useGameState({ gameId });
-  const { handleThrow, handleUndo, isUndoPending } = useThrowHandler({ gameId });
+  const { view, commands } = useGameSession(gameId);
+  const { game: gameData, isLoading, error } = view;
   const isGameActive = gameData?.status === "started";
   const skipFinishOverlay =
     parseLocationState(location.state, isGameLocationState)?.skipFinishOverlay === true;
@@ -99,9 +101,10 @@ export function useGameLogic(): UseGameLogicResult {
     error,
     gameData,
     gameId,
-    handleUndo,
+    handleUndo: commands.undo,
     isLoading,
-    isUndoPending,
+    canThrow: view.canThrow,
+    canUndo: view.canUndo,
     skipFinishOverlay,
   });
   const {
@@ -114,7 +117,7 @@ export function useGameLogic(): UseGameLogicResult {
   } = useGameSettingsFlow({
     gameData,
     gameId,
-    updateGameSettings,
+    updateGameSettings: commands.updateSettings,
   });
   const { handleCloseExitOverlay, handleExitGame, handleOpenExitOverlay, isExitOverlayOpen } =
     useGameExitFlow({
@@ -152,8 +155,11 @@ export function useGameLogic(): UseGameLogicResult {
     settingsError,
     pageError,
     isExitOverlayOpen,
-    handleThrow,
-    handleUndo,
+    isQueueFull: view.isQueueFull,
+    syncStatus: view.status,
+    handleRetry: commands.retry,
+    handleThrow: commands.throwDart,
+    handleUndo: commands.undo,
     handleContinueGame,
     handleUndoFromOverlay,
     handleOpenSettings,
@@ -163,6 +169,5 @@ export function useGameLogic(): UseGameLogicResult {
     handleCloseExitOverlay,
     clearPageError,
     handleExitGame,
-    refetch,
   };
 }

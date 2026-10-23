@@ -124,7 +124,8 @@ describe("buildGamePlayersDerivedState", () => {
       gameData,
       hasError: false,
       isLoading: false,
-      isUndoPending: false,
+      canThrow: true,
+      canUndo: true,
       skipFinishOverlay: false,
     });
 
@@ -143,7 +144,8 @@ describe("buildGamePlayersDerivedState", () => {
       gameData: buildGameData(),
       hasError: false,
       isLoading: false,
-      isUndoPending: false,
+      canThrow: true,
+      canUndo: true,
       skipFinishOverlay: false,
     });
 
@@ -158,7 +160,8 @@ describe("buildGamePlayersDerivedState", () => {
       gameData: buildGameData(),
       hasError: true,
       isLoading: false,
-      isUndoPending: false,
+      canThrow: true,
+      canUndo: true,
       skipFinishOverlay: false,
     });
 
@@ -166,7 +169,7 @@ describe("buildGamePlayersDerivedState", () => {
     expect(result.isUndoDisabled).toBe(true);
   });
 
-  it("should disable undo when isUndoPending is true and game has throws", () => {
+  it("should disable throw input but keep undo when the session refuses throws", () => {
     const gameData = buildGameData({
       players: [
         {
@@ -201,15 +204,16 @@ describe("buildGamePlayersDerivedState", () => {
       gameData,
       hasError: false,
       isLoading: false,
-      isUndoPending: true,
+      canThrow: false,
+      canUndo: true,
       skipFinishOverlay: false,
     });
 
-    expect(result.isUndoDisabled).toBe(true);
     expect(result.isInteractionDisabled).toBe(true);
+    expect(result.isUndoDisabled).toBe(false);
   });
 
-  it("should enable undo when isUndoPending is false and game has throws", () => {
+  it("should enable undo when the session takes undo and game has throws", () => {
     const gameData = buildGameData({
       players: [
         {
@@ -244,14 +248,15 @@ describe("buildGamePlayersDerivedState", () => {
       gameData,
       hasError: false,
       isLoading: false,
-      isUndoPending: false,
+      canThrow: true,
+      canUndo: true,
       skipFinishOverlay: false,
     });
 
     expect(result.isUndoDisabled).toBe(false);
   });
 
-  it("should disable all interactions when isUndoPending is true even if other conditions would enable them", () => {
+  it("should disable undo when the session refuses undo", () => {
     const gameData = buildGameData({
       players: [
         {
@@ -286,11 +291,12 @@ describe("buildGamePlayersDerivedState", () => {
       gameData,
       hasError: false,
       isLoading: false,
-      isUndoPending: true,
+      canThrow: true,
+      canUndo: false,
       skipFinishOverlay: false,
     });
 
     expect(result.isUndoDisabled).toBe(true);
-    expect(result.isInteractionDisabled).toBe(true);
+    expect(result.isInteractionDisabled).toBe(false);
   });
 });

@@ -293,52 +293,31 @@ test.describe("Undo Race Condition on Game Page", () => {
       ],
     });
 
-    const stateAfterThrowFollowingUndo = createState({
-      currentThrowCount: 2,
-      players: [
-        createPlayer(1, "Hugh", 276, true, {
-          throwsInCurrentRound: 2,
-          currentRoundThrows: [
-            { value: 20, isDouble: false, isTriple: false, isBust: false },
-            { value: 5, isDouble: false, isTriple: false, isBust: false },
-          ],
-          roundHistory: [
-            {
-              round: 4,
-              throws: [
-                { value: 18, isDouble: false, isTriple: false, isBust: false },
-                { value: 18, isDouble: false, isTriple: false, isBust: false },
-                { value: 18, isDouble: false, isTriple: false, isBust: false },
-              ],
-            },
-          ],
-        }),
-        createPlayer(2, "Alica", 226, false, {
-          roundHistory: [
-            {
-              round: 4,
-              throws: [
-                { value: 25, isDouble: false, isTriple: false, isBust: false },
-                { value: 25, isDouble: false, isTriple: false, isBust: false },
-                { value: 25, isDouble: false, isTriple: false, isBust: false },
-              ],
-            },
-          ],
-        }),
-        createPlayer(3, "Test", 180, false, {
-          roundHistory: [
-            {
-              round: 4,
-              throws: [
-                { value: 17, isDouble: false, isTriple: false, isBust: false },
-                { value: 20, isDouble: false, isTriple: false, isBust: false },
-                { value: 19, isDouble: false, isTriple: false, isBust: false },
-              ],
-            },
-          ],
-        }),
-      ],
-    });
+    // Each Undo tap steps back one throw (ADR 0003), so a double tap removes 20 and 19.
+    const stateAfterSecondUndo: MockGameState = {
+      ...stateAfterUndo,
+      currentThrowCount: 0,
+      players: stateAfterUndo.players.map((player) =>
+        player.id === 1
+          ? { ...player, score: 301, throwsInCurrentRound: 0, currentRoundThrows: [] }
+          : player,
+      ),
+    };
+
+    const stateAfterThrowFollowingUndo: MockGameState = {
+      ...stateAfterSecondUndo,
+      currentThrowCount: 1,
+      players: stateAfterSecondUndo.players.map((player) =>
+        player.id === 1
+          ? {
+              ...player,
+              score: 296,
+              throwsInCurrentRound: 1,
+              currentRoundThrows: [{ value: 5, isDouble: false, isTriple: false, isBust: false }],
+            }
+          : player,
+      ),
+    };
 
     let undoRequestCount = 0;
 
@@ -346,7 +325,7 @@ test.describe("Undo Race Condition on Game Page", () => {
     await installGameRoutes(page, {
       initialState: createState(),
       throwStates: [stateAfterThrowFollowingUndo],
-      undoStates: [stateAfterUndo],
+      undoStates: [stateAfterUndo, stateAfterSecondUndo],
       undoResponseDelayMs: 150,
       onUndoRequest: () => {
         undoRequestCount += 1;
@@ -365,12 +344,11 @@ test.describe("Undo Race Condition on Game Page", () => {
     // 3. Rapidly trigger the Undo action multiple times on the main game page.
     await undoButton(page).dblclick();
 
-    // 4. Verify the UI does not show corrupted repeated throws for every player.
-    await expect(playerCard(page, "Hugh")).toContainText("281");
-    await expect(playerCard(page, "Hugh")).toContainText("20");
+    // 4. Verify each tap undid one throw and no other player's score changed.
+    await expect(playerCard(page, "Hugh")).toContainText("301");
     await expect(playerCard(page, "Alica")).toContainText("226");
     await expect(playerCard(page, "Test")).toContainText("180");
-    expect(undoRequestCount).toBe(1);
+    await expect.poll(() => undoRequestCount).toBe(2);
 
     // 5. Perform a new throw immediately after the rapid Undo sequence.
     await page.getByRole("button", { name: "5", exact: true }).click();
@@ -385,7 +363,7 @@ test.describe("Undo Race Condition on Game Page", () => {
     expect(relevantConsoleMessages).toEqual([]);
 
     // 7. Verify the next throw is accepted and the active player remains valid.
-    await expect(playerCard(page, "Hugh")).toContainText("276");
+    await expect(playerCard(page, "Hugh")).toContainText("296");
     await expect(playerCard(page, "Hugh")).toContainText("5");
     await expect(playerCard(page, "Hugh")).toHaveAttribute("aria-current", "true");
   });
