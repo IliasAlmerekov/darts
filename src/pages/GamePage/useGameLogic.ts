@@ -6,20 +6,12 @@ import { useWakeLock } from "./useWakeLock";
 import type { GameThrowsResponse, UIPlayer } from "@/types";
 import type { SyncStatus } from "./lib/gameSession.logic";
 import { useGameExitFlow, useGameSettingsFlow } from "./useGameActions";
-import {
-  useAutoFinishGame,
-  useGameSummaryNavigation,
-  useInteractionSoundUnlock,
-} from "./useGamePageEffects";
+import { useGameSummaryNavigation, useInteractionSoundUnlock } from "./useGamePageEffects";
 import { useGamePlayersState } from "./useGamePlayersState";
 import { parseLocationState } from "@/lib/router/locationState";
 import { parseRouteGameId } from "@/lib/router/tabletGameRoute";
 
-export {
-  areAllPlayersAtStartScore,
-  shouldAutoFinishGame,
-  shouldNavigateToSummary,
-} from "./lib/gameLogic.helpers";
+export { areAllPlayersAtStartScore, shouldAutoFinishGame } from "./lib/gameLogic.helpers";
 
 interface GameSettingsFormValues {
   doubleOut: boolean;
@@ -46,6 +38,7 @@ interface UseGameLogicResult {
   handleUndo: () => void;
   handleUndoFromOverlay: () => void;
   isExitOverlayOpen: boolean;
+  isFinishFailed: boolean;
   isInteractionDisabled: boolean;
   isLoading: boolean;
   isQueueFull: boolean;
@@ -126,15 +119,7 @@ export function useGameLogic(): UseGameLogicResult {
       setPageError,
     });
 
-  useGameSummaryNavigation({ canFinish: view.canFinish, gameData, gameId, navigate });
-  useAutoFinishGame({
-    canFinish: view.canFinish,
-    gameData,
-    gameId,
-    navigate,
-    setPageError,
-    shouldShowFinishOverlay,
-  });
+  useGameSummaryNavigation({ gameId, isFinished: view.isFinished, navigate });
 
   const clearPageError = useCallback(() => {
     setPageError(null);
@@ -156,6 +141,7 @@ export function useGameLogic(): UseGameLogicResult {
     settingsError,
     pageError,
     isExitOverlayOpen,
+    isFinishFailed: view.isFinishFailed,
     isQueueFull: view.isQueueFull,
     syncStatus: view.status,
     handleRetry: commands.retry,

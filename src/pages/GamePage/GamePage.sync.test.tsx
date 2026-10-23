@@ -21,7 +21,7 @@ vi.mock("@/shared/services/browser/soundPlayer", () => ({
 }));
 
 import { act, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
-import { MemoryRouter, Route, Routes } from "react-router-dom";
+import { MemoryRouter, Route, RouterProvider, Routes, createMemoryRouter } from "react-router-dom";
 import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import { ApiError } from "@/shared/api";
 import {
@@ -104,6 +104,16 @@ function buildThrowAck(scores: { alice: number; bob: number }): ThrowAckResponse
     },
     serverTs: "2026-10-23T10:00:00Z",
   };
+}
+
+/** The ack for Alice's checkout from 19: Bob is the one active player left. */
+function buildWinningAck(): ThrowAckResponse {
+  const ack = buildThrowAck({ alice: 0, bob: 301 });
+  ack.scoreboardDelta.changedPlayers = [
+    { playerId: 1, name: "Alice", score: 0, isActive: false, isGuest: false, position: 1 },
+    { playerId: 2, name: "Bob", score: 301, isActive: true, isGuest: false },
+  ];
+  return ack;
 }
 
 function stateVersionConflict(): ApiError {
@@ -386,5 +396,99 @@ describe("GamePage throw sync", () => {
     tap("Undo");
 
     expect(playSoundMock).toHaveBeenCalledWith("undo");
+  });
+
+  // #123
+  it("keeps throw and undo input disabled while /finish runs", async () => {
+    finishGameMock.mockReturnValue(new Promise(() => {}));
+    recordThrowMock.mockResolvedValueOnce(buildWinningAck());
+    await openGame(buildGame({ alice: 19, bob: 301 }));
+
+    tap("19");
+
+    await waitFor(() => {
+      expect(finishGameMock).toHaveBeenCalledTimes(1);
+    });
+    expect(screen.getByRole("button", { name: "20" }).hasAttribute("disabled")).toBe(true);
+    expect(screen.getByRole("button", { name: "Undo" }).hasAttribute("disabled")).toBe(true);
+  });
+
+  // #123
+  it("offers Retry after /finish fails and opens the summary once it works", async () => {
+    finishGameMock.mockRejectedValueOnce(new TypeError("Failed to fetch"));
+    recordThrowMock.mockResolvedValueOnce(buildWinningAck());
+    await openGame(buildGame({ alice: 19, bob: 301 }));
+
+    tap("19");
+
+    const retryButton = await screen.findByRole("button", { name: "Retry" });
+    expect(screen.getByRole("status").textContent).toMatch(/could not finish/i);
+    expect(screen.getByRole("button", { name: "20" }).hasAttribute("disabled")).toBe(true);
+    expect(screen.queryByText("Summary page")).toBeNull();
+
+    fireEvent.click(retryButton);
+
+    expect(await screen.findByText("Summary page")).toBeTruthy();
+    expect(finishGameMock).toHaveBeenCalledTimes(2);
+  });
+
+  // #95, #123
+  it("ignores a /finish answer that arrives after the page moved to another game", async () => {
+    const finish = createDeferred<Awaited<ReturnType<typeof finishGame>>>();
+    finishGameMock.mockReturnValueOnce(finish.promise);
+    recordThrowMock.mockResolvedValueOnce(buildWinningAck());
+    getGameThrowsIfChangedMock.mockImplementation((id) =>
+      Promise.resolve({ ...buildGame({ alice: 19, bob: 301 }), id }),
+    );
+    const router = createMemoryRouter(
+      [
+        { path: "/game/:id", element: <GamePage /> },
+        { path: "/summary/:id", element: <p>Summary page</p> },
+      ],
+      { initialEntries: [`/game/${GAME_ID}`] },
+    );
+    render(<RouterProvider router={router} />);
+    await screen.findByRole("group", { name: "Alice" });
+
+    tap("19");
+    await waitFor(() => {
+      expect(finishGameMock).toHaveBeenCalledTimes(1);
+    });
+
+    await act(async () => {
+      await router.navigate("/game/5");
+    });
+    await screen.findByRole("group", { name: "Alice" });
+
+    await act(async () => {
+      finish.resolve([]);
+      await finish.promise;
+    });
+
+    expect(router.state.location.pathname).toBe("/game/5");
+    expect(screen.queryByText("Summary page")).toBeNull();
+    expect(screen.getByRole("button", { name: "20" }).hasAttribute("disabled")).toBe(false);
+  });
+
+  // #123: the server acknowledged the winning throw, but the page left before /finish.
+  it("finishes a loaded game that has one active player left, once", async () => {
+    const finish = createDeferred<Awaited<ReturnType<typeof finishGame>>>();
+    finishGameMock.mockReturnValueOnce(finish.promise);
+    getGameThrowsIfChangedMock.mockResolvedValue(buildGame({ alice: 0, bob: 301 }));
+    renderGamePage();
+
+    await waitFor(() => {
+      expect(finishGameMock).toHaveBeenCalledTimes(1);
+    });
+    expect(screen.getByRole("button", { name: "Undo" }).hasAttribute("disabled")).toBe(true);
+
+    await act(async () => {
+      finish.resolve([]);
+      await finish.promise;
+    });
+
+    expect(await screen.findByText("Summary page")).toBeTruthy();
+    expect(finishGameMock).toHaveBeenCalledTimes(1);
+    expect(finishGameMock).toHaveBeenCalledWith(GAME_ID, expect.any(AbortSignal));
   });
 });

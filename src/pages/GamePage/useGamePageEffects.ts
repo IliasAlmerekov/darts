@@ -1,32 +1,12 @@
-import { useEffect, useRef } from "react";
-import { finishGame, resetGameStateVersion } from "@/shared/api/game";
-import { toUserErrorMessage } from "@/lib/error/error-to-user-message";
+import { useEffect } from "react";
 import { ROUTES } from "@/lib/router/routes";
 import { unlockSounds } from "@/shared/services/browser/soundPlayer";
-import { gameQueries } from "@/shared/query/game.queries";
-import { queryClient } from "@/shared/query/queryClient";
-import { clientLogger } from "@/shared/services/browser/clientLogger";
-import type { GameThrowsResponse } from "@/types";
-import { shouldAutoFinishGame, shouldNavigateToSummary } from "./lib/gameLogic.helpers";
 
 interface UseGameSummaryNavigationOptions {
-  canFinish: boolean;
-  gameData: GameThrowsResponse | null;
   gameId: number | null;
+  /** From the game session: the game is finished and every tap is acknowledged. */
+  isFinished: boolean;
   navigate: (to: string, options?: { state?: { finishedGameId: number } }) => void;
-}
-
-interface UseAutoFinishGameOptions {
-  canFinish: boolean;
-  gameData: GameThrowsResponse | null;
-  gameId: number | null;
-  navigate: (to: string, options?: { state?: { finishedGameId: number } }) => void;
-  setPageError: (message: string | null) => void;
-  shouldShowFinishOverlay: boolean;
-}
-
-function isAbortError(error: unknown): boolean {
-  return error instanceof Error && error.name === "AbortError";
 }
 
 export function useInteractionSoundUnlock(): void {
@@ -45,72 +25,14 @@ export function useInteractionSoundUnlock(): void {
   }, []);
 }
 
-// Both hooks wait for `canFinish`: leaving the page drops the throws the server has not
-// acknowledged yet, and a rejected winning throw must not finish the game (#96).
 export function useGameSummaryNavigation({
-  canFinish,
-  gameData,
   gameId,
+  isFinished,
   navigate,
 }: UseGameSummaryNavigationOptions): void {
   useEffect(() => {
-    if (canFinish && gameId !== null && shouldNavigateToSummary(gameData, gameId)) {
+    if (isFinished && gameId !== null) {
       navigate(ROUTES.summary(gameId), { state: { finishedGameId: gameId } });
     }
-  }, [canFinish, gameData, gameId, navigate]);
-}
-
-export function useAutoFinishGame({
-  canFinish,
-  gameData,
-  gameId,
-  navigate,
-  setPageError,
-  shouldShowFinishOverlay,
-}: UseAutoFinishGameOptions): void {
-  const isAutoFinishingRef = useRef(false);
-
-  useEffect(() => {
-    if (!canFinish || gameId === null || !shouldAutoFinishGame(gameData, shouldShowFinishOverlay)) {
-      return;
-    }
-
-    if (isAutoFinishingRef.current) {
-      return;
-    }
-
-    isAutoFinishingRef.current = true;
-    const controller = new AbortController();
-    const { signal } = controller;
-
-    finishGame(gameId, signal)
-      .then((summary): void => {
-        if (signal.aborted) {
-          return;
-        }
-
-        resetGameStateVersion(gameId);
-        queryClient.setQueryData(gameQueries.finished(gameId).queryKey, summary);
-        navigate(ROUTES.summary(gameId), { state: { finishedGameId: gameId } });
-      })
-      .catch((error: unknown): void => {
-        if (isAbortError(error) || signal.aborted) {
-          return;
-        }
-
-        clientLogger.error("game.auto-finish.failed", {
-          context: { gameId },
-          error,
-        });
-        setPageError(toUserErrorMessage(error, "Could not finish the game automatically."));
-      })
-      .finally((): void => {
-        isAutoFinishingRef.current = false;
-      });
-
-    return () => {
-      controller.abort();
-      isAutoFinishingRef.current = false;
-    };
-  }, [canFinish, gameData, gameId, navigate, setPageError, shouldShowFinishOverlay]);
+  }, [gameId, isFinished, navigate]);
 }

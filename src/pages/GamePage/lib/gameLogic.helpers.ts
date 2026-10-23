@@ -15,11 +15,8 @@ export function areAllPlayersAtStartScore(gameData: GameThrowsResponse | null): 
   return gameData.players.every((player) => player.score === gameData.settings.startScore);
 }
 
-export function shouldAutoFinishGame(
-  gameData: GameThrowsResponse | null,
-  shouldShowFinishOverlay: boolean,
-): boolean {
-  if (!gameData || gameData.status === "finished" || shouldShowFinishOverlay) {
+export function shouldAutoFinishGame(gameData: GameThrowsResponse | null): boolean {
+  if (!gameData || gameData.status === "finished") {
     return false;
   }
 
@@ -27,17 +24,6 @@ export function shouldAutoFinishGame(
   const finishedPlayersCount = gameData.players.filter((player) => player.score === 0).length;
 
   return activePlayersCount === 1 && finishedPlayersCount >= 1;
-}
-
-export function shouldNavigateToSummary(
-  gameData: GameThrowsResponse | null,
-  gameId: number | null,
-): boolean {
-  if (!gameData || gameId === null) {
-    return false;
-  }
-
-  return gameData.id === gameId && gameData.status === "finished";
 }
 
 export function getZeroScorePlayerIds(players: UIPlayer[]): number[] {
@@ -63,5 +49,5 @@ export function calculateShouldShowFinishOverlay({
     return false;
   }
 
-  return !shouldAutoFinishGame(gameData, false);
+  return !shouldAutoFinishGame(gameData);
 }

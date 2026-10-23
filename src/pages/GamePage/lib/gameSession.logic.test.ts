@@ -4,6 +4,7 @@ import { buildBackendPlayer, buildGameThrowsResponse } from "@/shared/types/game
 import type { GameThrowsResponse } from "@/types";
 import type { ThrowAckResponse, UndoAckResponse } from "@/types";
 import {
+  applyFinished,
   applyReloadedGame,
   applyThrowAck,
   applyUndoResponse,
@@ -11,9 +12,11 @@ import {
   failSession,
   markSessionOffline,
   retrySession,
+  takeFinish,
   takeNextOp,
   enqueueThrow,
   enqueueUndo,
+  failFinish,
   getSessionView,
   getShownGame,
   type GameSession,
@@ -164,10 +167,11 @@ describe("gameSession.logic", () => {
 
   it("reports idle without pending requests", () => {
     expect(getSessionView(createGameSession(buildGame({ alice: 301, bob: 301 })))).toEqual({
-      canFinish: true,
       canRetry: false,
       canThrow: true,
       canUndo: true,
+      isFinished: false,
+      isFinishFailed: false,
       isQueueFull: false,
       status: "idle",
     });
@@ -351,10 +355,11 @@ describe("gameSession.logic", () => {
     );
 
     expect(getSessionView(offline)).toEqual({
-      canFinish: false,
       canRetry: true,
       canThrow: false,
       canUndo: false,
+      isFinished: false,
+      isFinishFailed: false,
       isQueueFull: false,
       status: "offline",
     });
@@ -366,5 +371,78 @@ describe("gameSession.logic", () => {
     const reloaded = applyReloadedGame(retrying, buildGame({ alice: 281, bob: 301 }));
     expect(getSessionView(reloaded)).toMatchObject({ canThrow: true, status: "failed" });
     expect(scores(reloaded.confirmed)).toEqual([281, 301]);
+  });
+
+  it("starts the finish once the confirmed game leaves one active player", () => {
+    expect(takeFinish(createGameSession(buildGame({ alice: 20, bob: 301 })))).toBeNull();
+    expect(
+      takeFinish(throwMany(createGameSession(buildGame({ alice: 20, bob: 301 })), [20])),
+    ).toBeNull();
+
+    const finishing = takeFinish(createGameSession(buildGame({ alice: 0, bob: 301 })));
+    expect(finishing).not.toBeNull();
+    if (finishing === null) return;
+    expect(getSessionView(finishing)).toMatchObject({
+      canRetry: false,
+      canThrow: false,
+      canUndo: false,
+      status: "syncing",
+    });
+    expect(takeFinish(finishing)).toBeNull();
+  });
+
+  it("offers Retry and Undo after a failed finish, and Undo drops the finish", () => {
+    const finishing = takeFinish(createGameSession(buildGame({ alice: 0, bob: 301 })));
+    if (finishing === null) throw new Error("finish refused");
+    const failed = failFinish(finishing);
+
+    expect(getSessionView(failed)).toMatchObject({
+      canRetry: true,
+      canThrow: false,
+      canUndo: true,
+      isFinishFailed: true,
+      status: "offline",
+    });
+    expect(getSessionView(retrySession(failed))).toMatchObject({
+      canRetry: false,
+      canUndo: false,
+      isFinishFailed: false,
+      status: "syncing",
+    });
+
+    const undone = enqueueUndo(failed);
+    expect(getSessionView(undone)).toMatchObject({ isFinishFailed: false, status: "syncing" });
+    expect(takeNextOp(undone)?.op).toEqual({ kind: "undo" });
+  });
+
+  it("reports the game finished after the finish, or once the server shows it finished", () => {
+    const finishing = takeFinish(createGameSession(buildGame({ alice: 0, bob: 301 })));
+    if (finishing === null) throw new Error("finish refused");
+    expect(getSessionView(finishing).isFinished).toBe(false);
+    expect(getSessionView(applyFinished(finishing))).toMatchObject({
+      canThrow: false,
+      canUndo: false,
+      isFinished: true,
+    });
+
+    const finishedGame: GameThrowsResponse = {
+      ...buildGame({ alice: 0, bob: 301 }),
+      status: "finished",
+    };
+    expect(getSessionView(createGameSession(finishedGame)).isFinished).toBe(true);
+    expect(takeFinish(createGameSession(finishedGame))).toBeNull();
+  });
+
+  it("waits for every tap to be acknowledged before it reports a finished game", () => {
+    const finishedGame: GameThrowsResponse = {
+      ...buildGame({ alice: 0, bob: 301 }),
+      status: "finished",
+    };
+    const session: GameSession = {
+      ...createGameSession(finishedGame),
+      pending: [{ kind: "undo" }],
+    };
+
+    expect(getSessionView(session).isFinished).toBe(false);
   });
 });

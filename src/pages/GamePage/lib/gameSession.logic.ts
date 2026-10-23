@@ -12,6 +12,7 @@ import {
   applyOptimisticUndo,
   applyScoreboardDeltaToGameState,
 } from "../throws/throwStateService";
+import { shouldAutoFinishGame } from "./gameLogic.helpers";
 
 /** ADR 0003: two full turns may wait for the server. */
 const MAX_UNCONFIRMED_THROWS = 6;
@@ -26,6 +27,12 @@ export type PendingOp =
  */
 type Recovery = "none" | "reloading" | "failed" | "offline";
 
+/**
+ * The `/finish` request. `sending`: it is on its way. `failed`: it failed and waits for Retry
+ * or Undo. `done`: the server finished the game.
+ */
+type FinishState = "none" | "sending" | "failed" | "done";
+
 export interface GameSession {
   /** The game as the server acknowledged it. */
   confirmed: GameThrowsResponse | null;
@@ -34,6 +41,7 @@ export interface GameSession {
   /** True while the request for `pending[0]` is on its way. */
   isHeadSent: boolean;
   recovery: Recovery;
+  finish: FinishState;
 }
 
 export type SyncStatus = "idle" | "syncing" | "failed" | "offline";
@@ -43,13 +51,21 @@ export interface GameSessionView {
   canThrow: boolean;
   canUndo: boolean;
   canRetry: boolean;
-  /** The server has acknowledged every tap, so the page may call `/finish` or open the summary. */
-  canFinish: boolean;
+  /** The server has finished the game and acknowledged every tap, so the summary may open. */
+  isFinished: boolean;
   isQueueFull: boolean;
+  /** `/finish` failed; Retry sends it again and Undo reopens the game. */
+  isFinishFailed: boolean;
 }
 
 export function createGameSession(game: GameThrowsResponse | null): GameSession {
-  return { confirmed: normalizeGameData(game), pending: [], isHeadSent: false, recovery: "none" };
+  return {
+    confirmed: normalizeGameData(game),
+    pending: [],
+    isHeadSent: false,
+    recovery: "none",
+    finish: "none",
+  };
 }
 
 function applyOp(game: GameThrowsResponse, op: PendingOp): GameThrowsResponse {
@@ -74,14 +90,23 @@ function countUnconfirmedThrows(session: GameSession): number {
 }
 
 export function getSessionView(session: GameSession): GameSessionView {
-  const isBlocked = session.recovery === "reloading" || session.recovery === "offline";
+  const isBlocked =
+    session.recovery === "reloading" ||
+    session.recovery === "offline" ||
+    session.finish === "sending" ||
+    session.finish === "done";
   const isQueueFull = countUnconfirmedThrows(session) >= MAX_UNCONFIRMED_THROWS;
   const shown = getShownGame(session);
 
   let status: SyncStatus = "idle";
-  if (session.recovery === "offline") {
+  // Like a failed reload, a failed finish keeps throw input closed until the player retries.
+  if (session.recovery === "offline" || session.finish === "failed") {
     status = "offline";
-  } else if (session.pending.length > 0 || session.recovery === "reloading") {
+  } else if (
+    session.pending.length > 0 ||
+    session.recovery === "reloading" ||
+    session.finish === "sending"
+  ) {
     status = "syncing";
   } else if (session.recovery === "failed") {
     status = "failed";
@@ -89,11 +114,16 @@ export function getSessionView(session: GameSession): GameSessionView {
 
   return {
     status,
-    canThrow: !isBlocked && !isQueueFull && shown?.status === "started",
+    canThrow:
+      !isBlocked && session.finish === "none" && !isQueueFull && shown?.status === "started",
     canUndo: !isBlocked && shown !== null,
-    canRetry: session.recovery === "offline",
-    canFinish: !isBlocked && session.pending.length === 0 && shown !== null,
+    canRetry: session.recovery === "offline" || session.finish === "failed",
+    // Leaving the page drops unacknowledged taps, so a finished game waits for the queue (#96).
+    isFinished:
+      session.finish === "done" ||
+      (!isBlocked && session.pending.length === 0 && shown?.status === "finished"),
     isQueueFull,
+    isFinishFailed: session.finish === "failed",
   };
 }
 
@@ -142,7 +172,28 @@ export function enqueueUndo(session: GameSession): GameSession {
       ? session.pending.slice(0, lastIndex)
       : [...session.pending, { kind: "undo" }];
 
-  return { ...session, pending, recovery: clearFailedNotice(session.recovery) };
+  // Undo after a failed finish reopens the game. The finish starts over once the server
+  // acknowledges the undo.
+  return {
+    ...session,
+    pending,
+    recovery: clearFailedNotice(session.recovery),
+    finish: session.finish === "failed" ? "none" : session.finish,
+  };
+}
+
+/**
+ * Marks the finish as sent when the server has acknowledged every tap and the confirmed game
+ * leaves one active player. Returns null when `/finish` may not be sent now.
+ */
+export function takeFinish(session: GameSession): GameSession | null {
+  const mayFinish =
+    session.finish === "none" &&
+    session.pending.length === 0 &&
+    (session.recovery === "none" || session.recovery === "failed") &&
+    shouldAutoFinishGame(session.confirmed);
+
+  return mayFinish ? { ...session, finish: "sending" } : null;
 }
 
 /** Marks the oldest pending op as sent and returns it, or null when nothing may be sent now. */
@@ -239,8 +290,20 @@ export function failSession(session: GameSession): GameSession {
   return { ...session, pending: [], isHeadSent: false, recovery: "reloading" };
 }
 
-/** Starts another reload after the server could not be reached. */
+export function applyFinished(session: GameSession): GameSession {
+  return { ...session, finish: "done" };
+}
+
+export function failFinish(session: GameSession): GameSession {
+  return { ...session, finish: "failed" };
+}
+
+/** Sends a failed finish again, or starts another reload after the server could not be reached. */
 export function retrySession(session: GameSession): GameSession {
+  if (session.finish === "failed") {
+    return { ...session, finish: "sending" };
+  }
+
   return session.recovery === "offline" ? { ...session, recovery: "reloading" } : session;
 }
 
