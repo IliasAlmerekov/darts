@@ -188,6 +188,27 @@ test.describe("Throw sync on the game page", () => {
     await expect(playerCard(page, "Alice")).toContainText("301");
   });
 
+  test("keeps the sync status in the accessibility tree while idle and announces a failure", async ({
+    page,
+  }) => {
+    const gameId = 1;
+    await mockAdminSession(page);
+    await mockTabletGame(page, startedTabletGame(gameId));
+    await mockGameState(page, gameId, gameState(gameId, playerScores(301, 301)));
+    await page.route(`**/api/game/${gameId}/throw/delta`, async (route) => {
+      await route.fulfill({ status: 500, contentType: "application/json", body: "{}" });
+    });
+
+    await page.goto(`/game/${gameId}`);
+    await expect(playerCard(page, "Alice")).toContainText("301");
+    // A live region that appears together with its first message is often not announced.
+    await expect(page.getByRole("status")).toHaveText("");
+
+    await tap(page, "20");
+
+    await expect(page.getByRole("status")).toContainText("not saved");
+  });
+
   test("changes the scoreboard within 200 ms per tap while the backend takes 1500 ms", async ({
     page,
   }) => {

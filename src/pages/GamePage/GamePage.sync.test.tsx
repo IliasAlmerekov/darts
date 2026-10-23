@@ -300,6 +300,20 @@ describe("GamePage throw sync", () => {
     expect(screen.getByRole("button", { name: "Undo" }).hasAttribute("disabled")).toBe(false);
   });
 
+  it("keeps the sync status region on the page while idle and puts the failure in it", async () => {
+    recordThrowMock.mockRejectedValueOnce(stateVersionConflict());
+    getGameThrowsMock.mockResolvedValue(buildGame({ alice: 301, bob: 301 }));
+    await openGame(buildGame({ alice: 301, bob: 301 }));
+
+    expect(screen.getByRole("status").textContent).toBe("");
+
+    tap("20");
+
+    await waitFor(() => {
+      expect(screen.getByRole("status").textContent).toMatch(/not saved/i);
+    });
+  });
+
   it("plays the undo sound on the tap, before the server answers", async () => {
     recordThrowMock.mockReturnValue(new Promise<ThrowAckResponse>(() => {}));
     await openGame(buildGame({ alice: 301, bob: 301 }));
