@@ -21,8 +21,8 @@ Keep all six on. Two of them change how code is written:
 - `as T` without full preceding runtime validation of the shape (see `as` casts below)
 - `as unknown` in production code; replace it with runtime validation (test files may use
   it to build mocks)
-- bare `JSX.Element` in production code; use `React.JSX.Element` (test helpers may keep
-  `JSX.Element`)
+- bare `JSX.Element`; `@types/react` 19 has no global `JSX` namespace, so use
+  `React.JSX.Element`
 - `React.FC` / `React.FunctionComponent`
 - `Dispatch<SetStateAction<T>>` in public interfaces; use `(value: T) => void`
 - `I`-prefixed interfaces (`IGameState`); the ESLint `naming-convention` rule rejects them

@@ -4,7 +4,7 @@ import { Link, MemoryRouter, Route, Routes } from "react-router-dom";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import ScrollToTop from "./ScrollToTop";
 
-function TestShell(): JSX.Element {
+function TestShell(): React.JSX.Element {
   return (
     <MemoryRouter initialEntries={["/statistics"]}>
       <ScrollToTop />
