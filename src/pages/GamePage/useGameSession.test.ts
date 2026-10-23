@@ -16,17 +16,20 @@ vi.mock("@/shared/services/browser/soundPlayer", () => ({
 import { act, renderHook, waitFor } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import {
+  getGameThrows,
   getGameThrowsIfChanged,
   recordThrow,
   setGameStateVersion,
   type ThrowAckResponse,
 } from "@/shared/api/game";
+import { playSound } from "@/shared/services/browser/soundPlayer";
 import { $gameData, resetGameStore, setGameData } from "@/shared/store";
 import { buildBackendPlayer, buildGameThrowsResponse } from "@/shared/types/game.test-support";
 import type { GameThrowsResponse } from "@/types";
 import { useGameSession } from "./useGameSession";
 
 const getGameThrowsIfChangedMock = vi.mocked(getGameThrowsIfChanged);
+const getGameThrowsMock = vi.mocked(getGameThrows);
 const recordThrowMock = vi.mocked(recordThrow);
 
 interface Deferred<T> {
@@ -146,6 +149,35 @@ describe("useGameSession", () => {
     expect(result.current.view.game?.players[0]?.score).toBe(301);
     expect(result.current.view.status).toBe("idle");
     expect(setGameStateVersion).not.toHaveBeenCalled();
+  });
+
+  it("reloads the game when the shown game has no active player to throw for", async () => {
+    const game = buildGame(1);
+    getGameThrowsIfChangedMock.mockResolvedValueOnce({
+      ...game,
+      activePlayerId: null,
+      players: game.players.map((player) => ({ ...player, isActive: false })),
+    });
+    getGameThrowsMock.mockResolvedValueOnce(buildGame(1, 281));
+
+    const { result } = renderHook(() => useGameSession(1));
+    await waitFor(() => {
+      expect(result.current.view.canThrow).toBe(true);
+    });
+
+    act(() => {
+      result.current.commands.throwDart(20);
+    });
+
+    await waitFor(() => {
+      expect(result.current.view.status).toBe("failed");
+    });
+    expect(getGameThrowsMock).toHaveBeenCalledWith(1, expect.any(AbortSignal));
+    expect(recordThrowMock).not.toHaveBeenCalled();
+    expect(playSound).toHaveBeenCalledWith("error");
+    expect(result.current.view.game?.activePlayerId).toBe(1);
+    expect(result.current.view.game?.players[0]?.score).toBe(281);
+    expect(result.current.view.canThrow).toBe(true);
   });
 
   it("drops a reload in flight when the game id is cleared", async () => {
