@@ -179,18 +179,29 @@ function wrapper({ children }: { children: ReactNode }): ReactNode {
 type SummaryHook = ReturnType<typeof useGameSummaryPage>;
 
 const SUMMARY_ACTIONS = [
-  { action: "Undo", run: (hook: SummaryHook) => hook.handleUndo(), request: undoLastThrowMock },
+  {
+    action: "Undo",
+    run: (hook: SummaryHook) => hook.handleUndo(),
+    request: undoLastThrowMock,
+    response: (): unknown => buildUndoAck(),
+  },
   {
     action: "Play Again",
     run: (hook: SummaryHook) => hook.handlePlayAgain(),
     request: startRematchMock,
+    response: (): unknown => ({ success: true, gameId: 77, invitationLink: "/invite/77" }),
   },
   {
     action: "Back To Start",
     run: (hook: SummaryHook) => hook.handleBackToStart(),
     request: createRematchGameMock,
+    response: (): unknown => ({ success: true, gameId: 77 }),
   },
 ];
+
+const ORDERED_ACTION_PAIRS = SUMMARY_ACTIONS.flatMap((first) =>
+  SUMMARY_ACTIONS.map((second) => ({ first, second })),
+);
 
 function countSummaryRequests(): number {
   return SUMMARY_ACTIONS.reduce((count, { request }) => count + request.mock.calls.length, 0);
@@ -298,6 +309,32 @@ describe("useGameSummaryPage", () => {
     expect(createRematchGameMock).not.toHaveBeenCalled();
     expect(result.current.pending).toBe(true);
   });
+
+  // #100: every pair of competing taps, the second while the first request still waits.
+  it.each(ORDERED_ACTION_PAIRS)(
+    "should send one request and navigate once for $first.action then $second.action",
+    async ({ first, second }) => {
+      const firstResponse = deferred<unknown>();
+      first.request.mockReturnValueOnce(firstResponse.promise);
+      const { result } = renderSummaryHook();
+
+      let firstRun: Promise<void> = Promise.resolve();
+      await act(async () => {
+        firstRun = first.run(result.current);
+      });
+      await act(async () => {
+        await second.run(result.current);
+      });
+      await act(async () => {
+        firstResponse.resolve(first.response());
+        await firstRun;
+      });
+
+      expect(first.request).toHaveBeenCalledTimes(1);
+      expect(countSummaryRequests()).toBe(1);
+      expect(navigateMock).toHaveBeenCalledTimes(1);
+    },
+  );
 
   it("should allow another summary action once Undo has failed", async () => {
     undoLastThrowMock.mockRejectedValueOnce(new Error("undo failed"));
