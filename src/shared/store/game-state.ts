@@ -1,7 +1,7 @@
 import { atom, computed } from "nanostores";
 import type { ReadableAtom } from "nanostores";
-import type { GameSettings, GameThrowsResponse, ScoreboardDelta } from "@/types";
-import { applyGameScoreboardDelta, normalizeGameData } from "../lib/game/gameStateNormalizer";
+import type { GameSettings, GameThrowsResponse } from "@/types";
+import { normalizeGameData } from "../lib/game/gameStateNormalizer";
 
 const gameDataAtom = atom<GameThrowsResponse | null>(null);
 const isLoadingAtom = atom<boolean>(false);
@@ -76,27 +76,6 @@ export function setGameSettings(settings: GameSettings, expectedGameId?: number)
       tripleOut: settings.tripleOut,
     },
   });
-}
-
-/**
- * Updates only the scoreboard fragment for the current game state.
- */
-export function setGameScoreboardDelta(
-  scoreboardDelta: ScoreboardDelta,
-  expectedGameId?: number,
-): void {
-  const currentGameData = gameDataAtom.get();
-  if (currentGameData === null) {
-    return;
-  }
-
-  if (typeof expectedGameId === "number" && currentGameData.id !== expectedGameId) {
-    return;
-  }
-
-  const nextGameData = applyGameScoreboardDelta(currentGameData, scoreboardDelta);
-
-  gameDataAtom.set(nextGameData);
 }
 
 /**

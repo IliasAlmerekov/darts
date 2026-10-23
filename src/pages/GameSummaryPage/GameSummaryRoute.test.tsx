@@ -176,7 +176,7 @@ describe("GameSummaryPage route", () => {
       fireEvent.click(await screen.findByRole("button", { name: "Return to game" }));
     }
 
-    it.fails("should send no second Undo", async () => {
+    it("should send no second Undo", async () => {
       await clickUndo();
 
       fireEvent.click(screen.getByRole("button", { name: "Return to game" }));
@@ -184,7 +184,7 @@ describe("GameSummaryPage route", () => {
       expect(undoLastThrowMock).toHaveBeenCalledTimes(1);
     });
 
-    it.fails("should not start a rematch from Play Again", async () => {
+    it("should not start a rematch from Play Again", async () => {
       await clickUndo();
 
       fireEvent.click(screen.getByRole("button", { name: "Play Again" }));
@@ -192,7 +192,7 @@ describe("GameSummaryPage route", () => {
       expect(startRematchMock).not.toHaveBeenCalled();
     });
 
-    it.fails("should not create a rematch room from Back To Start", async () => {
+    it("should not create a rematch room from Back To Start", async () => {
       await clickUndo();
 
       fireEvent.click(screen.getByRole("button", { name: "Back To Start" }));

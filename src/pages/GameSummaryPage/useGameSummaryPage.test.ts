@@ -10,33 +10,29 @@ import { gameQueries } from "@/shared/query/game.queries";
 import { ApiError } from "@/shared/api";
 import { gameSummaryLoader, useGameSummaryPage } from "./useGameSummaryPage";
 import { playSound } from "@/shared/services/browser/soundPlayer";
-import type { GameThrowsResponse, ScoreboardDelta, UndoAckResponse } from "@/types";
+import { $gameData, resetGameStore, setGameData } from "@/shared/store";
+import type { GameThrowsResponse, UndoAckResponse } from "@/types";
 import {
   buildExpectedPodiumPlaceholder,
   buildExpectedStandings,
   buildFinishedPlayerResponses,
   buildGameSettingsResponse,
 } from "@/shared/types/game.test-support";
-import { applyGameScoreboardDelta } from "@/shared/lib/game/gameStateNormalizer";
 
 const navigateMock = vi.fn();
 const getFinishedGameMock = vi.fn();
-const getGameThrowsMock = vi.fn();
 const getGameSettingsMock = vi.fn();
 const createRematchGameMock = vi.fn();
 const startRematchMock = vi.fn();
 const undoLastThrowMock = vi.fn();
 const getTabletGameMock = vi.fn();
 const setCurrentGameIdMock = vi.fn();
-const setGameDataMock = vi.fn();
-const setGameScoreboardDeltaMock = vi.fn();
 const setInvitationMock = vi.fn();
 const resetRoomStoreMock = vi.fn();
 
-// Mutable state for router/store — allows per-test overrides without vi.doMock
+// Mutable state for router — allows per-test overrides without vi.doMock
 let routeParams: { id?: string | undefined } = { id: "42" };
 let testQueryClient: QueryClient;
-let currentGameState: GameThrowsResponse | null = null;
 
 vi.mock("react-router-dom", () => ({
   useNavigate: () => navigateMock,
@@ -49,7 +45,6 @@ vi.mock("@nanostores/react", () => ({
 
 vi.mock("@/shared/api/game", () => ({
   getFinishedGame: (...args: unknown[]) => getFinishedGameMock(...args),
-  getGameThrows: (...args: unknown[]) => getGameThrowsMock(...args),
   getGameSettings: (...args: unknown[]) => getGameSettingsMock(...args),
   createRematchGame: (...args: unknown[]) => createRematchGameMock(...args),
   startRematch: (...args: unknown[]) => startRematchMock(...args),
@@ -61,12 +56,7 @@ vi.mock("@/shared/store", async (importOriginal) => {
   const original = await importOriginal<Record<string, unknown>>();
   return {
     ...original,
-    $gameData: {
-      get: () => currentGameState,
-    },
     setCurrentGameId: (...args: unknown[]) => setCurrentGameIdMock(...args),
-    setGameData: (...args: unknown[]) => setGameDataMock(...args),
-    setGameScoreboardDelta: (...args: unknown[]) => setGameScoreboardDeltaMock(...args),
     setInvitation: (...args: unknown[]) => setInvitationMock(...args),
     resetRoomStore: (...args: unknown[]) => resetRoomStoreMock(...args),
   };
@@ -188,10 +178,33 @@ function wrapper({ children }: { children: ReactNode }): ReactNode {
 type SummaryHook = ReturnType<typeof useGameSummaryPage>;
 
 const SUMMARY_ACTIONS = [
-  { action: "Undo", run: (hook: SummaryHook) => hook.handleUndo() },
-  { action: "Play Again", run: (hook: SummaryHook) => hook.handlePlayAgain() },
-  { action: "Back To Start", run: (hook: SummaryHook) => hook.handleBackToStart() },
+  {
+    action: "Undo",
+    run: (hook: SummaryHook) => hook.handleUndo(),
+    request: undoLastThrowMock,
+    response: (): unknown => buildUndoAck(),
+  },
+  {
+    action: "Play Again",
+    run: (hook: SummaryHook) => hook.handlePlayAgain(),
+    request: startRematchMock,
+    response: (): unknown => ({ success: true, gameId: 77, invitationLink: "/invite/77" }),
+  },
+  {
+    action: "Back To Start",
+    run: (hook: SummaryHook) => hook.handleBackToStart(),
+    request: createRematchGameMock,
+    response: (): unknown => ({ success: true, gameId: 77 }),
+  },
 ];
+
+const ORDERED_ACTION_PAIRS = SUMMARY_ACTIONS.flatMap((first) =>
+  SUMMARY_ACTIONS.map((second) => ({ first, second })),
+);
+
+function countSummaryRequests(): number {
+  return SUMMARY_ACTIONS.reduce((count, { request }) => count + request.mock.calls.length, 0);
+}
 
 function renderSummaryHook() {
   return renderHook(() => useGameSummaryPage(), { wrapper });
@@ -212,8 +225,7 @@ function deferred<T>() {
 describe("useGameSummaryPage", () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    setGameDataMock.mockReset();
-    setGameScoreboardDeltaMock.mockReset();
+    resetGameStore();
     setCurrentGameIdMock.mockReset();
     setInvitationMock.mockReset();
     resetRoomStoreMock.mockReset();
@@ -221,12 +233,10 @@ describe("useGameSummaryPage", () => {
     // Reset mutable router/store state to defaults before each test
     routeParams = { id: "42" };
     testQueryClient = createQueryClient();
-    currentGameState = buildFinishedGameState();
     getGameSettingsMock.mockResolvedValue(SETTINGS_RESPONSE);
     getTabletGameMock.mockResolvedValue({ game: null, lastFinishedGameId: 42 });
 
     getFinishedGameMock.mockResolvedValue([]);
-    getGameThrowsMock.mockResolvedValue(buildStartedGameState());
     startRematchMock.mockResolvedValue({
       success: true,
       gameId: 77,
@@ -242,119 +252,33 @@ describe("useGameSummaryPage", () => {
       gameId: 77,
     });
     undoLastThrowMock.mockResolvedValue(buildUndoAck());
-    setGameDataMock.mockImplementation((nextState: GameThrowsResponse | null) => {
-      currentGameState = nextState;
-    });
-    setGameScoreboardDeltaMock.mockImplementation((scoreboardDelta: ScoreboardDelta) => {
-      if (!currentGameState) {
-        return;
-      }
-
-      currentGameState = applyGameScoreboardDelta(currentGameState, scoreboardDelta);
-    });
   });
 
-  it("should undo last throw and navigate back to game route when compact ack response is returned", async () => {
-    undoLastThrowMock.mockResolvedValueOnce(
-      buildUndoAck({
-        scoreboardDelta: {
-          changedPlayers: [
-            {
-              playerId: 1,
-              name: "Alice",
-              score: 20,
-              position: null,
-              isActive: true,
-              isGuest: false,
-              isBust: false,
-            },
-          ],
-          winnerId: null,
-          status: "started",
-          currentRound: 7,
-        },
-      }),
-    );
+  // #123: the game page owns the game state, so it reads the reopened game from the server.
+  it.each([
+    { response: "compact ack", undoResponse: () => buildUndoAck() },
+    { response: "full game", undoResponse: () => buildStartedGameState() },
+  ])(
+    "should undo on the server and open the game without writing the game store ($response)",
+    async ({ undoResponse }) => {
+      undoLastThrowMock.mockResolvedValueOnce(undoResponse());
+      setGameData(buildFinishedGameState());
+      const shownGame = $gameData.get();
 
-    const { result } = renderSummaryHook();
+      const { result } = renderSummaryHook();
 
-    await act(async () => {
-      await result.current.handleUndo();
-    });
+      await act(async () => {
+        await result.current.handleUndo();
+      });
 
-    expect(undoLastThrowMock).toHaveBeenCalledWith(42);
-    expect(setGameDataMock).toHaveBeenCalledWith(
-      expect.objectContaining({
-        id: 42,
-        status: "started",
-      }),
-    );
-    expect(setGameScoreboardDeltaMock).toHaveBeenCalledWith(
-      expect.objectContaining({
-        currentRound: 7,
-        status: "started",
-      }),
-      42,
-    );
-    expect(getGameThrowsMock).not.toHaveBeenCalledWith(42);
-    expect(playSound).toHaveBeenCalledWith("undo");
-    expect(navigateMock).toHaveBeenCalledWith("/game/42", {
-      state: { skipFinishOverlay: true },
-    });
-  });
-
-  it("should keep supporting legacy full undo response when backend does not return compact ack", async () => {
-    const legacyGameState = buildStartedGameState();
-    undoLastThrowMock.mockResolvedValueOnce(legacyGameState);
-
-    const { result } = renderSummaryHook();
-
-    await act(async () => {
-      await result.current.handleUndo();
-    });
-
-    expect(setGameScoreboardDeltaMock).not.toHaveBeenCalled();
-    expect(setGameDataMock).toHaveBeenCalledWith(legacyGameState);
-    expect(navigateMock).toHaveBeenCalledWith("/game/42", {
-      state: { skipFinishOverlay: true },
-    });
-  });
-
-  it("should refresh full game state when compact undo cannot be applied locally", async () => {
-    currentGameState = null;
-    const refreshedGameState = buildStartedGameState();
-    undoLastThrowMock.mockResolvedValueOnce(
-      buildUndoAck({
-        scoreboardDelta: {
-          changedPlayers: [
-            {
-              playerId: 1,
-              name: "Alice",
-              score: 20,
-              position: null,
-              isActive: true,
-              isGuest: false,
-              isBust: false,
-            },
-          ],
-          winnerId: null,
-          status: "started",
-          currentRound: 7,
-        },
-      }),
-    );
-    getGameThrowsMock.mockResolvedValueOnce(refreshedGameState);
-
-    const { result } = renderSummaryHook();
-
-    await act(async () => {
-      await result.current.handleUndo();
-    });
-
-    expect(setGameScoreboardDeltaMock).toHaveBeenCalledWith(expect.any(Object), 42);
-    expect(getGameThrowsMock).toHaveBeenCalledWith(42);
-    expect(setGameDataMock).toHaveBeenCalledWith(refreshedGameState);
-  });
+      expect(undoLastThrowMock).toHaveBeenCalledWith(42);
+      expect($gameData.get()).toBe(shownGame);
+      expect(playSound).toHaveBeenCalledWith("undo");
+      expect(navigateMock).toHaveBeenCalledWith("/game/42", {
+        state: { skipFinishOverlay: true },
+      });
+    },
+  );
 
   it("should not navigate when undo request fails", async () => {
     undoLastThrowMock.mockRejectedValueOnce(new Error("undo failed"));
@@ -366,8 +290,67 @@ describe("useGameSummaryPage", () => {
     });
 
     expect(undoLastThrowMock).toHaveBeenCalledWith(42);
-    expect(setGameScoreboardDeltaMock).not.toHaveBeenCalled();
     expect(navigateMock).not.toHaveBeenCalledWith("/game/42");
+  });
+
+  // #100
+  it("should run no other summary action while Undo is pending, even in the same tick", async () => {
+    undoLastThrowMock.mockReturnValue(new Promise(() => {}));
+    const { result } = renderSummaryHook();
+
+    await act(async () => {
+      void result.current.handleUndo();
+      void result.current.handleUndo();
+      void result.current.handlePlayAgain();
+      void result.current.handleBackToStart();
+    });
+
+    expect(undoLastThrowMock).toHaveBeenCalledTimes(1);
+    expect(startRematchMock).not.toHaveBeenCalled();
+    expect(createRematchGameMock).not.toHaveBeenCalled();
+    expect(result.current.isActionPending).toBe(true);
+  });
+
+  // #100: every pair of competing taps, the second while the first request still waits.
+  it.each(ORDERED_ACTION_PAIRS)(
+    "should send one request and navigate once for $first.action then $second.action",
+    async ({ first, second }) => {
+      const firstResponse = deferred<unknown>();
+      first.request.mockReturnValueOnce(firstResponse.promise);
+      const { result } = renderSummaryHook();
+
+      let firstRun: Promise<void> = Promise.resolve();
+      await act(async () => {
+        firstRun = first.run(result.current);
+      });
+      await act(async () => {
+        await second.run(result.current);
+      });
+      await act(async () => {
+        firstResponse.resolve(first.response());
+        await firstRun;
+      });
+
+      expect(first.request).toHaveBeenCalledTimes(1);
+      expect(countSummaryRequests()).toBe(1);
+      expect(navigateMock).toHaveBeenCalledTimes(1);
+    },
+  );
+
+  it("should allow another summary action once Undo has failed", async () => {
+    undoLastThrowMock.mockRejectedValueOnce(new Error("undo failed"));
+    const { result } = renderSummaryHook();
+
+    await act(async () => {
+      await result.current.handleUndo();
+    });
+    expect(result.current.isActionPending).toBe(false);
+
+    await act(async () => {
+      await result.current.handleBackToStart();
+    });
+
+    expect(createRematchGameMock).toHaveBeenCalledWith(42);
   });
 
   it("should navigate to game route when startRematch resolves successfully", async () => {
@@ -383,13 +366,15 @@ describe("useGameSummaryPage", () => {
   });
 
   it("should not overwrite shared game state when starting a rematch", async () => {
+    setGameData(buildFinishedGameState());
+    const shownGame = $gameData.get();
     const { result } = renderSummaryHook();
 
     await act(async () => {
       await result.current.handlePlayAgain();
     });
 
-    expect(setGameDataMock).not.toHaveBeenCalled();
+    expect($gameData.get()).toBe(shownGame);
     expect(setInvitationMock).toHaveBeenCalledWith({
       gameId: 77,
       invitationLink: "/invite/77",
@@ -500,7 +485,29 @@ describe("useGameSummaryPage", () => {
     expect(navigateMock).toHaveBeenCalledWith("/game/77");
   });
 
-  it("should keep starting flag true when startRematch is pending and false after completion", async () => {
+  // #100: the next route's loader runs after the navigation, and the summary stays on screen
+  // until it ends, so a tap in that window must not start a second mutation.
+  it.each(SUMMARY_ACTIONS)(
+    "should run no other summary action after $action has succeeded",
+    async ({ run }) => {
+      const { result } = renderSummaryHook();
+
+      await act(async () => {
+        await run(result.current);
+      });
+      for (const other of SUMMARY_ACTIONS) {
+        await act(async () => {
+          await other.run(result.current);
+        });
+      }
+
+      expect(countSummaryRequests()).toBe(1);
+      expect(navigateMock).toHaveBeenCalledTimes(1);
+      expect(result.current.isActionPending).toBe(true);
+    },
+  );
+
+  it("should keep isActionPending true while startRematch runs and after it succeeds", async () => {
     let resolveStartRematch:
       | ((value: {
           success: boolean;
@@ -523,7 +530,7 @@ describe("useGameSummaryPage", () => {
       callPromise = result.current.handlePlayAgain();
     });
 
-    expect(result.current.starting).toBe(true);
+    expect(result.current.isActionPending).toBe(true);
 
     await act(async () => {
       if (resolveStartRematch === null || callPromise === null) {
@@ -541,7 +548,7 @@ describe("useGameSummaryPage", () => {
       await callPromise;
     });
 
-    expect(result.current.starting).toBe(false);
+    expect(result.current.isActionPending).toBe(true);
   });
 
   it("should not navigate when rematch response misses game id", async () => {
@@ -565,6 +572,8 @@ describe("useGameSummaryPage", () => {
   });
 
   it("should not overwrite shared game state when returning to start from summary", async () => {
+    setGameData(buildFinishedGameState());
+    const shownGame = $gameData.get();
     const { result } = renderSummaryHook();
 
     await act(async () => {
@@ -572,7 +581,7 @@ describe("useGameSummaryPage", () => {
     });
 
     expect(resetRoomStoreMock).toHaveBeenCalledTimes(1);
-    expect(setGameDataMock).not.toHaveBeenCalled();
+    expect($gameData.get()).toBe(shownGame);
     expect(setCurrentGameIdMock).toHaveBeenCalledWith(77);
     expect(setInvitationMock).not.toHaveBeenCalled();
     expect(navigateMock).toHaveBeenCalledWith("/start/77");
@@ -785,6 +794,8 @@ describe("useGameSummaryPage", () => {
 
         expect(result.current.error).toBe("This game can no longer be changed.");
         expect(result.current.leaving).toBe(true);
+        // The page disables its actions through this lock alone while it moves away.
+        expect(result.current.isActionPending).toBe(true);
         expect(navigateMock).not.toHaveBeenCalled();
 
         act(() => {
@@ -792,6 +803,26 @@ describe("useGameSummaryPage", () => {
         });
 
         expect(navigateMock).toHaveBeenCalledWith("/game/57", { replace: true });
+      },
+    );
+
+    // The server refuses every change to this game, and the page moves away from it.
+    it.each(SUMMARY_ACTIONS)(
+      "should run no other summary action after $action got a 409",
+      async ({ run }) => {
+        const { result } = renderSummaryHook();
+
+        await act(async () => {
+          await run(result.current);
+        });
+        for (const other of SUMMARY_ACTIONS) {
+          await act(async () => {
+            await other.run(result.current);
+          });
+        }
+
+        expect(countSummaryRequests()).toBe(1);
+        expect(result.current.isActionPending).toBe(true);
       },
     );
 

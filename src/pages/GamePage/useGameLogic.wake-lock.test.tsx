@@ -3,7 +3,6 @@
 const navigateMock = vi.hoisted(() => vi.fn());
 const getGameThrowsIfChangedMock = vi.hoisted(() => vi.fn());
 const resetGameStateVersionMock = vi.hoisted(() => vi.fn());
-const finishGameMock = vi.hoisted(() => vi.fn());
 const abortGameMock = vi.hoisted(() => vi.fn());
 const createRematchMock = vi.hoisted(() => vi.fn());
 const updateGameSettingsMock = vi.hoisted(() => vi.fn());
@@ -22,7 +21,6 @@ vi.mock("react-router-dom", async () => {
 vi.mock("@/shared/api/game", () => ({
   abortGame: (...args: unknown[]) => abortGameMock(...args),
   createRematch: (...args: unknown[]) => createRematchMock(...args),
-  finishGame: (...args: unknown[]) => finishGameMock(...args),
   getGameThrows: vi.fn(),
   getGameThrowsIfChanged: (...args: unknown[]) => getGameThrowsIfChangedMock(...args),
   recordThrow: vi.fn(),
@@ -154,7 +152,6 @@ describe("useGameLogic wake-lock wiring", () => {
       gameId: 4,
       invitationLink: "/invite/4",
     });
-    finishGameMock.mockResolvedValue([]);
     updateGameSettingsMock.mockResolvedValue({
       startScore: 301,
       doubleOut: false,

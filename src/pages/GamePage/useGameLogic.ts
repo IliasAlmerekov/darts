@@ -6,20 +6,10 @@ import { useWakeLock } from "./useWakeLock";
 import type { GameThrowsResponse, UIPlayer } from "@/types";
 import type { SyncStatus } from "./lib/gameSession.logic";
 import { useGameExitFlow, useGameSettingsFlow } from "./useGameActions";
-import {
-  useAutoFinishGame,
-  useGameSummaryNavigation,
-  useInteractionSoundUnlock,
-} from "./useGamePageEffects";
+import { useGameSummaryNavigation, useInteractionSoundUnlock } from "./useGamePageEffects";
 import { useGamePlayersState } from "./useGamePlayersState";
 import { parseLocationState } from "@/lib/router/locationState";
 import { parseRouteGameId } from "@/lib/router/tabletGameRoute";
-
-export {
-  areAllPlayersAtStartScore,
-  shouldAutoFinishGame,
-  shouldNavigateToSummary,
-} from "./lib/gameLogic.helpers";
 
 interface GameSettingsFormValues {
   doubleOut: boolean;
@@ -126,14 +116,7 @@ export function useGameLogic(): UseGameLogicResult {
       setPageError,
     });
 
-  useGameSummaryNavigation({ gameData, gameId, navigate });
-  useAutoFinishGame({
-    gameData,
-    gameId,
-    navigate,
-    setPageError,
-    shouldShowFinishOverlay,
-  });
+  useGameSummaryNavigation({ gameId, isFinished: view.isFinished, navigate });
 
   const clearPageError = useCallback(() => {
     setPageError(null);

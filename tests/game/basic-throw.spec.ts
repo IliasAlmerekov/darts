@@ -2,6 +2,7 @@
 // seed: tests/shared/seed.spec.ts
 
 import { test, expect, type Locator, type Page, type Route, type Request } from "../shared/test";
+import { mockFinishedGame } from "../shared/summary-mocks";
 import { mockTabletGame, startedTabletGame } from "../shared/tablet-game-mocks";
 
 type PlayerThrow = {
@@ -153,7 +154,7 @@ const installGameRoutes = async (page: Page, options: RouteOptions): Promise<voi
   const undoStates = [...(options.undoStates ?? [])];
   let throwSequence = 0;
 
-  await mockTabletGame(page, startedTabletGame(gameId));
+  const answerTabletGame = await mockTabletGame(page, startedTabletGame(gameId));
   let getCount = 0;
 
   await page.route(`**/api/game/${gameId}*`, async (route: Route, request: Request) => {
@@ -192,6 +193,10 @@ const installGameRoutes = async (page: Page, options: RouteOptions): Promise<voi
     const nextState = throwStates.shift();
     if (nextState) {
       currentState = nextState;
+    }
+    // The backend finishes the game with the winning throw, so the tablet has no game left.
+    if (currentState.status === "finished") {
+      answerTabletGame({ game: null, lastFinishedGameId: gameId });
     }
 
     throwSequence += 1;
@@ -506,6 +511,7 @@ test.describe("Basic Throw Mechanics and Validation", () => {
     });
 
     const stateAfterValidDoubleCheckout = createState({
+      status: "finished",
       currentThrowCount: 0,
       activePlayerId: 2,
       winnerId: 1,
@@ -520,7 +526,7 @@ test.describe("Basic Throw Mechanics and Validation", () => {
             },
           ],
         }),
-        createPlayer(2, "Player 2", 301, true),
+        createPlayer(2, "Player 2", 301, true, { position: 2 }),
       ],
       settings: {
         startScore: 301,
@@ -538,8 +544,7 @@ test.describe("Basic Throw Mechanics and Validation", () => {
       onSettingsRequest: (payload) => settingsRequests.push(payload),
     });
 
-    // The winning throw triggers auto-finish, which this checkout scenario does not cover.
-    await page.route("**/api/game/1/finish", (route) => route.abort("failed"));
+    await mockFinishedGame(page, 1);
 
     await openGame(page);
 
@@ -562,6 +567,7 @@ test.describe("Basic Throw Mechanics and Validation", () => {
     const winningThrowRequest = await winningThrowRequestPromise;
     const winningPayload = winningThrowRequest.postDataJSON() as ThrowRequestPayload;
     expect(winningPayload).toMatchObject({ value: 10, isDouble: true, isTriple: false });
+    await expect(page).toHaveURL("/summary/1");
   });
 
   test("1.6 Undo last throw within current turn", async ({ page }) => {

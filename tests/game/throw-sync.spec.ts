@@ -3,8 +3,7 @@ import { mockAdminSession } from "../shared/auth-route-mocks";
 import { mockFinishedGame } from "../shared/summary-mocks";
 import { mockTabletGame, startedTabletGame } from "../shared/tablet-game-mocks";
 
-// Throw sync rules from ADR 0003. `test.fail()` marks behaviour the game page does not have
-// yet; #123 removes each mark in the PR that makes the test pass.
+// Throw sync rules from ADR 0003.
 
 interface PlayerScore {
   id: number;
@@ -39,8 +38,23 @@ function gameState(gameId: number, scores: PlayerScore[]) {
   };
 }
 
+/**
+ * The backend's ack for a throw. A throw that leaves at most one active player finishes the
+ * game in the same request: the ack says `finished` and every player has a position.
+ */
 function throwAck(gameId: number, scores: PlayerScore[]) {
   const winner = scores.find((player) => player.score === 0) ?? null;
+  const isFinished = scores.filter((player) => player.score > 0).length <= 1;
+  const finishingOrder = [
+    ...scores.filter((player) => player.score === 0),
+    ...scores.filter((player) => player.score > 0),
+  ];
+  const positionOf = (player: PlayerScore): number | null => {
+    if (isFinished) {
+      return finishingOrder.indexOf(player) + 1;
+    }
+    return player.score === 0 ? 1 : null;
+  };
 
   return {
     success: true,
@@ -52,13 +66,13 @@ function throwAck(gameId: number, scores: PlayerScore[]) {
         playerId: player.id,
         name: player.name,
         score: player.score,
-        position: player.score === 0 ? 1 : null,
+        position: positionOf(player),
         isActive: player.isActive,
         isGuest: false,
         isBust: false,
       })),
       winnerId: winner?.id ?? null,
-      status: "started",
+      status: isFinished ? "finished" : "started",
       currentRound: 1,
     },
     serverTs: "2026-10-23T10:00:00Z",
@@ -116,7 +130,8 @@ const tap = async (page: Page, name: string): Promise<void> => {
 };
 
 test.describe("Throw sync on the game page", () => {
-  test("finishes the game after the winning throw and opens the summary", async ({ page }) => {
+  // #96: the server finishes the game with the winning throw; the client sends no /finish.
+  test("winning throw ack opens the summary", async ({ page }) => {
     const gameId = 1;
     await mockAdminSession(page);
     const answerTabletGame = await mockTabletGame(page, startedTabletGame(gameId));
@@ -124,33 +139,23 @@ test.describe("Throw sync on the game page", () => {
     await mockGameSettings(page, gameId);
     await mockFinishedGame(page, gameId);
     await page.route(`**/api/game/${gameId}/throw/delta`, async (route) => {
+      answerTabletGame({ game: null, lastFinishedGameId: gameId });
       await fulfillJson(route, throwAck(gameId, playerScores(0, 301, "Bob")));
     });
-    await page.route(`**/api/game/${gameId}/finish`, async (route) => {
-      answerTabletGame({ game: null, lastFinishedGameId: gameId });
-      await fulfillJson(route, {
-        gameId,
-        winnerRoundsPlayed: 1,
-        winnerRoundAverage: 301,
-        finishedPlayers: [
-          { playerId: 1, username: "Alice", position: 1, roundsPlayed: 1, roundAverage: 301 },
-          { playerId: 2, username: "Bob", position: 2, roundsPlayed: 1, roundAverage: 0 },
-        ],
-      });
+    const finishRequests: string[] = [];
+    page.on("request", (request) => {
+      if (request.url().endsWith(`/api/game/${gameId}/finish`)) {
+        finishRequests.push(request.url());
+      }
     });
 
     await page.goto(`/game/${gameId}`);
     await expect(playerCard(page, "Alice")).toContainText("20");
-    const finishRequest = page.waitForRequest(
-      (request) =>
-        request.method() === "POST" && request.url().endsWith(`/api/game/${gameId}/finish`),
-    );
     await tap(page, "20");
-
-    await finishRequest;
 
     await expect(page).toHaveURL(`/summary/${gameId}`);
     await expect(page.getByRole("button", { name: "Play Again" })).toBeVisible();
+    expect(finishRequests).toEqual([]);
   });
 
   // #95

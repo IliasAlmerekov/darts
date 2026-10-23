@@ -1,21 +1,12 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { replace, useNavigate, useParams, type LoaderFunctionArgs } from "react-router-dom";
-import { getGameThrows, createRematchGame, startRematch, undoLastThrow } from "@/shared/api/game";
-import type { UndoThrowResponse, UndoAckResponse } from "@/types";
-import {
-  $gameData,
-  setCurrentGameId,
-  setGameData,
-  setGameScoreboardDelta,
-  setInvitation,
-  resetRoomStore,
-} from "@/shared/store";
+import { createRematchGame, startRematch, undoLastThrow } from "@/shared/api/game";
+import { setCurrentGameId, setInvitation, resetRoomStore } from "@/shared/store";
 import { playSound } from "@/shared/services/browser/soundPlayer";
 import { toUserErrorMessage } from "@/lib/error/error-to-user-message";
 import { ROUTES } from "@/lib/router/routes";
 import { parseRouteGameId, tabletGamePath } from "@/lib/router/tabletGameRoute";
-import { applyOptimisticUndo } from "@/lib/game/applyOptimisticUndo";
 import type { FinishedGameStandings } from "@/lib/game/finishedGameStandings";
 import { clientLogger } from "@/shared/services/browser/clientLogger";
 import { gameQueries } from "@/shared/query/game.queries";
@@ -36,7 +27,11 @@ interface UseGameSummaryPageResult extends FinishedGameStandings {
   leaving: boolean;
   settings: SummarySettings;
   loadSettings: () => Promise<void>;
-  starting: boolean;
+  /**
+   * Undo, Play Again or Back To Start runs, or one has succeeded and the page is moving away.
+   * The other actions wait for it (#100).
+   */
+  isActionPending: boolean;
   loadSummary: () => Promise<void>;
   handleUndo: () => Promise<void>;
   handlePlayAgain: () => Promise<void>;
@@ -79,10 +74,6 @@ const LEAVE_OLD_GAME_DELAY_MS = 2_000;
 
 type SummaryAction = "undo" | "rematch" | "rematch-start";
 
-function isUndoAckResponse(response: UndoThrowResponse): response is UndoAckResponse {
-  return response.type === "ack";
-}
-
 /**
  * Loads summary data for a finished game and provides rematch actions.
  */
@@ -94,9 +85,10 @@ export function useGameSummaryPage(): UseGameSummaryPageResult {
     gameId: number | null;
     message: string;
   } | null>(null);
-  const [starting, setStarting] = useState<boolean>(false);
+  const [isActionPending, setIsActionPending] = useState<boolean>(false);
   const [releasedGameId, setReleasedGameId] = useState<number | null>(null);
-  const startGameInFlightRef = useRef<boolean>(false);
+  // Synchronous, so a second tap before the next render finds the lock taken.
+  const actionInFlightRef = useRef<boolean>(false);
   const [leaveState, setLeaveState] = useState<{ gameId: number | null; path: string } | null>(
     null,
   );
@@ -205,55 +197,33 @@ export function useGameSummaryPage(): UseGameSummaryPageResult {
     [client, finishedGameIdFromRoute],
   );
 
+  // The lock stays taken after a success and after a 409 GAME_NOT_NEWEST: the summary stays on
+  // screen while the page moves away, and a tap in that time must not start a second mutation.
+  // Any other failure releases it, so the player can try again.
+  const lockAction = useCallback((): boolean => {
+    if (actionInFlightRef.current) return false;
+    actionInFlightRef.current = true;
+    setIsActionPending(true);
+    return true;
+  }, []);
+
+  const unlockAction = useCallback((): void => {
+    actionInFlightRef.current = false;
+    setIsActionPending(false);
+  }, []);
+
   const { standings, podiumData, leaderBoardList } = useMemo(
     () => buildGameSummaryStandings(summaryQuery.data),
     [summaryQuery.data],
   );
 
   const handleUndo = useCallback(async (): Promise<void> => {
-    if (finishedGameIdFromRoute === null) return;
-
-    const currentGameData = $gameData.get();
-    const optimisticUndoState =
-      currentGameData && currentGameData.id === finishedGameIdFromRoute
-        ? applyOptimisticUndo(currentGameData)
-        : null;
-    let serverUndoApplied = false;
+    if (finishedGameIdFromRoute === null || !lockAction()) return;
 
     try {
       setActionError(null);
-      if (optimisticUndoState) {
-        setGameData(optimisticUndoState);
-      }
-
-      const undoResponse = await undoLastThrow(finishedGameIdFromRoute);
-      serverUndoApplied = true;
-
-      if (isUndoAckResponse(undoResponse)) {
-        const gameStateBeforePatch = $gameData.get();
-        setGameScoreboardDelta(undoResponse.scoreboardDelta, finishedGameIdFromRoute);
-        const gameStateAfterPatch = $gameData.get();
-        const patchedGameState =
-          gameStateBeforePatch !== null &&
-          gameStateBeforePatch.id === finishedGameIdFromRoute &&
-          gameStateAfterPatch !== null &&
-          gameStateAfterPatch.id === finishedGameIdFromRoute
-            ? gameStateAfterPatch
-            : null;
-        const needsFullRefresh =
-          optimisticUndoState === null ||
-          patchedGameState === null ||
-          (patchedGameState.status === "started" &&
-            (typeof patchedGameState.activePlayerId !== "number" ||
-              !Number.isFinite(patchedGameState.activePlayerId)));
-
-        if (needsFullRefresh) {
-          const refreshedGameState = await getGameThrows(finishedGameIdFromRoute);
-          setGameData(refreshedGameState);
-        }
-      } else {
-        setGameData(undoResponse);
-      }
+      // The game page owns the game state and reads the reopened game from the server.
+      await undoLastThrow(finishedGameIdFromRoute);
 
       playSound("undo");
       releaseFinishedGame(finishedGameIdFromRoute);
@@ -261,29 +231,29 @@ export function useGameSummaryPage(): UseGameSummaryPageResult {
         state: { skipFinishOverlay: true },
       });
     } catch (err) {
-      if (!serverUndoApplied && currentGameData && currentGameData.id === finishedGameIdFromRoute) {
-        setGameData(currentGameData);
-      }
       if (isGameNotNewestError(err)) {
         leaveOldGame("undo");
       } else {
         clientLogger.error("game-summary.undo-reopen.failed", {
-          context: {
-            finishedGameId: finishedGameIdFromRoute,
-            serverUndoApplied,
-          },
+          context: { finishedGameId: finishedGameIdFromRoute },
           error: err,
         });
+        unlockAction();
       }
       setActionError(toUserErrorMessage(err, "Could not reopen game and undo throw."));
     }
-  }, [finishedGameIdFromRoute, leaveOldGame, navigate, releaseFinishedGame, setActionError]);
+  }, [
+    finishedGameIdFromRoute,
+    leaveOldGame,
+    lockAction,
+    navigate,
+    releaseFinishedGame,
+    setActionError,
+    unlockAction,
+  ]);
 
   const handlePlayAgain = useCallback(async (): Promise<void> => {
-    if (finishedGameIdFromRoute === null || startGameInFlightRef.current) return;
-
-    startGameInFlightRef.current = true;
-    setStarting(true);
+    if (finishedGameIdFromRoute === null || !lockAction()) return;
 
     try {
       setActionError(null);
@@ -309,16 +279,22 @@ export function useGameSummaryPage(): UseGameSummaryPageResult {
           context: { finishedGameId: finishedGameIdFromRoute },
           error: err,
         });
+        unlockAction();
       }
       setActionError(toUserErrorMessage(err, "Could not start a rematch."));
-    } finally {
-      startGameInFlightRef.current = false;
-      setStarting(false);
     }
-  }, [finishedGameIdFromRoute, leaveOldGame, navigate, releaseFinishedGame, setActionError]);
+  }, [
+    finishedGameIdFromRoute,
+    leaveOldGame,
+    lockAction,
+    navigate,
+    releaseFinishedGame,
+    setActionError,
+    unlockAction,
+  ]);
 
   const handleBackToStart = useCallback(async (): Promise<void> => {
-    if (finishedGameIdFromRoute === null) return;
+    if (finishedGameIdFromRoute === null || !lockAction()) return;
 
     try {
       setActionError(null);
@@ -340,17 +316,26 @@ export function useGameSummaryPage(): UseGameSummaryPageResult {
           context: { finishedGameId: finishedGameIdFromRoute },
           error: err,
         });
+        unlockAction();
       }
       setActionError(toUserErrorMessage(err, "Could not return to start."));
     }
-  }, [finishedGameIdFromRoute, leaveOldGame, navigate, releaseFinishedGame, setActionError]);
+  }, [
+    finishedGameIdFromRoute,
+    leaveOldGame,
+    lockAction,
+    navigate,
+    releaseFinishedGame,
+    setActionError,
+    unlockAction,
+  ]);
 
   return {
     error,
     leaving: leavePath !== null,
     settings,
     loadSettings,
-    starting,
+    isActionPending,
     podiumData,
     standings,
     leaderBoardList,

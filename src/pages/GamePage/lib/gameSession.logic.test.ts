@@ -9,6 +9,7 @@ import {
   applyUndoResponse,
   createGameSession,
   failSession,
+  markFirstLoadFailed,
   markSessionOffline,
   retrySession,
   takeNextOp,
@@ -167,6 +168,7 @@ describe("gameSession.logic", () => {
       canRetry: false,
       canThrow: true,
       canUndo: true,
+      isFinished: false,
       isQueueFull: false,
       status: "idle",
     });
@@ -353,6 +355,7 @@ describe("gameSession.logic", () => {
       canRetry: true,
       canThrow: false,
       canUndo: false,
+      isFinished: false,
       isQueueFull: false,
       status: "offline",
     });
@@ -364,5 +367,110 @@ describe("gameSession.logic", () => {
     const reloaded = applyReloadedGame(retrying, buildGame({ alice: 281, bob: 301 }));
     expect(getSessionView(reloaded)).toMatchObject({ canThrow: true, status: "failed" });
     expect(scores(reloaded.confirmed)).toEqual([281, 301]);
+  });
+
+  // #98: a failed first load lost no tap, so a working Retry leaves nothing to report.
+  it("waits for Retry after a failed first load and clears it without a lost-throws notice", () => {
+    const loadFailed = markFirstLoadFailed(createGameSession(buildGame({ alice: 281, bob: 301 })));
+
+    expect(getSessionView(loadFailed)).toMatchObject({
+      canRetry: true,
+      canThrow: false,
+      canUndo: false,
+      status: "loadFailed",
+    });
+    expect(getSessionView(retrySession(loadFailed))).toMatchObject({
+      canRetry: false,
+      canThrow: true,
+      status: "idle",
+    });
+  });
+
+  // #96: the server finishes the game with the winning throw and says so in the ack.
+  it("reports the game finished once the winning throw ack says so", () => {
+    const sent = send(throwMany(createGameSession(buildGame({ alice: 20, bob: 301 })), [20]));
+    expect(getSessionView(sent).isFinished).toBe(false);
+
+    const ack = buildThrowAck(0, 301, 2);
+    ack.scoreboardDelta = {
+      changedPlayers: [
+        { playerId: 1, name: "Alice", score: 0, isActive: false, isGuest: false, position: 1 },
+        { playerId: 2, name: "Bob", score: 301, isActive: true, isGuest: false, position: 2 },
+      ],
+      winnerId: 1,
+      status: "finished",
+      currentRound: 1,
+    };
+    const acknowledged = applyThrowAck(sent, ack);
+
+    expect(acknowledged).not.toBeNull();
+    if (acknowledged === null) return;
+    expect(getSessionView(acknowledged)).toMatchObject({ canThrow: false, isFinished: true });
+  });
+
+  // The server finishes the game once one active player is left, so a tap for that player
+  // before the ack would be rejected.
+  it("closes throw input after the winning throw and keeps undo open", () => {
+    const won = throwMany(createGameSession(buildGame({ alice: 20, bob: 301 })), [20]);
+
+    expect(getSessionView(won)).toMatchObject({ canThrow: false, canUndo: true });
+    expect(enqueueThrow(won, 20)).toBeNull();
+  });
+
+  it("reopens throw input when the winning throw is undone", () => {
+    const undone = enqueueUndo(
+      throwMany(createGameSession(buildGame({ alice: 20, bob: 301 })), [20]),
+    );
+
+    expect(getSessionView(undone)).toMatchObject({ canThrow: true, isFinished: false });
+    expect(scores(getShownGame(undone))).toEqual([20, 301]);
+    expect(enqueueThrow(undone, 20)).not.toBeNull();
+  });
+
+  it("keeps throw input open after a checkout while two players are still in", () => {
+    const game = buildGameThrowsResponse({
+      id: 4,
+      settings: { startScore: 301, doubleOut: false, tripleOut: false },
+      players: [
+        buildBackendPlayer({ id: 1, name: "Alice", score: 20, isActive: true }),
+        buildBackendPlayer({ id: 2, name: "Bob", score: 301 }),
+        buildBackendPlayer({ id: 3, name: "Carol", score: 301 }),
+      ],
+    });
+    const checkedOut = throwMany(createGameSession(game), [20]);
+
+    expect(scores(getShownGame(checkedOut))).toEqual([0, 301, 301]);
+    expect(getSessionView(checkedOut)).toMatchObject({ canThrow: true, isFinished: false });
+    expect(enqueueThrow(checkedOut, 20)).not.toBeNull();
+  });
+
+  it("rolls back a rejected winning throw and reports no finished game", () => {
+    const sent = send(throwMany(createGameSession(buildGame({ alice: 20, bob: 301 })), [20]));
+    const failed = failSession(sent);
+
+    expect(getSessionView(failed).isFinished).toBe(false);
+    expect(scores(getShownGame(failed))).toEqual([20, 301]);
+  });
+
+  it("reports a game the server already finished as finished", () => {
+    const finishedGame: GameThrowsResponse = {
+      ...buildGame({ alice: 0, bob: 301 }),
+      status: "finished",
+    };
+
+    expect(getSessionView(createGameSession(finishedGame)).isFinished).toBe(true);
+  });
+
+  it("waits for every tap to be acknowledged before it reports a finished game", () => {
+    const finishedGame: GameThrowsResponse = {
+      ...buildGame({ alice: 0, bob: 301 }),
+      status: "finished",
+    };
+    const session: GameSession = {
+      ...createGameSession(finishedGame),
+      pending: [{ kind: "undo" }],
+    };
+
+    expect(getSessionView(session).isFinished).toBe(false);
   });
 });

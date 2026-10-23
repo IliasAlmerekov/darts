@@ -2,10 +2,9 @@
 import { describe, expect, it } from "vitest";
 import {
   areAllPlayersAtStartScore,
-  shouldAutoFinishGame,
-  shouldNavigateToSummary,
-} from "./useGameLogic";
-import { calculateShouldShowFinishOverlay } from "./lib/gameLogic.helpers";
+  calculateShouldShowFinishOverlay,
+  isLastActivePlayerLeft,
+} from "./lib/gameLogic.helpers";
 import type { GameThrowsResponse } from "@/types";
 
 function buildGameData(overrides?: Partial<GameThrowsResponse>): GameThrowsResponse {
@@ -96,47 +95,9 @@ describe("areAllPlayersAtStartScore", () => {
   });
 });
 
-describe("shouldAutoFinishGame", () => {
+describe("isLastActivePlayerLeft", () => {
   it("should return false when game data is missing", () => {
-    expect(shouldAutoFinishGame(null, false)).toBe(false);
-  });
-
-  it("should return false when the finish overlay is visible", () => {
-    const data = buildGameData({
-      currentRound: 3,
-      players: [
-        {
-          id: 1,
-          name: "P1",
-          score: 26,
-          isActive: true,
-          isBust: false,
-          position: null,
-          throwsInCurrentRound: 0,
-          currentRoundThrows: [],
-          roundHistory: [
-            { throws: [{ value: 20, isDouble: false, isTriple: false, isBust: false }] },
-          ],
-          isGuest: false,
-        },
-        {
-          id: 2,
-          name: "P2",
-          score: 0,
-          isActive: false,
-          isBust: false,
-          position: 1,
-          throwsInCurrentRound: 0,
-          currentRoundThrows: [],
-          roundHistory: [
-            { throws: [{ value: 20, isDouble: false, isTriple: false, isBust: false }] },
-          ],
-          isGuest: false,
-        },
-      ],
-    });
-
-    expect(shouldAutoFinishGame(data, true)).toBe(false);
+    expect(isLastActivePlayerLeft(null)).toBe(false);
   });
 
   it("should return true when exactly one active player remains in a progressed started game", () => {
@@ -174,7 +135,7 @@ describe("shouldAutoFinishGame", () => {
       ],
     });
 
-    expect(shouldAutoFinishGame(data, false)).toBe(true);
+    expect(isLastActivePlayerLeft(data)).toBe(true);
   });
 
   it("should return false when no players have finished yet", () => {
@@ -207,7 +168,7 @@ describe("shouldAutoFinishGame", () => {
       ],
     });
 
-    expect(shouldAutoFinishGame(data, false)).toBe(false);
+    expect(isLastActivePlayerLeft(data)).toBe(false);
   });
 
   it("should return true when the game is not finished and only one active player remains", () => {
@@ -241,38 +202,7 @@ describe("shouldAutoFinishGame", () => {
       ],
     });
 
-    expect(shouldAutoFinishGame(data, false)).toBe(true);
-  });
-});
-
-describe("shouldNavigateToSummary", () => {
-  it("should return true for a finished game when winnerId is null", () => {
-    const data = buildGameData({
-      id: 559,
-      status: "finished",
-      currentRound: 1,
-      winnerId: null,
-    });
-
-    expect(shouldNavigateToSummary(data, 559)).toBe(true);
-  });
-
-  it("should return false when the game id does not match the route id", () => {
-    const data = buildGameData({
-      id: 560,
-      status: "finished",
-    });
-
-    expect(shouldNavigateToSummary(data, 559)).toBe(false);
-  });
-
-  it("should return false when the game is not finished", () => {
-    const data = buildGameData({
-      id: 559,
-      status: "started",
-    });
-
-    expect(shouldNavigateToSummary(data, 559)).toBe(false);
+    expect(isLastActivePlayerLeft(data)).toBe(true);
   });
 });
 
@@ -395,7 +325,7 @@ describe("calculateShouldShowFinishOverlay", () => {
     ).toBe(false);
   });
 
-  it("should return false when the game should auto-finish instead", () => {
+  it("should return false when only one active player is left", () => {
     const data = buildGameData({
       currentRound: 4,
       players: [
