@@ -32,6 +32,7 @@ import {
   failSession,
   getSessionView,
   getShownGame,
+  markFirstLoadFailed,
   markSessionOffline,
   retrySession,
   takeNextOp,
@@ -114,15 +115,22 @@ export function useGameSession(gameId: number | null): UseGameSessionReturn {
         }
         const fetchError =
           loadError instanceof Error ? loadError : new Error("Failed to fetch game data");
-        setError(fetchError);
         clientLogger.error("game.fetch.failed", { context: { gameId: id }, error: fetchError });
+        // A copy from an earlier page keeps the scoreboard on screen, so the status line offers
+        // Retry instead of the page error.
+        const current = sessionAtom.get();
+        if (current.confirmed !== null) {
+          commit(markFirstLoadFailed(current));
+          return;
+        }
+        setError(fetchError);
       } finally {
         if (isCurrent(generation)) {
           setLoading(false);
         }
       }
     },
-    [commit, isCurrent],
+    [commit, isCurrent, sessionAtom],
   );
 
   /** Reads the game from the server after a rejected request; the session is `reloading`. */
@@ -286,8 +294,8 @@ export function useGameSession(gameId: number | null): UseGameSessionReturn {
     }
 
     const current = sessionAtom.get();
-    if (getSessionView(current).canRetry) {
-      commit(retrySession(current));
+    commit(retrySession(current));
+    if (current.recovery === "offline") {
       void reloadAfterFailure(gameId, generationRef.current);
       return;
     }

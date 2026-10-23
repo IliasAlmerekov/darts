@@ -22,9 +22,10 @@ export type PendingOp =
 /**
  * State after a rejected request. `reloading`: the game is being read again. `failed`: the
  * reload worked and the player still has to learn that the last throws were lost.
- * `offline`: the reload failed as well, so input waits for Retry.
+ * `offline`: the reload failed as well, so input waits for Retry. `loadFailed`: the first load
+ * failed while the store showed a copy of the game; no tap was lost, and input waits for Retry.
  */
-type Recovery = "none" | "reloading" | "failed" | "offline";
+type Recovery = "none" | "reloading" | "failed" | "offline" | "loadFailed";
 
 export interface GameSession {
   /** The game as the server acknowledged it. */
@@ -74,12 +75,13 @@ function countUnconfirmedThrows(session: GameSession): number {
 }
 
 export function getSessionView(session: GameSession): GameSessionView {
-  const isBlocked = session.recovery === "reloading" || session.recovery === "offline";
+  const isWaitingForRetry = session.recovery === "offline" || session.recovery === "loadFailed";
+  const isBlocked = isWaitingForRetry || session.recovery === "reloading";
   const isQueueFull = countUnconfirmedThrows(session) >= MAX_UNCONFIRMED_THROWS;
   const shown = getShownGame(session);
 
   let status: SyncStatus = "idle";
-  if (session.recovery === "offline") {
+  if (isWaitingForRetry) {
     status = "offline";
   } else if (session.pending.length > 0 || session.recovery === "reloading") {
     status = "syncing";
@@ -91,7 +93,7 @@ export function getSessionView(session: GameSession): GameSessionView {
     status,
     canThrow: !isBlocked && !isQueueFull && shown?.status === "started",
     canUndo: !isBlocked && shown !== null,
-    canRetry: session.recovery === "offline",
+    canRetry: isWaitingForRetry,
     // The server finishes the game with the winning throw. Leaving the page drops
     // unacknowledged taps, so the summary waits until the server confirmed every one (#96).
     isFinished: !isBlocked && session.pending.length === 0 && shown?.status === "finished",
@@ -241,9 +243,16 @@ export function failSession(session: GameSession): GameSession {
   return { ...session, pending: [], isHeadSent: false, recovery: "reloading" };
 }
 
-/** Starts another reload after the server could not be reached. */
+/**
+ * Starts another reload after the server could not be reached. After a failed first load the
+ * session drops the Retry state, and the caller loads the game again.
+ */
 export function retrySession(session: GameSession): GameSession {
-  return session.recovery === "offline" ? { ...session, recovery: "reloading" } : session;
+  if (session.recovery === "offline") {
+    return { ...session, recovery: "reloading" };
+  }
+
+  return session.recovery === "loadFailed" ? { ...session, recovery: "none" } : session;
 }
 
 export function applyReloadedGame(session: GameSession, game: GameThrowsResponse): GameSession {
@@ -252,6 +261,11 @@ export function applyReloadedGame(session: GameSession, game: GameThrowsResponse
 
 export function markSessionOffline(session: GameSession): GameSession {
   return { ...session, recovery: "offline" };
+}
+
+/** The first load failed while the store showed a copy of the game (#98). */
+export function markFirstLoadFailed(session: GameSession): GameSession {
+  return { ...session, recovery: "loadFailed" };
 }
 
 export function applySessionSettings(session: GameSession, settings: GameSettings): GameSession {

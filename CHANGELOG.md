@@ -36,7 +36,7 @@ and this project does **not** yet follow [Semantic Versioning](https://semver.or
 ### Fixed
 
 - Game page: a throw or undo response that arrives after the tablet left the game, or opened another one, no longer changes the scoreboard on screen (#95)
-- Game page: after a failed sync the page reloads the game and shows "Your last throws were not saved." If the reload fails too, throw and undo input stay disabled until Retry reloads the game (#98)
+- Game page: after a failed sync the page reloads the game and shows "Your last throws were not saved." If the reload fails too, throw and undo input stay disabled until Retry reloads the game. When the first load fails while the store still shows the game from an earlier page, the page offers the same Retry instead of a scoreboard with dead input, and a load that works shows no notice (#98)
 - Game page: a full throw queue disables throw input and shows "Syncing throws…" instead of dropping taps without a word (#105)
 - Game page: the server finishes the game inside the winning throw request, and the summary opens once that throw's ack says the game is finished and every throw is saved. A rejected winning throw rolls the scoreboard back and finishes nothing. `useAutoFinishGame` is gone, and the client sends no request of its own to finish the game (#96)
 - Summary: Undo, Play Again and Back To Start share one lock. While one runs, all three buttons are disabled and a second tap sends no request (#100)

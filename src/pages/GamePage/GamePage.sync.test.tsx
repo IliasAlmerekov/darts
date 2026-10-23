@@ -420,6 +420,30 @@ describe("GamePage throw sync", () => {
     expect(screen.getByRole("button", { name: "Undo" }).hasAttribute("disabled")).toBe(false);
   });
 
+  // #98: a cached copy keeps the scoreboard on screen, so the failure needs the status line.
+  it("offers Retry when the first load fails while the store shows the game", async () => {
+    getGameThrowsIfChangedMock
+      .mockRejectedValueOnce(new TypeError("Failed to fetch"))
+      .mockResolvedValue(buildGame({ alice: 250, bob: 301 }));
+    getGameThrowsMock.mockResolvedValue(buildGame({ alice: 250, bob: 301 }));
+    setGameData(buildGame({ alice: 281, bob: 301 }));
+    renderGamePage();
+
+    const retryButton = await screen.findByRole("button", { name: "Retry" });
+    expect(screen.getByRole("status").textContent).toMatch(/not saved/i);
+    expect(screen.getByRole("button", { name: "20" }).hasAttribute("disabled")).toBe(true);
+
+    fireEvent.click(retryButton);
+
+    await waitFor(() => {
+      expect(within(playerCard("Alice")).getByText("250")).toBeTruthy();
+      expect(screen.getByRole("button", { name: "20" }).hasAttribute("disabled")).toBe(false);
+    });
+    expect(screen.queryByRole("button", { name: "Retry" })).toBeNull();
+    // No tap was lost: the failed load sent no throw, so the page has nothing to report.
+    expect(screen.getByRole("status").textContent).not.toMatch(/not saved/i);
+  });
+
   // The summary's Undo reopens the game on the server and leaves the finished copy in the store.
   it("loads a game the summary reopened instead of returning to the summary", async () => {
     setGameData({ ...buildGame({ alice: 0, bob: 40 }), status: "finished", winnerId: 1 });

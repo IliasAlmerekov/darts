@@ -9,6 +9,7 @@ import {
   applyUndoResponse,
   createGameSession,
   failSession,
+  markFirstLoadFailed,
   markSessionOffline,
   retrySession,
   takeNextOp,
@@ -366,6 +367,23 @@ describe("gameSession.logic", () => {
     const reloaded = applyReloadedGame(retrying, buildGame({ alice: 281, bob: 301 }));
     expect(getSessionView(reloaded)).toMatchObject({ canThrow: true, status: "failed" });
     expect(scores(reloaded.confirmed)).toEqual([281, 301]);
+  });
+
+  // #98: a failed first load lost no tap, so a working Retry leaves nothing to report.
+  it("waits for Retry after a failed first load and clears it without a lost-throws notice", () => {
+    const loadFailed = markFirstLoadFailed(createGameSession(buildGame({ alice: 281, bob: 301 })));
+
+    expect(getSessionView(loadFailed)).toMatchObject({
+      canRetry: true,
+      canThrow: false,
+      canUndo: false,
+      status: "offline",
+    });
+    expect(getSessionView(retrySession(loadFailed))).toMatchObject({
+      canRetry: false,
+      canThrow: true,
+      status: "idle",
+    });
   });
 
   // #96: the server finishes the game with the winning throw and says so in the ack.
