@@ -28,7 +28,6 @@
     "resolveJsonModule": true,
 
     /* Path aliases — page-based architecture */
-    "baseUrl": ".",
     "paths": {
       "@/*": ["./src/*"],
       "@/app/*": ["./src/app/*"],
