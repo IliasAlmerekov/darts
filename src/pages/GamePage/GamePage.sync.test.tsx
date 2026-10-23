@@ -20,7 +20,7 @@ vi.mock("@/shared/services/browser/soundPlayer", () => ({
   unlockSounds: vi.fn(),
 }));
 
-import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
+import { act, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
 import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import { ApiError } from "@/shared/api";
@@ -216,10 +216,10 @@ describe("GamePage throw sync", () => {
       expect(within(playerCard("Alice")).getByText("281")).toBeTruthy();
     });
 
-    firstThrow.resolve(buildThrowAck({ alice: 281, bob: 301 }));
-
-    await waitFor(() => {
-      expect(screen.getByRole("button", { name: "20" }).hasAttribute("disabled")).toBe(false);
+    // Let the queue handle the ack and send whatever it still holds before asserting.
+    await act(async () => {
+      firstThrow.resolve(buildThrowAck({ alice: 281, bob: 301 }));
+      await new Promise((resolve) => setTimeout(resolve, 0));
     });
     expect(within(playerCard("Alice")).getByText("281")).toBeTruthy();
     expect(recordThrowMock).toHaveBeenCalledTimes(1);

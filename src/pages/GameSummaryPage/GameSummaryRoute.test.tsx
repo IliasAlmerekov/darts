@@ -164,20 +164,40 @@ describe("GameSummaryPage route", () => {
   });
 
   // #100
-  it.fails("should send no other summary action while Undo is pending", async () => {
-    getFinishedGameMock.mockResolvedValue(buildFinishedPlayerResponses());
-    getGameSettingsMock.mockResolvedValue(SETTINGS);
-    undoLastThrowMock.mockReturnValue(new Promise(() => {}));
-    renderSummaryRoute();
-    const undoButton = await screen.findByRole("button", { name: "Return to game" });
+  describe("while Undo is pending", () => {
+    beforeEach(() => {
+      getFinishedGameMock.mockResolvedValue(buildFinishedPlayerResponses());
+      getGameSettingsMock.mockResolvedValue(SETTINGS);
+      undoLastThrowMock.mockReturnValue(new Promise(() => {}));
+    });
 
-    fireEvent.click(undoButton);
-    fireEvent.click(undoButton);
-    fireEvent.click(screen.getByRole("button", { name: "Play Again" }));
-    fireEvent.click(screen.getByRole("button", { name: "Back To Start" }));
+    async function clickUndo(): Promise<void> {
+      renderSummaryRoute();
+      fireEvent.click(await screen.findByRole("button", { name: "Return to game" }));
+    }
 
-    expect(undoLastThrowMock).toHaveBeenCalledTimes(1);
-    expect(startRematchMock).not.toHaveBeenCalled();
-    expect(createRematchGameMock).not.toHaveBeenCalled();
+    it.fails("should send no second Undo", async () => {
+      await clickUndo();
+
+      fireEvent.click(screen.getByRole("button", { name: "Return to game" }));
+
+      expect(undoLastThrowMock).toHaveBeenCalledTimes(1);
+    });
+
+    it.fails("should not start a rematch from Play Again", async () => {
+      await clickUndo();
+
+      fireEvent.click(screen.getByRole("button", { name: "Play Again" }));
+
+      expect(startRematchMock).not.toHaveBeenCalled();
+    });
+
+    it.fails("should not create a rematch room from Back To Start", async () => {
+      await clickUndo();
+
+      fireEvent.click(screen.getByRole("button", { name: "Back To Start" }));
+
+      expect(createRematchGameMock).not.toHaveBeenCalled();
+    });
   });
 });
