@@ -253,6 +253,23 @@ describe("GamePage throw sync", () => {
     expect(await screen.findByText(`Summary page for game ${GAME_ID}`)).toBeTruthy();
   });
 
+  // The server finishes the game with the winning throw and would reject a tap for Bob.
+  it("disables throw input after the winning throw while its ack is on the way", async () => {
+    const winningThrow = createDeferred<ThrowAckResponse>();
+    recordThrowMock.mockReturnValueOnce(winningThrow.promise);
+    await openGame(buildGame({ alice: 19, bob: 301 }));
+
+    tap("19");
+    await waitFor(() => {
+      expect(recordThrowMock).toHaveBeenCalledTimes(1);
+    });
+
+    expect(screen.getByRole("button", { name: "20" }).hasAttribute("disabled")).toBe(true);
+    expect(screen.getByRole("button", { name: "Undo" }).hasAttribute("disabled")).toBe(false);
+    tap("20");
+    expect(recordThrowMock).toHaveBeenCalledTimes(1);
+  });
+
   // #95
   it("opens no summary when the winning throw ack arrives after the page moved to another game", async () => {
     const winningThrow = createDeferred<ThrowAckResponse>();

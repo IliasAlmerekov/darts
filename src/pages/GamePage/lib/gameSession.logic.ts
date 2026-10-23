@@ -12,6 +12,7 @@ import {
   applyOptimisticUndo,
   applyScoreboardDeltaToGameState,
 } from "../throws/throwStateService";
+import { shouldAutoFinishGame } from "./gameLogic.helpers";
 
 /** ADR 0003: two full turns may wait for the server. */
 const MAX_UNCONFIRMED_THROWS = 6;
@@ -91,7 +92,10 @@ export function getSessionView(session: GameSession): GameSessionView {
 
   return {
     status,
-    canThrow: !isBlocked && !isQueueFull && shown?.status === "started",
+    // The server finishes the game once one active player is left and would reject the next
+    // tap, so throw input closes with the winning throw. Undo stays open to take it back.
+    canThrow:
+      !isBlocked && !isQueueFull && shown?.status === "started" && !shouldAutoFinishGame(shown),
     canUndo: !isBlocked && shown !== null,
     canRetry: isWaitingForRetry,
     // The server finishes the game with the winning throw. Leaving the page drops

@@ -408,6 +408,15 @@ describe("gameSession.logic", () => {
     expect(getSessionView(acknowledged)).toMatchObject({ canThrow: false, isFinished: true });
   });
 
+  // The server finishes the game once one active player is left, so a tap for that player
+  // before the ack would be rejected.
+  it("closes throw input after the winning throw and keeps undo open", () => {
+    const won = throwMany(createGameSession(buildGame({ alice: 20, bob: 301 })), [20]);
+
+    expect(getSessionView(won)).toMatchObject({ canThrow: false, canUndo: true });
+    expect(enqueueThrow(won, 20)).toBeNull();
+  });
+
   it("rolls back a rejected winning throw and reports no finished game", () => {
     const sent = send(throwMany(createGameSession(buildGame({ alice: 20, bob: 301 })), [20]));
     const failed = failSession(sent);
