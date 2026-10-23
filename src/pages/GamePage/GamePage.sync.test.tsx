@@ -258,10 +258,11 @@ describe("GamePage throw sync", () => {
     getGameThrowsIfChangedMock.mockResolvedValue(buildGame({ alice: 301, bob: 301 }));
     fireEvent.click(retryButton);
 
+    // Input can come back before the reload answers, so wait for the reloaded score too.
     await waitFor(() => {
+      expect(within(playerCard("Alice")).getByText("301")).toBeTruthy();
       expect(screen.getByRole("button", { name: "20" }).hasAttribute("disabled")).toBe(false);
     });
-    expect(within(playerCard("Alice")).getByText("301")).toBeTruthy();
     expect(screen.queryByRole("button", { name: "Retry" })).toBeNull();
   });
 });
