@@ -13,6 +13,16 @@ updates:
         update-types: [version-update:semver-major]
       - dependency-name: "@eslint/js"
         update-types: [version-update:semver-major]
+      # shortcut: a React major needs react, react-dom and both type packages together plus code changes (#294),
+      # remove these four entries in the React 19 migration (#293).
+      - dependency-name: react
+        update-types: [version-update:semver-major]
+      - dependency-name: react-dom
+        update-types: [version-update:semver-major]
+      - dependency-name: "@types/react"
+        update-types: [version-update:semver-major]
+      - dependency-name: "@types/react-dom"
+        update-types: [version-update:semver-major]
     groups:
       npm-minor-patch:
         update-types: [minor, patch]
