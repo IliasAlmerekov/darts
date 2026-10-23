@@ -1,0 +1,256 @@
+// @vitest-environment jsdom
+
+// Regression tests for the throw sync rules in ADR 0003. Tests marked `it.fails` describe
+// behaviour the page does not have yet; #123 turns them green one by one.
+
+const getGameThrowsIfChangedMock = vi.hoisted(() => vi.fn());
+const getGameThrowsMock = vi.hoisted(() => vi.fn());
+const recordThrowMock = vi.hoisted(() => vi.fn());
+const undoLastThrowMock = vi.hoisted(() => vi.fn());
+const finishGameMock = vi.hoisted(() => vi.fn());
+
+vi.mock("@/shared/api/game", () => ({
+  abortGame: vi.fn(),
+  finishGame: (...args: unknown[]) => finishGameMock(...args),
+  getGameThrows: (...args: unknown[]) => getGameThrowsMock(...args),
+  getGameThrowsIfChanged: (...args: unknown[]) => getGameThrowsIfChangedMock(...args),
+  recordThrow: (...args: unknown[]) => recordThrowMock(...args),
+  resetGameStateVersion: vi.fn(),
+  setGameStateVersion: vi.fn(),
+  undoLastThrow: (...args: unknown[]) => undoLastThrowMock(...args),
+  updateGameSettings: vi.fn(),
+}));
+
+vi.mock("@/shared/services/browser/soundPlayer", () => ({
+  playSound: vi.fn(),
+  unlockSounds: vi.fn(),
+}));
+
+import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
+import { MemoryRouter, Route, Routes } from "react-router-dom";
+import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
+import { ApiError } from "@/shared/api";
+import type { ThrowAckResponse } from "@/shared/api/game";
+import { buildBackendPlayer, buildGameThrowsResponse } from "@/shared/types/game.test-support";
+import type { GameThrowsResponse } from "@/types";
+import * as gameStore from "@/shared/store/game-state";
+import GamePage from ".";
+
+const GAME_ID = 4;
+
+interface Deferred<T> {
+  promise: Promise<T>;
+  resolve: (value: T) => void;
+  reject: (reason: unknown) => void;
+}
+
+function createDeferred<T>(): Deferred<T> {
+  let resolve!: (value: T) => void;
+  let reject!: (reason: unknown) => void;
+  const promise = new Promise<T>((promiseResolve, promiseReject) => {
+    resolve = promiseResolve;
+    reject = promiseReject;
+  });
+  return { promise, resolve, reject };
+}
+
+function buildGame(scores: { alice: number; bob: number }): GameThrowsResponse {
+  return buildGameThrowsResponse({
+    id: GAME_ID,
+    settings: { startScore: 301, doubleOut: false, tripleOut: false },
+    players: [
+      buildBackendPlayer({
+        id: 1,
+        name: "Alice",
+        score: scores.alice,
+        isActive: true,
+        position: null,
+      }),
+      buildBackendPlayer({
+        id: 2,
+        name: "Bob",
+        score: scores.bob,
+        position: scores.bob === 0 ? 1 : null,
+      }),
+    ],
+  });
+}
+
+function buildThrowAck(scores: { alice: number; bob: number }): ThrowAckResponse {
+  return {
+    type: "ack",
+    success: true,
+    gameId: GAME_ID,
+    stateVersion: "v2",
+    throw: null,
+    scoreboardDelta: {
+      changedPlayers: [
+        { playerId: 1, name: "Alice", score: scores.alice, isActive: true, isGuest: false },
+        { playerId: 2, name: "Bob", score: scores.bob, isActive: false, isGuest: false },
+      ],
+      winnerId: null,
+      status: "started",
+      currentRound: 1,
+    },
+    serverTs: "2026-10-23T10:00:00Z",
+  };
+}
+
+function stateVersionConflict(): ApiError {
+  return new ApiError("Conflict", { status: 409, data: { error: "GAME_STATE_VERSION_MISMATCH" } });
+}
+
+function renderGamePage(): void {
+  render(
+    <MemoryRouter initialEntries={[`/game/${GAME_ID}`]}>
+      <Routes>
+        <Route path="/game/:id" element={<GamePage />} />
+        <Route path="/summary/:id" element={<p>Summary page</p>} />
+      </Routes>
+    </MemoryRouter>,
+  );
+}
+
+function tap(name: string): void {
+  fireEvent.click(screen.getByRole("button", { name }));
+}
+
+function playerCard(name: string): HTMLElement {
+  return screen.getByRole("group", { name });
+}
+
+async function openGame(game: GameThrowsResponse): Promise<void> {
+  getGameThrowsIfChangedMock.mockResolvedValue(game);
+  renderGamePage();
+  await screen.findByRole("group", { name: "Alice" });
+}
+
+let originalScrollIntoView: typeof HTMLElement.prototype.scrollIntoView | undefined;
+
+beforeAll(() => {
+  originalScrollIntoView = HTMLElement.prototype.scrollIntoView;
+  HTMLElement.prototype.scrollIntoView = vi.fn();
+});
+
+afterAll(() => {
+  if (originalScrollIntoView !== undefined) {
+    HTMLElement.prototype.scrollIntoView = originalScrollIntoView;
+    return;
+  }
+
+  Reflect.deleteProperty(HTMLElement.prototype, "scrollIntoView");
+});
+
+describe("GamePage throw sync", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    window.sessionStorage.clear();
+    gameStore.resetGameStore();
+    finishGameMock.mockResolvedValue([]);
+  });
+
+  // #96
+  it.fails("finishes the game only after the server acknowledges the winning throw", async () => {
+    const winningThrow = createDeferred<ThrowAckResponse>();
+    recordThrowMock.mockReturnValueOnce(winningThrow.promise);
+    getGameThrowsMock.mockResolvedValue(buildGame({ alice: 17, bob: 0 }));
+    await openGame(buildGame({ alice: 17, bob: 0 }));
+
+    tap("17");
+    await waitFor(() => {
+      expect(recordThrowMock).toHaveBeenCalledTimes(1);
+    });
+    expect(finishGameMock).not.toHaveBeenCalled();
+
+    winningThrow.reject(stateVersionConflict());
+
+    await waitFor(() => {
+      expect(within(playerCard("Alice")).getByText("17")).toBeTruthy();
+    });
+    expect(finishGameMock).not.toHaveBeenCalled();
+  });
+  it.fails(
+    "rolls back the next player's throws when a throw of the previous player is rejected",
+    async () => {
+      const firstThrow = createDeferred<ThrowAckResponse>();
+      recordThrowMock.mockReturnValueOnce(firstThrow.promise);
+      getGameThrowsMock.mockResolvedValue(buildGame({ alice: 301, bob: 301 }));
+      await openGame(buildGame({ alice: 301, bob: 301 }));
+
+      tap("20");
+      tap("20");
+      tap("20");
+      tap("5");
+      expect(within(playerCard("Alice")).getByText("241")).toBeTruthy();
+      expect(within(playerCard("Bob")).getByText("296")).toBeTruthy();
+
+      firstThrow.reject(stateVersionConflict());
+
+      expect(await screen.findByText(/not saved/i)).toBeTruthy();
+      expect(within(playerCard("Alice")).getByText("301")).toBeTruthy();
+      expect(within(playerCard("Bob")).getByText("301")).toBeTruthy();
+      expect(recordThrowMock).toHaveBeenCalledTimes(1);
+    },
+  );
+
+  it.fails("removes a throw that has not been sent yet on undo, without a request", async () => {
+    const firstThrow = createDeferred<ThrowAckResponse>();
+    recordThrowMock.mockReturnValueOnce(firstThrow.promise);
+    await openGame(buildGame({ alice: 301, bob: 301 }));
+
+    tap("20");
+    tap("5");
+    expect(within(playerCard("Alice")).getByText("276")).toBeTruthy();
+
+    tap("Undo");
+    await waitFor(() => {
+      expect(within(playerCard("Alice")).getByText("281")).toBeTruthy();
+    });
+
+    firstThrow.resolve(buildThrowAck({ alice: 281, bob: 301 }));
+
+    await waitFor(() => {
+      expect(screen.getByRole("button", { name: "20" }).hasAttribute("disabled")).toBe(false);
+    });
+    expect(within(playerCard("Alice")).getByText("281")).toBeTruthy();
+    expect(recordThrowMock).toHaveBeenCalledTimes(1);
+    expect(undoLastThrowMock).not.toHaveBeenCalled();
+  });
+
+  // #105
+  it.fails("accepts six unconfirmed throws, then disables throw input while syncing", async () => {
+    recordThrowMock.mockReturnValue(new Promise<ThrowAckResponse>(() => {}));
+    await openGame(buildGame({ alice: 301, bob: 301 }));
+
+    for (let throwCount = 0; throwCount < 6; throwCount += 1) {
+      tap("20");
+    }
+
+    expect(within(playerCard("Alice")).getByText("241")).toBeTruthy();
+    expect(within(playerCard("Bob")).getByText("241")).toBeTruthy();
+    expect(screen.getByRole("button", { name: "20" }).hasAttribute("disabled")).toBe(true);
+    expect(screen.getByText(/syncing/i)).toBeTruthy();
+  });
+
+  // #98
+  it.fails("keeps input disabled after a failed sync until Retry reloads the game", async () => {
+    recordThrowMock.mockRejectedValueOnce(new TypeError("Failed to fetch"));
+    getGameThrowsMock.mockRejectedValueOnce(new TypeError("Failed to fetch"));
+    await openGame(buildGame({ alice: 301, bob: 301 }));
+
+    tap("20");
+
+    const retryButton = await screen.findByRole("button", { name: "Retry" });
+    expect(screen.getByText(/not saved/i)).toBeTruthy();
+    expect(screen.getByRole("button", { name: "20" }).hasAttribute("disabled")).toBe(true);
+
+    getGameThrowsMock.mockResolvedValueOnce(buildGame({ alice: 301, bob: 301 }));
+    fireEvent.click(retryButton);
+
+    await waitFor(() => {
+      expect(screen.getByRole("button", { name: "20" }).hasAttribute("disabled")).toBe(false);
+    });
+    expect(within(playerCard("Alice")).getByText("301")).toBeTruthy();
+    expect(screen.queryByRole("button", { name: "Retry" })).toBeNull();
+  });
+});
