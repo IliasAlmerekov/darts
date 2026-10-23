@@ -196,6 +196,66 @@ describe("gameSession.logic", () => {
     expect(session && getSessionView(session).status).toBe("syncing");
   });
 
+  it("clears the throws of the finished turn when the turn passes to the next player", () => {
+    let session = throwMany(createGameSession(buildGame({ alice: 301, bob: 301 })), [20, 20, 20]);
+    session = applyThrowAck(send(session), buildThrowAck(281, 301)) ?? session;
+    session = applyThrowAck(send(session), buildThrowAck(261, 301)) ?? session;
+    const confirmed = applyThrowAck(send(session), buildThrowAck(241, 301, 2))?.confirmed;
+
+    const [alice, bob] = confirmed?.players ?? [];
+    expect(confirmed?.activePlayerId).toBe(2);
+    expect(confirmed?.currentThrowCount).toBe(0);
+    expect(alice?.currentRoundThrows).toEqual([]);
+    expect(alice?.throwsInCurrentRound).toBe(0);
+    expect(alice?.roundHistory).toHaveLength(1);
+    expect(bob?.currentRoundThrows).toEqual([]);
+    expect(bob?.throwsInCurrentRound).toBe(0);
+  });
+
+  it("ignores stale round throws after an undo when the next throw busts", () => {
+    // After an undo on the summary page the backend can send the throws of the round it
+    // reopened while it already counts zero throws for the current round.
+    const staleThrow = { value: 25, isBust: false, isDouble: false, isTriple: false };
+    const game = buildGameThrowsResponse({
+      id: 4,
+      currentRound: 7,
+      settings: { startScore: 301, doubleOut: false, tripleOut: false },
+      players: [
+        buildBackendPlayer({
+          id: 1,
+          name: "Alice",
+          score: 1,
+          isActive: true,
+          currentRoundThrows: [staleThrow, staleThrow],
+        }),
+        buildBackendPlayer({ id: 2, name: "Bob", score: 50 }),
+      ],
+    });
+    const bustAck: ThrowAckResponse = {
+      ...buildThrowAck(26, 50, 2),
+      scoreboardDelta: {
+        changedPlayers: [
+          { playerId: 1, name: "Alice", score: 26, isActive: false, isGuest: false, isBust: true },
+          { playerId: 2, name: "Bob", score: 50, isActive: true, isGuest: false, isBust: false },
+        ],
+        winnerId: null,
+        status: "started",
+        currentRound: 7,
+      },
+    };
+
+    const sent = send(throwMany(createGameSession(game), [25]));
+    const [alice, bob] = applyThrowAck(sent, bustAck)?.confirmed?.players ?? [];
+
+    expect(alice?.score).toBe(26);
+    expect(alice?.currentRoundThrows).toEqual([]);
+    expect(alice?.throwsInCurrentRound).toBe(0);
+    expect(alice?.roundHistory).toEqual([
+      { round: 7, throws: [{ value: 25, isBust: true, isDouble: false, isTriple: false }] },
+    ]);
+    expect(bob?.isActive).toBe(true);
+  });
+
   it("refuses an acknowledgement that keeps another player active than the client expects", () => {
     const sent = send(throwMany(createGameSession(buildGame({ alice: 301, bob: 301 })), [20]));
 
@@ -214,6 +274,16 @@ describe("gameSession.logic", () => {
     expect(scores(confirmed?.confirmed ?? null)).toEqual([301, 301]);
     expect(confirmed?.pending).toHaveLength(0);
     expect(confirmed && getSessionView(confirmed).status).toBe("idle");
+  });
+
+  it("refuses a compact undo acknowledgement that failed or belongs to another game", () => {
+    let session = send(throwMany(createGameSession(buildGame({ alice: 281, bob: 301 })), [20]));
+    session = applyThrowAck(session, buildThrowAck(261, 301)) ?? session;
+    session = send(enqueueUndo(session));
+
+    expect(applyUndoResponse(session, { ...buildUndoAck(281, 301), success: false })).toBeNull();
+    expect(applyUndoResponse(session, { ...buildUndoAck(281, 301), gameId: 5 })).toBeNull();
+    expect(applyUndoResponse(session, buildUndoAck(281, 301))).not.toBeNull();
   });
 
   it("takes the active player from the players when the undo answer leaves it out", () => {
