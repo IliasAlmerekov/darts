@@ -65,7 +65,11 @@ function throwAck(gameId: number, scores: PlayerScore[]) {
   };
 }
 
-const scores = (alice: number, bob: number, active: "Alice" | "Bob" = "Alice"): PlayerScore[] => [
+const playerScores = (
+  alice: number,
+  bob: number,
+  active: "Alice" | "Bob" = "Alice",
+): PlayerScore[] => [
   { ...ALICE, score: alice, isActive: active === "Alice" },
   { ...BOB, score: bob, isActive: active === "Bob" },
 ];
@@ -116,11 +120,11 @@ test.describe("Throw sync on the game page", () => {
     const gameId = 1;
     await mockAdminSession(page);
     const answerTabletGame = await mockTabletGame(page, startedTabletGame(gameId));
-    await mockGameState(page, gameId, gameState(gameId, scores(20, 301)));
+    await mockGameState(page, gameId, gameState(gameId, playerScores(20, 301)));
     await mockGameSettings(page, gameId);
     await mockFinishedGame(page, gameId);
     await page.route(`**/api/game/${gameId}/throw/delta`, async (route) => {
-      await fulfillJson(route, throwAck(gameId, scores(0, 301, "Bob")));
+      await fulfillJson(route, throwAck(gameId, playerScores(0, 301, "Bob")));
     });
     await page.route(`**/api/game/${gameId}/finish`, async (route) => {
       answerTabletGame({ game: null, lastFinishedGameId: gameId });
@@ -156,15 +160,15 @@ test.describe("Throw sync on the game page", () => {
     test.fail();
     await mockAdminSession(page);
     const answerTabletGame = await mockTabletGame(page, startedTabletGame(1));
-    await mockGameState(page, 1, gameState(1, scores(301, 301)));
-    await mockGameState(page, 2, gameState(2, scores(301, 301)));
+    await mockGameState(page, 1, gameState(1, playerScores(301, 301)));
+    await mockGameState(page, 2, gameState(2, playerScores(301, 301)));
     let releaseThrow!: () => void;
     const throwReleased = new Promise<void>((resolve) => {
       releaseThrow = resolve;
     });
     await page.route("**/api/game/1/throw/delta", async (route) => {
       await throwReleased;
-      await fulfillJson(route, throwAck(1, scores(281, 301)));
+      await fulfillJson(route, throwAck(1, playerScores(281, 301)));
     });
 
     await page.goto("/game/1");
@@ -191,12 +195,12 @@ test.describe("Throw sync on the game page", () => {
     test.fail();
     const gameId = 1;
     const delayMs = 1500;
-    const acks = [scores(281, 301), scores(261, 301), scores(241, 301, "Bob")];
+    const acks = [playerScores(281, 301), playerScores(261, 301), playerScores(241, 301, "Bob")];
     await mockAdminSession(page);
     await mockTabletGame(page, startedTabletGame(gameId));
-    await mockGameState(page, gameId, gameState(gameId, scores(301, 301)));
+    await mockGameState(page, gameId, gameState(gameId, playerScores(301, 301)));
     await page.route(`**/api/game/${gameId}/throw/delta`, async (route) => {
-      const ack = acks.shift() ?? scores(241, 301, "Bob");
+      const ack = acks.shift() ?? playerScores(241, 301, "Bob");
       await new Promise((resolve) => setTimeout(resolve, delayMs));
       await fulfillJson(route, throwAck(gameId, ack));
     });
@@ -207,7 +211,7 @@ test.describe("Throw sync on the game page", () => {
       }
 
       await new Promise((resolve) => setTimeout(resolve, delayMs));
-      await fulfillJson(route, gameState(gameId, scores(261, 301)));
+      await fulfillJson(route, gameState(gameId, playerScores(261, 301)));
     });
 
     await page.goto(`/game/${gameId}`);

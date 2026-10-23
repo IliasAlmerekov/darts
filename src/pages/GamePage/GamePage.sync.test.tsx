@@ -3,21 +3,15 @@
 // Regression tests for the throw sync rules in ADR 0003. Tests marked `it.fails` describe
 // behaviour the page does not have yet; #123 turns them green one by one.
 
-const getGameThrowsIfChangedMock = vi.hoisted(() => vi.fn());
-const getGameThrowsMock = vi.hoisted(() => vi.fn());
-const recordThrowMock = vi.hoisted(() => vi.fn());
-const undoLastThrowMock = vi.hoisted(() => vi.fn());
-const finishGameMock = vi.hoisted(() => vi.fn());
-
 vi.mock("@/shared/api/game", () => ({
   abortGame: vi.fn(),
-  finishGame: (...args: unknown[]) => finishGameMock(...args),
-  getGameThrows: (...args: unknown[]) => getGameThrowsMock(...args),
-  getGameThrowsIfChanged: (...args: unknown[]) => getGameThrowsIfChangedMock(...args),
-  recordThrow: (...args: unknown[]) => recordThrowMock(...args),
+  finishGame: vi.fn(),
+  getGameThrows: vi.fn(),
+  getGameThrowsIfChanged: vi.fn(),
+  recordThrow: vi.fn(),
   resetGameStateVersion: vi.fn(),
   setGameStateVersion: vi.fn(),
-  undoLastThrow: (...args: unknown[]) => undoLastThrowMock(...args),
+  undoLastThrow: vi.fn(),
   updateGameSettings: vi.fn(),
 }));
 
@@ -30,11 +24,24 @@ import { fireEvent, render, screen, waitFor, within } from "@testing-library/rea
 import { MemoryRouter, Route, Routes } from "react-router-dom";
 import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import { ApiError } from "@/shared/api";
-import type { ThrowAckResponse } from "@/shared/api/game";
+import {
+  finishGame,
+  getGameThrows,
+  getGameThrowsIfChanged,
+  recordThrow,
+  undoLastThrow,
+  type ThrowAckResponse,
+} from "@/shared/api/game";
 import { buildBackendPlayer, buildGameThrowsResponse } from "@/shared/types/game.test-support";
 import type { GameThrowsResponse } from "@/types";
 import * as gameStore from "@/shared/store/game-state";
 import GamePage from ".";
+
+const getGameThrowsIfChangedMock = vi.mocked(getGameThrowsIfChanged);
+const getGameThrowsMock = vi.mocked(getGameThrows);
+const recordThrowMock = vi.mocked(recordThrow);
+const undoLastThrowMock = vi.mocked(undoLastThrow);
+const finishGameMock = vi.mocked(finishGame);
 
 const GAME_ID = 4;
 
@@ -143,7 +150,7 @@ afterAll(() => {
 
 describe("GamePage throw sync", () => {
   beforeEach(() => {
-    vi.clearAllMocks();
+    vi.resetAllMocks();
     window.sessionStorage.clear();
     gameStore.resetGameStore();
     finishGameMock.mockResolvedValue([]);
@@ -153,10 +160,11 @@ describe("GamePage throw sync", () => {
   it.fails("finishes the game only after the server acknowledges the winning throw", async () => {
     const winningThrow = createDeferred<ThrowAckResponse>();
     recordThrowMock.mockReturnValueOnce(winningThrow.promise);
-    getGameThrowsMock.mockResolvedValue(buildGame({ alice: 17, bob: 0 }));
-    await openGame(buildGame({ alice: 17, bob: 0 }));
+    getGameThrowsMock.mockResolvedValue(buildGame({ alice: 19, bob: 301 }));
+    getGameThrowsIfChangedMock.mockResolvedValue(buildGame({ alice: 19, bob: 301 }));
+    await openGame(buildGame({ alice: 19, bob: 301 }));
 
-    tap("17");
+    tap("19");
     await waitFor(() => {
       expect(recordThrowMock).toHaveBeenCalledTimes(1);
     });
@@ -165,7 +173,7 @@ describe("GamePage throw sync", () => {
     winningThrow.reject(stateVersionConflict());
 
     await waitFor(() => {
-      expect(within(playerCard("Alice")).getByText("17")).toBeTruthy();
+      expect(within(playerCard("Alice")).getByText("19")).toBeTruthy();
     });
     expect(finishGameMock).not.toHaveBeenCalled();
   });
@@ -193,6 +201,7 @@ describe("GamePage throw sync", () => {
     },
   );
 
+  // #123
   it.fails("removes a throw that has not been sent yet on undo, without a request", async () => {
     const firstThrow = createDeferred<ThrowAckResponse>();
     recordThrowMock.mockReturnValueOnce(firstThrow.promise);
@@ -235,8 +244,9 @@ describe("GamePage throw sync", () => {
   // #98
   it.fails("keeps input disabled after a failed sync until Retry reloads the game", async () => {
     recordThrowMock.mockRejectedValueOnce(new TypeError("Failed to fetch"));
-    getGameThrowsMock.mockRejectedValueOnce(new TypeError("Failed to fetch"));
     await openGame(buildGame({ alice: 301, bob: 301 }));
+    getGameThrowsMock.mockRejectedValue(new TypeError("Failed to fetch"));
+    getGameThrowsIfChangedMock.mockRejectedValue(new TypeError("Failed to fetch"));
 
     tap("20");
 
@@ -244,7 +254,8 @@ describe("GamePage throw sync", () => {
     expect(screen.getByText(/not saved/i)).toBeTruthy();
     expect(screen.getByRole("button", { name: "20" }).hasAttribute("disabled")).toBe(true);
 
-    getGameThrowsMock.mockResolvedValueOnce(buildGame({ alice: 301, bob: 301 }));
+    getGameThrowsMock.mockResolvedValue(buildGame({ alice: 301, bob: 301 }));
+    getGameThrowsIfChangedMock.mockResolvedValue(buildGame({ alice: 301, bob: 301 }));
     fireEvent.click(retryButton);
 
     await waitFor(() => {
