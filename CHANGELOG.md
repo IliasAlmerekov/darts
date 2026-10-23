@@ -24,6 +24,7 @@ and this project does **not** yet follow [Semantic Versioning](https://semver.or
 
 - CI: Dependabot npm updates skip `eslint` and `@eslint/js` majors until `eslint-plugin-jsx-a11y` and `eslint-plugin-react` accept ESLint 10 as a peer. Minor and patch updates still arrive in the `npm-minor-patch` group. This replaces Dependabot PRs #244 and #249, which failed `npm ci` with `ERESOLVE` (#267)
 - CI: Dependabot npm updates skip `react`, `react-dom`, `@types/react` and `@types/react-dom` majors until the React 19 migration in #293. Dependabot PR #285 moved only `react` and `@types/react` to 19 and failed `npm ci` with `ERESOLVE` (#294)
+- CI: Dependabot npm updates skip `typescript` 7 and later until a `typescript-eslint` release accepts TypeScript 7; 8.72.0 accepts `>=4.8.4 <6.1.0`. Dependabot may offer TypeScript 6 instead. This replaces Dependabot PR #300, which failed `npm ci` with `ERESOLVE` (#302)
 - CI: the `e2e` job and the `E2E live` workflow run in the `mcr.microsoft.com/playwright:v1.64.1-noble` image, which ships Chromium and its system libraries. They no longer install those through apt, which hung for more than 8 minutes on a slow Ubuntu mirror (#275)
 
 ### Fixed
