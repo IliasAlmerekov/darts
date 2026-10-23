@@ -2,10 +2,11 @@
 
 Status: accepted.
 
-A throw or undo tap must change the scoreboard within 200 ms, even when three throws are tapped in quick succession on slow Wi-Fi. Waiting for the server before each throw cannot meet that, so the game page keeps an optimistic queue (#123). The client applies each throw or undo to the scoreboard at once and sends the requests to the backend one at a time, in tap order.
+Once the game is loaded, a throw or undo tap must change the scoreboard within 200 ms, even when three throws are tapped in quick succession on slow Wi-Fi. Waiting for the server before each throw cannot meet that, so the game page keeps an optimistic queue (#123). The client applies each throw or undo to the scoreboard at once and sends the requests to the backend one at a time, in tap order.
 
 ## Rules
 
+- Throw and undo input stay disabled until the first load of the game state answers, so the loaded game cannot overwrite throws tapped while the load runs. This also holds when the store already shows the game from an earlier page.
 - The queue holds at most 6 unconfirmed throws, two full turns, so an unconfirmed turn change is allowed. When the queue is full, throw input is disabled and the page shows that it is syncing (#105).
 - Undo is immediate, also when the queue is full. Each tap steps the scoreboard back by one throw. If the last throw has not been sent yet, undo removes it from the queue and the server never sees it. Otherwise the undo request joins the same queue behind the throws.
 - If a queued request fails (network error, 409 on the state version, 5xx), the client clears the queue, reloads the game state from the server and tells the player that their last throws were not saved. Throw and undo input stay disabled during the reload. If the server cannot be reached, input stays disabled until the player retries (#98).
