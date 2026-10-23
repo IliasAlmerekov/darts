@@ -2,16 +2,26 @@
 
 // ── API mock (only external boundary) ────────────────────────────────────────
 vi.mock("@/shared/api/game", () => ({
+  createRematchGame: vi.fn(),
   getFinishedGame: vi.fn(),
   getGameSettings: vi.fn(),
   getTabletGame: vi.fn(),
+  startRematch: vi.fn(),
+  undoLastThrow: vi.fn(),
 }));
 
 import { fireEvent, render, screen } from "@testing-library/react";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { createMemoryRouter, RouterProvider } from "react-router-dom";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { getFinishedGame, getGameSettings, getTabletGame } from "@/shared/api/game";
+import {
+  createRematchGame,
+  getFinishedGame,
+  getGameSettings,
+  getTabletGame,
+  startRematch,
+  undoLastThrow,
+} from "@/shared/api/game";
 import { queryClient } from "@/shared/query/queryClient";
 import { resetGameStore, setGameData } from "@/shared/store";
 import {
@@ -25,6 +35,9 @@ import { gameSummaryLoader } from "./useGameSummaryPage";
 const getFinishedGameMock = vi.mocked(getFinishedGame);
 const getGameSettingsMock = vi.mocked(getGameSettings);
 const getTabletGameMock = vi.mocked(getTabletGame);
+const createRematchGameMock = vi.mocked(createRematchGame);
+const startRematchMock = vi.mocked(startRematch);
+const undoLastThrowMock = vi.mocked(undoLastThrow);
 
 const SETTINGS = buildGameSettingsResponse({ gameId: 42, status: "finished", startScore: 301 });
 
@@ -148,5 +161,43 @@ describe("GameSummaryPage route", () => {
 
     expect(screen.getByText("Game settings are unavailable")).toBeTruthy();
     expect(getGameSettingsMock).not.toHaveBeenCalled();
+  });
+
+  // #100
+  describe("while Undo is pending", () => {
+    beforeEach(() => {
+      getFinishedGameMock.mockResolvedValue(buildFinishedPlayerResponses());
+      getGameSettingsMock.mockResolvedValue(SETTINGS);
+      undoLastThrowMock.mockReturnValue(new Promise(() => {}));
+    });
+
+    async function clickUndo(): Promise<void> {
+      renderSummaryRoute();
+      fireEvent.click(await screen.findByRole("button", { name: "Return to game" }));
+    }
+
+    it.fails("should send no second Undo", async () => {
+      await clickUndo();
+
+      fireEvent.click(screen.getByRole("button", { name: "Return to game" }));
+
+      expect(undoLastThrowMock).toHaveBeenCalledTimes(1);
+    });
+
+    it.fails("should not start a rematch from Play Again", async () => {
+      await clickUndo();
+
+      fireEvent.click(screen.getByRole("button", { name: "Play Again" }));
+
+      expect(startRematchMock).not.toHaveBeenCalled();
+    });
+
+    it.fails("should not create a rematch room from Back To Start", async () => {
+      await clickUndo();
+
+      fireEvent.click(screen.getByRole("button", { name: "Back To Start" }));
+
+      expect(createRematchGameMock).not.toHaveBeenCalled();
+    });
   });
 });
