@@ -43,7 +43,7 @@ export interface GameSessionView {
   canThrow: boolean;
   canUndo: boolean;
   canRetry: boolean;
-  /** The server has acknowledged every tap, so a finished scoreboard may be finished on it. */
+  /** The server has acknowledged every tap, so the page may call `/finish` or open the summary. */
   canFinish: boolean;
   isQueueFull: boolean;
 }

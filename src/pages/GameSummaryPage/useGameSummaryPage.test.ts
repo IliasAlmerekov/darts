@@ -20,7 +20,6 @@ import {
 
 const navigateMock = vi.fn();
 const getFinishedGameMock = vi.fn();
-const getGameThrowsMock = vi.fn();
 const getGameSettingsMock = vi.fn();
 const createRematchGameMock = vi.fn();
 const startRematchMock = vi.fn();
@@ -31,10 +30,9 @@ const setGameDataMock = vi.fn();
 const setInvitationMock = vi.fn();
 const resetRoomStoreMock = vi.fn();
 
-// Mutable state for router/store — allows per-test overrides without vi.doMock
+// Mutable state for router — allows per-test overrides without vi.doMock
 let routeParams: { id?: string | undefined } = { id: "42" };
 let testQueryClient: QueryClient;
-let currentGameState: GameThrowsResponse | null = null;
 
 vi.mock("react-router-dom", () => ({
   useNavigate: () => navigateMock,
@@ -47,7 +45,6 @@ vi.mock("@nanostores/react", () => ({
 
 vi.mock("@/shared/api/game", () => ({
   getFinishedGame: (...args: unknown[]) => getFinishedGameMock(...args),
-  getGameThrows: (...args: unknown[]) => getGameThrowsMock(...args),
   getGameSettings: (...args: unknown[]) => getGameSettingsMock(...args),
   createRematchGame: (...args: unknown[]) => createRematchGameMock(...args),
   startRematch: (...args: unknown[]) => startRematchMock(...args),
@@ -59,9 +56,6 @@ vi.mock("@/shared/store", async (importOriginal) => {
   const original = await importOriginal<Record<string, unknown>>();
   return {
     ...original,
-    $gameData: {
-      get: () => currentGameState,
-    },
     setCurrentGameId: (...args: unknown[]) => setCurrentGameIdMock(...args),
     setGameData: (...args: unknown[]) => setGameDataMock(...args),
     setInvitation: (...args: unknown[]) => setInvitationMock(...args),
@@ -217,12 +211,10 @@ describe("useGameSummaryPage", () => {
     // Reset mutable router/store state to defaults before each test
     routeParams = { id: "42" };
     testQueryClient = createQueryClient();
-    currentGameState = buildFinishedGameState();
     getGameSettingsMock.mockResolvedValue(SETTINGS_RESPONSE);
     getTabletGameMock.mockResolvedValue({ game: null, lastFinishedGameId: 42 });
 
     getFinishedGameMock.mockResolvedValue([]);
-    getGameThrowsMock.mockResolvedValue(buildStartedGameState());
     startRematchMock.mockResolvedValue({
       success: true,
       gameId: 77,
@@ -238,9 +230,6 @@ describe("useGameSummaryPage", () => {
       gameId: 77,
     });
     undoLastThrowMock.mockResolvedValue(buildUndoAck());
-    setGameDataMock.mockImplementation((nextState: GameThrowsResponse | null) => {
-      currentGameState = nextState;
-    });
   });
 
   // #123: the game page owns the game state, so it reads the reopened game from the server.
@@ -260,7 +249,6 @@ describe("useGameSummaryPage", () => {
 
       expect(undoLastThrowMock).toHaveBeenCalledWith(42);
       expect(setGameDataMock).not.toHaveBeenCalled();
-      expect(getGameThrowsMock).not.toHaveBeenCalled();
       expect(playSound).toHaveBeenCalledWith("undo");
       expect(navigateMock).toHaveBeenCalledWith("/game/42", {
         state: { skipFinishOverlay: true },

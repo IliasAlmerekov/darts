@@ -181,6 +181,33 @@ describe("GamePage throw sync", () => {
     expect(finishGameMock).not.toHaveBeenCalled();
   });
 
+  // ADR 0003: the overlay shows at once and closes again when the server rejects the checkout.
+  it("closes the finish overlay and rolls back when a checkout with 3 players is rejected", async () => {
+    const checkout = createDeferred<ThrowAckResponse>();
+    recordThrowMock.mockReturnValueOnce(checkout.promise);
+    const twoPlayerGame = buildGame({ alice: 19, bob: 301 });
+    const game: GameThrowsResponse = {
+      ...twoPlayerGame,
+      players: [
+        ...twoPlayerGame.players,
+        buildBackendPlayer({ id: 3, name: "Carol", score: 301, position: null }),
+      ],
+    };
+    getGameThrowsMock.mockResolvedValue(game);
+    await openGame(game);
+
+    tap("19");
+    expect(screen.getByText("Player Finished! Continue Game?")).toBeTruthy();
+
+    checkout.reject(stateVersionConflict());
+
+    await waitFor(() => {
+      expect(screen.queryByText("Player Finished! Continue Game?")).toBeNull();
+    });
+    expect(within(playerCard("Alice")).getByText("19")).toBeTruthy();
+    expect(finishGameMock).not.toHaveBeenCalled();
+  });
+
   // #96
   it("finishes the game once and opens the summary after the winning throw ack", async () => {
     const winningThrow = createDeferred<ThrowAckResponse>();

@@ -117,7 +117,7 @@ describe("GameSummaryPage", () => {
     }
   });
 
-  it("should disable Undo and Rematch while a summary action is pending", () => {
+  it("should disable every summary action while one is pending", () => {
     useGameSummaryPageMock.mockReturnValue(buildSummaryHookMockResult({ pending: true }));
 
     render(<GameSummaryPage />);
@@ -127,7 +127,7 @@ describe("GameSummaryPage", () => {
     }
   });
 
-  it("should enable Undo and Rematch when no summary action is pending", () => {
+  it("should enable every summary action when none is pending", () => {
     useGameSummaryPageMock.mockReturnValue(buildSummaryHookMockResult({ pending: false }));
 
     render(<GameSummaryPage />);
