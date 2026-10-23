@@ -18,9 +18,10 @@ call sites today:
 - `src/pages/StartPage/useCreateStartFlow.ts`: `getGameSettings` before a game starts.
 - `src/pages/LoginPage/useLogin.ts`: `getAuthenticatedUser` in the post-login session
   fallback, before it seeds the cache.
-- `src/pages/GameSummaryPage/useGameSummaryPage.ts` and
-  `src/pages/GamePage/throws/useThrowReconciliation.ts`: `getGameThrows` when a compact
-  undo or throw response cannot patch local state.
+- `src/pages/GameSummaryPage/useGameSummaryPage.ts`: `getGameThrows` when a compact undo
+  response cannot patch local state.
+- `src/pages/GamePage/useGameSession.ts`: `getGameThrows` after the server rejects a queued
+  throw or undo.
 
 A read that renders on its own, without such a workflow around it, goes through a query
 factory.
@@ -238,9 +239,8 @@ Mappers are pure functions that turn backend DTO shapes into UI types.
   mapped result and import no mapper. Type imports are fine. Known exceptions:
   - `startPageLoader.ts` imports `toLobbyPlayers` and `useGamePlayers.ts` imports
     `sortLobbyPlayers`; #194 decides them.
-  - `useThrowHandler.ts` (`parseThrowValue`), `useUndoFlow.ts` (`normalizeGameData`) and
-    `useGameSummaryPage.ts` (`applyOptimisticUndo`) call a mapper inside an event handler.
-    `eslint.config.mjs` ignores these three files as existing debt.
+  - `useGameSummaryPage.ts` (`applyOptimisticUndo`) calls a mapper inside an event handler.
+    `eslint.config.mjs` ignores this file as existing debt.
 
 ## ETag / conditional fetches
 
