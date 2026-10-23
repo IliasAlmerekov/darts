@@ -11,6 +11,7 @@ and this project does **not** yet follow [Semantic Versioning](https://semver.or
 
 - Code review: `.coderabbit.yaml` sets CodeRabbit up as a senior reviewer that follows `## Review guidelines` in `AGENTS.md`. It reviews every push of a ready PR, keeps the PR body untouched, and runs only the scanners CI lacks. Each finding has five parts (Severity, Location, Evidence, Impact, Fix), and the new `## Review feedback` tells agents to reproduce a finding before they act on it (#264)
 - Tests: regression tests for the throw sync rules of ADR 0003, ahead of the game page refactor. A Playwright spec covers auto-finish from the winning throw to the summary. Expected failures cover a late throw response from the previous game (#95), `/finish` before the winning throw is acknowledged (#96), a failed sync with Retry (#98), competing summary actions (#100), a queue of six throws (#105), a rejected throw that rolls back the next player's throws, undo of an unsent throw, and taps that change the scoreboard within 200 ms on a 1500 ms backend (#123)
+- Logging: a render error that no route boundary catches goes to `clientLogger` as `root.render.failed`, and an error React recovers from goes as the warning `root.render.recovered` with its `cause`. Both carry the React component stack under `context`. Route errors stay logged once by the route `ErrorBoundary` as `route_error_boundary_crash` (#307)
 
 ### Changed
 
