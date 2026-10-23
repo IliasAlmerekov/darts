@@ -417,6 +417,33 @@ describe("gameSession.logic", () => {
     expect(enqueueThrow(won, 20)).toBeNull();
   });
 
+  it("reopens throw input when the winning throw is undone", () => {
+    const undone = enqueueUndo(
+      throwMany(createGameSession(buildGame({ alice: 20, bob: 301 })), [20]),
+    );
+
+    expect(getSessionView(undone)).toMatchObject({ canThrow: true, isFinished: false });
+    expect(scores(getShownGame(undone))).toEqual([20, 301]);
+    expect(enqueueThrow(undone, 20)).not.toBeNull();
+  });
+
+  it("keeps throw input open after a checkout while two players are still in", () => {
+    const game = buildGameThrowsResponse({
+      id: 4,
+      settings: { startScore: 301, doubleOut: false, tripleOut: false },
+      players: [
+        buildBackendPlayer({ id: 1, name: "Alice", score: 20, isActive: true }),
+        buildBackendPlayer({ id: 2, name: "Bob", score: 301 }),
+        buildBackendPlayer({ id: 3, name: "Carol", score: 301 }),
+      ],
+    });
+    const checkedOut = throwMany(createGameSession(game), [20]);
+
+    expect(scores(getShownGame(checkedOut))).toEqual([0, 301, 301]);
+    expect(getSessionView(checkedOut)).toMatchObject({ canThrow: true, isFinished: false });
+    expect(enqueueThrow(checkedOut, 20)).not.toBeNull();
+  });
+
   it("rolls back a rejected winning throw and reports no finished game", () => {
     const sent = send(throwMany(createGameSession(buildGame({ alice: 20, bob: 301 })), [20]));
     const failed = failSession(sent);
