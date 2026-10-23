@@ -1,4 +1,5 @@
 // @vitest-environment jsdom
+import { createRef } from "react";
 import { fireEvent, render, screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 import {
@@ -70,6 +71,24 @@ describe("Pagination", () => {
 
     expect(onPrev).toHaveBeenCalledTimes(1);
     expect(onNext).toHaveBeenCalledTimes(1);
+  });
+
+  it("should point refs at the rendered list and list item when refs are passed", () => {
+    const contentRef = createRef<HTMLUListElement>();
+    const itemRef = createRef<HTMLLIElement>();
+
+    render(
+      <Pagination>
+        <PaginationContent ref={contentRef}>
+          <PaginationItem ref={itemRef}>
+            <PaginationNext href="#" />
+          </PaginationItem>
+        </PaginationContent>
+      </Pagination>,
+    );
+
+    expect(contentRef.current).toBe(screen.getByRole("list"));
+    expect(itemRef.current).toBe(screen.getByRole("listitem"));
   });
 
   it("should render an ellipsis when the ellipsis item is used", () => {

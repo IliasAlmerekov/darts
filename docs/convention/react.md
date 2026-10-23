@@ -31,8 +31,10 @@ export const LivePlayersList = React.memo(LivePlayersListComponent, (prev, next)
 
 ## Refs
 
-`React.forwardRef<HTMLElement, Props>(...)` wraps components that render a single DOM element
-a parent must reach (`src/shared/ui/pagination/Pagination.tsx`).
+A component that renders a single DOM element a parent must reach takes `ref` as a normal
+prop: type its props with `React.ComponentProps<"ul">` and spread them onto the element
+(`PaginationContent` in `src/shared/ui/pagination/Pagination.tsx`). `React.forwardRef` is
+not used.
 
 ## Hooks
 

@@ -25,34 +25,21 @@ export function Pagination({
   );
 }
 
-export const PaginationContent = React.forwardRef<
-  HTMLUListElement,
-  React.ComponentPropsWithoutRef<"ul">
->(({ className, ...props }, ref): React.JSX.Element => {
+export function PaginationContent({
+  className,
+  ...props
+}: React.ComponentProps<"ul">): React.JSX.Element {
   return (
-    <ul
-      ref={ref}
-      data-slot="pagination-content"
-      className={clsx(styles.content, className)}
-      {...props}
-    />
+    <ul data-slot="pagination-content" className={clsx(styles.content, className)} {...props} />
   );
-});
-PaginationContent.displayName = "PaginationContent";
+}
 
-export const PaginationItem = React.forwardRef<HTMLLIElement, React.ComponentPropsWithoutRef<"li">>(
-  ({ className, ...props }, ref): React.JSX.Element => {
-    return (
-      <li
-        ref={ref}
-        data-slot="pagination-item"
-        className={clsx(styles.item, className)}
-        {...props}
-      />
-    );
-  },
-);
-PaginationItem.displayName = "PaginationItem";
+export function PaginationItem({
+  className,
+  ...props
+}: React.ComponentProps<"li">): React.JSX.Element {
+  return <li data-slot="pagination-item" className={clsx(styles.item, className)} {...props} />;
+}
 
 type PaginationLinkProps = {
   isActive?: boolean;
