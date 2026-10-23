@@ -10,6 +10,7 @@ import { gameQueries } from "@/shared/query/game.queries";
 import { ApiError } from "@/shared/api";
 import { gameSummaryLoader, useGameSummaryPage } from "./useGameSummaryPage";
 import { playSound } from "@/shared/services/browser/soundPlayer";
+import { $gameData, resetGameStore, setGameData } from "@/shared/store";
 import type { GameThrowsResponse, UndoAckResponse } from "@/types";
 import {
   buildExpectedPodiumPlaceholder,
@@ -26,7 +27,6 @@ const startRematchMock = vi.fn();
 const undoLastThrowMock = vi.fn();
 const getTabletGameMock = vi.fn();
 const setCurrentGameIdMock = vi.fn();
-const setGameDataMock = vi.fn();
 const setInvitationMock = vi.fn();
 const resetRoomStoreMock = vi.fn();
 
@@ -57,7 +57,6 @@ vi.mock("@/shared/store", async (importOriginal) => {
   return {
     ...original,
     setCurrentGameId: (...args: unknown[]) => setCurrentGameIdMock(...args),
-    setGameData: (...args: unknown[]) => setGameDataMock(...args),
     setInvitation: (...args: unknown[]) => setInvitationMock(...args),
     resetRoomStore: (...args: unknown[]) => resetRoomStoreMock(...args),
   };
@@ -226,7 +225,7 @@ function deferred<T>() {
 describe("useGameSummaryPage", () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    setGameDataMock.mockReset();
+    resetGameStore();
     setCurrentGameIdMock.mockReset();
     setInvitationMock.mockReset();
     resetRoomStoreMock.mockReset();
@@ -263,6 +262,8 @@ describe("useGameSummaryPage", () => {
     "should undo on the server and open the game without writing the game store ($response)",
     async ({ undoResponse }) => {
       undoLastThrowMock.mockResolvedValueOnce(undoResponse());
+      setGameData(buildFinishedGameState());
+      const shownGame = $gameData.get();
 
       const { result } = renderSummaryHook();
 
@@ -271,7 +272,7 @@ describe("useGameSummaryPage", () => {
       });
 
       expect(undoLastThrowMock).toHaveBeenCalledWith(42);
-      expect(setGameDataMock).not.toHaveBeenCalled();
+      expect($gameData.get()).toBe(shownGame);
       expect(playSound).toHaveBeenCalledWith("undo");
       expect(navigateMock).toHaveBeenCalledWith("/game/42", {
         state: { skipFinishOverlay: true },
@@ -365,13 +366,15 @@ describe("useGameSummaryPage", () => {
   });
 
   it("should not overwrite shared game state when starting a rematch", async () => {
+    setGameData(buildFinishedGameState());
+    const shownGame = $gameData.get();
     const { result } = renderSummaryHook();
 
     await act(async () => {
       await result.current.handlePlayAgain();
     });
 
-    expect(setGameDataMock).not.toHaveBeenCalled();
+    expect($gameData.get()).toBe(shownGame);
     expect(setInvitationMock).toHaveBeenCalledWith({
       gameId: 77,
       invitationLink: "/invite/77",
@@ -569,6 +572,8 @@ describe("useGameSummaryPage", () => {
   });
 
   it("should not overwrite shared game state when returning to start from summary", async () => {
+    setGameData(buildFinishedGameState());
+    const shownGame = $gameData.get();
     const { result } = renderSummaryHook();
 
     await act(async () => {
@@ -576,7 +581,7 @@ describe("useGameSummaryPage", () => {
     });
 
     expect(resetRoomStoreMock).toHaveBeenCalledTimes(1);
-    expect(setGameDataMock).not.toHaveBeenCalled();
+    expect($gameData.get()).toBe(shownGame);
     expect(setCurrentGameIdMock).toHaveBeenCalledWith(77);
     expect(setInvitationMock).not.toHaveBeenCalled();
     expect(navigateMock).toHaveBeenCalledWith("/start/77");
