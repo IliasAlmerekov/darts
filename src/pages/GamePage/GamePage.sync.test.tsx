@@ -33,6 +33,7 @@ import {
   type ThrowAckResponse,
 } from "@/shared/api/game";
 import { playSound } from "@/shared/services/browser/soundPlayer";
+import { setGameData } from "@/shared/store";
 import { buildBackendPlayer, buildGameThrowsResponse } from "@/shared/types/game.test-support";
 import type { GameThrowsResponse } from "@/types";
 import * as gameStore from "@/shared/store/game-state";
@@ -277,6 +278,26 @@ describe("GamePage throw sync", () => {
     expect(await screen.findByText(/not saved/i)).toBeTruthy();
     expect(within(playerCard("Alice")).getByText("250")).toBeTruthy();
     expect(screen.getByRole("button", { name: "20" }).hasAttribute("disabled")).toBe(false);
+  });
+
+  it("keeps throw and undo input disabled until the first load answers, also with a cached game", async () => {
+    const firstLoad = createDeferred<GameThrowsResponse | null>();
+    getGameThrowsIfChangedMock.mockReturnValueOnce(firstLoad.promise);
+    // A score below the start score, so Undo is enabled once the load answers.
+    setGameData(buildGame({ alice: 281, bob: 301 }));
+    renderGamePage();
+
+    expect(within(playerCard("Alice")).getByText("281")).toBeTruthy();
+    expect(screen.getByRole("button", { name: "20" }).hasAttribute("disabled")).toBe(true);
+    expect(screen.getByRole("button", { name: "Undo" }).hasAttribute("disabled")).toBe(true);
+
+    await act(async () => {
+      firstLoad.resolve(buildGame({ alice: 281, bob: 301 }));
+      await firstLoad.promise;
+    });
+
+    expect(screen.getByRole("button", { name: "20" }).hasAttribute("disabled")).toBe(false);
+    expect(screen.getByRole("button", { name: "Undo" }).hasAttribute("disabled")).toBe(false);
   });
 
   it("plays the undo sound on the tap, before the server answers", async () => {
