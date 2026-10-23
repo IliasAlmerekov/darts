@@ -1,7 +1,9 @@
 import type { RootOptions } from "react-dom/client";
 import type { ClientLogger } from "@/shared/services/browser/clientLogger";
 
-export function createRootErrorOptions(logger: ClientLogger): RootOptions {
+type RootErrorOptions = Required<Pick<RootOptions, "onUncaughtError" | "onRecoverableError">>;
+
+export function createRootErrorOptions(logger: ClientLogger): RootErrorOptions {
   return {
     onUncaughtError: (error, errorInfo): void => {
       logger.error("root.render.failed", {
@@ -11,9 +13,11 @@ export function createRootErrorOptions(logger: ClientLogger): RootOptions {
     },
     onRecoverableError: (error, errorInfo): void => {
       // React 19 often wraps the original error and keeps it in `cause`.
+      const cause = error instanceof Error ? error.cause : undefined;
+
       logger.warn("root.render.recovered", {
         context: {
-          cause: error instanceof Error ? error.cause : undefined,
+          ...(cause !== undefined ? { cause } : {}),
           componentStack: errorInfo.componentStack,
         },
         error,

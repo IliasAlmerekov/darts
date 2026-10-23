@@ -53,7 +53,7 @@ describe("createRootErrorOptions", () => {
     const { onRecoverableError } = createRootErrorOptions(createClientLogger(sink));
     const cause = new Error("Hydration mismatch");
 
-    onRecoverableError?.(new Error("Recovered by client render", { cause }), {
+    onRecoverableError(new Error("Recovered by client render", { cause }), {
       componentStack: "\n    at Shell",
     });
 
@@ -66,6 +66,20 @@ describe("createRootErrorOptions", () => {
       error: expect.objectContaining({ name: "Error", message: "Recovered by client render" }),
     });
     expect(sink.error).not.toHaveBeenCalled();
+  });
+
+  it("leaves cause out of a recoverable error that has none", () => {
+    const { onRecoverableError } = createRootErrorOptions(createClientLogger(sink));
+
+    onRecoverableError(new Error("Recovered by client render"), {
+      componentStack: "\n    at Shell",
+    });
+
+    expect(sink.warn.mock.calls[0]?.[1]).toEqual({
+      context: { componentStack: "\n    at Shell" },
+      error: expect.objectContaining({ message: "Recovered by client render" }),
+    });
+    expect(sink.warn.mock.calls[0]?.[1]?.context).not.toHaveProperty("cause");
   });
 
   it("leaves a route render error to the route ErrorBoundary", async () => {
