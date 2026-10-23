@@ -1,5 +1,5 @@
 import { useCallback, useRef, useState } from "react";
-import type { MutableRefObject } from "react";
+import type { RefObject } from "react";
 import { undoLastThrow } from "@/shared/api/game";
 import { playSound } from "@/shared/services/browser/soundPlayer";
 import { clientLogger } from "@/shared/services/browser/clientLogger";
@@ -15,7 +15,7 @@ interface UseUndoFlowOptions {
 
 interface UseUndoFlowReturn {
   executeUndo: () => Promise<void>;
-  isUndoInFlightRef: MutableRefObject<boolean>;
+  isUndoInFlightRef: RefObject<boolean>;
   isUndoPending: boolean;
   resetUndoState: () => void;
 }
