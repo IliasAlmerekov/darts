@@ -11,8 +11,6 @@ import { useGamePlayersState } from "./useGamePlayersState";
 import { parseLocationState } from "@/lib/router/locationState";
 import { parseRouteGameId } from "@/lib/router/tabletGameRoute";
 
-export { areAllPlayersAtStartScore, shouldAutoFinishGame } from "./lib/gameLogic.helpers";
-
 interface GameSettingsFormValues {
   doubleOut: boolean;
   tripleOut: boolean;

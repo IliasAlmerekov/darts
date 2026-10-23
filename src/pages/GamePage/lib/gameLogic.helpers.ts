@@ -15,7 +15,11 @@ export function areAllPlayersAtStartScore(gameData: GameThrowsResponse | null): 
   return gameData.players.every((player) => player.score === gameData.settings.startScore);
 }
 
-export function shouldAutoFinishGame(gameData: GameThrowsResponse | null): boolean {
+/**
+ * True when an unfinished game has one active player left and at least one finished. The server
+ * finishes the game at that point, so the page shows no finish overlay and takes no throw.
+ */
+export function isLastActivePlayerLeft(gameData: GameThrowsResponse | null): boolean {
   if (!gameData || gameData.status === "finished") {
     return false;
   }
@@ -49,5 +53,5 @@ export function calculateShouldShowFinishOverlay({
     return false;
   }
 
-  return !shouldAutoFinishGame(gameData);
+  return !isLastActivePlayerLeft(gameData);
 }

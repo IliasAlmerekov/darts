@@ -1,7 +1,10 @@
 // @vitest-environment node
 import { describe, expect, it } from "vitest";
-import { areAllPlayersAtStartScore, shouldAutoFinishGame } from "./useGameLogic";
-import { calculateShouldShowFinishOverlay } from "./lib/gameLogic.helpers";
+import {
+  areAllPlayersAtStartScore,
+  calculateShouldShowFinishOverlay,
+  isLastActivePlayerLeft,
+} from "./lib/gameLogic.helpers";
 import type { GameThrowsResponse } from "@/types";
 
 function buildGameData(overrides?: Partial<GameThrowsResponse>): GameThrowsResponse {
@@ -92,9 +95,9 @@ describe("areAllPlayersAtStartScore", () => {
   });
 });
 
-describe("shouldAutoFinishGame", () => {
+describe("isLastActivePlayerLeft", () => {
   it("should return false when game data is missing", () => {
-    expect(shouldAutoFinishGame(null)).toBe(false);
+    expect(isLastActivePlayerLeft(null)).toBe(false);
   });
 
   it("should return true when exactly one active player remains in a progressed started game", () => {
@@ -132,7 +135,7 @@ describe("shouldAutoFinishGame", () => {
       ],
     });
 
-    expect(shouldAutoFinishGame(data)).toBe(true);
+    expect(isLastActivePlayerLeft(data)).toBe(true);
   });
 
   it("should return false when no players have finished yet", () => {
@@ -165,7 +168,7 @@ describe("shouldAutoFinishGame", () => {
       ],
     });
 
-    expect(shouldAutoFinishGame(data)).toBe(false);
+    expect(isLastActivePlayerLeft(data)).toBe(false);
   });
 
   it("should return true when the game is not finished and only one active player remains", () => {
@@ -199,7 +202,7 @@ describe("shouldAutoFinishGame", () => {
       ],
     });
 
-    expect(shouldAutoFinishGame(data)).toBe(true);
+    expect(isLastActivePlayerLeft(data)).toBe(true);
   });
 });
 
@@ -322,7 +325,7 @@ describe("calculateShouldShowFinishOverlay", () => {
     ).toBe(false);
   });
 
-  it("should return false when the game should auto-finish instead", () => {
+  it("should return false when only one active player is left", () => {
     const data = buildGameData({
       currentRound: 4,
       players: [
