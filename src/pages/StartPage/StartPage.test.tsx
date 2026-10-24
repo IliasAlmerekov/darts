@@ -95,9 +95,14 @@ class MockAudio {
 // Helpers
 // ---------------------------------------------------------------------------
 
-// The full parallel suite can delay the mocked lobby fetch past the 1000 ms default of
-// Testing Library's async utilities, so waits on lobby players use a longer limit.
+// shortcut: waits on lobby players allow 3000 ms because the full parallel suite can delay
+// the mocked lobby fetch past Testing Library's 1000 ms default. Move to a global
+// `asyncUtilTimeout` once other test files flake on the same default.
 const LOBBY_LOAD_TIMEOUT_MS = 3000;
+
+function findLobbyPlayer(name: string): Promise<HTMLElement> {
+  return screen.findByText(name, undefined, { timeout: LOBBY_LOAD_TIMEOUT_MS });
+}
 
 function renderStartPage(path: string): void {
   render(
@@ -159,7 +164,7 @@ describe("StartPage", () => {
 
     renderStartPage("/start/1");
 
-    await screen.findByText("Player 10", undefined, { timeout: LOBBY_LOAD_TIMEOUT_MS });
+    await findLobbyPlayer("Player 10");
 
     expect(screen.getByRole("button", { name: "Play as a guest" })).toHaveProperty(
       "disabled",
@@ -309,7 +314,7 @@ describe("StartPage", () => {
     });
 
     // Wait for players to load (so start is enabled)
-    await screen.findByText("Player 2", undefined, { timeout: LOBBY_LOAD_TIMEOUT_MS });
+    await findLobbyPlayer("Player 2");
     expect(screen.getByRole("button", { name: "Start" })).toHaveProperty("disabled", false);
 
     await act(async () => {
@@ -331,8 +336,6 @@ describe("StartPage", () => {
 
     renderStartPage("/start/1");
 
-    expect(
-      await screen.findByText("Alex", undefined, { timeout: LOBBY_LOAD_TIMEOUT_MS }),
-    ).toBeTruthy();
+    await findLobbyPlayer("Alex");
   });
 });
