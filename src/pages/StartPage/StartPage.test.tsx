@@ -95,6 +95,10 @@ class MockAudio {
 // Helpers
 // ---------------------------------------------------------------------------
 
+// The full parallel suite can delay the mocked lobby fetch past the 1000 ms default of
+// Testing Library's async utilities, so waits on lobby players use a longer limit.
+const LOBBY_LOAD_TIMEOUT_MS = 3000;
+
 function renderStartPage(path: string): void {
   render(
     <QueryClientProvider client={createQueryClient()}>
@@ -155,11 +159,12 @@ describe("StartPage", () => {
 
     renderStartPage("/start/1");
 
-    await waitFor(() => {
-      expect(
-        screen.getByRole("button", { name: "Play as a guest" }).getAttribute("disabled"),
-      ).not.toBeNull();
-    });
+    await screen.findByText("Player 10", undefined, { timeout: LOBBY_LOAD_TIMEOUT_MS });
+
+    expect(screen.getByRole("button", { name: "Play as a guest" })).toHaveProperty(
+      "disabled",
+      true,
+    );
   });
 
   it("should render the guest button in the action row next to Start when the page loads", async () => {
@@ -304,10 +309,8 @@ describe("StartPage", () => {
     });
 
     // Wait for players to load (so start is enabled)
-    await waitFor(() => {
-      const startBtn = screen.getByRole("button", { name: "Start" });
-      expect(startBtn.getAttribute("disabled")).toBeNull();
-    });
+    await screen.findByText("Player 2", undefined, { timeout: LOBBY_LOAD_TIMEOUT_MS });
+    expect(screen.getByRole("button", { name: "Start" })).toHaveProperty("disabled", false);
 
     await act(async () => {
       fireEvent.click(screen.getByRole("button", { name: "Start" }));
@@ -328,8 +331,8 @@ describe("StartPage", () => {
 
     renderStartPage("/start/1");
 
-    await waitFor(() => {
-      expect(screen.getByText("Alex")).toBeTruthy();
-    });
+    expect(
+      await screen.findByText("Alex", undefined, { timeout: LOBBY_LOAD_TIMEOUT_MS }),
+    ).toBeTruthy();
   });
 });
