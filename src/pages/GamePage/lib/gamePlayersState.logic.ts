@@ -15,6 +15,8 @@ interface BuildGamePlayersStateOptions {
   canThrow: boolean;
   /** The game session takes an undo now (not reloading). */
   canUndo: boolean;
+  /** The server has not answered every throw and undo yet, or the game is being reloaded. */
+  isSyncing: boolean;
   skipFinishOverlay: boolean;
 }
 
@@ -23,6 +25,7 @@ interface GamePlayersDerivedState {
   activePlayers: UIPlayer[];
   finishedPlayers: UIPlayer[];
   isInteractionDisabled: boolean;
+  isSettingsDisabled: boolean;
   isUndoDisabled: boolean;
   shouldShowFinishOverlay: boolean;
   zeroScorePlayerIds: number[];
@@ -58,6 +61,7 @@ export function buildGamePlayersDerivedState({
   isLoading,
   canThrow,
   canUndo,
+  isSyncing,
   skipFinishOverlay,
 }: BuildGamePlayersStateOptions): GamePlayersDerivedState {
   const playerUI = mapPlayersToUI(gameData?.players ?? [], gameData?.currentRound);
@@ -81,12 +85,16 @@ export function buildGamePlayersDerivedState({
     shouldShowFinishOverlay ||
     !canUndo ||
     !hasThrowHistory(gameData);
+  // The server locks the out rule while the game has a throw. Until it answered every pending
+  // op it may still hold a throw the screen no longer shows.
+  const isSettingsDisabled = isSyncing || hasThrowHistory(gameData);
 
   return {
     activePlayer,
     activePlayers,
     finishedPlayers,
     isInteractionDisabled,
+    isSettingsDisabled,
     isUndoDisabled,
     shouldShowFinishOverlay,
     zeroScorePlayerIds,

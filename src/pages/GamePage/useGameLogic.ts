@@ -40,6 +40,7 @@ interface UseGameLogicResult {
   isLoading: boolean;
   isQueueFull: boolean;
   isSavingSettings: boolean;
+  isSettingsDisabled: boolean;
   isSettingsOpen: boolean;
   isUndoDisabled: boolean;
   pageError: string | null;
@@ -85,6 +86,7 @@ export function useGameLogic(): UseGameLogicResult {
     handleContinueGame,
     handleUndoFromOverlay,
     isInteractionDisabled,
+    isSettingsDisabled,
     isUndoDisabled,
     shouldShowFinishOverlay,
   } = useGamePlayersState({
@@ -95,6 +97,7 @@ export function useGameLogic(): UseGameLogicResult {
     isLoading,
     canThrow: view.canThrow,
     canUndo: view.canUndo,
+    isSyncing: view.status === "syncing",
     skipFinishOverlay,
   });
   const {
@@ -133,6 +136,7 @@ export function useGameLogic(): UseGameLogicResult {
     shouldShowFinishOverlay,
     isInteractionDisabled,
     isUndoDisabled,
+    isSettingsDisabled,
     isSettingsOpen,
     isSavingSettings,
     settingsError,

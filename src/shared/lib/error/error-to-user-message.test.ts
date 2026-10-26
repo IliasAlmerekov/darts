@@ -61,6 +61,30 @@ describe("toUserErrorMessage", () => {
     ).toBe("This game can no longer be changed.");
   });
 
+  it("should map the out rule lock code to a message that the out rule is locked", () => {
+    expect(
+      toUserErrorMessage(
+        new ApiError("Conflict", {
+          status: 409,
+          data: { error: "GAME_OUT_RULE_CHANGE_NOT_ALLOWED" },
+        }),
+        "Failed to update settings",
+      ),
+    ).toBe("The out rule cannot be changed once the game has a throw.");
+  });
+
+  it("should map the conflicting out rules code to a message that only one out rule fits", () => {
+    expect(
+      toUserErrorMessage(
+        new ApiError("Unprocessable Entity", {
+          status: 422,
+          data: { error: "GAME_CONFLICTING_OUT_RULES" },
+        }),
+        "Failed to update settings",
+      ),
+    ).toBe("Double out and triple out cannot both be on. Choose one.");
+  });
+
   it("should use fallback message when error is unknown", () => {
     expect(toUserErrorMessage({})).toBe("Something went wrong. Please try again.");
     expect(toUserErrorMessage({}, "Custom fallback")).toBe("Custom fallback");

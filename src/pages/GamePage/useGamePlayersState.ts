@@ -14,6 +14,7 @@ interface UseGamePlayersStateOptions {
   isLoading: boolean;
   canThrow: boolean;
   canUndo: boolean;
+  isSyncing: boolean;
   skipFinishOverlay: boolean;
 }
 
@@ -31,6 +32,7 @@ interface UseGamePlayersStateResult {
   handleContinueGame: () => void;
   handleUndoFromOverlay: () => void;
   isInteractionDisabled: boolean;
+  isSettingsDisabled: boolean;
   isUndoDisabled: boolean;
   shouldShowFinishOverlay: boolean;
 }
@@ -43,6 +45,7 @@ export function useGamePlayersState({
   isLoading,
   canThrow,
   canUndo,
+  isSyncing,
   skipFinishOverlay,
 }: UseGamePlayersStateOptions): UseGamePlayersStateResult {
   const [dismissed, setDismissed] = useState<DismissedPlayers>({ gameId, ids: [] });
@@ -55,6 +58,7 @@ export function useGamePlayersState({
     activePlayers,
     finishedPlayers,
     isInteractionDisabled,
+    isSettingsDisabled,
     isUndoDisabled,
     shouldShowFinishOverlay,
     zeroScorePlayerIds,
@@ -67,9 +71,19 @@ export function useGamePlayersState({
         isLoading,
         canThrow,
         canUndo,
+        isSyncing,
         skipFinishOverlay,
       }),
-    [canThrow, canUndo, dismissedZeroScorePlayerIds, error, gameData, isLoading, skipFinishOverlay],
+    [
+      canThrow,
+      canUndo,
+      dismissedZeroScorePlayerIds,
+      error,
+      gameData,
+      isLoading,
+      isSyncing,
+      skipFinishOverlay,
+    ],
   );
 
   // A player who leaves zero through undo is no longer dismissed, so finishing again shows the
@@ -104,6 +118,7 @@ export function useGamePlayersState({
     handleContinueGame: dismissFinishedPlayers,
     handleUndoFromOverlay,
     isInteractionDisabled,
+    isSettingsDisabled,
     isUndoDisabled,
     shouldShowFinishOverlay,
   };
