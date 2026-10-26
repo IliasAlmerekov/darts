@@ -141,6 +141,14 @@ export function applyOptimisticUndo(
     const multiplier = removedThrow.isTriple ? 3 : removedThrow.isDouble ? 2 : 1;
     const points = removedThrow.value * multiplier;
 
+    // The server lists the current round in roundHistory too; drop the throw there as well.
+    activePlayer.roundHistory = activePlayer.roundHistory.flatMap((round) => {
+      if (round.round !== currentGameData.currentRound) {
+        return [round];
+      }
+      const throws = round.throws.slice(0, -1);
+      return throws.length > 0 ? [{ ...round, throws }] : [];
+    });
     activePlayer.currentRoundThrows = previousThrows;
     activePlayer.throwsInCurrentRound = previousThrows.length;
     activePlayer.score += points;

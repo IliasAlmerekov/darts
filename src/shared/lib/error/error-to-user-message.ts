@@ -41,6 +41,14 @@ function mapTextToMessage(rawText: string): string | null {
     return "The start score cannot be changed for an existing game.";
   }
 
+  if (text.includes("game out rule change not allowed")) {
+    return "The out rule cannot be changed once the game has a throw.";
+  }
+
+  if (text.includes("game conflicting out rules")) {
+    return "Double out and triple out cannot both be on. Choose one.";
+  }
+
   if (text.includes("game not newest")) {
     return "This game can no longer be changed.";
   }

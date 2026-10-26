@@ -34,6 +34,7 @@ import {
   getGameThrowsIfChanged,
   recordThrow,
   undoLastThrow,
+  updateGameSettings,
   type ThrowAckResponse,
 } from "@/shared/api/game";
 import { playSound } from "@/shared/services/browser/soundPlayer";
@@ -47,6 +48,7 @@ const getGameThrowsIfChangedMock = vi.mocked(getGameThrowsIfChanged);
 const getGameThrowsMock = vi.mocked(getGameThrows);
 const recordThrowMock = vi.mocked(recordThrow);
 const undoLastThrowMock = vi.mocked(undoLastThrow);
+const updateGameSettingsMock = vi.mocked(updateGameSettings);
 const playSoundMock = vi.mocked(playSound);
 
 const GAME_ID = 4;
@@ -515,5 +517,141 @@ describe("GamePage throw sync", () => {
     tap("Undo");
 
     expect(playSoundMock).toHaveBeenCalledWith("undo");
+  });
+});
+
+// #321: the server locks the out rule once the game has a throw.
+describe("GamePage settings lock", () => {
+  beforeEach(() => {
+    vi.resetAllMocks();
+    window.sessionStorage.clear();
+    gameStore.resetGameStore();
+  });
+
+  function settingsButton(): HTMLElement {
+    return screen.getByRole("button", { name: "Settings" });
+  }
+
+  it("disables Settings after a miss, before and after the server confirms it", async () => {
+    const miss = createDeferred<ThrowAckResponse>();
+    recordThrowMock.mockReturnValueOnce(miss.promise);
+    await openGame(buildGame({ alice: 301, bob: 301 }));
+    expect(settingsButton().hasAttribute("disabled")).toBe(false);
+
+    tap("0");
+    expect(settingsButton().hasAttribute("disabled")).toBe(true);
+
+    await act(async () => {
+      miss.resolve(buildThrowAck({ alice: 301, bob: 301 }));
+      await new Promise((resolve) => setTimeout(resolve, 0));
+    });
+    expect(screen.queryByText(/syncing/i)).toBeNull();
+    expect(settingsButton().hasAttribute("disabled")).toBe(true);
+  });
+
+  it("lets the first throw be undone, a miss included, so Settings opens again", async () => {
+    recordThrowMock.mockResolvedValueOnce(buildThrowAck({ alice: 301, bob: 301 }));
+    undoLastThrowMock.mockResolvedValueOnce(buildGame({ alice: 301, bob: 301 }));
+    await openGame(buildGame({ alice: 301, bob: 301 }));
+
+    tap("0");
+    await waitFor(() => {
+      expect(screen.queryByText(/syncing/i)).toBeNull();
+    });
+    expect(settingsButton().hasAttribute("disabled")).toBe(true);
+    expect(screen.getByRole("button", { name: "Undo" }).hasAttribute("disabled")).toBe(false);
+
+    tap("Undo");
+    await waitFor(() => {
+      expect(settingsButton().hasAttribute("disabled")).toBe(false);
+    });
+    expect(undoLastThrowMock).toHaveBeenCalledTimes(1);
+  });
+
+  it("disables Undo once the only throw of a loaded game is undone", async () => {
+    undoLastThrowMock.mockReturnValue(new Promise<GameThrowsResponse>(() => {}));
+    // The server lists the current round in both currentRoundThrows and roundHistory.
+    const game = buildGame({ alice: 301, bob: 301 });
+    const [alice] = game.players;
+    if (alice === undefined) {
+      throw new Error("Expected Alice");
+    }
+    const miss = { value: 0, isDouble: false, isTriple: false, isBust: false };
+    alice.currentRoundThrows = [miss];
+    alice.throwsInCurrentRound = 1;
+    alice.roundHistory = [{ round: 1, throws: [miss] }];
+    game.currentThrowCount = 1;
+    await openGame(game);
+
+    tap("Undo");
+
+    expect(screen.getByRole("button", { name: "Undo" }).hasAttribute("disabled")).toBe(true);
+    expect(undoLastThrowMock).toHaveBeenCalledTimes(1);
+  });
+
+  it("disables Settings after a bust the server has not confirmed yet", async () => {
+    recordThrowMock.mockReturnValue(new Promise<ThrowAckResponse>(() => {}));
+    await openGame(buildGame({ alice: 10, bob: 301 }));
+    expect(settingsButton().hasAttribute("disabled")).toBe(false);
+
+    tap("20");
+
+    expect(within(playerCard("Alice")).getByText("10")).toBeTruthy();
+    expect(settingsButton().hasAttribute("disabled")).toBe(true);
+  });
+
+  it("disables Settings for a loaded game whose only round was a bust", async () => {
+    const game = buildGame({ alice: 301, bob: 301 });
+    const [alice] = game.players;
+    if (alice === undefined) {
+      throw new Error("Expected Alice");
+    }
+    alice.roundHistory = [
+      { round: 1, throws: [{ value: 20, isDouble: false, isTriple: true, isBust: true }] },
+    ];
+    await openGame(game);
+
+    expect(settingsButton().hasAttribute("disabled")).toBe(true);
+  });
+
+  it("enables Settings again once the server confirms the undo of the last throw", async () => {
+    const undo = createDeferred<GameThrowsResponse>();
+    recordThrowMock.mockResolvedValueOnce(buildThrowAck({ alice: 281, bob: 301 }));
+    undoLastThrowMock.mockReturnValueOnce(undo.promise);
+    await openGame(buildGame({ alice: 301, bob: 301 }));
+
+    tap("20");
+    await waitFor(() => {
+      expect(screen.queryByText(/syncing/i)).toBeNull();
+    });
+
+    tap("Undo");
+    expect(within(playerCard("Alice")).getByText("301")).toBeTruthy();
+    // The server still holds the throw until it answers the undo.
+    expect(settingsButton().hasAttribute("disabled")).toBe(true);
+
+    await act(async () => {
+      undo.resolve(buildGame({ alice: 301, bob: 301 }));
+      await new Promise((resolve) => setTimeout(resolve, 0));
+    });
+    expect(settingsButton().hasAttribute("disabled")).toBe(false);
+  });
+
+  it("shows a readable message when the server locked the out rule before this tablet saw a throw", async () => {
+    updateGameSettingsMock.mockRejectedValueOnce(
+      new ApiError("Conflict", {
+        status: 409,
+        data: { error: "GAME_OUT_RULE_CHANGE_NOT_ALLOWED" },
+      }),
+    );
+    await openGame(buildGame({ alice: 301, bob: 301 }));
+
+    fireEvent.click(settingsButton());
+    tap("Save");
+
+    expect(
+      await screen.findByText("The out rule cannot be changed once the game has a throw."),
+    ).toBeTruthy();
+    expect(screen.queryByText("GAME_OUT_RULE_CHANGE_NOT_ALLOWED")).toBeNull();
   });
 });

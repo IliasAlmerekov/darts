@@ -34,6 +34,7 @@ function renderPlayersState(initialProps: HookProps) {
       useGamePlayersState({
         canThrow: true,
         canUndo: true,
+        isSyncing: false,
         error: null,
         gameData,
         gameId,

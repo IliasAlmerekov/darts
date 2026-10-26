@@ -69,6 +69,7 @@ function buildUndoStateFromSession(session: GameSession) {
     isLoading: false,
     canThrow: view.canThrow,
     canUndo: view.canUndo,
+    isSyncing: view.status === "syncing",
     skipFinishOverlay: false,
   });
 }
@@ -158,6 +159,7 @@ describe("buildGamePlayersDerivedState", () => {
       isLoading: false,
       canThrow: true,
       canUndo: true,
+      isSyncing: false,
       skipFinishOverlay: false,
     });
 
@@ -178,6 +180,7 @@ describe("buildGamePlayersDerivedState", () => {
       isLoading: false,
       canThrow: true,
       canUndo: true,
+      isSyncing: false,
       skipFinishOverlay: false,
     });
 
@@ -194,6 +197,7 @@ describe("buildGamePlayersDerivedState", () => {
       isLoading: false,
       canThrow: true,
       canUndo: true,
+      isSyncing: false,
       skipFinishOverlay: false,
     });
 
@@ -238,6 +242,7 @@ describe("buildGamePlayersDerivedState", () => {
       isLoading: false,
       canThrow: false,
       canUndo: true,
+      isSyncing: false,
       skipFinishOverlay: false,
     });
 
@@ -282,6 +287,7 @@ describe("buildGamePlayersDerivedState", () => {
       isLoading: false,
       canThrow: true,
       canUndo: true,
+      isSyncing: false,
       skipFinishOverlay: false,
     });
 
@@ -325,6 +331,7 @@ describe("buildGamePlayersDerivedState", () => {
       isLoading: false,
       canThrow: true,
       canUndo: false,
+      isSyncing: false,
       skipFinishOverlay: false,
     });
 

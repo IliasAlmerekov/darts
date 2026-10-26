@@ -127,11 +127,13 @@ const OverlaysSection = React.memo(function OverlaysSection({
 interface HeaderSectionProps {
   handleOpenExitOverlay: () => void;
   handleOpenSettings: () => void;
+  isSettingsDisabled: boolean;
 }
 
 const HeaderSection = React.memo(function HeaderSection({
   handleOpenExitOverlay,
   handleOpenSettings,
+  isSettingsDisabled,
 }: HeaderSectionProps): React.JSX.Element {
   return (
     <header className={styles.gameHeader}>
@@ -139,6 +141,7 @@ const HeaderSection = React.memo(function HeaderSection({
       <LinkButton
         label={<img src={settingsIcon} alt="Settings" />}
         handleClick={handleOpenSettings}
+        disabled={isSettingsDisabled}
         {...(styles.settingsBtn !== undefined ? { className: styles.settingsBtn } : {})}
       />
     </header>
@@ -202,6 +205,7 @@ function GamePage(): React.JSX.Element {
     shouldShowFinishOverlay,
     isInteractionDisabled,
     isUndoDisabled,
+    isSettingsDisabled,
     isSettingsOpen,
     isSavingSettings,
     settingsError,
@@ -283,6 +287,7 @@ function GamePage(): React.JSX.Element {
         <HeaderSection
           handleOpenExitOverlay={handleOpenExitOverlay}
           handleOpenSettings={handleOpenSettings}
+          isSettingsDisabled={isSettingsDisabled}
         />
 
         <div className={styles.gameContent}>

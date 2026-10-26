@@ -191,6 +191,52 @@ describe("throwStateService", () => {
     ]);
   });
 
+  it("should drop the undone throw from the current round in roundHistory as the server lists it there too", () => {
+    const miss = { value: 0, isDouble: false, isTriple: false, isBust: false };
+    const firstRound = {
+      round: 1,
+      throws: [
+        { ...miss, value: 20 },
+        { ...miss, value: 20 },
+      ],
+    };
+    const gameState = buildGameData({
+      currentRound: 2,
+      currentThrowCount: 1,
+      players: [
+        {
+          id: 1,
+          name: "P1",
+          score: 261,
+          isActive: true,
+          isBust: false,
+          position: null,
+          throwsInCurrentRound: 1,
+          currentRoundThrows: [miss],
+          roundHistory: [firstRound, { round: 2, throws: [miss] }],
+          isGuest: false,
+        },
+        {
+          id: 2,
+          name: "P2",
+          score: 301,
+          isActive: false,
+          isBust: false,
+          position: null,
+          throwsInCurrentRound: 0,
+          currentRoundThrows: [],
+          roundHistory: [],
+          isGuest: false,
+        },
+      ],
+    });
+
+    const nextState = applyOptimisticUndo(gameState);
+
+    expect(nextState?.players[0]?.currentRoundThrows).toEqual([]);
+    expect(nextState?.players[0]?.roundHistory).toEqual([firstRound]);
+  });
+
   it("should restore the previous player when undoing a completed winning throw", () => {
     const gameState = buildGameData({
       status: "started",
