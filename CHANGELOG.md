@@ -37,6 +37,7 @@ and this project does **not** yet follow [Semantic Versioning](https://semver.or
 
 ### Fixed
 
+- Game page: the optimistic throw treats a remaining score of 1 in double-out, and 1 or 2 in triple-out, as a bust. The score returns to its value at the start of the turn and the turn passes to the next player, as the backend already did. Before, the board showed the reduced score and kept the player active until the server response arrived (#102)
 - Game page: a throw or undo response that arrives after the tablet left the game, or opened another one, no longer changes the scoreboard on screen (#95)
 - Game page: after a failed sync the page reloads the game and shows "Your last throws were not saved." If the reload fails too, throw and undo input stay disabled until Retry reloads the game. When the first load fails while the store still shows the game from an earlier page, the page shows "Could not load the game." with the same Retry instead of a scoreboard with dead input, and a load that works shows no notice (#98)
 - Game page: a full throw queue disables throw input and shows "Syncing throws…" instead of dropping taps without a word (#105)

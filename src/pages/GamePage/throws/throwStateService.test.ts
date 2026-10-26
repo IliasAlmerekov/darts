@@ -1,6 +1,6 @@
 // @vitest-environment node
 import { describe, expect, it } from "vitest";
-import type { GameThrowsResponse } from "@/types";
+import type { GameThrowsResponse, PlayerThrow } from "@/types";
 import {
   applyOptimisticThrow,
   applyOptimisticUndo,
@@ -58,6 +58,92 @@ function buildGameDataWithFirstPlayerAtPosition(position: number): GameThrowsRes
     throw new Error("Expected buildGameData to include a player.");
   }
   return { ...gameState, players: [{ ...firstPlayer, position }, ...otherPlayers] };
+}
+
+function singleThrow(value: number): PlayerThrow {
+  return { value, isDouble: false, isTriple: false, isBust: false };
+}
+
+function buildTurnState({
+  rule,
+  turnStartScore,
+  priorThrowValues,
+  activeIndex,
+}: {
+  rule: "single" | "double" | "triple";
+  turnStartScore: number;
+  priorThrowValues: readonly number[];
+  activeIndex: 0 | 1;
+}): GameThrowsResponse {
+  const base = buildGameData();
+  const priorThrows = priorThrowValues.map(singleThrow);
+  const spent = priorThrowValues.reduce((sum, value) => sum + value, 0);
+  const players = base.players.map((player, index) => {
+    if (index !== activeIndex) {
+      return { ...player, isActive: false, score: 100 };
+    }
+    return {
+      ...player,
+      isActive: true,
+      score: turnStartScore - spent,
+      throwsInCurrentRound: priorThrows.length,
+      currentRoundThrows: priorThrows,
+    };
+  });
+  const activePlayer = players[activeIndex];
+  if (activePlayer === undefined) {
+    throw new Error("Expected an active player.");
+  }
+  return {
+    ...base,
+    activePlayerId: activePlayer.id,
+    currentThrowCount: priorThrows.length,
+    settings: {
+      startScore: 301,
+      doubleOut: rule === "double",
+      tripleOut: rule === "triple",
+    },
+    players,
+  };
+}
+
+function expectBustAtTurnStart({
+  gameState,
+  nextState,
+  activeIndex,
+  turnStartScore,
+  priorThrowValues,
+  lastThrowValue,
+}: {
+  gameState: GameThrowsResponse;
+  nextState: GameThrowsResponse | null;
+  activeIndex: 0 | 1;
+  turnStartScore: number;
+  priorThrowValues: readonly number[];
+  lastThrowValue: number;
+}): void {
+  const otherIndex = activeIndex === 0 ? 1 : 0;
+  const wrapped = activeIndex === 1;
+  const bustPlayer = nextState?.players[activeIndex];
+  const roundHistory = bustPlayer?.roundHistory ?? [];
+  const lastRound = roundHistory[roundHistory.length - 1];
+
+  expect(bustPlayer?.score).toBe(turnStartScore);
+  expect(bustPlayer?.isBust).toBe(true);
+  expect(bustPlayer?.isActive).toBe(false);
+  expect(bustPlayer?.currentRoundThrows).toEqual([]);
+  expect(bustPlayer?.throwsInCurrentRound).toBe(0);
+  expect(lastRound?.throws).toHaveLength(priorThrowValues.length + 1);
+  expect(lastRound?.throws.at(-1)).toEqual({
+    value: lastThrowValue,
+    isDouble: false,
+    isTriple: false,
+    isBust: true,
+  });
+  expect(nextState?.activePlayerId).toBe(gameState.players[otherIndex]?.id);
+  expect(nextState?.players[otherIndex]?.isActive).toBe(true);
+  expect(nextState?.currentThrowCount).toBe(0);
+  expect(nextState?.currentRound).toBe(gameState.currentRound + (wrapped ? 1 : 0));
 }
 
 describe("throwStateService", () => {
@@ -359,5 +445,140 @@ describe("throwStateService", () => {
     });
 
     expect(nextState.players[0]?.position).toBeNull();
+  });
+
+  describe("unreachable checkout remainders", () => {
+    const dartCases = [
+      { dart: 1, turnStartScore: 2, priorThrowValues: [] },
+      { dart: 2, turnStartScore: 21, priorThrowValues: [19] },
+      { dart: 3, turnStartScore: 40, priorThrowValues: [19, 19] },
+    ] as const;
+    const orderCases = [
+      { order: "not last in order", activeIndex: 0 },
+      { order: "last in order", activeIndex: 1 },
+    ] as const;
+
+    describe.each(dartCases)("double-out on dart $dart", (dartCase) => {
+      it.each(orderCases)(
+        "should bust and restore the turn start score when leaving 1 and the player is $order",
+        ({ activeIndex }) => {
+          const gameState = buildTurnState({ rule: "double", ...dartCase, activeIndex });
+
+          const nextState = applyOptimisticThrow(gameState, {
+            value: 1,
+            isDouble: false,
+            isTriple: false,
+          });
+
+          expectBustAtTurnStart({
+            gameState,
+            nextState,
+            activeIndex,
+            turnStartScore: dartCase.turnStartScore,
+            priorThrowValues: dartCase.priorThrowValues,
+            lastThrowValue: 1,
+          });
+        },
+      );
+    });
+
+    describe.each([
+      { left: 1, turnStartScore: 2 },
+      { left: 2, turnStartScore: 3 },
+    ])("triple-out leaving $left", ({ turnStartScore }) => {
+      it.each(orderCases)(
+        "should bust and restore the turn start score when the player is $order",
+        ({ activeIndex }) => {
+          const gameState = buildTurnState({
+            rule: "triple",
+            turnStartScore,
+            priorThrowValues: [],
+            activeIndex,
+          });
+
+          const nextState = applyOptimisticThrow(gameState, {
+            value: 1,
+            isDouble: false,
+            isTriple: false,
+          });
+
+          expectBustAtTurnStart({
+            gameState,
+            nextState,
+            activeIndex,
+            turnStartScore,
+            priorThrowValues: [],
+            lastThrowValue: 1,
+          });
+        },
+      );
+    });
+
+    it.each([
+      { left: 1, turnStartScore: 2 },
+      { left: 2, turnStartScore: 3 },
+    ])(
+      "should keep the player active with the reduced score when single-out leaves $left",
+      ({ left, turnStartScore }) => {
+        const gameState = buildTurnState({
+          rule: "single",
+          turnStartScore,
+          priorThrowValues: [],
+          activeIndex: 0,
+        });
+
+        const nextState = applyOptimisticThrow(gameState, {
+          value: 1,
+          isDouble: false,
+          isTriple: false,
+        });
+
+        expect(nextState?.players[0]?.score).toBe(left);
+        expect(nextState?.players[0]?.isActive).toBe(true);
+        expect(nextState?.players[0]?.isBust).toBe(false);
+        expect(nextState?.players[0]?.currentRoundThrows.at(-1)?.isBust).toBe(false);
+        expect(nextState?.activePlayerId).toBe(gameState.activePlayerId);
+      },
+    );
+
+    it("should finish the player when double-out ends on a double", () => {
+      const gameState = buildTurnState({
+        rule: "double",
+        turnStartScore: 2,
+        priorThrowValues: [],
+        activeIndex: 0,
+      });
+
+      const nextState = applyOptimisticThrow(gameState, {
+        value: 1,
+        isDouble: true,
+        isTriple: false,
+      });
+
+      expect(nextState?.players[0]?.score).toBe(0);
+      expect(nextState?.players[0]?.isBust).toBe(false);
+      expect(nextState?.players[0]?.position).toBe(1);
+      expect(nextState?.activePlayerId).toBe(2);
+    });
+
+    it("should finish the player when triple-out ends on a triple", () => {
+      const gameState = buildTurnState({
+        rule: "triple",
+        turnStartScore: 3,
+        priorThrowValues: [],
+        activeIndex: 0,
+      });
+
+      const nextState = applyOptimisticThrow(gameState, {
+        value: 1,
+        isDouble: false,
+        isTriple: true,
+      });
+
+      expect(nextState?.players[0]?.score).toBe(0);
+      expect(nextState?.players[0]?.isBust).toBe(false);
+      expect(nextState?.players[0]?.position).toBe(1);
+      expect(nextState?.activePlayerId).toBe(2);
+    });
   });
 });
