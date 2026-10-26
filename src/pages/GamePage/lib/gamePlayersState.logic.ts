@@ -1,9 +1,9 @@
 import { getFinishedPlayers, mapPlayersToUI } from "@/lib/game/player-mappers";
 import type { GameThrowsResponse, UIPlayer } from "@/types";
 import {
-  hasThrowHistory,
   calculateShouldShowFinishOverlay,
   getZeroScorePlayerIds,
+  hasThrowHistory,
 } from "./gameLogic.helpers";
 
 interface BuildGamePlayersStateOptions {

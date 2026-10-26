@@ -60,13 +60,15 @@ function buildGameData(overrides?: Partial<GameThrowsResponse>): GameThrowsRespo
 }
 
 function buildUndoStateFromSession(session: GameSession) {
+  const view = getSessionView(session);
+
   return buildGamePlayersDerivedState({
     dismissedZeroScorePlayerIds: [],
     gameData: getShownGame(session),
     hasError: false,
     isLoading: false,
-    canThrow: getSessionView(session).canThrow,
-    canUndo: getSessionView(session).canUndo,
+    canThrow: view.canThrow,
+    canUndo: view.canUndo,
     skipFinishOverlay: false,
   });
 }

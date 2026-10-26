@@ -1,8 +1,8 @@
 // @vitest-environment node
 import { describe, expect, it } from "vitest";
 import {
-  hasThrowHistory,
   calculateShouldShowFinishOverlay,
+  hasThrowHistory,
   isLastActivePlayerLeft,
 } from "./lib/gameLogic.helpers";
 import type { GameThrowsResponse } from "@/types";
@@ -61,19 +61,38 @@ describe("hasThrowHistory", () => {
   });
 
   it("should return true when a player has a throw in the current round", () => {
-    const data = buildGameData();
-    data.players[0]!.currentRoundThrows = [
-      { value: 0, isDouble: false, isTriple: false, isBust: false },
-    ];
+    const base = buildGameData();
+    const data = buildGameData({
+      players: base.players.map((player) =>
+        player.id === 1
+          ? {
+              ...player,
+              currentRoundThrows: [{ value: 0, isDouble: false, isTriple: false, isBust: false }],
+            }
+          : player,
+      ),
+    });
 
     expect(hasThrowHistory(data)).toBe(true);
   });
 
   it("should return true when a player has a finished round", () => {
-    const data = buildGameData();
-    data.players[1]!.roundHistory = [
-      { round: 1, throws: [{ value: 0, isDouble: false, isTriple: false, isBust: false }] },
-    ];
+    const base = buildGameData();
+    const data = buildGameData({
+      players: base.players.map((player) =>
+        player.id === 2
+          ? {
+              ...player,
+              roundHistory: [
+                {
+                  round: 1,
+                  throws: [{ value: 0, isDouble: false, isTriple: false, isBust: false }],
+                },
+              ],
+            }
+          : player,
+      ),
+    });
 
     expect(hasThrowHistory(data)).toBe(true);
   });
