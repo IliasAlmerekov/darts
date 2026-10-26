@@ -554,6 +554,25 @@ describe("GamePage settings lock", () => {
     expect(settingsButton().hasAttribute("disabled")).toBe(true);
   });
 
+  it("lets the first throw be undone, a miss included, so Settings opens again", async () => {
+    recordThrowMock.mockResolvedValueOnce(buildThrowAck({ alice: 301, bob: 301 }));
+    undoLastThrowMock.mockResolvedValueOnce(buildGame({ alice: 301, bob: 301 }));
+    await openGame(buildGame({ alice: 301, bob: 301 }));
+
+    tap("0");
+    await waitFor(() => {
+      expect(screen.queryByText(/syncing/i)).toBeNull();
+    });
+    expect(settingsButton().hasAttribute("disabled")).toBe(true);
+    expect(screen.getByRole("button", { name: "Undo" }).hasAttribute("disabled")).toBe(false);
+
+    tap("Undo");
+    await waitFor(() => {
+      expect(settingsButton().hasAttribute("disabled")).toBe(false);
+    });
+    expect(undoLastThrowMock).toHaveBeenCalledTimes(1);
+  });
+
   it("disables Settings after a bust the server has not confirmed yet", async () => {
     recordThrowMock.mockReturnValue(new Promise<ThrowAckResponse>(() => {}));
     await openGame(buildGame({ alice: 10, bob: 301 }));
