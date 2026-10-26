@@ -112,10 +112,11 @@ export function useGameExitFlow({
 }: UseGameExitFlowOptions): UseGameExitFlowResult {
   const [isExitOverlayOpen, setIsExitOverlayOpen] = useState(false);
   const controllerRef = useRef<AbortController | null>(null);
-  // The lock belongs to one game: it holds that game's id, so a new gameId finds it free.
-  const exitLockedGameIdRef = useRef<number | null>(null);
-  const [exitPendingGameId, setExitPendingGameId] = useState<number | null>(null);
-  const isExitPending = exitPendingGameId !== null && exitPendingGameId === gameId;
+  // The lock belongs to one game: each game id has its own entry, so a new gameId finds it free
+  // and a game the page left mid-exit stays locked when the page returns to it.
+  const exitLockedGameIdsRef = useRef<Set<number>>(new Set());
+  const [exitPendingGameIds, setExitPendingGameIds] = useState<ReadonlySet<number>>(new Set());
+  const isExitPending = gameId !== null && exitPendingGameIds.has(gameId);
 
   // A late answer for a game the page left must not navigate or set an error.
   useEffect(() => {
@@ -140,11 +141,19 @@ export function useGameExitFlow({
     // The lock stays taken after a success and after the finished-game summary: the page is
     // leaving, and a second tap in that time must not start a second exit. Any other failure
     // releases it, so the player can try again.
-    if (exitLockedGameIdRef.current === gameId) {
+    if (exitLockedGameIdsRef.current.has(gameId)) {
       return;
     }
-    exitLockedGameIdRef.current = gameId;
-    setExitPendingGameId(gameId);
+    exitLockedGameIdsRef.current.add(gameId);
+    setExitPendingGameIds((ids) => new Set(ids).add(gameId));
+    const releaseExitLock = (): void => {
+      exitLockedGameIdsRef.current.delete(gameId);
+      setExitPendingGameIds((ids) => {
+        const next = new Set(ids);
+        next.delete(gameId);
+        return next;
+      });
+    };
 
     controllerRef.current?.abort();
     const controller = new AbortController();
@@ -167,10 +176,7 @@ export function useGameExitFlow({
         isGameAbortNotAllowedError(error) && (await isGameFinished(gameId, controller.signal));
       if (controller.signal.aborted) {
         // The page left this game. Release only this call's lock: a later game's stays.
-        if (exitLockedGameIdRef.current === gameId) {
-          exitLockedGameIdRef.current = null;
-        }
-        setExitPendingGameId((pendingId) => (pendingId === gameId ? null : pendingId));
+        releaseExitLock();
         return;
       }
 
@@ -185,8 +191,7 @@ export function useGameExitFlow({
         error,
       });
       setPageError(toUserErrorMessage(error, "Could not leave the game. Please try again."));
-      exitLockedGameIdRef.current = null;
-      setExitPendingGameId(null);
+      releaseExitLock();
     }
   }, [gameId, navigate, setPageError]);
 

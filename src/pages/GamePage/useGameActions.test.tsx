@@ -336,6 +336,57 @@ describe("useGameExitFlow", () => {
       expect(abortGame).toHaveBeenCalledTimes(2);
       expect(abortGame).toHaveBeenLastCalledWith(42);
     });
+    it("should keep a game locked when the page returns to it while another game exits", async () => {
+      vi.mocked(abortGame).mockReturnValue(new Promise(() => {}));
+      const { rerender, result } = renderExitFlow(42);
+
+      await act(async () => {
+        void result.current.handleExitGame();
+        await Promise.resolve();
+      });
+      rerender({ gameId: 43 });
+      await act(async () => {
+        void result.current.handleExitGame();
+        await Promise.resolve();
+      });
+      rerender({ gameId: 42 });
+
+      expect(result.current.isExitPending).toBe(true);
+      await act(async () => {
+        await result.current.handleExitGame();
+      });
+      expect(abortGame).toHaveBeenCalledTimes(2);
+    });
+
+    it("should not release another game's lock when a stale exit fails", async () => {
+      const abort42 = deferred<{ success: boolean; message: string }>();
+      vi.mocked(abortGame)
+        .mockReturnValueOnce(abort42.promise)
+        .mockReturnValueOnce(new Promise(() => {}));
+      const { rerender, result } = renderExitFlow(42);
+
+      let stale: Promise<void> = Promise.resolve();
+      await act(async () => {
+        stale = result.current.handleExitGame();
+        await Promise.resolve();
+      });
+      rerender({ gameId: 43 });
+      await act(async () => {
+        void result.current.handleExitGame();
+        await Promise.resolve();
+      });
+      await act(async () => {
+        abort42.reject(new Error("offline"));
+        await stale;
+      });
+
+      expect(result.current.isExitPending).toBe(true);
+      await act(async () => {
+        await result.current.handleExitGame();
+      });
+      expect(abortGame).toHaveBeenCalledTimes(2);
+      expect(abortGame).toHaveBeenLastCalledWith(43);
+    });
   });
 
   describe("when the page moves on during the status read", () => {
