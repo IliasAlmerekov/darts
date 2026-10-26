@@ -288,6 +288,94 @@ describe("gameSession.logic", () => {
     expect(applyUndoResponse(session, buildUndoAck(281, 301))).not.toBeNull();
   });
 
+  describe("compact undo acknowledgement after a completed turn", () => {
+    function turn(round: number, ...values: number[]) {
+      return {
+        round,
+        throws: values.map((value) => ({ value, isDouble: false, isTriple: false, isBust: false })),
+      };
+    }
+
+    function buildThreeSeatGame(thirdRoundHistory: ReturnType<typeof turn>[]): GameThrowsResponse {
+      return buildGameThrowsResponse({
+        id: 4,
+        currentRound: 3,
+        activePlayerId: 3,
+        settings: { startScore: 301, doubleOut: false, tripleOut: false },
+        players: [
+          buildBackendPlayer({
+            id: 1,
+            name: "Alice",
+            score: 100,
+            roundHistory: [turn(1, 20), turn(2, 20), turn(3, 20, 20, 20)],
+          }),
+          buildBackendPlayer({
+            id: 2,
+            name: "Bob",
+            score: 0,
+            position: 1,
+            roundHistory: [turn(1, 20, 20, 20)],
+          }),
+          buildBackendPlayer({
+            id: 3,
+            name: "Cara",
+            score: 150,
+            isActive: true,
+            position: null,
+            roundHistory: thirdRoundHistory,
+          }),
+        ],
+      });
+    }
+
+    function sendUndo(game: GameThrowsResponse): GameSession {
+      return send(enqueueUndo(createGameSession(game)));
+    }
+
+    function buildThreeSeatAck(alice: number, active: 1 | 3): UndoAckResponse {
+      return {
+        ...buildUndoAck(alice, 0),
+        scoreboardDelta: {
+          changedPlayers: [
+            { playerId: 1, name: "Alice", score: alice, isActive: active === 1, isGuest: false },
+            { playerId: 3, name: "Cara", score: 150, isActive: active === 3, isGuest: false },
+          ],
+          winnerId: null,
+          status: "started",
+          currentRound: 3,
+        },
+      };
+    }
+
+    it("confirms the latest turn and skips a finished player", () => {
+      const session = sendUndo(buildThreeSeatGame([turn(1, 20), turn(2, 20)]));
+
+      const confirmed = applyUndoResponse(session, buildThreeSeatAck(120, 1))?.confirmed;
+
+      expect(confirmed?.activePlayerId).toBe(1);
+      expect(confirmed?.currentRound).toBe(3);
+      expect(confirmed?.players.map((player) => player.roundHistory)).toEqual([
+        [turn(1, 20), turn(2, 20)],
+        [turn(1, 20, 20, 20)],
+        [turn(1, 20), turn(2, 20)],
+      ]);
+      expect(confirmed?.players[0]?.currentRoundThrows).toEqual(turn(3, 20, 20).throws);
+      expect(scores(confirmed ?? null)).toEqual([120, 0, 150]);
+    });
+
+    it("returns null when no turn can be identified, so the caller reloads the game", () => {
+      const game = buildThreeSeatGame([turn(1, 20)]);
+      const session = sendUndo({
+        ...game,
+        players: game.players.map((player) =>
+          player.id === 1 ? { ...player, roundHistory: [turn(1, 20)] } : player,
+        ),
+      });
+
+      expect(applyUndoResponse(session, buildThreeSeatAck(120, 1))).toBeNull();
+    });
+  });
+
   it("takes the active player from the players when the undo answer leaves it out", () => {
     let session = send(throwMany(createGameSession(buildGame({ alice: 281, bob: 301 })), [20]));
     session = applyThrowAck(session, buildThrowAck(261, 301)) ?? session;

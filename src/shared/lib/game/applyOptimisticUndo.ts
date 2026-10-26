@@ -63,63 +63,39 @@ function getUndoTargetFromCompletedRound(
     };
   }
 
-  if (activePlayerIndex >= 0) {
-    for (let offset = 1; offset <= players.length; offset += 1) {
-      const candidateIndex = (activePlayerIndex - offset + players.length) % players.length;
-      const candidate = players[candidateIndex];
-      const roundIndex = candidate ? candidate.roundHistory.length - 1 : -1;
-      const lastRound = roundIndex >= 0 ? candidate?.roundHistory[roundIndex] : undefined;
-
-      if (!candidate || !lastRound || lastRound.throws.length === 0) {
-        continue;
-      }
-
-      return {
-        player: candidate,
-        playerIndex: candidateIndex,
-        roundIndex,
-        roundNumber:
-          typeof lastRound.round === "number" && lastRound.round > 0
-            ? lastRound.round
-            : currentGameData.currentRound,
-      };
-    }
+  if (activePlayerIndex < 0) {
+    return null;
   }
 
-  let fallbackCandidate: {
-    player: GameThrowsResponse["players"][number];
-    playerIndex: number;
-    roundIndex: number;
-    roundNumber: number;
-  } | null = null;
+  // Walk back through seat order to the latest turn: a seat before the active one played in
+  // currentRound, a seat after it (the walk wrapped) in currentRound - 1. Other seats finished
+  // earlier and are skipped.
+  for (let offset = 1; offset < players.length; offset += 1) {
+    const candidateIndex = (activePlayerIndex - offset + players.length) % players.length;
+    const candidate = players[candidateIndex];
+    const roundIndex = candidate ? candidate.roundHistory.length - 1 : -1;
+    const lastRound = roundIndex >= 0 ? candidate?.roundHistory[roundIndex] : undefined;
+    const expectedRound =
+      candidateIndex < activePlayerIndex
+        ? currentGameData.currentRound
+        : currentGameData.currentRound - 1;
 
-  players.forEach((player, playerIndex) => {
-    const roundIndex = player.roundHistory.length - 1;
-    const lastRound = roundIndex >= 0 ? player.roundHistory[roundIndex] : undefined;
-    if (!lastRound || lastRound.throws.length === 0) {
-      return;
+    if (!candidate || !lastRound || lastRound.throws.length === 0) {
+      continue;
+    }
+    if (lastRound.round !== expectedRound) {
+      continue;
     }
 
-    const roundNumber =
-      typeof lastRound.round === "number" && lastRound.round > 0
-        ? lastRound.round
-        : currentGameData.currentRound;
+    return {
+      player: candidate,
+      playerIndex: candidateIndex,
+      roundIndex,
+      roundNumber: expectedRound,
+    };
+  }
 
-    if (
-      fallbackCandidate === null ||
-      roundNumber > fallbackCandidate.roundNumber ||
-      (roundNumber === fallbackCandidate.roundNumber && playerIndex > fallbackCandidate.playerIndex)
-    ) {
-      fallbackCandidate = {
-        player,
-        playerIndex,
-        roundIndex,
-        roundNumber,
-      };
-    }
-  });
-
-  return fallbackCandidate;
+  return null;
 }
 
 export function applyOptimisticUndo(

@@ -628,3 +628,114 @@ describe("throwStateService", () => {
     });
   });
 });
+
+describe("applyOptimisticUndo after a completed turn", () => {
+  function turn(
+    round: number,
+    ...values: number[]
+  ): GameThrowsResponse["players"][number]["roundHistory"][number] {
+    return { round, throws: values.map(singleThrow) };
+  }
+
+  function seat(
+    id: number,
+    overrides: Partial<GameThrowsResponse["players"][number]>,
+  ): GameThrowsResponse["players"][number] {
+    return {
+      id,
+      name: `P${id}`,
+      score: 200,
+      isActive: false,
+      isBust: false,
+      position: null,
+      throwsInCurrentRound: 0,
+      currentRoundThrows: [],
+      roundHistory: [],
+      isGuest: false,
+      ...overrides,
+    };
+  }
+
+  it("should undo the latest turn and pass over a finished player that was skipped", () => {
+    const gameState = buildGameData({
+      currentRound: 3,
+      activePlayerId: 3,
+      players: [
+        seat(1, { score: 100, roundHistory: [turn(1, 20), turn(2, 20), turn(3, 20, 20, 20)] }),
+        seat(2, { score: 0, position: 1, roundHistory: [turn(1, 20, 20, 20)] }),
+        seat(3, { score: 150, isActive: true, roundHistory: [turn(1, 20), turn(2, 20)] }),
+      ],
+    });
+
+    const nextState = applyOptimisticUndo(gameState);
+
+    expect(nextState?.activePlayerId).toBe(1);
+    expect(nextState?.currentRound).toBe(3);
+    expect(nextState?.players.map((player) => player.isActive)).toEqual([true, false, false]);
+    expect(nextState?.players.map((player) => player.score)).toEqual([120, 0, 150]);
+    expect(nextState?.players.map((player) => player.currentRoundThrows)).toEqual([
+      [singleThrow(20), singleThrow(20)],
+      [],
+      [],
+    ]);
+    expect(nextState?.players.map((player) => player.roundHistory)).toEqual([
+      [turn(1, 20), turn(2, 20)],
+      [turn(1, 20, 20, 20)],
+      [turn(1, 20), turn(2, 20)],
+    ]);
+  });
+
+  it("should undo the last seat's turn of the previous round when the first seat is active", () => {
+    const gameState = buildGameData({
+      currentRound: 2,
+      activePlayerId: 1,
+      players: [
+        seat(1, { isActive: true, roundHistory: [turn(1, 20)] }),
+        seat(2, { roundHistory: [turn(1, 20)] }),
+        seat(3, { score: 180, roundHistory: [turn(1, 20, 20)] }),
+      ],
+    });
+
+    const nextState = applyOptimisticUndo(gameState);
+
+    expect(nextState?.activePlayerId).toBe(3);
+    expect(nextState?.currentRound).toBe(1);
+    expect(nextState?.players[2]?.score).toBe(200);
+    expect(nextState?.players[2]?.currentRoundThrows).toEqual([singleThrow(20)]);
+    expect(nextState?.players[2]?.roundHistory).toEqual([]);
+  });
+
+  it("should pass over a later seat that finished before the previous round", () => {
+    const gameState = buildGameData({
+      currentRound: 3,
+      activePlayerId: 1,
+      players: [
+        seat(1, { isActive: true, roundHistory: [turn(1, 20), turn(2, 20)] }),
+        seat(2, { roundHistory: [turn(1, 20), turn(2, 20)] }),
+        seat(3, { score: 180, roundHistory: [turn(1, 20), turn(2, 20, 20)] }),
+        seat(4, { score: 0, position: 1, roundHistory: [turn(1, 20, 20, 20)] }),
+      ],
+    });
+
+    const nextState = applyOptimisticUndo(gameState);
+
+    expect(nextState?.activePlayerId).toBe(3);
+    expect(nextState?.currentRound).toBe(2);
+    expect(nextState?.players[3]?.roundHistory).toEqual([turn(1, 20, 20, 20)]);
+    expect(nextState?.players[2]?.roundHistory).toEqual([turn(1, 20)]);
+  });
+
+  it("should return null when no player has a turn from the current or previous round", () => {
+    const gameState = buildGameData({
+      currentRound: 3,
+      activePlayerId: 3,
+      players: [
+        seat(1, { roundHistory: [turn(1, 20)] }),
+        seat(2, { roundHistory: [turn(1, 20)] }),
+        seat(3, { isActive: true }),
+      ],
+    });
+
+    expect(applyOptimisticUndo(gameState)).toBeNull();
+  });
+});

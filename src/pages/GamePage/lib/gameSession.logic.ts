@@ -232,10 +232,11 @@ export function applyUndoResponse(
     if (!response.success || response.gameId !== confirmed.id) {
       return null;
     }
-    acknowledged = applyGameScoreboardDelta(
-      applyOptimisticUndo(confirmed) ?? confirmed,
-      response.scoreboardDelta,
-    );
+    const undone = applyOptimisticUndo(confirmed);
+    if (undone === null) {
+      return null;
+    }
+    acknowledged = applyGameScoreboardDelta(undone, response.scoreboardDelta);
   } else {
     acknowledged = normalizeGameData(response);
   }
