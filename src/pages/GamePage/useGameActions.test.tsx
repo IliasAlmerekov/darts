@@ -187,6 +187,12 @@ describe("useGameExitFlow", () => {
 
     expect(createRematch).not.toHaveBeenCalled();
     expect(navigate).not.toHaveBeenCalled();
-    expect(setPageError).toHaveBeenLastCalledWith("GAME_ABORT_NOT_ALLOWED");
+    expect(setPageError).toHaveBeenLastCalledWith(
+      "This game can no longer be left. Please reload the page.",
+    );
+    expect(clientLoggerErrorMock).toHaveBeenCalledWith(
+      "game.exit.failed",
+      expect.objectContaining({ context: { gameId: 42 } }),
+    );
   });
 });

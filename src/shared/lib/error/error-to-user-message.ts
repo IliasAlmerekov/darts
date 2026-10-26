@@ -53,6 +53,10 @@ function mapTextToMessage(rawText: string): string | null {
     return "This game can no longer be changed.";
   }
 
+  if (text.includes("game abort not allowed")) {
+    return "This game can no longer be left. Please reload the page.";
+  }
+
   return null;
 }
 
