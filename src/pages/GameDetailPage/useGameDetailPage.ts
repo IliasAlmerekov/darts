@@ -2,26 +2,23 @@ import { useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useParams, type LoaderFunctionArgs } from "react-router-dom";
 import type { FinishedGameStandings } from "@/lib/game/finishedGameStandings";
+import { parseRouteGameId, routeGameIdOrNotFound } from "@/lib/router/tabletGameRoute";
 import { gameQueries } from "@/shared/query/game.queries";
 import { queryClient } from "@/shared/query/queryClient";
 import { buildGameDetailStandings } from "./lib/gameDetailStandings";
 
-function parseGameId(param: string | undefined): number | null {
-  const parsed = Number(param);
-  return Number.isFinite(parsed) && parsed > 0 ? parsed : null;
-}
-
 /**
  * React Router 6 loader
  * Registers the route: loader: gameDetailLoader
- * Fills the `['finishedGame', id]` query before the page renders. A failed fetch rejects,
+ * Fills the `['finishedGame', id]` query before the page renders. An invalid id throws a 404
+ * route error response before any read. A failed fetch rejects,
  * so the route error boundary shows it.
  */
 export async function gameDetailLoader({ params }: LoaderFunctionArgs): Promise<null> {
-  const gameId = parseGameId(params.id);
-
+  const gameId = routeGameIdOrNotFound(params.id);
   if (gameId === null) {
-    throw new Response("Invalid game id", { status: 400 });
+    // The route pattern always carries an id, so this only narrows the type.
+    throw new Response(null, { status: 404, statusText: "Not Found" });
   }
 
   await queryClient.ensureQueryData(gameQueries.finished(gameId));
@@ -33,7 +30,7 @@ export async function gameDetailLoader({ params }: LoaderFunctionArgs): Promise<
  */
 export function useGameDetailPage(): FinishedGameStandings {
   const { id } = useParams<{ id?: string }>();
-  const gameId = parseGameId(id);
+  const gameId = parseRouteGameId(id);
   const { data } = useQuery({
     ...gameQueries.finished(gameId ?? 0),
     enabled: gameId !== null,

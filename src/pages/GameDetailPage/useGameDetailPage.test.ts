@@ -80,13 +80,16 @@ describe("gameDetailLoader", () => {
     expect(getFinishedGameMock).not.toHaveBeenCalled();
   });
 
-  it("should throw a 400 Response when the route id is invalid", async () => {
-    await expect(
-      gameDetailLoader(makeLoaderArgs(new Request("http://localhost/"), { id: "invalid" })),
-    ).rejects.toBeInstanceOf(Response);
+  it.each(["abc", "0", "-5", "1e3", "1.5"])(
+    "should throw a 404 Response and send no request when the route id is %s",
+    async (id) => {
+      await expect(
+        gameDetailLoader(makeLoaderArgs(new Request("http://localhost/"), { id })),
+      ).rejects.toMatchObject({ status: 404 });
 
-    expect(getFinishedGameMock).not.toHaveBeenCalled();
-  });
+      expect(getFinishedGameMock).not.toHaveBeenCalled();
+    },
+  );
 
   it("should reject when the fetch fails, so the route error boundary shows it", async () => {
     getFinishedGameMock.mockRejectedValueOnce(new Error("network down"));
@@ -115,6 +118,14 @@ describe("useGameDetailPage", () => {
     expect(result.current.standings).toHaveLength(2);
     expect(result.current.podiumData).toHaveLength(3);
     expect(result.current.standings[0]?.rounds[0]).toEqual({});
+    expect(getFinishedGameMock).not.toHaveBeenCalled();
+  });
+
+  it("should not read 1e3 as game 1000", () => {
+    routeParams = { id: "1e3" };
+
+    renderDetailHook();
+
     expect(getFinishedGameMock).not.toHaveBeenCalled();
   });
 

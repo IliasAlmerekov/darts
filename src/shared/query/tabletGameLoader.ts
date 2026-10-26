@@ -1,6 +1,10 @@
 import { replace, type LoaderFunction } from "react-router-dom";
 import type { TabletGameResponse } from "@/shared/api/game";
-import { resolveTabletGameRoute, type TabletGameRouteKind } from "@/lib/router/tabletGameRoute";
+import {
+  resolveTabletGameRoute,
+  routeGameIdOrNotFound,
+  type TabletGameRouteKind,
+} from "@/lib/router/tabletGameRoute";
 import { gameQueries } from "@/shared/query/game.queries";
 import { queryClient } from "@/shared/query/queryClient";
 
@@ -68,16 +72,18 @@ export function redirectToTabletGame(target: string): Response {
 
 /**
  * Builds the loader of an admin route that follows the tablet game. It redirects, replacing the
- * history entry, when the URL shows another game or an invalid id.
+ * history entry, when the URL shows another game. An invalid id throws a 404 route error
+ * response before any read.
  */
 export function tabletGameLoader(kind: TabletGameRouteKind): LoaderFunction {
   return async ({ params, request }) => {
+    const gameId = routeGameIdOrNotFound(params.id);
     const tabletGame = await fetchTabletGame(request);
     if (tabletGame === null) {
       return null;
     }
 
-    const target = resolveTabletGameRoute(kind, params.id, tabletGame.game);
+    const target = resolveTabletGameRoute(kind, gameId, tabletGame.game);
     return target === null ? null : redirectToTabletGame(target);
   };
 }
