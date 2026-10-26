@@ -1,6 +1,6 @@
 // @vitest-environment node
 import { describe, expect, it } from "vitest";
-import type { GameThrowsResponse } from "@/types";
+import type { GameThrowsResponse, PlayerThrow } from "@/types";
 import {
   applyOptimisticThrow,
   applyOptimisticUndo,
@@ -60,9 +60,7 @@ function buildGameDataWithFirstPlayerAtPosition(position: number): GameThrowsRes
   return { ...gameState, players: [{ ...firstPlayer, position }, ...otherPlayers] };
 }
 
-type PlayerThrowRecord = { value: number; isDouble: boolean; isTriple: boolean; isBust: boolean };
-
-function singleThrow(value: number): PlayerThrowRecord {
+function singleThrow(value: number): PlayerThrow {
   return { value, isDouble: false, isTriple: false, isBust: false };
 }
 
@@ -536,6 +534,7 @@ describe("throwStateService", () => {
         });
 
         expect(nextState?.players[0]?.score).toBe(left);
+        expect(nextState?.players[0]?.isActive).toBe(true);
         expect(nextState?.players[0]?.isBust).toBe(false);
         expect(nextState?.players[0]?.currentRoundThrows.at(-1)?.isBust).toBe(false);
         expect(nextState?.activePlayerId).toBe(gameState.activePlayerId);

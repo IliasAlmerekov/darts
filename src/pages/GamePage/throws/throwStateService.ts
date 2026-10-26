@@ -7,17 +7,24 @@ function getThrowPoints(throwData: ParsedThrow): number {
   return throwData.value * multiplier;
 }
 
+function isUnreachableRemainder(
+  nextScore: number,
+  settings: GameThrowsResponse["settings"],
+): boolean {
+  if (nextScore === 1) {
+    return settings.doubleOut || settings.tripleOut;
+  }
+
+  return nextScore === 2 && settings.tripleOut;
+}
+
 function canCheckout(
   nextScore: number,
   throwData: ParsedThrow,
   settings: GameThrowsResponse["settings"],
 ): boolean {
   if (nextScore !== 0) {
-    if (nextScore === 1) {
-      return !settings.doubleOut && !settings.tripleOut;
-    }
-
-    return !(nextScore === 2 && settings.tripleOut);
+    return true;
   }
 
   if (settings.doubleOut && !throwData.isDouble) {
@@ -121,7 +128,9 @@ export function applyOptimisticThrow(
   const points = getThrowPoints(throwData);
   const projectedScore = activePlayer.score - points;
   const isBust =
-    projectedScore < 0 || !canCheckout(projectedScore, throwData, currentGameData.settings);
+    projectedScore < 0 ||
+    isUnreachableRemainder(projectedScore, currentGameData.settings) ||
+    !canCheckout(projectedScore, throwData, currentGameData.settings);
 
   const updatedState: GameThrowsResponse = {
     ...currentGameData,
