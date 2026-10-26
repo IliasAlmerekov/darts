@@ -125,6 +125,15 @@ describe("useGameExitFlow", () => {
     return { navigate, rerender, result, setPageError, unmount };
   }
 
+  async function startExit(handleExitGame: () => Promise<void>) {
+    let pending: Promise<void> = Promise.resolve();
+    await act(async () => {
+      pending = handleExitGame();
+      await Promise.resolve();
+    });
+    return { pending };
+  }
+
   function deferred<T>() {
     let resolve: (value: T) => void = () => {};
     let reject: (reason: unknown) => void = () => {};
@@ -398,15 +407,6 @@ describe("useGameExitFlow", () => {
       invitationLink: "https://example.test/join/abc",
     };
 
-    async function startExit(handleExitGame: () => Promise<void>) {
-      let pending: Promise<void> = Promise.resolve();
-      await act(async () => {
-        pending = handleExitGame();
-        await Promise.resolve();
-      });
-      return { pending };
-    }
-
     it("should send no rematch, store reset or navigation when abort resolves after the game id changed", async () => {
       const abort = deferred<typeof abortOk>();
       vi.mocked(abortGame).mockReturnValueOnce(abort.promise);
@@ -464,6 +464,27 @@ describe("useGameExitFlow", () => {
       expect(setPageError).not.toHaveBeenCalledWith(expect.any(String));
     });
 
+    it("should allow a new exit for a game the page returns to after its rematch resolved late", async () => {
+      const rematch = deferred<typeof rematchOk>();
+      vi.mocked(abortGame).mockResolvedValueOnce(abortOk);
+      vi.mocked(createRematch).mockReturnValueOnce(rematch.promise);
+      const { rerender, result } = renderExitFlow();
+
+      const { pending: stale } = await startExit(result.current.handleExitGame);
+      rerender({ gameId: 43 });
+      rerender({ gameId: 42 });
+      await act(async () => {
+        rematch.resolve(rematchOk);
+        await stale;
+      });
+
+      expect(result.current.isExitPending).toBe(false);
+      vi.mocked(abortGame).mockReturnValueOnce(new Promise(() => {}));
+      await startExit(result.current.handleExitGame);
+      expect(abortGame).toHaveBeenCalledTimes(2);
+      expect(abortGame).toHaveBeenLastCalledWith(42);
+    });
+
     it("should allow a new exit for a game the page returns to after its exit succeeded late", async () => {
       const abort = deferred<typeof abortOk>();
       vi.mocked(abortGame).mockReturnValueOnce(abort.promise);
@@ -496,15 +517,6 @@ describe("useGameExitFlow", () => {
           }),
       );
       return (game: GameThrowsResponse) => resolveRead(game);
-    }
-
-    async function startExit(handleExitGame: () => Promise<void>) {
-      let pending: Promise<void> = Promise.resolve();
-      await act(async () => {
-        pending = handleExitGame();
-        await Promise.resolve();
-      });
-      return { pending };
     }
 
     it("should not navigate or report an error when the page unmounts before the read resolves", async () => {
