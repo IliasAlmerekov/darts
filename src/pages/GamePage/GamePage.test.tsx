@@ -243,4 +243,20 @@ describe("GamePage", () => {
 
     expect(await screen.findByText("End Game?")).toBeTruthy();
   });
+
+  it("should disable Yes on the exit overlay while the exit runs", async () => {
+    getGameThrowsIfChangedMock.mockResolvedValue(buildGameData({ id: 2 }));
+    abortGameMock.mockReturnValue(new Promise(() => {}));
+
+    renderGamePage("/game/2");
+
+    fireEvent.click(await screen.findByRole("button", { name: "Back to Home" }));
+    fireEvent.click(await screen.findByRole("button", { name: "Yes" }));
+
+    await waitFor(() => {
+      expect(screen.getByRole("button", { name: "Yes" })).toHaveProperty("disabled", true);
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Yes" }));
+    expect(abortGameMock).toHaveBeenCalledTimes(1);
+  });
 });

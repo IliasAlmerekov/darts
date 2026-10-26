@@ -25,6 +25,7 @@ import { useGameLogic } from "./useGameLogic";
 interface OverlaysSectionProps {
   shouldShowFinishOverlay: boolean;
   isExitOverlayOpen: boolean;
+  isExitPending: boolean;
   isSettingsOpen: boolean;
   isSavingSettings: boolean;
   settingsError: string | null;
@@ -42,6 +43,7 @@ interface OverlaysSectionProps {
 const OverlaysSection = React.memo(function OverlaysSection({
   shouldShowFinishOverlay,
   isExitOverlayOpen,
+  isExitPending,
   isSettingsOpen,
   isSavingSettings,
   settingsError,
@@ -104,7 +106,13 @@ const OverlaysSection = React.memo(function OverlaysSection({
           </p>
           <p>A new game with the same players will be created.</p>
           <div>
-            <Button label="Yes" handleClick={handleExitGame} type="primary" link="" />
+            <Button
+              label="Yes"
+              handleClick={handleExitGame}
+              type="primary"
+              link=""
+              disabled={isExitPending}
+            />
             <Button label="Cancel" handleClick={handleCloseExitOverlay} type="secondary" link="" />
           </div>
         </div>
@@ -211,6 +219,7 @@ function GamePage(): React.JSX.Element {
     settingsError,
     pageError,
     isExitOverlayOpen,
+    isExitPending,
     isQueueFull,
     syncStatus,
     handleRetry,
@@ -260,6 +269,7 @@ function GamePage(): React.JSX.Element {
       <OverlaysSection
         shouldShowFinishOverlay={shouldShowFinishOverlay}
         isExitOverlayOpen={isExitOverlayOpen}
+        isExitPending={isExitPending}
         isSettingsOpen={isSettingsOpen}
         settingsError={settingsError}
         isSavingSettings={isSavingSettings}

@@ -114,11 +114,15 @@ describe("useGameExitFlow", () => {
   const abortNotAllowed = () =>
     new ApiError("Conflict", { status: 409, data: { error: "GAME_ABORT_NOT_ALLOWED" } });
 
-  function renderExitFlow() {
+  function renderExitFlow(gameId = 42) {
     const navigate = vi.fn();
     const setPageError = vi.fn();
-    const { result } = renderHook(() => useGameExitFlow({ gameId: 42, navigate, setPageError }));
-    return { navigate, result, setPageError };
+    const { rerender, result } = renderHook(
+      (props: { gameId: number }) =>
+        useGameExitFlow({ gameId: props.gameId, navigate, setPageError }),
+      { initialProps: { gameId } },
+    );
+    return { navigate, rerender, result, setPageError };
   }
 
   beforeEach(() => {
@@ -194,6 +198,196 @@ describe("useGameExitFlow", () => {
       "game.exit.failed",
       expect.objectContaining({ context: { gameId: 42 } }),
     );
+  });
+
+  describe("when Yes is pressed again while an exit runs", () => {
+    function deferred<T>() {
+      let resolve: (value: T) => void = () => {};
+      let reject: (reason: unknown) => void = () => {};
+      const promise = new Promise<T>((res, rej) => {
+        resolve = res;
+        reject = rej;
+      });
+      return { promise, reject, resolve };
+    }
+
+    it("should send one abort, one rematch and one navigation for a double call", async () => {
+      const abort = deferred<{ success: boolean; message: string }>();
+      const rematch = deferred<{ success: boolean; gameId: number; invitationLink: string }>();
+      vi.mocked(abortGame).mockReturnValue(abort.promise);
+      vi.mocked(createRematch).mockReturnValue(rematch.promise);
+      const { navigate, result } = renderExitFlow();
+
+      let calls: Promise<void>[] = [];
+      await act(async () => {
+        calls = [result.current.handleExitGame(), result.current.handleExitGame()];
+        await Promise.resolve();
+      });
+      await act(async () => {
+        abort.resolve({ success: true, message: "ok" });
+        await Promise.resolve();
+        rematch.resolve({ success: true, gameId: 43, invitationLink: "https://example.test/j" });
+        await Promise.all(calls);
+      });
+
+      expect(abortGame).toHaveBeenCalledTimes(1);
+      expect(createRematch).toHaveBeenCalledTimes(1);
+      expect(setInvitation).toHaveBeenCalledTimes(1);
+      expect(navigate).toHaveBeenCalledTimes(1);
+      expect(navigate).toHaveBeenCalledWith("/start/43");
+      expect(result.current.isExitPending).toBe(true);
+
+      await act(async () => {
+        await result.current.handleExitGame();
+      });
+      expect(abortGame).toHaveBeenCalledTimes(1);
+      expect(createRematch).toHaveBeenCalledTimes(1);
+    });
+
+    it("should release the lock and allow a retry when abort fails", async () => {
+      vi.mocked(abortGame).mockRejectedValueOnce(new Error("offline"));
+      const { result, setPageError } = renderExitFlow();
+
+      await act(async () => {
+        await result.current.handleExitGame();
+      });
+
+      expect(result.current.isExitPending).toBe(false);
+      expect(setPageError).toHaveBeenCalledWith(expect.any(String));
+
+      vi.mocked(abortGame).mockRejectedValueOnce(new Error("offline"));
+      await act(async () => {
+        await result.current.handleExitGame();
+      });
+
+      expect(abortGame).toHaveBeenCalledTimes(2);
+    });
+
+    it("should navigate to the summary once and ignore a repeated call for a finished game", async () => {
+      vi.mocked(abortGame).mockRejectedValue(abortNotAllowed());
+      const read = deferred<GameThrowsResponse>();
+      vi.mocked(getGameThrows).mockReturnValue(read.promise);
+      const { navigate, result } = renderExitFlow();
+
+      let first: Promise<void> = Promise.resolve();
+      await act(async () => {
+        first = result.current.handleExitGame();
+        await Promise.resolve();
+      });
+      await act(async () => {
+        await result.current.handleExitGame();
+      });
+      await act(async () => {
+        read.resolve({ ...createGameData(), status: "finished", winnerId: 7 });
+        await first;
+      });
+      await act(async () => {
+        await result.current.handleExitGame();
+      });
+
+      expect(abortGame).toHaveBeenCalledTimes(1);
+      expect(navigate).toHaveBeenCalledTimes(1);
+      expect(navigate).toHaveBeenCalledWith("/summary/42", { state: { finishedGameId: 42 } });
+      expect(result.current.isExitPending).toBe(true);
+    });
+
+    it("should allow a new exit when the game id changes", async () => {
+      vi.mocked(abortGame).mockReturnValue(new Promise(() => {}));
+      const { rerender, result } = renderExitFlow();
+
+      await act(async () => {
+        void result.current.handleExitGame();
+        await Promise.resolve();
+      });
+      rerender({ gameId: 43 });
+      expect(result.current.isExitPending).toBe(false);
+      await act(async () => {
+        void result.current.handleExitGame();
+        await Promise.resolve();
+      });
+
+      expect(abortGame).toHaveBeenNthCalledWith(1, 42);
+      expect(abortGame).toHaveBeenNthCalledWith(2, 43);
+    });
+
+    it("should allow an exit for a game the page returns to after leaving it mid-exit", async () => {
+      const abort = deferred<{ success: boolean; message: string }>();
+      vi.mocked(abortGame).mockReturnValueOnce(abort.promise);
+      const { rerender, result } = renderExitFlow();
+
+      let stale: Promise<void> = Promise.resolve();
+      await act(async () => {
+        stale = result.current.handleExitGame();
+        await Promise.resolve();
+      });
+      rerender({ gameId: 43 });
+      rerender({ gameId: 42 });
+      await act(async () => {
+        abort.reject(new Error("offline"));
+        await stale;
+      });
+
+      expect(result.current.isExitPending).toBe(false);
+      vi.mocked(abortGame).mockReturnValueOnce(new Promise(() => {}));
+      await act(async () => {
+        void result.current.handleExitGame();
+        await Promise.resolve();
+      });
+      expect(abortGame).toHaveBeenCalledTimes(2);
+      expect(abortGame).toHaveBeenLastCalledWith(42);
+    });
+
+    it("should keep a game locked when the page returns to it while another game exits", async () => {
+      vi.mocked(abortGame).mockReturnValue(new Promise(() => {}));
+      const { rerender, result } = renderExitFlow(42);
+
+      await act(async () => {
+        void result.current.handleExitGame();
+        await Promise.resolve();
+      });
+      rerender({ gameId: 43 });
+      await act(async () => {
+        void result.current.handleExitGame();
+        await Promise.resolve();
+      });
+      rerender({ gameId: 42 });
+
+      expect(result.current.isExitPending).toBe(true);
+      await act(async () => {
+        await result.current.handleExitGame();
+      });
+      expect(abortGame).toHaveBeenCalledTimes(2);
+    });
+
+    it("should not release another game's lock when a stale exit fails", async () => {
+      const abort42 = deferred<{ success: boolean; message: string }>();
+      vi.mocked(abortGame)
+        .mockReturnValueOnce(abort42.promise)
+        .mockReturnValueOnce(new Promise(() => {}));
+      const { rerender, result } = renderExitFlow(42);
+
+      let stale: Promise<void> = Promise.resolve();
+      await act(async () => {
+        stale = result.current.handleExitGame();
+        await Promise.resolve();
+      });
+      rerender({ gameId: 43 });
+      await act(async () => {
+        void result.current.handleExitGame();
+        await Promise.resolve();
+      });
+      await act(async () => {
+        abort42.reject(new Error("offline"));
+        await stale;
+      });
+
+      expect(result.current.isExitPending).toBe(true);
+      await act(async () => {
+        await result.current.handleExitGame();
+      });
+      expect(abortGame).toHaveBeenCalledTimes(2);
+      expect(abortGame).toHaveBeenLastCalledWith(43);
+    });
   });
 
   describe("when the page moves on during the status read", () => {
