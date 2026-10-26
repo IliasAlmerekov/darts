@@ -7,12 +7,15 @@ interface FinishOverlayVisibilityOptions {
   zeroScorePlayerIds: number[];
 }
 
-export function areAllPlayersAtStartScore(gameData: GameThrowsResponse | null): boolean {
+/** True when any player has a throw in the current round or in a finished round. */
+export function hasThrowHistory(gameData: GameThrowsResponse | null): boolean {
   if (!gameData) {
-    return true;
+    return false;
   }
 
-  return gameData.players.every((player) => player.score === gameData.settings.startScore);
+  return gameData.players.some(
+    (player) => player.currentRoundThrows.length > 0 || player.roundHistory.length > 0,
+  );
 }
 
 /**

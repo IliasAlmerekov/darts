@@ -2,6 +2,14 @@
 import { describe, expect, it } from "vitest";
 import type { GameThrowsResponse } from "@/types";
 import {
+  createGameSession,
+  enqueueThrow,
+  enqueueUndo,
+  getSessionView,
+  getShownGame,
+  type GameSession,
+} from "./gameSession.logic";
+import {
   appendDismissedPlayerIds,
   buildGamePlayersDerivedState,
   filterDismissedPlayerIds,
@@ -49,6 +57,28 @@ function buildGameData(overrides?: Partial<GameThrowsResponse>): GameThrowsRespo
     ],
     ...overrides,
   };
+}
+
+function buildUndoStateFromSession(session: GameSession) {
+  return buildGamePlayersDerivedState({
+    dismissedZeroScorePlayerIds: [],
+    gameData: getShownGame(session),
+    hasError: false,
+    isLoading: false,
+    canThrow: getSessionView(session).canThrow,
+    canUndo: getSessionView(session).canUndo,
+    skipFinishOverlay: false,
+  });
+}
+
+function enqueueThrows(session: GameSession, values: (string | number)[]): GameSession {
+  return values.reduce<GameSession>((current, value) => {
+    const next = enqueueThrow(current, value);
+    if (next === null) {
+      throw new Error(`Throw ${value} was not accepted`);
+    }
+    return next;
+  }, session);
 }
 
 describe("appendDismissedPlayerIds", () => {
@@ -298,5 +328,57 @@ describe("buildGamePlayersDerivedState", () => {
 
     expect(result.isUndoDisabled).toBe(true);
     expect(result.isInteractionDisabled).toBe(false);
+  });
+
+  it("should enable undo when one miss is the only throw in history", () => {
+    const session = enqueueThrows(createGameSession(buildGameData()), [0]);
+
+    const result = buildUndoStateFromSession(session);
+
+    expect(getShownGame(session)?.players.map((player) => player.score)).toEqual([301, 301]);
+    expect(result.isUndoDisabled).toBe(false);
+  });
+
+  it("should enable undo when three misses end a turn at the start score", () => {
+    const session = enqueueThrows(createGameSession(buildGameData()), [0, 0, 0]);
+
+    const result = buildUndoStateFromSession(session);
+
+    expect(getShownGame(session)?.players.map((player) => player.score)).toEqual([301, 301]);
+    expect(result.isUndoDisabled).toBe(false);
+  });
+
+  it("should enable undo when a bust from the start score restores the start score", () => {
+    const base = buildGameData();
+    const session = enqueueThrows(
+      createGameSession({
+        ...base,
+        settings: { startScore: 101, doubleOut: false, tripleOut: false },
+        players: base.players.map((player) => ({ ...player, score: 101 })),
+      }),
+      ["T20", "T20"],
+    );
+
+    const result = buildUndoStateFromSession(session);
+
+    expect(getShownGame(session)?.players.map((player) => player.score)).toEqual([101, 101]);
+    expect(result.isUndoDisabled).toBe(false);
+  });
+
+  it("should disable undo when no player has a throw in history", () => {
+    const result = buildUndoStateFromSession(createGameSession(buildGameData()));
+
+    expect(result.isUndoDisabled).toBe(true);
+  });
+
+  it("should enable undo while a miss is queued and disable it again after undoing the miss", () => {
+    const queued = enqueueThrows(createGameSession(buildGameData()), [0]);
+    expect(queued.pending).toHaveLength(1);
+    expect(buildUndoStateFromSession(queued).isUndoDisabled).toBe(false);
+
+    const undone = enqueueUndo(queued);
+
+    expect(undone.pending).toHaveLength(0);
+    expect(buildUndoStateFromSession(undone).isUndoDisabled).toBe(true);
   });
 });

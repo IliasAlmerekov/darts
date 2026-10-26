@@ -1,7 +1,7 @@
 import { getFinishedPlayers, mapPlayersToUI } from "@/lib/game/player-mappers";
 import type { GameThrowsResponse, UIPlayer } from "@/types";
 import {
-  areAllPlayersAtStartScore,
+  hasThrowHistory,
   calculateShouldShowFinishOverlay,
   getZeroScorePlayerIds,
 } from "./gameLogic.helpers";
@@ -80,7 +80,7 @@ export function buildGamePlayersDerivedState({
     !gameData ||
     shouldShowFinishOverlay ||
     !canUndo ||
-    areAllPlayersAtStartScore(gameData);
+    !hasThrowHistory(gameData);
 
   return {
     activePlayer,

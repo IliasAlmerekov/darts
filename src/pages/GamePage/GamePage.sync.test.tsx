@@ -89,6 +89,23 @@ function buildGame(scores: { alice: number; bob: number }): GameThrowsResponse {
   });
 }
 
+function buildGameWithAliceThrow(): GameThrowsResponse {
+  const game = buildGame({ alice: 281, bob: 301 });
+
+  return {
+    ...game,
+    players: game.players.map((player) =>
+      player.id === 1
+        ? {
+            ...player,
+            throwsInCurrentRound: 1,
+            currentRoundThrows: [{ value: 20, isDouble: false, isTriple: false, isBust: false }],
+          }
+        : player,
+    ),
+  };
+}
+
 function buildThrowAck(scores: { alice: number; bob: number }): ThrowAckResponse {
   return {
     type: "ack",
@@ -420,8 +437,9 @@ describe("GamePage throw sync", () => {
   it("keeps throw and undo input disabled until the first load answers, also with a cached game", async () => {
     const firstLoad = createDeferred<GameThrowsResponse | null>();
     getGameThrowsIfChangedMock.mockReturnValueOnce(firstLoad.promise);
-    // A score below the start score, so Undo is enabled once the load answers.
-    setGameData(buildGame({ alice: 281, bob: 301 }));
+    // Alice holds a throw, so Undo is enabled once the load answers.
+    const gameWithThrow = buildGameWithAliceThrow();
+    setGameData(gameWithThrow);
     renderGamePage();
 
     expect(within(playerCard("Alice")).getByText("281")).toBeTruthy();
@@ -429,7 +447,7 @@ describe("GamePage throw sync", () => {
     expect(screen.getByRole("button", { name: "Undo" }).hasAttribute("disabled")).toBe(true);
 
     await act(async () => {
-      firstLoad.resolve(buildGame({ alice: 281, bob: 301 }));
+      firstLoad.resolve(gameWithThrow);
       await firstLoad.promise;
     });
 
