@@ -532,16 +532,11 @@ describe("GamePage settings lock", () => {
     return screen.getByRole("button", { name: "Settings" });
   }
 
-  it("keeps Settings enabled in a started game without throws", async () => {
-    await openGame(buildGame({ alice: 301, bob: 301 }));
-
-    expect(settingsButton().hasAttribute("disabled")).toBe(false);
-  });
-
   it("disables Settings after a miss, before and after the server confirms it", async () => {
     const miss = createDeferred<ThrowAckResponse>();
     recordThrowMock.mockReturnValueOnce(miss.promise);
     await openGame(buildGame({ alice: 301, bob: 301 }));
+    expect(settingsButton().hasAttribute("disabled")).toBe(false);
 
     tap("0");
     expect(settingsButton().hasAttribute("disabled")).toBe(true);
