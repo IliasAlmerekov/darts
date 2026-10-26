@@ -49,7 +49,7 @@
                         "description": "Ein Setting wurde in camelCase und in Kleinschreibung mit unterschiedlichen Werten gesendet (`REQUEST_CONFLICTING_SETTING_KEYS`)."
                     },
                     "422": {
-                        "description": "Der Request-Body ist ung\u00fcltig und besteht die Validierung nicht."
+                        "description": "Der Request-Body ist ung\u00fcltig und besteht die Validierung nicht, oder das Spiel h\u00e4tte danach `doubleOut` und `tripleOut` zugleich (`GAME_CONFLICTING_OUT_RULES`). Das Spiel bleibt unver\u00e4ndert."
                     },
                     "403": {
                         "description": "Zugriff verweigert: `/api` ist per Firewall nur f\u00fcr ROLE_ADMIN offen, und der Code pr\u00fcft zus\u00e4tzlich die Spielteilnahme."
@@ -101,7 +101,7 @@
                         "description": "Ein Setting wurde in camelCase und in Kleinschreibung mit unterschiedlichen Werten gesendet (`REQUEST_CONFLICTING_SETTING_KEYS`)."
                     },
                     "422": {
-                        "description": "Der Request-Body ist ung\u00fcltig und besteht die Validierung nicht."
+                        "description": "Der Request-Body ist ung\u00fcltig und besteht die Validierung nicht, oder das Spiel h\u00e4tte danach `doubleOut` und `tripleOut` zugleich (`GAME_CONFLICTING_OUT_RULES`). Das Spiel bleibt unver\u00e4ndert."
                     },
                     "403": {
                         "description": "Zugriff verweigert: `/api` ist per Firewall nur f\u00fcr ROLE_ADMIN offen, und der Code pr\u00fcft zus\u00e4tzlich die Spielteilnahme."
@@ -142,7 +142,7 @@
                         }
                     },
                     "422": {
-                        "description": "Der Request-Body ist ung\u00fcltig und besteht die Validierung nicht."
+                        "description": "Der Request-Body ist ung\u00fcltig und besteht die Validierung nicht, oder das Spiel h\u00e4tte danach `doubleOut` und `tripleOut` zugleich (`GAME_CONFLICTING_OUT_RULES`). Das Spiel bleibt unver\u00e4ndert."
                     },
                     "403": {
                         "description": "Zugriff verweigert: `/api` ist per Firewall nur f\u00fcr ROLE_ADMIN offen, und der Code pr\u00fcft zus\u00e4tzlich die Spielteilnahme."
@@ -226,10 +226,13 @@
                         }
                     },
                     "422": {
-                        "description": "Der Request-Body ist ung\u00fcltig und besteht die Validierung nicht."
+                        "description": "Der Request-Body ist ung\u00fcltig und besteht die Validierung nicht, oder das Spiel h\u00e4tte danach `doubleOut` und `tripleOut` zugleich (`GAME_CONFLICTING_OUT_RULES`). Das Spiel bleibt unver\u00e4ndert."
                     },
                     "403": {
                         "description": "Zugriff verweigert: `/api` ist per Firewall nur f\u00fcr ROLE_ADMIN offen, und der Code pr\u00fcft zus\u00e4tzlich die Spielteilnahme."
+                    },
+                    "409": {
+                        "description": "Das Spiel ist gestartet und der Request sendet `startScore` (`GAME_START_SCORE_CHANGE_NOT_ALLOWED`), oder das Spiel hat schon einen Wurf und der Request sendet `outMode`, `doubleOut` oder `tripleOut`, auch mit dem aktuellen Wert (`GAME_OUT_RULE_CHANGE_NOT_ALLOWED`). Nachdem Undo jeden Wurf entfernt hat, ist die Out-Regel wieder \u00e4nderbar."
                     }
                 }
             }
@@ -514,7 +517,7 @@
                         }
                     },
                     "422": {
-                        "description": "Der Request-Body ist ung\u00fcltig und besteht die Validierung nicht."
+                        "description": "Der Request-Body ist ung\u00fcltig und besteht die Validierung nicht, oder das Spiel h\u00e4tte danach `doubleOut` und `tripleOut` zugleich (`GAME_CONFLICTING_OUT_RULES`). Das Spiel bleibt unver\u00e4ndert."
                     },
                     "403": {
                         "description": "Angemeldet ohne `ROLE_ADMIN` (z. B. ein Spieler)."
