@@ -1,8 +1,8 @@
 // @vitest-environment node
 import { describe, expect, it } from "vitest";
 import {
-  areAllPlayersAtStartScore,
   calculateShouldShowFinishOverlay,
+  hasThrowHistory,
   isLastActivePlayerLeft,
 } from "./lib/gameLogic.helpers";
 import type { GameThrowsResponse } from "@/types";
@@ -51,47 +51,50 @@ function buildGameData(overrides?: Partial<GameThrowsResponse>): GameThrowsRespo
   };
 }
 
-describe("areAllPlayersAtStartScore", () => {
-  it("should return true when game data is missing", () => {
-    expect(areAllPlayersAtStartScore(null)).toBe(true);
+describe("hasThrowHistory", () => {
+  it("should return false when game data is missing", () => {
+    expect(hasThrowHistory(null)).toBe(false);
   });
 
-  it("should return true when all players are on start score", () => {
-    const data = buildGameData();
-    expect(areAllPlayersAtStartScore(data)).toBe(true);
+  it("should return false when no player has a throw", () => {
+    expect(hasThrowHistory(buildGameData())).toBe(false);
   });
 
-  it("should return false when at least one player has changed score", () => {
+  it("should return true when a player has a throw in the current round", () => {
+    const base = buildGameData();
     const data = buildGameData({
-      players: [
-        {
-          id: 1,
-          name: "P1",
-          score: 281,
-          isActive: true,
-          isBust: false,
-          position: 1,
-          throwsInCurrentRound: 1,
-          currentRoundThrows: [],
-          roundHistory: [],
-          isGuest: false,
-        },
-        {
-          id: 2,
-          name: "P2",
-          score: 301,
-          isActive: false,
-          isBust: false,
-          position: 2,
-          throwsInCurrentRound: 0,
-          currentRoundThrows: [],
-          roundHistory: [],
-          isGuest: false,
-        },
-      ],
+      players: base.players.map((player) =>
+        player.id === 1
+          ? {
+              ...player,
+              currentRoundThrows: [{ value: 0, isDouble: false, isTriple: false, isBust: false }],
+            }
+          : player,
+      ),
     });
 
-    expect(areAllPlayersAtStartScore(data)).toBe(false);
+    expect(hasThrowHistory(data)).toBe(true);
+  });
+
+  it("should return true when a player has a finished round", () => {
+    const base = buildGameData();
+    const data = buildGameData({
+      players: base.players.map((player) =>
+        player.id === 2
+          ? {
+              ...player,
+              roundHistory: [
+                {
+                  round: 1,
+                  throws: [{ value: 0, isDouble: false, isTriple: false, isBust: false }],
+                },
+              ],
+            }
+          : player,
+      ),
+    });
+
+    expect(hasThrowHistory(data)).toBe(true);
   });
 });
 
