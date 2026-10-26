@@ -363,6 +363,12 @@ describe("gameSession.logic", () => {
       expect(scores(confirmed ?? null)).toEqual([120, 0, 150]);
     });
 
+    it("returns null when the delta marks another player active than the undo target", () => {
+      const session = sendUndo(buildThreeSeatGame([turn(1, 20), turn(2, 20)]));
+
+      expect(applyUndoResponse(session, buildThreeSeatAck(120, 3))).toBeNull();
+    });
+
     it("returns null when no turn can be identified, so the caller reloads the game", () => {
       const game = buildThreeSeatGame([turn(1, 20)]);
       const session = sendUndo({

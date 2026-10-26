@@ -237,6 +237,9 @@ export function applyUndoResponse(
       return null;
     }
     acknowledged = applyGameScoreboardDelta(undone, response.scoreboardDelta);
+    if (acknowledged?.activePlayerId !== undone.activePlayerId) {
+      return null;
+    }
   } else {
     acknowledged = normalizeGameData(response);
   }
