@@ -61,6 +61,15 @@ describe("toUserErrorMessage", () => {
     ).toBe("This game can no longer be changed.");
   });
 
+  it("should map the game abort not allowed code to a message to reload the page", () => {
+    expect(
+      toUserErrorMessage(
+        new ApiError("Conflict", { status: 409, data: { error: "GAME_ABORT_NOT_ALLOWED" } }),
+        "Could not leave the game. Please try again.",
+      ),
+    ).toBe("This game can no longer be left. Please reload the page.");
+  });
+
   it("should map the out rule lock code to a message that the out rule is locked", () => {
     expect(
       toUserErrorMessage(
