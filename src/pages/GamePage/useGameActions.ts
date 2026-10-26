@@ -1,10 +1,11 @@
 import { useCallback, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { abortGame, createRematch, updateGameSettings } from "@/shared/api/game";
+import { abortGame, createRematch, getGameThrows, updateGameSettings } from "@/shared/api/game";
 import { clientLogger } from "@/shared/services/browser/clientLogger";
 import { toUserErrorMessage } from "@/lib/error/error-to-user-message";
 import { ROUTES } from "@/lib/router/routes";
 import { resetRoomStore, setInvitation } from "@/shared/store";
+import { isGameAbortNotAllowedError } from "./lib/gameAbortNotAllowed";
 import type { GameSettings, GameThrowsResponse } from "@/types";
 
 interface GameSettingsFormValues {
@@ -38,6 +39,17 @@ interface UseGameExitFlowResult {
   handleExitGame: () => Promise<void>;
   handleOpenExitOverlay: () => void;
   isExitOverlayOpen: boolean;
+}
+
+// The 409 code is the same for a lobby and a finished game, and the page state can be stale.
+async function isGameFinished(gameId: number): Promise<boolean> {
+  try {
+    return (await getGameThrows(gameId)).status === "finished";
+  } catch (error) {
+    // The caller still reports the abort error; this read only decides the route.
+    clientLogger.warn("game.exit.status_check_failed", { context: { gameId }, error });
+    return false;
+  }
 }
 
 export function useGameSettingsFlow({
@@ -122,6 +134,12 @@ export function useGameExitFlow({
 
       navigate(ROUTES.start(rematch.gameId));
     } catch (error) {
+      if (isGameAbortNotAllowedError(error) && (await isGameFinished(gameId))) {
+        // The last throw finished the game while the overlay was open.
+        navigate(ROUTES.summary(gameId), { state: { finishedGameId: gameId } });
+        return;
+      }
+
       clientLogger.error("game.exit.failed", {
         context: { gameId },
         error,
