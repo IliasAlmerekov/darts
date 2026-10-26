@@ -36,6 +36,7 @@ interface UseGameLogicResult {
   handleUndo: () => void;
   handleUndoFromOverlay: () => void;
   isExitOverlayOpen: boolean;
+  isExitPending: boolean;
   isInteractionDisabled: boolean;
   isLoading: boolean;
   isQueueFull: boolean;
@@ -112,12 +113,17 @@ export function useGameLogic(): UseGameLogicResult {
     gameId,
     updateGameSettings: commands.updateSettings,
   });
-  const { handleCloseExitOverlay, handleExitGame, handleOpenExitOverlay, isExitOverlayOpen } =
-    useGameExitFlow({
-      gameId,
-      navigate,
-      setPageError,
-    });
+  const {
+    handleCloseExitOverlay,
+    handleExitGame,
+    handleOpenExitOverlay,
+    isExitOverlayOpen,
+    isExitPending,
+  } = useGameExitFlow({
+    gameId,
+    navigate,
+    setPageError,
+  });
 
   useGameSummaryNavigation({ gameId, isFinished: view.isFinished, navigate });
 
@@ -142,6 +148,7 @@ export function useGameLogic(): UseGameLogicResult {
     settingsError,
     pageError,
     isExitOverlayOpen,
+    isExitPending,
     isQueueFull: view.isQueueFull,
     syncStatus: view.status,
     handleRetry: commands.retry,

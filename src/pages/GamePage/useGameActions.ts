@@ -39,6 +39,7 @@ interface UseGameExitFlowResult {
   handleExitGame: () => Promise<void>;
   handleOpenExitOverlay: () => void;
   isExitOverlayOpen: boolean;
+  isExitPending: boolean;
 }
 
 // The 409 code is the same for a lobby and a finished game, and the page state can be stale.
@@ -111,6 +112,10 @@ export function useGameExitFlow({
 }: UseGameExitFlowOptions): UseGameExitFlowResult {
   const [isExitOverlayOpen, setIsExitOverlayOpen] = useState(false);
   const controllerRef = useRef<AbortController | null>(null);
+  // The lock belongs to one game: it holds that game's id, so a new gameId finds it free.
+  const exitLockedGameIdRef = useRef<number | null>(null);
+  const [exitPendingGameId, setExitPendingGameId] = useState<number | null>(null);
+  const isExitPending = exitPendingGameId !== null && exitPendingGameId === gameId;
 
   // A late answer for a game the page left must not navigate or set an error.
   useEffect(() => {
@@ -131,6 +136,15 @@ export function useGameExitFlow({
     if (gameId === null) {
       return;
     }
+
+    // The lock stays taken after a success and after the finished-game summary: the page is
+    // leaving, and a second tap in that time must not start a second exit. Any other failure
+    // releases it, so the player can try again.
+    if (exitLockedGameIdRef.current === gameId) {
+      return;
+    }
+    exitLockedGameIdRef.current = gameId;
+    setExitPendingGameId(gameId);
 
     controllerRef.current?.abort();
     const controller = new AbortController();
@@ -166,6 +180,8 @@ export function useGameExitFlow({
         error,
       });
       setPageError(toUserErrorMessage(error, "Could not leave the game. Please try again."));
+      exitLockedGameIdRef.current = null;
+      setExitPendingGameId(null);
     }
   }, [gameId, navigate, setPageError]);
 
@@ -174,5 +190,6 @@ export function useGameExitFlow({
     handleExitGame,
     handleOpenExitOverlay,
     isExitOverlayOpen,
+    isExitPending,
   };
 }
