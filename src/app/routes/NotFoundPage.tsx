@@ -1,18 +1,21 @@
 import React from "react";
-import { ErrorState } from "@/shared/ui/error-state";
-import styles from "./NotFoundPage.module.css";
+import { Link } from "react-router-dom";
+import dartIllustration from "@/assets/images/not-found-dart.webp";
 import { ROUTES } from "@/lib/router/routes";
+import styles from "./NotFoundPage.module.css";
 
 function NotFoundPage(): React.JSX.Element {
   return (
-    <main className={styles.container}>
-      <ErrorState
-        variant="page"
-        title="Page not found"
-        message="The page you requested does not exist or has been moved."
-        primaryAction={{ label: "Go to login", to: ROUTES.login }}
-        secondaryAction={{ label: "Go to start", to: ROUTES.start() }}
-      />
+    <main className={styles.page}>
+      <div className={styles.stage} aria-hidden="true">
+        <span className={styles.numeral}>404</span>
+        <img className={styles.dart} src={dartIllustration} alt="" width={1200} height={1200} />
+      </div>
+      <h1 className={styles.title}>Page not found</h1>
+      <p className={styles.message}>This page seems to have missed the target.</p>
+      <Link className={styles.backLink} to={ROUTES.start()}>
+        Back to start
+      </Link>
     </main>
   );
 }
