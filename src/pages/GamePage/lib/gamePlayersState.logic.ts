@@ -78,16 +78,11 @@ export function buildGamePlayersDerivedState({
   });
   const isInteractionDisabled =
     isLoading || hasError || !gameData || shouldShowFinishOverlay || !canThrow;
-  const isUndoDisabled =
-    isLoading ||
-    hasError ||
-    !gameData ||
-    shouldShowFinishOverlay ||
-    !canUndo ||
-    !hasThrowHistory(gameData);
+  const hasThrow = hasThrowHistory(gameData);
+  const isUndoDisabled = isLoading || hasError || shouldShowFinishOverlay || !canUndo || !hasThrow;
   // The server locks the out rule while the game has a throw. Until it answered every pending
   // op it may still hold a throw the screen no longer shows.
-  const isSettingsDisabled = isSyncing || hasThrowHistory(gameData);
+  const isSettingsDisabled = isSyncing || hasThrow;
 
   return {
     activePlayer,

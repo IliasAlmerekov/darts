@@ -573,6 +573,27 @@ describe("GamePage settings lock", () => {
     expect(undoLastThrowMock).toHaveBeenCalledTimes(1);
   });
 
+  it("disables Undo once the only throw of a loaded game is undone", async () => {
+    undoLastThrowMock.mockReturnValue(new Promise<GameThrowsResponse>(() => {}));
+    // The server lists the current round in both currentRoundThrows and roundHistory.
+    const game = buildGame({ alice: 301, bob: 301 });
+    const [alice] = game.players;
+    if (alice === undefined) {
+      throw new Error("Expected Alice");
+    }
+    const miss = { value: 0, isDouble: false, isTriple: false, isBust: false };
+    alice.currentRoundThrows = [miss];
+    alice.throwsInCurrentRound = 1;
+    alice.roundHistory = [{ round: 1, throws: [miss] }];
+    game.currentThrowCount = 1;
+    await openGame(game);
+
+    tap("Undo");
+
+    expect(screen.getByRole("button", { name: "Undo" }).hasAttribute("disabled")).toBe(true);
+    expect(undoLastThrowMock).toHaveBeenCalledTimes(1);
+  });
+
   it("disables Settings after a bust the server has not confirmed yet", async () => {
     recordThrowMock.mockReturnValue(new Promise<ThrowAckResponse>(() => {}));
     await openGame(buildGame({ alice: 10, bob: 301 }));
