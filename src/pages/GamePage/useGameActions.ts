@@ -166,6 +166,11 @@ export function useGameExitFlow({
       const isFinished =
         isGameAbortNotAllowedError(error) && (await isGameFinished(gameId, controller.signal));
       if (controller.signal.aborted) {
+        // The page left this game. Release only this call's lock: a later game's stays.
+        if (exitLockedGameIdRef.current === gameId) {
+          exitLockedGameIdRef.current = null;
+        }
+        setExitPendingGameId((pendingId) => (pendingId === gameId ? null : pendingId));
         return;
       }
 

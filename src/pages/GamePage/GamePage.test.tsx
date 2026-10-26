@@ -254,9 +254,7 @@ describe("GamePage", () => {
     fireEvent.click(await screen.findByRole("button", { name: "Yes" }));
 
     await waitFor(() => {
-      expect((screen.getByRole("button", { name: "Yes" }) as HTMLButtonElement).disabled).toBe(
-        true,
-      );
+      expect(screen.getByRole("button", { name: "Yes" })).toHaveProperty("disabled", true);
     });
     fireEvent.click(screen.getByRole("button", { name: "Yes" }));
     expect(abortGameMock).toHaveBeenCalledTimes(1);

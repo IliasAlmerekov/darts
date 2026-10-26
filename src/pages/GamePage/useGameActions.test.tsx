@@ -114,11 +114,15 @@ describe("useGameExitFlow", () => {
   const abortNotAllowed = () =>
     new ApiError("Conflict", { status: 409, data: { error: "GAME_ABORT_NOT_ALLOWED" } });
 
-  function renderExitFlow() {
+  function renderExitFlow(gameId = 42) {
     const navigate = vi.fn();
     const setPageError = vi.fn();
-    const { result } = renderHook(() => useGameExitFlow({ gameId: 42, navigate, setPageError }));
-    return { navigate, result, setPageError };
+    const { rerender, result } = renderHook(
+      (props: { gameId: number }) =>
+        useGameExitFlow({ gameId: props.gameId, navigate, setPageError }),
+      { initialProps: { gameId } },
+    );
+    return { navigate, rerender, result, setPageError };
   }
 
   beforeEach(() => {
@@ -232,6 +236,12 @@ describe("useGameExitFlow", () => {
       expect(navigate).toHaveBeenCalledTimes(1);
       expect(navigate).toHaveBeenCalledWith("/start/43");
       expect(result.current.isExitPending).toBe(true);
+
+      await act(async () => {
+        await result.current.handleExitGame();
+      });
+      expect(abortGame).toHaveBeenCalledTimes(1);
+      expect(createRematch).toHaveBeenCalledTimes(1);
     });
 
     it("should release the lock and allow a retry when abort fails", async () => {
@@ -283,12 +293,7 @@ describe("useGameExitFlow", () => {
 
     it("should allow a new exit when the game id changes", async () => {
       vi.mocked(abortGame).mockReturnValue(new Promise(() => {}));
-      const navigate = vi.fn();
-      const setPageError = vi.fn();
-      const { result, rerender } = renderHook(
-        ({ gameId }) => useGameExitFlow({ gameId, navigate, setPageError }),
-        { initialProps: { gameId: 42 } },
-      );
+      const { rerender, result } = renderExitFlow();
 
       await act(async () => {
         void result.current.handleExitGame();
@@ -303,6 +308,33 @@ describe("useGameExitFlow", () => {
 
       expect(abortGame).toHaveBeenNthCalledWith(1, 42);
       expect(abortGame).toHaveBeenNthCalledWith(2, 43);
+    });
+
+    it("should allow an exit for a game the page returns to after leaving it mid-exit", async () => {
+      const abort = deferred<{ success: boolean; message: string }>();
+      vi.mocked(abortGame).mockReturnValueOnce(abort.promise);
+      const { rerender, result } = renderExitFlow();
+
+      let stale: Promise<void> = Promise.resolve();
+      await act(async () => {
+        stale = result.current.handleExitGame();
+        await Promise.resolve();
+      });
+      rerender({ gameId: 43 });
+      rerender({ gameId: 42 });
+      await act(async () => {
+        abort.reject(new Error("offline"));
+        await stale;
+      });
+
+      expect(result.current.isExitPending).toBe(false);
+      vi.mocked(abortGame).mockReturnValueOnce(new Promise(() => {}));
+      await act(async () => {
+        void result.current.handleExitGame();
+        await Promise.resolve();
+      });
+      expect(abortGame).toHaveBeenCalledTimes(2);
+      expect(abortGame).toHaveBeenLastCalledWith(42);
     });
   });
 
