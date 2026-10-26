@@ -13,7 +13,11 @@ function canCheckout(
   settings: GameThrowsResponse["settings"],
 ): boolean {
   if (nextScore !== 0) {
-    return true;
+    if (nextScore === 1) {
+      return !settings.doubleOut && !settings.tripleOut;
+    }
+
+    return !(nextScore === 2 && settings.tripleOut);
   }
 
   if (settings.doubleOut && !throwData.isDouble) {
