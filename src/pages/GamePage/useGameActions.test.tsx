@@ -336,6 +336,7 @@ describe("useGameExitFlow", () => {
       expect(abortGame).toHaveBeenCalledTimes(2);
       expect(abortGame).toHaveBeenLastCalledWith(42);
     });
+
     it("should keep a game locked when the page returns to it while another game exits", async () => {
       vi.mocked(abortGame).mockReturnValue(new Promise(() => {}));
       const { rerender, result } = renderExitFlow(42);

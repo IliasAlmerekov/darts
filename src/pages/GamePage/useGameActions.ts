@@ -113,7 +113,8 @@ export function useGameExitFlow({
   const [isExitOverlayOpen, setIsExitOverlayOpen] = useState(false);
   const controllerRef = useRef<AbortController | null>(null);
   // The lock belongs to one game: each game id has its own entry, so a new gameId finds it free
-  // and a game the page left mid-exit stays locked when the page returns to it.
+  // and a game the page left mid-exit stays locked until that exit call settles. The ref is the
+  // synchronous lock; the state mirrors it for rendering.
   const exitLockedGameIdsRef = useRef<Set<number>>(new Set());
   const [exitPendingGameIds, setExitPendingGameIds] = useState<ReadonlySet<number>>(new Set());
   const isExitPending = gameId !== null && exitPendingGameIds.has(gameId);
