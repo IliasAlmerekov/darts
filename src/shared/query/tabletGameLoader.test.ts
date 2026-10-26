@@ -41,13 +41,17 @@ describe("fetchTabletGame", () => {
 });
 
 describe("tabletGameLoader", () => {
-  it.each(["abc", "0", "-5", "1e3"])(
-    "should throw a 404 response and send no request for the invalid id %s",
-    async (id) => {
-      const loader = tabletGameLoader("settings");
+  it.each(
+    (["game", "settings"] as const).flatMap((kind) =>
+      ["abc", "0", "-5", "1e3"].map((id) => [kind, id] as const),
+    ),
+  )(
+    "should throw a 404 response and send no request on /%s for the invalid id %s",
+    async (kind, id) => {
+      const loader = tabletGameLoader(kind);
 
       const result = Promise.resolve(
-        loader(makeLoaderArgs(new Request(`http://localhost/settings/${id}`), { id })),
+        loader(makeLoaderArgs(new Request(`http://localhost/${kind}/${id}`), { id })),
       );
 
       await expect(result).rejects.toMatchObject({ status: 404 });

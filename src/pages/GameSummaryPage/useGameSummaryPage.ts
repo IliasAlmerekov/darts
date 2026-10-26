@@ -46,7 +46,7 @@ interface UseGameSummaryPageResult extends FinishedGameStandings {
  * React Router 6 loader
  * Registers the route: loader: gameSummaryLoader
  * Only the last finished game has a summary: another game id moves to its details, replacing
- * the history entry. Returns null without fetching when the tablet game read fails or the
+ * the history entry. Returns null without fetching when the tablet game read fails.
  * An invalid game id throws a 404 route error response before any read.
  * Fills the `['finishedGame', id]` and the game settings queries before the page renders.
  */

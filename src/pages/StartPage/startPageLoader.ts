@@ -17,7 +17,8 @@ function isAbortError(error: unknown): boolean {
 
 /**
  * React Router loader for the StartPage route.
- * An invalid game id throws a 404 route error response before any read. Follows the tablet game, then fetches its game throws and invitation before the page
+ * An invalid game id throws a 404 route error response before any read.
+ * Follows the tablet game, then fetches its game throws and invitation before the page
  * renders, populates the game-session stores, and fills the lobby players query.
  * Register as: loader={startPageLoader}
  */
