@@ -176,11 +176,19 @@ describe("App routing", () => {
   });
 
   it("should send /start/:id to the start page of the tablet game", async () => {
-    window.history.pushState({}, "", "/start/game-42");
+    window.history.pushState({}, "", "/start/42");
 
     await renderApp();
 
     expect(await screen.findByText("Start Page")).toBeTruthy();
+  });
+
+  it("should answer /start/<invalid id> with the not found page", async () => {
+    window.history.pushState({}, "", "/start/game-42");
+
+    await renderApp();
+
+    expect(await screen.findByRole("heading", { name: "Page not found" })).toBeTruthy();
   });
 
   it("should render the admin layout route when the current route is an admin shell page", async () => {

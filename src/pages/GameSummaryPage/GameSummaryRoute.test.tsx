@@ -44,7 +44,12 @@ const SETTINGS = buildGameSettingsResponse({ gameId: 42, status: "finished", sta
 function renderSummaryRoute(path = "/summary/42"): ReturnType<typeof render> {
   const router = createMemoryRouter(
     [
-      { path: "/summary/:id", element: <GameSummaryPage />, loader: gameSummaryLoader },
+      {
+        path: "/summary/:id",
+        element: <GameSummaryPage />,
+        loader: gameSummaryLoader,
+        errorElement: <h1>Route error</h1>,
+      },
       { path: "/details/:id", element: <h1>Game details</h1> },
     ],
     { initialEntries: [path] },
@@ -154,14 +159,17 @@ describe("GameSummaryPage route", () => {
     expect(screen.queryByRole("button", { name: "Play Again" })).toBeNull();
   });
 
-  it("should not request settings for an invalid game id, even on Retry", async () => {
-    renderSummaryRoute("/summary/abc");
+  it.each(["abc", "0", "-5", "1e3"])(
+    "should hand /summary/%s to the route error element and send no request",
+    async (id) => {
+      renderSummaryRoute(`/summary/${id}`);
 
-    fireEvent.click(await screen.findByRole("button", { name: "Retry" }));
-
-    expect(screen.getByText("Game settings are unavailable")).toBeTruthy();
-    expect(getGameSettingsMock).not.toHaveBeenCalled();
-  });
+      expect(await screen.findByRole("heading", { name: "Route error" })).toBeTruthy();
+      expect(getTabletGameMock).not.toHaveBeenCalled();
+      expect(getFinishedGameMock).not.toHaveBeenCalled();
+      expect(getGameSettingsMock).not.toHaveBeenCalled();
+    },
+  );
 
   // #100
   describe("while Undo is pending", () => {

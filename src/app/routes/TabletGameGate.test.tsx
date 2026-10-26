@@ -29,6 +29,7 @@ import {
 } from "@/shared/store";
 import { UniversalSkeleton } from "@/shared/ui/skeletons";
 import { buildGameThrowsResponse } from "@/shared/types/game.test-support";
+import ErrorBoundary from "@/app/ErrorBoundary";
 import AdminLayoutRoute from "./AdminLayoutRoute";
 import TabletGameGate from "./TabletGameGate";
 
@@ -62,6 +63,7 @@ function renderAdminRoutes(entries: string[]): ReturnType<typeof createMemoryRou
     [
       {
         element: <AdminLayoutRoute />,
+        errorElement: <ErrorBoundary />,
         children: [
           {
             path: "/start/:id?",
@@ -189,18 +191,15 @@ describe("admin routes follow the tablet game", () => {
   });
 
   describe("invalid id", () => {
-    it.each(["-5", "0", "abc", "1e3"])("should treat %j like a foreign id", async (id) => {
+    it.each(
+      ["/start", "/settings"].flatMap((base) =>
+        ["-5", "0", "abc", "1e3"].map((id) => `${base}/${id}`),
+      ),
+    )("should answer %s with the not found page", async (path) => {
       getTabletGameMock.mockResolvedValue(LOBBY_7);
-      renderAdminRoutes([`/settings/${id}`]);
+      renderAdminRoutes([path]);
 
-      await expectPage("Settings /settings/7");
-    });
-
-    it("should send /game/abc to /start without a tablet game", async () => {
-      getTabletGameMock.mockResolvedValue(NO_TABLET_GAME);
-      renderAdminRoutes(["/game/abc"]);
-
-      await expectPage("Start /start");
+      expect(await screen.findByRole("heading", { name: "Page not found" })).toBeTruthy();
     });
   });
 

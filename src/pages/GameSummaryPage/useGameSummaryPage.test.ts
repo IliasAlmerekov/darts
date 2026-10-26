@@ -933,14 +933,18 @@ describe("useGameSummaryPage", () => {
       ).resolves.toBeNull();
     });
 
-    it.each(["abc", "0", "-1"])("should fetch nothing for the invalid game id %s", async (id) => {
-      await expect(
-        gameSummaryLoader(makeLoaderArgs(new Request("http://x/"), { id })),
-      ).resolves.toBeNull();
+    it.each(["abc", "0", "-5", "1e3"])(
+      "should throw a 404 response and send no request for the invalid game id %s",
+      async (id) => {
+        await expect(
+          gameSummaryLoader(makeLoaderArgs(new Request("http://x/"), { id })),
+        ).rejects.toMatchObject({ status: 404 });
 
-      expect(getFinishedGameMock).not.toHaveBeenCalled();
-      expect(getGameSettingsMock).not.toHaveBeenCalled();
-    });
+        expect(getTabletGameMock).not.toHaveBeenCalled();
+        expect(getFinishedGameMock).not.toHaveBeenCalled();
+        expect(getGameSettingsMock).not.toHaveBeenCalled();
+      },
+    );
   });
 
   describe("handlePlayAgain", () => {

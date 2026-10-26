@@ -1,8 +1,91 @@
-.container {
-  min-height: 100dvh;
+.page {
+  min-height: 100%;
   padding: var(--page-padding);
   box-sizing: border-box;
-  background:
-    radial-gradient(circle at top right, rgb(0 0 219 / 8%), transparent 50%),
-    radial-gradient(circle at bottom left, rgb(255 32 1 / 10%), transparent 55%), var(--color-bg);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  overflow-x: clip;
+  background: var(--color-bg);
+  text-align: center;
+}
+
+/* The numeral size drives the whole illustration, so both scale together. The height cap
+   keeps "Back to start" on a landscape tablet screen. */
+.stage {
+  --numeral-size: clamp(150px, min(45vw, 32dvh), 360px);
+  --dart-size: calc(var(--numeral-size) * 1.6);
+
+  position: relative;
+  padding-top: calc(var(--numeral-size) * 0.45);
+  padding-bottom: calc(var(--numeral-size) * 0.3);
+  user-select: none;
+}
+
+.numeral {
+  display: block;
+  font-size: var(--numeral-size);
+  font-weight: var(--font-weight-bold);
+  line-height: 0.8;
+  letter-spacing: -0.02em;
+  color: rgb(0 0 219 / 11%);
+}
+
+/* The crack sits at 45% of the image width, so that point lands on the numeral's centre. */
+.dart {
+  position: absolute;
+  bottom: calc(var(--dart-size) * -0.08);
+  left: calc(50% - var(--dart-size) * 0.45);
+  width: var(--dart-size);
+  height: auto;
+}
+
+.title {
+  margin: var(--space-lg) 0 0;
+  font-size: var(--font-size-48);
+  line-height: var(--line-height-57);
+  color: var(--color-text);
+}
+
+.message {
+  margin: var(--space-xs) 0 0;
+  max-width: 32ch;
+  text-wrap: balance;
+  font-size: var(--font-size-20);
+  line-height: var(--line-height-24);
+  color: var(--color-text-muted);
+}
+
+.backLink {
+  margin-top: var(--space-lg);
+  min-width: min(100%, 320px);
+  min-height: var(--button-height);
+  padding: var(--space-sm) var(--space-xl);
+  box-sizing: border-box;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-md);
+  background: var(--color-primary);
+  color: var(--white);
+  font-size: var(--font-size-20);
+  font-weight: var(--font-weight-bold);
+  text-decoration: none;
+  transition: background-color var(--transition-base);
+}
+
+.backLink:hover {
+  background: color-mix(in srgb, var(--color-primary) 85%, var(--darkblue));
+}
+
+.backLink:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 3px;
+}
+
+@media (width <= 600px) {
+  .backLink {
+    width: 100%;
+  }
 }

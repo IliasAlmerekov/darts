@@ -4,7 +4,7 @@ import { getGameThrows } from "@/shared/api/game";
 import { getInvitation } from "@/shared/api/room";
 import { toLobbyPlayers } from "@/lib/game/lobbyPlayers";
 import { ROUTES } from "@/lib/router/routes";
-import { parseRouteGameId, resolveTabletGameRoute } from "@/lib/router/tabletGameRoute";
+import { resolveTabletGameRoute, routeGameIdOrNotFound } from "@/lib/router/tabletGameRoute";
 import { gameQueries } from "@/shared/query/game.queries";
 import { queryClient } from "@/shared/query/queryClient";
 import { fetchTabletGame, redirectToTabletGame } from "@/shared/query/tabletGameLoader";
@@ -17,6 +17,7 @@ function isAbortError(error: unknown): boolean {
 
 /**
  * React Router loader for the StartPage route.
+ * An invalid game id throws a 404 route error response before any read.
  * Follows the tablet game, then fetches its game throws and invitation before the page
  * renders, populates the game-session stores, and fills the lobby players query.
  * Register as: loader={startPageLoader}
@@ -25,6 +26,7 @@ export async function startPageLoader({
   params,
   request,
 }: LoaderFunctionArgs): Promise<Response | null> {
+  const gameId = routeGameIdOrNotFound(params.id);
   const tabletGame = await fetchTabletGame(request);
   if (tabletGame === null) {
     return null;
@@ -33,12 +35,11 @@ export async function startPageLoader({
   // The room store may still hold the invitation of a game that has finished since.
   setServerCurrentGameId(tabletGame.game?.id ?? null);
 
-  const target = resolveTabletGameRoute("start", params.id, tabletGame.game);
+  const target = resolveTabletGameRoute("start", gameId, tabletGame.game);
   if (target !== null) {
     return redirectToTabletGame(target);
   }
 
-  const gameId = parseRouteGameId(params.id);
   if (gameId === null) {
     return null;
   }

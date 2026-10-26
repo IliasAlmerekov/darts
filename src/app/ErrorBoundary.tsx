@@ -1,6 +1,7 @@
 import React, { useEffect } from "react";
 import { isRouteErrorResponse, useRouteError } from "react-router-dom";
 import styles from "@/app/ErrorBoundary.module.css";
+import NotFoundPage from "@/app/routes/NotFoundPage";
 import { clientLogger } from "@/shared/services/browser/clientLogger";
 
 const DEFAULT_TITLE = "Something went wrong";
@@ -39,21 +40,33 @@ function normalizeRouteError(error: unknown): NormalizedRouteError {
   };
 }
 
+function isNotFoundRouteError(error: unknown): boolean {
+  return isRouteErrorResponse(error) && error.status === 404;
+}
+
 export default function ErrorBoundary(): React.JSX.Element {
   const routeError = useRouteError();
+  const isNotFound = isNotFoundRouteError(routeError);
 
   useEffect(() => {
+    // A 404 is an expected answer, not a crash.
+    if (isNotFound) return;
+
     const normalized = normalizeRouteError(routeError);
 
     clientLogger.error("route_error_boundary_crash", {
       context: normalized.routeError ?? undefined,
       error: normalized.error,
     });
-  }, [routeError]);
+  }, [routeError, isNotFound]);
 
   const handleReload = (): void => {
     window.location.reload();
   };
+
+  if (isNotFound) {
+    return <NotFoundPage />;
+  }
 
   return (
     <main className={styles.root} role="alert">

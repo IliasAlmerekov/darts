@@ -6,7 +6,11 @@ import { setCurrentGameId, setInvitation, resetRoomStore } from "@/shared/store"
 import { playSound } from "@/shared/services/browser/soundPlayer";
 import { toUserErrorMessage } from "@/lib/error/error-to-user-message";
 import { ROUTES } from "@/lib/router/routes";
-import { parseRouteGameId, tabletGamePath } from "@/lib/router/tabletGameRoute";
+import {
+  parseRouteGameId,
+  routeGameIdOrNotFound,
+  tabletGamePath,
+} from "@/lib/router/tabletGameRoute";
 import type { FinishedGameStandings } from "@/lib/game/finishedGameStandings";
 import { clientLogger } from "@/shared/services/browser/clientLogger";
 import { gameQueries } from "@/shared/query/game.queries";
@@ -42,16 +46,16 @@ interface UseGameSummaryPageResult extends FinishedGameStandings {
  * React Router 6 loader
  * Registers the route: loader: gameSummaryLoader
  * Only the last finished game has a summary: another game id moves to its details, replacing
- * the history entry. Returns null without fetching when the tablet game read fails or the
- * route has no valid game id.
+ * the history entry. Returns null without fetching when the tablet game read fails.
+ * An invalid game id throws a 404 route error response before any read.
  * Fills the `['finishedGame', id]` and the game settings queries before the page renders.
  */
 export async function gameSummaryLoader({
   params,
   request,
 }: LoaderFunctionArgs): Promise<Response | null> {
+  const gameId = routeGameIdOrNotFound(params.id);
   const tabletGame = await fetchTabletGame(request);
-  const gameId = parseRouteGameId(params.id);
   if (tabletGame === null || gameId === null) {
     return null;
   }

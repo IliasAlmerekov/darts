@@ -111,10 +111,11 @@ Rules:
 `src/app/ErrorBoundary.tsx` handles React Router route errors.
 
 - Loaders throw `new Response(..., { status })` for expected route failures such as an
-  invalid route param (`gameDetailLoader`).
+  invalid route param (`routeGameIdOrNotFound`, used by every loader with a game id).
+- `ErrorBoundary` renders `NotFoundPage` for a 404 route error response and does not log it.
 - Read route response fields only after `isRouteErrorResponse(error)`.
 - Normalize non-`Error` route failures to `Error` before logging.
-- The rendered fallback stays generic; details go to the log.
+- The rendered fallback for any other error stays generic; details go to the log.
 - Error boundaries are function components built on `useRouteError()`; the project has no
   class-based boundary.
 

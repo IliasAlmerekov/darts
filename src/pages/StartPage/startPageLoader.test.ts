@@ -96,14 +96,16 @@ describe("startPageLoader — follows the tablet game", () => {
     expect(getGameThrowsMock).not.toHaveBeenCalled();
   });
 
-  it("redirects an invalid id to /start when there is no tablet game", async () => {
-    getTabletGameMock.mockResolvedValue(tabletGame(null));
+  it.each(["abc", "0", "-5", "1e3"])(
+    "throws a 404 response and sends no request for the invalid id %s",
+    async (id) => {
+      await expect(startPageLoader(makeArgs(id))).rejects.toMatchObject({ status: 404 });
 
-    const result = await startPageLoader(makeArgs("abc"));
-
-    expect(redirectLocation(result)).toBe("/start");
-    expect(getGameThrowsMock).not.toHaveBeenCalled();
-  });
+      expect(getTabletGameMock).not.toHaveBeenCalled();
+      expect(getGameThrowsMock).not.toHaveBeenCalled();
+      expect(getInvitationMock).not.toHaveBeenCalled();
+    },
+  );
 
   it("redirects to the game page when the tablet game has started", async () => {
     getTabletGameMock.mockResolvedValue(tabletGame({ id: 42, status: "started" }));
