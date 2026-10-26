@@ -1,5 +1,6 @@
 // @vitest-environment node
 import { describe, expect, it } from "vitest";
+import { buildBackendPlayer } from "@/shared/types/game.test-support";
 import type { GameThrowsResponse, PlayerThrow } from "@/types";
 import {
   applyOptimisticThrow,
@@ -641,19 +642,7 @@ describe("applyOptimisticUndo after a completed turn", () => {
     id: number,
     overrides: Partial<GameThrowsResponse["players"][number]>,
   ): GameThrowsResponse["players"][number] {
-    return {
-      id,
-      name: `P${id}`,
-      score: 200,
-      isActive: false,
-      isBust: false,
-      position: null,
-      throwsInCurrentRound: 0,
-      currentRoundThrows: [],
-      roundHistory: [],
-      isGuest: false,
-      ...overrides,
-    };
+    return buildBackendPlayer({ id, name: `P${id}`, score: 200, position: null, ...overrides });
   }
 
   it("should undo the latest turn and pass over a finished player that was skipped", () => {
