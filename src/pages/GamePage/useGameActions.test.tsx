@@ -161,7 +161,7 @@ describe("useGameExitFlow", () => {
       await result.current.handleExitGame();
     });
 
-    expect(getGameThrows).toHaveBeenCalledWith(42);
+    expect(getGameThrows).toHaveBeenCalledWith(42, expect.any(AbortSignal));
     expect(createRematch).not.toHaveBeenCalled();
     expect(navigate).toHaveBeenCalledTimes(1);
     expect(navigate).toHaveBeenCalledWith("/summary/42", {
@@ -194,5 +194,74 @@ describe("useGameExitFlow", () => {
       "game.exit.failed",
       expect.objectContaining({ context: { gameId: 42 } }),
     );
+  });
+
+  describe("when the page moves on during the status read", () => {
+    function deferGameRead() {
+      let resolveRead: (game: GameThrowsResponse) => void = () => {};
+      vi.mocked(getGameThrows).mockImplementationOnce(
+        () =>
+          new Promise<GameThrowsResponse>((resolve) => {
+            resolveRead = resolve;
+          }),
+      );
+      return (game: GameThrowsResponse) => resolveRead(game);
+    }
+
+    async function startExit(handleExitGame: () => Promise<void>) {
+      let pending: Promise<void> = Promise.resolve();
+      await act(async () => {
+        pending = handleExitGame();
+        await Promise.resolve();
+      });
+      return { pending };
+    }
+
+    it("should not navigate or report an error when the page unmounts before the read resolves", async () => {
+      vi.mocked(abortGame).mockRejectedValueOnce(abortNotAllowed());
+      const resolveRead = deferGameRead();
+      const navigate = vi.fn();
+      const setPageError = vi.fn();
+      const { result, unmount } = renderHook(() =>
+        useGameExitFlow({ gameId: 42, navigate, setPageError }),
+      );
+
+      const { pending } = await startExit(result.current.handleExitGame);
+      const signal = vi.mocked(getGameThrows).mock.calls[0]?.[1];
+      unmount();
+      await act(async () => {
+        resolveRead({ ...createGameData(), status: "finished", winnerId: 7 });
+        await pending;
+      });
+
+      expect(signal?.aborted).toBe(true);
+      expect(navigate).not.toHaveBeenCalled();
+      expect(setPageError).not.toHaveBeenCalledWith(expect.any(String));
+      expect(clientLoggerErrorMock).not.toHaveBeenCalled();
+    });
+
+    it("should not navigate or report an error when the game id changes before the read resolves", async () => {
+      vi.mocked(abortGame).mockRejectedValueOnce(abortNotAllowed());
+      const resolveRead = deferGameRead();
+      const navigate = vi.fn();
+      const setPageError = vi.fn();
+      const { result, rerender } = renderHook(
+        ({ gameId }) => useGameExitFlow({ gameId, navigate, setPageError }),
+        { initialProps: { gameId: 42 } },
+      );
+
+      const { pending } = await startExit(result.current.handleExitGame);
+      const signal = vi.mocked(getGameThrows).mock.calls[0]?.[1];
+      rerender({ gameId: 43 });
+      await act(async () => {
+        resolveRead({ ...createGameData(), status: "finished", winnerId: 7 });
+        await pending;
+      });
+
+      expect(signal?.aborted).toBe(true);
+      expect(navigate).not.toHaveBeenCalled();
+      expect(setPageError).not.toHaveBeenCalledWith(expect.any(String));
+      expect(clientLoggerErrorMock).not.toHaveBeenCalled();
+    });
   });
 });
