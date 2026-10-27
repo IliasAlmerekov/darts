@@ -38,6 +38,10 @@ and this project does **not** yet follow [Semantic Versioning](https://semver.or
 - Game page: the settings button is disabled once the game has a throw, misses, busts and throws still on their way to the server included, and while the server has not answered an undo. Undoing every throw enables it again. `GAME_OUT_RULE_CHANGE_NOT_ALLOWED` and `GAME_CONFLICTING_OUT_RULES` from darts-backend#159 show a readable message instead of the raw code, and `docs/backend-api-contract.json` carries both (#321)
 - Summary: Undo no longer writes the game store. It undoes the throw on the server and the game page loads the reopened game, so only `useGameSession` writes the game on screen (#123)
 
+### Removed
+
+- Config: the unused `@/types/*` path alias in `tsconfig.json`; shared types are imported through the `@/types` barrel (#360)
+
 ### Fixed
 
 - API: the game start response is validated against the contract as `GameResponseDto`, after darts-backend#46. A start or rematch start answer that is not a game state now fails with a validation error instead of passing unchecked (#206)
