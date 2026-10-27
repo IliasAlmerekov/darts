@@ -57,6 +57,14 @@ function mapTextToMessage(rawText: string): string | null {
     return "This game can no longer be left. Please reload the page.";
   }
 
+  if (text.includes("game seats not editable")) {
+    return "This game has already started. The lobby can no longer be changed.";
+  }
+
+  if (text.includes("game room full")) {
+    return "The lobby is full. Remove a player to add another.";
+  }
+
   return null;
 }
 

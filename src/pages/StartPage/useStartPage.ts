@@ -1,14 +1,17 @@
-import { useCallback, useMemo } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import { useCallback, useMemo, useState } from "react";
+import { useNavigate, useParams, useRevalidator } from "react-router-dom";
 import { useStore } from "@nanostores/react";
 import { useGamePlayers } from "./useGamePlayers";
 import { useCreateStartFlow } from "./useCreateStartFlow";
 import { useGuestFlow } from "./useGuestFlow";
 import { persistPlayerOrder, usePlayerOrderPersistence } from "./usePlayerOrderPersistence";
+import { useIsCurrentGame } from "./useIsCurrentGame";
 import { useStartPageError } from "./useStartPageError";
 import { parseRouteGameId } from "@/lib/router/tabletGameRoute";
 import { $invitation } from "@/shared/store";
 import { leaveRoom } from "@/shared/api/room";
+import { isApiErrorCode } from "@/lib/error/api-error-code";
+import { clientLogger } from "@/shared/services/browser/clientLogger";
 import { toUserErrorMessage } from "@/lib/error/error-to-user-message";
 
 type GamePlayersResult = ReturnType<typeof useGamePlayers>;
@@ -47,6 +50,7 @@ interface UseStartPageResult {
  */
 export function useStartPage(): UseStartPageResult {
   const navigate = useNavigate();
+  const { revalidate } = useRevalidator();
   const { id: gameIdParam } = useParams<{ id?: string }>();
 
   const invitation = useStore($invitation);
@@ -59,11 +63,13 @@ export function useStartPage(): UseStartPageResult {
     removeOptimisticPlayer,
   } = useGamePlayers(gameId);
 
+  const isCurrentGame = useIsCurrentGame(gameId);
   const { pageError, setPageError, clearPageError } = useStartPageError();
   const { playerOrder, handleDragEnd } = usePlayerOrderPersistence({
     gameId,
     players,
     setPageError,
+    onSeatsNotEditable: revalidate,
   });
   const { creating, starting, handleCreateRoom, handleStartGame } = useCreateStartFlow({
     gameId,
@@ -87,7 +93,17 @@ export function useStartPage(): UseStartPageResult {
     gameId,
     playerCount,
     appendOptimisticPlayer,
+    onSeatsNotEditable: revalidate,
   });
+
+  // The loader can send /start/10 to /start (a finished or aborted game) without remounting the
+  // page. A message about the old game must not stay on the new route.
+  const [shownGameId, setShownGameId] = useState(gameId);
+  if (shownGameId !== gameId) {
+    setShownGameId(gameId);
+    clearPageError();
+    closeGuestOverlay();
+  }
 
   const handleRemovePlayer = useCallback(
     async (playerId: number, activeGameId: number): Promise<void> => {
@@ -100,10 +116,38 @@ export function useStartPage(): UseStartPageResult {
         if (removedPlayer) {
           appendOptimisticPlayer(removedPlayer);
         }
+        const seatsNotEditable = isApiErrorCode(error, "GAME_SEATS_NOT_EDITABLE");
+        if (seatsNotEditable) {
+          clientLogger.warn("room.leave.seats-not-editable", {
+            context: { gameId: activeGameId },
+            error,
+          });
+        }
+        // The route moved to another game while the request ran: its answer is not for this page.
+        if (!isCurrentGame(activeGameId)) {
+          if (!seatsNotEditable) {
+            clientLogger.warn("room.leave.stale-answer", {
+              context: { gameId: activeGameId },
+              error,
+            });
+          }
+          return;
+        }
         setPageError(toUserErrorMessage(error, "Could not remove player. Please try again."));
+        if (seatsNotEditable) {
+          // The game left the lobby: the route loader sends this tab to the game page.
+          void revalidate();
+        }
       }
     },
-    [appendOptimisticPlayer, players, removeOptimisticPlayer, setPageError],
+    [
+      appendOptimisticPlayer,
+      isCurrentGame,
+      players,
+      removeOptimisticPlayer,
+      revalidate,
+      setPageError,
+    ],
   );
 
   return {

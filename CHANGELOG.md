@@ -40,6 +40,7 @@ and this project does **not** yet follow [Semantic Versioning](https://semver.or
 
 ### Fixed
 
+- Lobby: a stale lobby tab that removes a player, adds a guest or reorders players after the game started shows "This game has already started. The lobby can no longer be changed." instead of the raw code `GAME_SEATS_NOT_EDITABLE`, then reloads the route so the tab ends on the game page. Adding a guest to a full lobby shows "The lobby is full. Remove a player to add another." instead of the generic guest error (#327)
 - Settings: while a game's settings save is pending, both the Game Mode and the Points buttons are disabled. Before, the other group looked enabled but ignored the click (#338)
 
 - Statistics: every screen shows the backend three-dart average with two decimals under the label `Ø AVG` (podium, leaderboard, Statistics, Profile stats card and history, scoring trend chart), with the accessible name "three-dart average". The per-round fallback from the start score is gone, and the summary page no longer requests the game settings it only read for it, so a failed settings request cannot replace the summary with an error. Podium and leaderboard show `-` for a player with no rounds, including the podium placeholder (#333)
