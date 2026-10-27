@@ -34,6 +34,10 @@ _Avoid_: player page, default page
 How often a player hits a board segment compared with the segment they hit most, in five steps from Very high to Very low.
 _Avoid_: heat, hit rate
 
+**Three-dart average**:
+A player's points divided by the darts they threw, times three. A busted turn counts as three darts and no points.
+_Avoid_: round average, points per round, average per round, Ø Round
+
 ## Finished game
 
 **Standings**:
