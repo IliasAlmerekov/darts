@@ -35,8 +35,7 @@
       "@/pages/*": ["./src/pages/*"],
       "@/shared/*": ["./src/shared/*"],
       "@/lib/*": ["./src/shared/lib/*"],
-      "@/types": ["./src/shared/types/index.ts"],
-      "@/types/*": ["./src/shared/types/*"]
+      "@/types": ["./src/shared/types/index.ts"]
     }
   },
   "include": ["src", "vite.config.ts", "playwright.config.ts"],

@@ -147,8 +147,6 @@ Defined in `tsconfig.json` and mirrored in `vite.config.ts`:
 | `@/types`    | `src/shared/types/index.ts` | shared types barrel (production)            |
 | `@/assets/*` | `src/assets/*`              | static assets                               |
 
-`@/types/*` also exists in `tsconfig.json` but is unused; prefer the forms above.
-
 Import shared lib through `@/lib/...`, not `@/shared/lib/...`. Verification check 4 lists
 the imports that still use the long form; #214 moves them.
 
