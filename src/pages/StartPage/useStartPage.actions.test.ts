@@ -726,6 +726,11 @@ describe("useStartPage action guards", () => {
         expect(result.current.pageError).toBeNull();
         expect(revalidateMock).not.toHaveBeenCalled();
         expect(result.current.players.map((p) => p.id)).toEqual([3, 4]);
+        expect(warnSpy).toHaveBeenCalledTimes(1);
+        expect(warnSpy).toHaveBeenCalledWith(
+          "room.leave.seats-not-editable",
+          expect.objectContaining({ context: { gameId: 10 } }),
+        );
       });
 
       it("should ignore a late GAME_SEATS_NOT_EDITABLE from add guest", async () => {
@@ -754,6 +759,84 @@ describe("useStartPage action guards", () => {
         expect(result.current.isGuestOverlayOpen).toBe(true);
         expect(result.current.isAddingGuest).toBe(false);
         expect(revalidateMock).not.toHaveBeenCalled();
+      });
+
+      it("should keep the overlay of the new game open when a stale add guest succeeds", async () => {
+        const pending = deferred<Awaited<ReturnType<typeof addGuestPlayer>>>();
+        vi.mocked(addGuestPlayer).mockReturnValueOnce(pending.promise);
+        const { result, moveTo } = await renderOnGame10();
+
+        await act(async () => {
+          result.current.openGuestOverlay();
+          result.current.setGuestUsername("Alex");
+        });
+        let adding = Promise.resolve();
+        await act(async () => {
+          adding = result.current.handleAddGuest();
+        });
+        await moveTo("/start/11");
+        await act(async () => {
+          result.current.openGuestOverlay();
+        });
+        await act(async () => {
+          pending.resolve({ id: 9, name: "Alex", position: null });
+          await adding;
+        });
+
+        expect(result.current.isGuestOverlayOpen).toBe(true);
+      });
+
+      it("should log a stale remove failure that is not a seat conflict", async () => {
+        const pending = deferred<void>();
+        vi.mocked(leaveRoom).mockReturnValueOnce(pending.promise);
+        const { result, moveTo } = await renderOnGame10();
+
+        let removal = Promise.resolve();
+        await act(async () => {
+          removal = result.current.handleRemovePlayer(2, 10);
+        });
+        await moveTo("/start/11");
+        const failure = new ApiError("Server error", { status: 500, data: null });
+        await act(async () => {
+          pending.reject(failure);
+          await removal;
+        });
+
+        expect(result.current.pageError).toBeNull();
+        expect(warnSpy).toHaveBeenCalledWith("room.leave.stale-answer", {
+          context: { gameId: 10 },
+          error: failure,
+        });
+      });
+
+      it("should log a stale add guest failure that is not a seat conflict or a full lobby", async () => {
+        const pending = deferred<never>();
+        vi.mocked(addGuestPlayer).mockReturnValueOnce(pending.promise);
+        const { result, moveTo } = await renderOnGame10();
+
+        await act(async () => {
+          result.current.openGuestOverlay();
+          result.current.setGuestUsername("Alex");
+        });
+        let adding = Promise.resolve();
+        await act(async () => {
+          adding = result.current.handleAddGuest();
+        });
+        await moveTo("/start/11");
+        const failure = new ApiError("Conflict", {
+          status: 409,
+          data: { success: false, error: "USERNAME_TAKEN", message: "Taken." },
+        });
+        await act(async () => {
+          pending.reject(failure);
+          await adding;
+        });
+
+        expect(result.current.guestError).toBeNull();
+        expect(warnSpy).toHaveBeenCalledWith("room.guest.stale-answer", {
+          context: { gameId: 10 },
+          error: failure,
+        });
       });
 
       it("should not roll back the order of the new game or reload on a late conflict from reorder", async () => {

@@ -160,11 +160,15 @@ export function useGuestFlow({
       if (seatsNotEditable) {
         clientLogger.warn("room.guest.seats-not-editable", { context: { gameId }, error });
       }
-      if (isApiErrorCode(error, "GAME_ROOM_FULL")) {
+      const lobbyFull = isApiErrorCode(error, "GAME_ROOM_FULL");
+      if (lobbyFull) {
         clientLogger.warn("room.guest.lobby-full", { context: { gameId }, error });
       }
       // The route moved to another game while the request ran: its answer is not for this page.
       if (!isCurrentGame(gameId)) {
+        if (!seatsNotEditable && !lobbyFull) {
+          clientLogger.warn("room.guest.stale-answer", { context: { gameId }, error });
+        }
         return;
       }
 
@@ -174,7 +178,7 @@ export function useGuestFlow({
         return;
       }
 
-      if (isApiErrorCode(error, "GAME_ROOM_FULL")) {
+      if (lobbyFull) {
         setGuestError(toUserErrorMessage(error));
         return;
       }

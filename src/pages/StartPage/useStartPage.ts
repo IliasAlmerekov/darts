@@ -125,6 +125,12 @@ export function useStartPage(): UseStartPageResult {
         }
         // The route moved to another game while the request ran: its answer is not for this page.
         if (!isCurrentGame(activeGameId)) {
+          if (!seatsNotEditable) {
+            clientLogger.warn("room.leave.stale-answer", {
+              context: { gameId: activeGameId },
+              error,
+            });
+          }
           return;
         }
         setPageError(toUserErrorMessage(error, "Could not remove player. Please try again."));

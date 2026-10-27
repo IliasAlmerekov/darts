@@ -1,4 +1,5 @@
-import { useCallback, useEffect, useRef } from "react";
+import { useCallback, useRef } from "react";
+import useIsomorphicLayoutEffect from "@/shared/lib/useIsomorphicLayoutEffect";
 
 /**
  * Returns a stable check for whether a game id is still the one the page shows. A seat request
@@ -7,7 +8,8 @@ import { useCallback, useEffect, useRef } from "react";
 export function useIsCurrentGame(gameId: number | null): (requestGameId: number) => boolean {
   const currentGameIdRef = useRef(gameId);
 
-  useEffect(() => {
+  // A layout effect, so the ref is current before a response can land after a route commit.
+  useIsomorphicLayoutEffect(() => {
     currentGameIdRef.current = gameId;
   }, [gameId]);
 
