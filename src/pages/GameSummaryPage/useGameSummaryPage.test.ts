@@ -90,6 +90,7 @@ function buildFinishedGameState(): GameThrowsResponse {
         isActive: true,
         isBust: false,
         position: 1,
+        placement: 1,
         throwsInCurrentRound: 0,
         currentRoundThrows: [],
         roundHistory: [
@@ -111,6 +112,7 @@ function buildFinishedGameState(): GameThrowsResponse {
         isActive: false,
         isBust: false,
         position: null,
+        placement: null,
         throwsInCurrentRound: 0,
         currentRoundThrows: [],
         roundHistory: [],
@@ -140,6 +142,7 @@ function buildStartedGameState(): GameThrowsResponse {
         score: 20,
         isActive: true,
         position: null,
+        placement: null,
         throwsInCurrentRound: 2,
         currentRoundThrows: [
           { value: 20, isDouble: false, isTriple: false, isBust: false },
@@ -211,7 +214,7 @@ function renderSummaryHook() {
 }
 
 function finishedPlayer(playerId: number, username: string) {
-  return { playerId, username, position: 1, roundsPlayed: 5, roundAverage: 60.2 };
+  return { playerId, username, position: 1, placement: 1, roundsPlayed: 5, roundAverage: 60.2 };
 }
 
 function deferred<T>() {

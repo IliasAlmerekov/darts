@@ -45,13 +45,28 @@ describe("buildFinishedGameStandings", () => {
     },
   );
 
-  it("should keep the backend order when positions are out of order", () => {
+  it("orders standings and podium by placement when the winner sat second", () => {
     const result = buildFinishedGameStandings([
-      { playerId: 2, username: "Bob", position: 2, roundsPlayed: 3, roundAverage: 30 },
-      { playerId: 1, username: "Alice", position: 1, roundsPlayed: 3, roundAverage: 40 },
+      {
+        playerId: 2,
+        username: "Bob",
+        position: 0,
+        placement: 2,
+        roundsPlayed: 3,
+        roundAverage: 30,
+      },
+      {
+        playerId: 1,
+        username: "Alice",
+        position: 1,
+        placement: 1,
+        roundsPlayed: 3,
+        roundAverage: 40,
+      },
     ]);
 
-    expect(result.standings.map((player) => player.id)).toStrictEqual([2, 1]);
-    expect(result.standings.map((player) => player.index)).toStrictEqual([1, 0]);
+    expect(result.standings.map((player) => player.id)).toStrictEqual([1, 2]);
+    expect(result.standings.map((player) => player.index)).toStrictEqual([0, 1]);
+    expect(result.podiumData.map((player) => player.id)).toStrictEqual([1, 2, 0]);
   });
 });

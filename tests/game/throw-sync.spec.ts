@@ -29,11 +29,12 @@ function gameState(gameId: number, scores: PlayerScore[]) {
     currentThrowCount: 0,
     winnerId: null,
     settings: { startScore: 301, doubleOut: false, tripleOut: false },
-    players: scores.map((player) => ({
+    players: scores.map((player, index) => ({
       ...player,
       isBust: false,
       isGuest: false,
-      position: player.score === 0 ? 1 : null,
+      position: index,
+      placement: player.score === 0 ? 1 : null,
       throwsInCurrentRound: 0,
       currentRoundThrows: [],
       roundHistory: [],
@@ -43,7 +44,7 @@ function gameState(gameId: number, scores: PlayerScore[]) {
 
 /**
  * The backend's ack for a throw. A throw that leaves at most one active player finishes the
- * game in the same request: the ack says `finished` and every player has a position.
+ * game in the same request: the ack says `finished` and every player has a placement.
  */
 function throwAck(gameId: number, scores: PlayerScore[]) {
   const winner = scores.find((player) => player.score === 0) ?? null;
@@ -52,7 +53,7 @@ function throwAck(gameId: number, scores: PlayerScore[]) {
     ...scores.filter((player) => player.score === 0),
     ...scores.filter((player) => player.score > 0),
   ];
-  const positionOf = (player: PlayerScore): number | null => {
+  const placementOf = (player: PlayerScore): number | null => {
     if (isFinished) {
       return finishingOrder.indexOf(player) + 1;
     }
@@ -65,11 +66,12 @@ function throwAck(gameId: number, scores: PlayerScore[]) {
     stateVersion: `v-${scores.map((player) => player.score).join("-")}`,
     throw: null,
     scoreboardDelta: {
-      changedPlayers: scores.map((player) => ({
+      changedPlayers: scores.map((player, index) => ({
         playerId: player.id,
         name: player.name,
         score: player.score,
-        position: positionOf(player),
+        position: index,
+        placement: placementOf(player),
         isActive: player.isActive,
         isGuest: false,
         isBust: false,

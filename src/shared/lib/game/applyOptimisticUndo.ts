@@ -130,9 +130,12 @@ export function applyOptimisticUndo(
     activePlayer.score += points;
     activePlayer.isBust = false;
 
-    if (activePlayer.score > 0 && activePlayer.position !== null) {
-      activePlayer.position = null;
-    }
+    players.forEach((player) => {
+      if (player.score > 0) player.placement = null;
+    });
+    const winnerReopened = players.some(
+      (player) => player.id === currentGameData.winnerId && player.score > 0,
+    );
 
     if (activePlayerIndex >= 0) {
       setActivePlayer(players, activePlayerIndex);
@@ -142,8 +145,8 @@ export function applyOptimisticUndo(
       ...currentGameData,
       players,
       currentThrowCount: previousThrows.length,
-      status: "started",
-      winnerId: null,
+      status: winnerReopened ? "started" : currentGameData.status,
+      winnerId: winnerReopened ? null : currentGameData.winnerId,
     };
   }
 
@@ -169,7 +172,6 @@ export function applyOptimisticUndo(
   player.currentRoundThrows = restoredThrows;
   player.throwsInCurrentRound = restoredThrows.length;
   player.isBust = false;
-  player.position = null;
 
   if (removedThrow.isBust) {
     player.score -= getSpentPointsInCurrentRound(restoredThrows);
@@ -178,6 +180,12 @@ export function applyOptimisticUndo(
     player.score += removedThrow.value * multiplier;
   }
 
+  players.forEach((candidate) => {
+    if (candidate.score > 0) candidate.placement = null;
+  });
+  const winnerReopened = players.some(
+    (candidate) => candidate.id === currentGameData.winnerId && candidate.score > 0,
+  );
   setActivePlayer(players, playerIndex);
 
   return {
@@ -186,7 +194,7 @@ export function applyOptimisticUndo(
     activePlayerId: player.id,
     currentThrowCount: restoredThrows.length,
     currentRound: roundNumber,
-    status: "started",
-    winnerId: null,
+    status: winnerReopened ? "started" : currentGameData.status,
+    winnerId: winnerReopened ? null : currentGameData.winnerId,
   };
 }

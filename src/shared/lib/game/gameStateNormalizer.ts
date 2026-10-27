@@ -64,6 +64,11 @@ export function deriveWinnerId(data: GameThrowsResponse): number | null {
     return data.winnerId;
   }
 
+  const firstPlacedPlayers = data.players.filter((player) => player.placement === 1);
+  if (firstPlacedPlayers.length === 1) {
+    return firstPlacedPlayers[0]?.id ?? null;
+  }
+
   const aliveByScore = data.players.filter((player) => player.score > 0);
   if (aliveByScore.length === 1) {
     return aliveByScore[0]?.id ?? null;
@@ -72,11 +77,6 @@ export function deriveWinnerId(data: GameThrowsResponse): number | null {
   const activePlayers = data.players.filter((player) => player.isActive === true);
   if (activePlayers.length === 1) {
     return activePlayers[0]?.id ?? null;
-  }
-
-  const playersWithOpenPosition = data.players.filter((player) => player.position === 0);
-  if (playersWithOpenPosition.length === 1) {
-    return playersWithOpenPosition[0]?.id ?? null;
   }
 
   return null;
@@ -125,6 +125,7 @@ export function applyGameScoreboardDelta(
       ...player,
       score: playerDelta.score,
       position: playerDelta.position === undefined ? player.position : playerDelta.position,
+      placement: playerDelta.placement === undefined ? player.placement : playerDelta.placement,
       isActive: playerDelta.isActive,
       isBust: typeof playerDelta.isBust === "boolean" ? playerDelta.isBust : player.isBust,
     };

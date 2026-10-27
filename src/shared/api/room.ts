@@ -21,6 +21,7 @@ const addGuestResponseSchema = v.object({
     id: integerSchema,
     name: v.string(),
     position: v.optional(v.nullable(integerSchema), null),
+    placement: v.optional(v.nullable(integerSchema)),
     isGuest: v.optional(v.boolean()),
   }),
 });

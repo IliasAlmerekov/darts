@@ -74,6 +74,7 @@ function buildGameData(status: GameThrowsResponse["status"]): GameThrowsResponse
         isBust: false,
         isGuest: false,
         position: null,
+        placement: null,
         throwsInCurrentRound: 0,
         currentRoundThrows: [],
         roundHistory:
@@ -89,6 +90,7 @@ function buildGameData(status: GameThrowsResponse["status"]): GameThrowsResponse
         isBust: false,
         isGuest: false,
         position: status === "finished" ? 1 : null,
+        placement: status === "finished" ? 1 : null,
         throwsInCurrentRound: 0,
         currentRoundThrows: [],
         roundHistory:

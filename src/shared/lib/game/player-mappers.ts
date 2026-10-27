@@ -101,6 +101,7 @@ function mapPlayerToUI(
     isActive: player.isActive,
     isBust: player.isBust,
     position: player.position,
+    placement: player.placement,
     index,
     rounds,
     isPlaying: player.score > 0,
@@ -116,9 +117,9 @@ export function getFinishedPlayers(players: UIPlayer[]): UIPlayer[] {
   return players
     .filter((p) => p.score === 0)
     .sort((a, b) => {
-      if (a.position == null && b.position == null) return 0;
-      if (a.position == null) return 1;
-      if (b.position == null) return -1;
-      return a.position - b.position;
+      if (a.placement == null && b.placement == null) return 0;
+      if (a.placement == null) return 1;
+      if (b.placement == null) return -1;
+      return a.placement - b.placement;
     });
 }

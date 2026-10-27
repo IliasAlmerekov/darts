@@ -28,6 +28,7 @@ export interface UIPlayer {
   isActive: boolean;
   isBust: boolean;
   position: number | null;
+  placement: number | null;
   index: number;
   rounds: UIRound[];
   isPlaying: boolean;

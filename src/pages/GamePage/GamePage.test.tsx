@@ -89,6 +89,7 @@ function buildGameData(overrides: Partial<GameThrowsResponse> = {}): GameThrowsR
         isActive: true,
         isBust: false,
         position: null,
+        placement: null,
         throwsInCurrentRound: 0,
         currentRoundThrows: [],
         roundHistory: [
@@ -103,6 +104,7 @@ function buildGameData(overrides: Partial<GameThrowsResponse> = {}): GameThrowsR
         isActive: false,
         isBust: false,
         position: null,
+        placement: null,
         throwsInCurrentRound: 0,
         currentRoundThrows: [],
         roundHistory: [

@@ -85,11 +85,11 @@ function setActivePlayer(players: GameThrowsResponse["players"], activeIndex: nu
   });
 }
 
-function getNextFinishingPosition(players: GameThrowsResponse["players"]): number {
+function getNextPlacement(players: GameThrowsResponse["players"]): number {
   const occupied = new Set(
     players
-      .map((player) => player.position)
-      .filter((position): position is number => position !== null && position > 0),
+      .map((player) => player.placement)
+      .filter((placement): placement is number => placement !== null && placement > 0),
   );
 
   let next = 1;
@@ -192,7 +192,7 @@ export function applyOptimisticThrow(
   const didEndTurn = didFinishPlayer || updatedRoundThrows.length >= 3;
 
   if (didFinishPlayer) {
-    activePlayer.position = activePlayer.position ?? getNextFinishingPosition(players);
+    activePlayer.placement = activePlayer.placement ?? getNextPlacement(players);
   }
 
   if (!didEndTurn) {
@@ -270,6 +270,9 @@ export function applyScoreboardDeltaToGameState(
     player.score = playerDelta.score;
     if (playerDelta.position !== undefined) {
       player.position = playerDelta.position;
+    }
+    if (playerDelta.placement !== undefined) {
+      player.placement = playerDelta.placement;
     }
     player.isActive = playerDelta.isActive;
     if (typeof playerDelta.isBust === "boolean") {

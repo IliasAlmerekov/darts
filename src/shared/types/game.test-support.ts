@@ -22,6 +22,7 @@ export function buildBackendPlayer(overrides: Partial<BackendPlayer> = {}): Back
     isBust: false,
     isGuest: false,
     position: 0,
+    placement: null,
     throwsInCurrentRound: 0,
     currentRoundThrows: [],
     roundHistory: [],
@@ -65,10 +66,24 @@ export function buildGameThrowsResponse(
  */
 export function buildFinishedPlayerResponses(): FinishedPlayerResponse[] {
   return [
-    { playerId: 1, username: "Alice", position: 1, roundsPlayed: 5, roundAverage: 60.5 },
-    { playerId: 2, username: "Bob", position: 2, roundsPlayed: 6, roundAverage: 50 },
-    { playerId: 3, username: "Cara", position: 3, roundsPlayed: 0, roundAverage: 0 },
-    { playerId: 4, username: "Dan", position: 4, roundsPlayed: 7, roundAverage: 40.25 },
+    {
+      playerId: 1,
+      username: "Alice",
+      position: 0,
+      placement: 1,
+      roundsPlayed: 5,
+      roundAverage: 60.5,
+    },
+    { playerId: 2, username: "Bob", position: 1, placement: 2, roundsPlayed: 6, roundAverage: 50 },
+    { playerId: 3, username: "Cara", position: 2, placement: 3, roundsPlayed: 0, roundAverage: 0 },
+    {
+      playerId: 4,
+      username: "Dan",
+      position: 3,
+      placement: 4,
+      roundsPlayed: 7,
+      roundAverage: 40.25,
+    },
   ];
 }
 
