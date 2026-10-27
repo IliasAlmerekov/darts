@@ -65,7 +65,7 @@ const NO_PLAYERS: LobbyPlayer[] = [];
  */
 export function useGamePlayers(
   gameId: number | null,
-  onStreamClosed?: () => void,
+  onStreamClosed: () => void,
 ): UseGamePlayersResult {
   const queryClient = useQueryClient();
   const { data: players = NO_PLAYERS } = useQuery({

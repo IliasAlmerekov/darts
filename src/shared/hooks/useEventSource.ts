@@ -15,7 +15,7 @@ interface UseEventSourceOptions {
   initialRetryDelayMs?: number;
   maxRetryDelayMs?: number;
   withCredentials?: boolean;
-  onClosed?: (() => void) | undefined;
+  onClosed?: () => void;
 }
 
 interface UseEventSourceResult {
