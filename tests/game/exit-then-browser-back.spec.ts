@@ -6,12 +6,6 @@ import { navigateInApp } from "../shared/in-app-navigation";
 import { mockQuietRoomStream } from "../shared/room-stream-mocks";
 import { mockTabletGame, startedTabletGame } from "../shared/tablet-game-mocks";
 
-declare global {
-  interface Window {
-    __abortJsonRead?: boolean;
-  }
-}
-
 const GAME_ID = 1;
 const REMATCH_ID = 2;
 
@@ -60,13 +54,7 @@ test.describe("Leaving the game with the browser Back button while End Game runs
       await fulfillJson(route, { success: true, message: "Game aborted" });
     });
 
-    // A request the spec sends from the page after the abort body is read; see the settle
-    // step below.
-    await page.route("**/api/__settled", (route) => route.fulfill({ status: 204 }));
-
-    const rematchRequests: string[] = [];
     await page.route(`**/api/room/${GAME_ID}/rematch`, async (route) => {
-      rematchRequests.push(route.request().method());
       await fulfillJson(route, {
         success: true,
         gameId: REMATCH_ID,
@@ -74,23 +62,44 @@ test.describe("Leaving the game with the browser Back button while End Game runs
       });
     });
 
-    // Marks the moment the page's JS has read the abort body. The marker is set from a timeout, which
-    // runs after every microtask chained from the body read: the API client's validation, the
-    // hook's guard and its rematch request are all microtasks, with no task break in between.
-    await page.addInitScript((abortPath) => {
-      const readJson = Response.prototype.json;
-      Response.prototype.json = function json(this: Response) {
-        const body = readJson.call(this);
-        if (new URL(this.url).pathname === abortPath) {
-          void body.then(() =>
-            setTimeout(() => {
-              window.__abortJsonRead = true;
-            }, 0),
-          );
-        }
-        return body;
-      };
-    }, `/api/game/${GAME_ID}/abort`);
+    // Two page-side probes, so the proof stays in the page's own event loop:
+    // - a counter of fetch calls to the rematch endpoint;
+    // - a marker set from a timeout after the abort body is read. That task runs after every
+    //   microtask chained from the body read, and the hook reaches the rematch fetch in
+    //   microtasks only (API client validation, the abort guard, createRematch). So the
+    //   counter is final when the marker is set.
+    await page.addInitScript(
+      ({ abortPath, rematchPath }) => {
+        Reflect.set(window, "__rematchFetches", 0);
+
+        const readJson = Response.prototype.json;
+        Response.prototype.json = function json(this: Response) {
+          const body = readJson.call(this);
+          if (this.url.endsWith(abortPath)) {
+            void body.then(() =>
+              setTimeout(() => {
+                Reflect.set(window, "__abortJsonRead", true);
+              }, 0),
+            );
+          }
+          return body;
+        };
+
+        const callFetch = window.fetch;
+        window.fetch = function countedFetch(input, init) {
+          const url = input instanceof Request ? input.url : String(input);
+          if (url.endsWith(rematchPath)) {
+            Reflect.set(
+              window,
+              "__rematchFetches",
+              Number(Reflect.get(window, "__rematchFetches")) + 1,
+            );
+          }
+          return callFetch.call(window, input, init);
+        };
+      },
+      { abortPath: `/api/game/${GAME_ID}/abort`, rematchPath: `/api/room/${GAME_ID}/rematch` },
+    );
 
     // A page the app can return to with Back; the game opens on top of it in the same SPA history.
     await page.goto("/start/abc");
@@ -106,13 +115,13 @@ test.describe("Leaving the game with the browser Back button while End Game runs
     await expect(page.getByRole("heading", { level: 1, name: "Page not found" })).toBeVisible();
 
     releaseAbort();
-    await page.waitForFunction(() => window.__abortJsonRead === true);
-    // The marker proves the page read the abort body and ran its microtasks, so a continuing
-    // exit has called fetch for the rematch. This request is sent after it, and its route runs
-    // after the rematch route, so the rematch handler has run when this evaluate returns.
-    await page.evaluate(() => fetch("/api/__settled").then(() => undefined));
+    await expect
+      .poll(() => page.evaluate(() => Reflect.get(window, "__abortJsonRead") === true), {
+        message: "the page never read the abort response body",
+      })
+      .toBe(true);
 
-    expect(rematchRequests).toEqual([]);
+    expect(await page.evaluate(() => Reflect.get(window, "__rematchFetches"))).toBe(0);
     await expect(page.getByRole("heading", { level: 1, name: "Page not found" })).toBeVisible();
     await expect(page).toHaveURL(/\/start\/abc$/);
   });
