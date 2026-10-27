@@ -15,6 +15,7 @@ and this project does **not** yet follow [Semantic Versioning](https://semver.or
 
 ### Changed
 
+- Routing: each page route loader lives in its own `<loaderName>.ts` next to the page hook: `gameDetailLoader.ts`, `gameSummaryLoader.ts` and `gamesOverviewLoader.ts` join `startPageLoader.ts`, and no page hook exports a loader. `App.tsx` no longer imports the page hooks, so the summary hook's rematch code leaves the entry chunk for the summary page's lazy chunk. Routes load the same data (#347)
 - Login and registration: both forms submit through `<form action>` with `useActionState` instead of `onSubmit` with hand-written `loading` and `error` state, and the login page's second `submitError` is gone. The hooks return `formAction` and `values` instead of `login`/`register` and `handleSubmit`. Pending state, the mapped error messages, the request logic and the redirects are unchanged. React 19 resets the fields after an action, so each form feeds the submitted values back as `defaultValue` and a failed submit keeps every field (#159)
 - Game page: the optimistic throw and undo logic live together in `src/pages/GamePage/lib/optimisticThrow.logic.ts`. `applyOptimisticUndo` moved there from `shared/lib/game/` without its re-export shim, `playerThrowsDisplay.logic` moved to `lib/` and `usePlayerThrowsDisplay` to the page root, and `throws/` is gone. Behaviour is unchanged (#348, #349)
 - Logging: a failed CSRF prefetch before registration logs the warning `auth.csrf_prefetch.failed` instead of a free-text message, as `docs/convention/errors.md` requires (#218)

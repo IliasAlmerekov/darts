@@ -26,7 +26,7 @@ import { queryClient } from "@/shared/query/queryClient";
 import { resetGameStore } from "@/shared/store";
 import { buildFinishedPlayerResponses } from "@/shared/types/game.test-support";
 import GameSummaryPage from ".";
-import { gameSummaryLoader } from "./useGameSummaryPage";
+import { gameSummaryLoader } from "./gameSummaryLoader";
 
 const getFinishedGameMock = vi.mocked(getFinishedGame);
 const getGameSettingsMock = vi.mocked(getGameSettings);

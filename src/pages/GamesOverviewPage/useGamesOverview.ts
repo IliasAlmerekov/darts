@@ -1,12 +1,10 @@
 import { useCallback } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { type LoaderFunctionArgs, useNavigation, useSearchParams } from "react-router-dom";
-import { queryClient } from "@/shared/query/queryClient";
+import { useNavigation, useSearchParams } from "react-router-dom";
 import { statsQueries } from "@/shared/query/statistics.queries";
 import type { FinishedGameProps } from "@/types";
+import { GAMES_OVERVIEW_LIMIT } from "./gamesOverviewLoader";
 import { parseOffset } from "./lib/parseOffset";
-
-const LIMIT = 9;
 
 const GAMES_OVERVIEW_ERROR_MESSAGE = "Could not load games overview";
 
@@ -19,22 +17,6 @@ interface UseGamesOverviewResult {
 }
 
 /**
- * React Router 6 loader for the GamesOverview route.
- * Reads `offset` from URL search params and fills that page's query before the page renders.
- * Register as: loader={gamesOverviewLoader}
- */
-export async function gamesOverviewLoader({ request }: LoaderFunctionArgs): Promise<null> {
-  const offset = parseOffset(new URL(request.url).searchParams.get("offset"));
-
-  // A failed read is logged by the query function and leaves the query in an error state,
-  // which the page shows with its Retry action.
-  await queryClient
-    .ensureQueryData(statsQueries.games({ limit: LIMIT, offset }))
-    .catch(() => undefined);
-  return null;
-}
-
-/**
  * Reads the games overview page of the current `offset` from the query cache.
  */
 export function useGamesOverview(): UseGamesOverviewResult {
@@ -43,7 +25,7 @@ export function useGamesOverview(): UseGamesOverviewResult {
   const navigation = useNavigation();
 
   const { data, error, isFetching, refetch } = useQuery({
-    ...statsQueries.games({ limit: LIMIT, offset }),
+    ...statsQueries.games({ limit: GAMES_OVERVIEW_LIMIT, offset }),
     // The loader already tried this key. Retry is the user's call.
     retryOnMount: false,
   });

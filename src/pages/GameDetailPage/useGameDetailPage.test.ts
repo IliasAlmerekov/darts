@@ -12,7 +12,6 @@ import { act, renderHook, waitFor } from "@testing-library/react";
 import { createElement, type ReactNode } from "react";
 import { QueryClientProvider, type QueryClient } from "@tanstack/react-query";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { makeLoaderArgs } from "@/test/loaderArgs";
 import type { FinishedPlayerResponse } from "@/types";
 import {
   buildExpectedPodiumPlaceholder,
@@ -20,8 +19,8 @@ import {
   buildFinishedPlayerResponses,
 } from "@/shared/types/game.test-support";
 import { gameQueries } from "@/shared/query/game.queries";
-import { createQueryClient, queryClient as appQueryClient } from "@/shared/query/queryClient";
-import { gameDetailLoader, useGameDetailPage } from "./useGameDetailPage";
+import { createQueryClient } from "@/shared/query/queryClient";
+import { useGameDetailPage } from "./useGameDetailPage";
 
 const getFinishedGameMock = vi.fn();
 let routeParams: { id?: string } = { id: "42" };
@@ -56,50 +55,6 @@ function wrapper({ children }: { children: ReactNode }): ReactNode {
 function renderDetailHook() {
   return renderHook(() => useGameDetailPage(), { wrapper });
 }
-
-describe("gameDetailLoader", () => {
-  beforeEach(() => {
-    vi.clearAllMocks();
-    appQueryClient.clear();
-  });
-
-  it("should fill the finishedGame query when the route id is valid", async () => {
-    const players = [buildFinishedPlayer({ username: "Alice", roundAverage: 75 })];
-    getFinishedGameMock.mockResolvedValue(players);
-
-    await gameDetailLoader(makeLoaderArgs(new Request("http://localhost/"), { id: "42" }));
-
-    expect(getFinishedGameMock).toHaveBeenCalledWith(42, expect.any(AbortSignal));
-    expect(appQueryClient.getQueryData(gameQueries.finished(42).queryKey)).toEqual(players);
-  });
-
-  it("should make no request when the summary page already cached the finished game", async () => {
-    appQueryClient.setQueryData(gameQueries.finished(42).queryKey, [buildFinishedPlayer()]);
-
-    await gameDetailLoader(makeLoaderArgs(new Request("http://localhost/"), { id: "42" }));
-
-    expect(getFinishedGameMock).not.toHaveBeenCalled();
-  });
-
-  it.each(["abc", "0", "-5", "1e3", "1.5"])(
-    "should throw a 404 Response and send no request when the route id is %s",
-    async (id) => {
-      await expect(
-        gameDetailLoader(makeLoaderArgs(new Request("http://localhost/"), { id })),
-      ).rejects.toMatchObject({ status: 404 });
-
-      expect(getFinishedGameMock).not.toHaveBeenCalled();
-    },
-  );
-
-  it("should reject when the fetch fails, so the route error boundary shows it", async () => {
-    getFinishedGameMock.mockRejectedValueOnce(new Error("network down"));
-
-    await expect(
-      gameDetailLoader(makeLoaderArgs(new Request("http://localhost/"), { id: "42" })),
-    ).rejects.toThrow("network down");
-  });
-});
 
 describe("useGameDetailPage", () => {
   beforeEach(() => {

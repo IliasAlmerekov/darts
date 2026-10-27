@@ -173,6 +173,8 @@ Rules:
   such as the Waiting room's polled current game and the Player profile: ADR 0001 keeps
   loaders for data that depends on route params, and a loader would hold the navigation
   instead.
+- A page's route loader lives in `<loaderName>.ts` next to the page hook (`startPageLoader.ts`,
+  `gameSummaryLoader.ts`); hooks never export loaders.
 - Optional URL parameters use `:id?` (e.g. `/start/:id?`, `/settings/:id?`). Declare one
   route per page, not two parallel ones.
 - Role-restricted routes are nested inside a `<ProtectedRoutes allowedRoles={[...]}>`
