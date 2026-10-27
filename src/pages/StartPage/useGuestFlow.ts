@@ -4,6 +4,7 @@ import { addGuestPlayer } from "@/shared/api/room";
 import { isApiErrorCode } from "@/lib/error/api-error-code";
 import { toUserErrorMessage } from "@/lib/error/error-to-user-message";
 import { clientLogger } from "@/shared/services/browser/clientLogger";
+import { useIsCurrentGame } from "./useIsCurrentGame";
 import { validateGuestUsername } from "./lib/guestUsername";
 import type { AddGuestErrorResponse } from "@/types";
 
@@ -81,6 +82,7 @@ export function useGuestFlow({
   const [guestSuggestions, setGuestSuggestions] = useState<string[]>([]);
   const [isAddingGuest, setIsAddingGuest] = useState(false);
   const addGuestInFlightRef = useRef(false);
+  const isCurrentGame = useIsCurrentGame(gameId);
   const isLobbyFull = playerCount >= MAX_LOBBY_PLAYERS;
 
   const openGuestOverlay = useCallback((): void => {
@@ -150,17 +152,29 @@ export function useGuestFlow({
     try {
       const guestPlayer = await addGuestPlayer(gameId, { username: trimmedUsername });
       appendOptimisticPlayer(guestPlayer);
-      closeGuestOverlay();
+      if (isCurrentGame(gameId)) {
+        closeGuestOverlay();
+      }
     } catch (error) {
-      if (isApiErrorCode(error, "GAME_SEATS_NOT_EDITABLE")) {
+      const seatsNotEditable = isApiErrorCode(error, "GAME_SEATS_NOT_EDITABLE");
+      if (seatsNotEditable) {
         clientLogger.warn("room.guest.seats-not-editable", { context: { gameId }, error });
+      }
+      if (isApiErrorCode(error, "GAME_ROOM_FULL")) {
+        clientLogger.warn("room.guest.lobby-full", { context: { gameId }, error });
+      }
+      // The route moved to another game while the request ran: its answer is not for this page.
+      if (!isCurrentGame(gameId)) {
+        return;
+      }
+
+      if (seatsNotEditable) {
         setGuestError(toUserErrorMessage(error));
         void onSeatsNotEditable();
         return;
       }
 
       if (isApiErrorCode(error, "GAME_ROOM_FULL")) {
-        clientLogger.warn("room.guest.lobby-full", { context: { gameId }, error });
         setGuestError(toUserErrorMessage(error));
         return;
       }
@@ -182,6 +196,7 @@ export function useGuestFlow({
     closeGuestOverlay,
     gameId,
     guestUsername,
+    isCurrentGame,
     isLobbyFull,
     onSeatsNotEditable,
   ]);

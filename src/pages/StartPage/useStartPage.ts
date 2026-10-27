@@ -5,6 +5,7 @@ import { useGamePlayers } from "./useGamePlayers";
 import { useCreateStartFlow } from "./useCreateStartFlow";
 import { useGuestFlow } from "./useGuestFlow";
 import { persistPlayerOrder, usePlayerOrderPersistence } from "./usePlayerOrderPersistence";
+import { useIsCurrentGame } from "./useIsCurrentGame";
 import { useStartPageError } from "./useStartPageError";
 import { parseRouteGameId } from "@/lib/router/tabletGameRoute";
 import { $invitation } from "@/shared/store";
@@ -62,6 +63,7 @@ export function useStartPage(): UseStartPageResult {
     removeOptimisticPlayer,
   } = useGamePlayers(gameId);
 
+  const isCurrentGame = useIsCurrentGame(gameId);
   const { pageError, setPageError, clearPageError } = useStartPageError();
   const { playerOrder, handleDragEnd } = usePlayerOrderPersistence({
     gameId,
@@ -114,18 +116,32 @@ export function useStartPage(): UseStartPageResult {
         if (removedPlayer) {
           appendOptimisticPlayer(removedPlayer);
         }
-        setPageError(toUserErrorMessage(error, "Could not remove player. Please try again."));
-        if (isApiErrorCode(error, "GAME_SEATS_NOT_EDITABLE")) {
+        const seatsNotEditable = isApiErrorCode(error, "GAME_SEATS_NOT_EDITABLE");
+        if (seatsNotEditable) {
           clientLogger.warn("room.leave.seats-not-editable", {
             context: { gameId: activeGameId },
             error,
           });
+        }
+        // The route moved to another game while the request ran: its answer is not for this page.
+        if (!isCurrentGame(activeGameId)) {
+          return;
+        }
+        setPageError(toUserErrorMessage(error, "Could not remove player. Please try again."));
+        if (seatsNotEditable) {
           // The game left the lobby: the route loader sends this tab to the game page.
           void revalidate();
         }
       }
     },
-    [appendOptimisticPlayer, players, removeOptimisticPlayer, revalidate, setPageError],
+    [
+      appendOptimisticPlayer,
+      isCurrentGame,
+      players,
+      removeOptimisticPlayer,
+      revalidate,
+      setPageError,
+    ],
   );
 
   return {

@@ -6,6 +6,7 @@ import { isApiErrorCode } from "@/lib/error/api-error-code";
 import { toUserErrorMessage } from "@/lib/error/error-to-user-message";
 import { clientLogger } from "@/shared/services/browser/clientLogger";
 import { mergePlayerOrder, orderByPosition, type OrderedPlayer } from "./lib/playerOrder";
+import { useIsCurrentGame } from "./useIsCurrentGame";
 import type { SetStartPageError } from "./useStartPageError";
 
 type UpdatePlayerOrderFn = (
@@ -72,6 +73,7 @@ export function usePlayerOrderPersistence({
   const [playerOrder, setPlayerOrder] = useState<number[]>(() => orderByPosition(players));
   const [orderedPlayers, setOrderedPlayers] = useState(players);
   const playerOrderRequestIdRef = useRef(0);
+  const isCurrentGame = useIsCurrentGame(gameId);
 
   // A new players list adjusts the order during render, so the list never shows a stale order.
   if (orderedPlayers !== players) {
@@ -111,6 +113,10 @@ export function usePlayerOrderPersistence({
             updatePlayerOrder,
             onError: (error) => {
               clientLogger.warn("room.player-order.persist.failed", { error });
+              // The route moved to another game while the request ran: its answer is not for it.
+              if (!isCurrentGame(gameId)) {
+                return;
+              }
               setPageError(
                 toUserErrorMessage(error, "Could not update player order. Please try again."),
               );
@@ -121,14 +127,15 @@ export function usePlayerOrderPersistence({
             onRollback: (order) => {
               setPlayerOrder(order);
             },
-            shouldRollback: () => playerOrderRequestIdRef.current === requestId,
+            shouldRollback: () =>
+              playerOrderRequestIdRef.current === requestId && isCurrentGame(gameId),
           });
         }
 
         return nextOrder;
       });
     },
-    [gameId, onSeatsNotEditable, setPageError],
+    [gameId, isCurrentGame, onSeatsNotEditable, setPageError],
   );
 
   return {

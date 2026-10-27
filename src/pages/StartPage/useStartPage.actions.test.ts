@@ -119,17 +119,22 @@ class MockAudio {
 type Deferred<T> = {
   promise: Promise<T>;
   resolve: (value: T) => void;
+  reject: (reason: unknown) => void;
 };
 
 function deferred<T>(): Deferred<T> {
   let resolve: (value: T) => void = () => {
     throw new Error("Attempted to resolve promise before it was initialized");
   };
-  const promise = new Promise<T>((res) => {
+  let reject: (reason: unknown) => void = () => {
+    throw new Error("Attempted to reject promise before it was initialized");
+  };
+  const promise = new Promise<T>((res, rej) => {
     resolve = res;
+    reject = rej;
   });
 
-  return { promise, resolve };
+  return { promise, resolve, reject };
 }
 
 function makeWrapper(
@@ -658,6 +663,123 @@ describe("useStartPage action guards", () => {
       expect(result.current.pageError).toBeNull();
       expect(result.current.isGuestOverlayOpen).toBe(false);
       expect(result.current.guestError).toBeNull();
+    });
+
+    describe("answers that arrive after the route moved to another game", () => {
+      async function renderOnGame10() {
+        const actual = await vi.importActual<typeof import("react-router-dom")>("react-router-dom");
+        const nav: { go: ReturnType<typeof actual.useNavigate> | null } = { go: null };
+        function NavigateProbe(): null {
+          nav.go = actual.useNavigate();
+          return null;
+        }
+        const Wrapper = makeWrapper("/start/10");
+        setInvitation({ gameId: 10, invitationLink: "/invite/10" });
+        vi.mocked(getGameThrows).mockImplementation(async (id: number) =>
+          buildGameThrowsResponse({
+            id,
+            players:
+              id === 10
+                ? [
+                    buildBackendPlayer({ id: 1, name: "Ann", isActive: true, position: 0 }),
+                    buildBackendPlayer({ id: 2, name: "Sam", isActive: true, position: 1 }),
+                  ]
+                : [
+                    buildBackendPlayer({ id: 3, name: "Bob", isActive: true, position: 0 }),
+                    buildBackendPlayer({ id: 4, name: "Cy", isActive: true, position: 1 }),
+                  ],
+          }),
+        );
+        const rendered = renderHook(() => useStartPage(), {
+          wrapper: ({ children }) =>
+            React.createElement(Wrapper, null, React.createElement(NavigateProbe), children),
+        });
+        await waitFor(() => {
+          expect(rendered.result.current.playerOrder).toEqual([1, 2]);
+        });
+        const moveTo = async (path: string): Promise<void> => {
+          await act(async () => {
+            nav.go?.(path);
+          });
+        };
+        return { ...rendered, moveTo };
+      }
+
+      it("should ignore a late GAME_SEATS_NOT_EDITABLE from remove player", async () => {
+        const pending = deferred<void>();
+        vi.mocked(leaveRoom).mockReturnValueOnce(pending.promise);
+        const { result, moveTo } = await renderOnGame10();
+
+        let removal = Promise.resolve();
+        await act(async () => {
+          removal = result.current.handleRemovePlayer(2, 10);
+        });
+        await moveTo("/start/11");
+        await waitFor(() => {
+          expect(result.current.playerOrder).toEqual([3, 4]);
+        });
+        await act(async () => {
+          pending.reject(seatsNotEditable());
+          await removal;
+        });
+
+        expect(result.current.pageError).toBeNull();
+        expect(revalidateMock).not.toHaveBeenCalled();
+        expect(result.current.players.map((p) => p.id)).toEqual([3, 4]);
+      });
+
+      it("should ignore a late GAME_SEATS_NOT_EDITABLE from add guest", async () => {
+        const pending = deferred<never>();
+        vi.mocked(addGuestPlayer).mockReturnValueOnce(pending.promise);
+        const { result, moveTo } = await renderOnGame10();
+
+        await act(async () => {
+          result.current.openGuestOverlay();
+          result.current.setGuestUsername("Alex");
+        });
+        let adding = Promise.resolve();
+        await act(async () => {
+          adding = result.current.handleAddGuest();
+        });
+        await moveTo("/start/11");
+        await act(async () => {
+          result.current.openGuestOverlay();
+        });
+        await act(async () => {
+          pending.reject(seatsNotEditable());
+          await adding;
+        });
+
+        expect(result.current.guestError).toBeNull();
+        expect(result.current.isGuestOverlayOpen).toBe(true);
+        expect(result.current.isAddingGuest).toBe(false);
+        expect(revalidateMock).not.toHaveBeenCalled();
+      });
+
+      it("should not roll back the order of the new game or reload on a late conflict from reorder", async () => {
+        const pending = deferred<void>();
+        vi.mocked(updatePlayerOrder).mockReturnValueOnce(pending.promise);
+        const { result, moveTo } = await renderOnGame10();
+
+        await act(async () => {
+          result.current.handleDragEnd({
+            active: { id: 2 },
+            over: { id: 1 },
+          } as unknown as Parameters<typeof result.current.handleDragEnd>[0]);
+        });
+        await moveTo("/start/11");
+        await waitFor(() => {
+          expect(result.current.playerOrder).toEqual([3, 4]);
+        });
+        await act(async () => {
+          pending.reject(seatsNotEditable());
+          await Promise.resolve();
+        });
+
+        expect(result.current.pageError).toBeNull();
+        expect(result.current.playerOrder).toEqual([3, 4]);
+        expect(revalidateMock).not.toHaveBeenCalled();
+      });
     });
 
     it("should show the lobby full message and not reload when add guest hits GAME_ROOM_FULL", async () => {
