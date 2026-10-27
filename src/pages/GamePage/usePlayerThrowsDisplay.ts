@@ -3,7 +3,7 @@ import {
   getPlayerThrowsDisplay,
   type PlayerThrowsDisplay,
   type PlayerThrowsDisplayOptions,
-} from "./playerThrowsDisplay.logic";
+} from "./lib/playerThrowsDisplay.logic";
 
 type UsePlayerThrowsDisplayParams = PlayerThrowsDisplayOptions;
 
