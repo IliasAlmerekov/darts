@@ -12,7 +12,9 @@ class MockEventSource {
   onopen: (() => void) | null = null;
   onerror: (() => void) | null = null;
   readyState: 0 | 1 | 2 = MockEventSource.CONNECTING;
-  close = vi.fn();
+  close = vi.fn(() => {
+    this.readyState = MockEventSource.CLOSED;
+  });
   url: string;
   withCredentials: boolean;
   private listeners: Map<string, (event: MessageEvent<string>) => void> = new Map();

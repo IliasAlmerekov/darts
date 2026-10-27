@@ -107,7 +107,7 @@ class MockEventSource {
   }
 
   close(): void {
-    // noop
+    this.readyState = MockEventSource.CLOSED;
   }
 }
 
