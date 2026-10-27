@@ -108,10 +108,12 @@ export default function StatisticsPage(): React.JSX.Element {
                 <div className={styles.playerNumber}>{offset + index + 1}.</div>
                 <div className={styles.playerName}>{player.name}</div>
                 <div className={styles.playerStats}>
-                  <div className={styles.roundStat}>
-                    <span className={styles.statLabel}>Ø Round</span>
+                  <div className={styles.roundStat} role="group" aria-label="three-dart average">
+                    <span className={styles.statLabel} aria-hidden="true">
+                      Ø AVG
+                    </span>
                     <span className={styles.statValue}>
-                      {(player.scoreAverage ?? 0).toFixed(1)}
+                      {(player.scoreAverage ?? 0).toFixed(2)}
                     </span>
                   </div>
                   <div className={styles.gamesStat}>

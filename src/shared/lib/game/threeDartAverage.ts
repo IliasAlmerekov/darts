@@ -1,6 +1,6 @@
 import type { WinnerPlayerProps } from "@/types";
 
-export const DEFAULT_ROUND_AVERAGE_START_SCORE = 301;
+const NO_AVERAGE = "-";
 
 export function getCompletedRounds(player: WinnerPlayerProps): number {
   if (typeof player.roundCount === "number") {
@@ -17,16 +17,14 @@ export function getCompletedRounds(player: WinnerPlayerProps): number {
     : player.rounds.length;
 }
 
-export function formatRoundAverage(
-  player: WinnerPlayerProps,
-  startScore = DEFAULT_ROUND_AVERAGE_START_SCORE,
-): string {
-  const completedRounds = getCompletedRounds(player);
-
-  if (completedRounds === 0) {
-    return (0).toFixed(2);
+/**
+ * The backend three-dart average with two decimals, or `-` when the player played no round
+ * or the backend sent no average.
+ */
+export function formatThreeDartAverage(player: WinnerPlayerProps): string {
+  if (!player.roundCount || player.scoreAverage === undefined) {
+    return NO_AVERAGE;
   }
 
-  const averageScoreRaw = player.scoreAverage ?? (startScore - player.score) / completedRounds;
-  return averageScoreRaw.toFixed(2);
+  return player.scoreAverage.toFixed(2);
 }

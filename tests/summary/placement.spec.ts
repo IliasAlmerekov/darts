@@ -8,17 +8,6 @@ for (const route of ["summary", "details"]) {
   }) => {
     await mockAdminSession(page);
     await mockTabletGame(page, { game: null, lastFinishedGameId: 42 });
-    await page.route("**/api/game/42/settings", async (request) => {
-      await request.fulfill({
-        json: {
-          gameId: 42,
-          status: "finished",
-          startScore: 301,
-          doubleOut: false,
-          tripleOut: false,
-        },
-      });
-    });
     await page.route("**/api/game/42/finished", async (request) => {
       await request.fulfill({
         json: {
@@ -74,7 +63,14 @@ for (const route of ["summary", "details"]) {
     const winnerCard = page.getByText("WINNER", { exact: true }).locator("..");
     await expect(winnerCard.getByRole("heading", { name: "Bob" })).toBeVisible();
     await expect(winnerCard.getByText("1.", { exact: true })).toBeVisible();
+    await expect(winnerCard.getByRole("group", { name: "three-dart average" })).toHaveText(
+      "Ø AVG60.00",
+    );
     const fourthPlace = page.getByText("Dan", { exact: true }).locator("..");
     await expect(fourthPlace.getByRole("heading", { name: "4", exact: true })).toBeVisible();
+    // The leaderboard row holds Dan's name in one container and his stats in a sibling.
+    await expect(
+      page.getByRole("group", { name: "three-dart average" }).filter({ hasText: "Ø AVG 30.00" }),
+    ).toBeVisible();
   });
 }

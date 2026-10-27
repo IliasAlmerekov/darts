@@ -17,7 +17,12 @@ export function HistoryTab({ profile }: HistoryTabProps): React.JSX.Element {
     <ol className={styles.gameList} aria-label="Recent games">
       {profile.history.map((row) => (
         <li key={row.gameId} className={styles.gameRow}>
-          <p className={styles.gameSummary}>{row.summary}</p>
+          <p className={styles.gameSummary}>
+            {row.summary} ·{" "}
+            <span role="group" aria-label="three-dart average">
+              <span aria-hidden="true">Ø AVG</span> {row.average}
+            </span>
+          </p>
           <ol className={styles.participantList} aria-label="Participants">
             {row.participants.map((participant) => (
               <li key={participant.key}>{participant.label}</li>

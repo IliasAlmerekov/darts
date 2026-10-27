@@ -101,3 +101,45 @@ describe("Podium", () => {
     expect(thirdPlayerCard?.classList.contains(podiumStyles.hide ?? "")).toBe(true);
   });
 });
+
+describe("Podium three-dart average", () => {
+  it("should show the backend three-dart average with two decimals under its accessible name", () => {
+    const player: WinnerPlayerProps = {
+      ...buildPlayer(1, "Anna", 0, 2, 60.6),
+      rounds: [{}, {}],
+    };
+
+    render(<Podium userMap={[player]} list={[player]} />);
+
+    const average = screen.getByRole("group", { name: "three-dart average" });
+    expect(average.textContent).toBe("Ø AVG60.60");
+  });
+
+  it("should show a dash for the podium placeholder", () => {
+    const placeholder: WinnerPlayerProps = {
+      id: 0,
+      name: "-",
+      score: 0,
+      isActive: false,
+      index: 0,
+      rounds: [{}],
+    };
+
+    render(<Podium userMap={[placeholder]} list={[]} />);
+
+    expect(screen.getByRole("group", { name: "three-dart average" }).textContent).toBe("Ø AVG-");
+  });
+
+  it("should show a dash for a player with zero rounds and 0.00 for a player with rounds and an average of 0", () => {
+    const idle = buildPlayer(1, "Idle", 0, 0, 0);
+    const busted = buildPlayer(2, "Busted", 0, 3, 0);
+
+    render(<Podium userMap={[idle, busted]} list={[idle, busted]} />);
+
+    const [idleAverage, bustedAverage] = screen.getAllByRole("group", {
+      name: "three-dart average",
+    });
+    expect(idleAverage?.textContent).toBe("Ø AVG-");
+    expect(bustedAverage?.textContent).toBe("Ø AVG0.00");
+  });
+});

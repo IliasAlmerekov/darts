@@ -25,14 +25,14 @@ function round(value: number): number {
 
 // The points' <title>s stay hidden inside role="img", so the label carries the trend itself.
 function describeTrend(points: ScoringTrendPoint[]): string {
-  const first = points[0]?.roundAverage.toFixed(1);
-  const last = points[points.length - 1]?.roundAverage.toFixed(1);
+  const first = points[0]?.roundAverage.toFixed(2);
+  const last = points[points.length - 1]?.roundAverage.toFixed(2);
   return points.length === 1
-    ? `Scoring trend chart, 1 game, round average ${first}`
-    : `Scoring trend chart, ${points.length} games, round average from ${first} to ${last}`;
+    ? `Scoring trend chart, 1 game, three-dart average ${first}`
+    : `Scoring trend chart, ${points.length} games, three-dart average from ${first} to ${last}`;
 }
 
-/** Each game's round average, oldest on the left, on a scale from zero. */
+/** Each game's three-dart average, oldest on the left, on a scale from zero. */
 export function ScoringTrendChart({
   points,
   isLarge = false,

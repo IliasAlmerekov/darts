@@ -14,10 +14,13 @@ export function PerformanceTab({ profile }: PerformanceTabProps): React.JSX.Elem
     <ProfileBlock title="Scoring trend" iconSrc={barChartIcon}>
       <ScoringTrendChart points={profile.scoringTrend} isLarge />
       {profile.scoringTrend.length > 0 ? (
-        <ol className={styles.averageList} aria-label="Round average per game">
+        <ol className={styles.averageList} aria-label="Three-dart average per game">
           {profile.scoringTrend.map((point) => (
             <li key={point.gameId} className={styles.averageItem}>
-              {point.label}
+              {point.date === null ? null : `${point.date} · `}
+              <span role="group" aria-label="three-dart average">
+                <span aria-hidden="true">Ø AVG</span> {point.average}
+              </span>
             </li>
           ))}
         </ol>
