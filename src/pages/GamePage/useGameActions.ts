@@ -139,9 +139,10 @@ export function useGameExitFlow({
       return;
     }
 
-    // The lock stays taken after a success and after the finished-game summary: the page is
-    // leaving, and a second tap in that time must not start a second exit. Any other failure
-    // releases it, so the player can try again.
+    // The lock stays taken after a success on the mounted page and after the finished-game
+    // summary: the page is leaving, and a second tap in that time must not start a second exit.
+    // A call whose page already left the game releases it on settle, success or not, and any
+    // other failure releases it too, so the player can try again.
     if (exitLockedGameIdsRef.current.has(gameId)) {
       return;
     }
@@ -163,9 +164,18 @@ export function useGameExitFlow({
     try {
       setPageError(null);
       await abortGame(gameId);
+      if (controller.signal.aborted) {
+        // The page left this game while the abort ran: no rematch, no navigation.
+        releaseExitLock();
+        return;
+      }
       resetRoomStore();
 
       const rematch = await createRematch(gameId);
+      if (controller.signal.aborted) {
+        releaseExitLock();
+        return;
+      }
       setInvitation({
         gameId: rematch.gameId,
         invitationLink: rematch.invitationLink,
