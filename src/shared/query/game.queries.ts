@@ -44,11 +44,18 @@ export const gameQueries = {
       },
     }),
 
-  /** Settings of one game. Starts from the settings copy kept in the game store, if any. */
+  /** Settings of one game. Starts from the game store's copy of them, if any. */
   settings: (gameId: number) =>
     queryOptions({
       queryKey: ["game", gameId, "settings"] as const,
-      initialData: () => getCachedGameSettings(gameId) ?? undefined,
+      // The settings cache keeps one game, so a save for another game can replace it while the
+      // game data still holds this game.
+      initialData: () => {
+        const gameData = $gameData.get();
+        return gameData?.id === gameId
+          ? gameData.settings
+          : (getCachedGameSettings(gameId) ?? undefined);
+      },
       queryFn: async ({ signal }) => {
         try {
           return await getGameSettings(gameId, signal);

@@ -7,6 +7,7 @@ Use this file when adding or changing Vitest, Testing Library, or Playwright tes
 ```text
 src/**/<name>.test.ts(x)            # Vitest, next to the source file
 src/test/loaderArgs.ts              # makeLoaderArgs() for calling a route loader in a test
+src/test/QueryClientWrapper.tsx     # render/renderHook wrapper with a fresh query client per mount
 src/test/architecture/              # repo-wide checks (import aliases, ESLint/Stylelint config, clientLogger adoption)
 src/test/playwright/                # Playwright helper logic that needs unit tests (credentials, live preflight)
 src/shared/types/*.test-support.ts  # shared DTO builders

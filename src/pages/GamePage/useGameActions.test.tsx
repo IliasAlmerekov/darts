@@ -24,11 +24,14 @@ vi.mock("@/shared/services/browser/clientLogger", () => ({
 }));
 
 import { act, renderHook, waitFor } from "@testing-library/react";
+import { QueryClientProvider } from "@tanstack/react-query";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { GameSettingsResponse, GameThrowsResponse } from "@/types";
 import { ApiError } from "@/shared/api";
 import { abortGame, createRematch, getGameThrows } from "@/shared/api/game";
 import { resetRoomStore, setInvitation } from "@/shared/store";
+import { gameQueries } from "@/shared/query/game.queries";
+import { createQueryClient } from "@/shared/query/queryClient";
 import { useGameExitFlow, useGameSettingsFlow } from "./useGameActions";
 
 function createGameData(): GameThrowsResponse {
@@ -68,7 +71,8 @@ describe("useGameSettingsFlow", () => {
     vi.clearAllMocks();
   });
 
-  it("should merge compact settings response into game state when settings are saved", async () => {
+  it("should merge compact settings response into game state and the settings cache when settings are saved", async () => {
+    const queryClient = createQueryClient();
     const updateGameSettingsStore = vi.fn();
     const updatedSettings: GameSettingsResponse = {
       gameId: 42,
@@ -79,12 +83,18 @@ describe("useGameSettingsFlow", () => {
     };
     updateGameSettingsMock.mockResolvedValueOnce(updatedSettings);
 
-    const { result } = renderHook(() =>
-      useGameSettingsFlow({
-        gameData: createGameData(),
-        gameId: 42,
-        updateGameSettings: updateGameSettingsStore,
-      }),
+    const { result } = renderHook(
+      () =>
+        useGameSettingsFlow({
+          gameData: createGameData(),
+          gameId: 42,
+          updateGameSettings: updateGameSettingsStore,
+        }),
+      {
+        wrapper: ({ children }) => (
+          <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
+        ),
+      },
     );
 
     act(() => {
@@ -106,6 +116,7 @@ describe("useGameSettingsFlow", () => {
     });
 
     expect(updateGameSettingsStore).toHaveBeenCalledWith(updatedSettings);
+    expect(queryClient.getQueryData(gameQueries.settings(42).queryKey)).toEqual(updatedSettings);
     expect(result.current.isSettingsOpen).toBe(false);
     expect(result.current.settingsError).toBeNull();
   });

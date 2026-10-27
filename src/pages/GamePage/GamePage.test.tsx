@@ -29,6 +29,7 @@ import { beforeAll, beforeEach, afterAll, describe, expect, it, vi } from "vites
 import type { GameThrowsResponse } from "@/types";
 import * as gameStore from "@/shared/store/game-state";
 import * as roomStore from "@/shared/store/game-session";
+import { QueryClientWrapper } from "@/test/QueryClientWrapper";
 import GamePage from ".";
 
 class MockEventSource implements EventSource {
@@ -125,6 +126,7 @@ function renderGamePage(initialEntry: string): ReturnType<typeof render> {
         <Route path="*" element={<GamePage />} />
       </Routes>
     </MemoryRouter>,
+    { wrapper: QueryClientWrapper },
   );
 }
 
