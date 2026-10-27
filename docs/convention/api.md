@@ -108,12 +108,7 @@ ADR 0002 records why responses are described by Valibot schemas.
   into `v.optional(schema, default)`, so the output type has the field.
 - A schema may be narrower than the contract where the contract is untyped (a `status`
   string becomes `v.picklist`). It is never looser.
-- One exception is open: `POST /api/game/{id}/start` validates with `v.unknown()`
-  (`unvalidatedStartGameResponseSchema` in `game.ts`), and its tests assert that `[]` and
-  `{}` resolve, with no invalid-payload test. The backend sends `[]` instead of `Game`
-  until darts-backend#46 ships, and `startGame` never reads the body. Once #46 ships, give
-  start a contract schema and an invalid-payload test. Any other unvalidated response needs
-  the user's approval and an entry here.
+- Any unvalidated response needs the user's approval and an entry here.
 - A discriminant the contract documents is read from the payload like any other field. The
   `type` of `GameResponseDto`, `ThrowAckDto` and `UndoAckDto` has a contract `default`, so it
   is `v.optional(v.picklist([...]), default)` and the undo union narrows on it. A schema may

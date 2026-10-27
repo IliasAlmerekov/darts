@@ -40,6 +40,8 @@ and this project does **not** yet follow [Semantic Versioning](https://semver.or
 
 ### Fixed
 
+- API: the game start response is validated against the contract as `GameResponseDto`, after darts-backend#46. A start or rematch start answer that is not a game state now fails with a validation error instead of passing unchecked (#206)
+- Lobby: when the room stream closes, the start page revalidates its route. A game that was started or aborted elsewhere now leaves the start page instead of the stream reconnecting every 30 s, and a game still in the lobby stays and keeps reconnecting. `useEventSource` gains an optional `onClosed` callback for an `error` that leaves the source closed (#206)
 - Lobby: a stale lobby tab that removes a player, adds a guest or reorders players after the game started shows "This game has already started. The lobby can no longer be changed." instead of the raw code `GAME_SEATS_NOT_EDITABLE`, then reloads the route so the tab ends on the game page. Adding a guest to a full lobby shows "The lobby is full. Remove a player to add another." instead of the generic guest error (#327)
 - Settings: while a game's settings save is pending, both the Game Mode and the Points buttons are disabled. Before, the other group looked enabled but ignored the click (#338)
 

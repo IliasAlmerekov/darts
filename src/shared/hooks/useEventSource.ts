@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 type EventHandler = (event: MessageEvent<string>) => void;
 
@@ -15,6 +15,7 @@ interface UseEventSourceOptions {
   initialRetryDelayMs?: number;
   maxRetryDelayMs?: number;
   withCredentials?: boolean;
+  onClosed?: () => void;
 }
 
 interface UseEventSourceResult {
@@ -35,6 +36,10 @@ const DISCONNECTED: ConnectionState = { error: null, isConnected: false, url: nu
  * IMPORTANT: `listeners` must be a stable reference (wrapped in `useMemo`)
  * at the call site. Unstable listeners cause EventSource to be recreated
  * on every render, which leads to connection thrashing.
+ *
+ * `onClosed` runs when an `error` leaves the source in `EventSource.CLOSED`, for example
+ * after the server answers 204 or 5xx. It only reports: the backoff reconnect runs either way.
+ * It is read through a ref, so a new function identity does not recreate the EventSource.
  */
 export const useEventSource = (
   url: string | null,
@@ -42,6 +47,11 @@ export const useEventSource = (
   options?: UseEventSourceOptions,
 ): UseEventSourceResult => {
   const [connection, setConnection] = useState<ConnectionState>(DISCONNECTED);
+  const onClosedRef = useRef(options?.onClosed);
+
+  useEffect(() => {
+    onClosedRef.current = options?.onClosed;
+  });
 
   useEffect(() => {
     if (!url) {
@@ -102,6 +112,9 @@ export const useEventSource = (
           return;
         }
 
+        // Read before dispose(): close() sets the state to CLOSED for every error.
+        const isClosed = source.readyState === EventSource.CLOSED;
+
         setConnection({
           error: new Error(EVENT_SOURCE_CONNECTION_ERROR_MESSAGE),
           isConnected: false,
@@ -114,6 +127,10 @@ export const useEventSource = (
           retryDelayMs = Math.min(retryDelayMs * 2, maxRetryDelayMs);
           connect();
         }, retryDelayMs);
+
+        if (isClosed) {
+          onClosedRef.current?.();
+        }
       };
     };
 
