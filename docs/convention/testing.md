@@ -121,8 +121,7 @@ Rules:
 
 Rules:
 
-- Test each public API function against valid and invalid response shapes. A response
-  listed as an open exception in `api.md` "Response schemas" has no invalid shape.
+- Test each public API function against valid and invalid response shapes.
 - Assert validation errors for malformed response payloads.
 - Assert request method, endpoint, body, and options when they are part of the contract.
 

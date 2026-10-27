@@ -134,6 +134,7 @@ data: ${JSON.stringify({ players })}
 
   await page.route(matchPath(/^\/api\/game\/\d+\/start$/), async (route) => {
     status = "started";
-    await fulfillJson(route, { success: true });
+    const gameId = Number(new URL(route.request().url()).pathname.split("/").at(-2));
+    await fulfillJson(route, gameState(gameId));
   });
 }
