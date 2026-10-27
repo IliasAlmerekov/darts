@@ -15,6 +15,7 @@ and this project does **not** yet follow [Semantic Versioning](https://semver.or
 
 ### Changed
 
+- Logging: a failed CSRF prefetch before registration logs the warning `auth.csrf_prefetch.failed` instead of a free-text message, as `docs/convention/errors.md` requires (#218)
 - Game page: `Keyboard` uses `React.memo` instead of `memo` imported bare from `"react"`, as `docs/convention/react.md` requires (#215)
 - Routing: an invalid game id (`abc`, `0`, `-5`, `1e3`) on `/start`, `/game`, `/settings`, `/summary` and `/details` answers 404 and shows the not found page, before the loader sends any request. These routes redirected to the tablet game, stayed on the summary with a settings error, or showed "Something went wrong". `ErrorBoundary` shows the not found page for a 404 route error and no longer logs it as `route_error_boundary_crash`. `/details/1e3` and `/details/1.5` were accepted before and are 404 now. ADR 0004 records the new rule (#260)
 - API: the Player profile response follows the refreshed backend contract. It carries `registeredAt`, the Registration date, and the stats carry wins, win rate, checkout rate, checkout hits and attempts, the hit distribution, the most hit segment, favorite doubles and the highest finish from darts-backend#149. A response without the new required stats fields fails validation, so this needs the backend with darts-backend#149 deployed (#257)
