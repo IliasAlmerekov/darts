@@ -101,7 +101,15 @@ async function submitLogin(_previous: LoginFormState, formData: FormData): Promi
   const email = String(formData.get("_username") ?? "");
   const password = String(formData.get("_password") ?? "");
 
-  return { error: await attemptLogin(email, password), values: { email, password } };
+  let error: string | null;
+  try {
+    error = await attemptLogin(email, password);
+  } catch (thrown) {
+    // The failure handling inside attemptLogin threw; the form still shows a message and keeps its values.
+    error = mapAuthErrorMessage({ flow: "login", error: thrown });
+  }
+
+  return { error, values: { email, password } };
 }
 
 /**

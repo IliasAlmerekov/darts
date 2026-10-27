@@ -4,6 +4,7 @@ import { act, renderHook } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { useLogin } from "./useLogin";
 import { ApiError } from "@/shared/api";
+import { clientLogger } from "@/shared/services/browser/clientLogger";
 import { queryClient } from "@/shared/query/queryClient";
 import { $currentGameId, setCurrentGameId } from "@/shared/store";
 
@@ -157,5 +158,17 @@ describe("useLogin", () => {
     expect(getAuthenticatedUserMock).toHaveBeenCalledTimes(1);
     expect(queryClient.getQueryData(AUTH_KEY)).toEqual(SEEDED_USER);
     expect(state.error).toBe("Incorrect email or password.");
+  });
+
+  it("maps an error thrown while handling a failed login and keeps the typed values", async () => {
+    loginWithCredentialsMock.mockRejectedValueOnce(new Error("Network request failed"));
+    vi.spyOn(clientLogger, "error").mockImplementationOnce(() => {
+      throw new Error("logger down");
+    });
+
+    const state = await submitLogin();
+
+    expect(state.error).toBe("Login failed. Please try again.");
+    expect(state.values).toEqual({ email: "player@test.com", password: "password" });
   });
 });
