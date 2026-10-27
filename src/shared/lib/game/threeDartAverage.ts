@@ -21,7 +21,7 @@ export function getCompletedRounds(player: WinnerPlayerProps): number {
  * The backend three-dart average with two decimals, or `-` when the player played no round
  * or the backend sent no average.
  */
-export function formatRoundAverage(player: WinnerPlayerProps): string {
+export function formatThreeDartAverage(player: WinnerPlayerProps): string {
   if (!player.roundCount || player.scoreAverage === undefined) {
     return NO_AVERAGE;
   }

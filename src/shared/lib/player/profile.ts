@@ -143,7 +143,7 @@ function formatOrdinal(placement: number): string {
   return `${placement}${ORDINAL_SUFFIXES[ordinalRules.select(placement)] ?? "th"}`;
 }
 
-function formatRoundAverage(roundAverage: number): string {
+function formatThreeDartAverage(roundAverage: number): string {
   return roundAverage.toFixed(2);
 }
 
@@ -163,7 +163,7 @@ function toHistoryRow(game: PlayerProfileGame): ProfileHistoryRow {
       formatFinishedAt(game.finishedAt),
       `${placement} of ${game.participantsCount}`,
     ]),
-    average: formatRoundAverage(game.roundAverage),
+    average: formatThreeDartAverage(game.roundAverage),
     participants: game.participants.map((participant, index) => {
       const position =
         participant.placement === null || participant.placement === undefined
@@ -184,7 +184,7 @@ function toHistoryRow(game: PlayerProfileGame): ProfileHistoryRow {
 
 function toScoringTrendPoint(game: PlayerProfileGame): ScoringTrendPoint {
   const date = formatFinishedAt(game.finishedAt);
-  const average = formatRoundAverage(game.roundAverage);
+  const average = formatThreeDartAverage(game.roundAverage);
   return {
     gameId: game.gameId,
     roundAverage: game.roundAverage,

@@ -4,7 +4,7 @@ import styles from "./OverviewPlayerItem.module.css";
 interface Props {
   className?: string;
   rounds?: number;
-  averagePerRound?: number | string;
+  threeDartAverage?: number | string;
   name?: string;
   placement?: number;
 }
@@ -26,7 +26,7 @@ function OverviewPlayerItem({ ...props }: Props): React.JSX.Element {
           aria-label="three-dart average"
         >
           <span aria-hidden="true">Ø AVG</span>{" "}
-          <h4 className={styles.numberDisplay}>{props.averagePerRound}</h4>
+          <h4 className={styles.numberDisplay}>{props.threeDartAverage}</h4>
         </div>
       </div>
     </div>

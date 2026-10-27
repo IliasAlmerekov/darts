@@ -1,7 +1,7 @@
 import type React from "react";
 import clsx from "clsx";
 import type { WinnerPlayerProps } from "@/types";
-import { formatRoundAverage, getCompletedRounds } from "@/lib/game/roundAverage";
+import { formatThreeDartAverage, getCompletedRounds } from "@/lib/game/threeDartAverage";
 import PodiumPlayerCard from "./PodiumPlayerCard";
 import styles from "./Podium.module.css";
 
@@ -25,7 +25,7 @@ function Podium({ userMap, list }: PodiumProps): React.JSX.Element {
     <div className={styles.podium}>
       {userMap.map((item: WinnerPlayerProps, index: number) => {
         const completedRound = getCompletedRounds(item);
-        const averagePerRound = formatRoundAverage(item);
+        const threeDartAverage = formatThreeDartAverage(item);
 
         return (
           <PodiumPlayerCard
@@ -40,7 +40,7 @@ function Podium({ userMap, list }: PodiumProps): React.JSX.Element {
             rounds={completedRound}
             name={item.name}
             placement={index + PODIUM_PLACEMENT_OFFSET + "."}
-            averagePerRound={averagePerRound}
+            threeDartAverage={threeDartAverage}
             isWinner={index === PODIUM_FIRST_PLACE_INDEX}
           />
         );

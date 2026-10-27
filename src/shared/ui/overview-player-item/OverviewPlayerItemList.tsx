@@ -1,6 +1,6 @@
 import type React from "react";
 import type { WinnerPlayerProps } from "@/types";
-import { formatRoundAverage, getCompletedRounds } from "@/lib/game/roundAverage";
+import { formatThreeDartAverage, getCompletedRounds } from "@/lib/game/threeDartAverage";
 import OverviewPlayerItem from "./OverviewPlayerItem";
 
 const OVERVIEW_PLACEMENT_START = 4;
@@ -14,7 +14,7 @@ function OverviewPlayerItemList({ userMap }: OverviewPlayerItemListProps): React
     <>
       {userMap.map((item: WinnerPlayerProps, index: number) => {
         const completedRounds = getCompletedRounds(item);
-        const averageScore = formatRoundAverage(item);
+        const averageScore = formatThreeDartAverage(item);
 
         return (
           <OverviewPlayerItem
@@ -22,7 +22,7 @@ function OverviewPlayerItemList({ userMap }: OverviewPlayerItemListProps): React
             name={item.name}
             placement={index + OVERVIEW_PLACEMENT_START}
             rounds={completedRounds}
-            averagePerRound={averageScore}
+            threeDartAverage={averageScore}
           />
         );
       })}
