@@ -6,15 +6,14 @@ import { MemoryRouter, Route, Routes } from "react-router-dom";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import RegisterPage from "./index";
 import { ApiError } from "@/shared/api";
+import { getAuthenticatedUser, registerUser } from "@/shared/api/auth";
 import { ROUTES } from "@/lib/router/routes";
 import { queryClient } from "@/shared/query/queryClient";
 import { setCurrentGameId } from "@/shared/store";
 
-const registerUserMock = vi.fn();
-
 vi.mock("@/shared/api/auth", () => ({
-  registerUser: (...args: unknown[]) => registerUserMock(...args),
-  getAuthenticatedUser: vi.fn().mockResolvedValue(null),
+  registerUser: vi.fn(),
+  getAuthenticatedUser: vi.fn(),
 }));
 
 function renderRegisterRoute(): void {
@@ -44,10 +43,11 @@ describe("RegisterPage form registration", () => {
     vi.clearAllMocks();
     queryClient.clear();
     setCurrentGameId(null);
+    vi.mocked(getAuthenticatedUser).mockResolvedValueOnce(null);
   });
 
   it("shows the mapped error and keeps the typed values after a failed registration", async () => {
-    registerUserMock.mockRejectedValue(
+    vi.mocked(registerUser).mockRejectedValueOnce(
       new ApiError("Validation failed", {
         status: 422,
         data: { errors: { email: ["This value is not a valid email address."] } },
@@ -67,7 +67,7 @@ describe("RegisterPage form registration", () => {
 
   it("disables the fields and the button while the registration request runs", async () => {
     let finishRegistration: (reason: unknown) => void = () => undefined;
-    registerUserMock.mockReturnValueOnce(
+    vi.mocked(registerUser).mockReturnValueOnce(
       new Promise((_resolve, reject) => {
         finishRegistration = reject;
       }),
@@ -92,7 +92,7 @@ describe("RegisterPage form registration", () => {
   });
 
   it("opens the start page after a successful registration", async () => {
-    registerUserMock.mockResolvedValueOnce({
+    vi.mocked(registerUser).mockResolvedValueOnce({
       success: true,
       roles: ["ROLE_ADMIN"],
       id: 5,
