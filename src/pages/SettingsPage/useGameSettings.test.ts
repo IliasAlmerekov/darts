@@ -160,6 +160,11 @@ describe("useGameSettings", () => {
       selectedPoints: 101,
     });
     expect(saveGameSettingsMock).not.toHaveBeenCalled();
+
+    act(() => {
+      hook.result.current.retryLoad();
+    });
+    expect(getGameSettingsMock).not.toHaveBeenCalled();
   });
 
   it("shows the change in the cache at once and keeps the save response once it resolves", async () => {
@@ -249,6 +254,40 @@ describe("useGameSettings", () => {
     routeParams = { id: "1" };
     hook.rerender();
     expect(hook.result.current.isDisabled).toBe(true);
+  });
+
+  it("keeps a later save's response when an earlier save from an unmounted page fails", async () => {
+    const firstSave = deferred<GameSettingsResponse>();
+    const secondSave = deferred<GameSettingsResponse>();
+    saveGameSettingsMock
+      .mockImplementationOnce(() => firstSave.promise)
+      .mockImplementationOnce(() => secondSave.promise);
+    const firstPage = await renderLoadedHook();
+
+    act(() => {
+      firstPage.result.current.selectPoints(501);
+    });
+    firstPage.unmount();
+    const secondPage = await renderLoadedHook();
+    act(() => {
+      secondPage.result.current.selectGameMode("double-out");
+    });
+
+    const saved = settingsResponse({ startScore: 501, doubleOut: true });
+    await act(async () => {
+      secondSave.resolve(saved);
+      await secondSave.promise;
+    });
+    await act(async () => {
+      firstSave.reject(new Error("Network down"));
+      await firstSave.promise.catch(() => undefined);
+    });
+
+    expect(testQueryClient.getQueryData(gameQueries.settings(1).queryKey)).toEqual(saved);
+    expect(secondPage.result.current).toMatchObject({
+      selectedGameMode: "double-out",
+      selectedPoints: 501,
+    });
   });
 
   it("reads the game store's settings when the settings cache holds another game", () => {

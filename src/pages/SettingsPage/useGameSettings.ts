@@ -97,7 +97,7 @@ export function useGameSettings(): UseGameSettingsReturn {
       const payload = buildPayload(previous);
       // A read still in flight started before the change, so its response would be older.
       void queryClient.cancelQueries({ queryKey });
-      queryClient.setQueryData(queryKey, { ...previous, ...payload });
+      const optimistic = queryClient.setQueryData(queryKey, { ...previous, ...payload });
 
       try {
         const response = await saveGameSettings(payload, gameId);
@@ -105,7 +105,10 @@ export function useGameSettings(): UseGameSettingsReturn {
         queryClient.setQueryData(queryKey, response);
         setGameSettings(response, gameId);
       } catch (error) {
-        queryClient.setQueryData(queryKey, previous);
+        // A later save, also one from a remounted page, may have replaced the optimistic value.
+        if (queryClient.getQueryData(queryKey) === optimistic) {
+          queryClient.setQueryData(queryKey, previous);
+        }
         setSaveError({ gameId, message: toUserErrorMessage(error, SAVE_FAILURE[scope].message) });
         clientLogger.error(SAVE_FAILURE[scope].logEvent, {
           context: { gameId, ...logContext },
@@ -167,7 +170,9 @@ export function useGameSettings(): UseGameSettingsReturn {
       settings === null && loadError !== null
         ? toUserErrorMessage(loadError, "Please try again.")
         : null,
-    retryLoad: () => void refetch(),
+    retryLoad: () => {
+      if (routeGameId !== null) void refetch();
+    },
     saveErrorMessage: saveError?.message ?? null,
     selectGameMode,
     selectPoints,

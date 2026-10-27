@@ -42,6 +42,7 @@ import { setGameData } from "@/shared/store";
 import { buildBackendPlayer, buildGameThrowsResponse } from "@/shared/types/game.test-support";
 import type { GameThrowsResponse } from "@/types";
 import * as gameStore from "@/shared/store/game-state";
+import { QueryClientWrapper } from "@/test/QueryClientWrapper";
 import GamePage from ".";
 
 const getGameThrowsIfChangedMock = vi.mocked(getGameThrowsIfChanged);
@@ -168,6 +169,7 @@ function renderGamePage(): void {
         <Route path="/summary/:id" element={<SummaryProbe />} />
       </Routes>
     </MemoryRouter>,
+    { wrapper: QueryClientWrapper },
   );
 }
 
@@ -303,7 +305,7 @@ describe("GamePage throw sync", () => {
       ],
       { initialEntries: [`/game/${GAME_ID}`] },
     );
-    render(<RouterProvider router={router} />);
+    render(<RouterProvider router={router} />, { wrapper: QueryClientWrapper });
     await screen.findByRole("group", { name: "Alice" });
 
     tap("19");

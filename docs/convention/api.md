@@ -212,7 +212,8 @@ The project has no `useMutation`. After a write, the caller puts the server's an
 cache itself:
 
 - `cancelQueries({ queryKey })`, then `setQueryData(queryKey, value)`, so a read still in
-  flight cannot overwrite the new value (`SettingsPage/useGameSettings.ts`, `useGamePlayers.ts`,
+  flight cannot overwrite the new value (`SettingsPage/useGameSettings.ts`, the game page's
+  settings save in `GamePage/useGameActions.ts`, `useGamePlayers.ts`,
   `useRegistration.ts` with `acceptLoggedInUser`).
 - `removeQueries({ queryKey })` drops an entry the write made invalid (undo and rematch
   in `useGameSummaryPage.ts`).
