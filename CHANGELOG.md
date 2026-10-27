@@ -39,6 +39,8 @@ and this project does **not** yet follow [Semantic Versioning](https://semver.or
 
 ### Fixed
 
+- Settings: while a game's settings save is pending, both the Game Mode and the Points buttons are disabled. Before, the other group looked enabled but ignored the click (#338)
+
 - Game: standings and the podium use placement for rank, while position stays the turn order. Optimistic checkout assigns placement, scoreboard updates preserve it, and undo clears placements only for players whose scores are above zero, keeping a winner who has not been undone (#330)
 
 - Game page: leaving the page while End Game is still running no longer starts a rematch or opens its lobby. If the abort request finishes after you left, the page sends no rematch request and does not navigate, and returning to that game lets you end it again (#331)

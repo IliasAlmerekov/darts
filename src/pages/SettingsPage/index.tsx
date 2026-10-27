@@ -64,10 +64,6 @@ const SAVE_FAILURE = {
   },
 } as const satisfies Record<SaveScope, { message: string; logEvent: string }>;
 
-interface PendingSave {
-  scope: SaveScope;
-}
-
 interface RouteGameSaveRequest {
   gameId: number;
   scope: SaveScope;
@@ -84,8 +80,8 @@ function SettingsPage(): React.JSX.Element {
   const preCreateGameSettings = useStore($preCreateGameSettings);
 
   const routeGameId = useMemo(() => parseRouteGameId(gameIdParam), [gameIdParam]);
-  const [pendingSaves, setPendingSaves] = useState<ReadonlyMap<number, PendingSave>>(
-    () => new Map(),
+  const [pendingSaveGameIds, setPendingSaveGameIds] = useState<ReadonlySet<number>>(
+    () => new Set(),
   );
   const [selectedGameMode, setSelectedGameMode] = useState<GameMode>("single-out");
   const [selectedPoints, setSelectedPoints] = useState<number>(DEFAULT_START_SCORE);
@@ -96,8 +92,8 @@ function SettingsPage(): React.JSX.Element {
   const effectiveGameIdRef = useRef<number | null>(null);
   // The game the selection refs hold, so a click never mixes in a previous game's values.
   const selectionGameIdRef = useRef<number | null>(null);
-  // One pending save per game: it locks only that game's buttons.
-  const pendingSavesRef = useRef(new Map<number, PendingSave>());
+  // One pending save per game: it locks all of that game's buttons, and only that game's.
+  const pendingSaveGameIdsRef = useRef(new Set<number>());
   const hasRouteGameInStore =
     routeGameId !== null && gameData?.id === routeGameId && gameSettings !== null;
   // Read the route game's settings unless the game store already holds them.
@@ -217,7 +213,7 @@ function SettingsPage(): React.JSX.Element {
   const isSettingsChangeBlocked = useCallback((): boolean => {
     const gameId = effectiveGameIdRef.current;
     if (selectionGameIdRef.current !== gameId) return true;
-    return gameId !== null && pendingSavesRef.current.has(gameId);
+    return gameId !== null && pendingSaveGameIdsRef.current.has(gameId);
   }, []);
 
   const saveRouteGameSettings = useCallback(
@@ -228,9 +224,9 @@ function SettingsPage(): React.JSX.Element {
       rollback,
       logContext,
     }: RouteGameSaveRequest): Promise<void> => {
-      const pendingSavesByGame = pendingSavesRef.current;
-      const syncPendingSaves = (): void => setPendingSaves(new Map(pendingSavesByGame));
-      pendingSavesByGame.set(gameId, { scope });
+      const pendingGameIds = pendingSaveGameIdsRef.current;
+      const syncPendingSaves = (): void => setPendingSaveGameIds(new Set(pendingGameIds));
+      pendingGameIds.add(gameId);
       syncPendingSaves();
       setSaveErrorMessage(null);
 
@@ -248,7 +244,7 @@ function SettingsPage(): React.JSX.Element {
           error,
         });
       } finally {
-        pendingSavesByGame.delete(gameId);
+        pendingGameIds.delete(gameId);
         syncPendingSaves();
       }
     },
@@ -332,8 +328,9 @@ function SettingsPage(): React.JSX.Element {
     [isSettingsChangeBlocked, saveRouteGameSettings, updatePreCreateSettings],
   );
 
-  const isSavingRouteGame = (scope: SaveScope): boolean =>
-    routeGameId !== null && pendingSaves.get(routeGameId)?.scope === scope;
+  // A pending save blocks every change of its game, so both groups show it.
+  const areOptionsDisabled =
+    isRouteSelectionUnavailable || (routeGameId !== null && pendingSaveGameIds.has(routeGameId));
 
   const errorStateClassProps =
     styles.settingsError !== undefined ? { className: styles.settingsError } : {};
@@ -363,14 +360,14 @@ function SettingsPage(): React.JSX.Element {
             options={GAME_MODE_OPTIONS}
             selectedId={selectedGameModeId}
             onChange={handleGameModeClick}
-            disabled={isRouteSelectionUnavailable || isSavingRouteGame("game-mode")}
+            disabled={areOptionsDisabled}
           />
           <SettingsTabs
             title="Points"
             options={POINTS_OPTIONS}
             selectedId={selectedPointsId}
             onChange={handlePointsClick}
-            disabled={isRouteSelectionUnavailable || isSavingRouteGame("points")}
+            disabled={areOptionsDisabled}
             mobileLayout="grid"
           />
         </div>

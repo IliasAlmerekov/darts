@@ -121,6 +121,23 @@ const SETTINGS_SAVE_CASES = [
   },
 ] as const;
 
+const PENDING_SAVE_CASES = [
+  {
+    setting: "Game Mode",
+    click: "Double-out",
+    otherSetting: "Points",
+    otherOption: "501",
+    response: createSettingsResponse({ gameId: 42, doubleOut: true }),
+  },
+  {
+    setting: "Points",
+    click: "501",
+    otherSetting: "Game Mode",
+    otherOption: "Double-out",
+    response: createSettingsResponse({ gameId: 42, startScore: 501 }),
+  },
+] as const;
+
 function isPressed(name: string): boolean {
   return screen.getByRole("button", { name }).getAttribute("aria-pressed") === "true";
 }
@@ -828,6 +845,30 @@ describe("SettingsPage", () => {
     expectOptionsEnabled();
     expect(getGameSettingsMock).not.toHaveBeenCalledWith(2, expect.anything());
   });
+
+  it.each(PENDING_SAVE_CASES)(
+    "should disable the $otherSetting buttons while a $setting save is pending, then enable every option",
+    async ({ click, otherOption, response }) => {
+      const pendingSave = createDeferred<GameSettingsResponse>();
+      saveGameSettingsMock.mockImplementationOnce(() => pendingSave.promise);
+      renderSettingsPage("/settings/42");
+      await waitFor(() => {
+        expect(isPressed("301")).toBe(true);
+      });
+
+      fireEvent.click(screen.getByRole("button", { name: click }));
+
+      expect(screen.getByRole("button", { name: otherOption }).getAttribute("disabled")).toBe("");
+
+      await act(async () => {
+        pendingSave.resolve(response);
+        await pendingSave.promise;
+      });
+
+      expect(isPressed(click)).toBe(true);
+      expectOptionsEnabled();
+    },
+  );
 
   describe.each(SETTINGS_SAVE_CASES)(
     "when a $setting save for game 1 settles after the route moved to game 2",
