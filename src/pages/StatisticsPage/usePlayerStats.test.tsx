@@ -4,7 +4,11 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { QueryClientProvider } from "@tanstack/react-query";
 import type { ReactNode } from "react";
 import { queryClient } from "@/shared/query/queryClient";
-import { INITIAL_PLAYER_STATS_PARAMS, statsQueries } from "@/shared/query/statistics.queries";
+import {
+  INITIAL_PLAYER_STATS_PARAMS,
+  statsQueries,
+  type PlayerStatsParams,
+} from "@/shared/query/statistics.queries";
 import type { PlayerProps } from "@/types";
 import { usePlayerStats } from "./usePlayerStats";
 
@@ -33,7 +37,7 @@ describe("usePlayerStats", () => {
     getPlayerStatsMock.mockReturnValue(new Promise(() => {})); // never resolves
 
     const { result } = renderHook(
-      () => usePlayerStats({ limit: 10, offset: 0, sortParam: undefined }),
+      () => usePlayerStats({ limit: 10, offset: 0, sortParam: "name:asc" }),
       { wrapper },
     );
 
@@ -58,7 +62,7 @@ describe("usePlayerStats", () => {
     getPlayerStatsMock.mockResolvedValue({ items: PLAYERS, total: 2 });
 
     const { result } = renderHook(
-      () => usePlayerStats({ limit: 10, offset: 0, sortParam: undefined }),
+      () => usePlayerStats({ limit: 10, offset: 0, sortParam: "name:asc" }),
       { wrapper },
     );
 
@@ -75,7 +79,7 @@ describe("usePlayerStats", () => {
     getPlayerStatsMock.mockResolvedValue({ items: PLAYERS, total: 42 });
 
     const { result } = renderHook(
-      () => usePlayerStats({ limit: 10, offset: 0, sortParam: undefined }),
+      () => usePlayerStats({ limit: 10, offset: 0, sortParam: "name:asc" }),
       { wrapper },
     );
 
@@ -89,7 +93,7 @@ describe("usePlayerStats", () => {
     getPlayerStatsMock.mockResolvedValue({ items: [], total: 0 });
 
     const { result } = renderHook(
-      () => usePlayerStats({ limit: 10, offset: 0, sortParam: undefined }),
+      () => usePlayerStats({ limit: 10, offset: 0, sortParam: "name:asc" }),
       { wrapper },
     );
 
@@ -103,7 +107,7 @@ describe("usePlayerStats", () => {
     getPlayerStatsMock.mockRejectedValue(new Error("Network error"));
 
     const { result } = renderHook(
-      () => usePlayerStats({ limit: 10, offset: 0, sortParam: undefined }),
+      () => usePlayerStats({ limit: 10, offset: 0, sortParam: "name:asc" }),
       { wrapper },
     );
 
@@ -118,7 +122,7 @@ describe("usePlayerStats", () => {
     getPlayerStatsMock.mockResolvedValueOnce({ items: PLAYERS, total: 2 });
 
     const { result } = renderHook(
-      () => usePlayerStats({ limit: 10, offset: 0, sortParam: undefined }),
+      () => usePlayerStats({ limit: 10, offset: 0, sortParam: "name:asc" }),
       { wrapper },
     );
 
@@ -146,7 +150,7 @@ describe("usePlayerStats", () => {
     );
 
     const { result } = renderHook(
-      () => usePlayerStats({ limit: 10, offset: 0, sortParam: undefined }),
+      () => usePlayerStats({ limit: 10, offset: 0, sortParam: "name:asc" }),
       { wrapper },
     );
 
@@ -180,7 +184,7 @@ describe("usePlayerStats", () => {
 
     const { result, rerender } = renderHook(
       ({ offset }: { offset: number }) =>
-        usePlayerStats({ limit: 10, offset, sortParam: undefined }),
+        usePlayerStats({ limit: 10, offset, sortParam: "name:asc" }),
       { initialProps: { offset: 0 }, wrapper },
     );
 
@@ -197,9 +201,9 @@ describe("usePlayerStats", () => {
     getPlayerStatsMock.mockResolvedValue({ items: PLAYERS, total: 2 });
 
     const { result, rerender } = renderHook(
-      ({ sortParam }: { sortParam: string | undefined }) =>
+      ({ sortParam }: Pick<PlayerStatsParams, "sortParam">) =>
         usePlayerStats({ limit: 10, offset: 0, sortParam }),
-      { initialProps: { sortParam: undefined as string | undefined }, wrapper },
+      { initialProps: { sortParam: "name:asc" }, wrapper },
     );
 
     await waitFor(() => expect(result.current.loading).toBe(false));
@@ -224,7 +228,7 @@ describe("usePlayerStats", () => {
 
     const { result, rerender } = renderHook(
       ({ offset }: { offset: number }) =>
-        usePlayerStats({ limit: 10, offset, sortParam: undefined }),
+        usePlayerStats({ limit: 10, offset, sortParam: "name:asc" }),
       { initialProps: { offset: 0 }, wrapper },
     );
 
@@ -257,7 +261,7 @@ describe("usePlayerStats", () => {
 
     const { result, rerender } = renderHook(
       ({ offset }: { offset: number }) =>
-        usePlayerStats({ limit: 10, offset, sortParam: undefined }),
+        usePlayerStats({ limit: 10, offset, sortParam: "name:asc" }),
       { initialProps: { offset: 0 }, wrapper },
     );
 
@@ -290,7 +294,7 @@ describe("usePlayerStats", () => {
 
     const { result, rerender } = renderHook(
       ({ offset }: { offset: number }) =>
-        usePlayerStats({ limit: 10, offset, sortParam: undefined }),
+        usePlayerStats({ limit: 10, offset, sortParam: "name:asc" }),
       { initialProps: { offset: 0 }, wrapper },
     );
 
@@ -319,9 +323,9 @@ describe("usePlayerStats", () => {
       .mockResolvedValueOnce({ items: [carol], total: 1 });
 
     const { result, rerender } = renderHook(
-      ({ sortParam }: { sortParam: string | undefined }) =>
+      ({ sortParam }: Pick<PlayerStatsParams, "sortParam">) =>
         usePlayerStats({ limit: 10, offset: 0, sortParam }),
-      { initialProps: { sortParam: undefined as string | undefined }, wrapper },
+      { initialProps: { sortParam: "name:asc" }, wrapper },
     );
 
     rerender({ sortParam: "average:desc" });
@@ -355,7 +359,7 @@ describe("usePlayerStats", () => {
     getPlayerStatsMock.mockReturnValue(new Promise((res) => (resolve = res)));
 
     const { result, unmount } = renderHook(
-      () => usePlayerStats({ limit: 10, offset: 0, sortParam: undefined }),
+      () => usePlayerStats({ limit: 10, offset: 0, sortParam: "name:asc" }),
       { wrapper },
     );
 

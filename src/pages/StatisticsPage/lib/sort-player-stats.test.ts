@@ -1,7 +1,7 @@
 // @vitest-environment node
 import { describe, expect, it } from "vitest";
 import type { PlayerProps } from "@/types";
-import { sortPlayerStats } from "./sort-player-stats";
+import { sortPlayerStatsByAverage } from "./sort-player-stats";
 
 function player(name: string, scoreAverage: number, playerId: number): PlayerProps {
   return {
@@ -13,20 +13,20 @@ function player(name: string, scoreAverage: number, playerId: number): PlayerPro
   };
 }
 
-describe("sortPlayerStats", () => {
-  it("should sort alphabetically ignoring case", () => {
-    const items = [player("beta", 10, 1), player("Alpha", 20, 2), player("charlie", 5, 3)];
-
-    const sorted = sortPlayerStats(items, "alphabetically");
-
-    expect(sorted.map((item) => item.name)).toEqual(["Alpha", "beta", "charlie"]);
-  });
-
+describe("sortPlayerStatsByAverage", () => {
   it("should sort by score in descending order", () => {
     const items = [player("Alpha", 10, 1), player("Beta", 30, 2), player("Charlie", 20, 3)];
 
-    const sorted = sortPlayerStats(items, "score");
+    const sorted = sortPlayerStatsByAverage(items);
 
     expect(sorted.map((item) => item.name)).toEqual(["Beta", "Charlie", "Alpha"]);
+  });
+
+  it("should break average ties by name", () => {
+    const items = [player("charlie", 10, 1), player("Alpha", 10, 2)];
+
+    const sorted = sortPlayerStatsByAverage(items);
+
+    expect(sorted.map((item) => item.name)).toEqual(["Alpha", "charlie"]);
   });
 });

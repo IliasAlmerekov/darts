@@ -10,7 +10,8 @@ import {
 } from "@/shared/ui/pagination";
 import type { SortMethod } from "@/shared/ui/sort-tabs";
 import { StatisticsHeaderControls } from "@/shared/ui/statistics-header-controls";
-import { sortPlayerStats } from "./lib/sort-player-stats";
+import type { PlayerStatsParams } from "@/shared/query/statistics.queries";
+import { sortPlayerStatsByAverage } from "./lib/sort-player-stats";
 import { usePlayerStats } from "./usePlayerStats";
 
 const LIMIT = 10;
@@ -49,8 +50,8 @@ const StatisticsPagination = React.memo(function StatisticsPagination({
   );
 });
 
-function sortParamFromMethod(method: SortMethod): string | undefined {
-  if (method === "alphabetically") return undefined;
+function sortParamFromMethod(method: SortMethod): PlayerStatsParams["sortParam"] {
+  if (method === "alphabetically") return "name:asc";
   return "average:desc";
 }
 
@@ -65,7 +66,8 @@ export default function StatisticsPage(): React.JSX.Element {
     sortParam,
   });
 
-  const sorted = sortPlayerStats(stats, sortMethod);
+  // The server sorts names before paging; a client re-sort could disagree with its collation.
+  const sorted = sortMethod === "score" ? sortPlayerStatsByAverage(stats) : stats;
 
   const handleSortChange = useCallback((method: SortMethod): void => {
     setSortMethod(method);
