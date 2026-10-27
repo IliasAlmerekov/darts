@@ -132,7 +132,19 @@ describe("PlayerProfilePage", () => {
     expect(screen.getByRole("heading", { level: 1, name: "Player Profile" })).toBeTruthy();
     expect(screen.getByRole("heading", { level: 2, name: "Alice" })).toBeTruthy();
     expect(await within(statValue("Games played")).findByText("18")).toBeTruthy();
-    expect(within(statValue("Avg. points")).getByText("56.40")).toBeTruthy();
+    expect(within(statValue("three-dart average")).getByText("56.40")).toBeTruthy();
+  });
+
+  it("shows the three-dart average of 60.6 as 60.60 labelled Ø AVG", async () => {
+    vi.mocked(getPlayerProfile).mockResolvedValue(
+      buildProfile({ stats: buildPlayerProfileStats({ scoreAverage: 60.6 }) }),
+    );
+
+    renderPage();
+
+    const average = statValue("three-dart average");
+    expect(await within(average).findByText("60.60")).toBeTruthy();
+    expect(average.textContent).toBe("Ø AVG60.60");
   });
 
   it("falls back to the email when the user has no username", () => {
@@ -158,7 +170,7 @@ describe("PlayerProfilePage", () => {
     renderPage();
 
     expect(await within(statValue("Games played")).findByText("0")).toBeTruthy();
-    expect(within(statValue("Avg. points")).getByText("–")).toBeTruthy();
+    expect(within(statValue("three-dart average")).getByText("–")).toBeTruthy();
   });
 
   it("lists each recent game in History with its participants", async () => {
@@ -170,18 +182,22 @@ describe("PlayerProfilePage", () => {
       .filter((item) => item.parentElement === history);
 
     expect(games).toHaveLength(2);
+    expect(within(games[0] as HTMLElement).getByRole("paragraph").textContent).toBe(
+      "20 Oct 2026, 18:42 · 2nd of 2 · Ø AVG 45.25",
+    );
     expect(
-      within(games[0] as HTMLElement).getByText("20 Oct 2026, 18:42 · 2nd of 2 · Avg 45.3"),
-    ).toBeTruthy();
+      within(games[0] as HTMLElement).getByRole("group", { name: "three-dart average" })
+        .textContent,
+    ).toBe("Ø AVG 45.25");
     expect(
       within(games[0] as HTMLElement)
         .getAllByRole("listitem")
         .map((item) => item.textContent),
     ).toEqual(["1. Anna", "2. Alice (you)"]);
-    expect(
-      within(games[1] as HTMLElement).getByText("19 Oct 2026, 09:05 · 1st of 2 · Avg 60.0"),
-    ).toBeTruthy();
-    expect(screen.queryByRole("link", { name: /Avg/ })).toBeNull();
+    expect(within(games[1] as HTMLElement).getByRole("paragraph").textContent).toBe(
+      "19 Oct 2026, 09:05 · 1st of 2 · Ø AVG 60.00",
+    );
+    expect(screen.queryByRole("link", { name: /AVG/ })).toBeNull();
   });
 
   it("tells a player without finished games so in History", async () => {
@@ -197,11 +213,11 @@ describe("PlayerProfilePage", () => {
 
     const overviewChart = await screen.findByRole("img", { name: /^Scoring trend chart/ });
     expect(overviewChart.getAttribute("aria-label")).toBe(
-      "Scoring trend chart, 2 games, round average from 60.0 to 45.3",
+      "Scoring trend chart, 2 games, three-dart average from 60.00 to 45.25",
     );
     expect(pointTitles(overviewChart)).toEqual([
-      "19 Oct 2026, 09:05 · Avg 60.0",
-      "20 Oct 2026, 18:42 · Avg 45.3",
+      "19 Oct 2026, 09:05 · Ø AVG 60.00",
+      "20 Oct 2026, 18:42 · Ø AVG 45.25",
     ]);
 
     fireEvent.click(screen.getByRole("tab", { name: "Performance" }));
@@ -209,15 +225,20 @@ describe("PlayerProfilePage", () => {
     const performance = screen.getByRole("tabpanel", { name: "Performance" });
     const performanceChart = within(performance).getByRole("img", { name: /^Scoring trend chart/ });
     expect(pointTitles(performanceChart)).toEqual([
-      "19 Oct 2026, 09:05 · Avg 60.0",
-      "20 Oct 2026, 18:42 · Avg 45.3",
+      "19 Oct 2026, 09:05 · Ø AVG 60.00",
+      "20 Oct 2026, 18:42 · Ø AVG 45.25",
     ]);
-    const averages = within(performance).getByRole("list", { name: "Round average per game" });
+    const averages = within(performance).getByRole("list", { name: "Three-dart average per game" });
+    const items = within(averages).getAllByRole("listitem");
+    expect(items.map((item) => item.textContent)).toEqual([
+      "19 Oct 2026, 09:05 · Ø AVG 60.00",
+      "20 Oct 2026, 18:42 · Ø AVG 45.25",
+    ]);
     expect(
-      within(averages)
-        .getAllByRole("listitem")
-        .map((item) => item.textContent),
-    ).toEqual(["19 Oct 2026, 09:05 · Avg 60.0", "20 Oct 2026, 18:42 · Avg 45.3"]);
+      items.map(
+        (item) => within(item).getByRole("group", { name: "three-dart average" }).textContent,
+      ),
+    ).toEqual(["Ø AVG 60.00", "Ø AVG 45.25"]);
   });
 
   it("opens the tab named in the URL and falls back to Overview", () => {
@@ -394,7 +415,7 @@ describe("PlayerProfilePage", () => {
     renderPage();
 
     expect(within(statValue("Games played")).getByText("Loading…")).toBeTruthy();
-    expect(within(statValue("Avg. points")).getByText("Loading…")).toBeTruthy();
+    expect(within(statValue("three-dart average")).getByText("Loading…")).toBeTruthy();
     expect(statValue("Won").textContent).toBe("WonLoading…");
     expect(statValue("Checkout rate").textContent).toBe("Checkout rateLoading…");
     const panel = screen.getByRole("tabpanel", { name: "Overview" });

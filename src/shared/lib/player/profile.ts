@@ -11,12 +11,19 @@ interface ProfileParticipant {
 interface ProfileHistoryRow {
   gameId: number;
   summary: string;
+  /** The game's three-dart average with two decimals, such as `45.30`. */
+  average: string;
   participants: ProfileParticipant[];
 }
 
 export interface ScoringTrendPoint {
   gameId: number;
   roundAverage: number;
+  /** The finish date, or null when the game has none. */
+  date: string | null;
+  /** The game's three-dart average with two decimals. */
+  average: string;
+  /** Date and average as one plain text, for the chart's point titles. */
   label: string;
 }
 
@@ -136,8 +143,8 @@ function formatOrdinal(placement: number): string {
   return `${placement}${ORDINAL_SUFFIXES[ordinalRules.select(placement)] ?? "th"}`;
 }
 
-function formatRoundAverage(roundAverage: number): string {
-  return `Avg ${roundAverage.toFixed(1)}`;
+function formatThreeDartAverage(roundAverage: number): string {
+  return roundAverage.toFixed(2);
 }
 
 function joinParts(parts: (string | null)[]): string {
@@ -155,8 +162,8 @@ function toHistoryRow(game: PlayerProfileGame): ProfileHistoryRow {
     summary: joinParts([
       formatFinishedAt(game.finishedAt),
       `${placement} of ${game.participantsCount}`,
-      formatRoundAverage(game.roundAverage),
     ]),
+    average: formatThreeDartAverage(game.roundAverage),
     participants: game.participants.map((participant, index) => {
       const position =
         participant.placement === null || participant.placement === undefined
@@ -176,10 +183,14 @@ function toHistoryRow(game: PlayerProfileGame): ProfileHistoryRow {
 }
 
 function toScoringTrendPoint(game: PlayerProfileGame): ScoringTrendPoint {
+  const date = formatFinishedAt(game.finishedAt);
+  const average = formatThreeDartAverage(game.roundAverage);
   return {
     gameId: game.gameId,
     roundAverage: game.roundAverage,
-    label: joinParts([formatFinishedAt(game.finishedAt), formatRoundAverage(game.roundAverage)]),
+    date,
+    average,
+    label: joinParts([date, `Ø AVG ${average}`]),
   };
 }
 

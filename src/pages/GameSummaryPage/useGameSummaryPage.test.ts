@@ -16,7 +16,6 @@ import {
   buildExpectedPodiumPlaceholder,
   buildExpectedStandings,
   buildFinishedPlayerResponses,
-  buildGameSettingsResponse,
 } from "@/shared/types/game.test-support";
 
 const navigateMock = vi.fn();
@@ -65,12 +64,6 @@ vi.mock("@/shared/store", async (importOriginal) => {
 vi.mock("@/shared/services/browser/soundPlayer", () => ({
   playSound: vi.fn(),
 }));
-
-const SETTINGS_RESPONSE = buildGameSettingsResponse({
-  gameId: 42,
-  status: "finished",
-  startScore: 301,
-});
 
 function buildFinishedGameState(): GameThrowsResponse {
   return {
@@ -236,7 +229,6 @@ describe("useGameSummaryPage", () => {
     // Reset mutable router/store state to defaults before each test
     routeParams = { id: "42" };
     testQueryClient = createQueryClient();
-    getGameSettingsMock.mockResolvedValue(SETTINGS_RESPONSE);
     getTabletGameMock.mockResolvedValue({ game: null, lastFinishedGameId: 42 });
 
     getFinishedGameMock.mockResolvedValue([]);
@@ -900,24 +892,12 @@ describe("useGameSummaryPage", () => {
       ]);
     });
 
-    it("should fill the game settings cache before the page renders", async () => {
+    it("should not request the game settings, which the summary does not read", async () => {
       getFinishedGameMock.mockResolvedValueOnce([finishedPlayer(3, "Carol")]);
-      getGameSettingsMock.mockResolvedValueOnce(SETTINGS_RESPONSE);
 
       await gameSummaryLoader(makeLoaderArgs(new Request("http://x/"), { id: "42" }));
 
-      expect(appQueryClient.getQueryData(gameQueries.settings(42).queryKey)).toEqual(
-        SETTINGS_RESPONSE,
-      );
-    });
-
-    it("should not throw when the settings fetch fails, so the page can show its Retry action", async () => {
-      getFinishedGameMock.mockResolvedValueOnce([finishedPlayer(3, "Carol")]);
-      getGameSettingsMock.mockRejectedValueOnce(new Error("network down"));
-
-      await expect(
-        gameSummaryLoader(makeLoaderArgs(new Request("http://x/"), { id: "42" })),
-      ).resolves.toBeNull();
+      expect(getGameSettingsMock).not.toHaveBeenCalled();
     });
 
     it("should not fetch again when the game page already seeded the cache", async () => {

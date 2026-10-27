@@ -8,13 +8,13 @@ function buildProps(): {
   name: string;
   placement: string;
   rounds: number;
-  averagePerRound: string;
+  threeDartAverage: string;
 } {
   return {
     name: "Alice",
     placement: "1.",
     rounds: 10,
-    averagePerRound: "45.50",
+    threeDartAverage: "45.50",
   };
 }
 

@@ -7,7 +7,7 @@ interface Props {
   placement?: number | string;
   className?: string;
   rounds?: number | string;
-  averagePerRound?: number | string;
+  threeDartAverage?: number | string;
   isWinner?: boolean;
 }
 
@@ -24,9 +24,13 @@ function PodiumPlayerCard({ ...props }: Props): React.JSX.Element {
         <span>Rounds</span>
         <h4 className={styles.number}>{props.rounds}</h4>
       </div>
-      <div className={clsx(styles.copylarge, styles.statRow, styles.color)}>
-        <span>Ø AVG</span>
-        <h4 className={styles.number}>{props.averagePerRound}</h4>
+      <div
+        className={clsx(styles.copylarge, styles.statRow, styles.color)}
+        role="group"
+        aria-label="three-dart average"
+      >
+        <span aria-hidden="true">Ø AVG</span>
+        <h4 className={styles.number}>{props.threeDartAverage}</h4>
       </div>
       <div className={clsx(styles.copylarge, styles.placementRound)}>{props.placement}</div>
     </div>

@@ -3,7 +3,6 @@ import styles from "./GameSummaryPage.module.css";
 import { Button } from "@/shared/ui/button";
 import { ErrorState } from "@/shared/ui/error-state";
 import { Podium } from "@/shared/ui/podium";
-import { UniversalSkeleton } from "@/shared/ui/skeletons";
 import Undo from "@/assets/icons/undolinkbutton.svg";
 import React from "react";
 import { useGameSummaryPage } from "./useGameSummaryPage";
@@ -12,8 +11,6 @@ function GameSummaryPage(): React.JSX.Element {
   const {
     error,
     leaving,
-    settings,
-    loadSettings,
     isActionPending,
     podiumData,
     standings,
@@ -24,25 +21,6 @@ function GameSummaryPage(): React.JSX.Element {
     handleBackToStart,
   } = useGameSummaryPage();
 
-  if (settings.status === "loading") {
-    return <UniversalSkeleton />;
-  }
-
-  if (settings.status === "error") {
-    return (
-      <div className={styles.summary}>
-        <div className={styles.errorPanel}>
-          <ErrorState
-            title="Game settings are unavailable"
-            message={settings.message}
-            primaryAction={{ label: "Retry", onClick: () => void loadSettings() }}
-          />
-        </div>
-      </div>
-    );
-  }
-
-  const { startScore } = settings;
   const summaryActionButtonClassName = styles.summaryActionButton;
   const summaryActionButtonProps =
     typeof summaryActionButtonClassName === "string"
@@ -66,10 +44,10 @@ function GameSummaryPage(): React.JSX.Element {
         </button>
       </div>
       <div className={styles.podiumBoard}>
-        <Podium userMap={podiumData} list={standings} startScore={startScore} />
+        <Podium userMap={podiumData} list={standings} />
       </div>
       <div className={styles.leaderBoard}>
-        <OverviewPlayerItemList userMap={leaderBoardList} startScore={startScore} />
+        <OverviewPlayerItemList userMap={leaderBoardList} />
       </div>
 
       {error ? (
