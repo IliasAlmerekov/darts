@@ -595,6 +595,52 @@ describe("useStartPage action guards", () => {
       expect(revalidateMock).toHaveBeenCalledTimes(1);
     });
 
+    it("should clear the page error and close the guest overlay when the route game id changes after a conflict", async () => {
+      const actual = await vi.importActual<typeof import("react-router-dom")>("react-router-dom");
+      let routerNavigate: ReturnType<typeof actual.useNavigate> | null = null;
+      function NavigateProbe(): null {
+        routerNavigate = actual.useNavigate();
+        return null;
+      }
+      const Wrapper = makeWrapper("/start/10");
+      vi.mocked(leaveRoom).mockRejectedValueOnce(seatsNotEditable());
+      vi.mocked(addGuestPlayer).mockRejectedValueOnce(seatsNotEditable());
+      setInvitation({ gameId: 10, invitationLink: "/invite/10" });
+      vi.mocked(getGameThrows).mockResolvedValue(
+        buildGameThrowsResponse({
+          id: 10,
+          players: [buildBackendPlayer({ id: 2, name: "Sam", isActive: true, position: 1 })],
+        }),
+      );
+      const { result } = renderHook(() => useStartPage(), {
+        wrapper: ({ children }) =>
+          React.createElement(Wrapper, null, React.createElement(NavigateProbe), children),
+      });
+      await waitFor(() => {
+        expect(result.current.players.some((p) => p.id === 2)).toBe(true);
+      });
+      await act(async () => {
+        await result.current.handleRemovePlayer(2, 10);
+        result.current.openGuestOverlay();
+        result.current.setGuestUsername("Alex");
+      });
+      await act(async () => {
+        await result.current.handleAddGuest();
+      });
+      expect(result.current.pageError).toBe(SEATS_MESSAGE);
+      expect(result.current.isGuestOverlayOpen).toBe(true);
+      expect(result.current.guestError).toBe(SEATS_MESSAGE);
+
+      await act(async () => {
+        routerNavigate?.("/start");
+      });
+
+      expect(result.current.gameId).toBeNull();
+      expect(result.current.pageError).toBeNull();
+      expect(result.current.isGuestOverlayOpen).toBe(false);
+      expect(result.current.guestError).toBeNull();
+    });
+
     it("should show the lobby full message and not reload when add guest hits GAME_ROOM_FULL", async () => {
       setInvitation({ gameId: 10, invitationLink: "/invite/10" });
       vi.mocked(addGuestPlayer).mockRejectedValueOnce(

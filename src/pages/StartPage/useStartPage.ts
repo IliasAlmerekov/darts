@@ -1,4 +1,4 @@
-import { useCallback, useMemo } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { useNavigate, useParams, useRevalidator } from "react-router-dom";
 import { useStore } from "@nanostores/react";
 import { useGamePlayers } from "./useGamePlayers";
@@ -92,6 +92,15 @@ export function useStartPage(): UseStartPageResult {
     appendOptimisticPlayer,
     onSeatsNotEditable: revalidate,
   });
+
+  // The loader can send /start/10 to /start (a finished or aborted game) without remounting the
+  // page. A message about the old game must not stay on the new route.
+  const [shownGameId, setShownGameId] = useState(gameId);
+  if (shownGameId !== gameId) {
+    setShownGameId(gameId);
+    clearPageError();
+    closeGuestOverlay();
+  }
 
   const handleRemovePlayer = useCallback(
     async (playerId: number, activeGameId: number): Promise<void> => {
