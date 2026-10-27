@@ -23,6 +23,7 @@ export interface FinishedPlayerResponse {
   playerId: number;
   username: string;
   position: number;
+  placement: number | null;
   roundsPlayed: number;
   roundAverage: number;
 }

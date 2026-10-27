@@ -17,6 +17,7 @@ function buildPlayer(overrides: Partial<GamePlayer> = {}): GamePlayer {
     score: 501,
     isActive: false,
     position: null,
+    placement: null,
     isBust: false,
     isGuest: false,
     throwsInCurrentRound: 0,
@@ -47,6 +48,7 @@ function buildGameData(overrides: Partial<GameThrowsResponse> = {}): GameThrowsR
         score: 301,
         isActive: true,
         position: 0,
+        placement: null,
         throwsInCurrentRound: 2,
       }),
       buildPlayer({
@@ -349,6 +351,7 @@ describe("gameStateNormalizer", () => {
             score: 60,
             isActive: false,
             position: null,
+            placement: null,
             throwsInCurrentRound: 2,
             currentRoundThrows: [
               { value: 20, isDouble: false, isTriple: false, isBust: false },
@@ -364,5 +367,77 @@ describe("gameStateNormalizer", () => {
         ],
       });
     });
+  });
+});
+
+describe("placement in scoreboard deltas", () => {
+  it.each([undefined, null, 2])(
+    "applies placement %s while preserving the turn position",
+    (placement) => {
+      const state = buildGameData({ players: [buildPlayer({ id: 1, position: 0, placement: 1 })] });
+      const delta = {
+        changedPlayers: [
+          {
+            playerId: 1,
+            name: "Alice",
+            score: 0,
+            isActive: true,
+            isGuest: false,
+            ...(placement === undefined ? {} : { placement }),
+          },
+        ],
+        currentRound: 3,
+        status: "started" as const,
+        winnerId: null,
+      };
+      const next = applyGameScoreboardDelta(state, delta);
+      expect(next.players[0]).toMatchObject({
+        position: 0,
+        placement: placement === undefined ? 1 : placement,
+      });
+      const changed = applyGameScoreboardDelta(next, {
+        ...delta,
+        changedPlayers: [
+          {
+            ...delta.changedPlayers[0],
+            playerId: 1,
+            name: "Alice",
+            score: 0,
+            isActive: true,
+            isGuest: false,
+            placement: 3,
+          },
+        ],
+      });
+      expect(changed.players[0]).toMatchObject({ position: 0, placement: 3 });
+    },
+  );
+});
+
+describe("placement fallbacks", () => {
+  it("finds the winner by placement even when the winner sat second", () => {
+    const state = buildGameData({
+      status: "finished",
+      winnerId: null,
+      activePlayerId: null,
+      players: [
+        buildPlayer({ id: 1, position: 0, placement: 2, score: 0, isActive: false }),
+        buildPlayer({ id: 2, position: 1, placement: 1, score: 0, isActive: false }),
+      ],
+    });
+    expect(deriveWinnerId(state)).toBe(2);
+  });
+
+  it("does not infer a winner from the first lobby seat or an open placement", () => {
+    const state = buildGameData({
+      status: "finished",
+      winnerId: null,
+      activePlayerId: null,
+      players: [
+        buildPlayer({ id: 1, position: 0, placement: 2, score: 0, isActive: false }),
+        buildPlayer({ id: 2, position: 1, placement: null, score: 0, isActive: false }),
+      ],
+    });
+    expect(deriveWinnerId(state)).toBeNull();
   });
 });

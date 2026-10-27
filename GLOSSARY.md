@@ -41,7 +41,7 @@ Every player of a finished game, in finishing order.
 _Avoid_: newList, finished list, results
 
 **Placement**:
-A player's place in a finished game. The winner has placement 1.
+A participant's rank in a game. A participant gets it at their checkout, or when the game ends without one. The winner has placement 1. Undoing a throw or reopening the game takes the placement away from everyone whose score is above zero again, and the win with it; the others keep theirs.
 _Avoid_: finishing position, position, rank, index
 
 **Podium**:

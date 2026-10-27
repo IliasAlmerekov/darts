@@ -75,6 +75,7 @@ const gamePlayerSchema = v.object({
   isActive: v.boolean(),
   isBust: v.boolean(),
   position: v.optional(v.nullable(integerSchema), null),
+  placement: v.optional(v.nullable(integerSchema), null),
   throwsInCurrentRound: v.optional(integerSchema, 0),
   currentRoundThrows: v.optional(v.array(playerThrowSchema), []),
   roundHistory: v.optional(v.array(roundHistorySchema), []),
@@ -127,6 +128,7 @@ const gameSummaryEnvelopeSchema = v.object({
       playerId: v.optional(v.nullable(integerSchema)),
       username: v.optional(v.nullable(v.string())),
       position: v.optional(v.nullable(integerSchema)),
+      placement: v.optional(v.nullable(integerSchema)),
       roundsPlayed: v.optional(v.nullable(integerSchema)),
       roundAverage: v.number(),
     }),
@@ -148,14 +150,15 @@ const throwDeltaSchema = v.object({
 });
 
 /**
- * Contract `ScoreboardPlayerDeltaDto`. A missing `position` or `isBust` stays absent: it
- * means the field is unchanged, while an explicit `null` position clears it.
+ * Contract `ScoreboardPlayerDeltaDto`. Missing `position`, `placement` and `isBust` stay
+ * absent. An omitted field is unchanged; an explicit null clears position or placement.
  */
 const scoreboardPlayerDeltaSchema = v.object({
   playerId: integerSchema,
   name: v.string(),
   score: integerSchema,
   position: v.optional(v.nullable(integerSchema)),
+  placement: v.optional(v.nullable(integerSchema)),
   isActive: v.boolean(),
   isGuest: v.boolean(),
   isBust: v.optional(v.nullable(v.boolean())),
@@ -240,7 +243,8 @@ function toFinishedPlayer(
       typeof item.username === "string" && item.username.trim().length > 0
         ? item.username
         : `Player ${index + 1}`,
-    position: item.position ?? index + 1,
+    position: item.position ?? index,
+    placement: item.placement ?? index + 1,
     roundsPlayed: item.roundsPlayed ?? 0,
     roundAverage: item.roundAverage,
   };

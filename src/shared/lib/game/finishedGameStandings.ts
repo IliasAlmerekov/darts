@@ -24,7 +24,7 @@ function mapFinishedPlayer(player: FinishedPlayerResponse): WinnerPlayerProps {
     name: player.username,
     score: 0,
     isActive: false,
-    index: player.position - 1,
+    index: (player.placement ?? 1) - 1,
     rounds: createEmptyRounds(player.roundsPlayed),
     scoreAverage: player.roundAverage,
     roundCount: player.roundsPlayed,
@@ -43,13 +43,17 @@ function createPodiumPlaceholder(): WinnerPlayerProps {
 }
 
 /**
- * Splits finished players, in the order the backend returns them, into the podium and the
+ * Orders finished players by placement and splits them into the podium and the
  * leaderboard. A two-player game gets a placeholder in the third podium slot.
  */
 export function buildFinishedGameStandings(
   players: readonly FinishedPlayerResponse[],
 ): FinishedGameStandings {
-  const standings = players.map(mapFinishedPlayer);
+  const standings = [...players]
+    .sort(
+      (a, b) => (a.placement ?? Number.MAX_SAFE_INTEGER) - (b.placement ?? Number.MAX_SAFE_INTEGER),
+    )
+    .map(mapFinishedPlayer);
   const podium = standings.slice(0, PODIUM_SIZE);
 
   return {

@@ -34,6 +34,7 @@ function buildFinishedPlayer(
     playerId: 1,
     username: "Player",
     position: 1,
+    placement: 1,
     roundsPlayed: 4,
     roundAverage: 50,
     ...overrides,

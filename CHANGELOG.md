@@ -38,6 +38,8 @@ and this project does **not** yet follow [Semantic Versioning](https://semver.or
 
 ### Fixed
 
+- Game: standings and the podium use placement for rank, while position stays the turn order. Optimistic checkout assigns placement, scoreboard updates preserve it, and undo clears placements only for players whose scores are above zero, keeping a winner who has not been undone (#330)
+
 - Game page: leaving the page while End Game is still running no longer starts a rematch or opens its lobby. If the abort request finishes after you left, the page sends no rematch request and does not navigate, and returning to that game lets you end it again (#331)
 - Game page: a second "Yes" on the End Game overlay no longer starts a second exit. The first tap locks the exit at once and the Yes button is disabled while it runs, so the page sends one abort and one rematch request instead of two, and no longer shows the backend's 409 `GAME_NOT_NEWEST` as an error beside the new lobby. A failed exit releases the lock, so Yes works again; after a successful exit or a finished game's summary the lock stays until the page leaves (#106)
 - Game page: Undo after a completed turn takes back the latest turn. When a player had checked out and was skipped, it took back that player's old turn, moved the game to the earlier round and wrote the wrong throw history into the confirmed game. Undo now passes over players whose last turn is not from the current round, or from the previous round for later seats. When no turn can be identified, the page reloads the game instead of guessing (#104)

@@ -45,6 +45,7 @@ const fullGamePayload = {
       isBust: false,
       isGuest: false,
       position: null,
+      placement: null,
       throwsInCurrentRound: 1,
       currentRoundThrows: [{ value: 20, isDouble: true, isTriple: false, isBust: false }],
       roundHistory: [],
@@ -61,7 +62,7 @@ const summaryPayload = {
   winnerRoundsPlayed: 8,
   winnerRoundAverage: 57.3,
   finishedPlayers: [
-    { playerId: 7, username: "P1", position: 1, roundsPlayed: 8, roundAverage: 57.3 },
+    { playerId: 7, username: "P1", position: 1, placement: 1, roundsPlayed: 8, roundAverage: 57.3 },
   ],
 };
 
@@ -90,6 +91,7 @@ const throwAckPayload = {
         name: "P1",
         score: 281,
         position: null,
+        placement: null,
         isActive: true,
         isGuest: false,
         isBust: false,
@@ -140,6 +142,7 @@ const fullUndoAckPayload = {
         name: "P1",
         score: 281,
         position: null,
+        placement: null,
         isActive: true,
         isGuest: false,
         isBust: false,
@@ -227,6 +230,7 @@ describe("game api contract payloads", () => {
           {
             ...minimalGamePayload.players[0],
             position: null,
+            placement: null,
             throwsInCurrentRound: 0,
             currentRoundThrows: [],
             roundHistory: [],

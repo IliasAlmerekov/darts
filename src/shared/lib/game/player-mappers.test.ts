@@ -14,6 +14,7 @@ function buildPlayer(
     isBust: false,
     isGuest: false,
     position: 1,
+    placement: null,
     throwsInCurrentRound: 0,
     currentRoundThrows: [],
     roundHistory: [],
@@ -73,17 +74,19 @@ describe("player-mappers", () => {
     expect(mapped[0]?.rounds[1]).toHaveProperty("throw1IsBust", false);
   });
 
-  it("should return finished players sorted by position with null positions at the end when positions are mixed", () => {
+  it("should return finished players sorted by placement independently of turn order", () => {
     const mappedPlayers = mapPlayersToUI([
-      buildPlayer({ id: 1, score: 0, position: 3 }),
-      buildPlayer({ id: 2, score: 0, position: null }),
-      buildPlayer({ id: 3, score: 0, position: 1 }),
-      buildPlayer({ id: 4, score: 50, position: 2 }),
+      buildPlayer({ id: 1, score: 0, position: 0, placement: 3 }),
+      buildPlayer({ id: 2, score: 0, position: 1, placement: 2 }),
+      buildPlayer({ id: 3, score: 0, position: 2, placement: 1 }),
+      buildPlayer({ id: 4, score: 50, position: 3, placement: null }),
     ]);
 
     const finished = getFinishedPlayers(mappedPlayers);
 
-    expect(finished.map((p) => p.id)).toEqual([3, 1, 2]);
+    expect(finished.map((p) => p.id)).toEqual([3, 2, 1]);
+    expect(finished.map((p) => p.placement)).toEqual([1, 2, 3]);
+    expect(finished.map((p) => p.position)).toEqual([2, 1, 0]);
   });
 
   it("should map isDouble and isTriple flags from backend throws to UIRound fields", () => {

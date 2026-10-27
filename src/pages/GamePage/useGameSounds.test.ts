@@ -49,6 +49,7 @@ function createPlayer(overrides: PlayerOverrides): GameThrowsResponse["players"]
     isBust: false,
     isGuest: false,
     position: null,
+    placement: null,
     throwsInCurrentRound: throws?.length ?? 0,
     currentRoundThrows: throws ?? [],
     roundHistory: (historyThrows ?? []).map((roundThrows, index) => ({

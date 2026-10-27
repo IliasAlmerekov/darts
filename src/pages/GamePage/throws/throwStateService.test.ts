@@ -30,6 +30,7 @@ function buildGameData(overrides: Partial<GameThrowsResponse> = {}): GameThrowsR
         isActive: true,
         isBust: false,
         position: null,
+        placement: null,
         throwsInCurrentRound: 0,
         currentRoundThrows: [],
         roundHistory: [],
@@ -42,6 +43,7 @@ function buildGameData(overrides: Partial<GameThrowsResponse> = {}): GameThrowsR
         isActive: false,
         isBust: false,
         position: null,
+        placement: null,
         throwsInCurrentRound: 0,
         currentRoundThrows: [],
         roundHistory: [],
@@ -159,6 +161,7 @@ describe("throwStateService", () => {
           isActive: true,
           isBust: false,
           position: null,
+          placement: null,
           throwsInCurrentRound: 2,
           currentRoundThrows: [
             { value: 20, isDouble: false, isTriple: false, isBust: false },
@@ -174,6 +177,7 @@ describe("throwStateService", () => {
           isActive: false,
           isBust: false,
           position: null,
+          placement: null,
           throwsInCurrentRound: 0,
           currentRoundThrows: [],
           roundHistory: [],
@@ -212,6 +216,7 @@ describe("throwStateService", () => {
           isActive: true,
           isBust: false,
           position: null,
+          placement: null,
           throwsInCurrentRound: 1,
           currentRoundThrows: [miss],
           roundHistory: [firstRound, { round: 2, throws: [miss] }],
@@ -224,6 +229,7 @@ describe("throwStateService", () => {
           isActive: false,
           isBust: false,
           position: null,
+          placement: null,
           throwsInCurrentRound: 0,
           currentRoundThrows: [],
           roundHistory: [],
@@ -253,6 +259,7 @@ describe("throwStateService", () => {
           isActive: false,
           isBust: false,
           position: 1,
+          placement: 1,
           throwsInCurrentRound: 0,
           currentRoundThrows: [],
           roundHistory: [
@@ -270,6 +277,7 @@ describe("throwStateService", () => {
           isActive: true,
           isBust: false,
           position: null,
+          placement: null,
           throwsInCurrentRound: 0,
           currentRoundThrows: [],
           roundHistory: [],
@@ -286,7 +294,8 @@ describe("throwStateService", () => {
     expect(nextState?.currentRound).toBe(3);
     expect(nextState?.currentThrowCount).toBe(0);
     expect(nextState?.players[0]?.score).toBe(20);
-    expect(nextState?.players[0]?.position).toBeNull();
+    expect(nextState?.players[0]?.position).toBe(1);
+    expect(nextState?.players[0]?.placement).toBeNull();
     expect(nextState?.players[0]?.isActive).toBe(true);
     expect(nextState?.players[0]?.roundHistory).toEqual([]);
   });
@@ -304,6 +313,7 @@ describe("throwStateService", () => {
           isActive: false,
           isBust: true,
           position: null,
+          placement: null,
           throwsInCurrentRound: 0,
           currentRoundThrows: [],
           roundHistory: [
@@ -325,6 +335,7 @@ describe("throwStateService", () => {
           isActive: true,
           isBust: false,
           position: null,
+          placement: null,
           throwsInCurrentRound: 0,
           currentRoundThrows: [],
           roundHistory: [],
@@ -359,6 +370,7 @@ describe("throwStateService", () => {
           isActive: true,
           isBust: false,
           position: null,
+          placement: null,
           throwsInCurrentRound: 2,
           currentRoundThrows: [
             { value: 10, isDouble: false, isTriple: false, isBust: false },
@@ -374,6 +386,7 @@ describe("throwStateService", () => {
           isActive: false,
           isBust: false,
           position: null,
+          placement: null,
           throwsInCurrentRound: 0,
           currentRoundThrows: [],
           roundHistory: [],
@@ -408,6 +421,7 @@ describe("throwStateService", () => {
           isActive: true,
           isBust: false,
           position: null,
+          placement: null,
           throwsInCurrentRound: 1,
           currentRoundThrows: [{ value: 20, isDouble: false, isTriple: false, isBust: false }],
           roundHistory: [],
@@ -420,6 +434,7 @@ describe("throwStateService", () => {
           isActive: false,
           isBust: false,
           position: null,
+          placement: null,
           throwsInCurrentRound: 0,
           currentRoundThrows: [],
           roundHistory: [],
@@ -604,7 +619,8 @@ describe("throwStateService", () => {
 
       expect(nextState?.players[0]?.score).toBe(0);
       expect(nextState?.players[0]?.isBust).toBe(false);
-      expect(nextState?.players[0]?.position).toBe(1);
+      expect(nextState?.players[0]?.placement).toBe(1);
+      expect(nextState?.players[0]?.position).toBeNull();
       expect(nextState?.activePlayerId).toBe(2);
     });
 
@@ -624,7 +640,8 @@ describe("throwStateService", () => {
 
       expect(nextState?.players[0]?.score).toBe(0);
       expect(nextState?.players[0]?.isBust).toBe(false);
-      expect(nextState?.players[0]?.position).toBe(1);
+      expect(nextState?.players[0]?.placement).toBe(1);
+      expect(nextState?.players[0]?.position).toBeNull();
       expect(nextState?.activePlayerId).toBe(2);
     });
   });
@@ -727,4 +744,62 @@ describe("applyOptimisticUndo after a completed turn", () => {
 
     expect(applyOptimisticUndo(gameState)).toBeNull();
   });
+});
+
+describe("placement on optimistic checkout", () => {
+  it("assigns the next free placement without changing any turn position", () => {
+    const state = buildGameData({
+      activePlayerId: 2,
+      players: [
+        buildBackendPlayer({ id: 1, score: 0, position: 0, placement: 1 }),
+        buildBackendPlayer({ id: 2, score: 20, position: 1, placement: null, isActive: true }),
+        buildBackendPlayer({ id: 3, score: 100, position: 2, placement: null }),
+      ],
+    });
+    const result = applyOptimisticThrow(state, { value: 20, isDouble: false, isTriple: false });
+    expect(result?.players.map(({ position, placement }) => ({ position, placement }))).toEqual([
+      { position: 0, placement: 1 },
+      { position: 1, placement: 2 },
+      { position: 2, placement: null },
+    ]);
+    expect(state.players[1]?.placement).toBeNull();
+  });
+});
+
+describe("placement in throw acknowledgements", () => {
+  it.each([undefined, null, 2])(
+    "applies placement %s without changing turn position",
+    (placement) => {
+      const state = buildGameData({
+        players: [buildBackendPlayer({ id: 1, position: 0, placement: 1 })],
+      });
+      const delta = {
+        changedPlayers: [
+          {
+            playerId: 1,
+            name: "Alice",
+            score: 0,
+            isActive: true,
+            isGuest: false,
+            ...(placement === undefined ? {} : { placement }),
+          },
+        ],
+        currentRound: 3,
+        status: "started" as const,
+        winnerId: null,
+      };
+      const next = applyScoreboardDeltaToGameState(state, delta);
+      expect(next.players[0]).toMatchObject({
+        position: 0,
+        placement: placement === undefined ? 1 : placement,
+      });
+      const changed = applyScoreboardDeltaToGameState(next, {
+        ...delta,
+        changedPlayers: [
+          { playerId: 1, name: "Alice", score: 0, isActive: true, isGuest: false, placement: 3 },
+        ],
+      });
+      expect(changed.players[0]).toMatchObject({ position: 0, placement: 3 });
+    },
+  );
 });

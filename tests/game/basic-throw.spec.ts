@@ -25,6 +25,7 @@ type MockPlayer = {
   isBust: boolean;
   isGuest: boolean;
   position: number | null;
+  placement: number | null;
   throwsInCurrentRound: number;
   currentRoundThrows: PlayerThrow[];
   roundHistory: RoundHistory[];
@@ -77,7 +78,8 @@ const createPlayer = (
   isActive,
   isBust: false,
   isGuest: false,
-  position: null,
+  position: id - 1,
+  placement: null,
   throwsInCurrentRound: 0,
   currentRoundThrows: [],
   roundHistory: [],
@@ -106,6 +108,7 @@ const createScoreboardDelta = (state: MockGameState) => ({
     name: player.name,
     score: player.score,
     position: player.position,
+    placement: player.placement,
     isActive: player.isActive,
     isGuest: false,
     isBust: player.isBust,
@@ -517,7 +520,7 @@ test.describe("Basic Throw Mechanics and Validation", () => {
       winnerId: 1,
       players: [
         createPlayer(1, "Player 1", 0, false, {
-          position: 1,
+          placement: 1,
           isBust: false,
           roundHistory: [
             {
@@ -642,7 +645,7 @@ test.describe("Basic Throw Mechanics and Validation", () => {
       currentThrowCount: 0,
       players: [
         createPlayer(1, "Player 1", 0, false, {
-          position: 1,
+          placement: 1,
           roundHistory: [
             {
               round: 1,
@@ -713,7 +716,7 @@ test.describe("Basic Throw Mechanics and Validation", () => {
       currentThrowCount: 0,
       players: [
         createPlayer(1, "Player 1", 0, false, {
-          position: 1,
+          placement: 1,
           roundHistory: [
             {
               round: 1,

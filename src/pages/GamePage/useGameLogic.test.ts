@@ -29,6 +29,7 @@ function buildGameData(overrides?: Partial<GameThrowsResponse>): GameThrowsRespo
         isActive: true,
         isBust: false,
         position: 1,
+        placement: 1,
         throwsInCurrentRound: 0,
         currentRoundThrows: [],
         roundHistory: [],
@@ -41,6 +42,7 @@ function buildGameData(overrides?: Partial<GameThrowsResponse>): GameThrowsRespo
         isActive: false,
         isBust: false,
         position: 2,
+        placement: 2,
         throwsInCurrentRound: 0,
         currentRoundThrows: [],
         roundHistory: [],
@@ -114,6 +116,7 @@ describe("isLastActivePlayerLeft", () => {
           isActive: true,
           isBust: false,
           position: null,
+          placement: null,
           throwsInCurrentRound: 0,
           currentRoundThrows: [],
           roundHistory: [
@@ -128,6 +131,7 @@ describe("isLastActivePlayerLeft", () => {
           isActive: false,
           isBust: false,
           position: 1,
+          placement: 1,
           throwsInCurrentRound: 0,
           currentRoundThrows: [],
           roundHistory: [
@@ -151,6 +155,7 @@ describe("isLastActivePlayerLeft", () => {
           isActive: true,
           isBust: false,
           position: null,
+          placement: null,
           throwsInCurrentRound: 0,
           currentRoundThrows: [],
           roundHistory: [],
@@ -163,6 +168,7 @@ describe("isLastActivePlayerLeft", () => {
           isActive: false,
           isBust: false,
           position: null,
+          placement: null,
           throwsInCurrentRound: 0,
           currentRoundThrows: [],
           roundHistory: [],
@@ -185,6 +191,7 @@ describe("isLastActivePlayerLeft", () => {
           isActive: true,
           isBust: false,
           position: null,
+          placement: null,
           throwsInCurrentRound: 0,
           currentRoundThrows: [],
           roundHistory: [],
@@ -197,6 +204,7 @@ describe("isLastActivePlayerLeft", () => {
           isActive: false,
           isBust: false,
           position: 1,
+          placement: 1,
           throwsInCurrentRound: 0,
           currentRoundThrows: [],
           roundHistory: [],
@@ -221,6 +229,7 @@ describe("calculateShouldShowFinishOverlay", () => {
           isActive: true,
           isBust: false,
           position: null,
+          placement: null,
           throwsInCurrentRound: 0,
           currentRoundThrows: [],
           roundHistory: [
@@ -235,6 +244,7 @@ describe("calculateShouldShowFinishOverlay", () => {
           isActive: false,
           isBust: false,
           position: null,
+          placement: null,
           throwsInCurrentRound: 0,
           currentRoundThrows: [],
           roundHistory: [
@@ -249,6 +259,7 @@ describe("calculateShouldShowFinishOverlay", () => {
           isActive: false,
           isBust: false,
           position: 1,
+          placement: 1,
           throwsInCurrentRound: 0,
           currentRoundThrows: [],
           roundHistory: [
@@ -280,6 +291,7 @@ describe("calculateShouldShowFinishOverlay", () => {
           isActive: true,
           isBust: false,
           position: null,
+          placement: null,
           throwsInCurrentRound: 0,
           currentRoundThrows: [],
           roundHistory: [
@@ -294,6 +306,7 @@ describe("calculateShouldShowFinishOverlay", () => {
           isActive: false,
           isBust: false,
           position: null,
+          placement: null,
           throwsInCurrentRound: 0,
           currentRoundThrows: [],
           roundHistory: [
@@ -308,6 +321,7 @@ describe("calculateShouldShowFinishOverlay", () => {
           isActive: false,
           isBust: false,
           position: 1,
+          placement: 1,
           throwsInCurrentRound: 0,
           currentRoundThrows: [],
           roundHistory: [
@@ -339,6 +353,7 @@ describe("calculateShouldShowFinishOverlay", () => {
           isActive: true,
           isBust: false,
           position: null,
+          placement: null,
           throwsInCurrentRound: 0,
           currentRoundThrows: [],
           roundHistory: [
@@ -353,6 +368,7 @@ describe("calculateShouldShowFinishOverlay", () => {
           isActive: false,
           isBust: false,
           position: 1,
+          placement: 1,
           throwsInCurrentRound: 0,
           currentRoundThrows: [],
           roundHistory: [

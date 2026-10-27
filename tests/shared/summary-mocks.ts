@@ -11,7 +11,14 @@ export async function mockFinishedGame(page: Page, gameId: number): Promise<void
         winnerRoundsPlayed: 5,
         winnerRoundAverage: 60.2,
         finishedPlayers: [
-          { playerId: 1, username: "Alice", position: 1, roundsPlayed: 5, roundAverage: 60.2 },
+          {
+            playerId: 1,
+            username: "Alice",
+            position: 0,
+            placement: 1,
+            roundsPlayed: 5,
+            roundAverage: 60.2,
+          },
         ],
       }),
     });

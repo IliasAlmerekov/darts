@@ -102,6 +102,37 @@ describe("GameSummaryPage route", () => {
     expect(getGameSettingsMock).toHaveBeenCalledWith(42, expect.any(AbortSignal));
   });
 
+  it("shows the second lobby seat as the winner on the podium in placement order", async () => {
+    getFinishedGameMock.mockResolvedValue([
+      {
+        playerId: 1,
+        username: "Alice",
+        position: 0,
+        placement: 2,
+        roundsPlayed: 5,
+        roundAverage: 50,
+      },
+      {
+        playerId: 2,
+        username: "Bob",
+        position: 1,
+        placement: 1,
+        roundsPlayed: 4,
+        roundAverage: 60,
+      },
+    ]);
+    getGameSettingsMock.mockResolvedValue(SETTINGS);
+
+    renderSummaryRoute();
+
+    const winner = await screen.findByRole("heading", { name: "Bob" });
+    expect(
+      screen.getAllByRole("heading", { name: /Alice|Bob/ }).map((heading) => heading.textContent),
+    ).toEqual(["Bob", "Alice"]);
+    expect(screen.getByText("WINNER").parentElement?.contains(winner)).toBe(true);
+    expect(screen.getByText("1.").parentElement?.contains(winner)).toBe(true);
+  });
+
   it("should show the settings error with Retry when the settings fetch fails", async () => {
     getFinishedGameMock.mockResolvedValue(buildFinishedPlayerResponses());
     getGameSettingsMock.mockRejectedValue(new Error("network down"));
