@@ -40,6 +40,7 @@ import { afterAll, beforeEach, describe, expect, it, vi } from "vitest";
 import type { GameThrowsResponse } from "@/types";
 import * as gameStore from "@/shared/store/game-state";
 import * as roomStore from "@/shared/store/game-session";
+import { QueryClientWrapper } from "@/test/QueryClientWrapper";
 import { useGameLogic } from "./useGameLogic";
 
 function setNavigatorWakeLock(request: (type?: WakeLockType) => Promise<WakeLockSentinel>): void {
@@ -171,7 +172,7 @@ describe("useGameLogic wake-lock wiring", () => {
     setNavigatorWakeLock(requestMock);
     getGameThrowsIfChangedMock.mockResolvedValue(buildGameData("started"));
 
-    const { result } = renderHook(() => useGameLogic());
+    const { result } = renderHook(() => useGameLogic(), { wrapper: QueryClientWrapper });
 
     await waitFor(() => {
       expect(requestMock).toHaveBeenCalledWith("screen");
@@ -195,7 +196,7 @@ describe("useGameLogic wake-lock wiring", () => {
     setNavigatorWakeLock(requestMock);
     getGameThrowsIfChangedMock.mockResolvedValue(gameData);
 
-    renderHook(() => useGameLogic());
+    renderHook(() => useGameLogic(), { wrapper: QueryClientWrapper });
     await act(async () => {
       await flushMicrotasks();
     });
@@ -210,7 +211,7 @@ describe("useGameLogic wake-lock wiring", () => {
     setNavigatorWakeLock(requestMock);
     getGameThrowsIfChangedMock.mockResolvedValue(buildGameData("started"));
 
-    renderHook(() => useGameLogic());
+    renderHook(() => useGameLogic(), { wrapper: QueryClientWrapper });
 
     await waitFor(() => {
       expect(requestMock).toHaveBeenCalledWith("screen");
@@ -232,7 +233,7 @@ describe("useGameLogic wake-lock wiring", () => {
     setNavigatorWakeLock(requestMock);
     getGameThrowsIfChangedMock.mockResolvedValue(buildGameData("lobby"));
 
-    renderHook(() => useGameLogic());
+    renderHook(() => useGameLogic(), { wrapper: QueryClientWrapper });
 
     await waitFor(() => {
       expect(gameStore.$gameData.get()?.status).toBe("lobby");
@@ -256,7 +257,7 @@ describe("useGameLogic wake-lock wiring", () => {
     setNavigatorWakeLock(requestMock);
     getGameThrowsIfChangedMock.mockResolvedValue(buildGameData("started"));
 
-    const { unmount } = renderHook(() => useGameLogic());
+    const { unmount } = renderHook(() => useGameLogic(), { wrapper: QueryClientWrapper });
 
     await waitFor(() => {
       expect(requestMock).toHaveBeenCalledWith("screen");

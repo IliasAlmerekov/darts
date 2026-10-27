@@ -2,6 +2,12 @@ import React, { useId, useState } from "react";
 import clsx from "clsx";
 import { Overlay } from "@/shared/ui/overlay";
 import { SettingsGroupBtn, Button } from "@/shared/ui/button";
+import {
+  GAME_MODE_OPTIONS,
+  isGameMode,
+  resolveGameMode,
+  toGameModeFlags,
+} from "@/lib/game/gameMode";
 import type { GameMode } from "@/types";
 import styles from "./SettingsOverlay.module.css";
 import deleteIcon from "@/assets/icons/delete.svg";
@@ -15,22 +21,6 @@ interface SettingsOverlayProps {
   initialTripleOut: boolean;
   isSaving?: boolean;
   error?: string | null;
-}
-
-const GAME_MODE_OPTIONS = [
-  { label: "Single-out", id: "single-out" },
-  { label: "Double-out", id: "double-out" },
-  { label: "Triple-out", id: "triple-out" },
-] as const satisfies ReadonlyArray<{ label: string; id: GameMode }>;
-
-function resolveGameMode(doubleOut: boolean, tripleOut: boolean): GameMode {
-  if (doubleOut) return "double-out";
-  if (tripleOut) return "triple-out";
-  return "single-out";
-}
-
-function isGameMode(id: string | number): id is GameMode {
-  return GAME_MODE_OPTIONS.some((option) => option.id === id);
 }
 
 function SettingsOverlay({
@@ -71,9 +61,7 @@ function SettingsOverlay({
   }
 
   const handleSave = (): void => {
-    const doubleOut = gameMode === "double-out";
-    const tripleOut = gameMode === "triple-out";
-    onSave({ doubleOut, tripleOut });
+    onSave(toGameModeFlags(gameMode));
   };
 
   return (

@@ -197,7 +197,7 @@ game id, room store, game store) stays in Nanostores (`state.md`).
 - The query cache is the single source for a server value that only queries hold (the
   authenticated user has no `$user` mirror). The game store is the exception: it holds the
   game state the client owns (ADR 0001), and two queries bridge to it. `gameQueries.settings`
-  seeds from `getCachedGameSettings`, and `gameQueries.lobbyPlayers` seeds from `$gameData`,
+  seeds from `$gameData` or `getCachedGameSettings`, and `gameQueries.lobbyPlayers` seeds from `$gameData`,
   both through `initialData`. `startPageLoader` writes one response to `setGameData` and to
   the lobby players query. The game page's throw queue, optimistic throws, and undo stay outside queries.
 
@@ -207,7 +207,8 @@ The project has no `useMutation`. After a write, the caller puts the server's an
 cache itself:
 
 - `cancelQueries({ queryKey })`, then `setQueryData(queryKey, value)`, so a read still in
-  flight cannot overwrite the new value (`SettingsPage/index.tsx`, `useGamePlayers.ts`,
+  flight cannot overwrite the new value (`SettingsPage/useGameSettings.ts`, the game page's
+  settings save in `GamePage/useGameActions.ts`, `useGamePlayers.ts`,
   `useRegistration.ts` with `acceptLoggedInUser`).
 - `removeQueries({ queryKey })` drops an entry the write made invalid (undo and rematch
   in `useGameSummaryPage.ts`).
