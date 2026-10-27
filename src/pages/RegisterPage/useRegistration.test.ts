@@ -26,12 +26,12 @@ const navigateMock = vi.fn();
 const registerUserMock = vi.fn();
 const getAuthenticatedUserMock = vi.fn();
 
-async function submit(
+function submit(
   registration: ReturnType<typeof useRegistration>,
   username: string,
   email: string,
   password: string,
-): Promise<void> {
+): void {
   const formData = new FormData();
   formData.set("username", username);
   formData.set("email", email);
@@ -65,7 +65,7 @@ describe("useRegistration", () => {
     const { result } = renderHook(() => useRegistration());
 
     await act(async () => {
-      await submit(result.current, "john", "invalid-email", "123");
+      submit(result.current, "john", "invalid-email", "123");
     });
 
     expect(result.current.error).toBe("Please enter a valid email address.\nPassword is invalid.");
@@ -90,7 +90,7 @@ describe("useRegistration", () => {
     const { result } = renderHook(() => useRegistration());
 
     await act(async () => {
-      await submit(result.current, "john", "john@example.com", "Password123!");
+      submit(result.current, "john", "john@example.com", "Password123!");
     });
 
     expect(registerUserMock).toHaveBeenNthCalledWith(
@@ -123,7 +123,7 @@ describe("useRegistration", () => {
     const { result } = renderHook(() => useRegistration());
 
     await act(async () => {
-      await submit(result.current, "john", "john@example.com", "Password123!");
+      submit(result.current, "john", "john@example.com", "Password123!");
     });
 
     expect(navigateMock).toHaveBeenCalledWith("/start");
@@ -139,7 +139,7 @@ describe("useRegistration", () => {
     const { result } = renderHook(() => useRegistration());
 
     await act(async () => {
-      await submit(result.current, "john", "john@example.com", "Password123!");
+      submit(result.current, "john", "john@example.com", "Password123!");
     });
 
     expect(navigateMock).toHaveBeenCalledWith("/start");
@@ -159,7 +159,7 @@ describe("useRegistration", () => {
     const { result } = renderHook(() => useRegistration());
 
     await act(async () => {
-      await submit(result.current, "john", "john@example.com", "Password123!");
+      submit(result.current, "john", "john@example.com", "Password123!");
     });
 
     expect(getActiveGameId()).toBe(42);
@@ -177,7 +177,7 @@ describe("useRegistration", () => {
     const { result } = renderHook(() => useRegistration());
 
     await act(async () => {
-      await submit(result.current, "john", "john@example.com", "Password123!");
+      submit(result.current, "john", "john@example.com", "Password123!");
     });
 
     expect(getActiveGameId()).toBeNull();
@@ -191,7 +191,7 @@ describe("useRegistration", () => {
     const { result } = renderHook(() => useRegistration());
 
     await act(async () => {
-      await submit(result.current, "john", "john@example.com", "Password123!");
+      submit(result.current, "john", "john@example.com", "Password123!");
     });
 
     expect(queryClient.getQueryData(authQueries.me().queryKey)).toEqual(failed);
@@ -206,7 +206,7 @@ describe("useRegistration", () => {
     const { result } = renderHook(() => useRegistration());
 
     await act(async () => {
-      await submit(result.current, "john", "john@example.com", "Password123!");
+      submit(result.current, "john", "john@example.com", "Password123!");
     });
 
     expect(getActiveGameId()).toBeNull();
@@ -225,7 +225,7 @@ describe("useRegistration", () => {
     const { result } = renderHook(() => useRegistration());
 
     await act(async () => {
-      await submit(result.current, "john", "john@example.com", "Password123!");
+      submit(result.current, "john", "john@example.com", "Password123!");
     });
     answerSessionCheck(null);
     await sessionCheck;
