@@ -10,6 +10,7 @@ import { parseRouteGameId } from "@/lib/router/tabletGameRoute";
 import { $invitation } from "@/shared/store";
 import { leaveRoom } from "@/shared/api/room";
 import { isApiErrorCode } from "@/lib/error/api-error-code";
+import { clientLogger } from "@/shared/services/browser/clientLogger";
 import { toUserErrorMessage } from "@/lib/error/error-to-user-message";
 
 type GamePlayersResult = ReturnType<typeof useGamePlayers>;
@@ -115,6 +116,10 @@ export function useStartPage(): UseStartPageResult {
         }
         setPageError(toUserErrorMessage(error, "Could not remove player. Please try again."));
         if (isApiErrorCode(error, "GAME_SEATS_NOT_EDITABLE")) {
+          clientLogger.warn("room.leave.seats-not-editable", {
+            context: { gameId: activeGameId },
+            error,
+          });
           // The game left the lobby: the route loader sends this tab to the game page.
           void revalidate();
         }

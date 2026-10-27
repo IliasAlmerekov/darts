@@ -34,6 +34,7 @@ import { createQueryClient } from "@/shared/query/queryClient";
 import { gameQueries } from "@/shared/query/game.queries";
 import React from "react";
 import { ApiError } from "@/shared/api";
+import { clientLogger } from "@/shared/services/browser/clientLogger";
 import { getGameThrows, getGameSettings, startGame } from "@/shared/api/game";
 import {
   createRoom,
@@ -502,6 +503,16 @@ describe("useStartPage action guards", () => {
   });
 
   describe("seat conflicts", () => {
+    let warnSpy: ReturnType<typeof vi.spyOn>;
+
+    beforeEach(() => {
+      warnSpy = vi.spyOn(clientLogger, "warn").mockImplementation(() => undefined);
+    });
+
+    afterEach(() => {
+      warnSpy.mockRestore();
+    });
+
     const SEATS_MESSAGE = "This game has already started. The lobby can no longer be changed.";
 
     function seatsNotEditable(): ApiError {
@@ -544,6 +555,10 @@ describe("useStartPage action guards", () => {
       expect(result.current.pageError).toBe(SEATS_MESSAGE);
       expect(result.current.invitation?.gameId).toBe(10);
       expect(revalidateMock).toHaveBeenCalledTimes(1);
+      expect(warnSpy).toHaveBeenCalledWith(
+        "room.leave.seats-not-editable",
+        expect.objectContaining({ context: { gameId: 10 } }),
+      );
     });
 
     it("should roll back the order, show a readable message and reload when reorder hits GAME_SEATS_NOT_EDITABLE", async () => {
@@ -593,6 +608,10 @@ describe("useStartPage action guards", () => {
       expect(result.current.guestError).toBe(SEATS_MESSAGE);
       expect(result.current.guestSuggestions).toEqual([]);
       expect(revalidateMock).toHaveBeenCalledTimes(1);
+      expect(warnSpy).toHaveBeenCalledWith(
+        "room.guest.seats-not-editable",
+        expect.objectContaining({ context: { gameId: 10 } }),
+      );
     });
 
     it("should clear the page error and close the guest overlay when the route game id changes after a conflict", async () => {
@@ -661,6 +680,10 @@ describe("useStartPage action guards", () => {
 
       expect(result.current.guestError).toBe("The lobby is full. Remove a player to add another.");
       expect(revalidateMock).not.toHaveBeenCalled();
+      expect(warnSpy).toHaveBeenCalledWith(
+        "room.guest.lobby-full",
+        expect.objectContaining({ context: { gameId: 10 } }),
+      );
     });
 
     it("should not reload after USERNAME_TAKEN", async () => {

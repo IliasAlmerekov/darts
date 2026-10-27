@@ -3,6 +3,7 @@ import { ApiError } from "@/shared/api";
 import { addGuestPlayer } from "@/shared/api/room";
 import { isApiErrorCode } from "@/lib/error/api-error-code";
 import { toUserErrorMessage } from "@/lib/error/error-to-user-message";
+import { clientLogger } from "@/shared/services/browser/clientLogger";
 import { validateGuestUsername } from "./lib/guestUsername";
 import type { AddGuestErrorResponse } from "@/types";
 
@@ -152,12 +153,14 @@ export function useGuestFlow({
       closeGuestOverlay();
     } catch (error) {
       if (isApiErrorCode(error, "GAME_SEATS_NOT_EDITABLE")) {
+        clientLogger.warn("room.guest.seats-not-editable", { context: { gameId }, error });
         setGuestError(toUserErrorMessage(error));
         void onSeatsNotEditable();
         return;
       }
 
       if (isApiErrorCode(error, "GAME_ROOM_FULL")) {
+        clientLogger.warn("room.guest.lobby-full", { context: { gameId }, error });
         setGuestError(toUserErrorMessage(error));
         return;
       }
