@@ -10,6 +10,7 @@ import {
 } from "@/shared/ui/pagination";
 import type { SortMethod } from "@/shared/ui/sort-tabs";
 import { StatisticsHeaderControls } from "@/shared/ui/statistics-header-controls";
+import type { PlayerStatsParams } from "@/shared/query/statistics.queries";
 import { sortPlayerStatsByAverage } from "./lib/sort-player-stats";
 import { usePlayerStats } from "./usePlayerStats";
 
@@ -49,7 +50,7 @@ const StatisticsPagination = React.memo(function StatisticsPagination({
   );
 });
 
-function sortParamFromMethod(method: SortMethod): string {
+function sortParamFromMethod(method: SortMethod): PlayerStatsParams["sortParam"] {
   if (method === "alphabetically") return "name:asc";
   return "average:desc";
 }

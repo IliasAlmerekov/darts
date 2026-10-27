@@ -6,7 +6,7 @@ import type { FinishedGameProps, GameDataProps } from "@/types";
 export interface PlayerStatsParams {
   limit: number;
   offset: number;
-  sortParam: string | undefined;
+  sortParam: "name:asc" | "average:desc";
 }
 
 export const INITIAL_PLAYER_STATS_PARAMS: Readonly<PlayerStatsParams> = {
