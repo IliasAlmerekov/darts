@@ -1,5 +1,6 @@
 import { test, expect, type Locator, type Page, type Route } from "../shared/test";
 import { mockAdminSession } from "../shared/auth-route-mocks";
+import { navigateInApp } from "../shared/in-app-navigation";
 import { mockFinishedGame } from "../shared/summary-mocks";
 import { mockTabletGame, startedTabletGame } from "../shared/tablet-game-mocks";
 
@@ -113,14 +114,6 @@ async function mockGameSettings(page: Page, gameId: number): Promise<void> {
       tripleOut: false,
     });
   });
-}
-
-/** Opens a route without a page load, the way an in-app link does. */
-async function navigateInApp(page: Page, path: string): Promise<void> {
-  await page.evaluate((nextPath) => {
-    window.history.pushState({}, "", nextPath);
-    window.dispatchEvent(new PopStateEvent("popstate"));
-  }, path);
 }
 
 const playerCard = (page: Page, name: string): Locator => page.getByRole("group", { name });

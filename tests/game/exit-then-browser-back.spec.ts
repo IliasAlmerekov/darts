@@ -1,5 +1,6 @@
 import { test, expect, type Route } from "../shared/test";
 import { mockAdminSession } from "../shared/auth-route-mocks";
+import { navigateInApp } from "../shared/in-app-navigation";
 import { mockQuietRoomStream } from "../shared/room-stream-mocks";
 import { mockTabletGame, startedTabletGame } from "../shared/tablet-game-mocks";
 
@@ -74,10 +75,7 @@ test.describe("Leaving the game with the browser Back button while End Game runs
     // A page the app can return to with Back; the game opens on top of it in the same SPA history.
     await page.goto("/start/abc");
     await expect(page.getByRole("heading", { level: 1, name: "Page not found" })).toBeVisible();
-    await page.evaluate((path) => {
-      window.history.pushState({}, "", path);
-      window.dispatchEvent(new PopStateEvent("popstate"));
-    }, `/game/${GAME_ID}`);
+    await navigateInApp(page, `/game/${GAME_ID}`);
     await expect(page.getByRole("button", { name: "Back to Home" })).toBeVisible();
 
     await page.getByRole("button", { name: "Back to Home" }).click();
@@ -87,9 +85,12 @@ test.describe("Leaving the game with the browser Back button while End Game runs
     await page.goBack();
     await expect(page.getByRole("heading", { level: 1, name: "Page not found" })).toBeVisible();
 
+    // The abort answer reaches the page, then one frame passes: a continuing exit has sent
+    // its rematch request by then.
+    const abortResponse = page.waitForResponse(`**/api/game/${GAME_ID}/abort`);
     releaseAbort();
-    // Give a wrongly continuing exit time to send the rematch and navigate.
-    await page.waitForTimeout(500);
+    await (await abortResponse).finished();
+    await page.evaluate(() => new Promise((resolve) => requestAnimationFrame(resolve)));
 
     expect(rematchRequests).toEqual([]);
     await expect(page).not.toHaveURL(new RegExp(`/start/${REMATCH_ID}$`));
