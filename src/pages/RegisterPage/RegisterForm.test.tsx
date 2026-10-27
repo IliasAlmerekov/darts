@@ -9,7 +9,12 @@ import { RegisterForm } from "./RegisterForm";
 function renderForm(error: string | null) {
   return render(
     <MemoryRouter>
-      <RegisterForm error={error} loading={false} onSubmit={vi.fn()} />
+      <RegisterForm
+        error={error}
+        loading={false}
+        action={vi.fn()}
+        values={{ username: "", email: "", password: "" }}
+      />
     </MemoryRouter>,
   );
 }
@@ -59,7 +64,12 @@ describe("RegisterForm pending state", () => {
   it("disables Create account and shows a spinner instead of text while loading", () => {
     render(
       <MemoryRouter>
-        <RegisterForm error={null} loading={true} onSubmit={vi.fn()} />
+        <RegisterForm
+          error={null}
+          loading={true}
+          action={vi.fn()}
+          values={{ username: "", email: "", password: "" }}
+        />
       </MemoryRouter>,
     );
 

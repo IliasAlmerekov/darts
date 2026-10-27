@@ -10,13 +10,16 @@ import { REGISTRATION_EMAIL_DOMAIN } from "@/lib/auth/email";
 interface RegistrationFormProps {
   error: string | null;
   loading: boolean;
-  onSubmit: (e: React.FormEvent<HTMLFormElement>) => void;
+  action: (formData: FormData) => void;
+  /** The values to show in the fields; they survive the reset React 19 does after an action. */
+  values: { username: string; email: string; password: string };
 }
 
 export function RegisterForm({
   error,
   loading,
-  onSubmit,
+  action,
+  values,
 }: RegistrationFormProps): React.JSX.Element {
   const [showPassword, setShowPassword] = useState(false);
 
@@ -37,7 +40,7 @@ export function RegisterForm({
         </div>
       )}
 
-      <form onSubmit={onSubmit} className={styles.form} data-testid="register-form">
+      <form action={action} className={styles.form} data-testid="register-form">
         <div className={styles.fieldGroup}>
           <label htmlFor="username" className={styles.formLabel}>
             Username <span className={styles.required}>*</span>
@@ -48,6 +51,7 @@ export function RegisterForm({
               type="text"
               name="username"
               id="username"
+              defaultValue={values.username}
               placeholder="Enter your username..."
               className={styles.formControl}
               required
@@ -67,6 +71,7 @@ export function RegisterForm({
               type="email"
               name="email"
               id="email"
+              defaultValue={values.email}
               placeholder={`name${REGISTRATION_EMAIL_DOMAIN}`}
               className={styles.formControl}
               required
@@ -89,6 +94,7 @@ export function RegisterForm({
               type={showPassword ? "text" : "password"}
               name="password"
               id="password"
+              defaultValue={values.password}
               placeholder="Create a password..."
               className={clsx(styles.formControl, styles.passwordInput)}
               required

@@ -12,6 +12,7 @@ vi.mock("@/shared/services/browser/clientLogger", () => ({
   clientLogger: { warn: vi.fn(), error: vi.fn() },
 }));
 
+import { startTransition } from "react";
 import { act, renderHook } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { ApiError } from "@/shared/api";
@@ -24,6 +25,22 @@ import { getActiveGameId, setCurrentGameId } from "@/shared/store";
 const navigateMock = vi.fn();
 const registerUserMock = vi.fn();
 const getAuthenticatedUserMock = vi.fn();
+
+async function submit(
+  registration: ReturnType<typeof useRegistration>,
+  username: string,
+  email: string,
+  password: string,
+): Promise<void> {
+  const formData = new FormData();
+  formData.set("username", username);
+  formData.set("email", email);
+  formData.set("password", password);
+
+  startTransition(() => {
+    registration.formAction(formData);
+  });
+}
 
 describe("useRegistration", () => {
   beforeEach(() => {
@@ -48,7 +65,7 @@ describe("useRegistration", () => {
     const { result } = renderHook(() => useRegistration());
 
     await act(async () => {
-      await result.current.register("john", "invalid-email", "123");
+      await submit(result.current, "john", "invalid-email", "123");
     });
 
     expect(result.current.error).toBe("Please enter a valid email address.\nPassword is invalid.");
@@ -73,7 +90,7 @@ describe("useRegistration", () => {
     const { result } = renderHook(() => useRegistration());
 
     await act(async () => {
-      await result.current.register("john", "john@example.com", "Password123!");
+      await submit(result.current, "john", "john@example.com", "Password123!");
     });
 
     expect(registerUserMock).toHaveBeenNthCalledWith(
@@ -106,7 +123,7 @@ describe("useRegistration", () => {
     const { result } = renderHook(() => useRegistration());
 
     await act(async () => {
-      await result.current.register("john", "john@example.com", "Password123!");
+      await submit(result.current, "john", "john@example.com", "Password123!");
     });
 
     expect(navigateMock).toHaveBeenCalledWith("/start");
@@ -122,7 +139,7 @@ describe("useRegistration", () => {
     const { result } = renderHook(() => useRegistration());
 
     await act(async () => {
-      await result.current.register("john", "john@example.com", "Password123!");
+      await submit(result.current, "john", "john@example.com", "Password123!");
     });
 
     expect(navigateMock).toHaveBeenCalledWith("/start");
@@ -142,7 +159,7 @@ describe("useRegistration", () => {
     const { result } = renderHook(() => useRegistration());
 
     await act(async () => {
-      await result.current.register("john", "john@example.com", "Password123!");
+      await submit(result.current, "john", "john@example.com", "Password123!");
     });
 
     expect(getActiveGameId()).toBe(42);
@@ -160,7 +177,7 @@ describe("useRegistration", () => {
     const { result } = renderHook(() => useRegistration());
 
     await act(async () => {
-      await result.current.register("john", "john@example.com", "Password123!");
+      await submit(result.current, "john", "john@example.com", "Password123!");
     });
 
     expect(getActiveGameId()).toBeNull();
@@ -174,7 +191,7 @@ describe("useRegistration", () => {
     const { result } = renderHook(() => useRegistration());
 
     await act(async () => {
-      await result.current.register("john", "john@example.com", "Password123!");
+      await submit(result.current, "john", "john@example.com", "Password123!");
     });
 
     expect(queryClient.getQueryData(authQueries.me().queryKey)).toEqual(failed);
@@ -189,7 +206,7 @@ describe("useRegistration", () => {
     const { result } = renderHook(() => useRegistration());
 
     await act(async () => {
-      await result.current.register("john", "john@example.com", "Password123!");
+      await submit(result.current, "john", "john@example.com", "Password123!");
     });
 
     expect(getActiveGameId()).toBeNull();
@@ -208,7 +225,7 @@ describe("useRegistration", () => {
     const { result } = renderHook(() => useRegistration());
 
     await act(async () => {
-      await result.current.register("john", "john@example.com", "Password123!");
+      await submit(result.current, "john", "john@example.com", "Password123!");
     });
     answerSessionCheck(null);
     await sessionCheck;

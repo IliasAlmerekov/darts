@@ -7,7 +7,7 @@ import JoiningScreen from "./JoiningScreen";
 import deepblueLogo from "@/assets/icons/madeByDeepblue.svg";
 
 function RegisterPage(): React.JSX.Element {
-  const { screen, error, loading, handleSubmit, goToPlayerProfile } = useRegistrationPage();
+  const { screen, error, loading, formAction, values, goToPlayerProfile } = useRegistrationPage();
 
   if (screen.type === "joining") {
     return <JoiningScreen />;
@@ -28,7 +28,7 @@ function RegisterPage(): React.JSX.Element {
           </div>
           <div className={styles.loginCard}>
             <div className={styles.loginCardBody}>
-              <RegisterForm error={error} loading={loading} onSubmit={handleSubmit} />
+              <RegisterForm error={error} loading={loading} action={formAction} values={values} />
             </div>
           </div>
         </div>
