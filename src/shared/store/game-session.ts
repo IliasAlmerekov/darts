@@ -1,5 +1,6 @@
 import { atom } from "nanostores";
 import type { ReadableAtom } from "nanostores";
+import { DEFAULT_START_SCORE } from "@/lib/game/gameMode";
 import { isRecord } from "@/lib/guards/guards";
 import { clientLogger } from "@/shared/services/browser/clientLogger";
 import type { CreateGameSettingsPayload } from "@/types";
@@ -14,7 +15,7 @@ export const INVITATION_STORAGE_KEY = "darts_current_invitation";
 export const PRE_CREATE_SETTINGS_STORAGE_KEY = "darts_pre_create_game_settings";
 
 const DEFAULT_PRE_CREATE_GAME_SETTINGS: CreateGameSettingsPayload = {
-  startScore: 301,
+  startScore: DEFAULT_START_SCORE,
   doubleOut: false,
   tripleOut: false,
 };
