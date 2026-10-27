@@ -595,8 +595,11 @@
                     "404": {
                         "description": "Spieler wurde im Spiel nicht gefunden."
                     },
+                    "409": {
+                        "description": "Das Spiel ist nicht mehr in der Lobby (`GAME_SEATS_NOT_EDITABLE`). Der Spieler bleibt im Spiel."
+                    },
                     "422": {
-                        "description": "Der Request-Body ist ung\u00fcltig und besteht die Validierung nicht."
+                        "description": "Der Request-Body ist ung\u00fcltig und besteht die Validierung nicht. Das wird vor dem Status gepr\u00fcft, also auch au\u00dferhalb der Lobby mit 422 statt 409 beantwortet."
                     }
                 }
             }
@@ -659,6 +662,11 @@
                                                     "example": 2,
                                                     "nullable": true
                                                 },
+                                                "placement": {
+                                                    "type": "integer",
+                                                    "example": null,
+                                                    "nullable": true
+                                                },
                                                 "isGuest": {
                                                     "type": "boolean",
                                                     "example": true
@@ -673,7 +681,7 @@
                         }
                     },
                     "409": {
-                        "description": "Username ist bereits vergeben.",
+                        "description": "Username ist bereits vergeben (`USERNAME_TAKEN`), das Spiel ist nicht mehr in der Lobby (`GAME_SEATS_NOT_EDITABLE`) oder hat schon 10 Spieler (`GAME_ROOM_FULL`). Gepr\u00fcft wird in dieser Reihenfolge: Status, volle Lobby, Name. Es wird weder ein Gast noch ein Platz angelegt.",
                         "content": {
                             "application/json": {
                                 "schema": {
@@ -713,7 +721,7 @@
                         }
                     },
                     "422": {
-                        "description": "Der Request-Body ist ung\u00fcltig und besteht die Validierung nicht."
+                        "description": "Der Request-Body ist ung\u00fcltig und besteht die Validierung nicht. Das wird vor dem Status gepr\u00fcft, also auch au\u00dferhalb der Lobby mit 422 statt 409 beantwortet."
                     }
                 }
             }
@@ -769,8 +777,11 @@
                     "404": {
                         "description": "Spiel nicht gefunden."
                     },
+                    "409": {
+                        "description": "Das Spiel ist nicht mehr in der Lobby (`GAME_SEATS_NOT_EDITABLE`), auch bei leerem `positions`. Die Positionen bleiben unver\u00e4ndert."
+                    },
                     "422": {
-                        "description": "Der Request-Body ist ung\u00fcltig und besteht die Validierung nicht."
+                        "description": "Der Request-Body ist ung\u00fcltig und besteht die Validierung nicht. Das wird vor dem Status gepr\u00fcft, also auch au\u00dferhalb der Lobby mit 422 statt 409 beantwortet."
                     }
                 }
             }
@@ -2459,8 +2470,7 @@
                                 "type": "integer"
                             }
                         },
-                        "default": [],
-                        "minItems": 1
+                        "default": []
                     }
                 },
                 "type": "object"
@@ -2577,6 +2587,11 @@
                         "type": "boolean"
                     },
                     "position": {
+                        "type": "integer",
+                        "nullable": true,
+                        "default": null
+                    },
+                    "placement": {
                         "type": "integer",
                         "nullable": true,
                         "default": null
@@ -2758,11 +2773,17 @@
                         "type": "integer",
                         "nullable": true
                     },
+                    "placement": {
+                        "type": "integer",
+                        "nullable": true
+                    },
                     "roundsPlayed": {
+                        "description": "Aufnahmen, die der Spieler in diesem Spiel geworfen hat.",
                         "type": "integer",
                         "nullable": true
                     },
                     "roundAverage": {
+                        "description": "Drei-Dart-Durchschnitt: Punkte geteilt durch geworfene Darts, mal drei. Eine Aufnahme mit Bust z\u00e4hlt 0 Punkte und 3 Darts.",
                         "type": "number",
                         "format": "float"
                     }
@@ -2793,9 +2814,11 @@
                         ]
                     },
                     "winnerRoundsPlayed": {
+                        "description": "Aufnahmen, die der Sieger geworfen hat; `roundsPlayed` seines Eintrags in `finishedPlayers`.",
                         "type": "integer"
                     },
                     "winnerRoundAverage": {
+                        "description": "Drei-Dart-Durchschnitt des Siegers; `roundAverage` seines Eintrags in `finishedPlayers`.",
                         "type": "number",
                         "format": "float"
                     },
@@ -2902,6 +2925,7 @@
                         "type": "integer"
                     },
                     "scoreAverage": {
+                        "description": "Drei-Dart-Durchschnitt \u00fcber alle Aufnahmen beendeter Spiele: Punkte geteilt durch geworfene Darts, mal drei. Eine Aufnahme mit Bust z\u00e4hlt 0 Punkte und 3 Darts.",
                         "type": "number",
                         "format": "float"
                     }
@@ -3000,6 +3024,10 @@
                         "type": "integer"
                     },
                     "position": {
+                        "type": "integer",
+                        "nullable": true
+                    },
+                    "placement": {
                         "type": "integer",
                         "nullable": true
                     },
@@ -3330,6 +3358,7 @@
                         "type": "integer"
                     },
                     "scoreAverage": {
+                        "description": "Drei-Dart-Durchschnitt \u00fcber alle Aufnahmen der gez\u00e4hlten Spiele; `null` ohne gez\u00e4hlte Spiele.",
                         "type": "number",
                         "format": "float",
                         "nullable": true
@@ -3443,6 +3472,7 @@
                         "nullable": true
                     },
                     "roundAverage": {
+                        "description": "Drei-Dart-Durchschnitt des Spielers in diesem Spiel, wie in der Spielzusammenfassung.",
                         "type": "number",
                         "format": "float"
                     },
