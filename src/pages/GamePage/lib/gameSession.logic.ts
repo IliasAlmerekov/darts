@@ -11,7 +11,7 @@ import {
   applyOptimisticThrow,
   applyOptimisticUndo,
   applyScoreboardDeltaToGameState,
-} from "../throws/throwStateService";
+} from "./optimisticThrow.logic";
 import { isLastActivePlayerLeft } from "./gameLogic.helpers";
 
 /** ADR 0003: two full turns may wait for the server. */
