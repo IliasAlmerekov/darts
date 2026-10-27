@@ -99,7 +99,16 @@ describe("game/rematch api", () => {
     );
     vi.mocked(apiClient.post)
       .mockImplementationOnce(respondWith({ gameId: 777, success: true }))
-      .mockImplementationOnce(respondWith({}));
+      .mockImplementationOnce(
+        respondWith({
+          id: 777,
+          status: "started",
+          currentRound: 1,
+          currentThrowCount: 0,
+          players: [],
+          settings: { startScore: 501, doubleOut: true, tripleOut: false },
+        }),
+      );
 
     const response = await startRematch(520);
 

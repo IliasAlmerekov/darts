@@ -12,8 +12,7 @@ Rules for React components, hooks, and effects in this project.
 
 ## Memoization
 
-`React.memo` is the convention; `memo` imported bare from `"react"` is not
-(`Keyboard.tsx` still does; #215 fixes it). Three forms:
+`React.memo` is the convention; `memo` imported bare from `"react"` is not. Three forms:
 
 ```tsx
 // 1. Inline named (tiny component near its use)

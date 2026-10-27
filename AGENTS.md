@@ -182,7 +182,7 @@ Check these on every diff:
 - **Contract.** A Valibot schema in `src/shared/api/` matches
   `docs/backend-api-contract.json` at the same commit. A schema widened to `v.any()`,
   `v.unknown()`, or an optional field the contract requires, so that a response passes, is
-  a P1. `docs/convention/api.md` lists the one open exception.
+  a P1.
 - **Async lifecycle.** An effect that subscribes, starts a timer, opens an `EventSource`, or
   sends a request cleans up on unmount and on dependency change. A request passes its
   `signal`. A late response for a previous game or player never overwrites the current one.

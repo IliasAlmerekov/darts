@@ -1,4 +1,4 @@
-import React, { memo, useState } from "react";
+import React, { useState } from "react";
 import styles from "./Keyboard.module.css";
 import { NumberButton } from "./NumberButton";
 import { unlockSounds } from "@/shared/services/browser/soundPlayer";
@@ -69,4 +69,4 @@ function KeyboardComponent({ onThrow, disabled }: KeyboardProps): React.JSX.Elem
   );
 }
 
-export const Keyboard = memo(KeyboardComponent);
+export const Keyboard = React.memo(KeyboardComponent);

@@ -15,6 +15,7 @@ and this project does **not** yet follow [Semantic Versioning](https://semver.or
 
 ### Changed
 
+- Game page: `Keyboard` uses `React.memo` instead of `memo` imported bare from `"react"`, as `docs/convention/react.md` requires (#215)
 - Routing: an invalid game id (`abc`, `0`, `-5`, `1e3`) on `/start`, `/game`, `/settings`, `/summary` and `/details` answers 404 and shows the not found page, before the loader sends any request. These routes redirected to the tablet game, stayed on the summary with a settings error, or showed "Something went wrong". `ErrorBoundary` shows the not found page for a 404 route error and no longer logs it as `route_error_boundary_crash`. `/details/1e3` and `/details/1.5` were accepted before and are 404 now. ADR 0004 records the new rule (#260)
 - API: the Player profile response follows the refreshed backend contract. It carries `registeredAt`, the Registration date, and the stats carry wins, win rate, checkout rate, checkout hits and attempts, the hit distribution, the most hit segment, favorite doubles and the highest finish from darts-backend#149. A response without the new required stats fields fails validation, so this needs the backend with darts-backend#149 deployed (#257)
 - Player profile: "Member since" shows the month the player registered, such as "Member since Feb 2026", from `registeredAt` in the timestamp's own offset, without a "Sample data" badge. The line is left out while the profile loads, when it failed to load, and when the player has no valid Registration date (#262)
@@ -40,6 +41,8 @@ and this project does **not** yet follow [Semantic Versioning](https://semver.or
 ### Fixed
 
 - Statistics: alphabetical mode requests `sort=name:asc` and shows rows in the server's order, so page 2 continues the A–Z list where page 1 ended. Before, the page fetched the players with the best average and sorted only that page by name. Needs darts-backend#166 deployed (#342)
+- API: the game start response is validated against the contract as `GameResponseDto`, after darts-backend#46. A start or rematch start answer that is not a game state now fails with a validation error instead of passing unchecked (#206)
+- Lobby: when the room stream closes, the start page revalidates its route. A game that was started or aborted elsewhere now leaves the start page instead of the stream reconnecting every 30 s, and a game still in the lobby stays and keeps reconnecting. `useEventSource` gains an optional `onClosed` callback for an `error` that leaves the source closed (#206)
 - Lobby: a stale lobby tab that removes a player, adds a guest or reorders players after the game started shows "This game has already started. The lobby can no longer be changed." instead of the raw code `GAME_SEATS_NOT_EDITABLE`, then reloads the route so the tab ends on the game page. Adding a guest to a full lobby shows "The lobby is full. Remove a player to add another." instead of the generic guest error (#327)
 - Settings: while a game's settings save is pending, both the Game Mode and the Points buttons are disabled. Before, the other group looked enabled but ignored the click (#338)
 
