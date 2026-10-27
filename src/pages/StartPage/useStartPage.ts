@@ -61,7 +61,7 @@ export function useStartPage(): UseStartPageResult {
     count: playerCount,
     appendOptimisticPlayer,
     removeOptimisticPlayer,
-  } = useGamePlayers(gameId);
+  } = useGamePlayers(gameId, revalidate);
 
   const isCurrentGame = useIsCurrentGame(gameId);
   const { pageError, setPageError, clearPageError } = useStartPageError();

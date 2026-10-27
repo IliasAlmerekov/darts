@@ -65,14 +65,20 @@ import {
 type EventHandler = (event: MessageEvent<string>) => void;
 
 class MockEventSource {
+  static CONNECTING = 0 as const;
+  static OPEN = 1 as const;
+  static CLOSED = 2 as const;
   static last: MockEventSource | null = null;
+  static urls: string[] = [];
 
   onopen: (() => void) | null = null;
   onerror: (() => void) | null = null;
+  readyState: 0 | 1 | 2 = MockEventSource.CONNECTING;
 
   private handlers = new Map<string, EventHandler[]>();
 
-  constructor() {
+  constructor(url: string | URL) {
+    MockEventSource.urls.push(String(url));
     MockEventSource.last = this;
   }
 
@@ -97,8 +103,13 @@ class MockEventSource {
     }
   }
 
+  fail(readyState: 0 | 1 | 2): void {
+    this.readyState = readyState;
+    this.onerror?.();
+  }
+
   close(): void {
-    // noop
+    this.readyState = MockEventSource.CLOSED;
   }
 }
 
@@ -173,6 +184,7 @@ describe("useStartPage action guards", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     MockEventSource.last = null;
+    MockEventSource.urls = [];
     sessionStorage.clear();
     resetRoomStore();
     resetGameStore();
@@ -915,6 +927,53 @@ describe("useStartPage action guards", () => {
       });
 
       expect(result.current.guestSuggestions).toEqual(["Alex2"]);
+      expect(revalidateMock).not.toHaveBeenCalled();
+    });
+  });
+
+  describe("room stream closed", () => {
+    it("should revalidate the route when the room stream closes", () => {
+      setInvitation({ gameId: 10, invitationLink: "/invite/10" });
+      renderHook(() => useStartPage(), { wrapper: makeWrapper("/start/10") });
+
+      act(() => {
+        MockEventSource.last?.fail(MockEventSource.CLOSED);
+      });
+
+      expect(revalidateMock).toHaveBeenCalledTimes(1);
+    });
+
+    it("should revalidate and open the same room stream again after the backoff delay", () => {
+      vi.useFakeTimers();
+      try {
+        setInvitation({ gameId: 10, invitationLink: "/invite/10" });
+        renderHook(() => useStartPage(), { wrapper: makeWrapper("/start/10") });
+
+        act(() => {
+          MockEventSource.last?.fail(MockEventSource.CLOSED);
+        });
+
+        expect(revalidateMock).toHaveBeenCalledTimes(1);
+        expect(MockEventSource.urls).toEqual(["/api/room/10/stream"]);
+
+        act(() => {
+          vi.advanceTimersByTime(1000);
+        });
+
+        expect(MockEventSource.urls).toEqual(["/api/room/10/stream", "/api/room/10/stream"]);
+      } finally {
+        vi.useRealTimers();
+      }
+    });
+
+    it("should not revalidate the route when the room stream fails while reconnecting", () => {
+      setInvitation({ gameId: 10, invitationLink: "/invite/10" });
+      renderHook(() => useStartPage(), { wrapper: makeWrapper("/start/10") });
+
+      act(() => {
+        MockEventSource.last?.fail(MockEventSource.CONNECTING);
+      });
+
       expect(revalidateMock).not.toHaveBeenCalled();
     });
   });

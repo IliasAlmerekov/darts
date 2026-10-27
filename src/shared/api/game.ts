@@ -197,10 +197,6 @@ const undoAckResponseSchema = v.object({
 // UndoAckDto during the compact-delta rollout. #101 owns that union.
 const undoThrowResponseSchema = v.union([gameThrowsResponseSchema, undoAckResponseSchema]);
 
-// The start response goes unvalidated: the backend sends [] instead of the game
-// (darts-backend#46), and startGame never reads the body.
-const unvalidatedStartGameResponseSchema = v.unknown();
-
 /** Contract response of `POST /api/room/{id}/rematch`. */
 const rematchResponseSchema = v.object({
   success: v.boolean(),
@@ -362,7 +358,7 @@ export async function startGame(gameId: number, config: StartGameRequest): Promi
       tripleOut: config.tripleOut,
     },
     {
-      validate: unvalidatedStartGameResponseSchema,
+      validate: gameThrowsResponseSchema,
     },
   );
 }
