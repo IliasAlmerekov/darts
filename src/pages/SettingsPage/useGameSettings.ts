@@ -97,7 +97,9 @@ export function useGameSettings(): UseGameSettingsReturn {
       const payload = buildPayload(previous);
       // A read still in flight started before the change, so its response would be older.
       void queryClient.cancelQueries({ queryKey });
-      const optimistic = queryClient.setQueryData(queryKey, { ...previous, ...payload });
+      queryClient.setQueryData(queryKey, { ...previous, ...payload });
+      // Each write counts, even one whose value equals this one and keeps its reference.
+      const optimisticWrite = queryClient.getQueryState(queryKey)?.dataUpdateCount;
 
       try {
         const response = await saveGameSettings(payload, gameId);
@@ -106,7 +108,7 @@ export function useGameSettings(): UseGameSettingsReturn {
         setGameSettings(response, gameId);
       } catch (error) {
         // A later save, also one from a remounted page, may have replaced the optimistic value.
-        if (queryClient.getQueryData(queryKey) === optimistic) {
+        if (queryClient.getQueryState(queryKey)?.dataUpdateCount === optimisticWrite) {
           queryClient.setQueryData(queryKey, previous);
         }
         setSaveError({ gameId, message: toUserErrorMessage(error, SAVE_FAILURE[scope].message) });

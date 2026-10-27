@@ -290,6 +290,33 @@ describe("useGameSettings", () => {
     });
   });
 
+  it("keeps a later save's equal response when an earlier save from an unmounted page fails", async () => {
+    // The game store holds the game, so a remounted page reads the cache without a refetch.
+    setGameData(gameResponse(1, { startScore: 401, doubleOut: false, tripleOut: true }));
+    const saved = { startScore: 501, doubleOut: false, tripleOut: true };
+    const firstSave = deferred<GameSettingsResponse>();
+    saveGameSettingsMock
+      .mockImplementationOnce(() => firstSave.promise)
+      .mockResolvedValueOnce(saved);
+    const firstPage = renderHook(() => useGameSettings(), { wrapper });
+
+    act(() => {
+      firstPage.result.current.selectPoints(501);
+    });
+    firstPage.unmount();
+    const secondPage = renderHook(() => useGameSettings(), { wrapper });
+    await act(async () => {
+      secondPage.result.current.selectPoints(501);
+    });
+    await act(async () => {
+      firstSave.reject(new Error("Network down"));
+      await firstSave.promise.catch(() => undefined);
+    });
+
+    expect(testQueryClient.getQueryData(gameQueries.settings(1).queryKey)).toEqual(saved);
+    expect(secondPage.result.current.selectedPoints).toBe(501);
+  });
+
   it("reads the game store's settings when the settings cache holds another game", () => {
     setGameData(gameResponse(2, { startScore: 501, doubleOut: true, tripleOut: false }));
     setGameSettings({ startScore: 101, doubleOut: false, tripleOut: false }, 1);
