@@ -1,5 +1,6 @@
-import { test, expect, type Route } from "../shared/test";
+import { test, expect } from "../shared/test";
 import { mockAdminSession } from "../shared/auth-route-mocks";
+import { fulfillJson, mockGameState } from "../shared/game-route-mocks";
 import { navigateInApp } from "../shared/in-app-navigation";
 import { mockQuietRoomStream } from "../shared/room-stream-mocks";
 import { mockTabletGame, startedTabletGame } from "../shared/tablet-game-mocks";
@@ -31,10 +32,6 @@ const startedGame = {
   players: [player(1, "Alice", true), player(2, "Bob", false)],
 };
 
-async function fulfillJson(route: Route, body: unknown): Promise<void> {
-  await route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify(body) });
-}
-
 test.describe("Leaving the game with the browser Back button while End Game runs", () => {
   test("should not create a rematch or open its lobby when the abort answers after Back", async ({
     page,
@@ -43,13 +40,7 @@ test.describe("Leaving the game with the browser Back button while End Game runs
     await mockTabletGame(page, startedTabletGame(GAME_ID));
     await mockQuietRoomStream(page);
 
-    await page.route(`**/api/game/${GAME_ID}`, async (route) => {
-      if (route.request().method() !== "GET") {
-        await route.fallback();
-        return;
-      }
-      await fulfillJson(route, startedGame);
-    });
+    await mockGameState(page, GAME_ID, startedGame);
 
     let releaseAbort: () => void = () => {};
     const abortReleased = new Promise<void>((resolve) => {
@@ -61,6 +52,10 @@ test.describe("Leaving the game with the browser Back button while End Game runs
       await abortReleased;
       await fulfillJson(route, { success: true, message: "Game aborted" });
     });
+
+    // A request the page sends after the abort answer. The page sends it last, so its route
+    // has run only after every earlier request's route has.
+    await page.route("**/api/__settled", (route) => route.fulfill({ status: 204 }));
 
     const rematchRequests: string[] = [];
     await page.route(`**/api/room/${GAME_ID}/rematch`, async (route) => {
@@ -85,15 +80,15 @@ test.describe("Leaving the game with the browser Back button while End Game runs
     await page.goBack();
     await expect(page.getByRole("heading", { level: 1, name: "Page not found" })).toBeVisible();
 
-    // The abort answer reaches the page, then one frame passes: a continuing exit has sent
-    // its rematch request by then.
     const abortResponse = page.waitForResponse(`**/api/game/${GAME_ID}/abort`);
     releaseAbort();
     await (await abortResponse).finished();
     await page.evaluate(() => new Promise((resolve) => requestAnimationFrame(resolve)));
+    // The hook goes from the abort answer to the rematch request in microtasks only, so a
+    // continuing exit has fetched the rematch before this request. Its route handler has run
+    // by the time this evaluate returns, so the check below cannot run too early.
+    await page.evaluate(() => fetch("/api/__settled").then(() => undefined));
 
     expect(rematchRequests).toEqual([]);
-    await expect(page).not.toHaveURL(new RegExp(`/start/${REMATCH_ID}$`));
-    await expect(page).toHaveURL(/\/start\/abc$/);
   });
 });

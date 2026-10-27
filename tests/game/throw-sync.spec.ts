@@ -1,5 +1,6 @@
-import { test, expect, type Locator, type Page, type Route } from "../shared/test";
+import { test, expect, type Locator, type Page } from "../shared/test";
 import { mockAdminSession } from "../shared/auth-route-mocks";
+import { fulfillJson, mockGameState } from "../shared/game-route-mocks";
 import { navigateInApp } from "../shared/in-app-navigation";
 import { mockFinishedGame } from "../shared/summary-mocks";
 import { mockTabletGame, startedTabletGame } from "../shared/tablet-game-mocks";
@@ -88,21 +89,6 @@ const playerScores = (
   { ...ALICE, score: alice, isActive: active === "Alice" },
   { ...BOB, score: bob, isActive: active === "Bob" },
 ];
-
-async function fulfillJson(route: Route, body: unknown): Promise<void> {
-  await route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify(body) });
-}
-
-async function mockGameState(page: Page, gameId: number, state: unknown): Promise<void> {
-  await page.route(`**/api/game/${gameId}`, async (route) => {
-    if (route.request().method() !== "GET") {
-      await route.fallback();
-      return;
-    }
-
-    await fulfillJson(route, state);
-  });
-}
 
 async function mockGameSettings(page: Page, gameId: number): Promise<void> {
   await page.route(`**/api/game/${gameId}/settings`, async (route) => {
