@@ -1,5 +1,13 @@
 // @vitest-environment jsdom
 
+vi.mock("react-router-dom", async (importOriginal) => {
+  const original = await importOriginal<Record<string, unknown>>();
+  return {
+    ...original,
+    useRevalidator: () => ({ revalidate: vi.fn(), state: "idle" }),
+  };
+});
+
 vi.mock("@/shared/api/game", () => ({
   getGameThrows: vi.fn(),
   getGameSettings: vi.fn(),

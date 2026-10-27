@@ -2,9 +2,11 @@ import { useCallback, useRef, useState } from "react";
 import { DragEndEvent } from "@dnd-kit/core";
 import { arrayMove } from "@dnd-kit/sortable";
 import { updatePlayerOrder } from "@/shared/api/room";
+import { isApiErrorCode } from "@/lib/error/api-error-code";
 import { toUserErrorMessage } from "@/lib/error/error-to-user-message";
 import { clientLogger } from "@/shared/services/browser/clientLogger";
 import { mergePlayerOrder, orderByPosition, type OrderedPlayer } from "./lib/playerOrder";
+import { useIsCurrentGame } from "./useIsCurrentGame";
 import type { SetStartPageError } from "./useStartPageError";
 
 type UpdatePlayerOrderFn = (
@@ -26,6 +28,8 @@ interface UsePlayerOrderPersistenceParams {
   gameId: number | null;
   players: OrderedPlayer[];
   setPageError: SetStartPageError;
+  /** Called when the backend refuses the order because the game left the lobby. */
+  onSeatsNotEditable: () => void | Promise<unknown>;
 }
 
 interface UsePlayerOrderPersistenceResult {
@@ -64,10 +68,12 @@ export function usePlayerOrderPersistence({
   gameId,
   players,
   setPageError,
+  onSeatsNotEditable,
 }: UsePlayerOrderPersistenceParams): UsePlayerOrderPersistenceResult {
   const [playerOrder, setPlayerOrder] = useState<number[]>(() => orderByPosition(players));
   const [orderedPlayers, setOrderedPlayers] = useState(players);
   const playerOrderRequestIdRef = useRef(0);
+  const isCurrentGame = useIsCurrentGame(gameId);
 
   // A new players list adjusts the order during render, so the list never shows a stale order.
   if (orderedPlayers !== players) {
@@ -107,21 +113,29 @@ export function usePlayerOrderPersistence({
             updatePlayerOrder,
             onError: (error) => {
               clientLogger.warn("room.player-order.persist.failed", { error });
+              // The route moved to another game while the request ran: its answer is not for it.
+              if (!isCurrentGame(gameId)) {
+                return;
+              }
               setPageError(
                 toUserErrorMessage(error, "Could not update player order. Please try again."),
               );
+              if (isApiErrorCode(error, "GAME_SEATS_NOT_EDITABLE")) {
+                void onSeatsNotEditable();
+              }
             },
             onRollback: (order) => {
               setPlayerOrder(order);
             },
-            shouldRollback: () => playerOrderRequestIdRef.current === requestId,
+            shouldRollback: () =>
+              playerOrderRequestIdRef.current === requestId && isCurrentGame(gameId),
           });
         }
 
         return nextOrder;
       });
     },
-    [gameId, setPageError],
+    [gameId, isCurrentGame, onSeatsNotEditable, setPageError],
   );
 
   return {
