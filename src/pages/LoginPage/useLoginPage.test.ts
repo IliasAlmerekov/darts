@@ -58,9 +58,10 @@ describe("useLoginPage", () => {
       },
     });
     useLoginMock.mockReturnValue({
-      login: vi.fn(),
+      formAction: vi.fn(),
       loading: false,
       error: null,
+      values: { email: "", password: "" },
     });
     givenAuthCheck(null);
     getActiveGameIdMock.mockReturnValue(null);

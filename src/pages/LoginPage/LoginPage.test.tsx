@@ -18,7 +18,8 @@ function givenScreen(screenState: unknown): void {
     error: null,
     loading: false,
     successMessage: null,
-    handleSubmit: vi.fn(),
+    formAction: vi.fn(),
+    values: { email: "", password: "" },
     goToPlayerProfile: goToPlayerProfileMock,
   });
 }
