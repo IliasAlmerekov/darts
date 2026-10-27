@@ -223,9 +223,9 @@ cache itself:
 Mappers are pure functions that turn backend DTO shapes into UI types.
 
 - They live in `src/shared/lib/<domain>/`: `shared/lib/game/` holds `gameStateNormalizer`,
-  `applyOptimisticUndo`, `mergeGameSettings`, `player-mappers`, `roundAverage`,
-  `parseThrowValue`, `finishedGameStandings`, `lobbyPlayers`; `shared/lib/player/` holds
-  `currentGame` and `profile`.
+  `mergeGameSettings`, `player-mappers`, `roundAverage`, `parseThrowValue`,
+  `finishedGameStandings`, `lobbyPlayers`; `shared/lib/player/` holds `currentGame` and
+  `profile`.
 - Every mapper has a co-located `*.test.ts`.
 - Mappers are called from an API domain function (`getCurrentGame` in `player.ts` calls
   `toCurrentGame`), a `queryFn` in `src/shared/query/` (`playerQueries.profile` calls
