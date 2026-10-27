@@ -244,9 +244,21 @@ describe("toPlayerProfile", () => {
     );
 
     expect(profile.scoringTrend).toEqual([
-      { gameId: 1, roundAverage: 30, label: "20 Oct 2026, 18:42 · Ø AVG 30.00" },
-      { gameId: 2, roundAverage: 40, label: "Ø AVG 40.00" },
-      { gameId: 3, roundAverage: 50, label: "20 Oct 2026, 18:42 · Ø AVG 50.00" },
+      {
+        gameId: 1,
+        roundAverage: 30,
+        date: "20 Oct 2026, 18:42",
+        average: "30.00",
+        label: "20 Oct 2026, 18:42 · Ø AVG 30.00",
+      },
+      { gameId: 2, roundAverage: 40, date: null, average: "40.00", label: "Ø AVG 40.00" },
+      {
+        gameId: 3,
+        roundAverage: 50,
+        date: "20 Oct 2026, 18:42",
+        average: "50.00",
+        label: "20 Oct 2026, 18:42 · Ø AVG 50.00",
+      },
     ]);
   });
 

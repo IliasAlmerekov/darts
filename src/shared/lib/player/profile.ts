@@ -19,6 +19,11 @@ interface ProfileHistoryRow {
 export interface ScoringTrendPoint {
   gameId: number;
   roundAverage: number;
+  /** The finish date, or null when the game has none. */
+  date: string | null;
+  /** The game's three-dart average with two decimals. */
+  average: string;
+  /** Date and average as one plain text, for the chart's point titles. */
   label: string;
 }
 
@@ -178,13 +183,14 @@ function toHistoryRow(game: PlayerProfileGame): ProfileHistoryRow {
 }
 
 function toScoringTrendPoint(game: PlayerProfileGame): ScoringTrendPoint {
+  const date = formatFinishedAt(game.finishedAt);
+  const average = formatRoundAverage(game.roundAverage);
   return {
     gameId: game.gameId,
     roundAverage: game.roundAverage,
-    label: joinParts([
-      formatFinishedAt(game.finishedAt),
-      `Ø AVG ${formatRoundAverage(game.roundAverage)}`,
-    ]),
+    date,
+    average,
+    label: joinParts([date, `Ø AVG ${average}`]),
   };
 }
 

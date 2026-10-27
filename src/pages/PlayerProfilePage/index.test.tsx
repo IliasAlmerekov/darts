@@ -229,11 +229,16 @@ describe("PlayerProfilePage", () => {
       "20 Oct 2026, 18:42 · Ø AVG 45.25",
     ]);
     const averages = within(performance).getByRole("list", { name: "Three-dart average per game" });
+    const items = within(averages).getAllByRole("listitem");
+    expect(items.map((item) => item.textContent)).toEqual([
+      "19 Oct 2026, 09:05 · Ø AVG 60.00",
+      "20 Oct 2026, 18:42 · Ø AVG 45.25",
+    ]);
     expect(
-      within(averages)
-        .getAllByRole("listitem")
-        .map((item) => item.textContent),
-    ).toEqual(["19 Oct 2026, 09:05 · Ø AVG 60.00", "20 Oct 2026, 18:42 · Ø AVG 45.25"]);
+      items.map(
+        (item) => within(item).getByRole("group", { name: "three-dart average" }).textContent,
+      ),
+    ).toEqual(["Ø AVG 60.00", "Ø AVG 45.25"]);
   });
 
   it("opens the tab named in the URL and falls back to Overview", () => {
