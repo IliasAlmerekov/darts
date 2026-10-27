@@ -1,12 +1,14 @@
 // @vitest-environment jsdom
 
 const navigateMock = vi.fn();
+const revalidateMock = vi.fn();
 
 vi.mock("react-router-dom", async (importOriginal) => {
   const original = await importOriginal<Record<string, unknown>>();
   return {
     ...original,
     useNavigate: () => navigateMock,
+    useRevalidator: () => ({ revalidate: revalidateMock, state: "idle" }),
   };
 });
 
@@ -497,5 +499,149 @@ describe("useStartPage action guards", () => {
 
     expect(leaveRoom).toHaveBeenCalledWith(10, 2);
     expect(result.current.players.some((p) => p.id === 2)).toBe(true);
+  });
+
+  describe("seat conflicts", () => {
+    const SEATS_MESSAGE = "This game has already started. The lobby can no longer be changed.";
+
+    function seatsNotEditable(): ApiError {
+      return new ApiError("Conflict", {
+        status: 409,
+        data: {
+          success: false,
+          error: "GAME_SEATS_NOT_EDITABLE",
+          message: "Seats can only change in the lobby.",
+        },
+      });
+    }
+
+    async function renderLobbyWithPlayer(): Promise<
+      ReturnType<typeof renderHook<ReturnType<typeof useStartPage>, unknown>>
+    > {
+      setInvitation({ gameId: 10, invitationLink: "/invite/10" });
+      vi.mocked(getGameThrows).mockResolvedValue(
+        buildGameThrowsResponse({
+          id: 10,
+          players: [buildBackendPlayer({ id: 2, name: "Sam", isActive: true, position: 1 })],
+        }),
+      );
+      const rendered = renderHook(() => useStartPage(), { wrapper: makeWrapper("/start/10") });
+      await waitFor(() => {
+        expect(rendered.result.current.players.some((p) => p.id === 2)).toBe(true);
+      });
+      return rendered;
+    }
+
+    it("should restore the removed player, show a readable message and reload when remove hits GAME_SEATS_NOT_EDITABLE", async () => {
+      vi.mocked(leaveRoom).mockRejectedValueOnce(seatsNotEditable());
+      const { result } = await renderLobbyWithPlayer();
+
+      await act(async () => {
+        await result.current.handleRemovePlayer(2, 10);
+      });
+
+      expect(result.current.players.some((p) => p.id === 2)).toBe(true);
+      expect(result.current.pageError).toBe(SEATS_MESSAGE);
+      expect(result.current.invitation?.gameId).toBe(10);
+      expect(revalidateMock).toHaveBeenCalledTimes(1);
+    });
+
+    it("should roll back the order, show a readable message and reload when reorder hits GAME_SEATS_NOT_EDITABLE", async () => {
+      setInvitation({ gameId: 10, invitationLink: "/invite/10" });
+      vi.mocked(getGameThrows).mockResolvedValue(
+        buildGameThrowsResponse({
+          id: 10,
+          players: [
+            buildBackendPlayer({ id: 1, name: "Ann", isActive: true, position: 0 }),
+            buildBackendPlayer({ id: 2, name: "Sam", isActive: true, position: 1 }),
+          ],
+        }),
+      );
+      vi.mocked(updatePlayerOrder).mockRejectedValueOnce(seatsNotEditable());
+      const { result } = renderHook(() => useStartPage(), { wrapper: makeWrapper("/start/10") });
+      await waitFor(() => {
+        expect(result.current.playerOrder).toEqual([1, 2]);
+      });
+
+      await act(async () => {
+        result.current.handleDragEnd({
+          active: { id: 2 },
+          over: { id: 1 },
+        } as unknown as Parameters<typeof result.current.handleDragEnd>[0]);
+      });
+
+      await waitFor(() => {
+        expect(result.current.pageError).toBe(SEATS_MESSAGE);
+      });
+      expect(result.current.playerOrder).toEqual([1, 2]);
+      expect(revalidateMock).toHaveBeenCalledTimes(1);
+    });
+
+    it("should show a readable message and reload when add guest hits GAME_SEATS_NOT_EDITABLE", async () => {
+      setInvitation({ gameId: 10, invitationLink: "/invite/10" });
+      vi.mocked(addGuestPlayer).mockRejectedValueOnce(seatsNotEditable());
+      const { result } = renderHook(() => useStartPage(), { wrapper: makeWrapper("/start/10") });
+
+      await act(async () => {
+        result.current.openGuestOverlay();
+        result.current.setGuestUsername("Alex");
+      });
+      await act(async () => {
+        await result.current.handleAddGuest();
+      });
+
+      expect(result.current.guestError).toBe(SEATS_MESSAGE);
+      expect(result.current.guestSuggestions).toEqual([]);
+      expect(revalidateMock).toHaveBeenCalledTimes(1);
+    });
+
+    it("should show the room full message and not reload when add guest hits GAME_ROOM_FULL", async () => {
+      setInvitation({ gameId: 10, invitationLink: "/invite/10" });
+      vi.mocked(addGuestPlayer).mockRejectedValueOnce(
+        new ApiError("Conflict", {
+          status: 409,
+          data: { success: false, error: "GAME_ROOM_FULL", message: "Room is full." },
+        }),
+      );
+      const { result } = renderHook(() => useStartPage(), { wrapper: makeWrapper("/start/10") });
+
+      await act(async () => {
+        result.current.openGuestOverlay();
+        result.current.setGuestUsername("Alex");
+      });
+      await act(async () => {
+        await result.current.handleAddGuest();
+      });
+
+      expect(result.current.guestError).toBe("The lobby is full. Remove a player to add another.");
+      expect(revalidateMock).not.toHaveBeenCalled();
+    });
+
+    it("should not reload after USERNAME_TAKEN", async () => {
+      setInvitation({ gameId: 10, invitationLink: "/invite/10" });
+      vi.mocked(addGuestPlayer).mockRejectedValueOnce(
+        new ApiError("Conflict", {
+          status: 409,
+          data: {
+            success: false,
+            error: "USERNAME_TAKEN",
+            message: "Username already taken in this game.",
+            suggestions: ["Alex2"],
+          },
+        }),
+      );
+      const { result } = renderHook(() => useStartPage(), { wrapper: makeWrapper("/start/10") });
+
+      await act(async () => {
+        result.current.openGuestOverlay();
+        result.current.setGuestUsername("Alex");
+      });
+      await act(async () => {
+        await result.current.handleAddGuest();
+      });
+
+      expect(result.current.guestSuggestions).toEqual(["Alex2"]);
+      expect(revalidateMock).not.toHaveBeenCalled();
+    });
   });
 });

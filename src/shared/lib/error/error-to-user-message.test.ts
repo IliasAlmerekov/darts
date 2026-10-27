@@ -70,6 +70,19 @@ describe("toUserErrorMessage", () => {
     ).toBe("This game can no longer be left. Please reload the page.");
   });
 
+  it("should map the game seats not editable code to a message that the game has started", () => {
+    const message = toUserErrorMessage(
+      new ApiError("Conflict", {
+        status: 409,
+        data: { success: false, error: "GAME_SEATS_NOT_EDITABLE", message: "Seats are locked." },
+      }),
+      "Could not remove player. Please try again.",
+    );
+
+    expect(message).toBe("This game has already started. The lobby can no longer be changed.");
+    expect(message).not.toContain("GAME_SEATS_NOT_EDITABLE");
+  });
+
   it("should map the out rule lock code to a message that the out rule is locked", () => {
     expect(
       toUserErrorMessage(

@@ -1,10 +1,12 @@
 import { useCallback, useRef, useState } from "react";
 import { ApiError } from "@/shared/api";
 import { addGuestPlayer } from "@/shared/api/room";
+import { isGameSeatsNotEditableError, toUserErrorMessage } from "@/lib/error/error-to-user-message";
 import { validateGuestUsername } from "./lib/guestUsername";
 import type { AddGuestErrorResponse } from "@/types";
 
 const MAX_LOBBY_PLAYERS = 10;
+const LOBBY_FULL_MESSAGE = "The lobby is full. Remove a player to add another.";
 
 interface OptimisticGuestPlayer {
   id: number;
@@ -16,6 +18,8 @@ interface UseGuestFlowParams {
   gameId: number | null;
   playerCount: number;
   appendOptimisticPlayer: (player: OptimisticGuestPlayer) => void;
+  /** Called when the backend refuses the guest because the game left the lobby. */
+  onSeatsNotEditable: () => void | Promise<unknown>;
 }
 
 interface UseGuestFlowResult {
@@ -51,6 +55,16 @@ function isAddGuestErrorResponse(data: unknown): data is AddGuestErrorResponse {
   );
 }
 
+function isRoomFullResponse(error: unknown): boolean {
+  return (
+    error instanceof ApiError &&
+    error.status === 409 &&
+    isRecord(error.data) &&
+    error.data.success === false &&
+    error.data.error === "GAME_ROOM_FULL"
+  );
+}
+
 function getGuestErrorFromApi(error: unknown): AddGuestErrorResponse | null {
   if (!(error instanceof ApiError) || error.status !== 409) {
     return null;
@@ -67,6 +81,7 @@ export function useGuestFlow({
   gameId,
   playerCount,
   appendOptimisticPlayer,
+  onSeatsNotEditable,
 }: UseGuestFlowParams): UseGuestFlowResult {
   const [isGuestOverlayOpen, setIsGuestOverlayOpen] = useState(false);
   const [guestUsername, setGuestUsernameState] = useState("");
@@ -78,7 +93,7 @@ export function useGuestFlow({
 
   const openGuestOverlay = useCallback((): void => {
     if (isLobbyFull) {
-      setGuestError("The lobby is full. Remove a player to add another.");
+      setGuestError(LOBBY_FULL_MESSAGE);
       return;
     }
 
@@ -120,7 +135,7 @@ export function useGuestFlow({
     }
 
     if (isLobbyFull) {
-      setGuestError("The lobby is full. Remove a player to add another.");
+      setGuestError(LOBBY_FULL_MESSAGE);
       return;
     }
 
@@ -145,6 +160,17 @@ export function useGuestFlow({
       appendOptimisticPlayer(guestPlayer);
       closeGuestOverlay();
     } catch (error) {
+      if (isGameSeatsNotEditableError(error)) {
+        setGuestError(toUserErrorMessage(error));
+        void onSeatsNotEditable();
+        return;
+      }
+
+      if (isRoomFullResponse(error)) {
+        setGuestError(LOBBY_FULL_MESSAGE);
+        return;
+      }
+
       const apiError = getGuestErrorFromApi(error);
       if (apiError) {
         setGuestError(apiError.message || "Username already taken in this game.");
@@ -157,7 +183,14 @@ export function useGuestFlow({
       addGuestInFlightRef.current = false;
       setIsAddingGuest(false);
     }
-  }, [appendOptimisticPlayer, closeGuestOverlay, gameId, guestUsername, isLobbyFull]);
+  }, [
+    appendOptimisticPlayer,
+    closeGuestOverlay,
+    gameId,
+    guestUsername,
+    isLobbyFull,
+    onSeatsNotEditable,
+  ]);
 
   return {
     isLobbyFull,

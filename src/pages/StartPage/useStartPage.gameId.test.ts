@@ -15,6 +15,7 @@ vi.mock("react-router-dom", async (importOriginal) => {
   return {
     ...original,
     useNavigate: () => navigateMock,
+    useRevalidator: () => ({ revalidate: vi.fn(), state: "idle" }),
   };
 });
 

@@ -2,7 +2,7 @@ import { useCallback, useRef, useState } from "react";
 import { DragEndEvent } from "@dnd-kit/core";
 import { arrayMove } from "@dnd-kit/sortable";
 import { updatePlayerOrder } from "@/shared/api/room";
-import { toUserErrorMessage } from "@/lib/error/error-to-user-message";
+import { isGameSeatsNotEditableError, toUserErrorMessage } from "@/lib/error/error-to-user-message";
 import { clientLogger } from "@/shared/services/browser/clientLogger";
 import { mergePlayerOrder, orderByPosition, type OrderedPlayer } from "./lib/playerOrder";
 import type { SetStartPageError } from "./useStartPageError";
@@ -26,6 +26,8 @@ interface UsePlayerOrderPersistenceParams {
   gameId: number | null;
   players: OrderedPlayer[];
   setPageError: SetStartPageError;
+  /** Called when the backend refuses the order because the game left the lobby. */
+  onSeatsNotEditable: () => void | Promise<unknown>;
 }
 
 interface UsePlayerOrderPersistenceResult {
@@ -64,6 +66,7 @@ export function usePlayerOrderPersistence({
   gameId,
   players,
   setPageError,
+  onSeatsNotEditable,
 }: UsePlayerOrderPersistenceParams): UsePlayerOrderPersistenceResult {
   const [playerOrder, setPlayerOrder] = useState<number[]>(() => orderByPosition(players));
   const [orderedPlayers, setOrderedPlayers] = useState(players);
@@ -110,6 +113,9 @@ export function usePlayerOrderPersistence({
               setPageError(
                 toUserErrorMessage(error, "Could not update player order. Please try again."),
               );
+              if (isGameSeatsNotEditableError(error)) {
+                void onSeatsNotEditable();
+              }
             },
             onRollback: (order) => {
               setPlayerOrder(order);
@@ -121,7 +127,7 @@ export function usePlayerOrderPersistence({
         return nextOrder;
       });
     },
-    [gameId, setPageError],
+    [gameId, onSeatsNotEditable, setPageError],
   );
 
   return {

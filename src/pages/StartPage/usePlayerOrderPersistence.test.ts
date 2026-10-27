@@ -13,7 +13,12 @@ import { usePlayerOrderPersistence } from "./usePlayerOrderPersistence";
 function renderOrder(players: OrderedPlayer[]) {
   return renderHook(
     ({ players: current }) =>
-      usePlayerOrderPersistence({ gameId: 7, players: current, setPageError: vi.fn() }),
+      usePlayerOrderPersistence({
+        gameId: 7,
+        players: current,
+        setPageError: vi.fn(),
+        onSeatsNotEditable: vi.fn(),
+      }),
     { initialProps: { players } },
   );
 }

@@ -1,5 +1,5 @@
 import { useCallback, useMemo } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import { useNavigate, useParams, useRevalidator } from "react-router-dom";
 import { useStore } from "@nanostores/react";
 import { useGamePlayers } from "./useGamePlayers";
 import { useCreateStartFlow } from "./useCreateStartFlow";
@@ -9,7 +9,7 @@ import { useStartPageError } from "./useStartPageError";
 import { parseRouteGameId } from "@/lib/router/tabletGameRoute";
 import { $invitation } from "@/shared/store";
 import { leaveRoom } from "@/shared/api/room";
-import { toUserErrorMessage } from "@/lib/error/error-to-user-message";
+import { isGameSeatsNotEditableError, toUserErrorMessage } from "@/lib/error/error-to-user-message";
 
 type GamePlayersResult = ReturnType<typeof useGamePlayers>;
 
@@ -47,6 +47,7 @@ interface UseStartPageResult {
  */
 export function useStartPage(): UseStartPageResult {
   const navigate = useNavigate();
+  const { revalidate } = useRevalidator();
   const { id: gameIdParam } = useParams<{ id?: string }>();
 
   const invitation = useStore($invitation);
@@ -64,6 +65,7 @@ export function useStartPage(): UseStartPageResult {
     gameId,
     players,
     setPageError,
+    onSeatsNotEditable: revalidate,
   });
   const { creating, starting, handleCreateRoom, handleStartGame } = useCreateStartFlow({
     gameId,
@@ -87,6 +89,7 @@ export function useStartPage(): UseStartPageResult {
     gameId,
     playerCount,
     appendOptimisticPlayer,
+    onSeatsNotEditable: revalidate,
   });
 
   const handleRemovePlayer = useCallback(
@@ -101,9 +104,13 @@ export function useStartPage(): UseStartPageResult {
           appendOptimisticPlayer(removedPlayer);
         }
         setPageError(toUserErrorMessage(error, "Could not remove player. Please try again."));
+        if (isGameSeatsNotEditableError(error)) {
+          // The game left the lobby: the route loader sends this tab to the game page.
+          void revalidate();
+        }
       }
     },
-    [appendOptimisticPlayer, players, removeOptimisticPlayer, setPageError],
+    [appendOptimisticPlayer, players, removeOptimisticPlayer, revalidate, setPageError],
   );
 
   return {
