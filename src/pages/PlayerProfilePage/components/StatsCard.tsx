@@ -18,21 +18,34 @@ interface StatsCardProps {
 
 interface StatItemProps {
   label: string;
+  /** The group's accessible name when it differs from the visible label. */
+  accessibleName?: string;
   value: string;
   iconSrc: string;
   /** Null while the stat has no detail to show. */
   detail: string | null;
 }
 
-function StatItem({ label, value, iconSrc, detail }: StatItemProps): React.JSX.Element {
+function StatItem({
+  label,
+  accessibleName,
+  value,
+  iconSrc,
+  detail,
+}: StatItemProps): React.JSX.Element {
   return (
     <li>
-      <div className={styles.statItem} role="group" aria-label={label}>
+      <div className={styles.statItem} role="group" aria-label={accessibleName ?? label}>
         <span className={styles.statIconTile}>
           <img className={styles.statIcon} src={iconSrc} alt="" width={36} height={36} />
         </span>
         <div className={styles.statText}>
-          <span className={styles.statLabel}>{label}</span>
+          <span
+            className={styles.statLabel}
+            aria-hidden={accessibleName === undefined ? undefined : true}
+          >
+            {label}
+          </span>
           <span className={styles.statValue}>{value}</span>
           {detail === null ? null : <span className={styles.statDetail}>{detail}</span>}
         </div>
@@ -104,7 +117,8 @@ export function StatsCard({
           iconSrc={trophyIcon}
         />
         <StatItem
-          label="Avg. points"
+          label="Ø AVG"
+          accessibleName="three-dart average"
           value={readStat(profileState, "scoreAverage")}
           detail={null}
           iconSrc={barChartIcon}

@@ -1,11 +1,7 @@
 import type React from "react";
 import clsx from "clsx";
 import type { WinnerPlayerProps } from "@/types";
-import {
-  DEFAULT_ROUND_AVERAGE_START_SCORE,
-  formatRoundAverage,
-  getCompletedRounds,
-} from "@/lib/game/roundAverage";
+import { formatRoundAverage, getCompletedRounds } from "@/lib/game/roundAverage";
 import PodiumPlayerCard from "./PodiumPlayerCard";
 import styles from "./Podium.module.css";
 
@@ -18,14 +14,9 @@ const PODIUM_TWO_PLAYER_COUNT = 2;
 interface PodiumProps {
   userMap?: WinnerPlayerProps[];
   list?: WinnerPlayerProps[];
-  startScore?: number;
 }
 
-function Podium({
-  userMap,
-  list,
-  startScore = DEFAULT_ROUND_AVERAGE_START_SCORE,
-}: PodiumProps): React.JSX.Element {
+function Podium({ userMap, list }: PodiumProps): React.JSX.Element {
   if (!userMap || userMap.length === 0) {
     return <div className={styles.podium} />;
   }
@@ -34,7 +25,7 @@ function Podium({
     <div className={styles.podium}>
       {userMap.map((item: WinnerPlayerProps, index: number) => {
         const completedRound = getCompletedRounds(item);
-        const averagePerRound = formatRoundAverage(item, startScore);
+        const averagePerRound = formatRoundAverage(item);
 
         return (
           <PodiumPlayerCard

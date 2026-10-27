@@ -74,7 +74,13 @@ for (const route of ["summary", "details"]) {
     const winnerCard = page.getByText("WINNER", { exact: true }).locator("..");
     await expect(winnerCard.getByRole("heading", { name: "Bob" })).toBeVisible();
     await expect(winnerCard.getByText("1.", { exact: true })).toBeVisible();
+    await expect(winnerCard.getByRole("group", { name: "three-dart average" })).toHaveText(
+      "Ø AVG60.00",
+    );
     const fourthPlace = page.getByText("Dan", { exact: true }).locator("..");
     await expect(fourthPlace.getByRole("heading", { name: "4", exact: true })).toBeVisible();
+    await expect(fourthPlace.getByRole("group", { name: "three-dart average" })).toHaveText(
+      "Ø AVG 30.00",
+    );
   });
 }

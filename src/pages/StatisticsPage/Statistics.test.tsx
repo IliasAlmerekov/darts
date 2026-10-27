@@ -258,7 +258,8 @@ describe("StatisticsPage", () => {
 
     renderPage();
 
-    expect(screen.getByText("55.5")).toBeTruthy();
+    const average = screen.getByRole("group", { name: "three-dart average" });
+    expect(average.textContent).toBe("Ø AVG55.50");
     expect(screen.getByText("10")).toBeTruthy();
   });
 });

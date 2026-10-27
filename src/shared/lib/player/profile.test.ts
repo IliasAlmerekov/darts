@@ -34,6 +34,12 @@ describe("toPlayerProfile", () => {
     });
   });
 
+  it("formats a three-dart average of 60.6 as 60.60", () => {
+    const { stats } = toPlayerProfile(buildProfile({ stats: buildStats({ scoreAverage: 60.6 }) }));
+
+    expect(stats.scoreAverage).toBe("60.60");
+  });
+
   it("rounds one-decimal API rates down as well as up", () => {
     const { stats, mostHitSegment, favoriteDoubles } = toPlayerProfile(
       buildProfile({
@@ -163,9 +169,10 @@ describe("toPlayerProfile", () => {
     );
 
     expect(profile.history.map((row) => row.summary)).toEqual([
-      "20 Oct 2026, 18:42 · 2nd of 4 · Avg 45.3",
-      "19 Oct 2026, 09:05 · 1st of 2 · Avg 60.0",
+      "20 Oct 2026, 18:42 · 2nd of 4",
+      "19 Oct 2026, 09:05 · 1st of 2",
     ]);
+    expect(profile.history.map((row) => row.average)).toEqual(["45.25", "60.00"]);
   });
 
   it("lists every participant in order and marks the player's own entry", () => {
@@ -198,7 +205,7 @@ describe("toPlayerProfile", () => {
       }),
     ).history;
 
-    expect(row?.summary).toBe("– of 2 · Avg 45.3");
+    expect(row?.summary).toBe("– of 2");
     expect(row?.participants.map((participant) => participant.label)).toEqual([
       "– Unknown",
       "– test2 (you)",
@@ -216,12 +223,12 @@ describe("toPlayerProfile", () => {
     );
 
     expect(summaries).toEqual([
-      "11th of 30 · Avg 45.3",
-      "12th of 30 · Avg 45.3",
-      "13th of 30 · Avg 45.3",
-      "21st of 30 · Avg 45.3",
-      "22nd of 30 · Avg 45.3",
-      "23rd of 30 · Avg 45.3",
+      "11th of 30",
+      "12th of 30",
+      "13th of 30",
+      "21st of 30",
+      "22nd of 30",
+      "23rd of 30",
     ]);
   });
 
@@ -237,9 +244,9 @@ describe("toPlayerProfile", () => {
     );
 
     expect(profile.scoringTrend).toEqual([
-      { gameId: 1, roundAverage: 30, label: "20 Oct 2026, 18:42 · Avg 30.0" },
-      { gameId: 2, roundAverage: 40, label: "Avg 40.0" },
-      { gameId: 3, roundAverage: 50, label: "20 Oct 2026, 18:42 · Avg 50.0" },
+      { gameId: 1, roundAverage: 30, label: "20 Oct 2026, 18:42 · Ø AVG 30.00" },
+      { gameId: 2, roundAverage: 40, label: "Ø AVG 40.00" },
+      { gameId: 3, roundAverage: 50, label: "20 Oct 2026, 18:42 · Ø AVG 50.00" },
     ]);
   });
 

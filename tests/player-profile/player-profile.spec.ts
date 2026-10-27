@@ -24,7 +24,9 @@ test.describe("Player profile", () => {
     await expect(page.getByRole("group", { name: "Games played" })).toContainText(
       String(PLAYER_PROFILE.stats.gamesPlayed),
     );
-    await expect(page.getByRole("group", { name: "Avg. points" })).toContainText("56.40");
+    await expect(page.getByRole("group", { name: "three-dart average" })).toContainText(
+      "Ø AVG56.40",
+    );
     await expect(page.getByRole("img", { name: /^Scoring trend chart/ })).toBeVisible();
   });
 
@@ -40,7 +42,7 @@ test.describe("Player profile", () => {
 
     await expect(page).toHaveURL("/playerprofile?tab=history");
     const games = page.getByRole("list", { name: "Recent games" });
-    await expect(games).toContainText("2nd of 3 · Avg 45.3");
+    await expect(games).toContainText("2nd of 3 · Ø AVG 45.30");
     await expect(games).toContainText("2. Captain Double (you)");
     await expect(games).toContainText("3. Guest");
   });

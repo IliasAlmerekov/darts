@@ -42,7 +42,6 @@ function GameSummaryPage(): React.JSX.Element {
     );
   }
 
-  const { startScore } = settings;
   const summaryActionButtonClassName = styles.summaryActionButton;
   const summaryActionButtonProps =
     typeof summaryActionButtonClassName === "string"
@@ -66,10 +65,10 @@ function GameSummaryPage(): React.JSX.Element {
         </button>
       </div>
       <div className={styles.podiumBoard}>
-        <Podium userMap={podiumData} list={standings} startScore={startScore} />
+        <Podium userMap={podiumData} list={standings} />
       </div>
       <div className={styles.leaderBoard}>
-        <OverviewPlayerItemList userMap={leaderBoardList} startScore={startScore} />
+        <OverviewPlayerItemList userMap={leaderBoardList} />
       </div>
 
       {error ? (

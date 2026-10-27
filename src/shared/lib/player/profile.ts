@@ -11,6 +11,8 @@ interface ProfileParticipant {
 interface ProfileHistoryRow {
   gameId: number;
   summary: string;
+  /** The game's three-dart average with two decimals, such as `45.30`. */
+  average: string;
   participants: ProfileParticipant[];
 }
 
@@ -137,7 +139,7 @@ function formatOrdinal(placement: number): string {
 }
 
 function formatRoundAverage(roundAverage: number): string {
-  return `Avg ${roundAverage.toFixed(1)}`;
+  return roundAverage.toFixed(2);
 }
 
 function joinParts(parts: (string | null)[]): string {
@@ -155,8 +157,8 @@ function toHistoryRow(game: PlayerProfileGame): ProfileHistoryRow {
     summary: joinParts([
       formatFinishedAt(game.finishedAt),
       `${placement} of ${game.participantsCount}`,
-      formatRoundAverage(game.roundAverage),
     ]),
+    average: formatRoundAverage(game.roundAverage),
     participants: game.participants.map((participant, index) => {
       const position =
         participant.placement === null || participant.placement === undefined
@@ -179,7 +181,10 @@ function toScoringTrendPoint(game: PlayerProfileGame): ScoringTrendPoint {
   return {
     gameId: game.gameId,
     roundAverage: game.roundAverage,
-    label: joinParts([formatFinishedAt(game.finishedAt), formatRoundAverage(game.roundAverage)]),
+    label: joinParts([
+      formatFinishedAt(game.finishedAt),
+      `Ø AVG ${formatRoundAverage(game.roundAverage)}`,
+    ]),
   };
 }
 
