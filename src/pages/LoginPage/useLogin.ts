@@ -123,7 +123,8 @@ export function useLogin(): LoginReturn {
   return {
     formAction,
     loading,
-    error: state.error,
+    // The previous error goes away when the next submit starts, as it did before the action state.
+    error: loading ? null : state.error,
     values: state.values,
   };
 }

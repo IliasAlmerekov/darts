@@ -119,7 +119,8 @@ export function useRegistration(): RegistrationReturn {
   return {
     formAction,
     loading,
-    error: state.error,
+    // The previous error goes away when the next submit starts, as it did before the action state.
+    error: loading ? null : state.error,
     registered: state.registered,
     values: state.values,
   };

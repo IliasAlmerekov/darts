@@ -104,4 +104,18 @@ describe("RegisterPage form registration", () => {
 
     expect(await screen.findByRole("heading", { name: "Start page" })).toBeTruthy();
   });
+
+  it("hides the previous error while the next registration request runs", async () => {
+    vi.mocked(registerUser).mockRejectedValueOnce(new ApiError("Server error", { status: 500 }));
+    vi.mocked(registerUser).mockReturnValueOnce(new Promise(() => undefined));
+
+    renderRegisterRoute();
+    submitRegistrationForm();
+    await screen.findByRole("alert");
+
+    fireEvent.click(screen.getByRole("button", { name: "Create account" }));
+
+    expect(await screen.findByRole("status")).toBeTruthy();
+    expect(screen.queryByRole("alert")).toBeNull();
+  });
 });

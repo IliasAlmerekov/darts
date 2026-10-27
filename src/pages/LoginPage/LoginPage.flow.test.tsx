@@ -119,4 +119,18 @@ describe("LoginPage form login", () => {
       expect(screen.getByLabelText<HTMLInputElement>(/email/i).disabled).toBe(false);
     });
   });
+
+  it("hides the previous error while the next login request runs", async () => {
+    loginWithCredentialsMock.mockResolvedValueOnce({ type: "failure", error: "unauthorized" });
+    loginWithCredentialsMock.mockReturnValueOnce(new Promise(() => undefined));
+
+    renderLoginRoute();
+    await submitLoginForm();
+    await screen.findByRole("alert");
+
+    fireEvent.click(screen.getByRole("button", { name: "Sign in" }));
+
+    expect(await screen.findByRole("button", { name: "Signing in..." })).toBeTruthy();
+    expect(screen.queryByRole("alert")).toBeNull();
+  });
 });
