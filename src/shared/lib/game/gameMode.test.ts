@@ -1,6 +1,6 @@
 // @vitest-environment node
 import { describe, expect, it } from "vitest";
-import { isGameMode, isStartScore, resolveGameMode, toGameModeFlags } from "./gameMode";
+import { isGameMode, resolveGameMode, toGameModeFlags } from "./gameMode";
 
 describe("gameMode", () => {
   it.each([
@@ -20,12 +20,9 @@ describe("gameMode", () => {
     },
   );
 
-  it("accepts only the offered options", () => {
+  it("accepts only the offered game modes", () => {
     expect(isGameMode("double-out")).toBe(true);
     expect(isGameMode("quadruple-out")).toBe(false);
     expect(isGameMode(301)).toBe(false);
-    expect(isStartScore(501)).toBe(true);
-    expect(isStartScore("501")).toBe(false);
-    expect(isStartScore(999)).toBe(false);
   });
 });

@@ -2,7 +2,8 @@ import React from "react";
 import { ErrorState } from "@/shared/ui/error-state";
 import styles from "./Settings.module.css";
 import { SettingsTabs } from "./components/SettingsTabs";
-import { GAME_MODE_OPTIONS, POINTS_OPTIONS } from "./lib/gameMode";
+import { GAME_MODE_OPTIONS } from "@/lib/game/gameMode";
+import { POINTS_OPTIONS } from "./lib/points";
 import { useGameSettings } from "./useGameSettings";
 
 function SettingsPage(): React.JSX.Element {

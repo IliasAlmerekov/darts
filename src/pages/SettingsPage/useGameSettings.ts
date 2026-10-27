@@ -14,7 +14,8 @@ import { gameQueries } from "@/shared/query/game.queries";
 import { clientLogger } from "@/shared/services/browser/clientLogger";
 import { toUserErrorMessage } from "@/lib/error/error-to-user-message";
 import type { GameMode, GameSettings, UpdateGameSettingsPayload } from "@/types";
-import { isGameMode, isStartScore, resolveGameMode, toGameModeFlags } from "./lib/gameMode";
+import { isGameMode, resolveGameMode, toGameModeFlags } from "@/lib/game/gameMode";
+import { isStartScore } from "./lib/points";
 
 type SaveScope = "game-mode" | "points";
 
