@@ -3,13 +3,12 @@ import { act, renderHook, waitFor } from "@testing-library/react";
 import { createElement, type ReactNode } from "react";
 import { QueryClientProvider, type QueryClient } from "@tanstack/react-query";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { makeLoaderArgs } from "@/test/loaderArgs";
 import { buildFinishedGame } from "@/shared/types/game.test-support";
 import { clientLogger } from "@/shared/services/browser/clientLogger";
-import { createQueryClient, queryClient as appQueryClient } from "@/shared/query/queryClient";
+import { createQueryClient } from "@/shared/query/queryClient";
 import { statsQueries } from "@/shared/query/statistics.queries";
 import type { FinishedGameProps } from "@/types";
-import { gamesOverviewLoader, useGamesOverview } from "./useGamesOverview";
+import { useGamesOverview } from "./useGamesOverview";
 
 // ── API mock ─────────────────────────────────────────────────────────────────
 const getGamesOverviewMock = vi.fn();
@@ -66,60 +65,6 @@ function deferred<T>() {
   });
   return { promise, resolve };
 }
-
-// ── gamesOverviewLoader tests ─────────────────────────────────────────────────
-describe("gamesOverviewLoader", () => {
-  beforeEach(() => {
-    vi.clearAllMocks();
-    appQueryClient.clear();
-  });
-
-  it("should fill the games overview query with limit=9 and offset=0 by default", async () => {
-    getGamesOverviewMock.mockResolvedValue({ items: GAMES, total: 2 });
-
-    await gamesOverviewLoader(makeLoaderArgs(new Request("http://localhost/games")));
-
-    expect(getGamesOverviewMock).toHaveBeenCalledWith(9, 0, expect.any(AbortSignal));
-    expect(
-      appQueryClient.getQueryData(statsQueries.games({ limit: 9, offset: 0 }).queryKey),
-    ).toEqual({ items: GAMES, total: 2 });
-  });
-
-  it("should read offset from URL search params", async () => {
-    getGamesOverviewMock.mockResolvedValue({ items: [], total: 0 });
-
-    await gamesOverviewLoader(makeLoaderArgs(new Request("http://localhost/games?offset=18")));
-
-    expect(getGamesOverviewMock).toHaveBeenCalledWith(9, 18, expect.any(AbortSignal));
-  });
-
-  it.each(["abc", "-9", "1.5"])(
-    "should read the first page for the invalid offset %s",
-    async (offset) => {
-      getGamesOverviewMock.mockResolvedValue({ items: [], total: 0 });
-
-      await gamesOverviewLoader(
-        makeLoaderArgs(new Request(`http://localhost/games?offset=${offset}`)),
-      );
-
-      expect(getGamesOverviewMock).toHaveBeenCalledWith(9, 0, expect.any(AbortSignal));
-    },
-  );
-
-  it("should not throw and should log when the API rejects", async () => {
-    const failure = new Error("Network error");
-    getGamesOverviewMock.mockRejectedValue(failure);
-
-    await expect(
-      gamesOverviewLoader(makeLoaderArgs(new Request("http://localhost/games"))),
-    ).resolves.toBeNull();
-
-    expect(clientLogger.error).toHaveBeenCalledWith("statistics.games-overview.fetch.failed", {
-      context: { limit: 9, offset: 0 },
-      error: failure,
-    });
-  });
-});
 
 // ── useGamesOverview hook tests ───────────────────────────────────────────────
 describe("useGamesOverview", () => {

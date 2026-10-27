@@ -1,21 +1,15 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { replace, useNavigate, useParams, type LoaderFunctionArgs } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import { createRematchGame, startRematch, undoLastThrow } from "@/shared/api/game";
 import { setCurrentGameId, setInvitation, resetRoomStore } from "@/shared/store";
 import { playSound } from "@/shared/services/browser/soundPlayer";
 import { toUserErrorMessage } from "@/lib/error/error-to-user-message";
 import { ROUTES } from "@/lib/router/routes";
-import {
-  parseRouteGameId,
-  routeGameIdOrNotFound,
-  tabletGamePath,
-} from "@/lib/router/tabletGameRoute";
+import { parseRouteGameId, tabletGamePath } from "@/lib/router/tabletGameRoute";
 import type { FinishedGameStandings } from "@/lib/game/finishedGameStandings";
 import { clientLogger } from "@/shared/services/browser/clientLogger";
 import { gameQueries } from "@/shared/query/game.queries";
-import { queryClient } from "@/shared/query/queryClient";
-import { fetchTabletGame } from "@/shared/query/tabletGameLoader";
 import { isGameNotNewestError } from "./lib/gameNotNewest";
 import { buildGameSummaryStandings } from "./lib/gameSummaryStandings";
 
@@ -32,34 +26,6 @@ interface UseGameSummaryPageResult extends FinishedGameStandings {
   handleUndo: () => Promise<void>;
   handlePlayAgain: () => Promise<void>;
   handleBackToStart: () => Promise<void>;
-}
-
-/**
- * React Router 6 loader
- * Registers the route: loader: gameSummaryLoader
- * Only the last finished game has a summary: another game id moves to its details, replacing
- * the history entry. Returns null without fetching when the tablet game read fails.
- * An invalid game id throws a 404 route error response before any read.
- * Fills the `['finishedGame', id]` query before the page renders.
- */
-export async function gameSummaryLoader({
-  params,
-  request,
-}: LoaderFunctionArgs): Promise<Response | null> {
-  const gameId = routeGameIdOrNotFound(params.id);
-  const tabletGame = await fetchTabletGame(request);
-  if (tabletGame === null || gameId === null) {
-    return null;
-  }
-
-  if (gameId !== tabletGame.lastFinishedGameId) {
-    return replace(ROUTES.details(gameId));
-  }
-
-  // A failed fetch is logged by the query function. The page then mounts, fetches again and
-  // shows its Retry action, so the failure does not reach the route error boundary.
-  await queryClient.ensureQueryData(gameQueries.finished(gameId)).catch(() => undefined);
-  return null;
 }
 
 // Time to read the message before the page moves to the tablet game.

@@ -15,7 +15,7 @@ import { queryClient } from "@/shared/query/queryClient";
 import { buildFinishedGame } from "@/shared/types/game.test-support";
 import styles from "./GamesOverview.module.css";
 import GamesOverviewPage from "./GamesOverview";
-import { gamesOverviewLoader } from "./useGamesOverview";
+import { gamesOverviewLoader } from "./gamesOverviewLoader";
 
 const GAMES = [
   buildFinishedGame({

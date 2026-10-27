@@ -1,14 +1,13 @@
 // @vitest-environment jsdom
 import { act, renderHook, waitFor } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { makeLoaderArgs } from "@/test/loaderArgs";
 import type { ReactNode } from "react";
 import { createElement } from "react";
 import { QueryClientProvider, type QueryClient } from "@tanstack/react-query";
-import { createQueryClient, queryClient as appQueryClient } from "@/shared/query/queryClient";
+import { createQueryClient } from "@/shared/query/queryClient";
 import { gameQueries } from "@/shared/query/game.queries";
 import { ApiError } from "@/shared/api";
-import { gameSummaryLoader, useGameSummaryPage } from "./useGameSummaryPage";
+import { useGameSummaryPage } from "./useGameSummaryPage";
 import { playSound } from "@/shared/services/browser/soundPlayer";
 import { $gameData, resetGameStore, setGameData } from "@/shared/store";
 import type { GameThrowsResponse, UndoAckResponse } from "@/types";
@@ -875,59 +874,6 @@ describe("useGameSummaryPage", () => {
       expect(result.current.leaving).toBe(false);
       expect(navigateMock).not.toHaveBeenCalled();
     });
-  });
-
-  describe("gameSummaryLoader", () => {
-    beforeEach(() => {
-      appQueryClient.clear();
-    });
-
-    it("should fill the finishedGame cache before the page renders", async () => {
-      getFinishedGameMock.mockResolvedValueOnce([finishedPlayer(3, "Carol")]);
-
-      await gameSummaryLoader(makeLoaderArgs(new Request("http://x/"), { id: "42" }));
-
-      expect(appQueryClient.getQueryData(gameQueries.finished(42).queryKey)).toEqual([
-        finishedPlayer(3, "Carol"),
-      ]);
-    });
-
-    it("should not request the game settings, which the summary does not read", async () => {
-      getFinishedGameMock.mockResolvedValueOnce([finishedPlayer(3, "Carol")]);
-
-      await gameSummaryLoader(makeLoaderArgs(new Request("http://x/"), { id: "42" }));
-
-      expect(getGameSettingsMock).not.toHaveBeenCalled();
-    });
-
-    it("should not fetch again when the game page already seeded the cache", async () => {
-      appQueryClient.setQueryData(gameQueries.finished(42).queryKey, [finishedPlayer(3, "Carol")]);
-
-      await gameSummaryLoader(makeLoaderArgs(new Request("http://x/"), { id: "42" }));
-
-      expect(getFinishedGameMock).not.toHaveBeenCalled();
-    });
-
-    it("should not throw when the fetch fails, so the page can show its Retry action", async () => {
-      getFinishedGameMock.mockRejectedValueOnce(new Error("network down"));
-
-      await expect(
-        gameSummaryLoader(makeLoaderArgs(new Request("http://x/"), { id: "42" })),
-      ).resolves.toBeNull();
-    });
-
-    it.each(["abc", "0", "-5", "1e3"])(
-      "should throw a 404 response and send no request for the invalid game id %s",
-      async (id) => {
-        await expect(
-          gameSummaryLoader(makeLoaderArgs(new Request("http://x/"), { id })),
-        ).rejects.toMatchObject({ status: 404 });
-
-        expect(getTabletGameMock).not.toHaveBeenCalled();
-        expect(getFinishedGameMock).not.toHaveBeenCalled();
-        expect(getGameSettingsMock).not.toHaveBeenCalled();
-      },
-    );
   });
 
   describe("handlePlayAgain", () => {
