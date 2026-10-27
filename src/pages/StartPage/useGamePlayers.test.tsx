@@ -72,7 +72,7 @@ function Providers({ children }: { children: React.ReactNode }): React.JSX.Eleme
 }
 
 function HookConsumer({ gameId }: { gameId: number | null }): React.JSX.Element {
-  const { count } = useGamePlayers(gameId);
+  const { count } = useGamePlayers(gameId, vi.fn());
   return <div data-testid="count">{count}</div>;
 }
 
@@ -81,7 +81,7 @@ function renderHookConsumer(gameId: number | null): ReturnType<typeof render> {
 }
 
 function renderGamePlayers(initialGameId: number | null) {
-  return renderHook(({ gameId }: { gameId: number | null }) => useGamePlayers(gameId), {
+  return renderHook(({ gameId }: { gameId: number | null }) => useGamePlayers(gameId, vi.fn()), {
     initialProps: { gameId: initialGameId },
     wrapper: Providers,
   });

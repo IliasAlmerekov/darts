@@ -7,6 +7,7 @@ Use this file when adding or changing Vitest, Testing Library, or Playwright tes
 ```text
 src/**/<name>.test.ts(x)            # Vitest, next to the source file
 src/test/loaderArgs.ts              # makeLoaderArgs() for calling a route loader in a test
+src/test/QueryClientWrapper.tsx     # render/renderHook wrapper with a fresh query client per mount
 src/test/architecture/              # repo-wide checks (import aliases, ESLint/Stylelint config, clientLogger adoption)
 src/test/playwright/                # Playwright helper logic that needs unit tests (credentials, live preflight)
 src/shared/types/*.test-support.ts  # shared DTO builders
@@ -121,8 +122,7 @@ Rules:
 
 Rules:
 
-- Test each public API function against valid and invalid response shapes. A response
-  listed as an open exception in `api.md` "Response schemas" has no invalid shape.
+- Test each public API function against valid and invalid response shapes.
 - Assert validation errors for malformed response payloads.
 - Assert request method, endpoint, body, and options when they are part of the contract.
 

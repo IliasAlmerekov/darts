@@ -1,5 +1,6 @@
 // @vitest-environment jsdom
 import type { LoaderFunctionArgs } from "react-router-dom";
+import { QueryObserver } from "@tanstack/react-query";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { makeLoaderArgs } from "@/test/loaderArgs";
 import { gameQueries } from "@/shared/query/game.queries";
@@ -155,6 +156,24 @@ describe("startPageLoader — invitation already loaded", () => {
     await startPageLoader(makeArgs("42"));
 
     expect(queryClient.getQueryData(gameQueries.lobbyPlayers(42).queryKey)).toBeUndefined();
+  });
+
+  it("keeps the lobby players while a page observes them", async () => {
+    $invitationGet.mockReturnValue({ gameId: 42, invitationLink: "/invite/42" });
+    const { queryKey } = gameQueries.lobbyPlayers(42);
+    const players = [{ id: 1, name: "Alice", position: 0 }];
+    queryClient.setQueryData(queryKey, players);
+    const observer = new QueryObserver(queryClient, {
+      queryKey,
+      queryFn: () => Promise.resolve(players),
+      staleTime: Infinity,
+    });
+    const unsubscribe = observer.subscribe(() => {});
+
+    await startPageLoader(makeArgs("42"));
+
+    expect(queryClient.getQueryData(queryKey)).toEqual(players);
+    unsubscribe();
   });
 });
 

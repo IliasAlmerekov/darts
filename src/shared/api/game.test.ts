@@ -253,7 +253,9 @@ describe("game api contract payloads", () => {
 
   describe("startGame", () => {
     it("sends the settings with camelCase keys", async () => {
-      const post = vi.spyOn(apiClient, "post").mockImplementationOnce(respondWith({}));
+      const post = vi
+        .spyOn(apiClient, "post")
+        .mockImplementationOnce(respondWith(minimalGamePayload));
 
       await startGame(42, { startScore: 501, doubleOut: true, tripleOut: false });
 
@@ -272,13 +274,12 @@ describe("game api contract payloads", () => {
       ).resolves.toBeUndefined();
     });
 
-    // The backend answers with [] until darts-backend#46 is fixed.
-    it.each([[[]], [{}]])("resolves for the response body %j", async (body) => {
-      vi.spyOn(apiClient, "post").mockImplementationOnce(respondWith(body));
+    it("rejects a malformed response body", async () => {
+      vi.spyOn(apiClient, "post").mockImplementationOnce(respondWith({}));
 
       await expect(
         startGame(42, { startScore: 301, doubleOut: false, tripleOut: false }),
-      ).resolves.toBeUndefined();
+      ).rejects.toBeInstanceOf(ApiValidationError);
     });
   });
 

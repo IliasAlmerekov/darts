@@ -146,15 +146,6 @@ export default [
     },
   },
   {
-    files: [
-      // Existing debt: this file sets state synchronously in an effect. #213 removes it.
-      "src/pages/SettingsPage/index.tsx",
-    ],
-    rules: {
-      "react-hooks/set-state-in-effect": "off",
-    },
-  },
-  {
     files: ["tests/**/*.spec.ts"],
     ignores: ["tests/live/**"],
     rules: {
