@@ -137,6 +137,15 @@ describe("startPageLoader — invitation already loaded", () => {
     expect(getGameThrowsMock).not.toHaveBeenCalled();
   });
 
+  it("redirects to the game page when the tablet game has started, though the invitation holds the same game", async () => {
+    $invitationGet.mockReturnValue({ gameId: 42, invitationLink: "/invite/42" });
+    getTabletGameMock.mockResolvedValue(tabletGame({ id: 42, status: "started" }));
+
+    const result = await startPageLoader(makeArgs("42"));
+
+    expect(redirectLocation(result)).toBe("/game/42");
+  });
+
   it("drops lobby players cached on an earlier visit, so the page reads them again", async () => {
     $invitationGet.mockReturnValue({ gameId: 42, invitationLink: "/invite/42" });
     queryClient.setQueryData(gameQueries.lobbyPlayers(42).queryKey, [

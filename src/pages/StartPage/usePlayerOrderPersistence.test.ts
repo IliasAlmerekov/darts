@@ -6,18 +6,19 @@ vi.mock("@/shared/api/room", () => ({
 import { act, renderHook } from "@testing-library/react";
 import type { DragEndEvent } from "@dnd-kit/core";
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { ApiError } from "@/shared/api";
 import { updatePlayerOrder } from "@/shared/api/room";
 import type { OrderedPlayer } from "./lib/playerOrder";
 import { usePlayerOrderPersistence } from "./usePlayerOrderPersistence";
 
-function renderOrder(players: OrderedPlayer[]) {
+function renderOrder(players: OrderedPlayer[], onSeatsNotEditable: () => void = vi.fn()) {
   return renderHook(
     ({ players: current }) =>
       usePlayerOrderPersistence({
         gameId: 7,
         players: current,
         setPageError: vi.fn(),
-        onSeatsNotEditable: vi.fn(),
+        onSeatsNotEditable,
       }),
     { initialProps: { players } },
   );
@@ -74,5 +75,43 @@ describe("usePlayerOrderPersistence", () => {
 
     rerender({ players: [] });
     expect(result.current.playerOrder).toEqual([]);
+  });
+
+  describe("when the backend refuses the order", () => {
+    const players = [
+      { id: 1, position: 0 },
+      { id: 2, position: 1 },
+    ];
+
+    it("should roll back and call onSeatsNotEditable once on 409 GAME_SEATS_NOT_EDITABLE", async () => {
+      vi.mocked(updatePlayerOrder).mockRejectedValueOnce(
+        new ApiError("Conflict", {
+          status: 409,
+          data: { success: false, error: "GAME_SEATS_NOT_EDITABLE", message: "Locked." },
+        }),
+      );
+      const onSeatsNotEditable = vi.fn();
+      const { result } = renderOrder(players, onSeatsNotEditable);
+
+      await act(async () => {
+        result.current.handleDragEnd(dragEnd(2, 1));
+      });
+
+      expect(result.current.playerOrder).toEqual([1, 2]);
+      expect(onSeatsNotEditable).toHaveBeenCalledTimes(1);
+    });
+
+    it("should roll back without calling onSeatsNotEditable on another error", async () => {
+      vi.mocked(updatePlayerOrder).mockRejectedValueOnce(new Error("network"));
+      const onSeatsNotEditable = vi.fn();
+      const { result } = renderOrder(players, onSeatsNotEditable);
+
+      await act(async () => {
+        result.current.handleDragEnd(dragEnd(2, 1));
+      });
+
+      expect(result.current.playerOrder).toEqual([1, 2]);
+      expect(onSeatsNotEditable).not.toHaveBeenCalled();
+    });
   });
 });
