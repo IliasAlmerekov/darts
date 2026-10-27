@@ -4,13 +4,10 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import styles from "./GameSummaryPage.module.css";
 import type { WinnerPlayerProps } from "@/types";
 import GameSummaryPage from ".";
-import type { SummarySettings } from "./useGameSummaryPage";
 
 type GameSummaryHookMockResult = {
   error: string | null;
   leaving: boolean;
-  settings: SummarySettings;
-  loadSettings: () => Promise<void>;
   isActionPending: boolean;
   podiumData: WinnerPlayerProps[];
   standings: WinnerPlayerProps[];
@@ -26,8 +23,6 @@ const buildSummaryHookMockResult = (
 ): GameSummaryHookMockResult => ({
   error: null,
   leaving: false,
-  settings: { status: "ready", startScore: 301 },
-  loadSettings: vi.fn(async () => {}),
   isActionPending: false,
   podiumData: [],
   standings: [],

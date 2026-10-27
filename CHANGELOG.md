@@ -39,7 +39,7 @@ and this project does **not** yet follow [Semantic Versioning](https://semver.or
 
 ### Fixed
 
-- Statistics: every screen shows the backend three-dart average with two decimals under the label `Ø AVG` (podium, leaderboard, Statistics, Profile stats card and history, scoring trend chart), with the accessible name "three-dart average". The per-round fallback from the start score is gone, and Podium and leaderboard show `-` for a player with no rounds, including the podium placeholder (#333)
+- Statistics: every screen shows the backend three-dart average with two decimals under the label `Ø AVG` (podium, leaderboard, Statistics, Profile stats card and history, scoring trend chart), with the accessible name "three-dart average". The per-round fallback from the start score is gone, and the summary page no longer requests the game settings it only read for it, so a failed settings request cannot replace the summary with an error. Podium and leaderboard show `-` for a player with no rounds, including the podium placeholder (#333)
 - Game: standings and the podium use placement for rank, while position stays the turn order. Optimistic checkout assigns placement, scoreboard updates preserve it, and undo clears placements only for players whose scores are above zero, keeping a winner who has not been undone (#330)
 
 - Game page: leaving the page while End Game is still running no longer starts a rematch or opens its lobby. If the abort request finishes after you left, the page sends no rematch request and does not navigate, and returning to that game lets you end it again (#331)

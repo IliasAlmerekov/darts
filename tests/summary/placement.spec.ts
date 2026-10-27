@@ -8,17 +8,6 @@ for (const route of ["summary", "details"]) {
   }) => {
     await mockAdminSession(page);
     await mockTabletGame(page, { game: null, lastFinishedGameId: 42 });
-    await page.route("**/api/game/42/settings", async (request) => {
-      await request.fulfill({
-        json: {
-          gameId: 42,
-          status: "finished",
-          startScore: 301,
-          doubleOut: false,
-          tripleOut: false,
-        },
-      });
-    });
     await page.route("**/api/game/42/finished", async (request) => {
       await request.fulfill({
         json: {
