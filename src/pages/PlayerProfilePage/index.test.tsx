@@ -182,7 +182,7 @@ describe("PlayerProfilePage", () => {
       .filter((item) => item.parentElement === history);
 
     expect(games).toHaveLength(2);
-    expect((games[0] as HTMLElement).querySelector("p")?.textContent).toBe(
+    expect(within(games[0] as HTMLElement).getByRole("paragraph").textContent).toBe(
       "20 Oct 2026, 18:42 · 2nd of 2 · Ø AVG 45.25",
     );
     expect(
@@ -194,7 +194,7 @@ describe("PlayerProfilePage", () => {
         .getAllByRole("listitem")
         .map((item) => item.textContent),
     ).toEqual(["1. Anna", "2. Alice (you)"]);
-    expect((games[1] as HTMLElement).querySelector("p")?.textContent).toBe(
+    expect(within(games[1] as HTMLElement).getByRole("paragraph").textContent).toBe(
       "19 Oct 2026, 09:05 · 1st of 2 · Ø AVG 60.00",
     );
     expect(screen.queryByRole("link", { name: /AVG/ })).toBeNull();
