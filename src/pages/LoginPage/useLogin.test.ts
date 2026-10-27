@@ -1,4 +1,5 @@
 // @vitest-environment jsdom
+import { startTransition } from "react";
 import { act, renderHook } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { useLogin } from "./useLogin";
@@ -30,8 +31,14 @@ const joinedPlayer = { ...loggedInPlayer, gameId: 42 };
 async function submitLogin(): Promise<ReturnType<typeof useLogin>> {
   const { result } = renderHook(() => useLogin());
 
+  const formData = new FormData();
+  formData.set("_username", "player@test.com");
+  formData.set("_password", "password");
+
   await act(async () => {
-    await result.current.login("player@test.com", "password");
+    startTransition(() => {
+      result.current.formAction(formData);
+    });
   });
 
   return result.current;

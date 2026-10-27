@@ -8,14 +8,17 @@ interface LoginFormProps {
   error: string | null;
   success?: string | null;
   loading: boolean;
-  onSubmit: (e: React.FormEvent<HTMLFormElement>) => void;
+  action: (formData: FormData) => void;
+  /** The values to show in the fields; they survive the reset React 19 does after an action. */
+  values: { email: string; password: string };
 }
 
 export function LoginForm({
   error,
   success,
   loading,
-  onSubmit,
+  action,
+  values,
 }: LoginFormProps): React.JSX.Element {
   const [showPassword, setShowPassword] = useState(false);
   // The status region mounts empty and receives its text on the next frame, because
@@ -51,7 +54,7 @@ export function LoginForm({
         </div>
       )}
 
-      <form onSubmit={onSubmit} className={styles.form} data-testid="login-form">
+      <form action={action} className={styles.form} data-testid="login-form">
         <div className={styles.fieldGroup}>
           <label htmlFor="_username" className={styles.formLabel}>
             Email <span className={styles.required}>*</span>
@@ -65,6 +68,7 @@ export function LoginForm({
               placeholder="name@db-n.com"
               className={styles.formControl}
               required
+              defaultValue={values.email}
               disabled={loading}
               autoComplete="username"
             />
@@ -84,6 +88,7 @@ export function LoginForm({
               placeholder="Enter your password..."
               className={`${styles.formControl} ${styles.passwordInput}`}
               required
+              defaultValue={values.password}
               disabled={loading}
               autoComplete="current-password"
             />

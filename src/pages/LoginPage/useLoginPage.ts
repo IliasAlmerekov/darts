@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useAuthenticatedUser } from "@/shared/hooks/useAuthenticatedUser";
 import { markInvitationErrorHandled } from "@/shared/query/acceptLoggedInUser";
@@ -6,7 +6,7 @@ import { useLogin } from "./useLogin";
 import { resolveLoginDestination } from "./lib/loginDestination";
 import { isLoginLocationState } from "./lib/loginLocationState";
 import { getActiveGameId } from "@/shared/store";
-import { mapAuthErrorMessage, mapInvitationErrorMessage } from "@/lib/error/auth-error-handling";
+import { mapInvitationErrorMessage } from "@/lib/error/auth-error-handling";
 import { ROUTES } from "@/lib/router/routes";
 import { resolveSafeRedirect } from "@/lib/router/safeRedirect";
 import { parseLocationState } from "@/lib/router/locationState";
@@ -23,13 +23,13 @@ interface LoginPageReturn {
   error: string | null;
   loading: boolean;
   successMessage: string | null;
-  handleSubmit: (e: React.FormEvent<HTMLFormElement>) => Promise<void>;
+  formAction: (formData: FormData) => void;
+  values: { email: string; password: string };
   goToPlayerProfile: () => void;
 }
 
 export function useLoginPage(): LoginPageReturn {
-  const [submitError, setSubmitError] = useState<string | null>(null);
-  const { login, loading, error: loginError } = useLogin();
+  const { formAction, loading, error, values } = useLogin();
   const navigate = useNavigate();
   const location = useLocation();
   const { user, loading: checkingLogin } = useAuthenticatedUser();
@@ -57,25 +57,6 @@ export function useLoginPage(): LoginPageReturn {
     screen = { type: "form" };
   }
 
-  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>): Promise<void> => {
-    e.preventDefault();
-    setSubmitError(null);
-
-    try {
-      const formData = new FormData(e.currentTarget);
-      const email = String(formData.get("_username") ?? "");
-      const password = String(formData.get("_password") ?? "");
-      await login(email, password);
-    } catch (err) {
-      setSubmitError(
-        mapAuthErrorMessage({
-          flow: "login",
-          error: err,
-        }),
-      );
-    }
-  };
-
   // The handled error leaves the cached user, so a later visit to the login page redirects
   // instead of showing it again. The redirect effect below then opens the profile.
   // The handled error leaves the cached user, so the redirect effect below opens the profile.
@@ -91,10 +72,11 @@ export function useLoginPage(): LoginPageReturn {
 
   return {
     screen,
-    error: submitError ?? loginError,
+    error,
     loading,
     successMessage,
-    handleSubmit,
+    formAction,
+    values,
     goToPlayerProfile,
   };
 }
