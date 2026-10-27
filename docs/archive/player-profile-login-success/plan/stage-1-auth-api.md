@@ -8,8 +8,8 @@ failure.
 
 ## Inputs
 
-- `docs/player-profile-login-success/research/research.md`
-- `docs/player-profile-login-success/design/design.md`
+- `docs/archive/player-profile-login-success/research/research.md`
+- `docs/archive/player-profile-login-success/design/design.md`
 - `docs/convention/api.md`
 - `docs/convention/typescript.md`
 - `docs/convention/errors.md`

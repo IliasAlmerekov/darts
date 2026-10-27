@@ -26,6 +26,10 @@ On a fresh Linux machine, run `npx playwright install --with-deps chromium` inst
 npm run dev
 ```
 
+To run the frontend together with the backend, start the local Compose stack (project `darts`, from `compose.dev.yaml`) with
+`docker compose up -d` in the folder that holds both repositories: the frontend serves :5173, the backend nginx :8001.
+See [Verification in `AGENTS.md`](AGENTS.md#verification) for details.
+
 ## Environment
 
 Create a `.env` file in the project root using `.env.example` as a template.
@@ -41,7 +45,8 @@ src/
 ├── app/          # Application bootstrap, routing, global styles, ErrorBoundary
 ├── assets/       # Static assets: fonts, icons
 ├── pages/        # Route-level pages (screen modules)
-└── shared/       # Shared utilities, UI components, types, API client
+├── shared/       # Shared utilities, UI components, types, API client
+└── test/         # Test-only helpers (query wrapper, loader args, architecture checks, Playwright helper logic)
 ```
 
 ### Page structure
@@ -81,7 +86,9 @@ Not every page needs all folders; keep only what is required.
 shared/
 ├── api/            # API modules grouped by domain (client, errors, mappers)
 ├── hooks/          # Reusable hooks
-├── lib/            # Pure utilities (parseThrowValue, player-mappers, routes, soundPlayer, etc.)
+├── lib/            # Pure utilities (parseThrowValue, player-mappers, routes, guards, etc.)
+├── query/          # TanStack Query option factories and the query client
+├── services/       # Browser side effects (clientLogger, soundPlayer)
 ├── store/          # Global Nanostores
 ├── types/          # Shared TypeScript types and ambient declarations
 └── ui/             # Reusable UI components (Button, Overlay, Pagination, etc.)
@@ -93,6 +100,15 @@ shared/
 - `shared/` must not import from upper layers (`pages` or `app`).
 - Keep route-level pages thin: read params, connect hooks/api, render UI.
 - Reuse shared UI and utilities before introducing new global modules.
+
+## Further reading
+
+- [`docs/convention/`](docs/convention/) — coding conventions per area (architecture, TypeScript, state, API, React, styling, errors, testing)
+- [`docs/adr/`](docs/adr/) — architecture decision records and the reasons behind them
+- [`docs/test-plans/`](docs/test-plans/) — Markdown test plans the Playwright specs trace to
+- [`GLOSSARY.md`](GLOSSARY.md) — domain terms (lobby, tablet game, current game, …) and the words to avoid
+- [`SECURITY.md`](SECURITY.md) — how to report a vulnerability and the security rules for changes
+- [`AGENTS.md`](AGENTS.md) — workflow, backend contract, verification and review rules
 
 ## Scripts
 

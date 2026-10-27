@@ -1,6 +1,7 @@
 # Playwright E2E Tests
 
 The Playwright suite is organized by scenario instead of storing every spec in one folder.
+The Markdown test plans the specs trace to live in `docs/test-plans/`.
 
 ## Structure
 

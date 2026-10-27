@@ -7,8 +7,8 @@ user without adding a second auth flow.
 
 ## Inputs
 
-- `docs/player-profile-login-success/research/research.md`
-- `docs/player-profile-login-success/design/design.md`
+- `docs/archive/player-profile-login-success/research/research.md`
+- `docs/archive/player-profile-login-success/design/design.md`
 - `docs/convention/react.md`
 - `docs/convention/state.md`
 - `docs/convention/errors.md`

@@ -7,8 +7,8 @@ fallback behavior for older authenticated-user shapes.
 
 ## Inputs
 
-- `docs/player-profile-login-success/research/research.md`
-- `docs/player-profile-login-success/design/design.md`
+- `docs/archive/player-profile-login-success/research/research.md`
+- `docs/archive/player-profile-login-success/design/design.md`
 - `docs/convention/react.md`
 - `docs/convention/typescript.md`
 - `docs/convention/testing.md`

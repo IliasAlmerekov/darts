@@ -16,7 +16,7 @@ tests/<domain>/*.spec.ts            # mocked Playwright specs (auth, start, game
 tests/shared/                       # reusable Playwright fixtures, route mocks, seed spec
 tests/harness/                      # self-tests for the tests/shared fixtures
 tests/live/                         # specs against a real backend, plus preflight.setup.ts
-specs/*.md                          # ticket and manual test plans
+docs/test-plans/*.md                # ticket and manual test plans
 ```
 
 Rules:

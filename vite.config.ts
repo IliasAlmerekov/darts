@@ -37,7 +37,6 @@ export default defineConfig(({ mode }) => {
       environment: "jsdom",
       globals: true,
       include: ["src/**/*.test.{ts,tsx}"],
-      exclude: ["specs/**"],
       coverage: {
         provider: "v8",
         reporter: ["text", "lcov", "html"],

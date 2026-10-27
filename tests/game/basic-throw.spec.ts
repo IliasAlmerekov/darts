@@ -1,4 +1,4 @@
-// spec: specs/ticket-test-plan.md
+// spec: docs/test-plans/ticket-test-plan.md
 // seed: tests/shared/seed.spec.ts
 
 import { test, expect, type Locator, type Page, type Route, type Request } from "../shared/test";
