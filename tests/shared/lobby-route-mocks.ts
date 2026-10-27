@@ -1,4 +1,5 @@
 import type { Page, Route } from "@playwright/test";
+import { fulfillJson } from "./json-response";
 import { fulfillRoomStream, isRoomStreamUrl } from "./room-stream-mocks";
 
 interface LobbyPlayer {
@@ -22,14 +23,6 @@ interface LobbySettings {
 
 const DEFAULT_LOBBY_GAME_ID = 101;
 const FIRST_GUEST_PLAYER_ID = 1001;
-
-function jsonResponse(route: Route, body: unknown): Promise<void> {
-  return route.fulfill({
-    status: 200,
-    contentType: "application/json",
-    body: JSON.stringify(body),
-  });
-}
 
 function matchPath(pattern: RegExp): (url: URL) => boolean {
   return (url) => pattern.test(url.pathname);
@@ -69,13 +62,13 @@ export async function mockLobbyApi(page: Page): Promise<void> {
     if (typeof payload === "object" && payload !== null) {
       settings = { ...settings, ...payload };
     }
-    await jsonResponse(route, { success: true, gameId: DEFAULT_LOBBY_GAME_ID });
+    await fulfillJson(route, { success: true, gameId: DEFAULT_LOBBY_GAME_ID });
   });
 
   await page.route(matchPath(/^\/api\/invite\/create\/\d+$/), async (route) => {
     const gameId = lastPathSegmentAsId(route);
     tabletGameId = gameId;
-    await jsonResponse(route, {
+    await fulfillJson(route, {
       success: true,
       gameId,
       invitationLink: `/invite/${gameId}`,
@@ -83,7 +76,7 @@ export async function mockLobbyApi(page: Page): Promise<void> {
   });
 
   await page.route(matchPath(/^\/api\/tablet\/game$/), async (route) => {
-    await jsonResponse(route, {
+    await fulfillJson(route, {
       game: tabletGameId === null ? null : { id: tabletGameId, status },
       lastFinishedGameId: null,
     });
@@ -91,7 +84,7 @@ export async function mockLobbyApi(page: Page): Promise<void> {
 
   await page.route(matchPath(/^\/api\/game\/\d+$/), async (route) => {
     const gameId = lastPathSegmentAsId(route);
-    await jsonResponse(route, gameState(gameId));
+    await fulfillJson(route, gameState(gameId));
   });
 
   await page.route(isRoomStreamUrl, (route) =>
@@ -123,11 +116,11 @@ data: ${JSON.stringify({ players })}
       roundHistory: [],
     };
     players.push(player);
-    await jsonResponse(route, { success: true, player: { id: player.id, name: player.name } });
+    await fulfillJson(route, { success: true, player: { id: player.id, name: player.name } });
   });
 
   await page.route(matchPath(/^\/api\/room\/\d+\/positions$/), async (route) => {
-    await jsonResponse(route, { success: true });
+    await fulfillJson(route, { success: true });
   });
 
   await page.route(matchPath(/^\/api\/game\/\d+\/settings$/), async (route) => {
@@ -136,11 +129,11 @@ data: ${JSON.stringify({ players })}
       settings = { ...settings, ...payload };
     }
     const gameId = Number(new URL(route.request().url()).pathname.split("/").at(-2));
-    await jsonResponse(route, { gameId, ...settings, status });
+    await fulfillJson(route, { gameId, ...settings, status });
   });
 
   await page.route(matchPath(/^\/api\/game\/\d+\/start$/), async (route) => {
     status = "started";
-    await jsonResponse(route, { success: true });
+    await fulfillJson(route, { success: true });
   });
 }

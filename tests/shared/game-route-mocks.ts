@@ -1,8 +1,5 @@
-import type { Page, Route } from "@playwright/test";
-
-export async function fulfillJson(route: Route, body: unknown): Promise<void> {
-  await route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify(body) });
-}
+import type { Page } from "@playwright/test";
+import { fulfillJson } from "./json-response";
 
 /** Answers `GET /api/game/<id>` with `state`; other methods fall through to later routes. */
 export async function mockGameState(page: Page, gameId: number, state: unknown): Promise<void> {

@@ -1,6 +1,7 @@
 import { test, expect, type Locator, type Page } from "../shared/test";
 import { mockAdminSession } from "../shared/auth-route-mocks";
-import { fulfillJson, mockGameState } from "../shared/game-route-mocks";
+import { mockGameState } from "../shared/game-route-mocks";
+import { fulfillJson } from "../shared/json-response";
 import { navigateInApp } from "../shared/in-app-navigation";
 import { mockFinishedGame } from "../shared/summary-mocks";
 import { mockTabletGame, startedTabletGame } from "../shared/tablet-game-mocks";
