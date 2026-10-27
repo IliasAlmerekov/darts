@@ -595,7 +595,7 @@ describe("useStartPage action guards", () => {
       expect(revalidateMock).toHaveBeenCalledTimes(1);
     });
 
-    it("should show the room full message and not reload when add guest hits GAME_ROOM_FULL", async () => {
+    it("should show the lobby full message and not reload when add guest hits GAME_ROOM_FULL", async () => {
       setInvitation({ gameId: 10, invitationLink: "/invite/10" });
       vi.mocked(addGuestPlayer).mockRejectedValueOnce(
         new ApiError("Conflict", {
