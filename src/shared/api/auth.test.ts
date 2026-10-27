@@ -14,6 +14,7 @@ import {
 } from "@/shared/store/game-session";
 import { $gameData, resetGameStore, setGameData } from "@/shared/store/game-state";
 import { buildGameThrowsResponse } from "@/shared/types/game.test-support";
+import { clientLogger } from "@/shared/services/browser/clientLogger";
 import { createMockResponse, respondWith } from "./test-utils";
 
 describe("getAuthenticatedUser", () => {
@@ -417,6 +418,17 @@ describe("registerUser", () => {
 
     expect(apiClient.post).toHaveBeenCalled();
     expect(result).toEqual(registrationExample);
+  });
+
+  it("logs a failed CSRF ping as auth.csrf_prefetch.failed with the caught error", async () => {
+    const error = new Error("Network error");
+    const warnSpy = vi.spyOn(clientLogger, "warn").mockImplementation(() => undefined);
+    vi.spyOn(apiClient, "get").mockRejectedValueOnce(error);
+    vi.spyOn(apiClient, "post").mockImplementationOnce(respondWith(registrationExample));
+
+    await registerUser({ username: "alice", email: "alice@example.com", password: "s3cr3t" }, true);
+
+    expect(warnSpy).toHaveBeenCalledExactlyOnceWith("auth.csrf_prefetch.failed", { error });
   });
 
   it("resolves when registration answers without a game, as after a stale invitation", async () => {

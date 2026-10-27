@@ -180,7 +180,7 @@ export async function registerUser(
       });
     } catch (error) {
       const { clientLogger } = await import("@/shared/services/browser/clientLogger");
-      clientLogger.warn("[auth] CSRF prefetch failed — proceeding with registration", { error });
+      clientLogger.warn("auth.csrf_prefetch.failed", { error });
     }
   }
 
