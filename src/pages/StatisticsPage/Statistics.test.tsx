@@ -2,6 +2,7 @@
 import { fireEvent, render, screen } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { INITIAL_PLAYER_STATS_PARAMS } from "@/shared/query/statistics.queries";
 import StatisticsPage from "./Statistics";
 
 // ── Nanostores ──────────────────────────────────────────────────────────────
@@ -247,7 +248,7 @@ describe("StatisticsPage", () => {
     expect(screen.getByText(/page 1 of/i)).toBeTruthy();
   });
 
-  it("should request the server's name order in alphabetical mode", () => {
+  it("should first request the params the route warmup prefetches", () => {
     usePlayerStatsMock.mockReturnValue({
       loading: false,
       error: null,
@@ -258,11 +259,7 @@ describe("StatisticsPage", () => {
 
     renderPage();
 
-    expect(usePlayerStatsMock).toHaveBeenLastCalledWith({
-      limit: 10,
-      offset: 0,
-      sortParam: "name:asc",
-    });
+    expect(usePlayerStatsMock).toHaveBeenLastCalledWith(INITIAL_PLAYER_STATS_PARAMS);
   });
 
   it("should request the average order in score mode", () => {

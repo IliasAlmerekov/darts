@@ -12,7 +12,7 @@ export interface PlayerStatsParams {
 export const INITIAL_PLAYER_STATS_PARAMS: Readonly<PlayerStatsParams> = {
   limit: 10,
   offset: 0,
-  sortParam: undefined,
+  sortParam: "name:asc",
 };
 
 interface GamesOverviewParams {
