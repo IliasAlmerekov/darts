@@ -2,7 +2,7 @@ import { useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useAuthenticatedUser } from "@/shared/hooks/useAuthenticatedUser";
 import { markInvitationErrorHandled } from "@/shared/query/acceptLoggedInUser";
-import { useLogin } from "./useLogin";
+import { useLogin, type LoginValues } from "./useLogin";
 import { resolveLoginDestination } from "./lib/loginDestination";
 import { isLoginLocationState } from "./lib/loginLocationState";
 import { getActiveGameId } from "@/shared/store";
@@ -24,7 +24,7 @@ interface LoginPageReturn {
   loading: boolean;
   successMessage: string | null;
   formAction: (formData: FormData) => void;
-  values: { email: string; password: string };
+  values: LoginValues;
   goToPlayerProfile: () => void;
 }
 

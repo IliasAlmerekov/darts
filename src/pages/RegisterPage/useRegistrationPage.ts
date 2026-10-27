@@ -1,5 +1,5 @@
 import { useNavigate } from "react-router-dom";
-import { useRegistration } from "./useRegistration";
+import { useRegistration, type RegistrationValues } from "./useRegistration";
 import { useAuthenticatedUser } from "@/shared/hooks/useAuthenticatedUser";
 import { mapInvitationErrorMessage } from "@/lib/error/auth-error-handling";
 import { markInvitationErrorHandled } from "@/shared/query/acceptLoggedInUser";
@@ -17,7 +17,7 @@ interface RegistrationPageReturn {
   error: string | null;
   loading: boolean;
   formAction: (formData: FormData) => void;
-  values: { username: string; email: string; password: string };
+  values: RegistrationValues;
   goToPlayerProfile: () => void;
 }
 

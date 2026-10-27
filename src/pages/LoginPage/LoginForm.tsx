@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { Mail, Lock, Eye, EyeOff } from "lucide-react";
+import type { LoginValues } from "./useLogin";
 import styles from "./LoginForm.module.css";
 import { ROUTES } from "@/lib/router/routes";
 
@@ -10,7 +11,7 @@ interface LoginFormProps {
   loading: boolean;
   action: (formData: FormData) => void;
   /** The values to show in the fields; they survive the reset React 19 does after an action. */
-  values: { email: string; password: string };
+  values: LoginValues;
 }
 
 export function LoginForm({

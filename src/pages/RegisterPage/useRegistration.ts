@@ -12,13 +12,18 @@ import { queryClient } from "@/shared/query/queryClient";
 import { setCurrentGameId } from "@/shared/store";
 import { clientLogger } from "@/shared/services/browser/clientLogger";
 
-/** What the form shows after a submit: the error, the accepted response, and the typed values to keep. */
-interface RegistrationFormState {
-  error: string | null;
-  registered: RegistrationResponse | null;
+/** The registration fields as submitted. */
+export interface RegistrationValues {
   username: string;
   email: string;
   password: string;
+}
+
+/** What the form shows after a submit: the error, the accepted response, and the submitted values to keep. */
+interface RegistrationFormState {
+  error: string | null;
+  registered: RegistrationResponse | null;
+  values: RegistrationValues;
 }
 
 /**
@@ -32,15 +37,13 @@ interface RegistrationReturn {
   /** The accepted registration response; the page decides between joining and the invitation error. */
   registered: RegistrationResponse | null;
   /** The last submitted values; the form feeds them back as `defaultValue`, because React 19 resets the fields after an action. */
-  values: { username: string; email: string; password: string };
+  values: RegistrationValues;
 }
 
 const INITIAL_STATE: RegistrationFormState = {
   error: null,
   registered: null,
-  username: "",
-  email: "",
-  password: "",
+  values: { username: "", email: "", password: "" },
 };
 
 function hasErrorsRecord(data: unknown): data is { errors: Record<string, unknown> } {
@@ -57,7 +60,7 @@ export function useRegistration(): RegistrationReturn {
     const username = String(formData.get("username") ?? "");
     const email = String(formData.get("email") ?? "");
     const password = String(formData.get("password") ?? "");
-    const typed = { username, email, password };
+    const submitted: RegistrationValues = { username, email, password };
 
     try {
       let response: RegistrationResponse;
@@ -84,7 +87,7 @@ export function useRegistration(): RegistrationReturn {
       acceptLoggedInUser(response);
 
       if (response.invitationError !== undefined) {
-        return { ...typed, error: null, registered: response };
+        return { values: submitted, error: null, registered: response };
       }
 
       if (response.redirect) {
@@ -95,13 +98,13 @@ export function useRegistration(): RegistrationReturn {
         }
         navigate(safeRedirect ?? ROUTES.start());
       }
-      return { ...typed, error: null, registered: response };
+      return { values: submitted, error: null, registered: response };
     } catch (err) {
       clientLogger.error("auth.registration.failed", {
         error: err,
       });
       return {
-        ...typed,
+        values: submitted,
         error: mapAuthErrorMessage({
           flow: "registration",
           error: err,
@@ -118,6 +121,6 @@ export function useRegistration(): RegistrationReturn {
     loading,
     error: state.error,
     registered: state.registered,
-    values: { username: state.username, email: state.email, password: state.password },
+    values: state.values,
   };
 }

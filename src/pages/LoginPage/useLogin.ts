@@ -5,11 +5,16 @@ import { clientLogger } from "@/shared/services/browser/clientLogger";
 import { acceptLoggedInUser } from "@/shared/query/acceptLoggedInUser";
 import { mapAuthErrorMessage } from "@/lib/error/auth-error-handling";
 
-/** What the form shows after a submit: the mapped error and the typed values to keep. */
-interface LoginFormState {
-  error: string | null;
+/** The login fields as submitted. */
+export interface LoginValues {
   email: string;
   password: string;
+}
+
+/** What the form shows after a submit: the mapped error and the submitted values to keep. */
+interface LoginFormState {
+  error: string | null;
+  values: LoginValues;
 }
 
 interface LoginReturn {
@@ -18,10 +23,10 @@ interface LoginReturn {
   loading: boolean;
   error: string | null;
   /** The last submitted values; the form feeds them back as `defaultValue`, because React 19 resets the fields after an action. */
-  values: { email: string; password: string };
+  values: LoginValues;
 }
 
-const INITIAL_STATE: LoginFormState = { error: null, email: "", password: "" };
+const INITIAL_STATE: LoginFormState = { error: null, values: { email: "", password: "" } };
 
 // A user whose redirect points into the API came from the controller fallback; the
 // target comes from `/api/login/success`.
@@ -96,7 +101,7 @@ async function submitLogin(_previous: LoginFormState, formData: FormData): Promi
   const email = String(formData.get("_username") ?? "");
   const password = String(formData.get("_password") ?? "");
 
-  return { error: await attemptLogin(email, password), email, password };
+  return { error: await attemptLogin(email, password), values: { email, password } };
 }
 
 /**
@@ -111,6 +116,6 @@ export function useLogin(): LoginReturn {
     formAction,
     loading,
     error: state.error,
-    values: { email: state.email, password: state.password },
+    values: state.values,
   };
 }

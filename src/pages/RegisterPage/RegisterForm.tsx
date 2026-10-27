@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { Link } from "react-router-dom";
 import { Mail, Lock, Eye, EyeOff, User } from "lucide-react";
 import clsx from "clsx";
+import type { RegistrationValues } from "./useRegistration";
 import styles from "./RegisterForm.module.css";
 import { ROUTES } from "@/lib/router/routes";
 import { PASSWORD_MIN_LENGTH } from "@/lib/auth/password";
@@ -12,7 +13,7 @@ interface RegistrationFormProps {
   loading: boolean;
   action: (formData: FormData) => void;
   /** The values to show in the fields; they survive the reset React 19 does after an action. */
-  values: { username: string; email: string; password: string };
+  values: RegistrationValues;
 }
 
 export function RegisterForm({
