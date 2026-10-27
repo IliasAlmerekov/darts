@@ -33,10 +33,11 @@ const player: AuthenticatedUser = {
 
 function givenRegistration(registered: unknown): void {
   useRegistrationMock.mockReturnValue({
-    register: vi.fn(),
+    formAction: vi.fn(),
     loading: false,
     error: null,
     registered,
+    values: { username: "", email: "", password: "" },
   });
 }
 

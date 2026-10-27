@@ -1,6 +1,5 @@
-import { FormEvent } from "react";
 import { useNavigate } from "react-router-dom";
-import { useRegistration } from "./useRegistration";
+import { useRegistration, type RegistrationValues } from "./useRegistration";
 import { useAuthenticatedUser } from "@/shared/hooks/useAuthenticatedUser";
 import { mapInvitationErrorMessage } from "@/lib/error/auth-error-handling";
 import { markInvitationErrorHandled } from "@/shared/query/acceptLoggedInUser";
@@ -17,12 +16,13 @@ interface RegistrationPageReturn {
   screen: RegistrationScreen;
   error: string | null;
   loading: boolean;
-  handleSubmit: (e: FormEvent<HTMLFormElement>) => Promise<void>;
+  formAction: (formData: FormData) => void;
+  values: RegistrationValues;
   goToPlayerProfile: () => void;
 }
 
 export function useRegistrationPage(): RegistrationPageReturn {
-  const { register, loading, error, registered } = useRegistration();
+  const { formAction, loading, error, registered, values } = useRegistration();
   const { user } = useAuthenticatedUser();
   const navigate = useNavigate();
 
@@ -43,30 +43,12 @@ export function useRegistrationPage(): RegistrationPageReturn {
     navigate(ROUTES.playerProfile);
   };
 
-  const handleSubmit = async (e: FormEvent<HTMLFormElement>): Promise<void> => {
-    e.preventDefault();
-
-    const formElement = e.currentTarget;
-    const usernameInput = formElement.elements.namedItem("username");
-    const emailInput = formElement.elements.namedItem("email");
-    const passwordInput = formElement.elements.namedItem("password");
-
-    if (
-      !(usernameInput instanceof HTMLInputElement) ||
-      !(emailInput instanceof HTMLInputElement) ||
-      !(passwordInput instanceof HTMLInputElement)
-    ) {
-      return;
-    }
-
-    await register(usernameInput.value, emailInput.value, passwordInput.value);
-  };
-
   return {
     screen,
     error,
     loading,
-    handleSubmit,
+    formAction,
+    values,
     goToPlayerProfile,
   };
 }

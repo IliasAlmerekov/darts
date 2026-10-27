@@ -13,7 +13,8 @@ function renderForm(props: { error?: string | null; success?: string | null }) {
         error={props.error ?? null}
         success={props.success ?? null}
         loading={false}
-        onSubmit={vi.fn()}
+        action={vi.fn()}
+        values={{ email: "", password: "" }}
       />
     </MemoryRouter>,
   );
@@ -105,7 +106,13 @@ describe("LoginForm banners", () => {
 
     rerender(
       <MemoryRouter>
-        <LoginForm error={null} success="Saved" loading={false} onSubmit={vi.fn()} />
+        <LoginForm
+          error={null}
+          success="Saved"
+          loading={false}
+          action={vi.fn()}
+          values={{ email: "", password: "" }}
+        />
       </MemoryRouter>,
     );
 

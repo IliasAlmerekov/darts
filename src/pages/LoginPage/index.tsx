@@ -7,7 +7,7 @@ import { InvitationErrorScreen } from "@/shared/ui/invitation-error-screen";
 import deepblueLogo from "@/assets/icons/madeByDeepblue.svg";
 
 function LoginPage(): React.JSX.Element {
-  const { screen, error, loading, successMessage, handleSubmit, goToPlayerProfile } =
+  const { screen, error, loading, successMessage, formAction, values, goToPlayerProfile } =
     useLoginPage();
 
   if (screen.type === "checking") {
@@ -33,7 +33,8 @@ function LoginPage(): React.JSX.Element {
                 error={error}
                 success={successMessage}
                 loading={loading}
-                onSubmit={handleSubmit}
+                action={formAction}
+                values={values}
               />
             </div>
           </div>

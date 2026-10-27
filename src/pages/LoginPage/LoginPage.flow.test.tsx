@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 
-import { fireEvent, render, screen } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
 import { beforeEach, describe, expect, it, vi } from "vitest";
@@ -84,5 +84,53 @@ describe("LoginPage form login", () => {
     fireEvent.click(screen.getByRole("button", { name: "Go to my profile" }));
 
     expect(await screen.findByRole("heading", { name: "Player profile" })).toBeTruthy();
+  });
+
+  it("shows the mapped error and keeps the typed values after a failed login", async () => {
+    loginWithCredentialsMock.mockResolvedValueOnce({ type: "failure", error: "unauthorized" });
+
+    renderLoginRoute();
+    await submitLoginForm();
+
+    expect((await screen.findByRole("alert")).textContent).toBe("Incorrect email or password.");
+    expect(screen.getByLabelText<HTMLInputElement>(/email/i).value).toBe("player@test.com");
+    expect(screen.getByLabelText<HTMLInputElement>(/^password/i).value).toBe("secret");
+  });
+
+  it("disables the fields and the button while the login request runs", async () => {
+    let finishLogin: (value: unknown) => void = () => undefined;
+    loginWithCredentialsMock.mockReturnValueOnce(
+      new Promise((resolve) => {
+        finishLogin = resolve;
+      }),
+    );
+
+    renderLoginRoute();
+    await submitLoginForm();
+
+    const button = await screen.findByRole("button", { name: "Signing in..." });
+    expect(button.hasAttribute("disabled")).toBe(true);
+    expect(screen.getByLabelText<HTMLInputElement>(/email/i).disabled).toBe(true);
+    expect(screen.getByLabelText<HTMLInputElement>(/^password/i).disabled).toBe(true);
+
+    finishLogin({ type: "failure", error: "unauthorized" });
+
+    await waitFor(() => {
+      expect(screen.getByLabelText<HTMLInputElement>(/email/i).disabled).toBe(false);
+    });
+  });
+
+  it("hides the previous error while the next login request runs", async () => {
+    loginWithCredentialsMock.mockResolvedValueOnce({ type: "failure", error: "unauthorized" });
+    loginWithCredentialsMock.mockReturnValueOnce(new Promise(() => undefined));
+
+    renderLoginRoute();
+    await submitLoginForm();
+    await screen.findByRole("alert");
+
+    fireEvent.click(screen.getByRole("button", { name: "Sign in" }));
+
+    expect(await screen.findByRole("button", { name: "Signing in..." })).toBeTruthy();
+    expect(screen.queryByRole("alert")).toBeNull();
   });
 });
