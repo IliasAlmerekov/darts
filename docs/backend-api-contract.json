@@ -40,7 +40,7 @@
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "$ref": "#/components/schemas/Game"
+                                    "$ref": "#/components/schemas/GameResponseDto"
                                 }
                             }
                         }
@@ -92,7 +92,7 @@
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "$ref": "#/components/schemas/Game"
+                                    "$ref": "#/components/schemas/GameResponseDto"
                                 }
                             }
                         }
@@ -791,7 +791,7 @@
                 "tags": [
                     "Game Rooms"
                 ],
-                "summary": "Streams SSE updates for a room.",
+                "summary": "Streams the players of a room in the lobby; outside the lobby answers 204 (ADR 0001).",
                 "operationId": "get_room_stream",
                 "parameters": [
                     {
@@ -806,10 +806,13 @@
                 ],
                 "responses": {
                     "200": {
-                        "description": "Server-Sent Events (SSE) Stream f\u00fcr Raum-Updates.",
+                        "description": "Server-Sent Events (SSE) Stream f\u00fcr die Lobby. Sendet `players`-Events (`players`, `count`), wenn sich die Spieler \u00e4ndern, und Heartbeats. Der Stream endet sp\u00e4testens eine Sekunde, nachdem das Spiel die Lobby verl\u00e4sst (gestartet oder abgebrochen), und sp\u00e4testens nach 5 Minuten. W\u00fcrfe sendet der Stream nicht.",
                         "content": {
                             "text/event-stream": {}
                         }
+                    },
+                    "204": {
+                        "description": "Das Spiel ist nicht in der Lobby (gestartet, beendet oder abgebrochen). Ohne Body, damit EventSource nicht neu verbindet."
                     },
                     "404": {
                         "description": "Spiel nicht gefunden."
@@ -996,7 +999,7 @@
                     {
                         "name": "sort",
                         "in": "query",
-                        "description": "Sortierung im Format `average:asc|desc` oder `gamesplayed:asc|desc`.",
+                        "description": "Sortierung im Format `average:asc|desc`, `gamesplayed:asc|desc` oder `name:asc|desc` (Anzeigename). Gleiche Werte folgen der Spieler-ID.",
                         "required": false,
                         "schema": {
                             "type": "string",
@@ -2533,9 +2536,6 @@
                         "minLength": 6
                     }
                 },
-                "type": "object"
-            },
-            "Game": {
                 "type": "object"
             },
             "ThrowResponseDto": {
