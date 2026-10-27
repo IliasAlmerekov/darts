@@ -1,4 +1,4 @@
-// spec: specs/ticket-test-plan.md
+// spec: docs/test-plans/ticket-test-plan.md
 // seed: tests/start/create-game.spec.ts
 
 import { test, expect, type Page } from "../shared/test";

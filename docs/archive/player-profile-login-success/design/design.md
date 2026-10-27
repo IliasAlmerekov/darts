@@ -1,6 +1,6 @@
 # Design: Player Profile Login Success
 
-Source research: `docs/player-profile-login-success/research/research.md`
+Source research: `docs/archive/player-profile-login-success/research/research.md`
 
 ## Data Flow
 

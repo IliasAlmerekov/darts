@@ -2,8 +2,8 @@
 
 ## Inputs
 
-- Research: `docs/player-profile-login-success/research/research.md`
-- Approved design: `docs/player-profile-login-success/design/design.md`
+- Research: `docs/archive/player-profile-login-success/research/research.md`
+- Approved design: `docs/archive/player-profile-login-success/design/design.md`
 - Coding standards: the Conventions table in `AGENTS.md`
 - API conventions: `docs/convention/api.md`
 - Architecture conventions: `docs/convention/architecture.md`
@@ -25,7 +25,7 @@ scoreAverage } } }`. Do not infer extra backend fields.
 ## Stages
 
 1. Stage 1: Auth API response handling
-   - Stage file: `docs/player-profile-login-success/plan/stage-1-auth-api.md`
+   - Stage file: `docs/archive/player-profile-login-success/plan/stage-1-auth-api.md`
    - Objective: accept the profile envelope, preserve existing redirect shapes, and treat
      `success: false` as an authorization failure.
    - Exact file scope:
@@ -50,7 +50,7 @@ scoreAverage } } }`. Do not infer extra backend fields.
      - `npm run eslint`
 
 2. Stage 2: Login and auth-bootstrap consumers
-   - Stage file: `docs/player-profile-login-success/plan/stage-2-login-consumers.md`
+   - Stage file: `docs/archive/player-profile-login-success/plan/stage-2-login-consumers.md`
    - Objective: ensure login and already-authenticated login-page flows store profile
      results and navigate through the existing safe redirect path.
    - Exact file scope:
@@ -87,7 +87,7 @@ scoreAverage } } }`. Do not infer extra backend fields.
      - `npm run eslint`
 
 3. Stage 3: Player profile rendering
-   - Stage file: `docs/player-profile-login-success/plan/stage-3-player-profile-ui.md`
+   - Stage file: `docs/archive/player-profile-login-success/plan/stage-3-player-profile-ui.md`
    - Objective: display profile envelope data on the existing `/playerprofile` page while
      preserving current fallback rendering.
    - Exact file scope:
@@ -110,7 +110,7 @@ scoreAverage } } }`. Do not infer extra backend fields.
      - `npm run eslint`
 
 4. Stage 4: Browser-flow coverage and final validation
-   - Stage file: `docs/player-profile-login-success/plan/stage-4-browser-validation.md`
+   - Stage file: `docs/archive/player-profile-login-success/plan/stage-4-browser-validation.md`
    - Objective: cover the cross-route browser behavior for profile login success without
      weakening existing admin or invite flows.
    - Exact file scope:

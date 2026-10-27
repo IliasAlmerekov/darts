@@ -7,8 +7,8 @@ preserving the existing admin successful-login flow.
 
 ## Inputs
 
-- `docs/player-profile-login-success/research/research.md`
-- `docs/player-profile-login-success/design/design.md`
+- `docs/archive/player-profile-login-success/research/research.md`
+- `docs/archive/player-profile-login-success/design/design.md`
 - `docs/convention/testing.md`
 - Stage 1 implementation
 - Stage 2 implementation

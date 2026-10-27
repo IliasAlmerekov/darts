@@ -1,4 +1,4 @@
-// spec: specs/joined-game-test-plan.md
+// spec: docs/test-plans/joined-game-test-plan.md
 // seed: seed.spec.ts
 
 import { test, expect } from "../shared/test";

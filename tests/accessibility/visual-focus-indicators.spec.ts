@@ -1,4 +1,4 @@
-// spec: specs/login-test-plan.md
+// spec: docs/test-plans/login-test-plan.md
 // seed: tests/shared/seed.spec.ts
 
 import { test, expect, type Locator } from "../shared/test";
