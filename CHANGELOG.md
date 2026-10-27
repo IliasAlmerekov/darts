@@ -39,6 +39,7 @@ and this project does **not** yet follow [Semantic Versioning](https://semver.or
 
 ### Fixed
 
+- Statistics: alphabetical mode requests `sort=name:asc` and shows rows in the server's order, so page 2 continues the A–Z list where page 1 ended. Before, the page fetched the players with the best average and sorted only that page by name. Needs darts-backend#166 deployed (#342)
 - Lobby: a stale lobby tab that removes a player, adds a guest or reorders players after the game started shows "This game has already started. The lobby can no longer be changed." instead of the raw code `GAME_SEATS_NOT_EDITABLE`, then reloads the route so the tab ends on the game page. Adding a guest to a full lobby shows "The lobby is full. Remove a player to add another." instead of the generic guest error (#327)
 - Settings: while a game's settings save is pending, both the Game Mode and the Points buttons are disabled. Before, the other group looked enabled but ignored the click (#338)
 
