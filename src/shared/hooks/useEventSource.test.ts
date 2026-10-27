@@ -4,10 +4,14 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { useEventSource } from "./useEventSource";
 
 class MockEventSource {
+  static CONNECTING = 0 as const;
+  static OPEN = 1 as const;
+  static CLOSED = 2 as const;
   static instances: MockEventSource[] = [];
 
   onopen: (() => void) | null = null;
   onerror: (() => void) | null = null;
+  readyState: 0 | 1 | 2 = MockEventSource.CONNECTING;
   close = vi.fn();
   url: string;
   withCredentials: boolean;
@@ -38,7 +42,8 @@ class MockEventSource {
     this.onopen?.();
   }
 
-  simulateError(): void {
+  simulateError(readyState: 0 | 1 | 2 = MockEventSource.CONNECTING): void {
+    this.readyState = readyState;
     this.onerror?.();
   }
 }
@@ -223,5 +228,79 @@ describe("useEventSource", () => {
     });
 
     expect(MockEventSource.instances).toHaveLength(1);
+  });
+
+  describe("onClosed", () => {
+    it("should call onClosed once and still schedule a reconnect when the error closes the source", () => {
+      const onClosed = vi.fn();
+      const listeners = [{ event: "players", handler: vi.fn() }] as const;
+      renderHook(() => useEventSource("/stream", listeners, { onClosed }));
+
+      act(() => {
+        MockEventSource.instances[0]?.simulateError(MockEventSource.CLOSED);
+      });
+
+      expect(onClosed).toHaveBeenCalledTimes(1);
+      expect(MockEventSource.instances).toHaveLength(1);
+
+      act(() => {
+        vi.advanceTimersByTime(1000);
+      });
+
+      expect(MockEventSource.instances).toHaveLength(2);
+    });
+
+    it("should not call onClosed when the error leaves the source connecting", () => {
+      const onClosed = vi.fn();
+      const listeners = [{ event: "players", handler: vi.fn() }] as const;
+      renderHook(() => useEventSource("/stream", listeners, { onClosed }));
+
+      act(() => {
+        MockEventSource.instances[0]?.simulateError(MockEventSource.CONNECTING);
+      });
+
+      expect(onClosed).not.toHaveBeenCalled();
+    });
+
+    it("should keep the EventSource when onClosed changes identity on rerender", () => {
+      const firstOnClosed = vi.fn();
+      const secondOnClosed = vi.fn();
+      const listeners = [{ event: "players", handler: vi.fn() }] as const;
+      const { rerender } = renderHook(
+        ({ onClosed }: { onClosed: () => void }) =>
+          useEventSource("/stream", listeners, { onClosed }),
+        { initialProps: { onClosed: firstOnClosed } },
+      );
+
+      rerender({ onClosed: secondOnClosed });
+
+      expect(MockEventSource.instances).toHaveLength(1);
+      expect(MockEventSource.instances[0]?.close).not.toHaveBeenCalled();
+
+      act(() => {
+        MockEventSource.instances[0]?.simulateError(MockEventSource.CLOSED);
+      });
+
+      expect(firstOnClosed).not.toHaveBeenCalled();
+      expect(secondOnClosed).toHaveBeenCalledTimes(1);
+    });
+
+    it("should not reconnect after a closed error when the url turns null before the retry", () => {
+      const listeners = [{ event: "players", handler: vi.fn() }] as const;
+      const { rerender } = renderHook<ReturnType<typeof useEventSource>, StreamProps>(
+        ({ url }) => useEventSource(url, listeners, { onClosed: vi.fn() }),
+        { initialProps: { url: "/stream" } },
+      );
+
+      act(() => {
+        MockEventSource.instances[0]?.simulateError(MockEventSource.CLOSED);
+      });
+      rerender({ url: null });
+      act(() => {
+        vi.advanceTimersByTime(30_000);
+      });
+
+      expect(MockEventSource.instances).toHaveLength(1);
+    });
   });
 });

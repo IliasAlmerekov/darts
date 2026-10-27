@@ -65,10 +65,14 @@ import {
 type EventHandler = (event: MessageEvent<string>) => void;
 
 class MockEventSource {
+  static CONNECTING = 0 as const;
+  static OPEN = 1 as const;
+  static CLOSED = 2 as const;
   static last: MockEventSource | null = null;
 
   onopen: (() => void) | null = null;
   onerror: (() => void) | null = null;
+  readyState: 0 | 1 | 2 = MockEventSource.CONNECTING;
 
   private handlers = new Map<string, EventHandler[]>();
 
@@ -95,6 +99,11 @@ class MockEventSource {
     for (const handler of eventHandlers) {
       handler(messageEvent);
     }
+  }
+
+  fail(readyState: 0 | 1 | 2): void {
+    this.readyState = readyState;
+    this.onerror?.();
   }
 
   close(): void {
@@ -915,6 +924,30 @@ describe("useStartPage action guards", () => {
       });
 
       expect(result.current.guestSuggestions).toEqual(["Alex2"]);
+      expect(revalidateMock).not.toHaveBeenCalled();
+    });
+  });
+
+  describe("room stream closed", () => {
+    it("should revalidate the route when the room stream closes", () => {
+      setInvitation({ gameId: 10, invitationLink: "/invite/10" });
+      renderHook(() => useStartPage(), { wrapper: makeWrapper("/start/10") });
+
+      act(() => {
+        MockEventSource.last?.fail(MockEventSource.CLOSED);
+      });
+
+      expect(revalidateMock).toHaveBeenCalledTimes(1);
+    });
+
+    it("should not revalidate the route when the room stream fails while reconnecting", () => {
+      setInvitation({ gameId: 10, invitationLink: "/invite/10" });
+      renderHook(() => useStartPage(), { wrapper: makeWrapper("/start/10") });
+
+      act(() => {
+        MockEventSource.last?.fail(MockEventSource.CONNECTING);
+      });
+
       expect(revalidateMock).not.toHaveBeenCalled();
     });
   });

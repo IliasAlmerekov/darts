@@ -59,7 +59,14 @@ interface UseGamePlayersResult {
 
 const NO_PLAYERS: LobbyPlayer[] = [];
 
-export function useGamePlayers(gameId: number | null): UseGamePlayersResult {
+/**
+ * `onStreamClosed` runs when the room stream ends with `EventSource.CLOSED`, which means the
+ * game left the lobby or the backend failed. The stream keeps reconnecting with backoff.
+ */
+export function useGamePlayers(
+  gameId: number | null,
+  onStreamClosed?: () => void,
+): UseGamePlayersResult {
   const queryClient = useQueryClient();
   const { data: players = NO_PLAYERS } = useQuery({
     ...gameQueries.lobbyPlayers(gameId ?? 0),
@@ -148,7 +155,7 @@ export function useGamePlayers(gameId: number | null): UseGamePlayersResult {
     [updatePlayers],
   );
 
-  useEventSource(url, listeners, { withCredentials: true });
+  useEventSource(url, listeners, { withCredentials: true, onClosed: onStreamClosed });
 
   return { players, count: players.length, appendOptimisticPlayer, removeOptimisticPlayer };
 }
