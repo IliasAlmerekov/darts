@@ -9,7 +9,8 @@ import { useStartPageError } from "./useStartPageError";
 import { parseRouteGameId } from "@/lib/router/tabletGameRoute";
 import { $invitation } from "@/shared/store";
 import { leaveRoom } from "@/shared/api/room";
-import { isGameSeatsNotEditableError, toUserErrorMessage } from "@/lib/error/error-to-user-message";
+import { isApiErrorCode } from "@/lib/error/api-error-code";
+import { toUserErrorMessage } from "@/lib/error/error-to-user-message";
 
 type GamePlayersResult = ReturnType<typeof useGamePlayers>;
 
@@ -104,7 +105,7 @@ export function useStartPage(): UseStartPageResult {
           appendOptimisticPlayer(removedPlayer);
         }
         setPageError(toUserErrorMessage(error, "Could not remove player. Please try again."));
-        if (isGameSeatsNotEditableError(error)) {
+        if (isApiErrorCode(error, "GAME_SEATS_NOT_EDITABLE")) {
           // The game left the lobby: the route loader sends this tab to the game page.
           void revalidate();
         }

@@ -2,7 +2,8 @@ import { useCallback, useRef, useState } from "react";
 import { DragEndEvent } from "@dnd-kit/core";
 import { arrayMove } from "@dnd-kit/sortable";
 import { updatePlayerOrder } from "@/shared/api/room";
-import { isGameSeatsNotEditableError, toUserErrorMessage } from "@/lib/error/error-to-user-message";
+import { isApiErrorCode } from "@/lib/error/api-error-code";
+import { toUserErrorMessage } from "@/lib/error/error-to-user-message";
 import { clientLogger } from "@/shared/services/browser/clientLogger";
 import { mergePlayerOrder, orderByPosition, type OrderedPlayer } from "./lib/playerOrder";
 import type { SetStartPageError } from "./useStartPageError";
@@ -113,7 +114,7 @@ export function usePlayerOrderPersistence({
               setPageError(
                 toUserErrorMessage(error, "Could not update player order. Please try again."),
               );
-              if (isGameSeatsNotEditableError(error)) {
+              if (isApiErrorCode(error, "GAME_SEATS_NOT_EDITABLE")) {
                 void onSeatsNotEditable();
               }
             },

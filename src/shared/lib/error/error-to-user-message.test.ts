@@ -83,6 +83,18 @@ describe("toUserErrorMessage", () => {
     expect(message).not.toContain("GAME_SEATS_NOT_EDITABLE");
   });
 
+  it("should map the game room full code to the lobby full message", () => {
+    expect(
+      toUserErrorMessage(
+        new ApiError("Conflict", {
+          status: 409,
+          data: { success: false, error: "GAME_ROOM_FULL", message: "Room is full." },
+        }),
+        "Could not add guest. Please try again.",
+      ),
+    ).toBe("The lobby is full. Remove a player to add another.");
+  });
+
   it("should map the out rule lock code to a message that the out rule is locked", () => {
     expect(
       toUserErrorMessage(

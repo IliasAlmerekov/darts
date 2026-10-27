@@ -1,7 +1,8 @@
 import { useCallback, useRef, useState } from "react";
 import { ApiError } from "@/shared/api";
 import { addGuestPlayer } from "@/shared/api/room";
-import { isGameSeatsNotEditableError, toUserErrorMessage } from "@/lib/error/error-to-user-message";
+import { isApiErrorCode } from "@/lib/error/api-error-code";
+import { toUserErrorMessage } from "@/lib/error/error-to-user-message";
 import { validateGuestUsername } from "./lib/guestUsername";
 import type { AddGuestErrorResponse } from "@/types";
 
@@ -52,16 +53,6 @@ function isAddGuestErrorResponse(data: unknown): data is AddGuestErrorResponse {
     (data.suggestions === undefined ||
       (Array.isArray(data.suggestions) &&
         data.suggestions.every((suggestion) => typeof suggestion === "string")))
-  );
-}
-
-function isRoomFullResponse(error: unknown): boolean {
-  return (
-    error instanceof ApiError &&
-    error.status === 409 &&
-    isRecord(error.data) &&
-    error.data.success === false &&
-    error.data.error === "GAME_ROOM_FULL"
   );
 }
 
@@ -160,14 +151,14 @@ export function useGuestFlow({
       appendOptimisticPlayer(guestPlayer);
       closeGuestOverlay();
     } catch (error) {
-      if (isGameSeatsNotEditableError(error)) {
+      if (isApiErrorCode(error, "GAME_SEATS_NOT_EDITABLE")) {
         setGuestError(toUserErrorMessage(error));
         void onSeatsNotEditable();
         return;
       }
 
-      if (isRoomFullResponse(error)) {
-        setGuestError(LOBBY_FULL_MESSAGE);
+      if (isApiErrorCode(error, "GAME_ROOM_FULL")) {
+        setGuestError(toUserErrorMessage(error));
         return;
       }
 

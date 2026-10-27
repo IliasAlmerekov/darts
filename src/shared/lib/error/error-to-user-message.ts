@@ -61,6 +61,10 @@ function mapTextToMessage(rawText: string): string | null {
     return "This game has already started. The lobby can no longer be changed.";
   }
 
+  if (text.includes("game room full")) {
+    return "The lobby is full. Remove a player to add another.";
+  }
+
   return null;
 }
 
@@ -98,19 +102,6 @@ function extractApiPayloadText(payload: unknown): string | null {
   }
 
   return null;
-}
-
-/**
- * True for the 409 answer of a seat call (remove player, add guest, reorder) on a game that
- * has left the lobby.
- */
-export function isGameSeatsNotEditableError(error: unknown): boolean {
-  return (
-    error instanceof ApiError &&
-    error.status === 409 &&
-    isRecord(error.data) &&
-    error.data.error === "GAME_SEATS_NOT_EDITABLE"
-  );
 }
 
 export function toUserErrorMessage(error: unknown, fallback = DEFAULT_ERROR_MESSAGE): string {
