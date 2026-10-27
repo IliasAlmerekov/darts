@@ -2,6 +2,7 @@
 import { fireEvent, render, screen } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { INITIAL_PLAYER_STATS_PARAMS } from "@/shared/query/statistics.queries";
 import StatisticsPage from "./Statistics";
 
 // ── Nanostores ──────────────────────────────────────────────────────────────
@@ -222,7 +223,7 @@ describe("StatisticsPage", () => {
     expect(usePlayerStatsMock).toHaveBeenLastCalledWith({
       limit: 10,
       offset: 0,
-      sortParam: undefined,
+      sortParam: "name:asc",
     });
     expect(screen.getByText("Alice")).toBeTruthy();
 
@@ -231,7 +232,7 @@ describe("StatisticsPage", () => {
     expect(usePlayerStatsMock).toHaveBeenLastCalledWith({
       limit: 10,
       offset: 10,
-      sortParam: undefined,
+      sortParam: "name:asc",
     });
     expect(screen.getByText("Carol")).toBeTruthy();
     expect(screen.getByText(/page 2 of/i)).toBeTruthy();
@@ -241,10 +242,62 @@ describe("StatisticsPage", () => {
     expect(usePlayerStatsMock).toHaveBeenLastCalledWith({
       limit: 10,
       offset: 0,
-      sortParam: undefined,
+      sortParam: "name:asc",
     });
     expect(screen.getByText("Alice")).toBeTruthy();
     expect(screen.getByText(/page 1 of/i)).toBeTruthy();
+  });
+
+  it("should first request the params the route warmup prefetches", () => {
+    usePlayerStatsMock.mockReturnValue({
+      loading: false,
+      error: null,
+      stats: PLAYERS,
+      total: 2,
+      retry: vi.fn(),
+    });
+
+    renderPage();
+
+    expect(usePlayerStatsMock).toHaveBeenLastCalledWith(INITIAL_PLAYER_STATS_PARAMS);
+  });
+
+  it("should request the average order in score mode", () => {
+    usePlayerStatsMock.mockReturnValue({
+      loading: false,
+      error: null,
+      stats: PLAYERS,
+      total: 2,
+      retry: vi.fn(),
+    });
+
+    renderPage();
+    fireEvent.click(screen.getByRole("button", { name: /sort by score/i }));
+
+    expect(usePlayerStatsMock).toHaveBeenLastCalledWith({
+      limit: 10,
+      offset: 0,
+      sortParam: "average:desc",
+    });
+  });
+
+  it("should render rows in the order the server returned them in alphabetical mode", () => {
+    usePlayerStatsMock.mockReturnValue({
+      loading: false,
+      error: null,
+      stats: [
+        { id: 2, playerId: 2, name: "Zoe", scoreAverage: 40.0, gamesPlayed: 5 },
+        { id: 1, playerId: 1, name: "adam", scoreAverage: 55.5, gamesPlayed: 10 },
+      ],
+      total: 2,
+      retry: vi.fn(),
+    });
+
+    renderPage();
+
+    const zoe = screen.getByText("Zoe");
+    const adam = screen.getByText("adam");
+    expect(zoe.compareDocumentPosition(adam) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
   });
 
   it("should display player score average", () => {

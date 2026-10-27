@@ -54,7 +54,7 @@ describe("useStatisticsPrefetch", () => {
     });
 
     expect(getPlayerStatsMock).toHaveBeenCalledTimes(1);
-    expect(getPlayerStatsMock).toHaveBeenCalledWith(10, 0, undefined, expect.any(AbortSignal));
+    expect(getPlayerStatsMock).toHaveBeenCalledWith(10, 0, "name:asc", expect.any(AbortSignal));
   });
 
   it("does not load statistics for a signed-in user without the admin role", async () => {

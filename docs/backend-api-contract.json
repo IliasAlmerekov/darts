@@ -999,7 +999,7 @@
                     {
                         "name": "sort",
                         "in": "query",
-                        "description": "Sortierung im Format `average:asc|desc` oder `gamesplayed:asc|desc`.",
+                        "description": "Sortierung im Format `average:asc|desc`, `gamesplayed:asc|desc` oder `name:asc|desc` (Anzeigename). Gleiche Werte folgen der Spieler-ID.",
                         "required": false,
                         "schema": {
                             "type": "string",
