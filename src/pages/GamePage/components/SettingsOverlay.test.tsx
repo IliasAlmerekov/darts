@@ -2,7 +2,7 @@
 
 import { fireEvent, render, screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
-import groupStyles from "@/shared/ui/button/SettingsGroupBtn.module.css";
+import groupStyles from "./SettingsGroupBtn.module.css";
 import useIsomorphicLayoutEffect from "@/shared/lib/useIsomorphicLayoutEffect";
 import SettingsOverlay from "./SettingsOverlay";
 
