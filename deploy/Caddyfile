@@ -1,4 +1,13 @@
 {$APP_HOSTNAME} {
+    # ">" defers each header until the response is written, so it replaces any
+    # value an upstream sends instead of adding a second copy.
+    header {
+        >Content-Security-Policy "default-src 'self'; img-src 'self' data:; frame-ancestors 'none'; base-uri 'self'; form-action 'self'; object-src 'none'"
+        >X-Frame-Options DENY
+        >X-Content-Type-Options nosniff
+        >Referrer-Policy strict-origin-when-cross-origin
+    }
+
     @api path /api /api/*
     handle @api {
         reverse_proxy backend:10000 {
