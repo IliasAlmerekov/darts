@@ -7,16 +7,16 @@ images from a registry. Caddy and MySQL images come from Docker Hub.
 
 ## Files
 
-| File                  | Purpose                                                              |
-| --------------------- | -------------------------------------------------------------------- |
-| `compose.yaml`        | Production stack. Project name `darts-production`. Server copy only. |
-| `Caddyfile`           | TLS and routing. `/api` and `/api/*` go to the backend. Server only. |
-| `frontend.Dockerfile` | Frontend image (Vite build served by nginx).                         |
-| `backend-ref`         | Backend commit that every release builds.                            |
-| `package-release.sh`  | Packs built images and `release.env` into the release archive.       |
-| `init-server.sh`      | One-time server setup. Safe to re-run.                               |
-| `rollout.sh`          | Installed as `/opt/darts/bin/rollout`. Deploys one archive.          |
-| `rollback.sh`         | Installed as `/opt/darts/bin/rollback`. Starts the previous release. |
+| File                  | Purpose                                                                                |
+| --------------------- | -------------------------------------------------------------------------------------- |
+| `compose.yaml`        | Production stack. Project name `darts-production`. Server copy only.                   |
+| `Caddyfile`           | TLS, routing and security headers. `/api` and `/api/*` go to the backend. Server only. |
+| `frontend.Dockerfile` | Frontend image (Vite build served by nginx).                                           |
+| `backend-ref`         | Backend commit that every release builds.                                              |
+| `package-release.sh`  | Packs built images and `release.env` into the release archive.                         |
+| `init-server.sh`      | One-time server setup. Safe to re-run.                                                 |
+| `rollout.sh`          | Installed as `/opt/darts/bin/rollout`. Deploys one archive.                            |
+| `rollback.sh`         | Installed as `/opt/darts/bin/rollback`. Starts the previous release.                   |
 
 ## Release archive
 
@@ -86,6 +86,17 @@ release at once:
 sudo docker compose --project-directory /opt/darts/config \
   --env-file /opt/darts/current/release.env -f /opt/darts/config/compose.yaml \
   up -d --wait --remove-orphans
+```
+
+A new `Caddyfile` also needs a new proxy container. `init-server.sh` installs it as a new
+file, and the running container keeps the bind-mounted old one; `up -d` and a rollback
+leave the proxy running, and `restart` keeps the old mount. Recreate the proxy alone, then
+check the headers with `curl -I https://<APP_HOSTNAME>/`:
+
+```sh
+sudo docker compose --project-directory /opt/darts/config \
+  --env-file /opt/darts/current/release.env -f /opt/darts/config/compose.yaml \
+  up -d --force-recreate --no-deps --wait proxy
 ```
 
 Keep `name: darts-production` in `compose.yaml`; `init-server.sh` refuses any other
