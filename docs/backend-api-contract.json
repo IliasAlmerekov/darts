@@ -46,13 +46,41 @@
                         }
                     },
                     "400": {
-                        "description": "Ein Setting wurde in camelCase und in Kleinschreibung mit unterschiedlichen Werten gesendet (`REQUEST_CONFLICTING_SETTING_KEYS`)."
+                        "description": "Der Request-Body ist kein g\u00fcltiges JSON (`REQUEST_INVALID_JSON_BODY`).",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ApiError"
+                                }
+                            }
+                        }
                     },
                     "422": {
-                        "description": "Der Request-Body ist ung\u00fcltig und besteht die Validierung nicht, oder das Spiel h\u00e4tte danach `doubleOut` und `tripleOut` zugleich (`GAME_CONFLICTING_OUT_RULES`). Das Spiel bleibt unver\u00e4ndert."
+                        "description": "Der Request-Body ist ung\u00fcltig und besteht die Validierung nicht, oder das Spiel h\u00e4tte danach `doubleOut` und `tripleOut` zugleich (`GAME_CONFLICTING_OUT_RULES`). Das Spiel bleibt unver\u00e4ndert.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "anyOf": [
+                                        {
+                                            "$ref": "#/components/schemas/RequestValidationFailed"
+                                        },
+                                        {
+                                            "$ref": "#/components/schemas/ApiError"
+                                        }
+                                    ]
+                                }
+                            }
+                        }
                     },
                     "403": {
-                        "description": "Zugriff verweigert: `/api` ist per Firewall nur f\u00fcr ROLE_ADMIN offen, und der Code pr\u00fcft zus\u00e4tzlich die Spielteilnahme."
+                        "description": "Zugriff verweigert: `/api` ist per Firewall nur f\u00fcr ROLE_ADMIN offen, und der Code pr\u00fcft zus\u00e4tzlich die Spielteilnahme (`ACCESS_DENIED`).",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ApiError"
+                                }
+                            }
+                        }
                     }
                 }
             }
@@ -98,13 +126,41 @@
                         }
                     },
                     "400": {
-                        "description": "Ein Setting wurde in camelCase und in Kleinschreibung mit unterschiedlichen Werten gesendet (`REQUEST_CONFLICTING_SETTING_KEYS`)."
+                        "description": "Der Request-Body ist kein g\u00fcltiges JSON (`REQUEST_INVALID_JSON_BODY`).",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ApiError"
+                                }
+                            }
+                        }
                     },
                     "422": {
-                        "description": "Der Request-Body ist ung\u00fcltig und besteht die Validierung nicht, oder das Spiel h\u00e4tte danach `doubleOut` und `tripleOut` zugleich (`GAME_CONFLICTING_OUT_RULES`). Das Spiel bleibt unver\u00e4ndert."
+                        "description": "Der Request-Body ist ung\u00fcltig und besteht die Validierung nicht, oder das Spiel h\u00e4tte danach `doubleOut` und `tripleOut` zugleich (`GAME_CONFLICTING_OUT_RULES`). Das Spiel bleibt unver\u00e4ndert.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "anyOf": [
+                                        {
+                                            "$ref": "#/components/schemas/RequestValidationFailed"
+                                        },
+                                        {
+                                            "$ref": "#/components/schemas/ApiError"
+                                        }
+                                    ]
+                                }
+                            }
+                        }
                     },
                     "403": {
-                        "description": "Zugriff verweigert: `/api` ist per Firewall nur f\u00fcr ROLE_ADMIN offen, und der Code pr\u00fcft zus\u00e4tzlich die Spielteilnahme."
+                        "description": "Zugriff verweigert: `/api` ist per Firewall nur f\u00fcr ROLE_ADMIN offen, und der Code pr\u00fcft zus\u00e4tzlich die Spielteilnahme (`ACCESS_DENIED`).",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ApiError"
+                                }
+                            }
+                        }
                     },
                     "409": {
                         "description": "Das alte Spiel ist nicht das neueste Spiel, oder es ist weder beendet noch abgebrochen (`GAME_NOT_NEWEST`). Eine offene Lobby ist immer das neueste Spiel."
@@ -141,11 +197,42 @@
                             }
                         }
                     },
+                    "400": {
+                        "description": "Der Request-Body ist kein g\u00fcltiges JSON (`REQUEST_INVALID_JSON_BODY`).",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ApiError"
+                                }
+                            }
+                        }
+                    },
                     "422": {
-                        "description": "Der Request-Body ist ung\u00fcltig und besteht die Validierung nicht, oder das Spiel h\u00e4tte danach `doubleOut` und `tripleOut` zugleich (`GAME_CONFLICTING_OUT_RULES`). Das Spiel bleibt unver\u00e4ndert."
+                        "description": "Der Request-Body ist ung\u00fcltig und besteht die Validierung nicht, oder das Spiel h\u00e4tte danach `doubleOut` und `tripleOut` zugleich (`GAME_CONFLICTING_OUT_RULES`). Das Spiel bleibt unver\u00e4ndert.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "anyOf": [
+                                        {
+                                            "$ref": "#/components/schemas/RequestValidationFailed"
+                                        },
+                                        {
+                                            "$ref": "#/components/schemas/ApiError"
+                                        }
+                                    ]
+                                }
+                            }
+                        }
                     },
                     "403": {
-                        "description": "Zugriff verweigert: `/api` ist per Firewall nur f\u00fcr ROLE_ADMIN offen, und der Code pr\u00fcft zus\u00e4tzlich die Spielteilnahme."
+                        "description": "Zugriff verweigert: `/api` ist per Firewall nur f\u00fcr ROLE_ADMIN offen, und der Code pr\u00fcft zus\u00e4tzlich die Spielteilnahme (`ACCESS_DENIED`).",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ApiError"
+                                }
+                            }
+                        }
                     }
                 },
                 "deprecated": true
@@ -182,7 +269,14 @@
                         }
                     },
                     "403": {
-                        "description": "Zugriff verweigert: `/api` ist per Firewall nur f\u00fcr ROLE_ADMIN offen, und der Code pr\u00fcft zus\u00e4tzlich die Spielteilnahme."
+                        "description": "Zugriff verweigert: `/api` ist per Firewall nur f\u00fcr ROLE_ADMIN offen, und der Code pr\u00fcft zus\u00e4tzlich die Spielteilnahme (`ACCESS_DENIED`).",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ApiError"
+                                }
+                            }
+                        }
                     }
                 }
             },
@@ -225,11 +319,42 @@
                             }
                         }
                     },
+                    "400": {
+                        "description": "Der Request-Body ist kein g\u00fcltiges JSON (`REQUEST_INVALID_JSON_BODY`).",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ApiError"
+                                }
+                            }
+                        }
+                    },
                     "422": {
-                        "description": "Der Request-Body ist ung\u00fcltig und besteht die Validierung nicht, oder das Spiel h\u00e4tte danach `doubleOut` und `tripleOut` zugleich (`GAME_CONFLICTING_OUT_RULES`). Das Spiel bleibt unver\u00e4ndert."
+                        "description": "Der Request-Body ist ung\u00fcltig und besteht die Validierung nicht, oder das Spiel h\u00e4tte danach `doubleOut` und `tripleOut` zugleich (`GAME_CONFLICTING_OUT_RULES`). Das Spiel bleibt unver\u00e4ndert.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "anyOf": [
+                                        {
+                                            "$ref": "#/components/schemas/RequestValidationFailed"
+                                        },
+                                        {
+                                            "$ref": "#/components/schemas/ApiError"
+                                        }
+                                    ]
+                                }
+                            }
+                        }
                     },
                     "403": {
-                        "description": "Zugriff verweigert: `/api` ist per Firewall nur f\u00fcr ROLE_ADMIN offen, und der Code pr\u00fcft zus\u00e4tzlich die Spielteilnahme."
+                        "description": "Zugriff verweigert: `/api` ist per Firewall nur f\u00fcr ROLE_ADMIN offen, und der Code pr\u00fcft zus\u00e4tzlich die Spielteilnahme (`ACCESS_DENIED`).",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ApiError"
+                                }
+                            }
+                        }
                     },
                     "409": {
                         "description": "Das Spiel ist gestartet und der Request sendet `startScore` (`GAME_START_SCORE_CHANGE_NOT_ALLOWED`), oder das Spiel hat schon einen Wurf und der Request sendet `outMode`, `doubleOut` oder `tripleOut`, auch mit dem aktuellen Wert (`GAME_OUT_RULE_CHANGE_NOT_ALLOWED`). Nachdem Undo jeden Wurf entfernt hat, ist die Out-Regel wieder \u00e4nderbar."
@@ -267,7 +392,14 @@
                         }
                     },
                     "403": {
-                        "description": "Zugriff verweigert: `/api` ist per Firewall nur f\u00fcr ROLE_ADMIN offen, und der Code pr\u00fcft zus\u00e4tzlich die Spielteilnahme."
+                        "description": "Zugriff verweigert: `/api` ist per Firewall nur f\u00fcr ROLE_ADMIN offen, und der Code pr\u00fcft zus\u00e4tzlich die Spielteilnahme (`ACCESS_DENIED`).",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ApiError"
+                                }
+                            }
+                        }
                     },
                     "409": {
                         "description": "Das Spiel ist in der Lobby oder abgebrochen (`GAME_FINISH_NOT_ALLOWED`). Ein bereits beendetes Spiel bleibt unver\u00e4ndert (200)."
@@ -305,7 +437,14 @@
                         }
                     },
                     "403": {
-                        "description": "Zugriff verweigert: `/api` ist per Firewall nur f\u00fcr ROLE_ADMIN offen, und der Code pr\u00fcft zus\u00e4tzlich die Spielteilnahme."
+                        "description": "Zugriff verweigert: `/api` ist per Firewall nur f\u00fcr ROLE_ADMIN offen, und der Code pr\u00fcft zus\u00e4tzlich die Spielteilnahme (`ACCESS_DENIED`).",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ApiError"
+                                }
+                            }
+                        }
                     },
                     "409": {
                         "description": "Das Spiel ist weder beendet noch gestartet (`GAME_REOPEN_NOT_ALLOWED`), oder es ist beendet, aber nicht das neueste Spiel (`GAME_NOT_NEWEST`)."
@@ -343,7 +482,14 @@
                         }
                     },
                     "403": {
-                        "description": "Zugriff verweigert: `/api` ist per Firewall nur f\u00fcr ROLE_ADMIN offen, und der Code pr\u00fcft zus\u00e4tzlich die Spielteilnahme."
+                        "description": "Zugriff verweigert: `/api` ist per Firewall nur f\u00fcr ROLE_ADMIN offen, und der Code pr\u00fcft zus\u00e4tzlich die Spielteilnahme (`ACCESS_DENIED`).",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ApiError"
+                                }
+                            }
+                        }
                     },
                     "409": {
                         "description": "Das Spiel ist nicht beendet (`GAME_NOT_FINISHED`)."
@@ -382,7 +528,14 @@
                         }
                     },
                     "403": {
-                        "description": "Zugriff verweigert: `/api` ist per Firewall nur f\u00fcr ROLE_ADMIN offen, und der Code pr\u00fcft zus\u00e4tzlich die Spielteilnahme."
+                        "description": "Zugriff verweigert: `/api` ist per Firewall nur f\u00fcr ROLE_ADMIN offen, und der Code pr\u00fcft zus\u00e4tzlich die Spielteilnahme (`ACCESS_DENIED`).",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ApiError"
+                                }
+                            }
+                        }
                     },
                     "409": {
                         "description": "Das Spiel ist nicht beendet (`GAME_NOT_FINISHED`)."
@@ -435,7 +588,14 @@
                         "description": "Spielzustand hat sich seit der letzten Version nicht ge\u00e4ndert."
                     },
                     "403": {
-                        "description": "Zugriff verweigert: `/api` ist per Firewall nur f\u00fcr ROLE_ADMIN offen, und der Code pr\u00fcft zus\u00e4tzlich die Spielteilnahme."
+                        "description": "Zugriff verweigert: `/api` ist per Firewall nur f\u00fcr ROLE_ADMIN offen, und der Code pr\u00fcft zus\u00e4tzlich die Spielteilnahme (`ACCESS_DENIED`).",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ApiError"
+                                }
+                            }
+                        }
                     }
                 }
             }
@@ -470,7 +630,14 @@
                         }
                     },
                     "403": {
-                        "description": "Zugriff verweigert: `/api` ist per Firewall nur f\u00fcr ROLE_ADMIN offen, und der Code pr\u00fcft zus\u00e4tzlich die Spielteilnahme."
+                        "description": "Zugriff verweigert: `/api` ist per Firewall nur f\u00fcr ROLE_ADMIN offen, und der Code pr\u00fcft zus\u00e4tzlich die Spielteilnahme (`ACCESS_DENIED`).",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ApiError"
+                                }
+                            }
+                        }
                     },
                     "409": {
                         "description": "Das Spiel ist in der Lobby oder beendet (`GAME_ABORT_NOT_ALLOWED`). Ein bereits abgebrochenes Spiel bleibt unver\u00e4ndert (200)."
@@ -522,11 +689,42 @@
                             }
                         }
                     },
+                    "400": {
+                        "description": "Der Request-Body ist kein g\u00fcltiges JSON (`REQUEST_INVALID_JSON_BODY`).",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ApiError"
+                                }
+                            }
+                        }
+                    },
                     "422": {
-                        "description": "Der Request-Body ist ung\u00fcltig und besteht die Validierung nicht, oder das Spiel h\u00e4tte danach `doubleOut` und `tripleOut` zugleich (`GAME_CONFLICTING_OUT_RULES`). Das Spiel bleibt unver\u00e4ndert."
+                        "description": "Der Request-Body ist ung\u00fcltig und besteht die Validierung nicht, oder das Spiel h\u00e4tte danach `doubleOut` und `tripleOut` zugleich (`GAME_CONFLICTING_OUT_RULES`). Das Spiel bleibt unver\u00e4ndert.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "anyOf": [
+                                        {
+                                            "$ref": "#/components/schemas/RequestValidationFailed"
+                                        },
+                                        {
+                                            "$ref": "#/components/schemas/ApiError"
+                                        }
+                                    ]
+                                }
+                            }
+                        }
                     },
                     "403": {
-                        "description": "Angemeldet ohne `ROLE_ADMIN` (z. B. ein Spieler)."
+                        "description": "Angemeldet ohne `ROLE_ADMIN` (z. B. ein Spieler) (`ACCESS_DENIED`).",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ApiError"
+                                }
+                            }
+                        }
                     },
                     "404": {
                         "description": "Eine ID in `playerIds` geh\u00f6rt zu keinem Benutzer (`PLAYER_NOT_FOUND`). Es wird keine Lobby angelegt."
@@ -590,7 +788,14 @@
                         }
                     },
                     "400": {
-                        "description": "playerId fehlt oder ist ung\u00fcltig."
+                        "description": "playerId fehlt oder ist ung\u00fcltig. Ist der Request-Body kein g\u00fcltiges JSON, antwortet der Endpoint ebenfalls mit 400 (`REQUEST_INVALID_JSON_BODY`).",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ApiError"
+                                }
+                            }
+                        }
                     },
                     "404": {
                         "description": "Spieler wurde im Spiel nicht gefunden."
@@ -599,7 +804,14 @@
                         "description": "Das Spiel ist nicht mehr in der Lobby (`GAME_SEATS_NOT_EDITABLE`). Der Spieler bleibt im Spiel."
                     },
                     "422": {
-                        "description": "Der Request-Body ist ung\u00fcltig und besteht die Validierung nicht. Das wird vor dem Status gepr\u00fcft, also auch au\u00dferhalb der Lobby mit 422 statt 409 beantwortet."
+                        "description": "Der Request-Body ist ung\u00fcltig und besteht die Validierung nicht. Das wird vor dem Status gepr\u00fcft, also auch au\u00dferhalb der Lobby mit 422 statt 409 beantwortet.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/RequestValidationFailed"
+                                }
+                            }
+                        }
                     }
                 }
             }
@@ -720,8 +932,25 @@
                             }
                         }
                     },
+                    "400": {
+                        "description": "Der Request-Body ist kein g\u00fcltiges JSON (`REQUEST_INVALID_JSON_BODY`).",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ApiError"
+                                }
+                            }
+                        }
+                    },
                     "422": {
-                        "description": "Der Request-Body ist ung\u00fcltig und besteht die Validierung nicht. Das wird vor dem Status gepr\u00fcft, also auch au\u00dferhalb der Lobby mit 422 statt 409 beantwortet."
+                        "description": "Der Request-Body ist ung\u00fcltig und besteht die Validierung nicht. Das wird vor dem Status gepr\u00fcft, also auch au\u00dferhalb der Lobby mit 422 statt 409 beantwortet.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/RequestValidationFailed"
+                                }
+                            }
+                        }
                     }
                 }
             }
@@ -780,8 +1009,25 @@
                     "409": {
                         "description": "Das Spiel ist nicht mehr in der Lobby (`GAME_SEATS_NOT_EDITABLE`), auch bei leerem `positions`. Die Positionen bleiben unver\u00e4ndert."
                     },
+                    "400": {
+                        "description": "Der Request-Body ist kein g\u00fcltiges JSON (`REQUEST_INVALID_JSON_BODY`).",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ApiError"
+                                }
+                            }
+                        }
+                    },
                     "422": {
-                        "description": "Der Request-Body ist ung\u00fcltig und besteht die Validierung nicht. Das wird vor dem Status gepr\u00fcft, also auch au\u00dferhalb der Lobby mit 422 statt 409 beantwortet."
+                        "description": "Der Request-Body ist ung\u00fcltig und besteht die Validierung nicht. Das wird vor dem Status gepr\u00fcft, also auch au\u00dferhalb der Lobby mit 422 statt 409 beantwortet.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/RequestValidationFailed"
+                                }
+                            }
+                        }
                     }
                 }
             }
@@ -875,10 +1121,24 @@
                         }
                     },
                     "404": {
-                        "description": "Vorheriges Spiel nicht gefunden."
+                        "description": "Vorheriges Spiel nicht gefunden (`GAME_NOT_FOUND`).",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ApiError"
+                                }
+                            }
+                        }
                     },
                     "403": {
-                        "description": "Zugriff verweigert: `/api` ist per Firewall nur f\u00fcr ROLE_ADMIN offen, und der Code pr\u00fcft zus\u00e4tzlich die Spielteilnahme."
+                        "description": "Zugriff verweigert: `/api` ist per Firewall nur f\u00fcr ROLE_ADMIN offen, und der Code pr\u00fcft zus\u00e4tzlich die Spielteilnahme (`ACCESS_DENIED`).",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ApiError"
+                                }
+                            }
+                        }
                     },
                     "409": {
                         "description": "Das alte Spiel ist nicht das neueste Spiel, oder es ist weder beendet noch abgebrochen (`GAME_NOT_NEWEST`). Eine offene Lobby ist immer das neueste Spiel."
@@ -1067,11 +1327,35 @@
                     "409": {
                         "description": "Wurf ist im aktuellen Zustand nicht erlaubt (z. B. falscher aktiver Spieler)."
                     },
+                    "400": {
+                        "description": "Der Request-Body ist kein g\u00fcltiges JSON (`REQUEST_INVALID_JSON_BODY`).",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ApiError"
+                                }
+                            }
+                        }
+                    },
                     "422": {
-                        "description": "Der Request-Body ist ung\u00fcltig und besteht die Validierung nicht."
+                        "description": "Der Request-Body ist ung\u00fcltig und besteht die Validierung nicht.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/RequestValidationFailed"
+                                }
+                            }
+                        }
                     },
                     "403": {
-                        "description": "Zugriff verweigert: `/api` ist per Firewall nur f\u00fcr ROLE_ADMIN offen, und der Code pr\u00fcft zus\u00e4tzlich die Spielteilnahme."
+                        "description": "Zugriff verweigert: `/api` ist per Firewall nur f\u00fcr ROLE_ADMIN offen, und der Code pr\u00fcft zus\u00e4tzlich die Spielteilnahme (`ACCESS_DENIED`).",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ApiError"
+                                }
+                            }
+                        }
                     }
                 },
                 "deprecated": true
@@ -1105,7 +1389,14 @@
                         }
                     },
                     "403": {
-                        "description": "Zugriff verweigert: `/api` ist per Firewall nur f\u00fcr ROLE_ADMIN offen, und der Code pr\u00fcft zus\u00e4tzlich die Spielteilnahme."
+                        "description": "Zugriff verweigert: `/api` ist per Firewall nur f\u00fcr ROLE_ADMIN offen, und der Code pr\u00fcft zus\u00e4tzlich die Spielteilnahme (`ACCESS_DENIED`).",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ApiError"
+                                }
+                            }
+                        }
                     },
                     "409": {
                         "description": "Das Spiel ist in der Lobby oder abgebrochen (`GAME_THROW_NOT_ALLOWED`); es wird nichts gel\u00f6scht. Oder der letzte Wurf hat das Spiel beendet, und das Spiel ist nicht das neueste Spiel (`GAME_NOT_NEWEST`). Das R\u00fcckg\u00e4ngigmachen w\u00fcrde das laufende Spiel abbrechen."
@@ -1156,11 +1447,35 @@
                     "409": {
                         "description": "Wurf ist im aktuellen Zustand nicht erlaubt."
                     },
+                    "400": {
+                        "description": "Der Request-Body ist kein g\u00fcltiges JSON (`REQUEST_INVALID_JSON_BODY`).",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ApiError"
+                                }
+                            }
+                        }
+                    },
                     "422": {
-                        "description": "Der Request-Body ist ung\u00fcltig und besteht die Validierung nicht."
+                        "description": "Der Request-Body ist ung\u00fcltig und besteht die Validierung nicht.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/RequestValidationFailed"
+                                }
+                            }
+                        }
                     },
                     "403": {
-                        "description": "Zugriff verweigert: `/api` ist per Firewall nur f\u00fcr ROLE_ADMIN offen, und der Code pr\u00fcft zus\u00e4tzlich die Spielteilnahme."
+                        "description": "Zugriff verweigert: `/api` ist per Firewall nur f\u00fcr ROLE_ADMIN offen, und der Code pr\u00fcft zus\u00e4tzlich die Spielteilnahme (`ACCESS_DENIED`).",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ApiError"
+                                }
+                            }
+                        }
                     }
                 }
             },
@@ -1193,7 +1508,14 @@
                         }
                     },
                     "403": {
-                        "description": "Zugriff verweigert: `/api` ist per Firewall nur f\u00fcr ROLE_ADMIN offen, und der Code pr\u00fcft zus\u00e4tzlich die Spielteilnahme."
+                        "description": "Zugriff verweigert: `/api` ist per Firewall nur f\u00fcr ROLE_ADMIN offen, und der Code pr\u00fcft zus\u00e4tzlich die Spielteilnahme (`ACCESS_DENIED`).",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ApiError"
+                                }
+                            }
+                        }
                     },
                     "409": {
                         "description": "Das Spiel ist in der Lobby oder abgebrochen (`GAME_THROW_NOT_ALLOWED`); es wird nichts gel\u00f6scht. Oder der letzte Wurf hat das Spiel beendet, und das Spiel ist nicht das neueste Spiel (`GAME_NOT_NEWEST`). Das R\u00fcckg\u00e4ngigmachen w\u00fcrde das laufende Spiel abbrechen."
@@ -1310,10 +1632,24 @@
                         }
                     },
                     "404": {
-                        "description": "Spiel nicht gefunden."
+                        "description": "Unbekannte Spiel-ID (`NOT_FOUND`, schon vom Entity-Resolver). Meldet der Service ein fehlendes Spiel, antwortet der Endpoint mit `GAME_NOT_FOUND`.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ApiError"
+                                }
+                            }
+                        }
                     },
                     "403": {
-                        "description": "Zugriff verweigert: `/api` ist per Firewall nur f\u00fcr ROLE_ADMIN offen, und der Code pr\u00fcft zus\u00e4tzlich die Spielteilnahme."
+                        "description": "Zugriff verweigert: `/api` ist per Firewall nur f\u00fcr ROLE_ADMIN offen, und der Code pr\u00fcft zus\u00e4tzlich die Spielteilnahme (`ACCESS_DENIED`).",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ApiError"
+                                }
+                            }
+                        }
                     }
                 }
             }
@@ -1507,7 +1843,14 @@
                         "description": "Nicht angemeldet."
                     },
                     "403": {
-                        "description": "Angemeldet ohne `ROLE_PLAYER` (z. B. der Admin)."
+                        "description": "Angemeldet ohne `ROLE_PLAYER` (z. B. der Admin) (`ACCESS_DENIED`).",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ApiError"
+                                }
+                            }
+                        }
                     }
                 }
             }
@@ -1534,7 +1877,14 @@
                         "description": "Nicht angemeldet."
                     },
                     "403": {
-                        "description": "Angemeldet ohne `ROLE_PLAYER` (z. B. der Admin)."
+                        "description": "Angemeldet ohne `ROLE_PLAYER` (z. B. der Admin) (`ACCESS_DENIED`).",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ApiError"
+                                }
+                            }
+                        }
                     }
                 }
             }
@@ -1545,7 +1895,7 @@
                     "Registration"
                 ],
                 "summary": "Registers a player from JSON payload and logs them in.",
-                "description": "RegistrationRateLimitSubscriber counts the request before the payload is mapped, and\nRegistrationErrorSubscriber renders mapping and validation failures.",
+                "description": "RegistrationRateLimitSubscriber counts the request before the payload is mapped, and\nErrorController renders mapping and validation failures.",
                 "operationId": "post_app_register",
                 "requestBody": {
                     "required": true,
@@ -1633,38 +1983,21 @@
                         }
                     },
                     "400": {
-                        "description": "Validierungsfehler. Eine E-Mail-Adresse au\u00dferhalb der Domain `db-n.com` ergibt eine Meldung unter `errors.email`.",
+                        "description": "Der Request-Body ist kein g\u00fcltiges JSON (`REQUEST_INVALID_JSON_BODY`).",
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "required": [
-                                        "success",
-                                        "message"
-                                    ],
-                                    "properties": {
-                                        "success": {
-                                            "type": "boolean",
-                                            "example": false
-                                        },
-                                        "error": {
-                                            "description": "Nur wenn der Body kein g\u00fcltiges JSON ist.",
-                                            "type": "string",
-                                            "example": "REQUEST_INVALID_JSON_BODY"
-                                        },
-                                        "message": {
-                                            "type": "string"
-                                        },
-                                        "errors": {
-                                            "type": "object",
-                                            "additionalProperties": {
-                                                "type": "array",
-                                                "items": {
-                                                    "type": "string"
-                                                }
-                                            }
-                                        }
-                                    },
-                                    "type": "object"
+                                    "$ref": "#/components/schemas/ApiError"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Der Request-Body ist ung\u00fcltig und besteht die Validierung nicht. Eine E-Mail-Adresse au\u00dferhalb der Domain `db-n.com` ergibt die Verletzung `EMAIL_DOMAIN_NOT_ALLOWED` auf `email`.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/RequestValidationFailed"
                                 }
                             }
                         }
@@ -1690,7 +2023,7 @@
                                         },
                                         "message": {
                                             "type": "string",
-                                            "example": "Ein Konto mit diesen Daten existiert bereits."
+                                            "example": "An account with these details already exists."
                                         }
                                     },
                                     "type": "object"
@@ -1755,7 +2088,8 @@
                                             "example": "REGISTRATION_RATE_LIMITED"
                                         },
                                         "message": {
-                                            "type": "string"
+                                            "type": "string",
+                                            "example": "Too many registration attempts. Try again later."
                                         }
                                     },
                                     "type": "object"
@@ -1772,7 +2106,7 @@
                 "tags": [
                     "Authentication"
                 ],
-                "summary": "Returns login state or last error for API clients.",
+                "summary": "Returns the login state of a logged-in user; without a session it answers 401.",
                 "operationId": "get_app_login",
                 "requestBody": {
                     "description": "Login-Daten f\u00fcr POST-Requests (Standard Symfony-Form-Felder). _username erwartet die E-Mail-Adresse.",
@@ -1855,16 +2189,6 @@
                                                 "GAME_ROOM_FULL",
                                                 "GAME_NOT_FOUND"
                                             ]
-                                        },
-                                        "last_username": {
-                                            "type": "string",
-                                            "example": "alice",
-                                            "nullable": true
-                                        },
-                                        "error": {
-                                            "type": "string",
-                                            "example": "Ung\u00fcltige Zugangsdaten.",
-                                            "nullable": true
                                         }
                                     },
                                     "type": "object"
@@ -1873,41 +2197,17 @@
                         }
                     },
                     "401": {
-                        "description": "Anmeldung fehlgeschlagen.",
+                        "description": "Bei POST: Anmeldung fehlgeschlagen (`LOGIN_INVALID_CREDENTIALS`), f\u00fcr jede Ursache gleich, auch bei unbekannter E-Mail. Bei GET ohne Session: `AUTHENTICATION_REQUIRED`.",
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "required": [
-                                        "success",
-                                        "error"
-                                    ],
-                                    "properties": {
-                                        "success": {
-                                            "type": "boolean",
-                                            "example": false
-                                        },
-                                        "last_username": {
-                                            "type": "string",
-                                            "example": "alice",
-                                            "nullable": true
-                                        },
-                                        "error": {
-                                            "type": "string",
-                                            "example": "Ung\u00fcltige Zugangsdaten."
-                                        },
-                                        "status": {
-                                            "description": "Nur bei POST: ApiAuthenticationFailureHandler antwortet direkt und l\u00e4sst `status` im Body.",
-                                            "type": "integer",
-                                            "example": 401
-                                        }
-                                    },
-                                    "type": "object"
+                                    "$ref": "#/components/schemas/ApiError"
                                 }
                             }
                         }
                     },
                     "429": {
-                        "description": "Zu viele fehlgeschlagene Anmeldungen (5 pro Minute je E-Mail und IP-Adresse, dazu ein weiteres Limit pro IP). Nur bei POST.",
+                        "description": "Zu viele fehlgeschlagene Anmeldungen (`LOGIN_RATE_LIMITED`; 5 pro Minute je E-Mail und IP-Adresse, dazu ein weiteres Limit pro IP). Nur bei POST.",
                         "headers": {
                             "Retry-After": {
                                 "description": "Sekunden bis zum n\u00e4chsten erlaubten Versuch, wenn der Limiter sie nennt.",
@@ -1919,32 +2219,7 @@
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "required": [
-                                        "success",
-                                        "error",
-                                        "status"
-                                    ],
-                                    "properties": {
-                                        "success": {
-                                            "type": "boolean",
-                                            "example": false
-                                        },
-                                        "last_username": {
-                                            "type": "string",
-                                            "example": "alice@example.com",
-                                            "nullable": true
-                                        },
-                                        "error": {
-                                            "type": "string",
-                                            "example": "Too many failed login attempts, please try again in 1 minute."
-                                        },
-                                        "status": {
-                                            "description": "Nur bei POST: ApiAuthenticationFailureHandler antwortet direkt und l\u00e4sst `status` im Body.",
-                                            "type": "integer",
-                                            "example": 429
-                                        }
-                                    },
-                                    "type": "object"
+                                    "$ref": "#/components/schemas/ApiError"
                                 }
                             }
                         }
@@ -1956,7 +2231,7 @@
                 "tags": [
                     "Authentication"
                 ],
-                "summary": "Returns login state or last error for API clients.",
+                "summary": "Returns the login state of a logged-in user; without a session it answers 401.",
                 "operationId": "post_app_login",
                 "requestBody": {
                     "description": "Login-Daten f\u00fcr POST-Requests (Standard Symfony-Form-Felder). _username erwartet die E-Mail-Adresse.",
@@ -2039,16 +2314,6 @@
                                                 "GAME_ROOM_FULL",
                                                 "GAME_NOT_FOUND"
                                             ]
-                                        },
-                                        "last_username": {
-                                            "type": "string",
-                                            "example": "alice",
-                                            "nullable": true
-                                        },
-                                        "error": {
-                                            "type": "string",
-                                            "example": "Ung\u00fcltige Zugangsdaten.",
-                                            "nullable": true
                                         }
                                     },
                                     "type": "object"
@@ -2057,41 +2322,17 @@
                         }
                     },
                     "401": {
-                        "description": "Anmeldung fehlgeschlagen.",
+                        "description": "Bei POST: Anmeldung fehlgeschlagen (`LOGIN_INVALID_CREDENTIALS`), f\u00fcr jede Ursache gleich, auch bei unbekannter E-Mail. Bei GET ohne Session: `AUTHENTICATION_REQUIRED`.",
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "required": [
-                                        "success",
-                                        "error"
-                                    ],
-                                    "properties": {
-                                        "success": {
-                                            "type": "boolean",
-                                            "example": false
-                                        },
-                                        "last_username": {
-                                            "type": "string",
-                                            "example": "alice",
-                                            "nullable": true
-                                        },
-                                        "error": {
-                                            "type": "string",
-                                            "example": "Ung\u00fcltige Zugangsdaten."
-                                        },
-                                        "status": {
-                                            "description": "Nur bei POST: ApiAuthenticationFailureHandler antwortet direkt und l\u00e4sst `status` im Body.",
-                                            "type": "integer",
-                                            "example": 401
-                                        }
-                                    },
-                                    "type": "object"
+                                    "$ref": "#/components/schemas/ApiError"
                                 }
                             }
                         }
                     },
                     "429": {
-                        "description": "Zu viele fehlgeschlagene Anmeldungen (5 pro Minute je E-Mail und IP-Adresse, dazu ein weiteres Limit pro IP). Nur bei POST.",
+                        "description": "Zu viele fehlgeschlagene Anmeldungen (`LOGIN_RATE_LIMITED`; 5 pro Minute je E-Mail und IP-Adresse, dazu ein weiteres Limit pro IP). Nur bei POST.",
                         "headers": {
                             "Retry-After": {
                                 "description": "Sekunden bis zum n\u00e4chsten erlaubten Versuch, wenn der Limiter sie nennt.",
@@ -2103,32 +2344,7 @@
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "required": [
-                                        "success",
-                                        "error",
-                                        "status"
-                                    ],
-                                    "properties": {
-                                        "success": {
-                                            "type": "boolean",
-                                            "example": false
-                                        },
-                                        "last_username": {
-                                            "type": "string",
-                                            "example": "alice@example.com",
-                                            "nullable": true
-                                        },
-                                        "error": {
-                                            "type": "string",
-                                            "example": "Too many failed login attempts, please try again in 1 minute."
-                                        },
-                                        "status": {
-                                            "description": "Nur bei POST: ApiAuthenticationFailureHandler antwortet direkt und l\u00e4sst `status` im Body.",
-                                            "type": "integer",
-                                            "example": 429
-                                        }
-                                    },
-                                    "type": "object"
+                                    "$ref": "#/components/schemas/ApiError"
                                 }
                             }
                         }
@@ -2211,7 +2427,14 @@
                         }
                     },
                     "401": {
-                        "description": "User ist nicht authentifiziert."
+                        "description": "Keine Session (`AUTHENTICATION_REQUIRED`).",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ApiError"
+                                }
+                            }
+                        }
                     }
                 }
             }
@@ -2224,8 +2447,8 @@
                 "summary": "Logs out the current user.",
                 "operationId": "post_app_logout",
                 "responses": {
-                    "302": {
-                        "description": "Abgemeldet. Weiterleitung auf `/`."
+                    "204": {
+                        "description": "Abgemeldet, die Session ist beendet. Die Antwort hat keinen Body."
                     }
                 }
             }
@@ -2313,7 +2536,14 @@
                         "description": "Nicht angemeldet."
                     },
                     "403": {
-                        "description": "Angemeldet ohne `ROLE_ADMIN` (z. B. ein Spieler)."
+                        "description": "Angemeldet ohne `ROLE_ADMIN` (z. B. ein Spieler) (`ACCESS_DENIED`).",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ApiError"
+                                }
+                            }
+                        }
                     }
                 }
             }
@@ -2321,6 +2551,85 @@
     },
     "components": {
         "schemas": {
+            "RequestValidationFailed": {
+                "required": [
+                    "success",
+                    "error",
+                    "message",
+                    "violations"
+                ],
+                "properties": {
+                    "success": {
+                        "type": "boolean",
+                        "enum": [
+                            false
+                        ]
+                    },
+                    "error": {
+                        "type": "string",
+                        "enum": [
+                            "REQUEST_VALIDATION_FAILED"
+                        ]
+                    },
+                    "message": {
+                        "description": "English, for developers only.",
+                        "type": "string",
+                        "example": "The request body failed validation."
+                    },
+                    "violations": {
+                        "description": "One entry per violation.",
+                        "type": "array",
+                        "items": {
+                            "required": [
+                                "field",
+                                "code",
+                                "message"
+                            ],
+                            "properties": {
+                                "field": {
+                                    "description": "Property path of the violation, `\"\"` for a class-level violation.",
+                                    "type": "string",
+                                    "example": "startScore"
+                                },
+                                "code": {
+                                    "description": "`REQUIRED`, `TOO_SHORT`, `TOO_LONG`, `INVALID_EMAIL`, `INVALID_CHOICE`, `OUT_OF_RANGE`, `INVALID_TYPE`, `DUPLICATE`, `UNKNOWN_FIELD` (a key the body must not contain) or `INVALID`, unless the constraint names its own code.",
+                                    "type": "string",
+                                    "example": "INVALID_CHOICE"
+                                },
+                                "message": {
+                                    "description": "English, for developers only.",
+                                    "type": "string",
+                                    "example": "The value you selected is not a valid choice."
+                                }
+                            },
+                            "type": "object"
+                        }
+                    }
+                },
+                "type": "object"
+            },
+            "ApiError": {
+                "required": [
+                    "success",
+                    "error",
+                    "message"
+                ],
+                "properties": {
+                    "success": {
+                        "type": "boolean",
+                        "enum": [
+                            false
+                        ]
+                    },
+                    "error": {
+                        "type": "string"
+                    },
+                    "message": {
+                        "type": "string"
+                    }
+                },
+                "type": "object"
+            },
             "StartGameRequest": {
                 "properties": {
                     "startScore": {
@@ -2517,7 +2826,7 @@
                 ],
                 "properties": {
                     "email": {
-                        "description": "Nur Adressen der Domain `db-n.com` werden angenommen, ohne Beachtung der Gro\u00df- und Kleinschreibung und nach Entfernen der Leerzeichen am Rand. Subdomains und andere Domains ergeben 400 mit `errors.email`.",
+                        "description": "Nur Adressen der Domain `db-n.com` werden angenommen, ohne Beachtung der Gro\u00df- und Kleinschreibung und nach Entfernen der Leerzeichen am Rand. Subdomains und andere Domains ergeben 422 mit dem Code `EMAIL_DOMAIN_NOT_ALLOWED`.",
                         "type": "string",
                         "format": "email",
                         "example": "alice@db-n.com"
