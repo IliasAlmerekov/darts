@@ -37,7 +37,7 @@ src/shared/api/
   types.ts             # apiClient types (HttpMethod, ApiRequestConfig, QueryParams)
   index.ts             # barrel: cross-cutting public surface
   test-utils.ts        # createMockResponse and respondWith helpers for tests
-  auth.ts              # auth flows, DTO types, clearClientSession
+  auth.ts              # auth flows, DTO types
   game.ts              # game flows + ETag cache
   room.ts              # room flows
   statistics.ts        # stats flows
@@ -47,6 +47,8 @@ src/shared/query/
   <domain>.queries.ts  # queryOptions factories: auth, game, player, statistics
   acceptLoggedInUser.ts # writes the logged-in user into the auth key
   tabletGameLoader.ts  # loader builder for the admin routes that follow the tablet game
+src/shared/lib/auth/
+  clearClientSession.ts # drops the query cache, the room store and the game store
 ```
 
 ## Public surface
@@ -215,7 +217,8 @@ cache itself:
 - `invalidateQueries({ queryKey })` marks a read the write changed on the server when the
   response does not carry its new value. Undo, rematch and room create invalidate
   `gameQueries.tablet()` (`useGameSummaryPage.ts`, `useCreateStartFlow.ts`).
-- Logout and the 401 handler call `clearClientSession()` in `auth.ts`, which runs
+- `useLogout` and the 401 handler call `clearClientSession()` in
+  `src/shared/lib/auth/clearClientSession.ts`, which runs
   `queryClient.clear()`: every cached read belongs to the old session.
 
 ## Mappers (DTO -> UI)
