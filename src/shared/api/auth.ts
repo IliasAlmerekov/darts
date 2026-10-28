@@ -47,6 +47,8 @@ const loginStatusSchema = v.pipe(
     gameId: v.optional(integerSchema),
     invitationError: v.optional(invitationErrorSchema),
   }),
+  // With every field optional, this check is what keeps an empty body from passing as
+  // a session in loginResponseSchema.
   v.check((login) => Object.keys(login).length > 0),
 );
 
