@@ -29,9 +29,9 @@ function renderRegisterRoute(): void {
   );
 }
 
-function submitRegistrationForm(): void {
+function submitRegistrationForm(email = "ton@db-n.com"): void {
   fireEvent.change(screen.getByLabelText(/^username/i), { target: { value: "ton80" } });
-  fireEvent.change(screen.getByLabelText(/^email/i), { target: { value: "ton@db-n.com" } });
+  fireEvent.change(screen.getByLabelText(/^email/i), { target: { value: email } });
   fireEvent.change(screen.getByLabelText(/^password/i), {
     target: { value: "long-enough-secret" },
   });
@@ -46,22 +46,33 @@ describe("RegisterPage form registration", () => {
     vi.mocked(getAuthenticatedUser).mockResolvedValueOnce(null);
   });
 
-  it("shows the mapped error and keeps the typed values after a failed registration", async () => {
+  it("shows the domain message and keeps the typed values after a gmail registration", async () => {
     vi.mocked(registerUser).mockRejectedValueOnce(
-      new ApiError("Validation failed", {
+      new ApiError("REQUEST_VALIDATION_FAILED", {
         status: 422,
-        data: { errors: { email: ["This value is not a valid email address."] } },
+        data: {
+          success: false,
+          error: "REQUEST_VALIDATION_FAILED",
+          message: "The request body failed validation.",
+          violations: [
+            {
+              field: "email",
+              code: "EMAIL_DOMAIN_NOT_ALLOWED",
+              message: "Please register with your @db-n.com email address",
+            },
+          ],
+        },
       }),
     );
 
     renderRegisterRoute();
-    submitRegistrationForm();
+    submitRegistrationForm("ton@gmail.com");
 
     expect((await screen.findByRole("alert")).textContent).toBe(
-      "Please enter a valid email address.",
+      "Only @db-n.com email addresses can register.",
     );
     expect(screen.getByLabelText<HTMLInputElement>(/^username/i).value).toBe("ton80");
-    expect(screen.getByLabelText<HTMLInputElement>(/^email/i).value).toBe("ton@db-n.com");
+    expect(screen.getByLabelText<HTMLInputElement>(/^email/i).value).toBe("ton@gmail.com");
     expect(screen.getByLabelText<HTMLInputElement>(/^password/i).value).toBe("long-enough-secret");
   });
 

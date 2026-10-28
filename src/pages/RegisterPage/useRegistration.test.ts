@@ -49,15 +49,22 @@ describe("useRegistration", () => {
     setCurrentGameId(null);
   });
 
-  it("should set mapped validation errors when registration fails with 422", async () => {
+  it("shows the violation texts when registration fails with REQUEST_VALIDATION_FAILED", async () => {
     registerUserMock.mockRejectedValueOnce(
-      new ApiError("Validation failed", {
+      new ApiError("REQUEST_VALIDATION_FAILED", {
         status: 422,
         data: {
-          errors: {
-            email: ["This value is not a valid email address."],
-            plainPassword: ["This value is too short."],
-          },
+          success: false,
+          error: "REQUEST_VALIDATION_FAILED",
+          message: "The request body failed validation.",
+          violations: [
+            {
+              field: "email",
+              code: "INVALID_EMAIL",
+              message: "Please enter a valid email address",
+            },
+            { field: "plainPassword", code: "TOO_SHORT", message: "Too short." },
+          ],
         },
       }),
     );
@@ -68,51 +75,11 @@ describe("useRegistration", () => {
       submit(result.current, "john", "invalid-email", "123");
     });
 
-    expect(result.current.error).toBe("Please enter a valid email address.\nPassword is invalid.");
+    expect(registerUserMock).toHaveBeenCalledTimes(1);
+    expect(result.current.error).toBe(
+      "Please enter a valid email address.\nPassword must be at least 6 characters.",
+    );
     expect(navigateMock).not.toHaveBeenCalled();
-  });
-
-  it("should retry registration with refreshed CSRF token when first attempt fails", async () => {
-    registerUserMock.mockRejectedValueOnce(
-      new ApiError("Validation failed", {
-        status: 422,
-        data: {
-          errors: {
-            _csrf_token: ["The CSRF token is invalid."],
-          },
-        },
-      }),
-    );
-    registerUserMock.mockResolvedValueOnce({
-      redirect: "/start",
-    });
-
-    const { result } = renderHook(() => useRegistration());
-
-    await act(async () => {
-      submit(result.current, "john", "john@example.com", "Password123!");
-    });
-
-    expect(registerUserMock).toHaveBeenNthCalledWith(
-      1,
-      {
-        username: "john",
-        email: "john@example.com",
-        password: "Password123!",
-      },
-      false,
-    );
-    expect(registerUserMock).toHaveBeenNthCalledWith(
-      2,
-      {
-        username: "john",
-        email: "john@example.com",
-        password: "Password123!",
-      },
-      true,
-    );
-    expect(navigateMock).toHaveBeenCalledWith("/start");
-    expect(result.current.error).toBeNull();
   });
 
   it("should navigate to the start route when registration returns an off-origin redirect", async () => {

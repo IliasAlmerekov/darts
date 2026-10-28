@@ -79,7 +79,9 @@ Two mappers are canonical:
 - `toUserErrorMessage(error, fallback?)` for caught errors outside auth flows. It recognises
   `NetworkError`, `ApiError` (by status and by payload `error` / `message` fields), generic
   `Error`, and bare strings.
-- `mapAuthErrorMessage({ flow, error, rawMessage })` for login and registration.
+- `mapAuthErrorMessage({ flow, error })` for login and registration. It reads the backend's
+  error `code` and, for `REQUEST_VALIDATION_FAILED`, each violation's `field` and `code`; it
+  never matches or shows the backend's `message`.
 
 Rules:
 

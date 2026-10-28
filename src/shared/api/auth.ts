@@ -17,15 +17,8 @@ const invitationErrorSchema = v.picklist([
   "GAME_JOIN_NOT_ALLOWED",
 ]);
 
-/** Contract response of `GET /api/csrf`. */
-const csrfTokensResponseSchema = v.object({
-  success: v.boolean(),
-  tokens: v.record(v.string(), v.string()),
-});
-
-// The contract documents no logout body. The backend answers with a 302 that `logout` does
-// not follow, so the body is the opaque redirect's empty text.
-const logoutResponseSchema = v.string();
+/** `POST /api/logout`: a 204 without a body, which `apiClient` reads as `null`. */
+const logoutResponseSchema = v.null();
 
 /** `GET /api/login/success`, the shape the contract documents. */
 const authenticatedUserSchema = v.object({
@@ -53,16 +46,16 @@ const loginStatusSchema = v.pipe(
     redirect: v.optional(v.nullable(v.string())),
     gameId: v.optional(integerSchema),
     invitationError: v.optional(invitationErrorSchema),
-    last_username: v.optional(v.nullable(v.string())),
-    error: v.optional(v.nullable(v.string())),
   }),
+  // With every field optional, this check is what keeps an empty body from passing as
+  // a session in loginResponseSchema.
   v.check((login) => Object.keys(login).length > 0),
 );
 
 /**
  * `POST /api/login`. A successful login answers with the `/api/login/success` body and
- * becomes `user`. Any other answer is a `failure` when it says so, and otherwise means
- * the user is logged in but the body lacks them, so the caller reads the `session`.
+ * becomes `user`. Any other 200 means the user is logged in but the body lacks them, so
+ * the caller reads the `session`. A failed login is a 401 `LOGIN_INVALID_CREDENTIALS`.
  */
 const loginResponseSchema = v.union([
   v.pipe(
@@ -71,11 +64,7 @@ const loginResponseSchema = v.union([
   ),
   v.pipe(
     loginStatusSchema,
-    v.transform((login) =>
-      login.success === false || typeof login.error === "string"
-        ? { type: "failure" as const, error: login.error ?? null }
-        : { type: "session" as const },
-    ),
+    v.transform(() => ({ type: "session" as const })),
   ),
 ]);
 
@@ -84,14 +73,6 @@ const loginResponseSchema = v.union([
  * answers with the `/api/login/success` body.
  */
 const registrationResponseSchema = authenticatedUserSchema;
-
-// The backend also answers with a user envelope or `{ success: false }`; the contract
-// does not document these yet.
-const authCheckResponseSchema = v.union([
-  v.object({ success: v.literal(true), user: authenticatedUserSchema }),
-  authenticatedUserSchema,
-  v.object({ success: v.literal(false) }),
-]);
 
 type LoginResponse = v.InferOutput<typeof loginResponseSchema>;
 export type RegistrationResponse = v.InferOutput<typeof registrationResponseSchema>;
@@ -113,7 +94,6 @@ interface RegistrationData {
 const LOGIN_ENDPOINT = "/login";
 const LOGOUT_ENDPOINT = "/logout";
 const REGISTER_ENDPOINT = "/register";
-const CSRF_ENDPOINT = "/csrf";
 const AUTH_CHECK_TIMEOUT_MS = 8000;
 
 interface GetAuthenticatedUserOptions {
@@ -141,35 +121,14 @@ export async function loginWithCredentials(credentials: LoginCredentials): Promi
  * client session only after a logout the backend accepted.
  */
 export async function logout(onSuccess?: () => void): Promise<void> {
-  // The 302 points at the backend's own origin. Following it from the app's origin fails
-  // CORS after the cookies are already gone, and a retry would hit the same wall.
-  await apiClient.post(LOGOUT_ENDPOINT, undefined, {
-    redirect: "manual",
-    validate: logoutResponseSchema,
-  });
+  await apiClient.post(LOGOUT_ENDPOINT, undefined, { validate: logoutResponseSchema });
   onSuccess?.();
 }
 
 /**
  * Registers a new user account.
- * @param refreshCsrf - when true, fetches a fresh CSRF token before posting
  */
-export async function registerUser(
-  data: RegistrationData,
-  refreshCsrf = false,
-): Promise<RegistrationResponse> {
-  if (refreshCsrf) {
-    try {
-      await apiClient.get(CSRF_ENDPOINT, {
-        skipAuthRedirect: true,
-        validate: csrfTokensResponseSchema,
-      });
-    } catch (error) {
-      const { clientLogger } = await import("@/shared/services/browser/clientLogger");
-      clientLogger.warn("auth.csrf_prefetch.failed", { error });
-    }
-  }
-
+export async function registerUser(data: RegistrationData): Promise<RegistrationResponse> {
   return apiClient.post(
     REGISTER_ENDPOINT,
     {
@@ -192,24 +151,11 @@ export async function getAuthenticatedUser(
   const timeoutMs = options.timeoutMs ?? AUTH_CHECK_TIMEOUT_MS;
 
   try {
-    const response = await apiClient.get("/login/success", {
+    return await apiClient.get("/login/success", {
       signal: options.signal,
       skipAuthRedirect: true,
       timeoutMs,
-      validate: authCheckResponseSchema,
-    });
-
-    if ("user" in response) {
-      return response.user;
-    }
-
-    if ("roles" in response) {
-      return response;
-    }
-
-    throw new ApiError("Authorization failed for authenticated user", {
-      status: 401,
-      data: response,
+      validate: authenticatedUserSchema,
     });
   } catch (error) {
     if (error instanceof UnauthorizedError) {

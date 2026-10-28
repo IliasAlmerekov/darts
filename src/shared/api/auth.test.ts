@@ -3,7 +3,6 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { getAuthenticatedUser, loginWithCredentials, logout, registerUser } from "./auth";
 import { apiClient, ApiValidationError } from "./client";
 import { TimeoutError } from "./errors";
-import { clientLogger } from "@/shared/services/browser/clientLogger";
 import { createMockResponse, respondWith } from "./test-utils";
 
 describe("getAuthenticatedUser", () => {
@@ -16,18 +15,15 @@ describe("getAuthenticatedUser", () => {
     vi.useRealTimers();
   });
 
-  it("should return authenticated user when the response is successful", async () => {
+  it("returns the user from the contract's login-success body", async () => {
     vi.spyOn(globalThis, "fetch").mockResolvedValueOnce(
       createMockResponse({
         body: {
           success: true,
-          user: {
-            success: true,
-            roles: ["ROLE_USER"],
-            id: 7,
-            redirect: "/start",
-            gameId: 42,
-          },
+          roles: ["ROLE_PLAYER"],
+          id: 7,
+          redirect: "http://localhost:5173/joined",
+          gameId: 42,
         },
         status: 200,
         headers: new Headers({ "content-type": "application/json" }),
@@ -38,6 +34,26 @@ describe("getAuthenticatedUser", () => {
     await expect(getAuthenticatedUser()).resolves.toMatchObject({
       id: 7,
       gameId: 42,
+    });
+  });
+
+  it("rejects a user wrapped in an envelope, which the contract does not document", async () => {
+    vi.spyOn(globalThis, "fetch").mockResolvedValueOnce(
+      createMockResponse({
+        body: {
+          success: true,
+          user: { success: true, roles: ["ROLE_USER"], id: 7, redirect: "/start" },
+        },
+        status: 200,
+        headers: new Headers({ "content-type": "application/json" }),
+        url: "/api/login/success",
+      }),
+    );
+
+    await expect(getAuthenticatedUser()).rejects.toMatchObject({
+      name: "ApiError",
+      message: "Unexpected response shape for authenticated user",
+      status: 200,
     });
   });
 
@@ -87,10 +103,14 @@ describe("getAuthenticatedUser", () => {
     });
   });
 
-  it("should return null when the auth-check response is 401", async () => {
+  it("returns null on 401 AUTHENTICATION_REQUIRED", async () => {
     vi.spyOn(globalThis, "fetch").mockResolvedValueOnce(
       createMockResponse({
-        body: { message: "Unauthorized" },
+        body: {
+          success: false,
+          error: "AUTHENTICATION_REQUIRED",
+          message: "Authentication required.",
+        },
         status: 401,
         headers: new Headers({ "content-type": "application/json" }),
         url: "/api/login/success",
@@ -127,15 +147,7 @@ describe("getAuthenticatedUser", () => {
   it("should throw ApiError when the auth-check returns a malformed authenticated user payload", async () => {
     vi.spyOn(globalThis, "fetch").mockResolvedValueOnce(
       createMockResponse({
-        body: {
-          success: true,
-          user: {
-            success: true,
-            roles: ["ROLE_USER"],
-            id: "7",
-            redirect: "/start",
-          },
-        },
+        body: { success: true, roles: ["ROLE_USER"], id: "7", redirect: "/start" },
         status: 200,
         headers: new Headers({ "content-type": "application/json" }),
         url: "/api/login/success",
@@ -165,7 +177,7 @@ describe("getAuthenticatedUser", () => {
     });
   });
 
-  it("should throw ApiError when the auth-check payload is explicitly unauthorized", async () => {
+  it("rejects a 200 with success false, which the backend answers with a 401 now", async () => {
     vi.spyOn(globalThis, "fetch").mockResolvedValueOnce(
       createMockResponse({
         body: { success: false },
@@ -177,8 +189,8 @@ describe("getAuthenticatedUser", () => {
 
     await expect(getAuthenticatedUser()).rejects.toMatchObject({
       name: "ApiError",
-      message: "Authorization failed for authenticated user",
-      status: 401,
+      message: "Unexpected response shape for authenticated user",
+      status: 200,
       data: { success: false },
     });
   });
@@ -244,36 +256,6 @@ describe("loginWithCredentials", () => {
     ).resolves.toEqual({ type: "user", user: response });
   });
 
-  it("returns the login error when the backend answers without a user", async () => {
-    vi.spyOn(apiClient, "post").mockImplementationOnce(
-      respondWith({ success: false, last_username: "alice", error: "Invalid credentials." }),
-    );
-
-    await expect(
-      loginWithCredentials({ email: "alice@example.com", password: "s3cr3t" }),
-    ).resolves.toEqual({ type: "failure", error: "Invalid credentials." });
-  });
-
-  it("ignores a status in the body, which the contract no longer documents", async () => {
-    vi.spyOn(apiClient, "post").mockImplementationOnce(
-      respondWith({ success: false, error: "Invalid credentials.", status: "401" }),
-    );
-
-    await expect(
-      loginWithCredentials({ email: "alice@example.com", password: "s3cr3t" }),
-    ).resolves.toEqual({ type: "failure", error: "Invalid credentials." });
-  });
-
-  it("returns the login error when the backend answers with only an error", async () => {
-    vi.spyOn(apiClient, "post").mockImplementationOnce(
-      respondWith({ error: "Invalid credentials." }),
-    );
-
-    await expect(
-      loginWithCredentials({ email: "alice@example.com", password: "s3cr3t" }),
-    ).resolves.toEqual({ type: "failure", error: "Invalid credentials." });
-  });
-
   it("asks for the session user when the backend answers with only the login-success redirect", async () => {
     vi.spyOn(apiClient, "post").mockImplementationOnce(
       respondWith({ redirect: "/api/login/success" }),
@@ -282,6 +264,16 @@ describe("loginWithCredentials", () => {
     await expect(
       loginWithCredentials({ email: "alice@example.com", password: "s3cr3t" }),
     ).resolves.toEqual({ type: "session" });
+  });
+
+  it("rejects with ApiValidationError when login answers 200 with only the old error field", async () => {
+    vi.spyOn(apiClient, "post").mockImplementationOnce(
+      respondWith({ error: "Invalid credentials.", last_username: "alice" }),
+    );
+
+    await expect(
+      loginWithCredentials({ email: "alice@example.com", password: "s3cr3t" }),
+    ).rejects.toBeInstanceOf(ApiValidationError);
   });
 
   it("rejects with ApiValidationError when the invitation error is not a known code", async () => {
@@ -348,78 +340,6 @@ describe("registerUser", () => {
     expect(result).toEqual(registrationExample);
   });
 
-  it("should not issue CSRF ping when refreshCsrf is false", async () => {
-    const getSpy = vi
-      .spyOn(apiClient, "get")
-      .mockImplementationOnce(
-        respondWith({ success: true, tokens: { user_registration: "csrf-token" } }),
-      );
-    vi.spyOn(apiClient, "post").mockImplementationOnce(respondWith(registrationExample));
-
-    await registerUser(
-      { username: "alice", email: "alice@example.com", password: "s3cr3t" },
-      false,
-    );
-
-    expect(getSpy).not.toHaveBeenCalled();
-  });
-
-  it("should route CSRF ping through apiClient.get with skipAuthRedirect when refreshCsrf is true", async () => {
-    const getSpy = vi
-      .spyOn(apiClient, "get")
-      .mockImplementationOnce(
-        respondWith({ success: true, tokens: { user_registration: "csrf-token" } }),
-      );
-    vi.spyOn(apiClient, "post").mockImplementationOnce(respondWith(registrationExample));
-
-    await registerUser({ username: "alice", email: "alice@example.com", password: "s3cr3t" }, true);
-
-    expect(getSpy).toHaveBeenCalledWith(
-      "/csrf",
-      expect.objectContaining({ skipAuthRedirect: true, validate: expect.any(Object) }),
-    );
-  });
-
-  // Ticket 2: bare fetch("/register") bypasses API_BASE_URL — must never happen
-  // This test FAILS on the current buggy implementation
-  it("should not call native fetch with bare /register path (must include API_BASE_URL)", async () => {
-    // Mock apiClient.post so only the CSRF-ping path can trigger native fetch
-    vi.spyOn(apiClient, "post").mockImplementationOnce(respondWith(registrationExample));
-    // Intercept all native fetch calls; reject so the ping error is caught and swallowed
-    const fetchSpy = vi.spyOn(globalThis, "fetch").mockRejectedValue(new Error("network"));
-
-    await registerUser({ username: "alice", email: "alice@example.com", password: "s3cr3t" }, true);
-
-    const bareRegisterCalls = fetchSpy.mock.calls.filter(
-      ([url]) => typeof url === "string" && url === "/register",
-    );
-    expect(bareRegisterCalls).toHaveLength(0);
-  });
-
-  it("should proceed with registration even when CSRF ping rejects", async () => {
-    vi.spyOn(apiClient, "get").mockRejectedValueOnce(new Error("Network error"));
-    vi.spyOn(apiClient, "post").mockImplementationOnce(respondWith(registrationExample));
-
-    const result = await registerUser(
-      { username: "alice", email: "alice@example.com", password: "s3cr3t" },
-      true,
-    );
-
-    expect(apiClient.post).toHaveBeenCalled();
-    expect(result).toEqual(registrationExample);
-  });
-
-  it("logs a failed CSRF ping as auth.csrf_prefetch.failed with the caught error", async () => {
-    const error = new Error("Network error");
-    const warnSpy = vi.spyOn(clientLogger, "warn").mockImplementation(() => undefined);
-    vi.spyOn(apiClient, "get").mockRejectedValueOnce(error);
-    vi.spyOn(apiClient, "post").mockImplementationOnce(respondWith(registrationExample));
-
-    await registerUser({ username: "alice", email: "alice@example.com", password: "s3cr3t" }, true);
-
-    expect(warnSpy).toHaveBeenCalledExactlyOnceWith("auth.csrf_prefetch.failed", { error });
-  });
-
   it("resolves when registration answers without a game, as after a stale invitation", async () => {
     const response = {
       success: true,
@@ -446,15 +366,6 @@ describe("registerUser", () => {
       registerUser({ username: "alice", email: "alice@example.com", password: "s3cr3t" }),
     ).rejects.toBeInstanceOf(ApiValidationError);
   });
-
-  it("proceeds with registration when the CSRF response is malformed", async () => {
-    vi.spyOn(apiClient, "get").mockImplementationOnce(respondWith({ success: true, tokens: [] }));
-    vi.spyOn(apiClient, "post").mockImplementationOnce(respondWith(registrationExample));
-
-    await expect(
-      registerUser({ username: "alice", email: "alice@example.com", password: "s3cr3t" }, true),
-    ).resolves.toEqual(registrationExample);
-  });
 });
 
 describe("logout", () => {
@@ -462,17 +373,14 @@ describe("logout", () => {
     vi.restoreAllMocks();
   });
 
-  it("should call the success callback when logout succeeds", async () => {
+  it("calls the success callback when logout answers 204 without a body", async () => {
     const onSuccess = vi.fn();
-    vi.spyOn(apiClient, "post").mockImplementationOnce(respondWith(""));
+    vi.spyOn(globalThis, "fetch").mockResolvedValueOnce(
+      createMockResponse({ body: null, status: 204, url: "/api/logout" }),
+    );
 
     await logout(onSuccess);
 
-    expect(apiClient.post).toHaveBeenCalledWith(
-      "/logout",
-      undefined,
-      expect.objectContaining({ redirect: "manual", validate: expect.any(Object) }),
-    );
     expect(onSuccess).toHaveBeenCalledTimes(1);
   });
 

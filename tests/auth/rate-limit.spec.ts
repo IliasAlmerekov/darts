@@ -13,8 +13,9 @@ test.describe("Auth rate limits", () => {
         contentType: "application/json",
         headers: { "Retry-After": "120" },
         body: JSON.stringify({
-          error: "Too many failed login attempts, please try again in 2 minutes.",
-          status: 429,
+          success: false,
+          error: "LOGIN_RATE_LIMITED",
+          message: "Too many failed login attempts, please try again in 2 minutes.",
         }),
       });
     });

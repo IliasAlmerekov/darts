@@ -403,7 +403,8 @@ export async function createRematchGame(previousGameId: number): Promise<Rematch
   const rematch = await apiClient.post(REMATCH_ENDPOINT(previousGameId), undefined, {
     validate: rematchResponseSchema,
   });
-  // The contract allows a null game id, for example when the previous game does not exist.
+  // An unknown previous game is a 404 GAME_NOT_FOUND that apiClient throws. The contract
+  // still allows a 200 with a null or missing game id, so guard against that body here.
   if (typeof rematch.gameId !== "number") {
     throw new ApiError("Rematch response has no game id", {
       status: 200,

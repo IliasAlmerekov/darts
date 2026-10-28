@@ -2,8 +2,6 @@ import { useActionState } from "react";
 import { useNavigate } from "react-router-dom";
 import { registerUser, type RegistrationResponse } from "@/shared/api/auth";
 import { mapAuthErrorMessage } from "@/lib/error/auth-error-handling";
-import { ApiError } from "@/shared/api";
-import { isRecord } from "@/lib/guards/guards";
 import { ROUTES } from "@/lib/router/routes";
 import { toSafeRedirectPath } from "@/lib/router/safeRedirect";
 import { acceptLoggedInUser } from "@/shared/query/acceptLoggedInUser";
@@ -46,10 +44,6 @@ const INITIAL_STATE: RegistrationFormState = {
   values: { username: "", email: "", password: "" },
 };
 
-function hasErrorsRecord(data: unknown): data is { errors: Record<string, unknown> } {
-  return isRecord(data) && "errors" in data && isRecord(data.errors);
-}
-
 export function useRegistration(): RegistrationReturn {
   const navigate = useNavigate();
 
@@ -63,20 +57,7 @@ export function useRegistration(): RegistrationReturn {
     const submitted: RegistrationValues = { username, email, password };
 
     try {
-      let response: RegistrationResponse;
-      try {
-        response = await registerUser({ username, email, password }, false);
-      } catch (firstErr) {
-        const isCsrfError =
-          firstErr instanceof ApiError &&
-          firstErr.status === 422 &&
-          hasErrorsRecord(firstErr.data) &&
-          "_csrf_token" in firstErr.data.errors;
-
-        if (!isCsrfError) throw firstErr;
-
-        response = await registerUser({ username, email, password }, true);
-      }
+      const response = await registerUser({ username, email, password });
 
       // A game id from an earlier session must not leak into the new account.
       if (typeof response.gameId !== "number") {

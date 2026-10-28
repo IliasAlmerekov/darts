@@ -1,10 +1,18 @@
 import type { Page } from "@playwright/test";
 
-type MockLoginFailureOptions = {
-  error?: string;
-};
+/** The backend's 401 without a session, in the shared error body. */
+const AUTHENTICATION_REQUIRED_BODY = JSON.stringify({
+  success: false,
+  error: "AUTHENTICATION_REQUIRED",
+  message: "Authentication required.",
+});
 
-const DEFAULT_INVALID_CREDENTIALS_ERROR = "Incorrect email or password";
+/** The backend's 401 for any failed login, in the shared error body. */
+const LOGIN_INVALID_CREDENTIALS_BODY = JSON.stringify({
+  success: false,
+  error: "LOGIN_INVALID_CREDENTIALS",
+  message: "Invalid credentials.",
+});
 
 /** Credentials typed into the login form in the mocked suite; no backend ever checks them. */
 export const MOCK_LOGIN_CREDENTIALS = {
@@ -54,7 +62,7 @@ export async function mockUnauthenticatedSession(page: Page): Promise<void> {
     await route.fulfill({
       status: 401,
       contentType: "application/json",
-      body: JSON.stringify({ authenticated: false }),
+      body: AUTHENTICATION_REQUIRED_BODY,
     });
   });
 }
@@ -76,7 +84,7 @@ export async function mockPendingUnauthenticatedSession(page: Page): Promise<() 
     await route.fulfill({
       status: 401,
       contentType: "application/json",
-      body: JSON.stringify({ authenticated: false }),
+      body: AUTHENTICATION_REQUIRED_BODY,
     });
   });
 
@@ -103,7 +111,7 @@ async function mockLoginFlow(page: Page, sessionResponse: SessionResponse): Prom
       await route.fulfill({
         status: 401,
         contentType: "application/json",
-        body: JSON.stringify({ authenticated: false }),
+        body: AUTHENTICATION_REQUIRED_BODY,
       });
       return;
     }
@@ -174,19 +182,14 @@ export async function mockRememberedPlayerSession(
   });
 }
 
-export async function mockFailedLogin(
-  page: Page,
-  options: MockLoginFailureOptions = {},
-): Promise<void> {
-  const error = options.error ?? DEFAULT_INVALID_CREDENTIALS_ERROR;
-
+export async function mockFailedLogin(page: Page): Promise<void> {
   await mockUnauthenticatedSession(page);
 
   await page.route("**/api/login", async (route) => {
     await route.fulfill({
       status: 401,
       contentType: "application/json",
-      body: JSON.stringify({ error }),
+      body: LOGIN_INVALID_CREDENTIALS_BODY,
     });
   });
 }
