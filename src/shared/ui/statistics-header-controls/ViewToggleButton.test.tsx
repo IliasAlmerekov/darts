@@ -4,8 +4,8 @@ import { MemoryRouter, useLocation, useNavigate } from "react-router-dom";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { ROUTES } from "@/lib/router/routes";
 import useIsomorphicLayoutEffect from "@/shared/lib/useIsomorphicLayoutEffect";
-import ViewToogleButton from "./ViewToogleBtn";
-import styles from "./ViewToogleBtn.module.css";
+import ViewToggleButton from "./ViewToggleButton";
+import styles from "./ViewToggleButton.module.css";
 
 // The highlighted link at each route commit, read before passive effects run.
 let highlightAtRouteCommit: string[] = [];
@@ -35,7 +35,7 @@ function LocationProbe(): React.JSX.Element {
 function renderAt(...history: string[]): void {
   render(
     <MemoryRouter initialEntries={history} initialIndex={history.length - 1}>
-      <ViewToogleButton />
+      <ViewToggleButton />
       <LocationProbe />
     </MemoryRouter>,
   );
@@ -58,7 +58,7 @@ function currentPageName(): string | null {
   return current.length === 1 ? (current[0]?.textContent ?? null) : null;
 }
 
-describe("ViewToogleButton", () => {
+describe("ViewToggleButton", () => {
   it("should expose a navigation landmark named Statistics view", () => {
     renderAt(ROUTES.statistics);
 

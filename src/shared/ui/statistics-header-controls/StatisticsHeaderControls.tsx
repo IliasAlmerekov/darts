@@ -1,6 +1,6 @@
 import React from "react";
-import { ViewToogleButton } from "@/shared/ui/button";
 import { SortTabs, type SortMethod } from "@/shared/ui/sort-tabs";
+import ViewToggleButton from "./ViewToggleButton";
 import styles from "./StatisticsHeaderControls.module.css";
 
 interface StatisticsHeaderControlsProps {
@@ -26,7 +26,7 @@ function StatisticsHeaderControlsComponent({
       <div className={styles.controlsRow}>
         <SortTabs value={sortValue} disabled={sortDisabled} {...sortTabsProps} />
         <div className={styles.viewTabs}>
-          <ViewToogleButton />
+          <ViewToggleButton />
         </div>
       </div>
     </div>

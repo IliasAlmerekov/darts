@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState, useCallback } from "react";
 import clsx from "clsx";
-import styles from "./ViewToogleBtn.module.css";
+import styles from "./ViewToggleButton.module.css";
 import { Link, matchPath, useLocation, useNavigate } from "react-router-dom";
 import { isPlainLeftClick } from "@/lib/router/isPlainLeftClick";
 import { ROUTES } from "@/lib/router/routes";
@@ -12,7 +12,7 @@ interface Preview {
   view: View;
 }
 
-function ViewToogleButton(): React.JSX.Element {
+function ViewToggleButton(): React.JSX.Element {
   const location = useLocation();
   const navigate = useNavigate();
 
@@ -100,4 +100,4 @@ function ViewToogleButton(): React.JSX.Element {
   );
 }
 
-export default React.memo(ViewToogleButton);
+export default React.memo(ViewToggleButton);

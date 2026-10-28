@@ -1,7 +1,8 @@
 import React, { useId, useState } from "react";
 import clsx from "clsx";
 import { Overlay } from "@/shared/ui/overlay";
-import { SettingsGroupBtn, Button } from "@/shared/ui/button";
+import { Button } from "@/shared/ui/button";
+import SettingsGroupBtn from "./SettingsGroupBtn";
 import {
   GAME_MODE_OPTIONS,
   isGameMode,
