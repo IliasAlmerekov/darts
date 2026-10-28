@@ -88,15 +88,15 @@ sudo docker compose --project-directory /opt/darts/config \
   up -d --wait --remove-orphans
 ```
 
-A new `Caddyfile` needs a proxy restart as well. `init-server.sh` installs it as a new file,
-and the running container keeps the bind-mounted old one; `up -d` and a rollback leave the
-proxy running, only a rollout stops it. Restart it, then check the headers with
-`curl -I https://<APP_HOSTNAME>/`:
+A new `Caddyfile` also needs a new proxy container. `init-server.sh` installs it as a new
+file, and the running container keeps the bind-mounted old one; `up -d` and a rollback
+leave the proxy running, and `restart` keeps the old mount. Recreate the proxy alone, then
+check the headers with `curl -I https://<APP_HOSTNAME>/`:
 
 ```sh
 sudo docker compose --project-directory /opt/darts/config \
   --env-file /opt/darts/current/release.env -f /opt/darts/config/compose.yaml \
-  restart proxy
+  up -d --force-recreate --no-deps --wait proxy
 ```
 
 Keep `name: darts-production` in `compose.yaml`; `init-server.sh` refuses any other
