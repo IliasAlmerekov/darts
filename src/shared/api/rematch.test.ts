@@ -69,13 +69,9 @@ describe("game/rematch api", () => {
 
   it("rejects with ApiError when the contract-valid rematch response has no game id", async () => {
     vi.mocked(apiClient.post).mockImplementationOnce(
-      respondWith({
-        success: false,
-        gameId: null,
-        message: "Vorheriges Spiel nicht gefunden",
-        // Not in the contract: the backend moves `status` into the HTTP status.
-        status: "404",
-      }),
+      // The 201 allows a null game id. An unknown previous game is a 404 `GAME_NOT_FOUND`
+      // instead, which apiClient throws before the schema runs.
+      respondWith({ success: false, gameId: null, message: "Vorheriges Spiel nicht gefunden" }),
     );
 
     await expect(createRematchGame(520)).rejects.toMatchObject({ name: "ApiError", status: 200 });
