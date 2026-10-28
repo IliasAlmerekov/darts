@@ -508,4 +508,19 @@ describe("apiClient response passthrough", () => {
       }),
     ).rejects.toBeInstanceOf(ApiValidationError);
   });
+
+  it("rejects an opaque redirect even when the schema accepts an empty body", async () => {
+    // A browser answers a 3xx under `redirect: "manual"` with this shape; jsdom cannot build it.
+    const opaqueRedirect = createMockResponse({ body: "" });
+    Object.defineProperties(opaqueRedirect, {
+      type: { value: "opaqueredirect" },
+      status: { value: 0 },
+      ok: { value: false },
+    });
+    vi.spyOn(globalThis, "fetch").mockResolvedValueOnce(opaqueRedirect);
+
+    await expect(
+      apiClient.post("/logout", undefined, { validate: v.null() }),
+    ).rejects.toMatchObject({ name: "ApiError", status: 0 });
+  });
 });
