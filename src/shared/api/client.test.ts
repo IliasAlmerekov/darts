@@ -520,7 +520,11 @@ describe("apiClient response passthrough", () => {
     vi.spyOn(globalThis, "fetch").mockResolvedValueOnce(opaqueRedirect);
 
     await expect(
-      apiClient.post("/logout", undefined, { validate: v.null() }),
+      apiClient.post("/logout", undefined, { redirect: "manual", validate: v.null() }),
     ).rejects.toMatchObject({ name: "ApiError", status: 0 });
+    expect(fetch).toHaveBeenCalledWith(
+      expect.any(String),
+      expect.objectContaining({ redirect: "manual" }),
+    );
   });
 });
