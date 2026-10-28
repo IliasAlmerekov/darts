@@ -32,10 +32,6 @@ const INITIAL_STATE: LoginFormState = { error: null, values: { email: "", passwo
 // target comes from `/api/login/success`.
 const API_REDIRECT_PREFIX = "/api/";
 
-function getAuthErrorRawMessage(error: unknown): string | undefined {
-  return error instanceof ApiError && error.status === 401 ? "unauthorized" : undefined;
-}
-
 /** Reads the session user and accepts it; false when there is no session. */
 async function acceptSessionUser(): Promise<boolean> {
   const authenticatedUser = await getAuthenticatedUser();
@@ -52,23 +48,12 @@ async function attemptLogin(email: string, password: string): Promise<string | n
   try {
     const response = await loginWithCredentials({ email, password });
 
-    if (response.type === "failure") {
-      if (response.error === null && (await acceptSessionUser())) {
-        return null;
-      }
-
-      return mapAuthErrorMessage({
-        flow: "login",
-        rawMessage: response.error,
-      });
-    }
-
     if (response.type === "session" || response.user.redirect.startsWith(API_REDIRECT_PREFIX)) {
       if (await acceptSessionUser()) {
         return null;
       }
 
-      return mapAuthErrorMessage({ flow: "login", rawMessage: "unauthorized" });
+      return mapAuthErrorMessage({ flow: "login" });
     }
 
     acceptLoggedInUser(response.user);
@@ -89,11 +74,7 @@ async function attemptLogin(email: string, password: string): Promise<string | n
       }
     }
 
-    return mapAuthErrorMessage({
-      flow: "login",
-      error,
-      rawMessage: getAuthErrorRawMessage(error),
-    });
+    return mapAuthErrorMessage({ flow: "login", error });
   }
 }
 

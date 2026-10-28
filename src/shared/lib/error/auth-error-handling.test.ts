@@ -1,214 +1,141 @@
 // @vitest-environment node
 import { describe, expect, it } from "vitest";
 import { ApiError, NetworkError, UnauthorizedError } from "@/shared/api";
-import {
-  isCsrfRelatedAuthError,
-  mapAuthErrorMessage,
-  mapInvitationErrorMessage,
-} from "./auth-error-handling";
+import { mapAuthErrorMessage, mapInvitationErrorMessage } from "./auth-error-handling";
+
+function backendError(status: number, error: string, retryAfterSeconds?: number): ApiError {
+  return new ApiError(error, {
+    status,
+    data: { success: false, error, message: "Developer text." },
+    retryAfterSeconds,
+  });
+}
 
 describe("mapAuthErrorMessage", () => {
-  it("should map invalid password message when login password is incorrect", () => {
+  it("shows the server error when the request fails with a 5xx", () => {
     const result = mapAuthErrorMessage({
       flow: "login",
-      rawMessage: "Invalid password",
-    });
-
-    expect(result).toBe("Incorrect password.");
-  });
-
-  it("should map invalid email message when login email is incorrect", () => {
-    const result = mapAuthErrorMessage({
-      flow: "login",
-      rawMessage: "Invalid email",
-    });
-
-    expect(result).toBe("Incorrect email address.");
-  });
-
-  it("should map server error message when login request fails with server error", () => {
-    const result = mapAuthErrorMessage({
-      flow: "login",
-      error: new ApiError("Internal Server Error", {
-        status: 500,
-      }),
+      error: new ApiError("Internal Server Error", { status: 500 }),
     });
 
     expect(result).toBe("Server error. Please try again later.");
   });
 
-  it("should map network error message when registration request fails without connection", () => {
-    const result = mapAuthErrorMessage({
-      flow: "registration",
-      error: new NetworkError(),
-    });
+  it("shows the network error when the request gets no response", () => {
+    const result = mapAuthErrorMessage({ flow: "registration", error: new NetworkError() });
 
     expect(result).toBe("Network error. Please check your connection and try again.");
   });
 
-  it("should map validation payload fields when registration returns field errors", () => {
-    const result = mapAuthErrorMessage({
-      flow: "registration",
-      error: new ApiError("Validation failed", {
-        status: 422,
-        data: {
-          errors: {
-            email: ["This value is not valid."],
-            plainPassword: ["This value is too short."],
-          },
-        },
-      }),
-    });
-
-    expect(result).toBe("Please enter a valid email address.\nPassword is invalid.");
-  });
-
-  it("should map username conflict message when registration returns existing username error", () => {
-    const result = mapAuthErrorMessage({
-      flow: "registration",
-      error: new ApiError("Conflict", {
-        status: 409,
-        data: {
-          errors: {
-            username: ["Username already exists"],
-          },
-        },
-      }),
-    });
-
-    expect(result).toBe("Username is already taken.");
-  });
-
-  it("should map credentials error message when login request is unauthorized", () => {
+  it("shows one credentials message for LOGIN_INVALID_CREDENTIALS", () => {
     const result = mapAuthErrorMessage({
       flow: "login",
-      error: new UnauthorizedError(),
+      error: new UnauthorizedError("Unauthorized", {
+        success: false,
+        error: "LOGIN_INVALID_CREDENTIALS",
+        message: "Invalid credentials.",
+      }),
     });
 
     expect(result).toBe("Incorrect email or password.");
   });
-});
 
-describe("mapAuthErrorMessage existing account", () => {
-  it("says the email or username is taken when registration hits an existing account", () => {
+  it("falls back to the flow text for an unknown code", () => {
+    expect(mapAuthErrorMessage({ flow: "login", error: backendError(400, "SOMETHING_NEW") })).toBe(
+      "Login failed. Please try again.",
+    );
+    expect(
+      mapAuthErrorMessage({ flow: "registration", error: backendError(400, "SOMETHING_NEW") }),
+    ).toBe("Registration failed. Please check your details and try again.");
+  });
+
+  it("never shows the backend message", () => {
+    const result = mapAuthErrorMessage({
+      flow: "login",
+      error: new ApiError("Incorrect password", {
+        status: 400,
+        data: { success: false, error: "Incorrect password", message: "Incorrect password" },
+      }),
+    });
+
+    expect(result).toBe("Login failed. Please try again.");
+  });
+
+  it("says the email or username is taken for REGISTRATION_ACCOUNT_EXISTS", () => {
     const result = mapAuthErrorMessage({
       flow: "registration",
-      error: new ApiError("Conflict", {
-        status: 409,
-        data: {
-          success: false,
-          error: "REGISTRATION_ACCOUNT_EXISTS",
-          message: "Ein Konto mit diesen Daten existiert bereits.",
-        },
-      }),
+      error: backendError(409, "REGISTRATION_ACCOUNT_EXISTS"),
     });
 
     expect(result).toBe("Email or username is already taken.");
   });
-
-  it("matches the existing-account code without a message", () => {
-    const result = mapAuthErrorMessage({
-      flow: "registration",
-      error: new ApiError("Conflict", {
-        status: 409,
-        data: { success: false, error: "REGISTRATION_ACCOUNT_EXISTS" },
-      }),
-    });
-
-    expect(result).toBe("Email or username is already taken.");
-  });
 });
 
-describe("mapAuthErrorMessage password minimum", () => {
-  it("shows the 6-character minimum when registration rejects a short password", () => {
+describe("mapAuthErrorMessage violations", () => {
+  function validationFailed(violations: { field: string; code: string }[]): ApiError {
+    return new ApiError("REQUEST_VALIDATION_FAILED", {
+      status: 422,
+      data: {
+        success: false,
+        error: "REQUEST_VALIDATION_FAILED",
+        message: "The request body failed validation.",
+        violations: violations.map((violation) => ({ ...violation, message: "Developer text." })),
+      },
+    });
+  }
+
+  it.each([
+    ["email", "REQUIRED", "Please enter an email address."],
+    ["email", "INVALID_EMAIL", "Please enter a valid email address."],
+    ["email", "EMAIL_DOMAIN_NOT_ALLOWED", "Only @db-n.com email addresses can register."],
+    ["email", "INVALID_TYPE", "Please enter a valid email address."],
+    ["username", "REQUIRED", "Please enter a username."],
+    ["username", "TOO_SHORT", "Username must be 3 to 30 characters."],
+    ["username", "TOO_LONG", "Username must be 3 to 30 characters."],
+    ["username", "INVALID_TYPE", "Username is invalid."],
+    ["plainPassword", "REQUIRED", "Please enter a password."],
+    ["plainPassword", "TOO_SHORT", "Password must be at least 6 characters."],
+    ["plainPassword", "TOO_LONG", "Password is invalid."],
+  ])("maps %s + %s to its text", (field, code, expected) => {
     const result = mapAuthErrorMessage({
       flow: "registration",
-      error: new ApiError("Validation failed", {
-        status: 400,
-        data: {
-          errors: { plainPassword: ["Your password should be at least 6 characters long."] },
-        },
-      }),
+      error: validationFailed([{ field, code }]),
     });
 
-    expect(result).toBe("Password must be at least 6 characters.");
+    expect(result).toBe(expected);
   });
 
-  it("keeps the generic text for other registration password errors", () => {
+  it("lists one line per distinct violation text", () => {
     const result = mapAuthErrorMessage({
       flow: "registration",
-      error: new ApiError("Validation failed", {
-        status: 400,
-        data: { errors: { plainPassword: ["This value should not be blank."] } },
-      }),
+      error: validationFailed([
+        { field: "email", code: "INVALID_EMAIL" },
+        { field: "plainPassword", code: "TOO_SHORT" },
+        { field: "username", code: "TOO_SHORT" },
+        { field: "username", code: "TOO_LONG" },
+      ]),
     });
 
-    expect(result).toBe("Password is invalid.");
+    expect(result).toBe(
+      "Please enter a valid email address.\nPassword must be at least 6 characters.\nUsername must be 3 to 30 characters.",
+    );
   });
 
-  it("keeps the generic text for a password rule that is not the length", () => {
+  it("falls back to the registration text when no violation names a form field", () => {
     const result = mapAuthErrorMessage({
       flow: "registration",
-      error: new ApiError("Validation failed", {
-        status: 400,
-        data: { errors: { plainPassword: ["Your password must contain at least one digit."] } },
-      }),
+      error: validationFailed([{ field: "_csrf_token", code: "UNKNOWN_FIELD" }]),
     });
 
-    expect(result).toBe("Password is invalid.");
-  });
-});
-
-describe("mapAuthErrorMessage email domain", () => {
-  it("names @db-n.com when registration rejects an address on another domain", () => {
-    const result = mapAuthErrorMessage({
-      flow: "registration",
-      error: new ApiError("Validation failed", {
-        status: 400,
-        data: { errors: { email: ["Please register with your @db-n.com email address"] } },
-      }),
-    });
-
-    expect(result).toBe("Only @db-n.com email addresses can register.");
-  });
-
-  it("keeps the generic text when registration rejects a blank email", () => {
-    const result = mapAuthErrorMessage({
-      flow: "registration",
-      error: new ApiError("Validation failed", {
-        status: 400,
-        data: { errors: { email: ["Please enter an email address"] } },
-      }),
-    });
-
-    expect(result).toBe("Please enter a valid email address.");
-  });
-
-  it("keeps the generic text when registration rejects a malformed email", () => {
-    const result = mapAuthErrorMessage({
-      flow: "registration",
-      error: new ApiError("Validation failed", {
-        status: 400,
-        data: { errors: { email: ["Please enter a valid email address"] } },
-      }),
-    });
-
-    expect(result).toBe("Please enter a valid email address.");
+    expect(result).toBe("Registration failed. Please check your details and try again.");
   });
 });
 
 describe("mapAuthErrorMessage rate limits", () => {
-  function tooManyRequests(data: unknown, retryAfterSeconds?: number): ApiError {
-    return new ApiError("Too many requests", { status: 429, data, retryAfterSeconds });
-  }
-
-  it("tells the player to try again later when registration is rate-limited", () => {
+  it("tells the player to try again later for REGISTRATION_RATE_LIMITED", () => {
     const result = mapAuthErrorMessage({
       flow: "registration",
-      error: tooManyRequests(
-        { success: false, error: "REGISTRATION_RATE_LIMITED", message: "Too many attempts." },
-        3600,
-      ),
+      error: backendError(429, "REGISTRATION_RATE_LIMITED", 3600),
     });
 
     expect(result).toBe("Too many registration attempts. Please try again later.");
@@ -220,50 +147,22 @@ describe("mapAuthErrorMessage rate limits", () => {
     [90, "Too many login attempts. Please try again in about 2 minutes."],
     [30, "Too many login attempts. Please try again in about 30 seconds."],
     [1, "Too many login attempts. Please try again in about 1 second."],
-  ])("names the wait when login is rate-limited with Retry-After %i", (seconds, expected) => {
+  ])("names the wait for LOGIN_RATE_LIMITED with Retry-After %i", (seconds, expected) => {
     const result = mapAuthErrorMessage({
       flow: "login",
-      error: tooManyRequests(
-        {
-          error: "Too many failed login attempts, please try again in 1 minute.",
-          status: 429,
-        },
-        seconds,
-      ),
+      error: backendError(429, "LOGIN_RATE_LIMITED", seconds),
     });
 
     expect(result).toBe(expected);
   });
 
-  it("omits the wait when login is rate-limited without Retry-After", () => {
+  it("omits the wait for LOGIN_RATE_LIMITED without Retry-After", () => {
     const result = mapAuthErrorMessage({
       flow: "login",
-      error: tooManyRequests({
-        error: "Too many failed login attempts, please try again in 1 minute.",
-        status: 429,
-      }),
+      error: backendError(429, "LOGIN_RATE_LIMITED"),
     });
 
     expect(result).toBe("Too many login attempts. Please try again later.");
-  });
-});
-
-describe("isCsrfRelatedAuthError", () => {
-  it("should detect csrf-related auth error when login raw message contains csrf token failure", () => {
-    expect(isCsrfRelatedAuthError(undefined, "Invalid CSRF token")).toBe(true);
-  });
-
-  it("should detect csrf-related auth error when api payload contains csrf token validation error", () => {
-    const error = new ApiError("Validation failed", {
-      status: 422,
-      data: {
-        errors: {
-          _csrf_token: ["The CSRF token is invalid."],
-        },
-      },
-    });
-
-    expect(isCsrfRelatedAuthError(error)).toBe(true);
   });
 });
 

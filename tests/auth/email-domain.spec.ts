@@ -13,10 +13,19 @@ test.describe("Registration email domain", () => {
     await page.route("**/api/register", async (route) => {
       registerEmails.push(route.request().postDataJSON()?.email);
       await route.fulfill({
-        status: 400,
+        status: 422,
         contentType: "application/json",
         body: JSON.stringify({
-          errors: { email: ["Please register with your @db-n.com email address"] },
+          success: false,
+          error: "REQUEST_VALIDATION_FAILED",
+          message: "The request body failed validation.",
+          violations: [
+            {
+              field: "email",
+              code: "EMAIL_DOMAIN_NOT_ALLOWED",
+              message: "Please register with your @db-n.com email address",
+            },
+          ],
         }),
       });
     });

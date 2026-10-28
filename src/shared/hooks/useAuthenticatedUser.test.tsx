@@ -182,10 +182,10 @@ describe("useAuthenticatedUser", () => {
     expect(result.current.error).toBeNull();
   });
 
-  it("should expose a mapped auth failure when the auth API rejects with authorization failure", async () => {
+  it("should expose the generic login failure when the auth check answers an unexpected shape", async () => {
     getAuthenticatedUserMock.mockRejectedValue(
-      new ApiError("Authorization failed for authenticated user", {
-        status: 401,
+      new ApiError("Unexpected response shape for authenticated user", {
+        status: 200,
         data: { success: false },
       }),
     );
@@ -197,7 +197,7 @@ describe("useAuthenticatedUser", () => {
     });
 
     expect(result.current.user).toBeNull();
-    expect(result.current.error).toBe("Incorrect email or password.");
+    expect(result.current.error).toBe("Login failed. Please try again.");
   });
 
   it("should expose a mapped auth failure state when the request fails unexpectedly", async () => {

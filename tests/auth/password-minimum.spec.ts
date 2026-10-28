@@ -29,10 +29,19 @@ test.describe("Registration password minimum", () => {
   test("shows the minimum when the backend rejects a short password", async ({ page }) => {
     await page.route("**/api/register", async (route) => {
       await route.fulfill({
-        status: 400,
+        status: 422,
         contentType: "application/json",
         body: JSON.stringify({
-          errors: { plainPassword: ["Your password should be at least 6 characters long."] },
+          success: false,
+          error: "REQUEST_VALIDATION_FAILED",
+          message: "The request body failed validation.",
+          violations: [
+            {
+              field: "plainPassword",
+              code: "TOO_SHORT",
+              message: "Your password should be at least 6 characters long.",
+            },
+          ],
         }),
       });
     });

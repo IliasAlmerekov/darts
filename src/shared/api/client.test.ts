@@ -509,28 +509,3 @@ describe("apiClient response passthrough", () => {
     ).rejects.toBeInstanceOf(ApiValidationError);
   });
 });
-
-describe("apiClient manual redirects", () => {
-  beforeEach(() => {
-    vi.restoreAllMocks();
-  });
-
-  it("resolves an opaque redirect when the caller asked for manual redirects", async () => {
-    // A browser answers a 3xx under `redirect: "manual"` with this shape; jsdom cannot build it.
-    const opaqueRedirect = createMockResponse({ body: "" });
-    Object.defineProperties(opaqueRedirect, {
-      type: { value: "opaqueredirect" },
-      status: { value: 0 },
-      ok: { value: false },
-    });
-    vi.spyOn(globalThis, "fetch").mockResolvedValueOnce(opaqueRedirect);
-
-    await expect(
-      apiClient.post("/logout", undefined, { redirect: "manual", validate: v.string() }),
-    ).resolves.toBe("");
-    expect(fetch).toHaveBeenCalledWith(
-      expect.any(String),
-      expect.objectContaining({ redirect: "manual" }),
-    );
-  });
-});

@@ -50,7 +50,11 @@ test.describe("Error Handling and Edge Cases", () => {
       route.fulfill({
         status: 401,
         contentType: "application/json",
-        body: JSON.stringify({ error: "Incorrect email or password" }),
+        body: JSON.stringify({
+          success: false,
+          error: "LOGIN_INVALID_CREDENTIALS",
+          message: "Invalid credentials.",
+        }),
       });
     });
 

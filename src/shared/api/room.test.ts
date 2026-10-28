@@ -17,8 +17,8 @@ import { apiClient, ApiValidationError } from "./client";
 import { ApiError } from "./errors";
 import { respondWith } from "./test-utils";
 
-// Contract example: POST /api/invite/create/{id}, without `status`: the backend moves it into
-// the HTTP status.
+// Contract example: POST /api/invite/create/{id}. An unknown id is a 404 in the shared error
+// body, which apiClient throws before the schema runs.
 const invitationExample = {
   success: true,
   gameId: 123,

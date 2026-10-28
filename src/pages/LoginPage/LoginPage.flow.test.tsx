@@ -5,6 +5,7 @@ import { QueryClientProvider } from "@tanstack/react-query";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import LoginPage from "./index";
+import { UnauthorizedError } from "@/shared/api";
 import { ROUTES } from "@/lib/router/routes";
 import { queryClient } from "@/shared/query/queryClient";
 import { $currentGameId, setCurrentGameId } from "@/shared/store";
@@ -16,6 +17,12 @@ vi.mock("@/shared/api/auth", () => ({
   loginWithCredentials: (...args: unknown[]) => loginWithCredentialsMock(...args),
   getAuthenticatedUser: (...args: unknown[]) => getAuthenticatedUserMock(...args),
 }));
+
+const invalidCredentials = new UnauthorizedError("Unauthorized", {
+  success: false,
+  error: "LOGIN_INVALID_CREDENTIALS",
+  message: "Invalid credentials.",
+});
 
 const loggedInPlayer = {
   success: true,
@@ -87,7 +94,7 @@ describe("LoginPage form login", () => {
   });
 
   it("shows the mapped error and keeps the typed values after a failed login", async () => {
-    loginWithCredentialsMock.mockResolvedValueOnce({ type: "failure", error: "unauthorized" });
+    loginWithCredentialsMock.mockRejectedValueOnce(invalidCredentials);
 
     renderLoginRoute();
     await submitLoginForm();
@@ -98,10 +105,10 @@ describe("LoginPage form login", () => {
   });
 
   it("disables the fields and the button while the login request runs", async () => {
-    let finishLogin: (value: unknown) => void = () => undefined;
+    let failLogin: (reason: unknown) => void = () => undefined;
     loginWithCredentialsMock.mockReturnValueOnce(
-      new Promise((resolve) => {
-        finishLogin = resolve;
+      new Promise((_resolve, reject) => {
+        failLogin = reject;
       }),
     );
 
@@ -113,7 +120,7 @@ describe("LoginPage form login", () => {
     expect(screen.getByLabelText<HTMLInputElement>(/email/i).disabled).toBe(true);
     expect(screen.getByLabelText<HTMLInputElement>(/^password/i).disabled).toBe(true);
 
-    finishLogin({ type: "failure", error: "unauthorized" });
+    failLogin(invalidCredentials);
 
     await waitFor(() => {
       expect(screen.getByLabelText<HTMLInputElement>(/email/i).disabled).toBe(false);
@@ -121,7 +128,7 @@ describe("LoginPage form login", () => {
   });
 
   it("hides the previous error while the next login request runs", async () => {
-    loginWithCredentialsMock.mockResolvedValueOnce({ type: "failure", error: "unauthorized" });
+    loginWithCredentialsMock.mockRejectedValueOnce(invalidCredentials);
     loginWithCredentialsMock.mockReturnValueOnce(new Promise(() => undefined));
 
     renderLoginRoute();

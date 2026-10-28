@@ -3,7 +3,7 @@ import { startTransition } from "react";
 import { act, renderHook } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { useLogin } from "./useLogin";
-import { ApiError } from "@/shared/api";
+import { NetworkError, UnauthorizedError } from "@/shared/api";
 import { clientLogger } from "@/shared/services/browser/clientLogger";
 import { queryClient } from "@/shared/query/queryClient";
 import { $currentGameId, setCurrentGameId } from "@/shared/store";
@@ -102,18 +102,8 @@ describe("useLogin", () => {
     expect(state.error).toBeNull();
   });
 
-  it("reads the session user when the login fails without a reason", async () => {
-    loginWithCredentialsMock.mockResolvedValueOnce({ type: "failure", error: null });
-    getAuthenticatedUserMock.mockResolvedValueOnce(joinedPlayer);
-
-    const state = await submitLogin();
-
-    expect(queryClient.getQueryData(AUTH_KEY)).toEqual(joinedPlayer);
-    expect(state.error).toBeNull();
-  });
-
   it("stores the session user when the login request fails but the session exists", async () => {
-    loginWithCredentialsMock.mockRejectedValueOnce(new Error("Network request failed"));
+    loginWithCredentialsMock.mockRejectedValueOnce(new NetworkError());
     getAuthenticatedUserMock.mockResolvedValueOnce(joinedPlayer);
 
     const state = await submitLogin();
@@ -124,7 +114,7 @@ describe("useLogin", () => {
   });
 
   it("sets the network error when the login request fails and no session exists", async () => {
-    loginWithCredentialsMock.mockRejectedValueOnce(new Error("Network request failed"));
+    loginWithCredentialsMock.mockRejectedValueOnce(new NetworkError());
     getAuthenticatedUserMock.mockResolvedValueOnce(null);
 
     const state = await submitLogin();
@@ -134,8 +124,14 @@ describe("useLogin", () => {
     expect(state.error).toBe("Network error. Please check your connection and try again.");
   });
 
-  it("maps an unsuccessful login response without exposing the raw message", async () => {
-    loginWithCredentialsMock.mockResolvedValueOnce({ type: "failure", error: "unauthorized" });
+  it("shows the credentials message for a 401 LOGIN_INVALID_CREDENTIALS", async () => {
+    loginWithCredentialsMock.mockRejectedValueOnce(
+      new UnauthorizedError("Unauthorized", {
+        success: false,
+        error: "LOGIN_INVALID_CREDENTIALS",
+        message: "Invalid credentials.",
+      }),
+    );
 
     const state = await submitLogin();
 
@@ -144,24 +140,19 @@ describe("useLogin", () => {
     expect(state.error).toBe("Incorrect email or password.");
   });
 
-  it("maps an authorization failure from login-success without exposing the raw error", async () => {
+  it("shows the generic login failure when the login answers 200 but no session exists", async () => {
     loginWithCredentialsMock.mockResolvedValueOnce({ type: "session" });
-    getAuthenticatedUserMock.mockRejectedValueOnce(
-      new ApiError("Authorization failed for authenticated user", {
-        status: 401,
-        data: { success: false },
-      }),
-    );
+    getAuthenticatedUserMock.mockResolvedValueOnce(null);
 
     const state = await submitLogin();
 
     expect(getAuthenticatedUserMock).toHaveBeenCalledTimes(1);
     expect(queryClient.getQueryData(AUTH_KEY)).toEqual(SEEDED_USER);
-    expect(state.error).toBe("Incorrect email or password.");
+    expect(state.error).toBe("Login failed. Please try again.");
   });
 
   it("maps an error thrown while handling a failed login and keeps the typed values", async () => {
-    loginWithCredentialsMock.mockRejectedValueOnce(new Error("Network request failed"));
+    loginWithCredentialsMock.mockRejectedValueOnce(new NetworkError());
     vi.spyOn(clientLogger, "error").mockImplementationOnce(() => {
       throw new Error("logger down");
     });

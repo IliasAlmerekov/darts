@@ -12,7 +12,11 @@ test("Display page for unauthenticated users", async ({ page }) => {
     await route.fulfill({
       status: 401,
       contentType: "application/json",
-      body: JSON.stringify({ authenticated: false }),
+      body: JSON.stringify({
+        success: false,
+        error: "AUTHENTICATION_REQUIRED",
+        message: "Authentication required.",
+      }),
     });
   });
 
