@@ -2,9 +2,6 @@ import * as v from "valibot";
 import { apiClient, ApiValidationError } from "./client";
 import { ApiError, UnauthorizedError } from "./errors";
 import { integerSchema } from "./schemas";
-import { queryClient } from "@/shared/query/queryClient";
-import { resetRoomStore } from "@/shared/store/game-session";
-import { resetGameStore } from "@/shared/store/game-state";
 
 // ---------------------------------------------------------------------------
 // Schemas
@@ -140,18 +137,8 @@ export async function loginWithCredentials(credentials: LoginCredentials): Promi
 }
 
 /**
- * Drops everything the client holds for the current session: cached reads, the room
- * store with its stored game id, and the game store. Logout and the 401 handler share it.
- */
-export function clearClientSession(): void {
-  queryClient.clear();
-  resetRoomStore();
-  resetGameStore();
-}
-
-/**
- * Logs out the current user, then clears the client session. A failed request throws
- * before anything is cleared, because the remember-me cookie would still be valid.
+ * Logs out the current user. It throws on a failed request, so the caller clears the
+ * client session only after a logout the backend accepted.
  */
 export async function logout(onSuccess?: () => void): Promise<void> {
   // The 302 points at the backend's own origin. Following it from the app's origin fails
@@ -160,7 +147,6 @@ export async function logout(onSuccess?: () => void): Promise<void> {
     redirect: "manual",
     validate: logoutResponseSchema,
   });
-  clearClientSession();
   onSuccess?.();
 }
 

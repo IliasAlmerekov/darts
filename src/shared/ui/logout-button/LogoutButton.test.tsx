@@ -3,6 +3,10 @@ vi.mock("@/shared/api/auth", () => ({
   logout: vi.fn(),
 }));
 
+vi.mock("@/lib/auth/clearClientSession", () => ({
+  clearClientSession: vi.fn(),
+}));
+
 vi.mock("@/shared/services/browser/clientLogger", () => ({
   clientLogger: { error: vi.fn() },
 }));
@@ -11,6 +15,7 @@ import { fireEvent, render, screen } from "@testing-library/react";
 import { createMemoryRouter, RouterProvider } from "react-router-dom";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { logout } from "@/shared/api/auth";
+import { clearClientSession } from "@/lib/auth/clearClientSession";
 import { NetworkError } from "@/shared/api";
 import { ROUTES } from "@/lib/router/routes";
 import { LogoutButton } from "./index";
@@ -44,6 +49,7 @@ function deferred(): {
 describe("LogoutButton", () => {
   beforeEach(() => {
     vi.mocked(logout).mockReset();
+    vi.mocked(clearClientSession).mockReset();
   });
 
   it("shows a Log out button", () => {
@@ -77,6 +83,31 @@ describe("LogoutButton", () => {
     expect(await screen.findByText("Login form")).toBeTruthy();
     expect(router.state.location.pathname).toBe(ROUTES.login);
     expect(router.state.historyAction).toBe("REPLACE");
+  });
+
+  it("clears the client session before it opens the login page when logout succeeds", async () => {
+    vi.mocked(logout).mockResolvedValueOnce(undefined);
+    const router = renderOnJoinedPage();
+    const pathnamesAtClear: string[] = [];
+    vi.mocked(clearClientSession).mockImplementationOnce(() => {
+      pathnamesAtClear.push(router.state.location.pathname);
+    });
+
+    fireEvent.click(screen.getByRole("button", { name: "Log out" }));
+
+    expect(await screen.findByText("Login form")).toBeTruthy();
+    expect(pathnamesAtClear).toEqual([ROUTES.joined]);
+  });
+
+  it("keeps the client session and the page when logout fails", async () => {
+    vi.mocked(logout).mockRejectedValueOnce(new NetworkError("Failed to fetch"));
+    const router = renderOnJoinedPage();
+
+    fireEvent.click(screen.getByRole("button", { name: "Log out" }));
+
+    expect(await screen.findByRole("alert")).toBeTruthy();
+    expect(clearClientSession).not.toHaveBeenCalled();
+    expect(router.state.location.pathname).toBe(ROUTES.joined);
   });
 
   it("stays on the page and shows an error with Retry when logout fails", async () => {

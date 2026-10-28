@@ -24,7 +24,7 @@ import { gameSummaryLoader } from "@/pages/GameSummaryPage/gameSummaryLoader";
 import { gamesOverviewLoader } from "@/pages/GamesOverviewPage/gamesOverviewLoader";
 import { clearUnauthorizedHandler, setUnauthorizedHandler } from "@/shared/api";
 import { ROUTES } from "@/lib/router/routes";
-import { clearClientSession } from "@/shared/api/auth";
+import { clearClientSession } from "@/lib/auth/clearClientSession";
 import { queryClient } from "@/shared/query/queryClient";
 import { tabletGameLoader } from "@/shared/query/tabletGameLoader";
 import { UniversalSkeleton } from "@/shared/ui/skeletons";

@@ -27,7 +27,7 @@ The project is pages-based: there is no `src/features/`, `src/components/`, or
 src/shared/
   api/         # apiClient, endpoints, typed errors, Valibot schemas, per-domain calls
   hooks/       # cross-page hooks
-  lib/         # pure helpers (guards, router, error mapping, game logic, etc.)
+  lib/         # helpers (guards, router, error mapping, game logic, session cleanup, etc.)
   query/       # the QueryClient and query options per resource (auth, statistics, game, player)
   services/    # browser-side services (logger, sound)
   store/       # Nanostores atoms and actions
