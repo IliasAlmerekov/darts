@@ -222,23 +222,30 @@ cache itself:
 
 ## Mappers (DTO -> UI)
 
-Mappers are pure functions that turn backend DTO shapes into UI types.
+A mapper is a pure function that turns a backend DTO shape into a UI type. Two kinds of
+function are not mappers, and render-flow hooks may call them:
 
-- They live in `src/shared/lib/<domain>/`: `shared/lib/game/` holds `gameStateNormalizer`,
-  `mergeGameSettings`, `player-mappers`, `roundAverage`, `parseThrowValue`,
-  `finishedGameStandings`, `lobbyPlayers`; `shared/lib/player/` holds `currentGame` and
-  `profile`.
+- functions that reorder or derive values within UI types (`sortLobbyPlayers` takes and
+  returns `LobbyPlayer[]`, `getFinishedPlayers` takes and returns `UIPlayer[]`);
+- error -> user message functions (`mapInvitationErrorMessage`), which follow
+  "Error -> user message".
+
+Mapper rules:
+
+- Mappers live in `src/shared/lib/<domain>/`: `shared/lib/game/` holds `gameStateNormalizer`,
+  `mergeGameSettings`, `player-mappers` (`mapPlayersToUI`), `roundAverage`, `parseThrowValue`,
+  `finishedGameStandings`, `lobbyPlayers` (`toLobbyPlayers`); `shared/lib/player/` holds
+  `currentGame` and `profile`.
 - Every mapper has a co-located `*.test.ts`.
 - Mappers are called from an API domain function (`getCurrentGame` in `player.ts` calls
   `toCurrentGame`), a `queryFn` in `src/shared/query/` (`playerQueries.profile` calls
   `toPlayerProfile`), a store action (`setGameData(data)`
-  calls `normalizeGameData(data)`), or a page-private logic file under `src/pages/<Page>/lib/`.
+  calls `normalizeGameData(data)`), a route loader (`startPageLoader.ts` calls
+  `toLobbyPlayers`), or a page-private logic file under `src/pages/<Page>/lib/`.
 - JSX files (`src/pages/**/*.tsx`) and render-flow hooks (`src/pages/**/use*.ts`) receive the
-  mapped result and import no mapper. Type imports are fine. Known exceptions:
-  - `startPageLoader.ts` imports `toLobbyPlayers` and `useGamePlayers.ts` imports
-    `sortLobbyPlayers`; #194 decides them.
-  - `useGameSummaryPage.ts` (`applyOptimisticUndo`) calls a mapper inside an event handler.
-    `eslint.config.mjs` ignores this file as existing debt.
+  mapped result and import no mapper. Type imports are fine. Known exception:
+  `useGameSummaryPage.ts` (`applyOptimisticUndo`) calls a mapper inside an event handler.
+  `eslint.config.mjs` ignores this file as existing debt.
 
 ## ETag / conditional fetches
 
@@ -307,4 +314,6 @@ rg -n 'queryKey:\s*\[|(get|set|remove|cancel|invalidate|refetch|reset)Quer(y|ies
 **6. Mappers imported by render-flow files:** `npm run eslint` passes. The
 `no-restricted-imports` rule for `src/pages/**/*.tsx` and `src/pages/**/use*.ts` in
 `eslint.config.mjs` lists the mapper modules by file, so a new mapper module is added to its
-regex. `lobbyPlayers` is not in it yet; #194 adds it or records the exception.
+regex. `lobbyPlayers` and `player-mappers` also hold UI-to-UI helpers (`sortLobbyPlayers`,
+`getFinishedPlayers`), which are not mappers, so a separate pattern bans only their mapper
+imports (`toLobbyPlayers`, `mapPlayersToUI`). A new mixed module goes into that pattern.

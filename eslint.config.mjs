@@ -136,9 +136,17 @@ export default [
             {
               allowTypeImports: true,
               regex:
-                "^@/(shared/lib|lib)/(game/(finishedGameStandings|gameStateNormalizer|mergeGameSettings|parseThrowValue|player-mappers|roundAverage)|player/(currentGame|profile))(\\.ts)?$",
+                "^@/(shared/lib|lib)/(game/(finishedGameStandings|gameStateNormalizer|mergeGameSettings|parseThrowValue|roundAverage)|player/(currentGame|profile))(\\.ts)?$",
               message:
-                "Render-flow files must not call DTO mappers. Call them from a page lib/ file (docs/convention/api.md, Mappers).",
+                "Render-flow files must not call DTO mappers. Call them from an API function, queryFn, store action, route loader or page lib/ file (docs/convention/api.md, Mappers).",
+            },
+            {
+              // These modules also hold UI-to-UI helpers (sortLobbyPlayers, getFinishedPlayers), so only
+              // their DTO mappers are banned.
+              regex: "^@/(shared/lib|lib)/game/(lobbyPlayers|player-mappers)(\\.ts)?$",
+              importNames: ["toLobbyPlayers", "mapPlayersToUI"],
+              message:
+                "Render-flow files must not call DTO mappers. Call them from an API function, queryFn, store action, route loader or page lib/ file (docs/convention/api.md, Mappers).",
             },
           ],
         },
