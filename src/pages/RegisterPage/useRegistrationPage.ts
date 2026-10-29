@@ -1,7 +1,7 @@
 import { useNavigate } from "react-router-dom";
 import { useRegistration, type RegistrationValues } from "./useRegistration";
 import { useAuthenticatedUser } from "@/shared/hooks/useAuthenticatedUser";
-import { mapInvitationErrorMessage } from "@/lib/error/auth-error-handling";
+import { mapInvitationErrorMessage } from "@/lib/error/invitation-error-message";
 import { markInvitationErrorHandled } from "@/shared/query/acceptLoggedInUser";
 import { ROUTES } from "@/lib/router/routes";
 

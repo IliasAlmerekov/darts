@@ -1,5 +1,4 @@
 import { ApiError, NetworkError } from "@/shared/api";
-import type { InvitationError } from "@/shared/api/auth";
 import { isRecord } from "@/lib/guards/guards";
 import { PASSWORD_MIN_LENGTH } from "@/lib/auth/password";
 import { REGISTRATION_EMAIL_DOMAIN } from "@/lib/auth/email";
@@ -29,13 +28,6 @@ const AUTH_ERROR_MESSAGES = {
   server: "Server error. Please try again later.",
   network: "Network error. Please check your connection and try again.",
 } as const;
-
-const INVITATION_ERROR_MESSAGES: Record<InvitationError, string> = {
-  GAME_ALREADY_STARTED: "This game has already started",
-  GAME_ROOM_FULL: "This game is full",
-  GAME_NOT_FOUND: "This game no longer exists",
-  GAME_JOIN_NOT_ALLOWED: "This game can no longer be joined",
-};
 
 /** UI text per registration field, by violation code; `default` covers any other code. */
 const VIOLATION_MESSAGES: Record<string, Record<string, string> & { default: string }> = {
@@ -157,11 +149,4 @@ export function mapAuthErrorMessage({ flow, error }: AuthErrorInput): string {
   return "login" === flow
     ? AUTH_ERROR_MESSAGES.loginFailed
     : AUTH_ERROR_MESSAGES.registrationFailed;
-}
-
-/**
- * Returns the text for an invitation the backend could not join after a successful login.
- */
-export function mapInvitationErrorMessage(invitationError: InvitationError): string {
-  return INVITATION_ERROR_MESSAGES[invitationError];
 }
