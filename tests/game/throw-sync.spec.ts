@@ -84,6 +84,12 @@ function throwAck(gameId: number, scores: PlayerScore[]) {
   };
 }
 
+/** The backend's ack for an undo: a throw ack without the throw. */
+function undoAck(gameId: number, scores: PlayerScore[]) {
+  const { success, stateVersion, scoreboardDelta, serverTs } = throwAck(gameId, scores);
+  return { success, gameId, stateVersion, scoreboardDelta, serverTs };
+}
+
 const playerScores = (
   alice: number,
   bob: number,
@@ -206,18 +212,14 @@ test.describe("Throw sync on the game page", () => {
     await mockTabletGame(page, startedTabletGame(gameId));
     await mockGameState(page, gameId, gameState(gameId, playerScores(301, 301)));
     await page.route(`**/api/game/${gameId}/throw/delta`, async (route) => {
-      const ack = acks.shift() ?? playerScores(241, 301, "Bob");
       await new Promise((resolve) => setTimeout(resolve, delayMs));
-      await fulfillJson(route, throwAck(gameId, ack));
-    });
-    await page.route(`**/api/game/${gameId}/throw`, async (route) => {
-      if (route.request().method() !== "DELETE") {
-        await route.fallback();
+      if (route.request().method() === "DELETE") {
+        await fulfillJson(route, undoAck(gameId, playerScores(261, 301)));
         return;
       }
 
-      await new Promise((resolve) => setTimeout(resolve, delayMs));
-      await fulfillJson(route, gameState(gameId, playerScores(261, 301)));
+      const ack = acks.shift() ?? playerScores(241, 301, "Bob");
+      await fulfillJson(route, throwAck(gameId, ack));
     });
 
     await page.goto(`/game/${gameId}`);

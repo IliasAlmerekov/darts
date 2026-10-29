@@ -382,36 +382,6 @@ describe("gameSession.logic", () => {
     });
   });
 
-  it("takes the active player from the players when the undo answer leaves it out", () => {
-    let session = send(throwMany(createGameSession(buildGame({ alice: 281, bob: 301 })), [20]));
-    session = applyThrowAck(session, buildThrowAck(261, 301)) ?? session;
-    session = send(enqueueUndo(session));
-
-    const confirmed = applyUndoResponse(session, {
-      ...buildGame({ alice: 281, bob: 301 }),
-      activePlayerId: null,
-    });
-
-    expect(confirmed?.confirmed?.activePlayerId).toBe(1);
-    expect(confirmed?.pending).toHaveLength(0);
-  });
-
-  it("refuses an undo answer without a valid active player", () => {
-    let session = send(throwMany(createGameSession(buildGame({ alice: 281, bob: 301 })), [20]));
-    session = applyThrowAck(session, buildThrowAck(261, 301)) ?? session;
-    session = send(enqueueUndo(session));
-
-    const fullGame = buildGame({ alice: 281, bob: 301 });
-    const withoutActivePlayer = {
-      ...fullGame,
-      activePlayerId: null,
-      players: fullGame.players.map((player) => ({ ...player, isActive: false })),
-    };
-
-    expect(applyUndoResponse(session, withoutActivePlayer)).toBeNull();
-    expect(scores(applyUndoResponse(session, fullGame)?.confirmed ?? null)).toEqual([281, 301]);
-  });
-
   it("drops every pending op on failure and blocks input until the reload answers", () => {
     const sent = send(
       throwMany(createGameSession(buildGame({ alice: 301, bob: 301 })), [20, 20, 20, 5]),

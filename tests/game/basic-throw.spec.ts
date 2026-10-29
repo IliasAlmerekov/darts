@@ -156,6 +156,7 @@ const installGameRoutes = async (page: Page, options: RouteOptions): Promise<voi
   const throwStates = [...(options.throwStates ?? [])];
   const undoStates = [...(options.undoStates ?? [])];
   let throwSequence = 0;
+  let undoSequence = 0;
 
   const answerTabletGame = await mockTabletGame(page, startedTabletGame(gameId));
   let getCount = 0;
@@ -182,7 +183,38 @@ const installGameRoutes = async (page: Page, options: RouteOptions): Promise<voi
     });
   });
 
-  await page.route(`**/api/game/${gameId}/throw/delta`, async (route: Route) => {
+  const answerUndo = async (route: Route, request: Request): Promise<void> => {
+    options.onUndoRequest?.(request);
+    const nextState = undoStates.shift();
+    if (nextState) {
+      currentState = nextState;
+    }
+
+    if (options.undoResponseDelayMs) {
+      await new Promise((resolve) => setTimeout(resolve, options.undoResponseDelayMs));
+    }
+
+    undoSequence += 1;
+
+    await route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify({
+        success: true,
+        gameId,
+        stateVersion: `undo-v${undoSequence}`,
+        scoreboardDelta: createScoreboardDelta(currentState),
+        serverTs: new Date().toISOString(),
+      }),
+    });
+  };
+
+  await page.route(`**/api/game/${gameId}/throw/delta`, async (route: Route, request: Request) => {
+    if (request.method() === "DELETE") {
+      await answerUndo(route, request);
+      return;
+    }
+
     if (options.conflictOnThrow && throwSequence === 0) {
       throwSequence += 1;
       await route.fulfill({
@@ -215,29 +247,6 @@ const installGameRoutes = async (page: Page, options: RouteOptions): Promise<voi
         scoreboardDelta: createScoreboardDelta(currentState),
         serverTs: new Date().toISOString(),
       }),
-    });
-  });
-
-  await page.route(`**/api/game/${gameId}/throw`, async (route: Route, request: Request) => {
-    if (request.method() !== "DELETE") {
-      await route.fallback();
-      return;
-    }
-
-    options.onUndoRequest?.(request);
-    const nextState = undoStates.shift();
-    if (nextState) {
-      currentState = nextState;
-    }
-
-    if (options.undoResponseDelayMs) {
-      await new Promise((resolve) => setTimeout(resolve, options.undoResponseDelayMs));
-    }
-
-    await route.fulfill({
-      status: 200,
-      contentType: "application/json",
-      body: JSON.stringify(currentState),
     });
   });
 
@@ -628,7 +637,7 @@ test.describe("Basic Throw Mechanics and Validation", () => {
     await expect(p1BeforeUndo).toContainText("19");
 
     const undoRequestPromise = page.waitForRequest((request) => {
-      return request.url().includes("/api/game/1/throw") && request.method() === "DELETE";
+      return request.url().endsWith("/api/game/1/throw/delta") && request.method() === "DELETE";
     });
     await undoButton(page).click();
     await undoRequestPromise;

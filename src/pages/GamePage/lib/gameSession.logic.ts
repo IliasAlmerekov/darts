@@ -5,7 +5,7 @@ import type {
   GameThrowsResponse,
   ThrowAckResponse,
   ThrowRequest,
-  UndoThrowResponse,
+  UndoAckResponse,
 } from "@/types";
 import {
   applyOptimisticThrow,
@@ -214,37 +214,29 @@ function hasValidActivePlayer(game: GameThrowsResponse): boolean {
 }
 
 /**
- * Applies the server's answer to the sent undo: a compact acknowledgement or the full game.
- * Returns null when the answer leaves no valid active player, so the caller reloads the game.
+ * Applies the server's answer to the sent undo. Returns null when the answer disagrees with
+ * the client or leaves no valid active player, so the caller reloads the game.
  */
-export function applyUndoResponse(
-  session: GameSession,
-  response: UndoThrowResponse,
-): GameSession | null {
+export function applyUndoResponse(session: GameSession, ack: UndoAckResponse): GameSession | null {
   const head = session.pending[0];
   const { confirmed } = session;
-  if (head?.kind !== "undo" || !session.isHeadSent || confirmed === null) {
+  if (
+    head?.kind !== "undo" ||
+    !session.isHeadSent ||
+    confirmed === null ||
+    !ack.success ||
+    ack.gameId !== confirmed.id
+  ) {
     return null;
   }
 
-  let acknowledged: GameThrowsResponse | null;
-  if ("scoreboardDelta" in response) {
-    if (!response.success || response.gameId !== confirmed.id) {
-      return null;
-    }
-    const undone = applyOptimisticUndo(confirmed);
-    if (undone === null) {
-      return null;
-    }
-    acknowledged = applyGameScoreboardDelta(undone, response.scoreboardDelta);
-    if (acknowledged?.activePlayerId !== undone.activePlayerId) {
-      return null;
-    }
-  } else {
-    acknowledged = normalizeGameData(response);
+  const undone = applyOptimisticUndo(confirmed);
+  if (undone === null) {
+    return null;
   }
 
-  if (acknowledged === null || acknowledged.id !== confirmed.id) {
+  const acknowledged = applyGameScoreboardDelta(undone, ack.scoreboardDelta);
+  if (acknowledged.activePlayerId !== undone.activePlayerId) {
     return null;
   }
 

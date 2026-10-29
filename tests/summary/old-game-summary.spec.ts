@@ -28,7 +28,7 @@ test.describe("Summary of a game that is not the last finished game", () => {
     {
       action: "Undo",
       button: "Return to game",
-      endpoint: `/api/game/${LAST_FINISHED_GAME_ID}/throw`,
+      endpoint: `/api/game/${LAST_FINISHED_GAME_ID}/throw/delta`,
     },
     {
       action: "Play Again",

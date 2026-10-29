@@ -114,41 +114,6 @@ function buildFinishedGameState(): GameThrowsResponse {
   };
 }
 
-function buildStartedGameState(): GameThrowsResponse {
-  const finishedGameState = buildFinishedGameState();
-  const firstPlayer = finishedGameState.players[0];
-  const secondPlayer = finishedGameState.players[1];
-  if (!firstPlayer || !secondPlayer) {
-    throw new Error("Fixture error: expected two players in finished game state");
-  }
-
-  return {
-    ...finishedGameState,
-    status: "started",
-    currentRound: 7,
-    currentThrowCount: 2,
-    winnerId: null,
-    players: [
-      {
-        ...firstPlayer,
-        score: 20,
-        isActive: true,
-        position: null,
-        placement: null,
-        throwsInCurrentRound: 2,
-        currentRoundThrows: [
-          { value: 20, isDouble: false, isTriple: false, isBust: false },
-          { value: 20, isDouble: false, isTriple: false, isBust: false },
-        ],
-        roundHistory: [],
-      },
-      {
-        ...secondPlayer,
-      },
-    ],
-  };
-}
-
 function buildUndoAck(overrides: Partial<UndoAckResponse> = {}): UndoAckResponse {
   return {
     type: "ack",
@@ -249,30 +214,23 @@ describe("useGameSummaryPage", () => {
   });
 
   // #123: the game page owns the game state, so it reads the reopened game from the server.
-  it.each([
-    { response: "compact ack", undoResponse: () => buildUndoAck() },
-    { response: "full game", undoResponse: () => buildStartedGameState() },
-  ])(
-    "should undo on the server and open the game without writing the game store ($response)",
-    async ({ undoResponse }) => {
-      undoLastThrowMock.mockResolvedValueOnce(undoResponse());
-      setGameData(buildFinishedGameState());
-      const shownGame = $gameData.get();
+  it("should undo on the server and open the game without writing the game store", async () => {
+    setGameData(buildFinishedGameState());
+    const shownGame = $gameData.get();
 
-      const { result } = renderSummaryHook();
+    const { result } = renderSummaryHook();
 
-      await act(async () => {
-        await result.current.handleUndo();
-      });
+    await act(async () => {
+      await result.current.handleUndo();
+    });
 
-      expect(undoLastThrowMock).toHaveBeenCalledWith(42);
-      expect($gameData.get()).toBe(shownGame);
-      expect(playSound).toHaveBeenCalledWith("undo");
-      expect(navigateMock).toHaveBeenCalledWith("/game/42", {
-        state: { skipFinishOverlay: true },
-      });
-    },
-  );
+    expect(undoLastThrowMock).toHaveBeenCalledWith(42);
+    expect($gameData.get()).toBe(shownGame);
+    expect(playSound).toHaveBeenCalledWith("undo");
+    expect(navigateMock).toHaveBeenCalledWith("/game/42", {
+      state: { skipFinishOverlay: true },
+    });
+  });
 
   it("should not navigate when undo request fails", async () => {
     undoLastThrowMock.mockRejectedValueOnce(new Error("undo failed"));
