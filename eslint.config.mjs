@@ -138,14 +138,14 @@ export default [
               regex:
                 "^@/(shared/lib|lib)/(game/(finishedGameStandings|gameStateNormalizer|mergeGameSettings|parseThrowValue|player-mappers|roundAverage)|player/(currentGame|profile))(\\.ts)?$",
               message:
-                "Render-flow files must not call DTO mappers. Call them from a page lib/ file (docs/convention/api.md, Mappers).",
+                "Render-flow files must not call DTO mappers. Call them from an API function, queryFn, store action, route loader or page lib/ file (docs/convention/api.md, Mappers).",
             },
             {
               // sortLobbyPlayers only reorders UI players, so only the DTO mapper of this module is banned.
               regex: "^@/(shared/lib|lib)/game/lobbyPlayers(\\.ts)?$",
               importNames: ["toLobbyPlayers"],
               message:
-                "Render-flow files must not call DTO mappers. Call them from a page lib/ file (docs/convention/api.md, Mappers).",
+                "Render-flow files must not call DTO mappers. Call them from an API function, queryFn, store action, route loader or page lib/ file (docs/convention/api.md, Mappers).",
             },
           ],
         },
