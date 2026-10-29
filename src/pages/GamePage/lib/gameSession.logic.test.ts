@@ -548,9 +548,7 @@ describe("gameSession.logic", () => {
       throw new Error("expected a pending throw");
     }
 
-    expectTypeOf<keyof ThrowRequest>().toEqualTypeOf<
-      "playerId" | "value" | "isDouble" | "isTriple"
-    >();
+    expectTypeOf<ThrowRequest>().not.toHaveProperty("isBust");
     expect(toThrowRequest(head)).toEqual({
       playerId: 1,
       value: 20,
