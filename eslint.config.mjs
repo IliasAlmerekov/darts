@@ -140,6 +140,13 @@ export default [
               message:
                 "Render-flow files must not call DTO mappers. Call them from a page lib/ file (docs/convention/api.md, Mappers).",
             },
+            {
+              // sortLobbyPlayers maps UI to UI, so only the DTO mapper of this module is banned.
+              regex: "^@/(shared/lib|lib)/game/lobbyPlayers(\\.ts)?$",
+              importNames: ["toLobbyPlayers"],
+              message:
+                "Render-flow files must not call DTO mappers. Call them from a page lib/ file (docs/convention/api.md, Mappers).",
+            },
           ],
         },
       ],
