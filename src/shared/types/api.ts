@@ -16,7 +16,6 @@ export interface ThrowRequest {
   value: number;
   isDouble?: boolean;
   isTriple?: boolean;
-  isBust?: boolean;
 }
 
 export interface FinishedPlayerResponse {
