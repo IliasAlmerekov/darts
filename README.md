@@ -36,70 +36,7 @@ Create a `.env` file in the project root using `.env.example` as a template.
 
 ## Architecture
 
-This project uses a **pages-based architecture**. Route-level pages are grouped in `src/pages`, while cross-cutting logic and reusable UI live in `src/shared`.
-
-### Top-level layout
-
-```
-src/
-├── app/          # Application bootstrap, routing, global styles, ErrorBoundary
-├── assets/       # Static assets: fonts, icons
-├── pages/        # Route-level pages (screen modules)
-├── shared/       # Shared utilities, UI components, types, API client
-└── test/         # Test-only helpers (query wrapper, loader args, architecture checks, Playwright helper logic)
-```
-
-### Page structure
-
-Each page module is colocated in its own folder and typically follows this shape:
-
-```
-pages/<PageName>/
-├── index.tsx       # Route entry/page composition
-├── components/     # Page-local UI blocks
-├── lib/            # Pure helpers/business rules (optional)
-├── *.module.css    # Page styles (CSS Modules)
-└── *.test.ts(x)    # Unit/integration tests near implementation
-```
-
-Not every page needs all folders; keep only what is required.
-
-### Pages
-
-| Page                | Responsibility                     |
-| ------------------- | ---------------------------------- |
-| `LoginPage`         | Login flow                         |
-| `RegisterPage`      | Registration flow                  |
-| `StartPage`         | Pre-game lobby, player preparation |
-| `GamePage`          | Active game scoring flow           |
-| `GameSummaryPage`   | Post-game summary                  |
-| `GamesOverviewPage` | List of all games                  |
-| `GameDetailPage`    | Single game details and statistics |
-| `StatisticsPage`    | Player statistics summary          |
-| `SettingsPage`      | Game/application settings          |
-| `JoinedGamePage`    | Player view for joined games       |
-| `PlayerProfilePage` | Player profile                     |
-
-### Shared
-
-```
-shared/
-├── api/            # API modules grouped by domain (client, errors, mappers)
-├── hooks/          # Reusable hooks
-├── lib/            # Pure utilities (parseThrowValue, player-mappers, routes, guards, etc.)
-├── query/          # TanStack Query option factories and the query client
-├── services/       # Browser side effects (clientLogger, soundPlayer)
-├── store/          # Global Nanostores
-├── types/          # Shared TypeScript types and ambient declarations
-└── ui/             # Reusable UI components (Button, Overlay, Pagination, etc.)
-```
-
-### Rules
-
-- Shared logic lives in `shared/`, not copied between pages.
-- `shared/` must not import from upper layers (`pages` or `app`).
-- Keep route-level pages thin: read params, connect hooks/api, render UI.
-- Reuse shared UI and utilities before introducing new global modules.
+The project is pages-based: route-level pages live in `src/pages`, and code that two or more pages share lives in `src/shared`. Imports go one way, `app → pages → shared`. [`docs/convention/architecture.md`](docs/convention/architecture.md) holds the rules, and [ADR 0005](docs/adr/0005-pages-based-structure.md) records why the project uses this structure instead of Feature-Sliced Design or MVC.
 
 ## Further reading
 
