@@ -6,7 +6,7 @@ import { useLogin, type LoginValues } from "./useLogin";
 import { resolveLoginDestination } from "./lib/loginDestination";
 import { isLoginLocationState } from "./lib/loginLocationState";
 import { getActiveGameId } from "@/shared/store";
-import { mapInvitationErrorMessage } from "@/lib/error/auth-error-handling";
+import { mapInvitationErrorMessage } from "@/lib/error/invitation-error-message";
 import { ROUTES } from "@/lib/router/routes";
 import { resolveSafeRedirect } from "@/lib/router/safeRedirect";
 import { parseLocationState } from "@/lib/router/locationState";
