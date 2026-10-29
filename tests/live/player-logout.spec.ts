@@ -24,7 +24,7 @@ interface RoomInvitation {
 async function openRoomInvitation(adminRequest: APIRequestContext): Promise<RoomInvitation> {
   const { email, password } = getAuthTestCredentials();
   const login = await adminRequest.post("/api/login", {
-    form: { _username: email, _password: password },
+    form: { _username: email, _password: password, _csrf_token: "csrf-token" },
   });
   expect(login.ok()).toBe(true);
 

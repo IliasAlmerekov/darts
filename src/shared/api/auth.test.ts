@@ -247,6 +247,27 @@ describe("loginWithCredentials", () => {
     ).resolves.toEqual({ type: "user", user: loginSuccessExample });
   });
 
+  it("posts the credentials with the fixed CSRF field the backend origin check expects", async () => {
+    const post = vi.spyOn(apiClient, "post").mockImplementationOnce(respondWith(loggedInExample));
+
+    await loginWithCredentials({ email: "alice@example.com", password: "s3cr3t" });
+
+    expect(post).toHaveBeenCalledOnce();
+    expect(post).toHaveBeenCalledWith(
+      "/login",
+      expect.any(String),
+      expect.objectContaining({
+        headers: { "Content-Type": "application/x-www-form-urlencoded" },
+        skipAuthRedirect: true,
+      }),
+    );
+    expect(Object.fromEntries(new URLSearchParams(String(post.mock.calls[0]?.[1])))).toEqual({
+      _username: "alice@example.com",
+      _password: "s3cr3t",
+      _csrf_token: "csrf-token",
+    });
+  });
+
   it("keeps the invitation error when the stored invitation could not be joined", async () => {
     const response = { ...loggedInExample, invitationError: "GAME_ALREADY_STARTED" };
     vi.spyOn(apiClient, "post").mockImplementationOnce(respondWith(response));

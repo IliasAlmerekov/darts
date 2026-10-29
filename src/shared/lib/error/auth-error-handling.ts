@@ -23,6 +23,9 @@ const AUTH_ERROR_MESSAGES = {
   registrationRateLimited: "Too many registration attempts. Please try again later.",
   // The backend hides which field clashed, so the text names neither (darts-backend#33).
   accountExists: "Email or username is already taken.",
+  // The backend sends this code for a cross-origin request and for a form without
+  // `_csrf_token`, so the text blames neither.
+  requestBlocked: "Your request was blocked. Please reload the page and try again.",
   server: "Server error. Please try again later.",
   network: "Network error. Please check your connection and try again.",
 } as const;
@@ -128,6 +131,8 @@ function mapErrorCode(error: ApiError): string | null {
       return AUTH_ERROR_MESSAGES.registrationRateLimited;
     case "REGISTRATION_ACCOUNT_EXISTS":
       return AUTH_ERROR_MESSAGES.accountExists;
+    case "CROSS_ORIGIN_REQUEST":
+      return AUTH_ERROR_MESSAGES.requestBlocked;
     case "REQUEST_VALIDATION_FAILED":
       return mapViolations(readViolations(error)).join("\n") || null;
     default:
