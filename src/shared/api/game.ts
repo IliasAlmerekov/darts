@@ -533,7 +533,7 @@ export async function recordThrow(
 }
 
 /**
- * Undoes the last throw and returns compact server acknowledgement with scoreboard delta.
+ * Undoes the last throw and returns a compact server acknowledgement with scoreboard delta.
  */
 export async function undoLastThrow(gameId: number): Promise<UndoAckResponse> {
   const undo = await apiClient.delete(THROW_DELTA_ENDPOINT(gameId), {

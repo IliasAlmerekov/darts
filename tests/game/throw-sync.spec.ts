@@ -87,7 +87,7 @@ function throwAck(gameId: number, scores: PlayerScore[]) {
 /** The backend's ack for an undo: a throw ack without the throw. */
 function undoAck(gameId: number, scores: PlayerScore[]) {
   const { success, stateVersion, scoreboardDelta, serverTs } = throwAck(gameId, scores);
-  return { success, gameId, stateVersion, scoreboardDelta, serverTs };
+  return { type: "ack", success, gameId, stateVersion, scoreboardDelta, serverTs };
 }
 
 const playerScores = (

@@ -208,6 +208,7 @@ const installGameRoutes = async (page: Page, options: RouteOptions): Promise<voi
       status: 200,
       contentType: "application/json",
       body: JSON.stringify({
+        type: "ack",
         success: true,
         gameId,
         stateVersion: `undo-v${undoSequence}`,

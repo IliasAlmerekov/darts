@@ -206,16 +206,9 @@ export function applyThrowAck(session: GameSession, ack: ThrowAckResponse): Game
   return confirmHead(session, acknowledged);
 }
 
-function hasValidActivePlayer(game: GameThrowsResponse): boolean {
-  return (
-    game.status !== "started" ||
-    (typeof game.activePlayerId === "number" && Number.isFinite(game.activePlayerId))
-  );
-}
-
 /**
  * Applies the server's answer to the sent undo. Returns null when the answer disagrees with
- * the client or leaves no valid active player, so the caller reloads the game.
+ * the client, so the caller reloads the game.
  */
 export function applyUndoResponse(session: GameSession, ack: UndoAckResponse): GameSession | null {
   const head = session.pending[0];
@@ -240,7 +233,7 @@ export function applyUndoResponse(session: GameSession, ack: UndoAckResponse): G
     return null;
   }
 
-  return hasValidActivePlayer(acknowledged) ? confirmHead(session, acknowledged) : null;
+  return confirmHead(session, acknowledged);
 }
 
 /** Drops every pending op after a rejected request; the caller reloads the game next. */
