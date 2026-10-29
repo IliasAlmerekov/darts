@@ -168,200 +168,6 @@
                 }
             }
         },
-        "/api/game/settings": {
-            "post": {
-                "tags": [
-                    "Game Lifecycle"
-                ],
-                "summary": "Legacy-Endpoint f\u00fcr Spielanlage mit vollst\u00e4ndigem Spielzustand",
-                "description": "Deprecated. Ist ein Spiel in der Lobby, liefert der Endpoint dieses Spiel und \u00fcberschreibt seine Einstellungen; sonst legt er eine neue Lobby an. Verwenden Sie stattdessen `POST /api/room/create`, danach `PATCH /api/game/{gameId}/settings` und `GET /api/game/{gameId}/settings` f\u00fcr den kompakten Settings-Flow.",
-                "operationId": "post_app_game_settings_create",
-                "requestBody": {
-                    "required": true,
-                    "content": {
-                        "application/json": {
-                            "schema": {
-                                "$ref": "#/components/schemas/GameSettingsRequest"
-                            }
-                        }
-                    }
-                },
-                "responses": {
-                    "201": {
-                        "description": "Deprecated: liefert die offene Lobby oder eine neue Lobby mit vollst\u00e4ndigem Spielzustand zur\u00fcck.",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/GameResponseDto"
-                                }
-                            }
-                        }
-                    },
-                    "400": {
-                        "description": "Der Request-Body ist kein g\u00fcltiges JSON (`REQUEST_INVALID_JSON_BODY`).",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/ApiError"
-                                }
-                            }
-                        }
-                    },
-                    "422": {
-                        "description": "Der Request-Body ist ung\u00fcltig und besteht die Validierung nicht, oder das Spiel h\u00e4tte danach `doubleOut` und `tripleOut` zugleich (`GAME_CONFLICTING_OUT_RULES`). Das Spiel bleibt unver\u00e4ndert.",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "anyOf": [
-                                        {
-                                            "$ref": "#/components/schemas/RequestValidationFailed"
-                                        },
-                                        {
-                                            "$ref": "#/components/schemas/ApiError"
-                                        }
-                                    ]
-                                }
-                            }
-                        }
-                    },
-                    "403": {
-                        "description": "Zugriff verweigert: `/api` ist per Firewall nur f\u00fcr ROLE_ADMIN offen, und der Code pr\u00fcft zus\u00e4tzlich die Spielteilnahme (`ACCESS_DENIED`).",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/ApiError"
-                                }
-                            }
-                        }
-                    }
-                },
-                "deprecated": true
-            }
-        },
-        "/api/game/{gameId}/settings": {
-            "get": {
-                "tags": [
-                    "Game Lifecycle"
-                ],
-                "summary": "Kompakte Spieleinstellungen lesen",
-                "description": "Bevorzugter Read-Flow f\u00fcr Spieleinstellungen. Liefert nur settings-bezogene Daten und vermeidet den vollst\u00e4ndigen Spielzustand.",
-                "operationId": "get_app_game_settings_read",
-                "parameters": [
-                    {
-                        "name": "gameId",
-                        "in": "path",
-                        "required": true,
-                        "schema": {
-                            "type": "integer",
-                            "example": 123
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "Leichtgewichtige Spieleinstellungen.",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/GameSettingsResponseDto"
-                                }
-                            }
-                        }
-                    },
-                    "403": {
-                        "description": "Zugriff verweigert: `/api` ist per Firewall nur f\u00fcr ROLE_ADMIN offen, und der Code pr\u00fcft zus\u00e4tzlich die Spielteilnahme (`ACCESS_DENIED`).",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/ApiError"
-                                }
-                            }
-                        }
-                    }
-                }
-            },
-            "patch": {
-                "tags": [
-                    "Game Lifecycle"
-                ],
-                "summary": "Kompakte Spieleinstellungen aktualisieren",
-                "description": "Bevorzugter Settings-Flow nach der Raumerstellung. Aktualisiert nur Einstellungen und gibt `GameSettingsResponseDto` statt des vollst\u00e4ndigen Spielzustands zur\u00fcck.",
-                "operationId": "patch_app_game_settings",
-                "parameters": [
-                    {
-                        "name": "gameId",
-                        "in": "path",
-                        "required": true,
-                        "schema": {
-                            "type": "integer",
-                            "example": 123
-                        }
-                    }
-                ],
-                "requestBody": {
-                    "required": true,
-                    "content": {
-                        "application/json": {
-                            "schema": {
-                                "$ref": "#/components/schemas/GameSettingsRequest"
-                            }
-                        }
-                    }
-                },
-                "responses": {
-                    "200": {
-                        "description": "Spieleinstellungen wurden aktualisiert.",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/GameSettingsResponseDto"
-                                }
-                            }
-                        }
-                    },
-                    "400": {
-                        "description": "Der Request-Body ist kein g\u00fcltiges JSON (`REQUEST_INVALID_JSON_BODY`).",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/ApiError"
-                                }
-                            }
-                        }
-                    },
-                    "422": {
-                        "description": "Der Request-Body ist ung\u00fcltig und besteht die Validierung nicht, oder das Spiel h\u00e4tte danach `doubleOut` und `tripleOut` zugleich (`GAME_CONFLICTING_OUT_RULES`). Das Spiel bleibt unver\u00e4ndert.",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "anyOf": [
-                                        {
-                                            "$ref": "#/components/schemas/RequestValidationFailed"
-                                        },
-                                        {
-                                            "$ref": "#/components/schemas/ApiError"
-                                        }
-                                    ]
-                                }
-                            }
-                        }
-                    },
-                    "403": {
-                        "description": "Zugriff verweigert: `/api` ist per Firewall nur f\u00fcr ROLE_ADMIN offen, und der Code pr\u00fcft zus\u00e4tzlich die Spielteilnahme (`ACCESS_DENIED`).",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/ApiError"
-                                }
-                            }
-                        }
-                    },
-                    "409": {
-                        "description": "Das Spiel ist gestartet und der Request sendet `startScore` (`GAME_START_SCORE_CHANGE_NOT_ALLOWED`), oder das Spiel hat schon einen Wurf und der Request sendet `outMode`, `doubleOut` oder `tripleOut`, auch mit dem aktuellen Wert (`GAME_OUT_RULE_CHANGE_NOT_ALLOWED`). Nachdem Undo jeden Wurf entfernt hat, ist die Out-Regel wieder \u00e4nderbar."
-                    }
-                }
-            }
-        },
         "/api/game/{gameId}/finish": {
             "post": {
                 "tags": [
@@ -1146,6 +952,200 @@
                 }
             }
         },
+        "/api/game/settings": {
+            "post": {
+                "tags": [
+                    "Game Lifecycle"
+                ],
+                "summary": "Legacy-Endpoint f\u00fcr Spielanlage mit vollst\u00e4ndigem Spielzustand",
+                "description": "Deprecated. Ist ein Spiel in der Lobby, liefert der Endpoint dieses Spiel und \u00fcberschreibt seine Einstellungen; sonst legt er eine neue Lobby an. Verwenden Sie stattdessen `POST /api/room/create`, danach `PATCH /api/game/{gameId}/settings` und `GET /api/game/{gameId}/settings` f\u00fcr den kompakten Settings-Flow.",
+                "operationId": "post_app_game_settings_create",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/GameSettingsRequest"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "Deprecated: liefert die offene Lobby oder eine neue Lobby mit vollst\u00e4ndigem Spielzustand zur\u00fcck.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/GameResponseDto"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Der Request-Body ist kein g\u00fcltiges JSON (`REQUEST_INVALID_JSON_BODY`).",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ApiError"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Der Request-Body ist ung\u00fcltig und besteht die Validierung nicht, oder das Spiel h\u00e4tte danach `doubleOut` und `tripleOut` zugleich (`GAME_CONFLICTING_OUT_RULES`). Das Spiel bleibt unver\u00e4ndert.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "anyOf": [
+                                        {
+                                            "$ref": "#/components/schemas/RequestValidationFailed"
+                                        },
+                                        {
+                                            "$ref": "#/components/schemas/ApiError"
+                                        }
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "Zugriff verweigert: `/api` ist per Firewall nur f\u00fcr ROLE_ADMIN offen, und der Code pr\u00fcft zus\u00e4tzlich die Spielteilnahme (`ACCESS_DENIED`).",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ApiError"
+                                }
+                            }
+                        }
+                    }
+                },
+                "deprecated": true
+            }
+        },
+        "/api/game/{gameId}/settings": {
+            "get": {
+                "tags": [
+                    "Game Lifecycle"
+                ],
+                "summary": "Kompakte Spieleinstellungen lesen",
+                "description": "Bevorzugter Read-Flow f\u00fcr Spieleinstellungen. Liefert nur settings-bezogene Daten und vermeidet den vollst\u00e4ndigen Spielzustand.",
+                "operationId": "get_app_game_settings_read",
+                "parameters": [
+                    {
+                        "name": "gameId",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer",
+                            "example": 123
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Leichtgewichtige Spieleinstellungen.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/GameSettingsResponseDto"
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "Zugriff verweigert: `/api` ist per Firewall nur f\u00fcr ROLE_ADMIN offen, und der Code pr\u00fcft zus\u00e4tzlich die Spielteilnahme (`ACCESS_DENIED`).",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ApiError"
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            "patch": {
+                "tags": [
+                    "Game Lifecycle"
+                ],
+                "summary": "Kompakte Spieleinstellungen aktualisieren",
+                "description": "Bevorzugter Settings-Flow nach der Raumerstellung. Aktualisiert nur Einstellungen und gibt `GameSettingsResponseDto` statt des vollst\u00e4ndigen Spielzustands zur\u00fcck.",
+                "operationId": "patch_app_game_settings",
+                "parameters": [
+                    {
+                        "name": "gameId",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer",
+                            "example": 123
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/GameSettingsRequest"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Spieleinstellungen wurden aktualisiert.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/GameSettingsResponseDto"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Der Request-Body ist kein g\u00fcltiges JSON (`REQUEST_INVALID_JSON_BODY`).",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ApiError"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Der Request-Body ist ung\u00fcltig und besteht die Validierung nicht, oder das Spiel h\u00e4tte danach `doubleOut` und `tripleOut` zugleich (`GAME_CONFLICTING_OUT_RULES`). Das Spiel bleibt unver\u00e4ndert.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "anyOf": [
+                                        {
+                                            "$ref": "#/components/schemas/RequestValidationFailed"
+                                        },
+                                        {
+                                            "$ref": "#/components/schemas/ApiError"
+                                        }
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "Zugriff verweigert: `/api` ist per Firewall nur f\u00fcr ROLE_ADMIN offen, und der Code pr\u00fcft zus\u00e4tzlich die Spielteilnahme (`ACCESS_DENIED`).",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ApiError"
+                                }
+                            }
+                        }
+                    },
+                    "409": {
+                        "description": "Das Spiel ist gestartet und der Request sendet `startScore` (`GAME_START_SCORE_CHANGE_NOT_ALLOWED`), oder das Spiel hat schon einen Wurf und der Request sendet `outMode`, `doubleOut` oder `tripleOut`, auch mit dem aktuellen Wert (`GAME_OUT_RULE_CHANGE_NOT_ALLOWED`). Nachdem Undo jeden Wurf entfernt hat, ist die Out-Regel wieder \u00e4nderbar."
+                    }
+                }
+            }
+        },
         "/api/games/overview": {
             "get": {
                 "tags": [
@@ -1559,6 +1559,52 @@
                 "security": []
             }
         },
+        "/api/ready": {
+            "get": {
+                "tags": [
+                    "Invitations"
+                ],
+                "summary": "Readiness endpoint: answers 200 only while the database answers a trivial query.",
+                "operationId": "get_api_ready",
+                "responses": {
+                    "200": {
+                        "description": "The database answers; the backend can serve API traffic.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "required": [
+                                        "success",
+                                        "status"
+                                    ],
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": true
+                                        },
+                                        "status": {
+                                            "type": "string",
+                                            "example": "ready"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "503": {
+                        "description": "Die Datenbankpr\u00fcfung ist fehlgeschlagen (`DATABASE_UNAVAILABLE`), ohne Fehlerdetails.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ApiError"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": []
+            }
+        },
         "/api/invite/create/{id}": {
             "post": {
                 "tags": [
@@ -1689,122 +1735,6 @@
                 "security": []
             }
         },
-        "/api/invite/process": {
-            "post": {
-                "tags": [
-                    "Invitations"
-                ],
-                "summary": "Processes invitation stored in session for the current user.",
-                "operationId": "post_process_invitation",
-                "responses": {
-                    "200": {
-                        "description": "Einladung wurde verarbeitet (User dem Spiel hinzugef\u00fcgt) und Redirect f\u00fcrs Frontend zur\u00fcckgegeben.",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "required": [
-                                        "success",
-                                        "roles",
-                                        "id",
-                                        "redirect",
-                                        "gameId"
-                                    ],
-                                    "properties": {
-                                        "success": {
-                                            "type": "boolean",
-                                            "example": true
-                                        },
-                                        "roles": {
-                                            "type": "array",
-                                            "items": {
-                                                "type": "string"
-                                            },
-                                            "example": [
-                                                "ROLE_PLAYER"
-                                            ]
-                                        },
-                                        "id": {
-                                            "type": "integer",
-                                            "example": 1
-                                        },
-                                        "email": {
-                                            "type": "string",
-                                            "example": "alice@example.com",
-                                            "nullable": true
-                                        },
-                                        "username": {
-                                            "type": "string",
-                                            "example": "alice",
-                                            "nullable": true
-                                        },
-                                        "redirect": {
-                                            "type": "string",
-                                            "example": "http://localhost:5173/joined"
-                                        },
-                                        "gameId": {
-                                            "type": "integer",
-                                            "example": 42
-                                        }
-                                    },
-                                    "type": "object"
-                                }
-                            }
-                        }
-                    },
-                    "401": {
-                        "description": "User ist nicht authentifiziert oder Session ist ung\u00fcltig.",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "required": [
-                                        "success",
-                                        "redirect"
-                                    ],
-                                    "properties": {
-                                        "success": {
-                                            "type": "boolean",
-                                            "example": false
-                                        },
-                                        "redirect": {
-                                            "type": "string",
-                                            "example": "/login"
-                                        }
-                                    },
-                                    "type": "object"
-                                }
-                            }
-                        }
-                    },
-                    "400": {
-                        "description": "Session enth\u00e4lt keine game_id (z. B. Einladung nicht zuerst gejoint).",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "required": [
-                                        "success",
-                                        "redirect"
-                                    ],
-                                    "properties": {
-                                        "success": {
-                                            "type": "boolean",
-                                            "example": false
-                                        },
-                                        "redirect": {
-                                            "type": "string",
-                                            "example": "/start"
-                                        }
-                                    },
-                                    "type": "object"
-                                }
-                            }
-                        }
-                    },
-                    "409": {
-                        "description": "Spiel kann nicht gejoint werden (z. B. nicht mehr in Lobby oder Raum bereits voll)."
-                    }
-                }
-            }
-        },
         "/api/player/current-game": {
             "get": {
                 "tags": [
@@ -1895,7 +1825,7 @@
                     "Registration"
                 ],
                 "summary": "Registers a player from JSON payload and logs them in.",
-                "description": "RegistrationRateLimitSubscriber counts the request before the payload is mapped, and\nErrorController renders mapping and validation failures.",
+                "description": "RegistrationRateLimitSubscriber counts the request before the payload is mapped, and\nErrorController renders mapping and validation failures.\n\nThe new player is logged in on the main firewall, as a form login would: the form_login\nsuccess handler builds the body, including the invitation join or its `invitationError`.\nThe remember-me badge lets RememberedLoginSubscriber start a Remembered login.",
                 "operationId": "post_app_register",
                 "requestBody": {
                     "required": true,
@@ -2114,6 +2044,11 @@
                     "content": {
                         "application/x-www-form-urlencoded": {
                             "schema": {
+                                "required": [
+                                    "_username",
+                                    "_password",
+                                    "_csrf_token"
+                                ],
                                 "properties": {
                                     "_username": {
                                         "type": "string",
@@ -2124,8 +2059,12 @@
                                         "example": "secret"
                                     },
                                     "_csrf_token": {
+                                        "description": "Fester Wert `csrf-token`. Die Herkunft pr\u00fcft der Server \u00fcber `Sec-Fetch-Site` / `Origin`; ein Request anderer Herkunft oder ohne das Feld antwortet mit 403 `CROSS_ORIGIN_REQUEST`.",
                                         "type": "string",
-                                        "example": "csrf-token"
+                                        "example": "csrf-token",
+                                        "enum": [
+                                            "csrf-token"
+                                        ]
                                     }
                                 },
                                 "type": "object"
@@ -2239,6 +2178,11 @@
                     "content": {
                         "application/x-www-form-urlencoded": {
                             "schema": {
+                                "required": [
+                                    "_username",
+                                    "_password",
+                                    "_csrf_token"
+                                ],
                                 "properties": {
                                     "_username": {
                                         "type": "string",
@@ -2249,8 +2193,12 @@
                                         "example": "secret"
                                     },
                                     "_csrf_token": {
+                                        "description": "Fester Wert `csrf-token`. Die Herkunft pr\u00fcft der Server \u00fcber `Sec-Fetch-Site` / `Origin`; ein Request anderer Herkunft oder ohne das Feld antwortet mit 403 `CROSS_ORIGIN_REQUEST`.",
                                         "type": "string",
-                                        "example": "csrf-token"
+                                        "example": "csrf-token",
+                                        "enum": [
+                                            "csrf-token"
+                                        ]
                                     }
                                 },
                                 "type": "object"
@@ -2453,48 +2401,6 @@
                 }
             }
         },
-        "/api/csrf": {
-            "get": {
-                "tags": [
-                    "Authentication"
-                ],
-                "summary": "Returns CSRF tokens for authentication flows.",
-                "operationId": "get_app_csrf_tokens",
-                "responses": {
-                    "200": {
-                        "description": "CSRF-Tokens f\u00fcr Login/Registration.",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "required": [
-                                        "success",
-                                        "tokens"
-                                    ],
-                                    "properties": {
-                                        "success": {
-                                            "type": "boolean",
-                                            "example": true
-                                        },
-                                        "tokens": {
-                                            "type": "object",
-                                            "example": {
-                                                "authenticate": "csrf-token",
-                                                "user_registration": "csrf-token"
-                                            },
-                                            "additionalProperties": {
-                                                "type": "string"
-                                            }
-                                        }
-                                    },
-                                    "type": "object"
-                                }
-                            }
-                        }
-                    }
-                },
-                "security": []
-            }
-        },
         "/api/tablet/game": {
             "get": {
                 "tags": [
@@ -2622,6 +2528,7 @@
                         ]
                     },
                     "error": {
+                        "description": "Machine-readable error code. `CROSS_ORIGIN_REQUEST` (403): an unsafe `/api` request (`POST`, `PUT`, `PATCH`, `DELETE`) whose `Sec-Fetch-Site` is not `same-origin`, or whose `Origin` differs from the API's own, and a login without the fixed `_csrf_token`.",
                         "type": "string"
                     },
                     "message": {
@@ -2659,43 +2566,6 @@
                         "nullable": true,
                         "maxItems": 10,
                         "minItems": 2
-                    }
-                },
-                "type": "object"
-            },
-            "GameSettingsRequest": {
-                "properties": {
-                    "startScore": {
-                        "type": "integer",
-                        "nullable": true,
-                        "default": null,
-                        "enum": [
-                            101,
-                            201,
-                            301,
-                            401,
-                            501
-                        ]
-                    },
-                    "outMode": {
-                        "type": "string",
-                        "nullable": true,
-                        "default": null,
-                        "enum": [
-                            "singleout",
-                            "doubleout",
-                            "tripleout"
-                        ]
-                    },
-                    "doubleOut": {
-                        "type": "boolean",
-                        "nullable": true,
-                        "default": null
-                    },
-                    "tripleOut": {
-                        "type": "boolean",
-                        "nullable": true,
-                        "default": null
                     }
                 },
                 "type": "object"
@@ -2783,6 +2653,43 @@
                             }
                         },
                         "default": []
+                    }
+                },
+                "type": "object"
+            },
+            "GameSettingsRequest": {
+                "properties": {
+                    "startScore": {
+                        "type": "integer",
+                        "nullable": true,
+                        "default": null,
+                        "enum": [
+                            101,
+                            201,
+                            301,
+                            401,
+                            501
+                        ]
+                    },
+                    "outMode": {
+                        "type": "string",
+                        "nullable": true,
+                        "default": null,
+                        "enum": [
+                            "singleout",
+                            "doubleout",
+                            "tripleout"
+                        ]
+                    },
+                    "doubleOut": {
+                        "type": "boolean",
+                        "nullable": true,
+                        "default": null
+                    },
+                    "tripleOut": {
+                        "type": "boolean",
+                        "nullable": true,
+                        "default": null
                     }
                 },
                 "type": "object"
@@ -3023,33 +2930,6 @@
                 },
                 "type": "object"
             },
-            "GameSettingsResponseDto": {
-                "required": [
-                    "gameId",
-                    "startScore",
-                    "doubleOut",
-                    "tripleOut",
-                    "status"
-                ],
-                "properties": {
-                    "gameId": {
-                        "type": "integer"
-                    },
-                    "startScore": {
-                        "type": "integer"
-                    },
-                    "doubleOut": {
-                        "type": "boolean"
-                    },
-                    "tripleOut": {
-                        "type": "boolean"
-                    },
-                    "status": {
-                        "type": "string"
-                    }
-                },
-                "type": "object"
-            },
             "GameSummaryWinnerDto": {
                 "required": [
                     "id"
@@ -3151,6 +3031,33 @@
                     "success": {
                         "type": "boolean",
                         "default": true
+                    }
+                },
+                "type": "object"
+            },
+            "GameSettingsResponseDto": {
+                "required": [
+                    "gameId",
+                    "startScore",
+                    "doubleOut",
+                    "tripleOut",
+                    "status"
+                ],
+                "properties": {
+                    "gameId": {
+                        "type": "integer"
+                    },
+                    "startScore": {
+                        "type": "integer"
+                    },
+                    "doubleOut": {
+                        "type": "boolean"
+                    },
+                    "tripleOut": {
+                        "type": "boolean"
+                    },
+                    "status": {
+                        "type": "string"
                     }
                 },
                 "type": "object"
