@@ -1,6 +1,6 @@
 // @vitest-environment node
 import { describe, expect, it } from "vitest";
-import { ApiError, NetworkError, UnauthorizedError } from "@/shared/api";
+import { ApiError, ForbiddenError, NetworkError, UnauthorizedError } from "@/shared/api";
 import { mapAuthErrorMessage, mapInvitationErrorMessage } from "./auth-error-handling";
 
 function backendError(status: number, error: string, retryAfterSeconds?: number): ApiError {
@@ -59,6 +59,19 @@ describe("mapAuthErrorMessage", () => {
     });
 
     expect(result).toBe("Login failed. Please try again.");
+  });
+
+  it("asks to reload the page for a 403 CROSS_ORIGIN_REQUEST", () => {
+    const result = mapAuthErrorMessage({
+      flow: "login",
+      error: new ForbiddenError("Forbidden", {
+        success: false,
+        error: "CROSS_ORIGIN_REQUEST",
+        message: "Cross-origin request.",
+      }),
+    });
+
+    expect(result).toBe("Your request was blocked. Please reload the page and try again.");
   });
 
   it("says the email or username is taken for REGISTRATION_ACCOUNT_EXISTS", () => {

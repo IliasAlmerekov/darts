@@ -108,6 +108,9 @@ export async function loginWithCredentials(credentials: LoginCredentials): Promi
   const payload = new URLSearchParams();
   payload.set("_username", credentials.email);
   payload.set("_password", credentials.password);
+  // Without this field the backend answers 403 CROSS_ORIGIN_REQUEST. The value is fixed:
+  // the backend checks the origin through `Sec-Fetch-Site` / `Origin`.
+  payload.set("_csrf_token", "csrf-token");
 
   return apiClient.post(LOGIN_ENDPOINT, payload.toString(), {
     headers: { "Content-Type": "application/x-www-form-urlencoded" },
