@@ -539,16 +539,19 @@ describe("gameSession.logic", () => {
     expect(getSessionView(session).isFinished).toBe(false);
   });
 
-  it("sends the parsed throw without a bust flag, which the backend rejects", () => {
+  it("builds a throw request without a bust flag, which the backend would reject", () => {
     const session = send(
       throwMany(createGameSession(buildGame({ alice: 301, bob: 301 })), ["T20"]),
     );
     const head = session.pending[0];
+    if (head?.kind !== "throw") {
+      throw new Error("expected a pending throw");
+    }
 
     expectTypeOf<keyof ThrowRequest>().toEqualTypeOf<
       "playerId" | "value" | "isDouble" | "isTriple"
     >();
-    expect(head?.kind === "throw" ? toThrowRequest(head) : null).toEqual({
+    expect(toThrowRequest(head)).toEqual({
       playerId: 1,
       value: 20,
       isDouble: false,
