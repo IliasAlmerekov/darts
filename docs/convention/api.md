@@ -226,14 +226,14 @@ A mapper is a pure function that turns a backend DTO shape into a UI type. Two k
 function are not mappers, and render-flow hooks may call them:
 
 - functions that reorder or derive values within UI types (`sortLobbyPlayers` takes and
-  returns `LobbyPlayer[]`);
+  returns `LobbyPlayer[]`, `getFinishedPlayers` takes and returns `UIPlayer[]`);
 - error -> user message functions (`mapInvitationErrorMessage`), which follow
   "Error -> user message".
 
 Mapper rules:
 
 - Mappers live in `src/shared/lib/<domain>/`: `shared/lib/game/` holds `gameStateNormalizer`,
-  `mergeGameSettings`, `player-mappers`, `roundAverage`, `parseThrowValue`,
+  `mergeGameSettings`, `player-mappers` (`mapPlayersToUI`), `roundAverage`, `parseThrowValue`,
   `finishedGameStandings`, `lobbyPlayers` (`toLobbyPlayers`); `shared/lib/player/` holds
   `currentGame` and `profile`.
 - Every mapper has a co-located `*.test.ts`.
@@ -314,5 +314,6 @@ rg -n 'queryKey:\s*\[|(get|set|remove|cancel|invalidate|refetch|reset)Quer(y|ies
 **6. Mappers imported by render-flow files:** `npm run eslint` passes. The
 `no-restricted-imports` rule for `src/pages/**/*.tsx` and `src/pages/**/use*.ts` in
 `eslint.config.mjs` lists the mapper modules by file, so a new mapper module is added to its
-regex. `lobbyPlayers` also holds `sortLobbyPlayers`, which is not a mapper, so a separate
-pattern bans only its `toLobbyPlayers` import.
+regex. `lobbyPlayers` and `player-mappers` also hold UI-to-UI helpers (`sortLobbyPlayers`,
+`getFinishedPlayers`), which are not mappers, so a separate pattern bans only their mapper
+imports (`toLobbyPlayers`, `mapPlayersToUI`). A new mixed module goes into that pattern.
