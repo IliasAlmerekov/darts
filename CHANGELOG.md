@@ -49,6 +49,7 @@ and this project does **not** yet follow [Semantic Versioning](https://semver.or
 - Summary: Undo no longer writes the game store. It undoes the throw on the server and the game page loads the reopened game, so only `useGameSession` writes the game on screen (#123)
 - Docs: the README trees list every folder in `src/` and `src/shared/` (`test/`, `query/`, `services/`), `soundPlayer` sits under `services/`, a short note names the local Compose stack, and a "Further reading" section links the conventions, ADRs, test plans, `GLOSSARY.md`, `SECURITY.md` and `AGENTS.md`. `.env.example` documents the optional `VITE_API_BASE_URL` (#356)
 - Docs: the test plans moved from `specs/` to `docs/test-plans/`, with a README on how they relate to `tests/`; the `// spec:` comment of each Playwright spec points there. The finished player profile feature docs moved to `docs/archive/player-profile-login-success/`, and Vitest drops the `specs/**` exclude that no longer matches anything (#359)
+- Docs: ADR 0005 records why the app is pages-based instead of Feature-Sliced Design or MVC. The README architecture section shrinks to one paragraph that links to `docs/convention/architecture.md` (#384)
 
 ### Removed
 
