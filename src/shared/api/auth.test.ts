@@ -252,6 +252,15 @@ describe("loginWithCredentials", () => {
 
     await loginWithCredentials({ email: "alice@example.com", password: "s3cr3t" });
 
+    expect(post).toHaveBeenCalledOnce();
+    expect(post).toHaveBeenCalledWith(
+      "/login",
+      expect.any(String),
+      expect.objectContaining({
+        headers: { "Content-Type": "application/x-www-form-urlencoded" },
+        skipAuthRedirect: true,
+      }),
+    );
     expect(Object.fromEntries(new URLSearchParams(String(post.mock.calls[0]?.[1])))).toEqual({
       _username: "alice@example.com",
       _password: "s3cr3t",
