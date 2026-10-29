@@ -31,8 +31,7 @@ const REOPEN_GAME_ENDPOINT = (id: number) => `/game/${id}/reopen`;
 const ABORT_GAME_ENDPOINT = (id: number) => `/game/${id}/abort`;
 const REMATCH_ENDPOINT = (id: number) => `/room/${id}/rematch`;
 const GAME_SETTINGS_ENDPOINT = (id: number) => `/game/${id}/settings`;
-const RECORD_THROW_ENDPOINT = (id: number) => `/game/${id}/throw/delta`;
-const UNDO_THROW_ENDPOINT = (id: number) => `/game/${id}/throw`;
+const THROW_DELTA_ENDPOINT = (id: number) => `/game/${id}/throw/delta`;
 const TABLET_GAME_ENDPOINT = "/tablet/game";
 
 // ---------------------------------------------------------------------------
@@ -193,10 +192,6 @@ const undoAckResponseSchema = v.object({
   serverTs: v.string(),
 });
 
-// The contract documents GameResponseDto for DELETE /throw; the backend also answers with
-// UndoAckDto during the compact-delta rollout. #101 owns that union.
-const undoThrowResponseSchema = v.union([gameThrowsResponseSchema, undoAckResponseSchema]);
-
 /** Contract response of `POST /api/room/{id}/rematch`. */
 const rematchResponseSchema = v.object({
   success: v.boolean(),
@@ -214,7 +209,6 @@ export type GameSettingsResponse = v.InferOutput<typeof gameSettingsResponseSche
 export type ScoreboardDelta = v.InferOutput<typeof scoreboardDeltaSchema>;
 export type ThrowAckResponse = v.InferOutput<typeof throwAckResponseSchema>;
 export type UndoAckResponse = v.InferOutput<typeof undoAckResponseSchema>;
-export type UndoThrowResponse = v.InferOutput<typeof undoThrowResponseSchema>;
 
 // ---------------------------------------------------------------------------
 // ETag-based conditional game state fetching
@@ -533,23 +527,20 @@ export async function recordThrow(
   gameId: number,
   payload: ThrowRequest,
 ): Promise<ThrowAckResponse> {
-  return apiClient.post(RECORD_THROW_ENDPOINT(gameId), payload, {
+  return apiClient.post(THROW_DELTA_ENDPOINT(gameId), payload, {
     validate: throwAckResponseSchema,
   });
 }
 
 /**
- * Undoes the last throw and returns either the full game state or the compact
- * acknowledgement used by the targeted scoreboard update flow.
+ * Undoes the last throw and returns a compact server acknowledgement with scoreboard delta.
  */
-export async function undoLastThrow(gameId: number): Promise<UndoThrowResponse> {
-  const undo = await apiClient.delete(UNDO_THROW_ENDPOINT(gameId), {
-    validate: undoThrowResponseSchema,
+export async function undoLastThrow(gameId: number): Promise<UndoAckResponse> {
+  const undo = await apiClient.delete(THROW_DELTA_ENDPOINT(gameId), {
+    validate: undoAckResponseSchema,
   });
 
-  if (undo.type === "ack") {
-    setGameStateVersion(gameId, undo.stateVersion);
-  }
+  setGameStateVersion(gameId, undo.stateVersion);
 
   return undo;
 }

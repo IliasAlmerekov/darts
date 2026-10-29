@@ -5,7 +5,7 @@ import type {
   GameThrowsResponse,
   ThrowAckResponse,
   ThrowRequest,
-  UndoThrowResponse,
+  UndoAckResponse,
 } from "@/types";
 import {
   applyOptimisticThrow,
@@ -206,49 +206,34 @@ export function applyThrowAck(session: GameSession, ack: ThrowAckResponse): Game
   return confirmHead(session, acknowledged);
 }
 
-function hasValidActivePlayer(game: GameThrowsResponse): boolean {
-  return (
-    game.status !== "started" ||
-    (typeof game.activePlayerId === "number" && Number.isFinite(game.activePlayerId))
-  );
-}
-
 /**
- * Applies the server's answer to the sent undo: a compact acknowledgement or the full game.
- * Returns null when the answer leaves no valid active player, so the caller reloads the game.
+ * Applies the server's answer to the sent undo. Returns null when the answer disagrees with
+ * the client, so the caller reloads the game.
  */
-export function applyUndoResponse(
-  session: GameSession,
-  response: UndoThrowResponse,
-): GameSession | null {
+export function applyUndoResponse(session: GameSession, ack: UndoAckResponse): GameSession | null {
   const head = session.pending[0];
   const { confirmed } = session;
-  if (head?.kind !== "undo" || !session.isHeadSent || confirmed === null) {
+  if (
+    head?.kind !== "undo" ||
+    !session.isHeadSent ||
+    confirmed === null ||
+    !ack.success ||
+    ack.gameId !== confirmed.id
+  ) {
     return null;
   }
 
-  let acknowledged: GameThrowsResponse | null;
-  if ("scoreboardDelta" in response) {
-    if (!response.success || response.gameId !== confirmed.id) {
-      return null;
-    }
-    const undone = applyOptimisticUndo(confirmed);
-    if (undone === null) {
-      return null;
-    }
-    acknowledged = applyGameScoreboardDelta(undone, response.scoreboardDelta);
-    if (acknowledged?.activePlayerId !== undone.activePlayerId) {
-      return null;
-    }
-  } else {
-    acknowledged = normalizeGameData(response);
-  }
-
-  if (acknowledged === null || acknowledged.id !== confirmed.id) {
+  const undone = applyOptimisticUndo(confirmed);
+  if (undone === null) {
     return null;
   }
 
-  return hasValidActivePlayer(acknowledged) ? confirmHead(session, acknowledged) : null;
+  const acknowledged = applyGameScoreboardDelta(undone, ack.scoreboardDelta);
+  if (acknowledged.activePlayerId !== undone.activePlayerId) {
+    return null;
+  }
+
+  return confirmHead(session, acknowledged);
 }
 
 /** Drops every pending op after a rejected request; the caller reloads the game next. */

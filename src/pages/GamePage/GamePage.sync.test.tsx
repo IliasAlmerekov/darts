@@ -36,6 +36,7 @@ import {
   undoLastThrow,
   updateGameSettings,
   type ThrowAckResponse,
+  type UndoAckResponse,
 } from "@/shared/api/game";
 import { playSound } from "@/shared/services/browser/soundPlayer";
 import { setGameData } from "@/shared/store";
@@ -127,6 +128,11 @@ function buildThrowAck(scores: { alice: number; bob: number }): ThrowAckResponse
     },
     serverTs: "2026-10-23T10:00:00Z",
   };
+}
+
+function buildUndoAck(scores: { alice: number; bob: number }): UndoAckResponse {
+  const { type, success, gameId, stateVersion, scoreboardDelta, serverTs } = buildThrowAck(scores);
+  return { type, success, gameId, stateVersion, scoreboardDelta, serverTs };
 }
 
 /**
@@ -553,7 +559,7 @@ describe("GamePage settings lock", () => {
 
   it("lets the first throw be undone, a miss included, so Settings opens again", async () => {
     recordThrowMock.mockResolvedValueOnce(buildThrowAck({ alice: 301, bob: 301 }));
-    undoLastThrowMock.mockResolvedValueOnce(buildGame({ alice: 301, bob: 301 }));
+    undoLastThrowMock.mockResolvedValueOnce(buildUndoAck({ alice: 301, bob: 301 }));
     await openGame(buildGame({ alice: 301, bob: 301 }));
 
     tap("0");
@@ -571,7 +577,7 @@ describe("GamePage settings lock", () => {
   });
 
   it("disables Undo once the only throw of a loaded game is undone", async () => {
-    undoLastThrowMock.mockReturnValue(new Promise<GameThrowsResponse>(() => {}));
+    undoLastThrowMock.mockReturnValue(new Promise<UndoAckResponse>(() => {}));
     // The server lists the current round in both currentRoundThrows and roundHistory.
     const game = buildGame({ alice: 301, bob: 301 });
     const [alice] = game.players;
@@ -617,7 +623,7 @@ describe("GamePage settings lock", () => {
   });
 
   it("enables Settings again once the server confirms the undo of the last throw", async () => {
-    const undo = createDeferred<GameThrowsResponse>();
+    const undo = createDeferred<UndoAckResponse>();
     recordThrowMock.mockResolvedValueOnce(buildThrowAck({ alice: 281, bob: 301 }));
     undoLastThrowMock.mockReturnValueOnce(undo.promise);
     await openGame(buildGame({ alice: 301, bob: 301 }));
@@ -633,7 +639,7 @@ describe("GamePage settings lock", () => {
     expect(settingsButton().hasAttribute("disabled")).toBe(true);
 
     await act(async () => {
-      undo.resolve(buildGame({ alice: 301, bob: 301 }));
+      undo.resolve(buildUndoAck({ alice: 301, bob: 301 }));
       await new Promise((resolve) => setTimeout(resolve, 0));
     });
     expect(settingsButton().hasAttribute("disabled")).toBe(false);

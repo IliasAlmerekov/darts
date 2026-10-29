@@ -450,26 +450,23 @@ describe("game api contract payloads", () => {
   });
 
   describe("undoLastThrow", () => {
-    it("returns a full game state response as full-state", async () => {
-      vi.spyOn(apiClient, "delete").mockImplementationOnce(respondWith(fullGamePayload));
+    it.each([
+      ["a full game state", fullGamePayload],
+      ["a game state without type", minimalGamePayload],
+    ])("rejects with ApiValidationError when the response is %s", async (_label, payload) => {
+      vi.spyOn(apiClient, "delete").mockImplementationOnce(respondWith(payload));
 
-      await expect(undoLastThrow(42)).resolves.toEqual(fullGamePayload);
+      await expect(undoLastThrow(42)).rejects.toBeInstanceOf(ApiValidationError);
     });
 
-    it("fills the full-state type default for a game state without type", async () => {
-      vi.spyOn(apiClient, "delete").mockImplementationOnce(respondWith(minimalGamePayload));
-
-      await expect(undoLastThrow(42)).resolves.toMatchObject({ type: "full-state", id: 42 });
-    });
-
-    it("returns a contract UndoAckDto as an ack", async () => {
+    it("sends DELETE /throw/delta and returns a contract UndoAckDto as an ack", async () => {
       const deleteSpy = vi
         .spyOn(apiClient, "delete")
         .mockImplementationOnce(respondWith(fullUndoAckPayload));
 
       await expect(undoLastThrow(42)).resolves.toEqual(fullUndoAckPayload);
       expect(deleteSpy).toHaveBeenCalledWith(
-        "/game/42/throw",
+        "/game/42/throw/delta",
         expect.objectContaining({ validate: expect.any(Object) }),
       );
     });
@@ -507,7 +504,7 @@ describe("game api contract payloads", () => {
       },
     );
 
-    it("rejects with ApiValidationError when the response is neither a game nor an ack", async () => {
+    it("rejects with ApiValidationError when the response is not an ack", async () => {
       vi.spyOn(apiClient, "delete").mockImplementationOnce(respondWith({ success: true }));
 
       await expect(undoLastThrow(42)).rejects.toBeInstanceOf(ApiValidationError);

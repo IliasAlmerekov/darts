@@ -1,7 +1,7 @@
 import type { GameSettingsResponse } from "@/shared/api/game";
 import type { GameStatus } from "./game";
 
-export type { GameSettingsResponse, UndoAckResponse, UndoThrowResponse } from "@/shared/api/game";
+export type { GameSettingsResponse, UndoAckResponse } from "@/shared/api/game";
 
 export interface StartGameRequest {
   startScore: number;
