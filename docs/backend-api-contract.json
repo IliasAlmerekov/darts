@@ -73,7 +73,7 @@
                         }
                     },
                     "403": {
-                        "description": "Zugriff verweigert: `/api` ist per Firewall nur f\u00fcr ROLE_ADMIN offen, und der Code pr\u00fcft zus\u00e4tzlich die Spielteilnahme (`ACCESS_DENIED`).",
+                        "description": "Zugriff verweigert: Nur ROLE_ADMIN (das Tablet) darf diese Route nutzen (`ACCESS_DENIED`).",
                         "content": {
                             "application/json": {
                                 "schema": {
@@ -81,89 +81,6 @@
                                 }
                             }
                         }
-                    }
-                }
-            }
-        },
-        "/api/game/{gameId}/rematch/start": {
-            "post": {
-                "tags": [
-                    "Game Lifecycle"
-                ],
-                "summary": "Rematch in der offenen Lobby oder in einer neuen Lobby direkt starten",
-                "description": "Wie `POST /api/room/{id}/rematch`, danach wird das Spiel gestartet. Es ist h\u00f6chstens ein Spiel in der Lobby. Ist ein Spiel in der Lobby, startet dieses Spiel mit seinen Spielern und den fehlenden Spielern des alten Spiels; sonst wird eine neue Lobby angelegt und gestartet.",
-                "operationId": "post_app_game_rematch_start",
-                "parameters": [
-                    {
-                        "name": "gameId",
-                        "in": "path",
-                        "required": true,
-                        "schema": {
-                            "type": "integer",
-                            "example": 123
-                        }
-                    }
-                ],
-                "requestBody": {
-                    "required": true,
-                    "content": {
-                        "application/json": {
-                            "schema": {
-                                "$ref": "#/components/schemas/StartGameRequest"
-                            }
-                        }
-                    }
-                },
-                "responses": {
-                    "201": {
-                        "description": "Die offene Lobby oder eine neue Lobby wurde mit den Spielern bef\u00fcllt und gestartet.",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/GameResponseDto"
-                                }
-                            }
-                        }
-                    },
-                    "400": {
-                        "description": "Der Request-Body ist kein g\u00fcltiges JSON (`REQUEST_INVALID_JSON_BODY`).",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/ApiError"
-                                }
-                            }
-                        }
-                    },
-                    "422": {
-                        "description": "Der Request-Body ist ung\u00fcltig und besteht die Validierung nicht, oder das Spiel h\u00e4tte danach `doubleOut` und `tripleOut` zugleich (`GAME_CONFLICTING_OUT_RULES`). Das Spiel bleibt unver\u00e4ndert.",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "anyOf": [
-                                        {
-                                            "$ref": "#/components/schemas/RequestValidationFailed"
-                                        },
-                                        {
-                                            "$ref": "#/components/schemas/ApiError"
-                                        }
-                                    ]
-                                }
-                            }
-                        }
-                    },
-                    "403": {
-                        "description": "Zugriff verweigert: `/api` ist per Firewall nur f\u00fcr ROLE_ADMIN offen, und der Code pr\u00fcft zus\u00e4tzlich die Spielteilnahme (`ACCESS_DENIED`).",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/ApiError"
-                                }
-                            }
-                        }
-                    },
-                    "409": {
-                        "description": "Das alte Spiel ist nicht das neueste Spiel, oder es ist weder beendet noch abgebrochen (`GAME_NOT_NEWEST`). Eine offene Lobby ist immer das neueste Spiel."
                     }
                 }
             }
@@ -198,7 +115,7 @@
                         }
                     },
                     "403": {
-                        "description": "Zugriff verweigert: `/api` ist per Firewall nur f\u00fcr ROLE_ADMIN offen, und der Code pr\u00fcft zus\u00e4tzlich die Spielteilnahme (`ACCESS_DENIED`).",
+                        "description": "Zugriff verweigert: Nur ROLE_ADMIN (das Tablet) darf diese Route nutzen (`ACCESS_DENIED`).",
                         "content": {
                             "application/json": {
                                 "schema": {
@@ -243,7 +160,7 @@
                         }
                     },
                     "403": {
-                        "description": "Zugriff verweigert: `/api` ist per Firewall nur f\u00fcr ROLE_ADMIN offen, und der Code pr\u00fcft zus\u00e4tzlich die Spielteilnahme (`ACCESS_DENIED`).",
+                        "description": "Zugriff verweigert: Nur ROLE_ADMIN (das Tablet) darf diese Route nutzen (`ACCESS_DENIED`).",
                         "content": {
                             "application/json": {
                                 "schema": {
@@ -288,53 +205,7 @@
                         }
                     },
                     "403": {
-                        "description": "Zugriff verweigert: `/api` ist per Firewall nur f\u00fcr ROLE_ADMIN offen, und der Code pr\u00fcft zus\u00e4tzlich die Spielteilnahme (`ACCESS_DENIED`).",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/ApiError"
-                                }
-                            }
-                        }
-                    },
-                    "409": {
-                        "description": "Das Spiel ist nicht beendet (`GAME_NOT_FINISHED`)."
-                    }
-                }
-            }
-        },
-        "/api/games/{gameId}/finished": {
-            "get": {
-                "tags": [
-                    "Game Lifecycle"
-                ],
-                "summary": "Returns finished game summary without mutating game state.",
-                "operationId": "get_app_games_finished",
-                "parameters": [
-                    {
-                        "name": "gameId",
-                        "in": "path",
-                        "required": true,
-                        "schema": {
-                            "type": "integer",
-                            "pattern": "\\d+",
-                            "example": 123
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "Normalisierte Summary des Spiels (read-only).",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/GameSummaryResponseDto"
-                                }
-                            }
-                        }
-                    },
-                    "403": {
-                        "description": "Zugriff verweigert: `/api` ist per Firewall nur f\u00fcr ROLE_ADMIN offen, und der Code pr\u00fcft zus\u00e4tzlich die Spielteilnahme (`ACCESS_DENIED`).",
+                        "description": "Zugriff verweigert: Nur ROLE_ADMIN (das Tablet) darf diese Route nutzen (`ACCESS_DENIED`).",
                         "content": {
                             "application/json": {
                                 "schema": {
@@ -394,7 +265,7 @@
                         "description": "Spielzustand hat sich seit der letzten Version nicht ge\u00e4ndert."
                     },
                     "403": {
-                        "description": "Zugriff verweigert: `/api` ist per Firewall nur f\u00fcr ROLE_ADMIN offen, und der Code pr\u00fcft zus\u00e4tzlich die Spielteilnahme (`ACCESS_DENIED`).",
+                        "description": "Zugriff verweigert: Nur ROLE_ADMIN (das Tablet) darf diese Route nutzen (`ACCESS_DENIED`).",
                         "content": {
                             "application/json": {
                                 "schema": {
@@ -436,7 +307,7 @@
                         }
                     },
                     "403": {
-                        "description": "Zugriff verweigert: `/api` ist per Firewall nur f\u00fcr ROLE_ADMIN offen, und der Code pr\u00fcft zus\u00e4tzlich die Spielteilnahme (`ACCESS_DENIED`).",
+                        "description": "Zugriff verweigert: Nur ROLE_ADMIN (das Tablet) darf diese Route nutzen (`ACCESS_DENIED`).",
                         "content": {
                             "application/json": {
                                 "schema": {
@@ -937,7 +808,7 @@
                         }
                     },
                     "403": {
-                        "description": "Zugriff verweigert: `/api` ist per Firewall nur f\u00fcr ROLE_ADMIN offen, und der Code pr\u00fcft zus\u00e4tzlich die Spielteilnahme (`ACCESS_DENIED`).",
+                        "description": "Zugriff verweigert: Nur ROLE_ADMIN (das Tablet) darf diese Route nutzen (`ACCESS_DENIED`).",
                         "content": {
                             "application/json": {
                                 "schema": {
@@ -950,76 +821,6 @@
                         "description": "Das alte Spiel ist nicht das neueste Spiel, oder es ist weder beendet noch abgebrochen (`GAME_NOT_NEWEST`). Eine offene Lobby ist immer das neueste Spiel."
                     }
                 }
-            }
-        },
-        "/api/game/settings": {
-            "post": {
-                "tags": [
-                    "Game Lifecycle"
-                ],
-                "summary": "Legacy-Endpoint f\u00fcr Spielanlage mit vollst\u00e4ndigem Spielzustand",
-                "description": "Deprecated. Ist ein Spiel in der Lobby, liefert der Endpoint dieses Spiel und \u00fcberschreibt seine Einstellungen; sonst legt er eine neue Lobby an. Verwenden Sie stattdessen `POST /api/room/create`, danach `PATCH /api/game/{gameId}/settings` und `GET /api/game/{gameId}/settings` f\u00fcr den kompakten Settings-Flow.",
-                "operationId": "post_app_game_settings_create",
-                "requestBody": {
-                    "required": true,
-                    "content": {
-                        "application/json": {
-                            "schema": {
-                                "$ref": "#/components/schemas/GameSettingsRequest"
-                            }
-                        }
-                    }
-                },
-                "responses": {
-                    "201": {
-                        "description": "Deprecated: liefert die offene Lobby oder eine neue Lobby mit vollst\u00e4ndigem Spielzustand zur\u00fcck.",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/GameResponseDto"
-                                }
-                            }
-                        }
-                    },
-                    "400": {
-                        "description": "Der Request-Body ist kein g\u00fcltiges JSON (`REQUEST_INVALID_JSON_BODY`).",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/ApiError"
-                                }
-                            }
-                        }
-                    },
-                    "422": {
-                        "description": "Der Request-Body ist ung\u00fcltig und besteht die Validierung nicht, oder das Spiel h\u00e4tte danach `doubleOut` und `tripleOut` zugleich (`GAME_CONFLICTING_OUT_RULES`). Das Spiel bleibt unver\u00e4ndert.",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "anyOf": [
-                                        {
-                                            "$ref": "#/components/schemas/RequestValidationFailed"
-                                        },
-                                        {
-                                            "$ref": "#/components/schemas/ApiError"
-                                        }
-                                    ]
-                                }
-                            }
-                        }
-                    },
-                    "403": {
-                        "description": "Zugriff verweigert: `/api` ist per Firewall nur f\u00fcr ROLE_ADMIN offen, und der Code pr\u00fcft zus\u00e4tzlich die Spielteilnahme (`ACCESS_DENIED`).",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/ApiError"
-                                }
-                            }
-                        }
-                    }
-                },
-                "deprecated": true
             }
         },
         "/api/game/{gameId}/settings": {
@@ -1053,7 +854,7 @@
                         }
                     },
                     "403": {
-                        "description": "Zugriff verweigert: `/api` ist per Firewall nur f\u00fcr ROLE_ADMIN offen, und der Code pr\u00fcft zus\u00e4tzlich die Spielteilnahme (`ACCESS_DENIED`).",
+                        "description": "Zugriff verweigert: Nur ROLE_ADMIN (das Tablet) darf diese Route nutzen (`ACCESS_DENIED`).",
                         "content": {
                             "application/json": {
                                 "schema": {
@@ -1131,7 +932,7 @@
                         }
                     },
                     "403": {
-                        "description": "Zugriff verweigert: `/api` ist per Firewall nur f\u00fcr ROLE_ADMIN offen, und der Code pr\u00fcft zus\u00e4tzlich die Spielteilnahme (`ACCESS_DENIED`).",
+                        "description": "Zugriff verweigert: Nur ROLE_ADMIN (das Tablet) darf diese Route nutzen (`ACCESS_DENIED`).",
                         "content": {
                             "application/json": {
                                 "schema": {
@@ -1192,42 +993,6 @@
                 }
             }
         },
-        "/api/games/{gameId}": {
-            "get": {
-                "tags": [
-                    "Statistics"
-                ],
-                "summary": "Returns details for a single game from overview context.",
-                "operationId": "get_app_games_details",
-                "parameters": [
-                    {
-                        "name": "gameId",
-                        "in": "path",
-                        "required": true,
-                        "schema": {
-                            "type": "integer",
-                            "pattern": "\\d+",
-                            "example": 123
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "Details eines einzelnen Spiels.",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/GameSummaryResponseDto"
-                                }
-                            }
-                        }
-                    },
-                    "404": {
-                        "description": "Spiel nicht gefunden."
-                    }
-                }
-            }
-        },
         "/api/players/stats": {
             "get": {
                 "tags": [
@@ -1283,126 +1048,6 @@
                         "description": "`limit` oder `offset` ist keine ganze Zahl."
                     }
                 }
-            }
-        },
-        "/api/game/{gameId}/throw": {
-            "post": {
-                "tags": [
-                    "Game Throws"
-                ],
-                "summary": "Records a throw for the current player.",
-                "operationId": "post_app_game_throw",
-                "parameters": [
-                    {
-                        "name": "gameId",
-                        "in": "path",
-                        "required": true,
-                        "schema": {
-                            "type": "integer",
-                            "example": 123
-                        }
-                    }
-                ],
-                "requestBody": {
-                    "required": true,
-                    "content": {
-                        "application/json": {
-                            "schema": {
-                                "$ref": "#/components/schemas/ThrowRequest"
-                            }
-                        }
-                    }
-                },
-                "responses": {
-                    "200": {
-                        "description": "Spielzustand nach dem Erfassen des Wurfs.",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/GameResponseDto"
-                                }
-                            }
-                        }
-                    },
-                    "409": {
-                        "description": "Wurf ist im aktuellen Zustand nicht erlaubt (z. B. falscher aktiver Spieler)."
-                    },
-                    "400": {
-                        "description": "Der Request-Body ist kein g\u00fcltiges JSON (`REQUEST_INVALID_JSON_BODY`).",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/ApiError"
-                                }
-                            }
-                        }
-                    },
-                    "422": {
-                        "description": "Der Request-Body ist ung\u00fcltig und besteht die Validierung nicht.",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/RequestValidationFailed"
-                                }
-                            }
-                        }
-                    },
-                    "403": {
-                        "description": "Zugriff verweigert: `/api` ist per Firewall nur f\u00fcr ROLE_ADMIN offen, und der Code pr\u00fcft zus\u00e4tzlich die Spielteilnahme (`ACCESS_DENIED`).",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/ApiError"
-                                }
-                            }
-                        }
-                    }
-                },
-                "deprecated": true
-            },
-            "delete": {
-                "tags": [
-                    "Game Throws"
-                ],
-                "summary": "Undoes the last recorded throw.",
-                "operationId": "delete_app_game_throw_undo",
-                "parameters": [
-                    {
-                        "name": "gameId",
-                        "in": "path",
-                        "required": true,
-                        "schema": {
-                            "type": "integer",
-                            "example": 123
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "Spielzustand nach dem R\u00fcckg\u00e4ngigmachen des letzten Wurfs.",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/GameResponseDto"
-                                }
-                            }
-                        }
-                    },
-                    "403": {
-                        "description": "Zugriff verweigert: `/api` ist per Firewall nur f\u00fcr ROLE_ADMIN offen, und der Code pr\u00fcft zus\u00e4tzlich die Spielteilnahme (`ACCESS_DENIED`).",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/ApiError"
-                                }
-                            }
-                        }
-                    },
-                    "409": {
-                        "description": "Das Spiel ist in der Lobby oder abgebrochen (`GAME_THROW_NOT_ALLOWED`); es wird nichts gel\u00f6scht. Oder der letzte Wurf hat das Spiel beendet, und das Spiel ist nicht das neueste Spiel (`GAME_NOT_NEWEST`). Das R\u00fcckg\u00e4ngigmachen w\u00fcrde das laufende Spiel abbrechen."
-                    }
-                },
-                "deprecated": true
             }
         },
         "/api/game/{gameId}/throw/delta": {
@@ -1468,7 +1113,7 @@
                         }
                     },
                     "403": {
-                        "description": "Zugriff verweigert: `/api` ist per Firewall nur f\u00fcr ROLE_ADMIN offen, und der Code pr\u00fcft zus\u00e4tzlich die Spielteilnahme (`ACCESS_DENIED`).",
+                        "description": "Zugriff verweigert: Nur ROLE_ADMIN (das Tablet) darf diese Route nutzen (`ACCESS_DENIED`).",
                         "content": {
                             "application/json": {
                                 "schema": {
@@ -1508,7 +1153,7 @@
                         }
                     },
                     "403": {
-                        "description": "Zugriff verweigert: `/api` ist per Firewall nur f\u00fcr ROLE_ADMIN offen, und der Code pr\u00fcft zus\u00e4tzlich die Spielteilnahme (`ACCESS_DENIED`).",
+                        "description": "Zugriff verweigert: Nur ROLE_ADMIN (das Tablet) darf diese Route nutzen (`ACCESS_DENIED`).",
                         "content": {
                             "application/json": {
                                 "schema": {
@@ -1688,7 +1333,7 @@
                         }
                     },
                     "403": {
-                        "description": "Zugriff verweigert: `/api` ist per Firewall nur f\u00fcr ROLE_ADMIN offen, und der Code pr\u00fcft zus\u00e4tzlich die Spielteilnahme (`ACCESS_DENIED`).",
+                        "description": "Zugriff verweigert: Nur ROLE_ADMIN (das Tablet) darf diese Route nutzen (`ACCESS_DENIED`).",
                         "content": {
                             "application/json": {
                                 "schema": {
@@ -2715,10 +2360,6 @@
                         "nullable": true
                     },
                     "isTriple": {
-                        "type": "boolean",
-                        "nullable": true
-                    },
-                    "isBust": {
                         "type": "boolean",
                         "nullable": true
                     }

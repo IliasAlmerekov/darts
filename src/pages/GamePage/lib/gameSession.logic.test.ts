@@ -1,8 +1,8 @@
 // @vitest-environment node
-import { describe, expect, it } from "vitest";
+import { describe, expect, expectTypeOf, it } from "vitest";
 import { buildBackendPlayer, buildGameThrowsResponse } from "@/shared/types/game.test-support";
 import type { GameThrowsResponse } from "@/types";
-import type { ThrowAckResponse, UndoAckResponse } from "@/types";
+import type { ThrowAckResponse, ThrowRequest, UndoAckResponse } from "@/types";
 import {
   applyReloadedGame,
   applyThrowAck,
@@ -13,6 +13,7 @@ import {
   markSessionOffline,
   retrySession,
   takeNextOp,
+  toThrowRequest,
   enqueueThrow,
   enqueueUndo,
   getSessionView,
@@ -536,5 +537,23 @@ describe("gameSession.logic", () => {
     };
 
     expect(getSessionView(session).isFinished).toBe(false);
+  });
+
+  it("builds a throw request without a bust flag, which the backend would reject", () => {
+    const session = send(
+      throwMany(createGameSession(buildGame({ alice: 301, bob: 301 })), ["T20"]),
+    );
+    const head = session.pending[0];
+    if (head?.kind !== "throw") {
+      throw new Error("expected a pending throw");
+    }
+
+    expectTypeOf<ThrowRequest>().not.toHaveProperty("isBust");
+    expect(toThrowRequest(head)).toEqual({
+      playerId: 1,
+      value: 20,
+      isDouble: false,
+      isTriple: true,
+    });
   });
 });
