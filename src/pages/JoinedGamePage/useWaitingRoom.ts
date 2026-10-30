@@ -40,7 +40,7 @@ export function useWaitingRoom(): UseWaitingRoomResult {
   }
 
   // The current game cannot tell a finished game from a removal; the profile lists the
-  // finished games, so only a game missing there was taken from the player.
+  // newest finished games, and a game missing from that list may be a removal.
   const mustCheckFinished = data?.kind === "none" && !hasSeenGame && earlierLobbyGameId !== null;
   const finishedCheck = useQuery({ ...playerQueries.profile(), enabled: mustCheckFinished });
 
