@@ -35,9 +35,9 @@ const StartPage = lazy(() => import("@/pages/StartPage/StartPage"));
 const GamePage = lazy(() => import("@/pages/GamePage"));
 const GameSummaryPage = lazy(() => import("@/pages/GameSummaryPage"));
 const GameDetailPage = lazy(() => import("@/pages/GameDetailPage/GameDetailPage"));
-const GamesOverview = lazy(() => import("@/pages/GamesOverviewPage/GamesOverview"));
+const GamesOverview = lazy(() => import("@/pages/GamesOverviewPage/GamesOverviewPage"));
 const SettingsPage = lazy(() => import("@/pages/SettingsPage"));
-const Statistics = lazy(() => import("@/pages/StatisticsPage/Statistics"));
+const Statistics = lazy(() => import("@/pages/StatisticsPage/StatisticsPage"));
 const JoinedGamePage = lazy(() => import("@/pages/JoinedGamePage"));
 const PlayerProfile = lazy(() => import("@/pages/PlayerProfilePage"));
 

@@ -1,6 +1,6 @@
 import React from "react";
 import { ErrorState } from "@/shared/ui/error-state";
-import styles from "./Settings.module.css";
+import styles from "./SettingsPage.module.css";
 import { SettingsTabs } from "./components/SettingsTabs";
 import { GAME_MODE_OPTIONS } from "@/lib/game/gameMode";
 import { POINTS_OPTIONS } from "./lib/points";

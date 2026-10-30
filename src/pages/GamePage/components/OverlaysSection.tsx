@@ -5,7 +5,7 @@ import { Button } from "@/shared/ui/button";
 import { LinkButton } from "@/shared/ui/link-button";
 import deleteIcon from "@/assets/icons/delete.svg";
 import Undo from "@/assets/icons/undo-copy.svg";
-import styles from "../Game.module.css";
+import styles from "../GamePage.module.css";
 import SettingsOverlay from "./SettingsOverlay";
 
 interface OverlaysSectionProps {

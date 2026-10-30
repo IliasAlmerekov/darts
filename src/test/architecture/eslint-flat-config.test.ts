@@ -87,7 +87,7 @@ describe("shared lib import aliases", () => {
     "src/shared/lib/guards/guards.ts",
     "src/pages/StartPage/startPageLoader.ts",
     "src/pages/StartPage/useIsCurrentGame.ts",
-    "src/pages/StatisticsPage/Statistics.tsx",
+    "src/pages/StatisticsPage/StatisticsPage.tsx",
   ])(
     "rejects the long alias in production file %s",
     async (filePath) => {
@@ -122,7 +122,7 @@ describe("dynamic shared lib imports", () => {
     "src/shared/lib/guards/guards.ts",
     "src/pages/StartPage/startPageLoader.ts",
     "src/pages/StartPage/useIsCurrentGame.ts",
-    "src/pages/StatisticsPage/Statistics.tsx",
+    "src/pages/StatisticsPage/StatisticsPage.tsx",
   ])(
     "rejects dynamic imports in %s",
     async (filePath) => {

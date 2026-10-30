@@ -1,5 +1,5 @@
 import React from "react";
-import styles from "./RegistrationPage.module.css";
+import styles from "./RegisterPage.module.css";
 import { useRegistrationPage } from "./useRegistrationPage";
 import { RegisterForm } from "./RegisterForm";
 import { InvitationErrorScreen } from "@/shared/ui/invitation-error-screen";

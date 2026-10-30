@@ -2,7 +2,7 @@ import React from "react";
 import { BackButton } from "@/shared/ui/back-button";
 import { LinkButton } from "@/shared/ui/link-button";
 import settingsIcon from "@/assets/icons/settings-inactive.svg";
-import styles from "../Game.module.css";
+import styles from "../GamePage.module.css";
 
 interface HeaderSectionProps {
   handleOpenExitOverlay: () => void;
