@@ -7,6 +7,12 @@ and this project does **not** yet follow [Semantic Versioning](https://semver.or
 
 ## [Unreleased]
 
+## [0.4.1] - 2026-10-30
+
+### Fixed
+
+- Deploy: releases build `darts-backend` at `945374d`, which upgrades `brotli-libs` to 1.2.1-r0 in the backend image and fixes the critical CVE-2026-111497. The base image `php:8.4.27-fpm-alpine` still ships 1.2.0-r1, and the release Trivy gate stopped v0.4.0 before deploy, so 0.4.1 is the first release that ships the 0.4.0 changes (IliasAlmerekov/darts-backend#230)
+
 ## [0.4.0] - 2026-10-30
 
 ### Added
