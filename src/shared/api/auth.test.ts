@@ -235,8 +235,9 @@ const loggedInExample = {
   redirect: "http://localhost:5173/joined",
 };
 const loginSuccessExample = { ...loggedInExample, gameId: 42 };
-// The session user `/api/login/success` answers after the controller fallback.
-const sessionUserExample = { ...loginSuccessExample, redirect: "http://localhost:5173/joined" };
+// The session user `/api/login/success` answers after the controller fallback. Its own game id
+// shows that the result comes from the session check, not from the login answer.
+const sessionUserExample = { ...loggedInExample, gameId: 7 };
 const credentials = { email: "alice@example.com", password: "s3cr3t" };
 
 describe("loginWithCredentials", () => {
@@ -250,15 +251,13 @@ describe("loginWithCredentials", () => {
   it("returns the logged-in user with the redirect and the joined game", async () => {
     vi.spyOn(apiClient, "post").mockImplementationOnce(respondWith(loginSuccessExample));
 
-    await expect(
-      loginWithCredentials({ email: "alice@example.com", password: "s3cr3t" }),
-    ).resolves.toEqual(loginSuccessExample);
+    await expect(loginWithCredentials(credentials)).resolves.toEqual(loginSuccessExample);
   });
 
   it("posts the credentials with the fixed CSRF field the backend origin check expects", async () => {
     const post = vi.spyOn(apiClient, "post").mockImplementationOnce(respondWith(loggedInExample));
 
-    await loginWithCredentials({ email: "alice@example.com", password: "s3cr3t" });
+    await loginWithCredentials(credentials);
 
     expect(post).toHaveBeenCalledOnce();
     expect(post).toHaveBeenCalledWith(
@@ -280,9 +279,7 @@ describe("loginWithCredentials", () => {
     const response = { ...loggedInExample, invitationError: "GAME_ALREADY_STARTED" };
     vi.spyOn(apiClient, "post").mockImplementationOnce(respondWith(response));
 
-    await expect(
-      loginWithCredentials({ email: "alice@example.com", password: "s3cr3t" }),
-    ).resolves.toEqual(response);
+    await expect(loginWithCredentials(credentials)).resolves.toEqual(response);
   });
 
   it("does not read the session when the login answers with the user", async () => {
@@ -339,6 +336,7 @@ describe("loginWithCredentials", () => {
 
     await expect(loginWithCredentials(credentials)).rejects.toBe(failure);
     expect(apiClient.get).toHaveBeenCalledOnce();
+    expect(clientLogger.error).toHaveBeenCalledWith("auth.login.failed", { error: failure });
   });
 
   it("rejects with the original error and logs the session check when that check throws", async () => {
@@ -370,9 +368,7 @@ describe("loginWithCredentials", () => {
       respondWith({ error: "Invalid credentials.", last_username: "alice" }),
     );
 
-    await expect(
-      loginWithCredentials({ email: "alice@example.com", password: "s3cr3t" }),
-    ).rejects.toBeInstanceOf(ApiValidationError);
+    await expect(loginWithCredentials(credentials)).rejects.toBeInstanceOf(ApiValidationError);
   });
 
   it("rejects with ApiValidationError when the invitation error is not a known code", async () => {
@@ -380,25 +376,19 @@ describe("loginWithCredentials", () => {
       respondWith({ ...loginSuccessExample, invitationError: "GAME_ON_FIRE" }),
     );
 
-    await expect(
-      loginWithCredentials({ email: "alice@example.com", password: "s3cr3t" }),
-    ).rejects.toBeInstanceOf(ApiValidationError);
+    await expect(loginWithCredentials(credentials)).rejects.toBeInstanceOf(ApiValidationError);
   });
 
   it("rejects with ApiValidationError when login returns a malformed response shape", async () => {
     vi.spyOn(apiClient, "post").mockImplementationOnce(respondWith({ redirect: 42 }));
 
-    await expect(
-      loginWithCredentials({ email: "alice@example.com", password: "s3cr3t" }),
-    ).rejects.toBeInstanceOf(ApiValidationError);
+    await expect(loginWithCredentials(credentials)).rejects.toBeInstanceOf(ApiValidationError);
   });
 
   it("rejects with ApiValidationError when login returns none of the known fields", async () => {
     vi.spyOn(apiClient, "post").mockImplementationOnce(respondWith({}));
 
-    await expect(
-      loginWithCredentials({ email: "alice@example.com", password: "s3cr3t" }),
-    ).rejects.toBeInstanceOf(ApiValidationError);
+    await expect(loginWithCredentials(credentials)).rejects.toBeInstanceOf(ApiValidationError);
   });
 });
 
