@@ -132,9 +132,10 @@ These layers have no barrels. Consumers deep-import by file name:
 
 ### Test-only files
 
-Test-only factories live next to the types as `*.test-support.ts`
-(`src/shared/types/game.test-support.ts`). Only test files (`*.test.ts`, `*.test.tsx`)
-import them; an import from production code would pull fixtures into the runtime bundle.
+Test-only factories live in `src/shared/types/` as `*.test-support.ts`
+(`src/shared/types/game.test-support.ts`). They build client types and API types from
+`shared/api`. Only test files (`*.test.ts`, `*.test.tsx`) import them; an import from
+production code would pull fixtures into the runtime bundle.
 
 ## Path aliases
 
