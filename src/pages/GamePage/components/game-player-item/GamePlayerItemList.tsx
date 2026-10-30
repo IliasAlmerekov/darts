@@ -1,7 +1,7 @@
 import React, { useRef } from "react";
 import clsx from "clsx";
 import type { WinnerPlayerProps } from "@/types";
-import useIsomorphicLayoutEffect from "@/shared/lib/useIsomorphicLayoutEffect";
+import useIsomorphicLayoutEffect from "@/lib/useIsomorphicLayoutEffect";
 import { getPlayerThrowsDisplay } from "../../lib/playerThrowsDisplay.logic";
 import GamePlayerItem from "./GamePlayerItem";
 import styles from "./GamePlayerItem.module.css";

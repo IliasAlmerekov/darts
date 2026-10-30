@@ -77,7 +77,7 @@ vi.mock("@/pages/GameSummaryPage", () => ({
   default: () => <div>Game Summary</div>,
 }));
 
-vi.mock("@/pages/GameDetailPage", () => ({
+vi.mock("@/pages/GameDetailPage/GameDetailPage", () => ({
   default: () => <div>Game Details</div>,
 }));
 
@@ -89,7 +89,7 @@ vi.mock("@/pages/SettingsPage", () => ({
   default: () => <div>Settings Page</div>,
 }));
 
-vi.mock("@/pages/StatisticsPage", () => ({
+vi.mock("@/pages/StatisticsPage/Statistics", () => ({
   default: () => <div>Statistics Page</div>,
 }));
 
@@ -228,7 +228,7 @@ describe("App routing", () => {
     window.history.pushState({}, "", "/statistics");
     vi.clearAllMocks();
     vi.resetModules();
-    vi.doMock("@/pages/StatisticsPage", () => ({
+    vi.doMock("@/pages/StatisticsPage/Statistics", () => ({
       default: function StatisticsPage(): never {
         throw pendingStatisticsPage;
       },
@@ -249,7 +249,7 @@ describe("App routing", () => {
     window.history.pushState({}, "", "/statistics");
     vi.clearAllMocks();
     vi.resetModules();
-    vi.doMock("@/pages/StatisticsPage", () => ({
+    vi.doMock("@/pages/StatisticsPage/Statistics", () => ({
       default: function StatisticsPage(): never {
         throw new Error("Crash");
       },

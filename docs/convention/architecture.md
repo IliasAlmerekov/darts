@@ -152,8 +152,7 @@ Defined in `tsconfig.json` and mirrored in `vite.config.ts`:
 | `@/types`    | `src/shared/types/index.ts` | shared types barrel (production)            |
 | `@/assets/*` | `src/assets/*`              | static assets                               |
 
-Import shared lib through `@/lib/...`, not `@/shared/lib/...`. Verification check 4 lists
-the imports that still use the long form; #214 moves them.
+Import shared lib through `@/lib/...`, not `@/shared/lib/...`. ESLint enforces this in production code.
 
 ## Routing (`src/app/App.tsx`)
 
@@ -216,12 +215,4 @@ rg -n -g '!**/*.test.{ts,tsx}' -g '!src/shared/api/**' \
 rg -n 'from "[^"]*\.test-support"' src -g '!**/*.test.{ts,tsx}'
 ```
 
-**4. Shared lib imported through `@/shared/lib/` instead of `@/lib/`:**
-
-```bash
-rg -n 'from "@/shared/lib/' src -g '!**/*.test.{ts,tsx}'
-```
-
-A clean run of (2), (3), and (4) prints nothing. Until #214 lands, (2) prints
-`src/pages/StatisticsPage/Statistics.tsx:3` and (4) prints one import each in
-`GamePlayerItemList.tsx` and `useIsCurrentGame.ts`; any other line is a new violation.
+A clean run of (2) and (3) prints nothing.

@@ -1,6 +1,6 @@
 import React, { useCallback, useState } from "react";
 import styles from "./Statistics.module.css";
-import Button from "@/shared/ui/button/Button";
+import { Button } from "@/shared/ui/button";
 import {
   Pagination,
   PaginationContent,

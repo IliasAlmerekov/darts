@@ -1,5 +1,5 @@
 import { useCallback, useRef } from "react";
-import useIsomorphicLayoutEffect from "@/shared/lib/useIsomorphicLayoutEffect";
+import useIsomorphicLayoutEffect from "@/lib/useIsomorphicLayoutEffect";
 
 /**
  * Returns a stable check for whether a game id is still the one the page shows. A seat request
