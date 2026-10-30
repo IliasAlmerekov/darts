@@ -56,6 +56,10 @@ _Avoid_: top three, winners
 The players of the standings from fourth place on.
 _Avoid_: rest, overview list
 
+**Standings entry**:
+One player's line in the standings: name, rounds played and Three-dart average.
+_Avoid_: winner player, player row
+
 **Podium placeholder**:
 The empty third podium slot shown when a game had only two players.
 _Avoid_: dummy player, fake third

@@ -13,7 +13,6 @@ function GameSummaryPage(): React.JSX.Element {
     leaving,
     isActionPending,
     podiumData,
-    standings,
     leaderBoardList,
     loadSummary,
     handleUndo,
@@ -44,7 +43,7 @@ function GameSummaryPage(): React.JSX.Element {
         </button>
       </div>
       <div className={styles.podiumBoard}>
-        <Podium userMap={podiumData} list={standings} />
+        <Podium userMap={podiumData} />
       </div>
       <div className={styles.leaderBoard}>
         <OverviewPlayerItemList userMap={leaderBoardList} />
