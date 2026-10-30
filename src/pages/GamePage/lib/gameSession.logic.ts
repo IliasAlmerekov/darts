@@ -1,4 +1,4 @@
-import { applyGameScoreboardDelta, normalizeGameData } from "@/lib/game/gameStateNormalizer";
+import { normalizeGameData } from "@/lib/game/gameStateNormalizer";
 import { parseThrowValue, type ParsedThrow } from "@/lib/game/parseThrowValue";
 import type {
   GameSettings,
@@ -10,9 +10,36 @@ import type {
 import {
   applyOptimisticThrow,
   applyOptimisticUndo,
-  applyScoreboardDeltaToGameState,
+  applyScoreboardDelta,
 } from "./optimisticThrow.logic";
-import { isLastActivePlayerLeft } from "./gameLogic.helpers";
+import { getFinishedPlayers, mapPlayersToUI } from "@/lib/game/player-mappers";
+import type { UIPlayer } from "@/types";
+
+/** True when any player has a throw in the current round or in a finished round. */
+function hasThrowHistory(gameData: GameThrowsResponse | null): boolean {
+  if (!gameData) {
+    return false;
+  }
+
+  return gameData.players.some(
+    (player) => player.currentRoundThrows.length > 0 || player.roundHistory.length > 0,
+  );
+}
+
+/**
+ * True when an unfinished game has one active player left and at least one finished. The server
+ * finishes the game at that point, so the page shows no finish overlay and takes no throw.
+ */
+function isLastActivePlayerLeft(gameData: GameThrowsResponse | null): boolean {
+  if (!gameData || gameData.status === "finished") {
+    return false;
+  }
+
+  const activePlayersCount = gameData.players.filter((player) => player.score > 0).length;
+  const finishedPlayersCount = gameData.players.filter((player) => player.score === 0).length;
+
+  return activePlayersCount === 1 && finishedPlayersCount >= 1;
+}
 
 /** ADR 0003: two full turns may wait for the server. */
 const MAX_UNCONFIRMED_THROWS = 6;
@@ -36,6 +63,8 @@ export interface GameSession {
   /** True while the request for `pending[0]` is on its way. */
   isHeadSent: boolean;
   recovery: Recovery;
+  dismissedZeroScorePlayerIds: number[];
+  skipFinishOverlay: boolean;
 }
 
 /**
@@ -53,10 +82,25 @@ export interface GameSessionView {
   /** The server has finished the game and acknowledged every tap, so the summary may open. */
   isFinished: boolean;
   isQueueFull: boolean;
+  canOpenSettings: boolean;
+  shouldShowFinishOverlay: boolean;
+  activePlayers: UIPlayer[];
+  finishedPlayers: UIPlayer[];
+  activePlayer: GameThrowsResponse["players"][number] | null;
 }
 
-export function createGameSession(game: GameThrowsResponse | null): GameSession {
-  return { confirmed: normalizeGameData(game), pending: [], isHeadSent: false, recovery: "none" };
+export function createGameSession(
+  game: GameThrowsResponse | null,
+  skipFinishOverlay = false,
+): GameSession {
+  return {
+    confirmed: normalizeGameData(game),
+    pending: [],
+    isHeadSent: false,
+    recovery: "none",
+    dismissedZeroScorePlayerIds: [],
+    skipFinishOverlay,
+  };
 }
 
 function applyOp(game: GameThrowsResponse, op: PendingOp): GameThrowsResponse {
@@ -85,6 +129,16 @@ export function getSessionView(session: GameSession): GameSessionView {
   const isBlocked = isWaitingForRetry || session.recovery === "reloading";
   const isQueueFull = countUnconfirmedThrows(session) >= MAX_UNCONFIRMED_THROWS;
   const shown = getShownGame(session);
+  const players = mapPlayersToUI(shown?.players ?? [], shown?.currentRound);
+  const activePlayers = players.filter((player) => player.score > 0);
+  const finishedPlayers = getFinishedPlayers(players);
+  const shouldShowFinishOverlay =
+    !session.skipFinishOverlay &&
+    shown?.status !== "finished" &&
+    !isLastActivePlayerLeft(shown) &&
+    players.some(
+      (player) => player.score === 0 && !session.dismissedZeroScorePlayerIds.includes(player.id),
+    );
 
   let status: SyncStatus = "idle";
   if (session.recovery === "offline" || session.recovery === "loadFailed") {
@@ -100,8 +154,17 @@ export function getSessionView(session: GameSession): GameSessionView {
     // The server finishes the game once one active player is left and would reject the next
     // tap, so throw input closes with the winning throw. Undo stays open to take it back.
     canThrow:
-      !isBlocked && !isQueueFull && shown?.status === "started" && !isLastActivePlayerLeft(shown),
-    canUndo: !isBlocked && shown !== null,
+      !isBlocked &&
+      !isQueueFull &&
+      !shouldShowFinishOverlay &&
+      shown?.status === "started" &&
+      !isLastActivePlayerLeft(shown),
+    canUndo: !isBlocked && !shouldShowFinishOverlay && hasThrowHistory(shown),
+    canOpenSettings: status !== "syncing" && !hasThrowHistory(shown),
+    shouldShowFinishOverlay,
+    activePlayers,
+    finishedPlayers,
+    activePlayer: shown?.players.find((player) => player.id === shown.activePlayerId) ?? null,
     canRetry: isWaitingForRetry,
     // The server finishes the game with the winning throw. Leaving the page drops
     // unacknowledged taps, so the summary waits until the server confirmed every one (#96).
@@ -155,7 +218,41 @@ export function enqueueUndo(session: GameSession): GameSession {
       ? session.pending.slice(0, lastIndex)
       : [...session.pending, { kind: "undo" }];
 
-  return { ...session, pending, recovery: clearFailedNotice(session.recovery) };
+  const next = { ...session, pending, recovery: clearFailedNotice(session.recovery) };
+  const zeroIds =
+    getShownGame(next)
+      ?.players.filter((player) => player.score === 0)
+      .map((player) => player.id) ?? [];
+  return {
+    ...next,
+    dismissedZeroScorePlayerIds: next.dismissedZeroScorePlayerIds.filter((id) =>
+      zeroIds.includes(id),
+    ),
+  };
+}
+
+export function dismissFinishedPlayers(session: GameSession): GameSession {
+  const ids =
+    getShownGame(session)
+      ?.players.filter((player) => player.score === 0)
+      .map((player) => player.id) ?? [];
+  return {
+    ...session,
+    dismissedZeroScorePlayerIds: Array.from(
+      new Set([...session.dismissedZeroScorePlayerIds, ...ids]),
+    ),
+  };
+}
+
+export function undoFromOverlay(session: GameSession): GameSession {
+  if (
+    session.recovery === "reloading" ||
+    session.recovery === "offline" ||
+    session.recovery === "loadFailed"
+  ) {
+    return session;
+  }
+  return enqueueUndo(dismissFinishedPlayers(session));
 }
 
 /** Marks the oldest pending op as sent and returns it, or null when nothing may be sent now. */
@@ -198,7 +295,7 @@ export function applyThrowAck(session: GameSession, ack: ThrowAckResponse): Game
     return null;
   }
 
-  const acknowledged = applyScoreboardDeltaToGameState(expected, ack.scoreboardDelta);
+  const acknowledged = applyScoreboardDelta(expected, ack.scoreboardDelta);
   if (acknowledged.activePlayerId !== expected.activePlayerId) {
     return null;
   }
@@ -228,7 +325,7 @@ export function applyUndoResponse(session: GameSession, ack: UndoAckResponse): G
     return null;
   }
 
-  const acknowledged = applyGameScoreboardDelta(undone, ack.scoreboardDelta);
+  const acknowledged = applyScoreboardDelta(undone, ack.scoreboardDelta);
   if (acknowledged.activePlayerId !== undone.activePlayerId) {
     return null;
   }
@@ -254,7 +351,13 @@ export function retrySession(session: GameSession): GameSession {
 }
 
 export function applyReloadedGame(session: GameSession, game: GameThrowsResponse): GameSession {
-  return { ...createGameSession(game), recovery: session.recovery === "none" ? "none" : "failed" };
+  return {
+    ...createGameSession(game, session.skipFinishOverlay),
+    dismissedZeroScorePlayerIds: session.dismissedZeroScorePlayerIds.filter((id) =>
+      game.players.some((player) => player.id === id && player.score === 0),
+    ),
+    recovery: session.recovery === "none" ? "none" : "failed",
+  };
 }
 
 export function markSessionOffline(session: GameSession): GameSession {

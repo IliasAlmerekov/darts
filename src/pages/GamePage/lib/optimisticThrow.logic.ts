@@ -1,3 +1,4 @@
+import { deriveActivePlayerId, deriveWinnerId } from "@/lib/game/gameStateNormalizer";
 import type { ParsedThrow } from "@/lib/game/parseThrowValue";
 import type { GameThrowsResponse, PlayerThrow, ScoreboardDelta } from "@/shared/api/game";
 
@@ -232,81 +233,67 @@ export function applyOptimisticThrow(
   return updatedState;
 }
 
-export function applyScoreboardDeltaToGameState(
+function normalizeActiveFlags(
+  players: GameThrowsResponse["players"],
+  activePlayerId: number | null,
+): GameThrowsResponse["players"] {
+  if (
+    activePlayerId === null ||
+    players.every((player) => player.isActive === (player.id === activePlayerId))
+  )
+    return players;
+  return players.map((player) => ({ ...player, isActive: player.id === activePlayerId }));
+}
+
+export function applyScoreboardDelta(
   currentGameData: GameThrowsResponse,
   scoreboardDelta: ScoreboardDelta,
 ): GameThrowsResponse {
-  const players = clonePlayers(currentGameData.players);
   const changedPlayerById = new Map(
     scoreboardDelta.changedPlayers.map((playerDelta) => [playerDelta.playerId, playerDelta]),
   );
 
-  const previousActivePlayerId = currentGameData.activePlayerId;
-  let activePlayerId = previousActivePlayerId;
-
-  const finalizePlayerTurn = (playerId: number): void => {
-    const player = players.find((candidate) => candidate.id === playerId);
-    if (!player) {
-      return;
-    }
-
-    if (player.currentRoundThrows.length > 0) {
-      player.roundHistory = [
-        ...(player.roundHistory ?? []),
-        { round: currentGameData.currentRound, throws: [...player.currentRoundThrows] },
-      ];
-    }
-    player.currentRoundThrows = [];
-    player.throwsInCurrentRound = 0;
-  };
-
-  players.forEach((player) => {
+  const patchedPlayers = currentGameData.players.map((player) => {
     const playerDelta = changedPlayerById.get(player.id);
     if (!playerDelta) {
-      return;
+      return player;
     }
 
-    player.score = playerDelta.score;
-    if (playerDelta.position !== undefined) {
-      player.position = playerDelta.position;
-    }
-    if (playerDelta.placement !== undefined) {
-      player.placement = playerDelta.placement;
-    }
-    player.isActive = playerDelta.isActive;
-    if (typeof playerDelta.isBust === "boolean") {
-      player.isBust = playerDelta.isBust;
-    }
-
-    if (playerDelta.isActive) {
-      activePlayerId = player.id;
-    }
+    return {
+      ...player,
+      score: playerDelta.score,
+      position: playerDelta.position === undefined ? player.position : playerDelta.position,
+      placement: playerDelta.placement === undefined ? player.placement : playerDelta.placement,
+      isActive: playerDelta.isActive,
+      isBust: typeof playerDelta.isBust === "boolean" ? playerDelta.isBust : player.isBust,
+    };
   });
 
-  if (activePlayerId !== previousActivePlayerId) {
-    if (previousActivePlayerId !== null) {
-      finalizePlayerTurn(previousActivePlayerId);
-    }
-    const nextActivePlayer = players.find((player) => player.id === activePlayerId);
-    if (nextActivePlayer) {
-      nextActivePlayer.currentRoundThrows = [];
-      nextActivePlayer.throwsInCurrentRound = 0;
-    }
-  }
-
-  const activePlayer = players.find((player) => player.id === activePlayerId);
-  const currentThrowCount = activePlayer
-    ? Math.max(activePlayer.currentRoundThrows.length, activePlayer.throwsInCurrentRound)
-    : currentGameData.currentThrowCount;
-
-  return {
+  const gameDataWithPatchedScoreboard = {
     ...currentGameData,
-    players,
-    activePlayerId,
-    currentThrowCount,
+    players: patchedPlayers,
     currentRound: scoreboardDelta.currentRound,
     status: scoreboardDelta.status,
     winnerId: scoreboardDelta.winnerId,
+  };
+  const activePlayerFromDelta = patchedPlayers.find((player) => player.isActive)?.id ?? null;
+  const activePlayerId =
+    activePlayerFromDelta ?? deriveActivePlayerId(gameDataWithPatchedScoreboard);
+  const patchedGameData = {
+    ...gameDataWithPatchedScoreboard,
+    activePlayerId,
+    winnerId: deriveWinnerId(gameDataWithPatchedScoreboard),
+    players: normalizeActiveFlags(patchedPlayers, activePlayerId),
+  };
+  const activePlayer = patchedGameData.players.find(
+    (player) => player.id === patchedGameData.activePlayerId,
+  );
+
+  return {
+    ...patchedGameData,
+    currentThrowCount: activePlayer
+      ? Math.max(activePlayer.currentRoundThrows.length, activePlayer.throwsInCurrentRound)
+      : gameDataWithPatchedScoreboard.currentThrowCount,
   };
 }
 

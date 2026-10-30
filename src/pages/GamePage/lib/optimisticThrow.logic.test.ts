@@ -5,7 +5,7 @@ import type { GameThrowsResponse, PlayerThrow } from "@/shared/api/game";
 import {
   applyOptimisticThrow,
   applyOptimisticUndo,
-  applyScoreboardDeltaToGameState,
+  applyScoreboardDelta,
 } from "./optimisticThrow.logic";
 
 function buildGameData(overrides: Partial<GameThrowsResponse> = {}): GameThrowsResponse {
@@ -409,82 +409,10 @@ describe("throwStateService", () => {
     expect(nextState?.players[1]?.isActive).toBe(true);
   });
 
-  it("should reconcile scoreboard delta by finalizing the previous active player turn when a turn change is received", () => {
-    const gameState = buildGameData({
-      currentRound: 7,
-      currentThrowCount: 1,
-      players: [
-        {
-          id: 1,
-          name: "P1",
-          score: 281,
-          isActive: true,
-          isBust: false,
-          position: null,
-          placement: null,
-          throwsInCurrentRound: 1,
-          currentRoundThrows: [{ value: 20, isDouble: false, isTriple: false, isBust: false }],
-          roundHistory: [],
-          isGuest: false,
-        },
-        {
-          id: 2,
-          name: "P2",
-          score: 301,
-          isActive: false,
-          isBust: false,
-          position: null,
-          placement: null,
-          throwsInCurrentRound: 0,
-          currentRoundThrows: [],
-          roundHistory: [],
-          isGuest: false,
-        },
-      ],
-    });
-
-    const nextState = applyScoreboardDeltaToGameState(gameState, {
-      changedPlayers: [
-        {
-          playerId: 1,
-          name: "P1",
-          score: 281,
-          position: null,
-          isActive: false,
-          isGuest: false,
-          isBust: false,
-        },
-        {
-          playerId: 2,
-          name: "P2",
-          score: 301,
-          position: null,
-          isActive: true,
-          isGuest: false,
-          isBust: false,
-        },
-      ],
-      winnerId: null,
-      status: "started",
-      currentRound: 7,
-    });
-
-    expect(nextState.activePlayerId).toBe(2);
-    expect(nextState.currentThrowCount).toBe(0);
-    expect(nextState.players[0]?.currentRoundThrows).toEqual([]);
-    expect(nextState.players[0]?.throwsInCurrentRound).toBe(0);
-    expect(nextState.players[0]?.roundHistory).toEqual([
-      {
-        round: 7,
-        throws: [{ value: 20, isDouble: false, isTriple: false, isBust: false }],
-      },
-    ]);
-  });
-
   it("keeps a player's position when the scoreboard delta omits it", () => {
     const gameState = buildGameDataWithFirstPlayerAtPosition(2);
 
-    const nextState = applyScoreboardDeltaToGameState(gameState, {
+    const nextState = applyScoreboardDelta(gameState, {
       changedPlayers: [{ playerId: 1, name: "P1", score: 281, isActive: true, isGuest: false }],
       winnerId: null,
       status: "started",
@@ -497,7 +425,7 @@ describe("throwStateService", () => {
   it("clears a player's position when the scoreboard delta sets it to null", () => {
     const gameState = buildGameDataWithFirstPlayerAtPosition(2);
 
-    const nextState = applyScoreboardDeltaToGameState(gameState, {
+    const nextState = applyScoreboardDelta(gameState, {
       changedPlayers: [
         { playerId: 1, name: "P1", score: 281, position: null, isActive: true, isGuest: false },
       ],
@@ -788,12 +716,12 @@ describe("placement in throw acknowledgements", () => {
         status: "started" as const,
         winnerId: null,
       };
-      const next = applyScoreboardDeltaToGameState(state, delta);
+      const next = applyScoreboardDelta(state, delta);
       expect(next.players[0]).toMatchObject({
         position: 0,
         placement: placement === undefined ? 1 : placement,
       });
-      const changed = applyScoreboardDeltaToGameState(next, {
+      const changed = applyScoreboardDelta(next, {
         ...delta,
         changedPlayers: [
           { playerId: 1, name: "Alice", score: 0, isActive: true, isGuest: false, placement: 3 },
@@ -876,4 +804,171 @@ describe("placement after undo", () => {
       expect(state.players.map((player) => player.placement)).toEqual([1, 2, 3]);
     },
   );
+});
+
+type GamePlayer = GameThrowsResponse["players"][number];
+
+function buildDeltaPlayer(overrides: Partial<GamePlayer> = {}): GamePlayer {
+  return {
+    id: 1,
+    name: "Player",
+    score: 501,
+    isActive: false,
+    position: null,
+    placement: null,
+    isBust: false,
+    isGuest: false,
+    throwsInCurrentRound: 0,
+    roundHistory: [],
+    currentRoundThrows: [],
+    ...overrides,
+  };
+}
+
+function buildDeltaGameData(overrides: Partial<GameThrowsResponse> = {}): GameThrowsResponse {
+  return {
+    type: "full-state",
+    id: 1,
+    activePlayerId: 1,
+    currentRound: 3,
+    currentThrowCount: 2,
+    status: "started",
+    winnerId: null,
+    settings: {
+      startScore: 501,
+      doubleOut: true,
+      tripleOut: false,
+    },
+    players: [
+      buildDeltaPlayer({
+        id: 1,
+        name: "Alice",
+        score: 301,
+        isActive: true,
+        position: 0,
+        placement: null,
+        throwsInCurrentRound: 2,
+      }),
+      buildDeltaPlayer({
+        id: 2,
+        name: "Bob",
+        score: 401,
+        position: 1,
+      }),
+    ],
+    ...overrides,
+  };
+}
+
+const mockDeltaGameData = buildDeltaGameData();
+
+describe("applyScoreboardDelta", () => {
+  it("keeps a player's position when the delta omits it", () => {
+    const nextGameData = applyScoreboardDelta(mockDeltaGameData, {
+      changedPlayers: [{ playerId: 2, name: "Bob", score: 341, isActive: true, isGuest: false }],
+      winnerId: null,
+      status: "started",
+      currentRound: 3,
+    });
+
+    expect(nextGameData.players[1]?.position).toBe(1);
+  });
+
+  it("clears a player's position when the delta sets it to null", () => {
+    const nextGameData = applyScoreboardDelta(mockDeltaGameData, {
+      changedPlayers: [
+        { playerId: 2, name: "Bob", score: 341, position: null, isActive: true, isGuest: false },
+      ],
+      winnerId: null,
+      status: "started",
+      currentRound: 3,
+    });
+
+    expect(nextGameData.players[1]?.position).toBeNull();
+  });
+
+  it("should apply scoreboard changes and recompute the active player when the delta updates the turn", () => {
+    const [firstPlayer, secondPlayer] = mockDeltaGameData.players;
+
+    if (firstPlayer === undefined || secondPlayer === undefined) {
+      throw new Error("Expected mockDeltaGameData.players to include two players.");
+    }
+
+    const currentGameData: GameThrowsResponse = {
+      ...mockDeltaGameData,
+      currentRound: 5,
+      currentThrowCount: 2,
+      players: [
+        {
+          ...firstPlayer,
+          score: 40,
+          throwsInCurrentRound: 2,
+          currentRoundThrows: [
+            { value: 20, isDouble: false, isTriple: false, isBust: false },
+            { value: 20, isDouble: false, isTriple: false, isBust: false },
+          ],
+        },
+        {
+          ...secondPlayer,
+          score: 101,
+          isActive: false,
+        },
+      ],
+    };
+
+    expect(
+      applyScoreboardDelta(currentGameData, {
+        changedPlayers: [
+          {
+            playerId: 1,
+            name: "Alice",
+            score: 60,
+            position: null,
+            isActive: false,
+            isGuest: false,
+            isBust: false,
+          },
+          {
+            playerId: 2,
+            name: "Bob",
+            score: 101,
+            position: 1,
+            isActive: true,
+            isGuest: false,
+            isBust: false,
+          },
+        ],
+        winnerId: null,
+        status: "started",
+        currentRound: 6,
+      }),
+    ).toEqual({
+      ...mockDeltaGameData,
+      activePlayerId: 2,
+      currentRound: 6,
+      currentThrowCount: 0,
+      status: "started",
+      winnerId: null,
+      players: [
+        {
+          ...firstPlayer,
+          score: 60,
+          isActive: false,
+          position: null,
+          placement: null,
+          throwsInCurrentRound: 2,
+          currentRoundThrows: [
+            { value: 20, isDouble: false, isTriple: false, isBust: false },
+            { value: 20, isDouble: false, isTriple: false, isBust: false },
+          ],
+        },
+        {
+          ...secondPlayer,
+          score: 101,
+          isActive: true,
+          position: 1,
+        },
+      ],
+    });
+  });
 });
