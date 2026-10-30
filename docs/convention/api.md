@@ -57,8 +57,7 @@ The API layer has two levels:
 
 - `@/shared/api` (the `index.ts` barrel): `setUnauthorizedHandler`,
   `clearUnauthorizedHandler`, `ApiError`, `UnauthorizedError`, `ForbiddenError`,
-  `NetworkError`, `TimeoutError`, plus everything re-exported from `endpoints.ts` and the
-  per-domain modules.
+  `NetworkError`, `TimeoutError`, plus everything re-exported from the per-domain modules.
 - `@/shared/api/<domain>`: the public entry for that domain's DTO types, resource functions,
   and per-domain caches.
 

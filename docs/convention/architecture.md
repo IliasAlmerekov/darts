@@ -97,15 +97,16 @@ The API layer has a **two-level public surface**:
 
 - `@/shared/api` (the `index.ts` barrel) exposes cross-cutting symbols:
   `setUnauthorizedHandler`, `clearUnauthorizedHandler`, `ApiError`, `ForbiddenError`,
-  `NetworkError`, `UnauthorizedError`, `TimeoutError`, endpoint constants, and re-exports
-  every domain module. It does not export `apiClient`.
+  `NetworkError`, `UnauthorizedError`, `TimeoutError`, and re-exports every domain module.
+  It does not export `apiClient` or anything from `endpoints.ts`.
 - `@/shared/api/<domain>` (`auth`, `game`, `room`, `statistics`, `player`) is the per-domain
   public surface. Pages and other shared code import resource calls and DTO types from
   these modules: `import { getGameThrows } from "@/shared/api/game"`.
 
 Internals -- `client.ts`, `errors.ts`, `types.ts`, `endpoints.ts`, `schemas.ts` -- are
 imported only inside `shared/api/`. Everything else uses what the barrel or a domain module
-exports; `apiClient` stays inside `shared/api/` (see `api.md`).
+exports; `apiClient` stays inside `shared/api/` (see `api.md`). Each domain file owns its
+paths; `endpoints.ts` holds only a path that 2+ domain files use (see `api.md`, "Endpoints").
 
 ### `shared/types/`
 
