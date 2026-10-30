@@ -171,8 +171,8 @@ The joined-game feature is a confirmation page displayed to users after successf
    - expect: User is on the joined game page
 
 2. Use Tab key to navigate through interactive elements
-   - expect: The 'My profile' link is the only focusable control while waiting for the game
-   - expect: The focused link shows a visible focus outline
+   - expect: The 'My profile' link and the 'Log out' button are the focusable controls while waiting for the game, in that order
+   - expect: Each focused control shows a visible focus outline
 
 #### 5.2. Verify semantic HTML and ARIA labels
 

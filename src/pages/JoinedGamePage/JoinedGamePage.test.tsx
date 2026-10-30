@@ -221,6 +221,31 @@ describe("JoinedGamePage", () => {
     expect(router.state.location.pathname).toBe(ROUTES.joined);
   });
 
+  it("should tell a player removed while the profile was open after browser back", async () => {
+    setCurrentGameId(42);
+    respondWithCurrentGames(lobby(42));
+    const { router } = renderPage();
+    await screen.findByText("Game #42");
+
+    fireEvent.click(screen.getByRole("link", { name: "My profile" }));
+    expect(await screen.findByText("Player profile")).toBeTruthy();
+
+    respondWithCurrentGames(noCurrentGame);
+    await act(() => router.navigate(-1));
+
+    expect(await screen.findByText("You are no longer in this game")).toBeTruthy();
+    expect(router.state.location.pathname).toBe(ROUTES.joined);
+  });
+
+  it("should tell a removed player after a reload of the Waiting room", async () => {
+    setCurrentGameId(42);
+    respondWithCurrentGames(noCurrentGame);
+    renderPage();
+
+    expect(await screen.findByText("You are no longer in this game")).toBeTruthy();
+    expect($currentGameId.get()).toBeNull();
+  });
+
   it("should open the player profile when there is no current game on load", async () => {
     respondWithCurrentGames(noCurrentGame);
     renderPage();
