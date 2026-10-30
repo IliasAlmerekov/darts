@@ -14,6 +14,9 @@ test.describe("Create Game with QR Code", () => {
 
     await expect(page.getByRole("button", { name: "Created" })).toBeDisabled();
     await expect(page.getByRole("heading", { name: "Selected Players" })).toBeVisible();
+    const emptyMessage = page.getByText("No players yet. Scan the QR code to join!");
+    await expect(emptyMessage).toBeVisible();
+    await expect(emptyMessage).toHaveCSS("color", "rgb(95, 95, 95)");
     await expect(page.getByText("GAME ID")).toBeVisible();
     await expect(page.getByText(`#${gameId}`)).toBeVisible();
     await expect(page.locator('[class*="qrCodeContainer"] svg')).toBeVisible();

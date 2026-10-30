@@ -74,6 +74,7 @@ and this project does **not** yet follow [Semantic Versioning](https://semver.or
 
 ### Fixed
 
+- Lobby: the empty roster message uses the muted text color, improving its contrast (#217)
 - Deploy: Caddy sends `Content-Security-Policy` (`default-src 'self'; img-src 'self' data:; frame-ancestors 'none'; base-uri 'self'; form-action 'self'; object-src 'none'`), `X-Frame-Options: DENY`, `X-Content-Type-Options: nosniff` and `Referrer-Policy: strict-origin-when-cross-origin` on every response: the frontend files, `/api` and the lobby stream. Another site can no longer load the app in an iframe and trick a tap on the tablet. The headers replace any value the backend sends, so each appears once. The release archive does not ship the `Caddyfile`; install it on the VM as `deploy/README.md` describes. The README now recreates the proxy after a `Caddyfile` change, because the running container keeps the old file (#227)
 - Statistics: alphabetical mode requests `sort=name:asc` and shows rows in the server's order, so page 2 continues the A–Z list where page 1 ended. Before, the page fetched the players with the best average and sorted only that page by name. Needs darts-backend#166 deployed (#342)
 - API: the game start response is validated against the contract as `GameResponseDto`, after darts-backend#46. A start or rematch start answer that is not a game state now fails with a validation error instead of passing unchecked (#206)
