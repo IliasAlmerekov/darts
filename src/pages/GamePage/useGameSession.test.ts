@@ -134,10 +134,14 @@ describe("useGameSession", () => {
       };
     }
 
-    async function renderCheckedOutGame(client = createQueryClient()) {
+    function buildCheckoutGame(): GameThrowsResponse {
       const game = buildGame(1, 20);
       game.players.push(buildBackendPlayer({ id: 3, name: "Cara", score: 301 }));
-      getGameThrowsIfChangedMock.mockResolvedValueOnce(game);
+      return game;
+    }
+
+    async function renderCheckedOutGame(client = createQueryClient()) {
+      getGameThrowsIfChangedMock.mockResolvedValueOnce(buildCheckoutGame());
       const ack = createDeferred<ThrowAckResponse>();
       recordThrowMock.mockReturnValueOnce(ack.promise);
       const rendered = renderHook(() => useGameSession(1), {
@@ -194,6 +198,35 @@ describe("useGameSession", () => {
       expect(result.current.view).toMatchObject({
         shouldShowFinishOverlay: false,
         canThrow: true,
+        finishError: null,
+      });
+    });
+
+    it("opens the next first checkout without the error of an earlier finish", async () => {
+      getGameThrowsIfChangedMock.mockImplementation((gameId) =>
+        Promise.resolve(gameId === 1 ? buildCheckoutGame() : buildGame(gameId)),
+      );
+      recordThrowMock.mockImplementation(() => Promise.resolve(buildCheckoutAck()));
+      finishGameMock.mockRejectedValueOnce(new ApiError("Server error", { status: 500 }));
+      const { result, rerender } = renderHook(({ gameId }) => useGameSession(gameId), {
+        wrapper: QueryClientWrapper,
+        initialProps: { gameId: 1 },
+      });
+      await waitFor(() => expect(result.current.view.canThrow).toBe(true));
+      act(() => result.current.commands.throwDart(20));
+      await waitFor(() => expect(result.current.view.canFinishGame).toBe(true));
+      act(() => result.current.commands.finishGame());
+      await waitFor(() => expect(result.current.view.finishError).not.toBeNull());
+
+      rerender({ gameId: 2 });
+      await waitFor(() => expect(result.current.view.game?.id).toBe(2));
+      rerender({ gameId: 1 });
+      await waitFor(() => expect(result.current.view.canThrow).toBe(true));
+      act(() => result.current.commands.throwDart(20));
+
+      expect(result.current.view).toMatchObject({
+        shouldShowFinishOverlay: true,
+        isFinishPending: false,
         finishError: null,
       });
     });

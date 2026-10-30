@@ -118,6 +118,14 @@ export function useGameSession(gameId: number | null): UseGameSessionResult {
       if (next.confirmed !== previous.confirmed || next.pending !== previous.pending) {
         setGameData(getShownGame(next));
       }
+      // A finish request belongs to the overlay it ran from, so a newly opened overlay starts
+      // without the error or the aborted request of an earlier one.
+      if (
+        getSessionView(next).shouldShowFinishOverlay &&
+        !getSessionView(previous).shouldShowFinishOverlay
+      ) {
+        setFinishState(null);
+      }
     },
     [sessionAtom],
   );
