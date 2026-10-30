@@ -32,7 +32,6 @@ factory.
 src/shared/api/
   client.ts            # apiClient + ApiValidationError + setUnauthorizedHandler
   errors.ts            # typed error classes
-  endpoints.ts         # cross-domain endpoints only (currently: createInviteEndpoint)
   schemas.ts           # Valibot schemas shared by 2+ domain files, integerSchema
   types.ts             # apiClient types (HttpMethod, ApiRequestConfig, QueryParams)
   index.ts             # barrel: cross-cutting public surface
@@ -62,7 +61,7 @@ The API layer has two levels:
   and per-domain caches.
 
 `apiClient` stays inside `shared/api/`: only the domain files call it, and the barrel does not
-export it. Internals (`client.ts`, `errors.ts`, `types.ts`, `endpoints.ts`, `schemas.ts`) are
+export it. Internals (`client.ts`, `errors.ts`, `types.ts`, `schemas.ts`) are
 never deep-imported from outside `shared/api/`.
 
 ## `apiClient`: single gateway
@@ -121,8 +120,7 @@ ADR 0002 records why responses are described by Valibot schemas.
   `type` of `GameResponseDto`, `ThrowAckDto` and `UndoAckDto` has a contract `default`, so it
   is `v.optional(v.picklist([...]), default)`. A schema may still map a parsed response to a
   client-side result with `v.transform` (`loginResponseSchema` in `auth.ts`).
-- A schema used by 2+ domain files lives in `schemas.ts`, like a shared endpoint in
-  `endpoints.ts`.
+- A schema used by 2+ domain files lives in `schemas.ts`.
 - Shared guards in `@/lib/guards/guards` are for code outside the API layer. `shared/api/`
   has no `isXxxResponse` guards.
 
@@ -151,14 +149,13 @@ It is thrown when the body does not match the `validate` schema; `raw` holds the
 
 ## Endpoints
 
-Three forms coexist:
+Two forms coexist:
 
 - **Static path constant** at the top of the domain file: `const LOGIN_ENDPOINT = "/login";`
 - **Path builder** for path-with-id endpoints: `const GAME_ENDPOINT = (id: number) => ...`
-- **Cross-domain shared** in `endpoints.ts`, only for a path that 2+ domain files use
-  (currently `createInviteEndpoint`).
 
-Domain endpoints stay inside the domain file until a second domain file needs the path.
+Each domain file owns its paths. A path that a second domain file needs moves to an internal
+`endpoints.ts`, which holds only paths that 2+ domain files use.
 
 ## Server reads: TanStack Query
 

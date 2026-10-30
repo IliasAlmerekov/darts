@@ -26,7 +26,7 @@ records why.
 
 ```
 src/shared/
-  api/         # apiClient, endpoints, typed errors, Valibot schemas, per-domain calls
+  api/         # apiClient, typed errors, Valibot schemas, per-domain calls
   hooks/       # cross-page hooks
   lib/         # helpers (guards, router, error mapping, game logic, session cleanup, etc.)
   query/       # the QueryClient and query options per resource (auth, statistics, game, player)
@@ -98,15 +98,15 @@ The API layer has a **two-level public surface**:
 - `@/shared/api` (the `index.ts` barrel) exposes cross-cutting symbols:
   `setUnauthorizedHandler`, `clearUnauthorizedHandler`, `ApiError`, `ForbiddenError`,
   `NetworkError`, `UnauthorizedError`, `TimeoutError`, and re-exports every domain module.
-  It does not export `apiClient` or anything from `endpoints.ts`.
+  It does not export `apiClient`.
 - `@/shared/api/<domain>` (`auth`, `game`, `room`, `statistics`, `player`) is the per-domain
   public surface. Pages and other shared code import resource calls and DTO types from
   these modules: `import { getGameThrows } from "@/shared/api/game"`.
 
-Internals -- `client.ts`, `errors.ts`, `types.ts`, `endpoints.ts`, `schemas.ts` -- are
+Internals -- `client.ts`, `errors.ts`, `types.ts`, `schemas.ts` -- are
 imported only inside `shared/api/`. Everything else uses what the barrel or a domain module
 exports; `apiClient` stays inside `shared/api/` (see `api.md`). Each domain file owns its
-paths; `endpoints.ts` holds only a path that 2+ domain files use (see `api.md`, "Endpoints").
+paths (see `api.md`, "Endpoints").
 
 ### `shared/types/`
 
@@ -204,7 +204,7 @@ ls src/
 
 ```bash
 rg -n -g '!**/*.test.{ts,tsx}' -g '!src/shared/api/**' \
-  -e 'from "@/shared/api/(client|errors|types|endpoints|schemas)"' \
+  -e 'from "@/shared/api/(client|errors|types|schemas)"' \
   -e 'from "@/shared/ui/[^/"]+/' \
   -e 'from "@/(shared/)?types/' \
   src
