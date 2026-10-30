@@ -28,6 +28,8 @@ import {
   applyThrowAck,
   applyUndoResponse,
   createGameSession,
+  dismissFinishedPlayers,
+  undoFromOverlay,
   enqueueThrow,
   enqueueUndo,
   failSession,
@@ -46,11 +48,16 @@ interface GameSessionPageView extends GameSessionView {
   game: GameThrowsResponse | null;
   isLoading: boolean;
   error: Error | null;
+  isInteractionDisabled: boolean;
+  isUndoDisabled: boolean;
+  isSettingsDisabled: boolean;
 }
 
 interface GameSessionCommands {
   throwDart: (value: string | number) => void;
   undo: () => void;
+  continueGame: () => void;
+  undoFromOverlay: () => void;
   /** Reloads the game after a failed first load or after the server could not be reached. */
   retry: () => void;
   updateSettings: (settings: GameSettings) => void;
@@ -70,7 +77,10 @@ function isAbortError(error: unknown): boolean {
  * is the only writer of the game store while the game page is open. Every response carries the
  * session generation; one that arrives after the page left the game is ignored.
  */
-export function useGameSession(gameId: number | null): UseGameSessionReturn {
+export function useGameSession(
+  gameId: number | null,
+  skipFinishOverlay = false,
+): UseGameSessionReturn {
   // Local to this hook, so each game page instance starts with its own queue.
   const [sessionAtom] = useState(() => atom<GameSession>(createGameSession(null)));
   const session = useStore(sessionAtom);
@@ -108,7 +118,7 @@ export function useGameSession(gameId: number | null): UseGameSessionReturn {
           return;
         }
         if (data) {
-          commit(createGameSession(data));
+          commit(applyReloadedGame(sessionAtom.get(), data));
         }
       } catch (loadError) {
         if (!isCurrent(generation) || isAbortError(loadError)) {
@@ -232,7 +242,7 @@ export function useGameSession(gameId: number | null): UseGameSessionReturn {
     // would send the page straight back to the summary.
     const cached = $gameData.get();
     const hasCachedGame = gameId !== null && cached?.id === gameId && cached.status !== "finished";
-    sessionAtom.set(createGameSession(hasCachedGame ? cached : null));
+    sessionAtom.set(createGameSession(hasCachedGame ? cached : null, skipFinishOverlay));
     if (!hasCachedGame) {
       resetGameStore();
     }
@@ -247,7 +257,7 @@ export function useGameSession(gameId: number | null): UseGameSessionReturn {
       generationRef.current += 1;
       controller.abort();
     };
-  }, [gameId, loadGame, sessionAtom]);
+  }, [gameId, loadGame, sessionAtom, skipFinishOverlay]);
 
   const throwDart = useCallback(
     (value: string | number): void => {
@@ -289,6 +299,19 @@ export function useGameSession(gameId: number | null): UseGameSessionReturn {
     void sendNext();
   }, [commit, sendNext, sessionAtom]);
 
+  const continueGame = useCallback((): void => {
+    commit(dismissFinishedPlayers(sessionAtom.get()));
+  }, [commit, sessionAtom]);
+
+  const handleUndoFromOverlay = useCallback((): void => {
+    const current = sessionAtom.get();
+    const next = undoFromOverlay(current);
+    commit(next);
+    if (next.pending === current.pending) return;
+    playSound("undo");
+    void sendNext();
+  }, [commit, sendNext, sessionAtom]);
+
   const retry = useCallback((): void => {
     if (gameId === null) {
       return;
@@ -313,12 +336,27 @@ export function useGameSession(gameId: number | null): UseGameSessionReturn {
 
   const sessionView = useMemo(() => getSessionView(session), [session]);
   const commands = useMemo(
-    () => ({ throwDart, undo, retry, updateSettings }),
-    [retry, throwDart, undo, updateSettings],
+    () => ({
+      throwDart,
+      undo,
+      retry,
+      updateSettings,
+      continueGame,
+      undoFromOverlay: handleUndoFromOverlay,
+    }),
+    [retry, throwDart, undo, updateSettings, continueGame, handleUndoFromOverlay],
   );
 
   return {
-    view: { ...sessionView, game, isLoading, error },
+    view: {
+      ...sessionView,
+      game,
+      isLoading,
+      error,
+      isInteractionDisabled: isLoading || !!error || !game || !sessionView.canThrow,
+      isUndoDisabled: isLoading || !!error || !game || !sessionView.canUndo,
+      isSettingsDisabled: !sessionView.canOpenSettings,
+    },
     commands,
   };
 }
