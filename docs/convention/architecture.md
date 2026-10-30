@@ -111,9 +111,10 @@ exports; `apiClient` stays inside `shared/api/` (see `api.md`).
 
 - Production code imports types through the `@/types` barrel
   (`src/shared/types/index.ts`). Deep imports (`@/shared/types/game`,
-  `@/shared/types/api`, etc.) are forbidden in production.
+  etc.) are forbidden in production.
 - API request and response types live in `shared/api/<domain>`; `shared/types` holds
-  client-only types and never imports from `shared/api`.
+  client-only types. Its production files never import from `shared/api`; only
+  `*.test-support.ts` factories may.
 - Test files import test-support factories by path:
   `import { buildBackendPlayer } from "@/shared/types/game.test-support"`.
 
