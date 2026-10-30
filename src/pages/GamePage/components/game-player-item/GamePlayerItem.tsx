@@ -2,76 +2,38 @@ import React from "react";
 import styles from "./GamePlayerItem.module.css";
 import bustIconX from "@/assets/icons/delete-grey.svg";
 import clsx from "clsx";
-import { usePlayerThrowsDisplay } from "../../usePlayerThrowsDisplay";
+import type { ThrowSlot, ThrowSlots } from "../../lib/playerThrowsDisplay.logic";
 
 interface GamePlayerItemProps {
   name?: string;
   isActive?: boolean;
   value: number;
-  gamePlayerItemThrow1?: React.ReactNode;
-  gamePlayerItemThrow2?: React.ReactNode;
-  gamePlayerItemThrow3?: React.ReactNode;
-  throw1IsBust?: boolean | undefined;
-  throw2IsBust?: boolean | undefined;
-  throw3IsBust?: boolean | undefined;
+  throwSlots: ThrowSlots;
   className: string;
-  isBust?: boolean | undefined;
   isPlaying?: boolean | undefined;
-  roundsCountLength: number;
-  gamePlayerItemPrevThrow1?: React.ReactNode;
-  gamePlayerItemPrevThrow2?: React.ReactNode;
-  gamePlayerItemPrevThrow3?: React.ReactNode;
-  prevThrow1IsBust?: boolean | undefined;
-  prevThrow2IsBust?: boolean | undefined;
-  prevThrow3IsBust?: boolean | undefined;
   id?: string;
   itemRef?: React.Ref<HTMLDivElement>;
 }
 
 const BUST_ICON = <img src={bustIconX} alt="Bust icon" />;
 
+function renderSlotContent(slot: ThrowSlot): React.ReactNode {
+  if (slot.kind === "value") return slot.label;
+  if (slot.kind === "bust-icon") return BUST_ICON;
+  return null;
+}
+
 function GamePlayerItem({
   name,
   isActive = false,
   value,
-  gamePlayerItemThrow1,
-  gamePlayerItemThrow2,
-  gamePlayerItemThrow3,
-  throw1IsBust,
-  throw2IsBust,
-  throw3IsBust,
+  throwSlots,
   className,
-  isBust,
   isPlaying,
-  roundsCountLength,
-  gamePlayerItemPrevThrow1,
-  gamePlayerItemPrevThrow2,
-  gamePlayerItemPrevThrow3,
-  prevThrow1IsBust,
-  prevThrow2IsBust,
-  prevThrow3IsBust,
   id,
   itemRef,
 }: GamePlayerItemProps): React.JSX.Element {
-  // Business logic: calculate throw display values
-  const displayThrows = usePlayerThrowsDisplay({
-    isActive,
-    isBust,
-    roundsCountLength,
-    currentThrow1: gamePlayerItemThrow1,
-    currentThrow2: gamePlayerItemThrow2,
-    currentThrow3: gamePlayerItemThrow3,
-    prevThrow1: gamePlayerItemPrevThrow1,
-    prevThrow2: gamePlayerItemPrevThrow2,
-    prevThrow3: gamePlayerItemPrevThrow3,
-    throw1IsBust,
-    throw2IsBust,
-    throw3IsBust,
-    prevThrow1IsBust,
-    prevThrow2IsBust,
-    prevThrow3IsBust,
-    bustIcon: BUST_ICON,
-  });
+  const [slot1, slot2, slot3] = throwSlots;
 
   return (
     <div
@@ -102,26 +64,26 @@ function GamePlayerItem({
         >
           <div
             className={clsx(styles.divDisplay, styles.copyLarge, {
-              [styles.handleBust ?? ""]: displayThrows.throw1IsBust && !isActive,
+              [styles.handleBust ?? ""]: slot1.isBust && !isActive,
             })}
           >
-            {displayThrows.throw1}
+            {renderSlotContent(slot1)}
           </div>
 
           <div
             className={clsx(styles.divDisplay, styles.copyLarge, {
-              [styles.handleBust ?? ""]: displayThrows.throw2IsBust && !isActive,
+              [styles.handleBust ?? ""]: slot2.isBust && !isActive,
             })}
           >
-            {displayThrows.throw2}
+            {renderSlotContent(slot2)}
           </div>
 
           <div
             className={clsx(styles.divDisplay, styles.copyLarge, {
-              [styles.handleBust ?? ""]: displayThrows.throw3IsBust && !isActive,
+              [styles.handleBust ?? ""]: slot3.isBust && !isActive,
             })}
           >
-            {displayThrows.throw3}
+            {renderSlotContent(slot3)}
           </div>
         </div>
 
@@ -140,6 +102,19 @@ function GamePlayerItem({
   );
 }
 
+function getSlotLabel(slot: ThrowSlot): string | undefined {
+  return slot.kind === "value" ? slot.label : undefined;
+}
+
+function isSameSlot(previousSlot: ThrowSlot, nextSlot: ThrowSlot): boolean {
+  return (
+    previousSlot.kind === nextSlot.kind &&
+    previousSlot.isBust === nextSlot.isBust &&
+    getSlotLabel(previousSlot) === getSlotLabel(nextSlot)
+  );
+}
+
+// The list builds a new slot tuple on every render, so slots compare by value.
 function areEqual(
   previousProps: Readonly<GamePlayerItemProps>,
   nextProps: Readonly<GamePlayerItemProps>,
@@ -148,21 +123,10 @@ function areEqual(
     previousProps.name === nextProps.name &&
     previousProps.isActive === nextProps.isActive &&
     previousProps.value === nextProps.value &&
-    previousProps.gamePlayerItemThrow1 === nextProps.gamePlayerItemThrow1 &&
-    previousProps.gamePlayerItemThrow2 === nextProps.gamePlayerItemThrow2 &&
-    previousProps.gamePlayerItemThrow3 === nextProps.gamePlayerItemThrow3 &&
-    previousProps.throw1IsBust === nextProps.throw1IsBust &&
-    previousProps.throw2IsBust === nextProps.throw2IsBust &&
-    previousProps.throw3IsBust === nextProps.throw3IsBust &&
-    previousProps.isBust === nextProps.isBust &&
+    isSameSlot(previousProps.throwSlots[0], nextProps.throwSlots[0]) &&
+    isSameSlot(previousProps.throwSlots[1], nextProps.throwSlots[1]) &&
+    isSameSlot(previousProps.throwSlots[2], nextProps.throwSlots[2]) &&
     previousProps.isPlaying === nextProps.isPlaying &&
-    previousProps.roundsCountLength === nextProps.roundsCountLength &&
-    previousProps.gamePlayerItemPrevThrow1 === nextProps.gamePlayerItemPrevThrow1 &&
-    previousProps.gamePlayerItemPrevThrow2 === nextProps.gamePlayerItemPrevThrow2 &&
-    previousProps.gamePlayerItemPrevThrow3 === nextProps.gamePlayerItemPrevThrow3 &&
-    previousProps.prevThrow1IsBust === nextProps.prevThrow1IsBust &&
-    previousProps.prevThrow2IsBust === nextProps.prevThrow2IsBust &&
-    previousProps.prevThrow3IsBust === nextProps.prevThrow3IsBust &&
     previousProps.id === nextProps.id &&
     previousProps.className === nextProps.className
   );
