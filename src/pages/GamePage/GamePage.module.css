@@ -23,7 +23,7 @@
 }
 
 .finishGameOverlay p.overlayError {
-  color: #d00000;
+  color: var(--red-strong);
 }
 
 .overlayBox {

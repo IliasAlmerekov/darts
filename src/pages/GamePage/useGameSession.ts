@@ -73,6 +73,13 @@ interface GameSessionCommands {
   updateSettings: (settings: GameSettings) => void;
 }
 
+/** The overlay's Finish game request of one game. */
+interface FinishState {
+  gameId: number;
+  isPending: boolean;
+  error: string | null;
+}
+
 interface UseGameSessionResult {
   view: GameSessionPageView;
   commands: GameSessionCommands;
@@ -100,11 +107,7 @@ export function useGameSession(gameId: number | null): UseGameSessionResult {
   // The game whose finish request runs, or ran and succeeded while the page moves away. The ref
   // is the synchronous lock against a second tap; the state mirrors it for rendering.
   const finishingGameIdRef = useRef<number | null>(null);
-  const [finishState, setFinishState] = useState<{
-    gameId: number;
-    isPending: boolean;
-    error: string | null;
-  } | null>(null);
+  const [finishState, setFinishState] = useState<FinishState | null>(null);
   // Finish state belongs to the game it ran for, so it never follows a game change.
   const finish = finishState?.gameId === gameId ? finishState : null;
 
