@@ -71,6 +71,7 @@ and this project does **not** yet follow [Semantic Versioning](https://semver.or
 ### Removed
 
 - Config: the unused `@/types/*` path alias in `tsconfig.json`; shared types are imported through the `@/types` barrel (#360)
+- Build: `vercel.json`, `Dockerfile`, `docker-compose.frontend.yml` and `docker/nginx.conf` are gone. Vercel is retired, production runs from the files in `deploy/`, and no CI job or deploy script built the root image. Dependabot now watches the images in `deploy/frontend.Dockerfile` instead of the deleted root `Dockerfile`. The README lists the build and run files that remain and when each is used (#355)
 
 ### Fixed
 

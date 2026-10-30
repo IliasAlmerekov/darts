@@ -276,7 +276,7 @@ describe("StartPage", () => {
   it("should preserve absolute invitation links from the backend when copying the invite link", async () => {
     setInvitation({
       gameId: 42,
-      invitationLink: "https://darts-sigma.vercel.app/api/invite/join/abc",
+      invitationLink: "https://example.com/api/invite/join/abc",
     });
     vi.mocked(getGameThrows).mockResolvedValueOnce(buildGameThrowsResponse({ id: 42 }));
 
@@ -296,9 +296,7 @@ describe("StartPage", () => {
       fireEvent.click(screen.getByRole("button", { name: "Copy Invite Link" }));
     });
 
-    expect(writeTextMock).toHaveBeenCalledWith(
-      "https://darts-sigma.vercel.app/api/invite/join/abc",
-    );
+    expect(writeTextMock).toHaveBeenCalledWith("https://example.com/api/invite/join/abc");
   });
 
   it("should keep Start label while button is disabled during game start", async () => {
