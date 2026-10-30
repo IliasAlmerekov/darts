@@ -108,7 +108,7 @@ workspace folder that holds both repos. The frontend container serves this check
 browser checks and `npm run test:e2e` see the branch that is checked out.
 
 `.nvmrc` pins Node.js, and every workflow reads it. A Node.js update changes `.nvmrc` and
-the `node:` images in `Dockerfile`, `deploy/frontend.Dockerfile`, `compose.dev.yaml` and
+the `node:` images in `deploy/frontend.Dockerfile`, `compose.dev.yaml` and
 `.gitlab-ci.yml` together. A Node.js major also moves `@types/node` to the same major in
 `package.json` and the lockfile, because Dependabot skips `@types/node` majors.
 
