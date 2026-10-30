@@ -249,6 +249,8 @@ describe("useLoginPage", () => {
     });
 
     it("keeps the logged-in user when a pending Remembered login check answers late with no user", async () => {
+      // A fresh cached user would let the check skip its request, so nothing would be in flight.
+      queryClient.removeQueries({ queryKey: AUTH_KEY });
       let answerSessionCheck: (user: null) => void = () => {};
       getAuthenticatedUserMock.mockReturnValueOnce(
         new Promise((resolve) => {
@@ -256,6 +258,7 @@ describe("useLoginPage", () => {
         }),
       );
       const sessionCheck = queryClient.prefetchQuery(authQueries.me());
+      expect(getAuthenticatedUserMock).toHaveBeenCalledOnce();
       loginWithCredentialsMock.mockResolvedValueOnce(joinedPlayer);
 
       await submitLogin();
