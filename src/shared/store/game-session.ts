@@ -265,7 +265,8 @@ export function getActiveGameId(): number | null {
 
 /**
  * Whether the server last said the player waits in a lobby. A game that later disappears
- * from there was taken from the player, not finished.
+ * from there was taken from the player, not finished. The Waiting room reads it once when it
+ * opens, so it lives in session storage alone, without an atom.
  */
 export function wasWaitingInLobby(): boolean {
   if (!canUseSessionStorage()) {

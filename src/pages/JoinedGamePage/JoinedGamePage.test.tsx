@@ -257,9 +257,10 @@ describe("JoinedGamePage", () => {
   });
 
   it("should open the player profile on a reload after the started game has ended", async () => {
-    setCurrentGameId(42);
-    respondWithCurrentGames(started(42));
+    respondWithCurrentGames(lobby(42), started(42));
     const { unmount } = renderPage();
+    await screen.findByText("Game #42");
+    await advancePolling();
     await screen.findByText("The game has started");
     unmount();
 
