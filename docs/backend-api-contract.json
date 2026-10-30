@@ -346,22 +346,7 @@
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "required": [
-                                        "success",
-                                        "gameId"
-                                    ],
-                                    "properties": {
-                                        "success": {
-                                            "type": "boolean",
-                                            "example": true
-                                        },
-                                        "gameId": {
-                                            "type": "integer",
-                                            "example": 123,
-                                            "nullable": true
-                                        }
-                                    },
-                                    "type": "object"
+                                    "$ref": "#/components/schemas/RoomCreateResponseDto"
                                 }
                             }
                         }
@@ -768,31 +753,7 @@
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "required": [
-                                        "success"
-                                    ],
-                                    "properties": {
-                                        "success": {
-                                            "type": "boolean",
-                                            "example": true
-                                        },
-                                        "gameId": {
-                                            "type": "integer",
-                                            "example": 456,
-                                            "nullable": true
-                                        },
-                                        "invitationLink": {
-                                            "type": "string",
-                                            "example": "/api/invite/join/xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx",
-                                            "nullable": true
-                                        },
-                                        "message": {
-                                            "type": "string",
-                                            "example": "Vorheriges Spiel nicht gefunden",
-                                            "nullable": true
-                                        }
-                                    },
-                                    "type": "object"
+                                    "$ref": "#/components/schemas/RematchResponseDto"
                                 }
                             }
                         }
@@ -2672,6 +2633,47 @@
                     "success": {
                         "type": "boolean",
                         "default": true
+                    }
+                },
+                "type": "object"
+            },
+            "RoomCreateResponseDto": {
+                "required": [
+                    "success",
+                    "gameId"
+                ],
+                "properties": {
+                    "success": {
+                        "type": "boolean",
+                        "default": true,
+                        "example": true
+                    },
+                    "gameId": {
+                        "type": "integer",
+                        "example": 123
+                    }
+                },
+                "type": "object"
+            },
+            "RematchResponseDto": {
+                "required": [
+                    "success",
+                    "gameId",
+                    "invitationLink"
+                ],
+                "properties": {
+                    "success": {
+                        "type": "boolean",
+                        "default": true,
+                        "example": true
+                    },
+                    "gameId": {
+                        "type": "integer",
+                        "example": 456
+                    },
+                    "invitationLink": {
+                        "type": "string",
+                        "example": "/api/invite/join/xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
                     }
                 },
                 "type": "object"
