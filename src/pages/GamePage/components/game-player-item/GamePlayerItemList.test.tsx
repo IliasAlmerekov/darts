@@ -4,6 +4,23 @@ import { describe, expect, it, vi, beforeEach, afterEach } from "vitest";
 import type { WinnerPlayerProps } from "@/types";
 import GamePlayerItemList from "./GamePlayerItemList";
 
+// Each GamePlayerItem render reads `styles.throws` exactly once and the list never reads it,
+// so the read count is the number of row renders.
+const rowRenders = vi.hoisted(() => ({ count: 0 }));
+
+vi.mock("./GamePlayerItem.module.css", () => ({
+  default: new Proxy(
+    {},
+    {
+      get: (_target, key): string | undefined => {
+        if (typeof key !== "string") return undefined;
+        if (key === "throws") rowRenders.count += 1;
+        return key;
+      },
+    },
+  ),
+}));
+
 const createPlayer = (id: number, name: string, isActive: boolean): WinnerPlayerProps => ({
   id,
   name,
@@ -117,5 +134,34 @@ describe("GamePlayerItemList", () => {
 
     vi.runAllTimers();
     expect(scrollIntoViewMock).toHaveBeenCalledTimes(1);
+  });
+
+  it("should re-render only the row whose data changed when the list gets an equal player", () => {
+    const createPlayerWithRounds = (): WinnerPlayerProps => ({
+      ...createPlayer(1, "Player 1", false),
+      score: 240,
+      isBust: true,
+      rounds: [
+        { throw1: 20, throw1IsDouble: true, throw2: 19, throw2IsTriple: true, throw3: 0 },
+        { throw1: 5, throw1IsBust: true },
+      ],
+    });
+
+    const { rerender } = render(
+      <GamePlayerItemList
+        userMap={[createPlayerWithRounds(), createPlayer(2, "Player 2", true)]}
+        round={2}
+      />,
+    );
+    const rendersAfterMount = rowRenders.count;
+
+    rerender(
+      <GamePlayerItemList
+        userMap={[createPlayerWithRounds(), { ...createPlayer(2, "Player 2", true), score: 281 }]}
+        round={2}
+      />,
+    );
+
+    expect(rowRenders.count - rendersAfterMount).toBe(1);
   });
 });
