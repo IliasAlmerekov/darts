@@ -10,7 +10,6 @@ export {
 } from "./errors";
 
 // Domain API modules
-export * from "./endpoints";
 export * from "./game";
 export * from "./room";
 export * from "./auth";
