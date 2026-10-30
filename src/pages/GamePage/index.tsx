@@ -5,7 +5,8 @@ import { ROUTES } from "@/lib/router/routes";
 import { DEFAULT_START_SCORE } from "@/lib/game/gameMode";
 import GamePlayerItemList from "./components/game-player-item/GamePlayerItemList";
 import FinishedGamePlayerItemList from "./components/game-player-item/FinishedGamePlayerItemList";
-// HeaderSection comes first so LinkButton's CSS precedes Game.module.css, which overrides it.
+// shortcut: HeaderSection stays the first section import so LinkButton's CSS loads before
+// Game.module.css overrides it; drop the ordering once .settingsBtn and .undoThrow win on specificity.
 import { HeaderSection } from "./components/HeaderSection";
 import { KeyboardSection } from "./components/KeyboardSection";
 import { OverlaysSection } from "./components/OverlaysSection";
