@@ -18,10 +18,16 @@ Rules:
 - Add non-module CSS only to `src/app/styles/index.css`. It is imported by the bootstrap
   files `src/index.tsx` and `src/app/App.tsx` only.
 - Import a CSS Module only from its own folder. In pages and shared UI that is
-  `./<Name>.module.css`; a `../` or `@/` import crosses an ownership boundary.
+  `./<Name>.module.css`; a `../` or `@/` import crosses an ownership boundary. Page
+  sections are the one exception, below.
 - Share one CSS Module between sibling components only when they are one visual unit
   (`Keyboard.module.css` for `Keyboard` and `NumberButton`; `GamePlayerItem.module.css`
   for the player item and its lists).
+- A page section is a component in `src/pages/<Page>/components/` that is a slice of the
+  page's own layout, bound to it. It imports the page's module from the parent folder as
+  `../<Page>.module.css` (`HeaderSection`, `KeyboardSection` and `OverlaysSection` use
+  `../Game.module.css`). A standalone UI component owns its own module. When a section
+  becomes standalone, move its styles into a local module, so the page module stays small.
 
 ## Global stylesheet
 
@@ -157,10 +163,12 @@ rg -n '^import .*\.css' src --glob '*.{ts,tsx}' --glob '!src/index.tsx' --glob '
 rg -n "className=\{?[\"'][A-Za-z]" src --glob '*.tsx'
 ```
 
-**4. No CSS Module imported from another folder**:
+**4. No CSS Module imported from another folder**, except page sections importing their
+page's module:
 
 ```bash
-rg -n 'from "(@/|\.\./)[^"]*\.module\.css"' src/pages src/shared
+rg -n 'from "(@/|\.\./)[^"]*\.module\.css"' src/pages src/shared \
+  | rg -v '^src/pages/[^/]+/components/[^/:]+:[0-9]+:import styles from "\.\./[A-Za-z]+\.module\.css";$'
 ```
 
 `src/app/` files import their own modules through `@/app/...`, so the check skips `src/app/`.
