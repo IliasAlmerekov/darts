@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import React from "react";
 import { createMemoryRouter, data, RouterProvider } from "react-router-dom";
-import { render, screen } from "@testing-library/react";
+import { act, render, screen } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import ErrorBoundary from "@/app/ErrorBoundary";
 import { clientLogger } from "@/shared/services/browser/clientLogger";
@@ -14,6 +14,23 @@ const ThrowingRoute = (): React.JSX.Element => {
   throw new Error("Crash");
 };
 
+const firstCrash = new Error("First crash");
+const secondCrash = new Error("Second crash");
+
+const FirstThrowingRoute = (): React.JSX.Element => {
+  throw firstCrash;
+};
+
+const SecondThrowingRoute = (): React.JSX.Element => {
+  throw secondCrash;
+};
+
+const routeCrashLogs = (): unknown[] =>
+  vi
+    .mocked(clientLogger.error)
+    .mock.calls.filter(([event]) => event === "route_error_boundary_crash")
+    .map(([, payload]) => payload);
+
 describe("ErrorBoundary", () => {
   let errorHandler: ((event: ErrorEvent) => void) | null = null;
   let consoleErrorSpy: ReturnType<typeof vi.spyOn>;
@@ -23,6 +40,7 @@ describe("ErrorBoundary", () => {
   ): ReturnType<typeof createMemoryRouter> => createMemoryRouter(routes);
 
   beforeEach(() => {
+    vi.mocked(clientLogger.error).mockClear();
     consoleErrorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
     errorHandler = (event) => {
       event.preventDefault();
@@ -127,5 +145,58 @@ describe("ErrorBoundary", () => {
     render(<RouterProvider router={router} />);
 
     expect(screen.getByRole("button", { name: "Reload" })).toBeTruthy();
+  });
+
+  it("should log one route error once under StrictMode", async () => {
+    const router = createRouter([
+      {
+        path: "/",
+        element: <ThrowingRoute />,
+        errorElement: <ErrorBoundary />,
+      },
+    ]);
+
+    render(
+      <React.StrictMode>
+        <RouterProvider router={router} />
+      </React.StrictMode>,
+    );
+
+    expect(await screen.findByRole("alert")).toBeTruthy();
+    expect(routeCrashLogs()).toEqual([
+      expect.objectContaining({ error: expect.objectContaining({ message: "Crash" }) }),
+    ]);
+  });
+
+  it("should log a different route error after navigation under StrictMode", async () => {
+    const router = createRouter([
+      {
+        path: "/",
+        errorElement: <ErrorBoundary />,
+        children: [
+          { index: true, element: <FirstThrowingRoute /> },
+          { path: "other", element: <SecondThrowingRoute /> },
+        ],
+      },
+    ]);
+
+    render(
+      <React.StrictMode>
+        <RouterProvider router={router} />
+      </React.StrictMode>,
+    );
+
+    expect(await screen.findByRole("alert")).toBeTruthy();
+
+    await act(async () => {
+      await router.navigate("/other");
+    });
+
+    expect(router.state.location.pathname).toBe("/other");
+    expect(screen.getByRole("alert")).toBeTruthy();
+    expect(routeCrashLogs()).toEqual([
+      expect.objectContaining({ error: firstCrash }),
+      expect.objectContaining({ error: secondCrash }),
+    ]);
   });
 });
