@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { useQueryClient } from "@tanstack/react-query";
 import {
   abortGame,
-  createRematch,
+  createRematchGame,
   getGameThrows,
   updateGameSettings,
   type GameSettings,
@@ -184,7 +184,7 @@ export function useGameExitFlow({
       }
       resetRoomStore();
 
-      const rematch = await createRematch(gameId);
+      const rematch = await createRematchGame(gameId);
       if (controller.signal.aborted) {
         releaseExitLock();
         return;

@@ -15,6 +15,7 @@ and this project does **not** yet follow [Semantic Versioning](https://semver.or
 
 ### Changed
 
+- API: the room create and rematch responses follow darts-backend#222. `POST /api/room/create` needs an integer `gameId`, and `POST /api/room/{id}/rematch` needs `success`, an integer `gameId` and `invitationLink` and drops `message`; a body without them fails validation instead of reaching the hand-written guards, which are gone. A rematch never calls the invite endpoint, `createRematch()` folds into `createRematchGame()`, and the summary page always stores the rematch invitation. The backend already sends these bodies, so screens are unchanged (#397)
 - Game: consolidate session state and scoreboard reconciliation (#387).
 
 - Finished game: the Podium and the Leaderboard render a `StandingsEntry` (name, rounds played, Three-dart average already formatted, `isPlaceholder` for the Podium placeholder) instead of a live-game `WinnerPlayerProps` with invented scores and empty rounds. `buildFinishedGameStandings` takes the finished players or nothing and returns only `podiumData` and `leaderBoardList`; the summary page wrapper and the `threeDartAverage` module are gone, the detail page wrapper only passes the players on, and `Podium` hides the placeholder card without a `list` prop. A negative round count now shows `-` instead of an average, like a player with no round; otherwise the Podium, the Leaderboard, the ranks and the average format look the same (#389)

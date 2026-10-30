@@ -187,18 +187,13 @@ export function useGameSummaryPage(): UseGameSummaryPageResult {
     try {
       setActionError(null);
       const rematch = await startRematch(finishedGameIdFromRoute);
-      if (!rematch?.gameId) {
-        throw new Error("Invalid rematch response: missing game id");
-      }
 
       releaseFinishedGame(finishedGameIdFromRoute);
       setCurrentGameId(rematch.gameId);
-      if (rematch.invitationLink) {
-        setInvitation({
-          gameId: rematch.gameId,
-          invitationLink: rematch.invitationLink,
-        });
-      }
+      setInvitation({
+        gameId: rematch.gameId,
+        invitationLink: rematch.invitationLink,
+      });
       navigate(ROUTES.game(rematch.gameId));
     } catch (err) {
       if (isGameNotNewestError(err)) {
@@ -228,9 +223,6 @@ export function useGameSummaryPage(): UseGameSummaryPageResult {
     try {
       setActionError(null);
       const rematch = await createRematchGame(finishedGameIdFromRoute);
-      if (!rematch?.gameId) {
-        throw new Error("Invalid rematch response: missing game id");
-      }
 
       // A failed rematch, such as 409 GAME_NOT_NEWEST, leaves the open room untouched.
       resetRoomStore();
