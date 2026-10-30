@@ -1,7 +1,6 @@
 import * as v from "valibot";
 import { apiClient } from "./client";
 import { ApiError } from "./errors";
-import { createInviteEndpoint } from "./endpoints";
 import { integerSchema, invitationResponseSchema, successMessageResponseSchema } from "./schemas";
 import type { CreateGameSettingsPayload } from "./game";
 
@@ -67,6 +66,7 @@ const CREATE_ROOM_ENDPOINT = "/room/create";
 const ROOM_ENDPOINT = (id: number) => `/room/${id}`;
 const UPDATE_PLAYER_ORDER_ENDPOINT = (id: number) => `/room/${id}/positions`;
 const ADD_GUEST_ENDPOINT = (id: number) => `/room/${id}/guest`;
+const CREATE_INVITE_ENDPOINT = (id: number) => `/invite/create/${id}`;
 
 // ---------------------------------------------------------------------------
 // Room
@@ -81,7 +81,7 @@ type CreateGamePayload = Partial<CreateGameSettingsPayload> & {
  * Fetches an invitation link for a game.
  */
 export async function getInvitation(gameId: number, signal?: AbortSignal): Promise<RoomInvitation> {
-  const invite = await apiClient.post(createInviteEndpoint(gameId), undefined, {
+  const invite = await apiClient.post(CREATE_INVITE_ENDPOINT(gameId), undefined, {
     ...(signal ? { signal } : {}),
     validate: invitationResponseSchema,
   });
