@@ -3,6 +3,12 @@ import type { PlayerProfileGame, PlayerProfileResponse } from "@/shared/api/play
 const MISSING_VALUE = "–";
 const UNKNOWN_NAME = "Unknown";
 
+/**
+ * The most finished games the profile lists, newest first (backend
+ * `PlayerProfileService::RECENT_GAMES_LIMIT`). A full list may leave out older games.
+ */
+export const RECENT_GAMES_LIMIT = 10;
+
 interface ProfileParticipant {
   key: string;
   label: string;

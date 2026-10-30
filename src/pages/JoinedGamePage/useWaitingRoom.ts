@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { playerQueries } from "@/shared/query/player.queries";
 import { getLobbyGameId } from "@/shared/store";
-import type { WaitingRoomView } from "./lib/waitingRoomView";
+import { provesRemoval, type WaitingRoomView } from "./lib/waitingRoomView";
 
 const FAILURES_BEFORE_CONNECTION_LOST = 3;
 
@@ -60,10 +60,8 @@ export function useWaitingRoom(): UseWaitingRoomResult {
   } else if (finishedCheck.isError || finishedCheck.data === undefined) {
     view = { kind: "no-game" };
   } else {
-    const hasFinished = finishedCheck.data.history.some(
-      (game) => game.gameId === earlierLobbyGameId,
-    );
-    view = { kind: hasFinished ? "no-game" : "removed" };
+    const isRemoved = provesRemoval(finishedCheck.data.history, earlierLobbyGameId);
+    view = { kind: isRemoved ? "removed" : "no-game" };
   }
 
   return {

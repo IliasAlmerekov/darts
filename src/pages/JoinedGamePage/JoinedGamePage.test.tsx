@@ -306,6 +306,22 @@ describe("JoinedGamePage", () => {
     expect(await screen.findByText("You are no longer in this game")).toBeTruthy();
   });
 
+  it("should open the player profile when a full list of other finished games proves nothing", async () => {
+    setLobbyGameId(42);
+    respondWithCurrentGames(noCurrentGame);
+    vi.mocked(getPlayerProfile).mockResolvedValue(
+      buildPlayerProfile({
+        recentGames: Array.from({ length: 10 }, (_, index) =>
+          buildPlayerProfileGame({ gameId: 50 + index }),
+        ),
+      }),
+    );
+    renderPage();
+
+    expect(await screen.findByText("Player profile")).toBeTruthy();
+    expect(screen.queryByText("You are no longer in this game")).toBeNull();
+  });
+
   it("should open the player profile when the finished-game check fails", async () => {
     setLobbyGameId(42);
     respondWithCurrentGames(noCurrentGame);
