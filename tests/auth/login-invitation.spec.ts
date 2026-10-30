@@ -8,8 +8,19 @@ import {
 import { lobbyCurrentGame, mockCurrentGame } from "../shared/current-game-mocks";
 import type { Page } from "@playwright/test";
 
+const INVITATION_PATH = "/api/invite/join/0b9c6f1e-4d2a-4f8e-9a3b-7c5d1e2f3a4b";
+
+/** The scanned QR code opens the backend join route, which stores the invitation and redirects to the app. */
+async function scanInvitation(page: Page): Promise<void> {
+  await page.route(`**${INVITATION_PATH}`, async (route) => {
+    await route.fulfill({ status: 302, headers: { location: "/" } });
+  });
+  await page.goto(INVITATION_PATH);
+  await expect(page).toHaveURL("/");
+}
+
 async function logIn(page: Page): Promise<void> {
-  await page.goto("/");
+  await scanInvitation(page);
   await page.getByRole("textbox", { name: "Email *" }).fill(MOCK_LOGIN_CREDENTIALS.email);
   await page.getByRole("textbox", { name: "Password *" }).fill(MOCK_LOGIN_CREDENTIALS.password);
   await page.getByRole("button", { name: "Sign in" }).click();
