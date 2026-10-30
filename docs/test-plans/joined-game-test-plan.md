@@ -43,6 +43,11 @@ The joined-game feature is a confirmation page displayed to users after successf
    - expect: The text color in the success box is #155724
    - expect: The layout is responsive and centered vertically
 
+3. At 360px, 768px and 1024px width, inspect the card header in the lobby view
+   - expect: The 'My profile' link sits to the right of the 'Joined game' heading
+   - expect: The link is on the same row as the heading
+   - expect: The heading stays on one line
+
 #### 1.3. Display page for unauthenticated users
 
 **File:** `tests/joined-game/unauthenticated-access.spec.ts`
@@ -166,8 +171,8 @@ The joined-game feature is a confirmation page displayed to users after successf
    - expect: User is on the joined game page
 
 2. Use Tab key to navigate through interactive elements
-   - expect: No focusable controls are present on the page
-   - expect: Tab navigation does not focus any controls
+   - expect: The 'My profile' link is the only focusable control while waiting for the game
+   - expect: The focused link shows a visible focus outline
 
 #### 5.2. Verify semantic HTML and ARIA labels
 

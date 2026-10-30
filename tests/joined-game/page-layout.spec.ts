@@ -47,7 +47,8 @@ test("Verify page layout and styling", async ({ page }) => {
     await expect(successBox).toBeVisible();
 
     // Verify the heading is visible
-    await expect(page.locator("h1")).toContainText("Joined game");
+    const title = page.getByRole("heading", { name: "Joined game" });
+    await expect(title).toBeVisible();
 
     // Verify no logout button is shown on the joined confirmation page
     const logoutButton = page.locator("button").filter({ hasText: /logout/i });
@@ -60,7 +61,6 @@ test("Verify page layout and styling", async ({ page }) => {
     await expect(hasHorizontalScroll, `${viewport.name} should not overflow`).toBe(false);
 
     // Verify the profile link sits top right, on one line with the single-line title
-    const title = page.locator("h1");
     const titleBox = await title.boundingBox();
     const titleLineHeight = await title.evaluate((element) =>
       Number.parseFloat(getComputedStyle(element).lineHeight),
