@@ -4,7 +4,8 @@ import type {
   GameSettingsResponse,
   GameThrowsResponse,
 } from "@/shared/api/game";
-import type { FinishedGameProps, WinnerPlayerProps } from "./game";
+import type { StandingsEntry } from "@/lib/game/finishedGameStandings";
+import type { FinishedGameProps } from "./game";
 
 export function buildFinishedGame(overrides: Partial<FinishedGameProps> = {}): FinishedGameProps {
   return {
@@ -92,52 +93,16 @@ export function buildFinishedPlayerResponses(): FinishedPlayerResponse[] {
 }
 
 /** The standings entries the summary and detail pages show for `buildFinishedPlayerResponses()`. */
-export function buildExpectedStandings(): WinnerPlayerProps[] {
+export function buildExpectedStandings(): StandingsEntry[] {
   return [
-    {
-      id: 1,
-      name: "Alice",
-      score: 0,
-      isActive: false,
-      index: 0,
-      rounds: [{}, {}, {}, {}, {}],
-      scoreAverage: 60.5,
-      roundCount: 5,
-    },
-    {
-      id: 2,
-      name: "Bob",
-      score: 0,
-      isActive: false,
-      index: 1,
-      rounds: [{}, {}, {}, {}, {}, {}],
-      scoreAverage: 50,
-      roundCount: 6,
-    },
-    {
-      id: 3,
-      name: "Cara",
-      score: 0,
-      isActive: false,
-      index: 2,
-      rounds: [{}],
-      scoreAverage: 0,
-      roundCount: 0,
-    },
-    {
-      id: 4,
-      name: "Dan",
-      score: 0,
-      isActive: false,
-      index: 3,
-      rounds: [{}, {}, {}, {}, {}, {}, {}],
-      scoreAverage: 40.25,
-      roundCount: 7,
-    },
+    { id: 1, name: "Alice", rounds: 5, threeDartAverage: "60.50" },
+    { id: 2, name: "Bob", rounds: 6, threeDartAverage: "50.00" },
+    { id: 3, name: "Cara", rounds: 0, threeDartAverage: "-" },
+    { id: 4, name: "Dan", rounds: 7, threeDartAverage: "40.25" },
   ];
 }
 
 /** The empty third podium slot shown when a game had only two players. */
-export function buildExpectedPodiumPlaceholder(): WinnerPlayerProps {
-  return { id: 0, name: "-", score: 0, isActive: false, index: 0, rounds: [{}] };
+export function buildExpectedPodiumPlaceholder(): StandingsEntry {
+  return { id: 0, name: "-", rounds: 0, threeDartAverage: "-", isPlaceholder: true };
 }

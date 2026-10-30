@@ -560,8 +560,8 @@ describe("useGameSummaryPage", () => {
     const { result } = renderSummaryHook();
 
     await waitFor(() => {
-      expect(result.current.standings).toEqual([
-        expect.objectContaining({ id: 3, name: "Carol", scoreAverage: 60.2, roundCount: 5 }),
+      expect(result.current.podiumData).toEqual([
+        { id: 3, name: "Carol", rounds: 5, threeDartAverage: "60.20" },
       ]);
     });
     expect(getFinishedGameMock).toHaveBeenCalledWith(42, expect.any(AbortSignal));
@@ -575,7 +575,7 @@ describe("useGameSummaryPage", () => {
 
     const { result } = renderSummaryHook();
 
-    expect(result.current.standings).toEqual([expect.objectContaining({ id: 2, name: "Bob" })]);
+    expect(result.current.podiumData).toEqual([expect.objectContaining({ id: 2, name: "Bob" })]);
     expect(getFinishedGameMock).not.toHaveBeenCalled();
   });
 
@@ -600,7 +600,7 @@ describe("useGameSummaryPage", () => {
     });
 
     await waitFor(() => {
-      expect(result.current.standings.map((player) => player.name)).toEqual(["Beta"]);
+      expect(result.current.podiumData.map((entry) => entry.name)).toEqual(["Beta"]);
     });
   });
 
@@ -611,13 +611,13 @@ describe("useGameSummaryPage", () => {
     routeParams = { id: "1" };
     const { result, rerender } = renderSummaryHook();
     await waitFor(() => {
-      expect(result.current.standings.map((player) => player.name)).toEqual(["Alpha"]);
+      expect(result.current.podiumData.map((entry) => entry.name)).toEqual(["Alpha"]);
     });
 
     routeParams = { id: "2" };
     rerender();
 
-    expect(result.current.standings).toEqual([]);
+    expect(result.current.podiumData).toEqual([]);
   });
 
   it("should drop an action error from game A when the route moves to game B", async () => {
@@ -850,25 +850,22 @@ describe("useGameSummaryPage", () => {
     it.each([
       {
         playerCount: 2,
-        standings: [alice, bob],
         podium: [alice, bob, placeholder],
         leaderboard: [],
       },
       {
         playerCount: 3,
-        standings: [alice, bob, cara],
         podium: [alice, bob, cara],
         leaderboard: [],
       },
       {
         playerCount: 4,
-        standings: [alice, bob, cara, dan],
         podium: [alice, bob, cara],
         leaderboard: [dan],
       },
     ])(
       "should build podium and leaderboard when the game had $playerCount players",
-      async ({ playerCount, standings, podium, leaderboard }) => {
+      async ({ playerCount, podium, leaderboard }) => {
         getFinishedGameMock.mockResolvedValueOnce(
           buildFinishedPlayerResponses().slice(0, playerCount),
         );
@@ -876,9 +873,8 @@ describe("useGameSummaryPage", () => {
         const { result } = renderSummaryHook();
 
         await waitFor(() => {
-          expect(result.current.standings).toStrictEqual(standings);
+          expect(result.current.podiumData).toStrictEqual(podium);
         });
-        expect(result.current.podiumData).toStrictEqual(podium);
         expect(result.current.leaderBoardList).toStrictEqual(leaderboard);
       },
     );
