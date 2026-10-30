@@ -72,9 +72,11 @@ and this project does **not** yet follow [Semantic Versioning](https://semver.or
 ### Removed
 
 - Config: the unused `@/types/*` path alias in `tsconfig.json`; shared types are imported through the `@/types` barrel (#360)
+- Build: `vercel.json`, `Dockerfile`, `docker-compose.frontend.yml` and `docker/nginx.conf` are gone. Vercel is retired, production runs from the files in `deploy/`, and no CI job or deploy script built the root image. Dependabot now watches the images in `deploy/frontend.Dockerfile` instead of the deleted root `Dockerfile`. The README lists the build and run files that remain and when each is used (#355)
 
 ### Fixed
 
+- Logging: the route `ErrorBoundary` writes `route_error_boundary_crash` once per route error under `React.StrictMode` in development, where it wrote two entries. A different route error, for example after navigating to another failing route, is still logged. Production builds already logged once (#311)
 - Lobby: the empty roster message uses the muted text color, improving its contrast (#217)
 - Deploy: Caddy sends `Content-Security-Policy` (`default-src 'self'; img-src 'self' data:; frame-ancestors 'none'; base-uri 'self'; form-action 'self'; object-src 'none'`), `X-Frame-Options: DENY`, `X-Content-Type-Options: nosniff` and `Referrer-Policy: strict-origin-when-cross-origin` on every response: the frontend files, `/api` and the lobby stream. Another site can no longer load the app in an iframe and trick a tap on the tablet. The headers replace any value the backend sends, so each appears once. The release archive does not ship the `Caddyfile`; install it on the VM as `deploy/README.md` describes. The README now recreates the proxy after a `Caddyfile` change, because the running container keeps the old file (#227)
 - Statistics: alphabetical mode requests `sort=name:asc` and shows rows in the server's order, so page 2 continues the A–Z list where page 1 ended. Before, the page fetched the players with the best average and sorted only that page by name. Needs darts-backend#166 deployed (#342)

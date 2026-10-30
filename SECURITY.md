@@ -86,10 +86,9 @@ the user-facing text from `src/shared/lib/error/`, never a raw response body or 
 
 ### Deployment config
 
-`deploy/frontend.nginx.conf`, `deploy/Caddyfile`, `docker/nginx.conf`, and `vercel.json`
-decide which origin serves the app and the API. A change that serves the API from another
-origin, proxies `/api` to a host other than the backend, or exposes source maps or `.env`
-files is a P0.
+`deploy/frontend.nginx.conf` and `deploy/Caddyfile` decide which origin serves the app and
+the API. A change that serves the API from another origin, proxies `/api` to a host other
+than the backend, or exposes source maps or `.env` files is a P0.
 
 The Vite dev proxy forwards `/api` traffic, cookies included, to `VITE_API_TARGET`. A
 committed `.env`, or a target in `.env.example` or `vite.config.ts` that is not a local

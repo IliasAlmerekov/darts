@@ -30,6 +30,16 @@ To run the frontend together with the backend, start the local Compose stack (pr
 `docker compose up -d` in the folder that holds both repositories: the frontend serves :5173, the backend nginx :8001.
 See [Verification in `AGENTS.md`](AGENTS.md#verification) for details.
 
+## Build and run files
+
+| File                         | When it is used                                                                                                                                      |
+| ---------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `compose.dev.yaml`           | Local development. The workspace `compose.yaml` includes it, so `docker compose up -d` starts the Vite dev server on :5173.                          |
+| `deploy/frontend.Dockerfile` | Production. The release workflow builds the frontend image from it. Details in [`deploy/README.md`](deploy/README.md).                               |
+| `deploy/frontend.nginx.conf` | Production. `deploy/frontend.Dockerfile` copies it into the image as the nginx config. Details in [`deploy/README.md`](deploy/README.md).            |
+| `.github/workflows/`         | GitHub Actions. Checks run on every pull request that is ready for review, a release on each version tag, and the live E2E suite on manual dispatch. |
+| `.gitlab-ci.yml`             | GitLab CI. Checks run on every merge request, and the live E2E job in a pipeline started by hand.                                                    |
+
 ## Environment
 
 Create a `.env` file in the project root using `.env.example` as a template.
