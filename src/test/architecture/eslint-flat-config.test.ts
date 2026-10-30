@@ -1,3 +1,4 @@
+import { ESLint } from "eslint";
 import { beforeAll, describe, expect, it } from "vitest";
 
 const GLOBAL_IGNORES = ["commitlint.config.mjs", "dist/**"];
@@ -72,5 +73,38 @@ describe("eslint flat config global ignores", () => {
     }
 
     expect(sharedOverride.ignores).toBeUndefined();
+  });
+});
+
+describe("shared lib import aliases", () => {
+  const eslint = new ESLint();
+
+  it.each([
+    "src/index.tsx",
+    "src/app/App.tsx",
+    "src/shared/lib/guards/guards.ts",
+    "src/pages/StartPage/startPageLoader.ts",
+    "src/pages/StartPage/useIsCurrentGame.ts",
+    "src/pages/StatisticsPage/Statistics.tsx",
+  ])(
+    "rejects the long alias in production file %s",
+    async (filePath) => {
+      const [result] = await eslint.lintText('import "@/shared/lib/guards/guards";', { filePath });
+      expect(result?.messages.some((message) => message.ruleId === "no-restricted-imports")).toBe(
+        true,
+      );
+    },
+    120_000,
+  );
+
+  it.each([
+    "src/app/App.test.tsx",
+    "src/shared/ui/navigation-bar/NavigationBar.test.tsx",
+    "src/pages/GamePage/components/SettingsOverlay.test.tsx",
+  ])("allows the long alias in test file %s", async (filePath) => {
+    const [result] = await eslint.lintText('import "@/shared/lib/guards/guards";', { filePath });
+    expect(result?.messages.some((message) => message.ruleId === "no-restricted-imports")).toBe(
+      false,
+    );
   });
 });

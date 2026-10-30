@@ -15,6 +15,8 @@ and this project does **not** yet follow [Semantic Versioning](https://semver.or
 
 ### Changed
 
+- Architecture: use public import paths and direct lazy page entries, and enforce the shared lib alias in production code (#214)
+
 - API: the room create and rematch responses follow darts-backend#222. `POST /api/room/create` needs an integer `gameId`, and `POST /api/room/{id}/rematch` needs `success`, an integer `gameId` and `invitationLink` and drops `message`; a body without them fails validation instead of reaching the hand-written guards, which are gone. A rematch never calls the invite endpoint, `createRematch()` folds into `createRematchGame()`, and the summary page always stores the rematch invitation. The backend already sends these bodies, so screens are unchanged (#397)
 - Game: consolidate session state and scoreboard reconciliation (#387).
 
