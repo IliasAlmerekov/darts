@@ -1,5 +1,5 @@
 import React, { useCallback } from "react";
-import styles from "./GamesOverview.module.css";
+import styles from "./GamesOverviewPage.module.css";
 import { Link, useSearchParams } from "react-router-dom";
 import { ROUTES } from "@/lib/router/routes";
 import { Button } from "@/shared/ui/button";

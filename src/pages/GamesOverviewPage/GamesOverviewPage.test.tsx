@@ -13,8 +13,8 @@ import { createMemoryRouter, RouterProvider } from "react-router-dom";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { queryClient } from "@/shared/query/queryClient";
 import { buildFinishedGame } from "@/shared/types/game.test-support";
-import styles from "./GamesOverview.module.css";
-import GamesOverviewPage from "./GamesOverview";
+import styles from "./GamesOverviewPage.module.css";
+import GamesOverviewPage from "./GamesOverviewPage";
 import { gamesOverviewLoader } from "./gamesOverviewLoader";
 
 const GAMES = [
