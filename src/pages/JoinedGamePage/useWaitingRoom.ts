@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { playerQueries } from "@/shared/query/player.queries";
-import { $currentGameId } from "@/shared/store";
+import { wasWaitingInLobby } from "@/shared/store";
 import type { WaitingRoomView } from "./lib/waitingRoomView";
 
 const FAILURES_BEFORE_CONNECTION_LOST = 3;
@@ -22,9 +22,9 @@ interface FailureBaseline {
  */
 export function useWaitingRoom(): UseWaitingRoomResult {
   const { data, dataUpdatedAt, errorUpdateCount } = useQuery(playerQueries.currentGame());
-  // The stored game id outlives this page, so a player removed while on the profile page or
-  // during a reload still learns why. The first answer of "none" clears it.
-  const [hasSeenGame, setHasSeenGame] = useState(() => $currentGameId.get() !== null);
+  // A player removed from the lobby while on the profile page or during a reload still
+  // learns why. The flag drops once the game starts, so a finished game is not a removal.
+  const [hasSeenGame, setHasSeenGame] = useState(wasWaitingInLobby);
   const [failureBaseline, setFailureBaseline] = useState<FailureBaseline>({
     dataUpdatedAt,
     errorUpdateCount,

@@ -30,7 +30,14 @@ import { clientLogger } from "@/shared/services/browser/clientLogger";
 import { ROUTES } from "@/lib/router/routes";
 import { createQueryClient } from "@/shared/query/queryClient";
 import { CURRENT_GAME_POLL_INTERVAL_MS } from "@/shared/query/player.queries";
-import { $currentGameId, $invitation, setCurrentGameId, setInvitation } from "@/shared/store";
+import {
+  $currentGameId,
+  $invitation,
+  setCurrentGameId,
+  setInvitation,
+  setWaitingInLobby,
+  wasWaitingInLobby,
+} from "@/shared/store";
 import JoinedGamePage from "./index";
 
 const lobby = (gameId: number): CurrentGame => ({ kind: "lobby", gameId });
@@ -91,6 +98,7 @@ describe("JoinedGamePage", () => {
     vi.useFakeTimers({ toFake: ["setInterval", "clearInterval", "Date"] });
     setInvitation(null);
     setCurrentGameId(null);
+    setWaitingInLobby(false);
     vi.mocked(logout).mockReset();
     vi.mocked(clientLogger.error).mockReset();
     vi.mocked(getCurrentGame).mockReset();
@@ -237,13 +245,29 @@ describe("JoinedGamePage", () => {
     expect(router.state.location.pathname).toBe(ROUTES.joined);
   });
 
-  it("should tell a removed player after a reload of the Waiting room", async () => {
+  it("should tell a player removed from the lobby after a reload of the Waiting room", async () => {
     setCurrentGameId(42);
+    setWaitingInLobby(true);
     respondWithCurrentGames(noCurrentGame);
     renderPage();
 
     expect(await screen.findByText("You are no longer in this game")).toBeTruthy();
     expect($currentGameId.get()).toBeNull();
+    expect(wasWaitingInLobby()).toBe(false);
+  });
+
+  it("should open the player profile on a reload after the started game has ended", async () => {
+    setCurrentGameId(42);
+    respondWithCurrentGames(started(42));
+    const { unmount } = renderPage();
+    await screen.findByText("The game has started");
+    unmount();
+
+    respondWithCurrentGames(noCurrentGame);
+    renderPage();
+
+    expect(await screen.findByText("Player profile")).toBeTruthy();
+    expect(screen.queryByText("You are no longer in this game")).toBeNull();
   });
 
   it("should open the player profile when there is no current game on load", async () => {
