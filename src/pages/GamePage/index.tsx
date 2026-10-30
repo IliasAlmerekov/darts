@@ -30,6 +30,9 @@ function GamePage(): React.JSX.Element {
     pageError,
     isExitOverlayOpen,
     isExitPending,
+    isFinishGameDisabled,
+    isFinishPending,
+    finishError,
     isQueueFull,
     syncStatus,
     handleRetry,
@@ -37,6 +40,7 @@ function GamePage(): React.JSX.Element {
     handleUndo,
     handleContinueGame,
     handleUndoFromOverlay,
+    handleFinishGame,
     handleOpenSettings,
     handleCloseSettings,
     handleSaveSettings,
@@ -78,6 +82,9 @@ function GamePage(): React.JSX.Element {
     <>
       <OverlaysSection
         shouldShowFinishOverlay={shouldShowFinishOverlay}
+        isFinishGameDisabled={isFinishGameDisabled}
+        isFinishPending={isFinishPending}
+        finishError={finishError}
         isExitOverlayOpen={isExitOverlayOpen}
         isExitPending={isExitPending}
         isSettingsOpen={isSettingsOpen}
@@ -88,6 +95,7 @@ function GamePage(): React.JSX.Element {
         initialTripleOut={gameData?.settings.tripleOut ?? false}
         handleContinueGame={handleContinueGame}
         handleUndoFromOverlay={handleUndoFromOverlay}
+        handleFinishGame={handleFinishGame}
         handleCloseExitOverlay={handleCloseExitOverlay}
         handleExitGame={handleExitGame}
         handleCloseSettings={handleCloseSettings}

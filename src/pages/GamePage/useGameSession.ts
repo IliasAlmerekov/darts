@@ -1,7 +1,9 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useStore } from "@nanostores/react";
+import { useQueryClient } from "@tanstack/react-query";
 import { atom } from "nanostores";
 import {
+  finishGame,
   getGameThrows,
   getGameThrowsIfChanged,
   recordThrow,
@@ -11,6 +13,8 @@ import {
   type GameSettings,
   type GameThrowsResponse,
 } from "@/shared/api/game";
+import { toUserErrorMessage } from "@/lib/error/error-to-user-message";
+import { gameQueries } from "@/shared/query/game.queries";
 import { clientLogger } from "@/shared/services/browser/clientLogger";
 import { playSound } from "@/shared/services/browser/soundPlayer";
 import {
@@ -27,8 +31,9 @@ import {
   applySessionSettings,
   applyThrowAck,
   applyUndoResponse,
+  closeFinishOverlay,
   createGameSession,
-  dismissFinishedPlayers,
+  markGameFinished,
   undoFromOverlay,
   enqueueThrow,
   enqueueUndo,
@@ -51,6 +56,9 @@ interface GameSessionPageView extends GameSessionView {
   isInteractionDisabled: boolean;
   isUndoDisabled: boolean;
   isSettingsDisabled: boolean;
+  /** The overlay's Finish game request runs; the overlay's actions wait for it. */
+  isFinishPending: boolean;
+  finishError: string | null;
 }
 
 interface GameSessionCommands {
@@ -58,9 +66,18 @@ interface GameSessionCommands {
   undo: () => void;
   continueGame: () => void;
   undoFromOverlay: () => void;
+  /** Ends the game on the server once every tap is acknowledged, then reports it finished. */
+  finishGame: () => void;
   /** Reloads the game after a failed first load or after the server could not be reached. */
   retry: () => void;
   updateSettings: (settings: GameSettings) => void;
+}
+
+/** The overlay's Finish game request of one game. */
+interface FinishState {
+  gameId: number;
+  isPending: boolean;
+  error: string | null;
 }
 
 interface UseGameSessionResult {
@@ -77,18 +94,22 @@ function isAbortError(error: unknown): boolean {
  * is the only writer of the game store while the game page is open. Every response carries the
  * session generation; one that arrives after the page left the game is ignored.
  */
-export function useGameSession(
-  gameId: number | null,
-  skipFinishOverlay = false,
-): UseGameSessionResult {
+export function useGameSession(gameId: number | null): UseGameSessionResult {
   // Local to this hook, so each game page instance starts with its own queue.
   const [sessionAtom] = useState(() => atom<GameSession>(createGameSession(null)));
   const session = useStore(sessionAtom);
   const game = useStore($gameData);
   const isLoading = useStore($isLoading);
   const error = useStore($error);
+  const queryClient = useQueryClient();
   const generationRef = useRef(0);
   const controllerRef = useRef<AbortController | null>(null);
+  // The game whose finish request runs, or ran and succeeded while the page moves away. The ref
+  // is the synchronous lock against a second tap; the state mirrors it for rendering.
+  const finishingGameIdRef = useRef<number | null>(null);
+  const [finishState, setFinishState] = useState<FinishState | null>(null);
+  // Finish state belongs to the game it ran for, so it never follows a game change.
+  const finish = finishState?.gameId === gameId ? finishState : null;
 
   const commit = useCallback(
     (next: GameSession): void => {
@@ -96,6 +117,14 @@ export function useGameSession(
       sessionAtom.set(next);
       if (next.confirmed !== previous.confirmed || next.pending !== previous.pending) {
         setGameData(getShownGame(next));
+      }
+      // A finish request belongs to the overlay it ran from, so a newly opened overlay starts
+      // without the error or the aborted request of an earlier one.
+      if (
+        getSessionView(next).shouldShowFinishOverlay &&
+        !getSessionView(previous).shouldShowFinishOverlay
+      ) {
+        setFinishState(null);
       }
     },
     [sessionAtom],
@@ -242,7 +271,7 @@ export function useGameSession(
     // would send the page straight back to the summary.
     const cached = $gameData.get();
     const hasCachedGame = gameId !== null && cached?.id === gameId && cached.status !== "finished";
-    sessionAtom.set(createGameSession(hasCachedGame ? cached : null, skipFinishOverlay));
+    sessionAtom.set(createGameSession(hasCachedGame ? cached : null));
     if (!hasCachedGame) {
       resetGameStore();
     }
@@ -257,7 +286,7 @@ export function useGameSession(
       generationRef.current += 1;
       controller.abort();
     };
-  }, [gameId, loadGame, sessionAtom, skipFinishOverlay]);
+  }, [gameId, loadGame, sessionAtom]);
 
   const throwDart = useCallback(
     (value: string | number): void => {
@@ -299,18 +328,70 @@ export function useGameSession(
     void sendNext();
   }, [commit, sendNext, sessionAtom]);
 
+  const isFinishing = useCallback(
+    (): boolean => gameId !== null && finishingGameIdRef.current === gameId,
+    [gameId],
+  );
+
   const continueGame = useCallback((): void => {
-    commit(dismissFinishedPlayers(sessionAtom.get()));
-  }, [commit, sessionAtom]);
+    if (isFinishing()) {
+      return;
+    }
+    setFinishState(null);
+    commit(closeFinishOverlay(sessionAtom.get()));
+  }, [commit, isFinishing, sessionAtom]);
 
   const handleUndoFromOverlay = useCallback((): void => {
+    if (isFinishing()) {
+      return;
+    }
+    setFinishState(null);
     const current = sessionAtom.get();
     const next = undoFromOverlay(current);
     commit(next);
     if (next.pending === current.pending) return;
     playSound("undo");
     void sendNext();
-  }, [commit, sendNext, sessionAtom]);
+  }, [commit, isFinishing, sendNext, sessionAtom]);
+
+  const handleFinishGame = useCallback(async (): Promise<void> => {
+    if (gameId === null || isFinishing() || !getSessionView(sessionAtom.get()).canFinishGame) {
+      return;
+    }
+
+    const generation = generationRef.current;
+    finishingGameIdRef.current = gameId;
+    setFinishState({ gameId, isPending: true, error: null });
+    const release = (): void => {
+      if (finishingGameIdRef.current === gameId) {
+        finishingGameIdRef.current = null;
+      }
+    };
+
+    try {
+      const summary = await finishGame(gameId, controllerRef.current?.signal);
+      if (!isCurrent(generation)) {
+        release();
+        return;
+      }
+      // The summary reads this entry, so it opens without a second request.
+      const { queryKey } = gameQueries.finished(gameId);
+      void queryClient.cancelQueries({ queryKey });
+      queryClient.setQueryData(queryKey, summary);
+      commit(markGameFinished(sessionAtom.get()));
+    } catch (finishError) {
+      release();
+      if (!isCurrent(generation) || isAbortError(finishError)) {
+        return;
+      }
+      clientLogger.error("game.finish.failed", { context: { gameId }, error: finishError });
+      setFinishState({
+        gameId,
+        isPending: false,
+        error: toUserErrorMessage(finishError, "Could not finish the game. Please try again."),
+      });
+    }
+  }, [commit, gameId, isCurrent, isFinishing, queryClient, sessionAtom]);
 
   const retry = useCallback((): void => {
     if (gameId === null) {
@@ -343,8 +424,9 @@ export function useGameSession(
       updateSettings,
       continueGame,
       undoFromOverlay: handleUndoFromOverlay,
+      finishGame: () => void handleFinishGame(),
     }),
-    [retry, throwDart, undo, updateSettings, continueGame, handleUndoFromOverlay],
+    [retry, throwDart, undo, updateSettings, continueGame, handleUndoFromOverlay, handleFinishGame],
   );
 
   return {
@@ -356,6 +438,8 @@ export function useGameSession(
       isInteractionDisabled: isLoading || !!error || !game || !sessionView.canThrow,
       isUndoDisabled: isLoading || !!error || !game || !sessionView.canUndo,
       isSettingsDisabled: !sessionView.canOpenSettings,
+      isFinishPending: finish?.isPending ?? false,
+      finishError: finish?.error ?? null,
     },
     commands,
   };

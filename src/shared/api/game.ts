@@ -21,6 +21,7 @@ export * from "./rematch";
 // ---------------------------------------------------------------------------
 
 const START_GAME_ENDPOINT = (id: number) => `/game/${id}/start`;
+const FINISH_GAME_ENDPOINT = (id: number) => `/game/${id}/finish`;
 const FINISHED_GAME_ENDPOINT = (id: number) => `/game/${id}/finished`;
 const REOPEN_GAME_ENDPOINT = (id: number) => `/game/${id}/reopen`;
 const ABORT_GAME_ENDPOINT = (id: number) => `/game/${id}/abort`;
@@ -189,6 +190,21 @@ export async function startGame(gameId: number, config: StartGameRequest): Promi
       validate: gameThrowsResponseSchema,
     },
   );
+}
+
+/**
+ * Finishes a started game and returns its final standings, ranked by the server. A game the
+ * server already finished is returned unchanged.
+ */
+export async function finishGame(
+  gameId: number,
+  signal?: AbortSignal,
+): Promise<GameSummaryResponse> {
+  const summary = await apiClient.post(FINISH_GAME_ENDPOINT(gameId), undefined, {
+    ...(signal ? { signal } : {}),
+    validate: gameSummaryEnvelopeSchema,
+  });
+  return toGameSummary(summary, gameId);
 }
 
 /**

@@ -22,6 +22,10 @@
   margin-top: clamp(8px, 1.6vw, 12px);
 }
 
+.finishGameOverlay p.overlayError {
+  color: var(--red-strong);
+}
+
 .overlayBox {
   position: relative;
   display: flex;

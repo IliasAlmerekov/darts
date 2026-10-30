@@ -12,7 +12,8 @@ import {
   applyThrowAck,
   applyUndoResponse,
   createGameSession,
-  dismissFinishedPlayers,
+  closeFinishOverlay,
+  markGameFinished,
   undoFromOverlay,
   failSession,
   markFirstLoadFailed,
@@ -124,16 +125,103 @@ describe("gameSession.logic", () => {
     expect(scores(getShownGame(undone))).toEqual([20, 301, 301]);
     expect(getSessionView(undone).shouldShowFinishOverlay).toBe(false);
     expect(getSessionView(throwMany(undone, [20])).shouldShowFinishOverlay).toBe(true);
-    expect(getSessionView(dismissFinishedPlayers(finished)).shouldShowFinishOverlay).toBe(false);
+    expect(getSessionView(closeFinishOverlay(finished))).toMatchObject({
+      shouldShowFinishOverlay: false,
+      canThrow: true,
+    });
+  });
+
+  it("opens the finish overlay for the first checkout only", () => {
+    const game = buildGame({ alice: 20, bob: 20 });
+    game.players.push(
+      buildBackendPlayer({ id: 3, name: "Carol", score: 301 }),
+      buildBackendPlayer({ id: 4, name: "Dave", score: 301 }),
+    );
+    const first = throwMany(createGameSession(game), [20]);
+    expect(getSessionView(first).shouldShowFinishOverlay).toBe(true);
+
+    const second = throwMany(closeFinishOverlay(first), [20]);
+    expect(scores(getShownGame(second))).toEqual([0, 0, 301, 301]);
+    expect(getSessionView(second)).toMatchObject({
+      shouldShowFinishOverlay: false,
+      canThrow: true,
+      canUndo: true,
+    });
+  });
+
+  it("treats the next checkout as the first once the regular undo took the checkout back", () => {
+    const game = buildGame({ alice: 20, bob: 301 });
+    game.players.push(buildBackendPlayer({ id: 3, name: "Carol", score: 301 }));
+    const continued = closeFinishOverlay(throwMany(createGameSession(game), [20]));
+    const undone = enqueueUndo(continued);
+    expect(scores(getShownGame(undone))).toEqual([20, 301, 301]);
+
+    expect(getSessionView(throwMany(undone, [20])).shouldShowFinishOverlay).toBe(true);
+  });
+
+  it("keeps the finish overlay closed after a reload while a player is at 0", () => {
+    const game = buildGame({ alice: 0, bob: 301 });
+    game.players.push(buildBackendPlayer({ id: 3, name: "Carol", score: 301 }));
+
+    expect(getSessionView(createGameSession(game)).shouldShowFinishOverlay).toBe(false);
+    expect(
+      getSessionView(applyReloadedGame(createGameSession(null), game)).shouldShowFinishOverlay,
+    ).toBe(false);
+  });
+
+  it("closes the finish overlay when the server rejects the checkout", () => {
+    const game = buildGame({ alice: 20, bob: 301 });
+    game.players.push(buildBackendPlayer({ id: 3, name: "Carol", score: 301 }));
+    const failed = failSession(send(throwMany(createGameSession(game), [20])));
+
+    expect(getSessionView(failed).shouldShowFinishOverlay).toBe(false);
+  });
+
+  it("allows finishing the game only once the server acknowledged the checkout", () => {
+    const game = buildGame({ alice: 20, bob: 301 });
+    game.players.push(buildBackendPlayer({ id: 3, name: "Carol", score: 301 }));
+    const sent = send(throwMany(createGameSession(game), [20]));
+    expect(getSessionView(sent)).toMatchObject({
+      shouldShowFinishOverlay: true,
+      canFinishGame: false,
+    });
+
+    const acknowledged = applyThrowAck(sent, buildThrowAck(0, 301, 2));
+    expect(acknowledged && getSessionView(acknowledged)).toMatchObject({
+      shouldShowFinishOverlay: true,
+      canFinishGame: true,
+    });
+    expect(getSessionView(createGameSession(game)).canFinishGame).toBe(false);
+  });
+
+  it("reports the game as finished once the server finished it from the overlay", () => {
+    const game = buildGame({ alice: 20, bob: 301 });
+    game.players.push(buildBackendPlayer({ id: 3, name: "Carol", score: 301 }));
+    const acknowledged = applyThrowAck(
+      send(throwMany(createGameSession(game), [20])),
+      buildThrowAck(0, 301, 2),
+    );
+    if (acknowledged === null) {
+      throw new Error("ack refused");
+    }
+
+    expect(getSessionView(markGameFinished(acknowledged))).toMatchObject({
+      isFinished: true,
+      shouldShowFinishOverlay: false,
+      canThrow: false,
+    });
   });
 
   it.each(["reloading", "offline", "loadFailed"] as const)(
     "keeps the finish overlay open when undo is blocked by %s",
     (recovery) => {
-      const game = buildGame({ alice: 0, bob: 301 });
+      const game = buildGame({ alice: 20, bob: 301 });
       game.players.push(buildBackendPlayer({ id: 3, name: "Carol", score: 301 }));
-      const session = { ...createGameSession(game), recovery };
-      expect(getSessionView(session).shouldShowFinishOverlay).toBe(true);
+      const session = { ...throwMany(createGameSession(game), [20]), recovery };
+      expect(getSessionView(session)).toMatchObject({
+        shouldShowFinishOverlay: true,
+        canFinishGame: false,
+      });
       expect(undoFromOverlay(session)).toBe(session);
     },
   );
@@ -160,25 +248,6 @@ describe("gameSession.logic", () => {
       canOpenSettings: false,
       canUndo: false,
     });
-  });
-
-  it("keeps dismissals and skip flag through reload and forgets players who leave zero", () => {
-    const game = buildGame({ alice: 0, bob: 301 });
-    game.players.push(buildBackendPlayer({ id: 3, score: 301 }));
-    const dismissed = dismissFinishedPlayers(createGameSession(game));
-    expect(
-      getSessionView(applyReloadedGame(failSession(dismissed), game)).shouldShowFinishOverlay,
-    ).toBe(false);
-    const skipped = createGameSession(game, true);
-    expect(
-      getSessionView(applyReloadedGame(failSession(skipped), game)).shouldShowFinishOverlay,
-    ).toBe(false);
-    const reopened = {
-      ...game,
-      players: game.players.map((player) => (player.id === 1 ? { ...player, score: 20 } : player)),
-    };
-    const reloaded = applyReloadedGame(failSession(dismissed), reopened);
-    expect(getSessionView(applyReloadedGame(reloaded, game)).shouldShowFinishOverlay).toBe(true);
   });
 
   it("derives the winner when a finished throw acknowledgement omits it", () => {
@@ -426,7 +495,7 @@ describe("gameSession.logic", () => {
     }
 
     function sendUndo(game: GameThrowsResponse): GameSession {
-      return send(enqueueUndo(createGameSession(game, true)));
+      return send(enqueueUndo(createGameSession(game)));
     }
 
     function buildThreeSeatAck(alice: number, active: 1 | 3): UndoAckResponse {

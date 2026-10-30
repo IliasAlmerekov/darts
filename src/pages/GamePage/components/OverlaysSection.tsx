@@ -10,6 +10,9 @@ import SettingsOverlay from "./SettingsOverlay";
 
 interface OverlaysSectionProps {
   shouldShowFinishOverlay: boolean;
+  isFinishGameDisabled: boolean;
+  isFinishPending: boolean;
+  finishError: string | null;
   isExitOverlayOpen: boolean;
   isExitPending: boolean;
   isSettingsOpen: boolean;
@@ -20,6 +23,7 @@ interface OverlaysSectionProps {
   initialTripleOut: boolean;
   handleContinueGame: () => void;
   handleUndoFromOverlay: () => void;
+  handleFinishGame: () => void;
   handleCloseExitOverlay: () => void;
   handleExitGame: () => Promise<void>;
   handleCloseSettings: () => void;
@@ -28,6 +32,9 @@ interface OverlaysSectionProps {
 
 export const OverlaysSection = React.memo(function OverlaysSection({
   shouldShowFinishOverlay,
+  isFinishGameDisabled,
+  isFinishPending,
+  finishError,
   isExitOverlayOpen,
   isExitPending,
   isSettingsOpen,
@@ -38,6 +45,7 @@ export const OverlaysSection = React.memo(function OverlaysSection({
   initialTripleOut,
   handleContinueGame,
   handleUndoFromOverlay,
+  handleFinishGame,
   handleCloseExitOverlay,
   handleExitGame,
   handleCloseSettings,
@@ -67,12 +75,31 @@ export const OverlaysSection = React.memo(function OverlaysSection({
           <p className={styles.overlayHeading} id={finishOverlayTitleId}>
             Player Finished! Continue Game?
           </p>
+          {finishError ? (
+            <p className={styles.overlayError} role="alert">
+              {finishError}
+            </p>
+          ) : null}
           <div>
-            <Button label="Continue" handleClick={handleContinueGame} type="primary" link="" />
+            <Button
+              label="Finish game"
+              handleClick={handleFinishGame}
+              type="primary"
+              link=""
+              disabled={isFinishGameDisabled}
+            />
+            <Button
+              label="Continue"
+              handleClick={handleContinueGame}
+              type="secondary"
+              link=""
+              disabled={isFinishPending}
+            />
             <LinkButton
               icon={Undo}
               label="Undo Throw"
               handleClick={handleUndoFromOverlay}
+              disabled={isFinishPending}
               {...(styles.undoThrow !== undefined ? { className: styles.undoThrow } : {})}
             />
           </div>

@@ -63,8 +63,11 @@ export interface GameSession {
   /** True while the request for `pending[0]` is on its way. */
   isHeadSent: boolean;
   recovery: Recovery;
-  dismissedZeroScorePlayerIds: number[];
-  skipFinishOverlay: boolean;
+  /**
+   * The player whose checkout opened the finish overlay. Only the first checkout, a throw that
+   * takes a player to 0 while no other player is at 0, opens it. A load starts with none.
+   */
+  finishOverlayPlayerId: number | null;
 }
 
 /**
@@ -84,22 +87,20 @@ export interface GameSessionView {
   isQueueFull: boolean;
   canOpenSettings: boolean;
   shouldShowFinishOverlay: boolean;
+  /** The overlay's Finish game may be sent: the server acknowledged every tap (#96). */
+  canFinishGame: boolean;
   activePlayers: UIPlayer[];
   finishedPlayers: UIPlayer[];
   activePlayer: GameThrowsResponse["players"][number] | null;
 }
 
-export function createGameSession(
-  game: GameThrowsResponse | null,
-  skipFinishOverlay = false,
-): GameSession {
+export function createGameSession(game: GameThrowsResponse | null): GameSession {
   return {
     confirmed: normalizeGameData(game),
     pending: [],
     isHeadSent: false,
     recovery: "none",
-    dismissedZeroScorePlayerIds: [],
-    skipFinishOverlay,
+    finishOverlayPlayerId: null,
   };
 }
 
@@ -132,13 +133,11 @@ export function getSessionView(session: GameSession): GameSessionView {
   const players = mapPlayersToUI(shown?.players ?? [], shown?.currentRound);
   const activePlayers = players.filter((player) => player.score > 0);
   const finishedPlayers = getFinishedPlayers(players);
+  // A rejected checkout rolls the score back, which closes the overlay with it.
   const shouldShowFinishOverlay =
-    !session.skipFinishOverlay &&
     shown?.status !== "finished" &&
     !isLastActivePlayerLeft(shown) &&
-    players.some(
-      (player) => player.score === 0 && !session.dismissedZeroScorePlayerIds.includes(player.id),
-    );
+    players.some((player) => player.id === session.finishOverlayPlayerId && player.score === 0);
 
   let status: SyncStatus = "idle";
   if (session.recovery === "offline" || session.recovery === "loadFailed") {
@@ -162,6 +161,8 @@ export function getSessionView(session: GameSession): GameSessionView {
     canUndo: !isBlocked && !shouldShowFinishOverlay && hasThrowHistory(shown),
     canOpenSettings: status !== "syncing" && !hasThrowHistory(shown),
     shouldShowFinishOverlay,
+    canFinishGame:
+      shouldShowFinishOverlay && session.recovery === "none" && session.pending.length === 0,
     activePlayers,
     finishedPlayers,
     activePlayer: shown?.players.find((player) => player.id === shown.activePlayerId) ?? null,
@@ -190,14 +191,19 @@ export function enqueueThrow(session: GameSession, value: string | number): Game
 
   const throwData = parseThrowValue(value);
   const playerId = shown.activePlayerId;
-  if (applyOptimisticThrow(shown, throwData, playerId) === null) {
+  const next = applyOptimisticThrow(shown, throwData, playerId);
+  if (next === null) {
     return null;
   }
 
+  const isFirstCheckout =
+    !shown.players.some((player) => player.score === 0) &&
+    next.players.some((player) => player.id === playerId && player.score === 0);
   return {
     ...session,
     pending: [...session.pending, { kind: "throw", playerId, throwData }],
     recovery: clearFailedNotice(session.recovery),
+    finishOverlayPlayerId: isFirstCheckout ? playerId : session.finishOverlayPlayerId,
   };
 }
 
@@ -218,30 +224,21 @@ export function enqueueUndo(session: GameSession): GameSession {
       ? session.pending.slice(0, lastIndex)
       : [...session.pending, { kind: "undo" }];
 
-  const next = { ...session, pending, recovery: clearFailedNotice(session.recovery) };
-  const zeroIds =
-    getShownGame(next)
-      ?.players.filter((player) => player.score === 0)
-      .map((player) => player.id) ?? [];
-  return {
-    ...next,
-    dismissedZeroScorePlayerIds: next.dismissedZeroScorePlayerIds.filter((id) =>
-      zeroIds.includes(id),
-    ),
-  };
+  return { ...session, pending, recovery: clearFailedNotice(session.recovery) };
 }
 
-export function dismissFinishedPlayers(session: GameSession): GameSession {
-  const ids =
-    getShownGame(session)
-      ?.players.filter((player) => player.score === 0)
-      .map((player) => player.id) ?? [];
-  return {
-    ...session,
-    dismissedZeroScorePlayerIds: Array.from(
-      new Set([...session.dismissedZeroScorePlayerIds, ...ids]),
-    ),
-  };
+/** The overlay's Continue: play goes on, and later checkouts open no overlay. */
+export function closeFinishOverlay(session: GameSession): GameSession {
+  return { ...session, finishOverlayPlayerId: null };
+}
+
+/** The server finished the game from the overlay's Finish game, so the summary may open. */
+export function markGameFinished(session: GameSession): GameSession {
+  if (session.confirmed === null) {
+    return session;
+  }
+
+  return { ...session, confirmed: { ...session.confirmed, status: "finished" } };
 }
 
 export function undoFromOverlay(session: GameSession): GameSession {
@@ -252,7 +249,7 @@ export function undoFromOverlay(session: GameSession): GameSession {
   ) {
     return session;
   }
-  return enqueueUndo(dismissFinishedPlayers(session));
+  return enqueueUndo(closeFinishOverlay(session));
 }
 
 /** Marks the oldest pending op as sent and returns it, or null when nothing may be sent now. */
@@ -352,10 +349,7 @@ export function retrySession(session: GameSession): GameSession {
 
 export function applyReloadedGame(session: GameSession, game: GameThrowsResponse): GameSession {
   return {
-    ...createGameSession(game, session.skipFinishOverlay),
-    dismissedZeroScorePlayerIds: session.dismissedZeroScorePlayerIds.filter((id) =>
-      game.players.some((player) => player.id === id && player.score === 0),
-    ),
+    ...createGameSession(game),
     recovery: session.recovery === "none" ? "none" : "failed",
   };
 }

@@ -156,9 +156,7 @@ export function useGameSummaryPage(): UseGameSummaryPageResult {
 
       playSound("undo");
       releaseFinishedGame(finishedGameIdFromRoute);
-      navigate(ROUTES.game(finishedGameIdFromRoute), {
-        state: { skipFinishOverlay: true },
-      });
+      navigate(ROUTES.game(finishedGameIdFromRoute));
     } catch (err) {
       if (isGameNotNewestError(err)) {
         leaveOldGame("undo");
