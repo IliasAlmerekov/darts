@@ -63,10 +63,7 @@ describe("LoginPage form login", () => {
   });
 
   it("stores the joined game and opens the Waiting room", async () => {
-    loginWithCredentialsMock.mockResolvedValueOnce({
-      type: "user",
-      user: { ...loggedInPlayer, gameId: 42 },
-    });
+    loginWithCredentialsMock.mockResolvedValueOnce({ ...loggedInPlayer, gameId: 42 });
 
     renderLoginRoute();
     await submitLoginForm();
@@ -77,8 +74,8 @@ describe("LoginPage form login", () => {
 
   it("shows why the invitation failed and offers the player profile", async () => {
     loginWithCredentialsMock.mockResolvedValueOnce({
-      type: "user",
-      user: { ...loggedInPlayer, invitationError: "GAME_ALREADY_STARTED" },
+      ...loggedInPlayer,
+      invitationError: "GAME_ALREADY_STARTED",
     });
 
     renderLoginRoute();

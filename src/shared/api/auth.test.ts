@@ -2,7 +2,9 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { getAuthenticatedUser, loginWithCredentials, logout, registerUser } from "./auth";
 import { apiClient, ApiValidationError } from "./client";
-import { TimeoutError } from "./errors";
+import { ApiError, NetworkError, TimeoutError, UnauthorizedError } from "./errors";
+import { mapAuthErrorMessage } from "@/lib/error/auth-error-handling";
+import { clientLogger } from "@/shared/services/browser/clientLogger";
 import { createMockResponse, respondWith } from "./test-utils";
 
 describe("getAuthenticatedUser", () => {
@@ -233,10 +235,16 @@ const loggedInExample = {
   redirect: "http://localhost:5173/joined",
 };
 const loginSuccessExample = { ...loggedInExample, gameId: 42 };
+// The session user `/api/login/success` answers after the controller fallback.
+const sessionUserExample = { ...loginSuccessExample, redirect: "http://localhost:5173/joined" };
+const credentials = { email: "alice@example.com", password: "s3cr3t" };
 
 describe("loginWithCredentials", () => {
   beforeEach(() => {
     vi.restoreAllMocks();
+    // No session user unless a test answers the session check itself.
+    vi.spyOn(apiClient, "get").mockRejectedValue(new UnauthorizedError());
+    vi.spyOn(clientLogger, "error").mockImplementation(() => undefined);
   });
 
   it("returns the logged-in user with the redirect and the joined game", async () => {
@@ -244,7 +252,7 @@ describe("loginWithCredentials", () => {
 
     await expect(
       loginWithCredentials({ email: "alice@example.com", password: "s3cr3t" }),
-    ).resolves.toEqual({ type: "user", user: loginSuccessExample });
+    ).resolves.toEqual(loginSuccessExample);
   });
 
   it("posts the credentials with the fixed CSRF field the backend origin check expects", async () => {
@@ -274,17 +282,87 @@ describe("loginWithCredentials", () => {
 
     await expect(
       loginWithCredentials({ email: "alice@example.com", password: "s3cr3t" }),
-    ).resolves.toEqual({ type: "user", user: response });
+    ).resolves.toEqual(response);
   });
 
-  it("asks for the session user when the backend answers with only the login-success redirect", async () => {
+  it("does not read the session when the login answers with the user", async () => {
+    vi.spyOn(apiClient, "post").mockImplementationOnce(respondWith(loginSuccessExample));
+
+    await loginWithCredentials(credentials);
+
+    expect(apiClient.get).not.toHaveBeenCalled();
+  });
+
+  it("returns the session user when the backend answers with only the login-success redirect", async () => {
+    vi.spyOn(apiClient, "post").mockImplementationOnce(
+      respondWith({ redirect: "/api/login/success" }),
+    );
+    vi.spyOn(apiClient, "get").mockImplementationOnce(respondWith(sessionUserExample));
+
+    await expect(loginWithCredentials(credentials)).resolves.toEqual(sessionUserExample);
+  });
+
+  it("returns the session user when the user in the login answer redirects into the API", async () => {
+    vi.spyOn(apiClient, "post").mockImplementationOnce(
+      respondWith({ ...loggedInExample, redirect: "/api/login/success" }),
+    );
+    vi.spyOn(apiClient, "get").mockImplementationOnce(respondWith(sessionUserExample));
+
+    await expect(loginWithCredentials(credentials)).resolves.toEqual(sessionUserExample);
+  });
+
+  it("rejects with a login-session error that is no ApiError when a 200 leaves no session user", async () => {
     vi.spyOn(apiClient, "post").mockImplementationOnce(
       respondWith({ redirect: "/api/login/success" }),
     );
 
-    await expect(
-      loginWithCredentials({ email: "alice@example.com", password: "s3cr3t" }),
-    ).resolves.toEqual({ type: "session" });
+    const login = loginWithCredentials(credentials);
+
+    await expect(login).rejects.toMatchObject({ name: "LoginSessionMissingError" });
+    await expect(login).rejects.not.toBeInstanceOf(ApiError);
+    const error: unknown = await login.catch((thrown: unknown) => thrown);
+    expect(mapAuthErrorMessage({ flow: "login", error })).toBe("Login failed. Please try again.");
+  });
+
+  it("returns the session user and logs the failure when the login request fails but the session exists", async () => {
+    const failure = new NetworkError();
+    vi.spyOn(apiClient, "post").mockRejectedValueOnce(failure);
+    vi.spyOn(apiClient, "get").mockImplementationOnce(respondWith(sessionUserExample));
+
+    await expect(loginWithCredentials(credentials)).resolves.toEqual(sessionUserExample);
+    expect(clientLogger.error).toHaveBeenCalledWith("auth.login.failed", { error: failure });
+  });
+
+  it("rejects with the original error when the login request fails and no session exists", async () => {
+    const failure = new NetworkError();
+    vi.spyOn(apiClient, "post").mockRejectedValueOnce(failure);
+
+    await expect(loginWithCredentials(credentials)).rejects.toBe(failure);
+    expect(apiClient.get).toHaveBeenCalledOnce();
+  });
+
+  it("rejects with the original error and logs the session check when that check throws", async () => {
+    const failure = new NetworkError();
+    const sessionCheckFailure = new TimeoutError();
+    vi.spyOn(apiClient, "post").mockRejectedValueOnce(failure);
+    vi.spyOn(apiClient, "get").mockRejectedValueOnce(sessionCheckFailure);
+
+    await expect(loginWithCredentials(credentials)).rejects.toBe(failure);
+    expect(clientLogger.error).toHaveBeenCalledWith("auth.login.session-check-after-error.failed", {
+      error: sessionCheckFailure,
+    });
+  });
+
+  it("rejects a 401 at once, without a session check", async () => {
+    const invalidCredentials = new UnauthorizedError("Unauthorized", {
+      success: false,
+      error: "LOGIN_INVALID_CREDENTIALS",
+      message: "Invalid credentials.",
+    });
+    vi.spyOn(apiClient, "post").mockRejectedValueOnce(invalidCredentials);
+
+    await expect(loginWithCredentials(credentials)).rejects.toBe(invalidCredentials);
+    expect(apiClient.get).not.toHaveBeenCalled();
   });
 
   it("rejects with ApiValidationError when login answers 200 with only the old error field", async () => {
