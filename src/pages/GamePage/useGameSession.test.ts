@@ -20,6 +20,7 @@ import {
   getGameThrowsIfChanged,
   recordThrow,
   setGameStateVersion,
+  undoLastThrow,
   type ThrowAckResponse,
   type GameThrowsResponse,
 } from "@/shared/api/game";
@@ -86,6 +87,20 @@ describe("useGameSession", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     resetGameStore();
+  });
+
+  it("dismisses the overlay without sending undo when no throw exists", async () => {
+    const game = buildGame(1, 0);
+    game.players.push(buildBackendPlayer({ id: 3, name: "Cara", score: 301 }));
+    getGameThrowsIfChangedMock.mockResolvedValueOnce(game);
+
+    const { result } = renderHook(() => useGameSession(1));
+    await waitFor(() => expect(result.current.view.shouldShowFinishOverlay).toBe(true));
+    act(() => result.current.commands.undoFromOverlay());
+
+    expect(result.current.view.shouldShowFinishOverlay).toBe(false);
+    expect(undoLastThrow).not.toHaveBeenCalled();
+    expect(playSound).not.toHaveBeenCalledWith("undo");
   });
 
   it("forgets dismissed players when another game opens", async () => {

@@ -306,8 +306,8 @@ export function useGameSession(
   const handleUndoFromOverlay = useCallback((): void => {
     const current = sessionAtom.get();
     const next = undoFromOverlay(current);
-    if (next.pending === current.pending) return;
     commit(next);
+    if (next.pending === current.pending) return;
     playSound("undo");
     void sendNext();
   }, [commit, sendNext, sessionAtom]);
