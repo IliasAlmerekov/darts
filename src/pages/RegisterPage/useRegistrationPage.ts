@@ -31,7 +31,7 @@ type RegistrationScreen =
 /**
  * Orchestrates registration page state and submission handling.
  */
-interface RegistrationPageReturn {
+interface UseRegistrationPageResult {
   screen: RegistrationScreen;
   error: string | null;
   loading: boolean;
@@ -48,7 +48,7 @@ const INITIAL_STATE: RegistrationFormState = {
   values: { username: "", email: "", password: "" },
 };
 
-export function useRegistrationPage(): RegistrationPageReturn {
+export function useRegistrationPage(): UseRegistrationPageResult {
   const { user } = useAuthenticatedUser();
   const navigate = useNavigate();
 

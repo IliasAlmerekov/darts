@@ -42,7 +42,7 @@ not used.
   hook used by 2+ pages moves to `src/shared/hooks/`. App-shell hooks live in `src/app/`
   (`useStatisticsPrefetch.ts`).
 - **Return shape:** a hook that returns more than one value declares
-  `interface Use<Name>Return { ... }` and annotates its return type with it
+  `interface Use<Name>Result { ... }` and annotates its return type with it
   (`src/pages/GamePage/useGameSession.ts`).
 - **Pure helpers belong in `lib/`.** A `use*` file holds hooks; a pure function moves to
   the page's `lib/` or `src/shared/lib/`.
@@ -121,4 +121,10 @@ rg -n '\buseLayoutEffect\b' src --glob '!src/shared/lib/useIsomorphicLayoutEffec
 
 ```bash
 rg -n 'key=\{(index|i|idx)\}' src --glob '!src/shared/ui/skeletons/**'
+```
+
+**3. Hook return shapes named `...Return` or declared with `type`:**
+
+```bash
+rg -n '\binterface \w*Return\b|\btype Use\w+Result\b' src
 ```

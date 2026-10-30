@@ -8,7 +8,7 @@ import { clientLogger } from "@/shared/services/browser/clientLogger";
 
 const LOGOUT_FAILED_MESSAGE = "Could not log out. Please try again.";
 
-interface UseLogoutReturn {
+interface UseLogoutResult {
   isPending: boolean;
   errorMessage: string | null;
   requestLogout: () => void;
@@ -18,7 +18,7 @@ interface UseLogoutReturn {
  * Ends the Remembered login on this device, clears the client session and opens the login
  * page. A failed request keeps the page and its state, so the player can retry.
  */
-export function useLogout(): UseLogoutReturn {
+export function useLogout(): UseLogoutResult {
   const navigate = useNavigate();
   const isPendingRef = useRef(false);
   const [isPending, setIsPending] = useState(false);

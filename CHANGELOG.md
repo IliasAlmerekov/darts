@@ -15,6 +15,7 @@ and this project does **not** yet follow [Semantic Versioning](https://semver.or
 
 ### Changed
 
+- Conventions: hook return interfaces are named `Use<Hook>Result`. `react.md` now says `Result` instead of `Return`, and its new Verification grep flags an interface ending in `Return` or a `Use*Result` declared with `type`. Seven interfaces are renamed and two `type` aliases become interfaces; no hook returns anything different (#216)
 - Login: a login now cancels a Remembered login check that is still running, as registration already did, so its late answer can no longer replace the user who just logged in. `loginWithCredentials` resolves with the logged-in user and reads the session user itself; without one after an accepted login it rejects with `LoginSessionMissingError`, which still shows "Login failed. Please try again.". `acceptLoggedInUser` is async and cancels the auth check for login and registration. `useLogin` and `useRegistration` merge into `useLoginPage` and `useRegistrationPage`. A login without a game still keeps a stored Current game id; registration still clears it (#390)
 - Pages: page entries and CSS modules take their folder's page name: `GamesOverviewPage.tsx`, `StatisticsPage.tsx` and their tests, plus `GamePage.module.css`, `SettingsPage.module.css`, `RegisterPage.module.css`, `GamesOverviewPage.module.css` and `StatisticsPage.module.css`. The app router test now mocks the games overview page by its real module path. Markup and behaviour are unchanged (#357)
 - Lobby: consolidate roster mutations and ordering (#391).

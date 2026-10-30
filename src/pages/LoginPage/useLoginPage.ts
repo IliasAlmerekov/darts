@@ -31,7 +31,7 @@ type LoginScreen =
 /**
  * Orchestrates login page state, submission, and redirect logic.
  */
-interface LoginPageReturn {
+interface UseLoginPageResult {
   screen: LoginScreen;
   error: string | null;
   loading: boolean;
@@ -61,7 +61,7 @@ async function submitLogin(_previous: LoginFormState, formData: FormData): Promi
   }
 }
 
-export function useLoginPage(): LoginPageReturn {
+export function useLoginPage(): UseLoginPageResult {
   const [state, formAction, loading] = useActionState(submitLogin, INITIAL_STATE);
   const navigate = useNavigate();
   const location = useLocation();

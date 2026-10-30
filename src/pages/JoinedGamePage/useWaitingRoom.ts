@@ -5,7 +5,7 @@ import type { WaitingRoomView } from "./lib/waitingRoomView";
 
 const FAILURES_BEFORE_CONNECTION_LOST = 3;
 
-interface UseWaitingRoomReturn {
+interface UseWaitingRoomResult {
   view: WaitingRoomView;
   isConnectionLost: boolean;
 }
@@ -19,7 +19,7 @@ interface FailureBaseline {
 /**
  * Polls the player's current game and tells the Waiting room what to show.
  */
-export function useWaitingRoom(): UseWaitingRoomReturn {
+export function useWaitingRoom(): UseWaitingRoomResult {
   const { data, dataUpdatedAt, errorUpdateCount } = useQuery(playerQueries.currentGame());
   const [hasSeenGame, setHasSeenGame] = useState(false);
   const [failureBaseline, setFailureBaseline] = useState<FailureBaseline>({
