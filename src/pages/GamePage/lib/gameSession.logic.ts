@@ -245,6 +245,13 @@ export function dismissFinishedPlayers(session: GameSession): GameSession {
 }
 
 export function undoFromOverlay(session: GameSession): GameSession {
+  if (
+    session.recovery === "reloading" ||
+    session.recovery === "offline" ||
+    session.recovery === "loadFailed"
+  ) {
+    return session;
+  }
   return enqueueUndo(dismissFinishedPlayers(session));
 }
 

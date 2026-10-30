@@ -127,6 +127,17 @@ describe("gameSession.logic", () => {
     expect(getSessionView(dismissFinishedPlayers(finished)).shouldShowFinishOverlay).toBe(false);
   });
 
+  it.each(["reloading", "offline", "loadFailed"] as const)(
+    "keeps the finish overlay open when undo is blocked by %s",
+    (recovery) => {
+      const game = buildGame({ alice: 0, bob: 301 });
+      game.players.push(buildBackendPlayer({ id: 3, name: "Carol", score: 301 }));
+      const session = { ...createGameSession(game), recovery };
+      expect(getSessionView(session).shouldShowFinishOverlay).toBe(true);
+      expect(undoFromOverlay(session)).toBe(session);
+    },
+  );
+
   it.each([[[0]], [[0, 0, 0]], [["T20", "T20"]]])(
     "allows undo and locks settings after throws %s",
     (values) => {
