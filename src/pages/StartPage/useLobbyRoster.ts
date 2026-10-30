@@ -86,6 +86,7 @@ export function useLobbyRoster(
   const queryClient = useQueryClient();
   const isCurrentGame = useIsCurrentGame(gameId);
   const requestIdRef = useRef(0);
+  const streamVersionRef = useRef(0);
   const { data: players = NO_PLAYERS } = useQuery({
     ...gameQueries.lobbyPlayers(gameId ?? 0),
     enabled: gameId !== null,
@@ -127,6 +128,7 @@ export function useLobbyRoster(
         const list = payload.items ?? payload.players;
 
         if (Array.isArray(list)) {
+          streamVersionRef.current += 1;
           const mappedPlayers = list.map((player, index) => ({
             id: player.id,
             name: player.username ?? player.name ?? "",
@@ -232,12 +234,14 @@ export function useLobbyRoster(
   const removePlayer = useCallback(
     async (playerId: number, activeGameId: number): Promise<void> => {
       const removed = players.find((player) => player.id === playerId);
+      const streamVersion = streamVersionRef.current;
       removeOptimisticPlayer(playerId);
       const result = await mutateSeat({
         gameId: activeGameId,
         request: () => leaveRoom(activeGameId, playerId),
         rollback: () => {
-          if (removed) appendOptimisticPlayer(removed);
+          if (removed && streamVersionRef.current === streamVersion)
+            appendOptimisticPlayer(removed);
         },
         seatsLog: "room.leave.seats-not-editable",
       });
@@ -248,6 +252,12 @@ export function useLobbyRoster(
             error: result.error,
           });
       } else if (result.status !== "success") {
+        if (result.status === "failed") {
+          clientLogger.error("room.leave.failed", {
+            context: { gameId: activeGameId },
+            error: result.error,
+          });
+        }
         onError(toUserErrorMessage(result.error, "Could not remove player. Please try again."));
       }
     },
@@ -258,40 +268,39 @@ export function useLobbyRoster(
     (event: DragEndEvent): void => {
       const { active, over } = event;
       if (!over || active.id === over.id) return;
-      setPlayerOrder((items) => {
-        const activeId = Number(active.id);
-        const overId = Number(over.id);
-        if (!Number.isFinite(activeId) || !Number.isFinite(overId)) return items;
-        const oldIndex = items.indexOf(activeId);
-        const newIndex = items.indexOf(overId);
-        if (oldIndex === -1 || newIndex === -1) return items;
-        const nextOrder = arrayMove(items, oldIndex, newIndex);
-        if (gameId !== null) {
-          const requestId = ++requestIdRef.current;
-          void mutateSeat({
-            gameId,
-            request: () =>
-              updatePlayerOrder(
-                gameId,
-                nextOrder.map((playerId, position) => ({ playerId, position })),
-              ),
-            rollback: () => setPlayerOrder(items),
-            shouldRollback: () => requestIdRef.current === requestId && isCurrentGame(gameId),
-            failureLog: "room.player-order.persist.failed",
-          }).then((result) => {
-            if (result.status !== "success" && result.status !== "stale")
-              onError(
-                toUserErrorMessage(
-                  result.error,
-                  "Could not update player order. Please try again.",
-                ),
-              );
-          });
-        }
-        return nextOrder;
-      });
+      const items = playerOrder;
+      const activeId = Number(active.id);
+      const overId = Number(over.id);
+      if (!Number.isFinite(activeId) || !Number.isFinite(overId)) return;
+      const oldIndex = items.indexOf(activeId);
+      const newIndex = items.indexOf(overId);
+      if (oldIndex === -1 || newIndex === -1) return;
+      const nextOrder = arrayMove(items, oldIndex, newIndex);
+      setPlayerOrder(nextOrder);
+      if (gameId !== null) {
+        const requestId = ++requestIdRef.current;
+        void mutateSeat({
+          gameId,
+          request: () =>
+            updatePlayerOrder(
+              gameId,
+              nextOrder.map((playerId, position) => ({ playerId, position })),
+            ),
+          rollback: () => {
+            const current = queryClient.getQueryData(gameQueries.lobbyPlayers(gameId).queryKey);
+            setPlayerOrder(mergePlayerOrder(items, current ?? NO_PLAYERS));
+          },
+          shouldRollback: () => requestIdRef.current === requestId && isCurrentGame(gameId),
+          failureLog: "room.player-order.persist.failed",
+        }).then((result) => {
+          if (result.status !== "success" && result.status !== "stale")
+            onError(
+              toUserErrorMessage(result.error, "Could not update player order. Please try again."),
+            );
+        });
+      }
     },
-    [gameId, isCurrentGame, mutateSeat, onError],
+    [gameId, isCurrentGame, mutateSeat, onError, playerOrder, queryClient],
   );
 
   useEventSource(url, listeners, { withCredentials: true, onClosed: onStreamClosed });

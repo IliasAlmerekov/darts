@@ -12,6 +12,7 @@ import { ApiError } from "@/shared/api";
 import { QueryClientProvider, type QueryClient } from "@tanstack/react-query";
 import { useLobbyRoster } from "./useLobbyRoster";
 import { addGuestPlayer, leaveRoom, updatePlayerOrder } from "@/shared/api/room";
+import { clientLogger } from "@/shared/services/browser/clientLogger";
 
 vi.mock("@/shared/api/room", () => ({
   addGuestPlayer: vi.fn(),
@@ -188,6 +189,21 @@ describe("useLobbyRoster", () => {
     expect(onError).toHaveBeenCalledOnce();
   });
 
+  it("logs unexpected removal failures", async () => {
+    const error = new Error("network");
+    const log = vi.spyOn(clientLogger, "error").mockImplementation(() => {});
+    vi.mocked(leaveRoom).mockRejectedValueOnce(error);
+    testQueryClient.setQueryData(gameQueries.lobbyPlayers(5).queryKey, [
+      { id: 1, name: "A", position: 0 },
+    ]);
+    const { result } = renderGamePlayers(5);
+    await act(async () => {
+      await result.current.removePlayer(1, 5);
+    });
+    expect(log).toHaveBeenCalledWith("room.leave.failed", { context: { gameId: 5 }, error });
+    log.mockRestore();
+  });
+
   it("ignores a failed removal after the game changes", async () => {
     let rejectRemoval!: (error: Error) => void;
     const pending = new Promise<void>((_resolve, reject) => {
@@ -219,6 +235,86 @@ describe("useLobbyRoster", () => {
     expect(result.current.players).toEqual([{ id: 2, name: "B", position: 0 }]);
     expect(onError).not.toHaveBeenCalled();
     expect(revalidate).not.toHaveBeenCalled();
+  });
+
+  it("keeps a newer stream roster when a removal fails", async () => {
+    let rejectRemoval!: (error: Error) => void;
+    vi.mocked(leaveRoom).mockReturnValueOnce(
+      new Promise<void>((_resolve, reject) => {
+        rejectRemoval = reject;
+      }),
+    );
+    testQueryClient.setQueryData(gameQueries.lobbyPlayers(5).queryKey, [
+      { id: 1, name: "A", position: 0 },
+    ]);
+    const { result } = renderGamePlayers(5);
+    let removal!: Promise<void>;
+    act(() => {
+      removal = result.current.removePlayer(1, 5);
+    });
+    act(() => {
+      MockEventSource.last?.dispatch("players", JSON.stringify({ players: [] }));
+    });
+    await act(async () => {
+      rejectRemoval(new Error("network"));
+      await removal;
+    });
+    await waitFor(() => expect(result.current.players).toEqual([]));
+  });
+
+  it("reconciles a failed reorder with a newer stream roster", async () => {
+    let rejectOrder!: (error: Error) => void;
+    vi.mocked(updatePlayerOrder).mockReturnValueOnce(
+      new Promise<void>((_resolve, reject) => {
+        rejectOrder = reject;
+      }),
+    );
+    testQueryClient.setQueryData(gameQueries.lobbyPlayers(5).queryKey, [
+      { id: 1, name: "A", position: 0 },
+      { id: 2, name: "B", position: 1 },
+    ]);
+    const { result } = renderGamePlayers(5);
+    const drag = { active: { id: 2 }, over: { id: 1 } } as unknown as DragEndEvent;
+    act(() => {
+      result.current.reorderPlayers(drag);
+    });
+    act(() => {
+      MockEventSource.last?.dispatch(
+        "players",
+        JSON.stringify({
+          players: [
+            { id: 2, name: "B", position: 0 },
+            { id: 3, name: "C", position: 1 },
+          ],
+        }),
+      );
+    });
+    await waitFor(() => expect(result.current.playerOrder).toEqual([2, 3]));
+    await act(async () => {
+      rejectOrder(new Error("network"));
+    });
+    await waitFor(() => expect(result.current.playerOrder).toEqual([2, 3]));
+  });
+
+  it("sends one reorder request per drag in Strict Mode", async () => {
+    testQueryClient.setQueryData(gameQueries.lobbyPlayers(5).queryKey, [
+      { id: 1, name: "A", position: 0 },
+      { id: 2, name: "B", position: 1 },
+    ]);
+    vi.mocked(updatePlayerOrder).mockResolvedValue(undefined);
+    const { result } = renderHook(() => useLobbyRoster(5, vi.fn(), vi.fn()), {
+      wrapper: ({ children }) => (
+        <React.StrictMode>
+          <Providers>{children}</Providers>
+        </React.StrictMode>
+      ),
+    });
+    const drag = { active: { id: 2 }, over: { id: 1 } } as unknown as DragEndEvent;
+    vi.mocked(updatePlayerOrder).mockClear();
+    await act(async () => {
+      result.current.reorderPlayers(drag);
+    });
+    expect(updatePlayerOrder).toHaveBeenCalledTimes(1);
   });
 
   it("sends the reordered positions and rolls back when seats are locked", async () => {
