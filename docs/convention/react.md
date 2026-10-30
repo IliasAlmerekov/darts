@@ -126,5 +126,5 @@ rg -n 'key=\{(index|i|idx)\}' src --glob '!src/shared/ui/skeletons/**'
 **3. Hook return shapes named `...Return` or declared with `type`:**
 
 ```bash
-rg -n '\binterface \w*Return\b|\btype Use\w+Result\b' src
+rg -n '\b(interface|type) \w*Return\b|\btype Use\w+Result\b' src
 ```
