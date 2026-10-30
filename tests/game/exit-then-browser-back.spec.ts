@@ -66,7 +66,7 @@ test.describe("Leaving the game with the browser Back button while End Game runs
     // - a counter of fetch calls to the rematch endpoint;
     // - a marker set from a timeout after the abort body is read. That task runs after every
     //   microtask chained from the body read, and the hook reaches the rematch fetch in
-    //   microtasks only (API client validation, the abort guard, createRematch). So the
+    //   microtasks only (API client validation, the abort guard, createRematchGame). So the
     //   counter is final when the marker is set.
     await page.addInitScript(
       ({ abortPath, rematchPath }) => {

@@ -3,7 +3,6 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { apiClient, ApiValidationError } from "./client";
 import {
   abortGame,
-  createRematch,
   getFinishedGame,
   getGameSettings,
   getTabletGame,
@@ -375,18 +374,6 @@ describe("game api contract payloads", () => {
       await expect(
         updateGameSettings(42, { doubleOut: true, tripleOut: false }),
       ).rejects.toBeInstanceOf(ApiValidationError);
-    });
-  });
-
-  describe("createRematch", () => {
-    it("rejects with ApiError when the contract-valid invitation has no link", async () => {
-      vi.spyOn(apiClient, "post")
-        .mockImplementationOnce(respondWith({ success: true, gameId: 777 }))
-        .mockImplementationOnce(
-          respondWith({ success: false, gameId: null, invitationLink: null }),
-        );
-
-      await expect(createRematch(42)).rejects.toMatchObject({ name: "ApiError", status: 200 });
     });
   });
 

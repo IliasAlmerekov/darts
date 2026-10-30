@@ -154,7 +154,7 @@ const SUMMARY_ACTIONS = [
     action: "Back To Start",
     run: (hook: SummaryHook) => hook.handleBackToStart(),
     request: createRematchGameMock,
-    response: (): unknown => ({ success: true, gameId: 77 }),
+    response: (): unknown => ({ success: true, gameId: 77, invitationLink: "/invite/77" }),
   },
 ];
 
@@ -209,6 +209,7 @@ describe("useGameSummaryPage", () => {
     createRematchGameMock.mockResolvedValue({
       success: true,
       gameId: 77,
+      invitationLink: "/invite/77",
     });
     undoLastThrowMock.mockResolvedValue(buildUndoAck());
   });
@@ -353,7 +354,7 @@ describe("useGameSummaryPage", () => {
           success: boolean;
           gameId: number;
           settings: { startScore: number; doubleOut: boolean; tripleOut: boolean };
-          invitationLink?: string;
+          invitationLink: string;
         }) => void)
       | null = null;
     startRematchMock.mockImplementation(
@@ -381,6 +382,7 @@ describe("useGameSummaryPage", () => {
       resolveStartRematch({
         success: true,
         gameId: 77,
+        invitationLink: "/invite/77",
         settings: {
           startScore: 301,
           doubleOut: false,
@@ -399,7 +401,7 @@ describe("useGameSummaryPage", () => {
           success: boolean;
           gameId: number;
           settings: { startScore: number; doubleOut: boolean; tripleOut: boolean };
-          invitationLink?: string;
+          invitationLink: string;
         }) => void)
       | null = null;
     startRematchMock.mockImplementation(
@@ -425,6 +427,7 @@ describe("useGameSummaryPage", () => {
       resolveStartRematch({
         success: true,
         gameId: 77,
+        invitationLink: "/invite/77",
         settings: {
           startScore: 301,
           doubleOut: false,
@@ -465,7 +468,7 @@ describe("useGameSummaryPage", () => {
           success: boolean;
           gameId: number;
           settings: { startScore: number; doubleOut: boolean; tripleOut: boolean };
-          invitationLink?: string;
+          invitationLink: string;
         }) => void)
       | null = null;
     startRematchMock.mockImplementation(
@@ -491,6 +494,7 @@ describe("useGameSummaryPage", () => {
       resolveStartRematch({
         success: true,
         gameId: 77,
+        invitationLink: "/invite/77",
         settings: {
           startScore: 301,
           doubleOut: false,
@@ -501,26 +505,6 @@ describe("useGameSummaryPage", () => {
     });
 
     expect(result.current.isActionPending).toBe(true);
-  });
-
-  it("should not navigate when rematch response misses game id", async () => {
-    startRematchMock.mockResolvedValueOnce({
-      success: false,
-      gameId: 0,
-      settings: {
-        startScore: 301,
-        doubleOut: false,
-        tripleOut: false,
-      },
-    });
-
-    const { result } = renderSummaryHook();
-
-    await act(async () => {
-      await result.current.handlePlayAgain();
-    });
-
-    expect(navigateMock).not.toHaveBeenCalledWith("/start/77");
   });
 
   it("should not overwrite shared game state when returning to start from summary", async () => {
@@ -844,27 +828,6 @@ describe("useGameSummaryPage", () => {
 
       expect(startRematchMock).toHaveBeenCalledWith(42);
       expect(startRematchMock).toHaveBeenCalledTimes(1);
-    });
-
-    it("should not set invitation when rematch adapter returns only game id", async () => {
-      startRematchMock.mockResolvedValueOnce({
-        success: true,
-        gameId: 77,
-        settings: {
-          startScore: 501,
-          doubleOut: true,
-          tripleOut: false,
-        },
-      });
-
-      const { result } = renderSummaryHook();
-
-      await act(async () => {
-        await result.current.handlePlayAgain();
-      });
-
-      expect(setInvitationMock).not.toHaveBeenCalled();
-      expect(setCurrentGameIdMock).toHaveBeenCalledWith(77);
     });
 
     it("should not call rematch adapter when finishedGameId is absent", async () => {

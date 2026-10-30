@@ -1,10 +1,8 @@
 import * as v from "valibot";
 import { apiClient } from "./client";
 import { ApiError } from "./errors";
-import { createInviteEndpoint } from "./endpoints";
 import {
   integerSchema,
-  invitationResponseSchema,
   successMessageResponseSchema,
   type SuccessMessageResponse,
 } from "./schemas";
@@ -185,9 +183,8 @@ const undoAckResponseSchema = v.object({
 /** Contract response of `POST /api/room/{id}/rematch`. */
 const rematchResponseSchema = v.object({
   success: v.boolean(),
-  gameId: v.optional(v.nullable(integerSchema)),
-  invitationLink: v.optional(v.nullable(v.string())),
-  message: v.optional(v.nullable(v.string())),
+  gameId: integerSchema,
+  invitationLink: v.string(),
 });
 
 type GameStatus = v.InferOutput<typeof gameStatusSchema>;
@@ -239,15 +236,7 @@ export interface FinishedPlayerResponse {
 
 export type GameSummaryResponse = FinishedPlayerResponse[];
 
-export interface RematchGameResponse {
-  success: boolean;
-  gameId: number;
-  invitationLink?: string;
-}
-
-export interface RematchResponse extends RematchGameResponse {
-  invitationLink: string;
-}
+type RematchGameResponse = v.InferOutput<typeof rematchResponseSchema>;
 
 export interface StartRematchResponse extends RematchGameResponse {
   settings: GameSettingsResponse;
@@ -433,57 +422,12 @@ export async function abortGame(gameId: number): Promise<SuccessMessageResponse>
 }
 
 /**
- * Creates a rematch and returns the new game id plus any invitation link already
- * provided by the backend. This does not trigger the invite fallback call.
+ * Creates a rematch and returns the new game id with its invitation link.
  */
 export async function createRematchGame(previousGameId: number): Promise<RematchGameResponse> {
-  const rematch = await apiClient.post(REMATCH_ENDPOINT(previousGameId), undefined, {
+  return apiClient.post(REMATCH_ENDPOINT(previousGameId), undefined, {
     validate: rematchResponseSchema,
   });
-  // An unknown previous game is a 404 GAME_NOT_FOUND that apiClient throws. The contract
-  // still allows a 200 with a null or missing game id, so guard against that body here.
-  if (typeof rematch.gameId !== "number") {
-    throw new ApiError("Rematch response has no game id", {
-      status: 200,
-      data: rematch,
-    });
-  }
-
-  return {
-    success: rematch.success,
-    gameId: rematch.gameId,
-    ...(rematch.invitationLink ? { invitationLink: rematch.invitationLink } : {}),
-  };
-}
-
-/**
- * Creates a rematch and returns invitation details for the new game.
- */
-export async function createRematch(previousGameId: number): Promise<RematchResponse> {
-  const rematch = await createRematchGame(previousGameId);
-  if (rematch.invitationLink) {
-    return {
-      success: rematch.success,
-      gameId: rematch.gameId,
-      invitationLink: rematch.invitationLink,
-    };
-  }
-
-  const invite = await apiClient.post(createInviteEndpoint(rematch.gameId), undefined, {
-    validate: invitationResponseSchema,
-  });
-  // The contract allows a null game id and link; without them there is nothing to join.
-  if (typeof invite.gameId !== "number" || typeof invite.invitationLink !== "string") {
-    throw new ApiError("Invitation response has no game id or link", {
-      status: 200,
-      data: invite,
-    });
-  }
-  return {
-    success: rematch.success,
-    gameId: invite.gameId,
-    invitationLink: invite.invitationLink,
-  };
 }
 
 /**
@@ -507,8 +451,8 @@ export async function startRematch(previousGameId: number): Promise<StartRematch
   return {
     success: rematch.success,
     gameId: rematch.gameId,
+    invitationLink: rematch.invitationLink,
     settings,
-    ...(rematch.invitationLink ? { invitationLink: rematch.invitationLink } : {}),
   };
 }
 
