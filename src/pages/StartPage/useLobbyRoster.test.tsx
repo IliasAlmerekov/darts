@@ -188,6 +188,69 @@ describe("useLobbyRoster", () => {
     expect(onError).toHaveBeenCalledOnce();
   });
 
+  it("ignores a failed removal after the game changes", async () => {
+    let rejectRemoval!: (error: Error) => void;
+    const pending = new Promise<void>((_resolve, reject) => {
+      rejectRemoval = reject;
+    });
+    const revalidate = vi.fn();
+    const onError = vi.fn();
+    testQueryClient.setQueryData(gameQueries.lobbyPlayers(5).queryKey, [
+      { id: 1, name: "A", position: 0 },
+    ]);
+    testQueryClient.setQueryData(gameQueries.lobbyPlayers(6).queryKey, [
+      { id: 2, name: "B", position: 0 },
+    ]);
+    vi.mocked(leaveRoom).mockReturnValueOnce(pending);
+    const { result, rerender } = renderHook(
+      ({ gameId }) => useLobbyRoster(gameId, revalidate, onError),
+      { initialProps: { gameId: 5 }, wrapper: Providers },
+    );
+    let removal!: Promise<void>;
+    act(() => {
+      removal = result.current.removePlayer(1, 5);
+    });
+    expect(leaveRoom).toHaveBeenCalledWith(5, 1);
+    rerender({ gameId: 6 });
+    await act(async () => {
+      rejectRemoval(new Error("network"));
+      await removal;
+    });
+    expect(result.current.players).toEqual([{ id: 2, name: "B", position: 0 }]);
+    expect(onError).not.toHaveBeenCalled();
+    expect(revalidate).not.toHaveBeenCalled();
+  });
+
+  it("sends the reordered positions and rolls back when seats are locked", async () => {
+    const revalidate = vi.fn();
+    const onError = vi.fn();
+    const error = new ApiError("Locked", {
+      status: 409,
+      data: { error: "GAME_SEATS_NOT_EDITABLE" },
+    });
+    testQueryClient.setQueryData(gameQueries.lobbyPlayers(7).queryKey, [
+      { id: 10, name: "A", position: 0 },
+      { id: 20, name: "B", position: 1 },
+      { id: 30, name: "C", position: 2 },
+    ]);
+    vi.mocked(updatePlayerOrder).mockRejectedValueOnce(error);
+    const { result } = renderHook(() => useLobbyRoster(7, revalidate, onError), {
+      wrapper: Providers,
+    });
+    const drag = { active: { id: 20 }, over: { id: 10 } } as unknown as DragEndEvent;
+    await act(async () => {
+      result.current.reorderPlayers(drag);
+    });
+    expect(updatePlayerOrder).toHaveBeenCalledWith(7, [
+      { playerId: 20, position: 0 },
+      { playerId: 10, position: 1 },
+      { playerId: 30, position: 2 },
+    ]);
+    expect(result.current.playerOrder).toEqual([10, 20, 30]);
+    expect(revalidate).toHaveBeenCalledOnce();
+    expect(onError).toHaveBeenCalledOnce();
+  });
+
   it("keeps a newer reorder when an earlier request fails and merges an SSE update", async () => {
     const first = deferred<void>();
     const second = deferred<void>();
