@@ -26,7 +26,7 @@ Rules:
 - A page section is a component in `src/pages/<Page>/components/` that is a slice of the
   page's own layout, bound to it. It imports the page's module from the parent folder as
   `../<Page>.module.css` (`HeaderSection`, `KeyboardSection` and `OverlaysSection` use
-  `../Game.module.css`). A standalone UI component owns its own module. When a section
+  `../GamePage.module.css`). A standalone UI component owns its own module. When a section
   becomes standalone, move its styles into a local module, so the page module stays small.
 
 ## Global stylesheet

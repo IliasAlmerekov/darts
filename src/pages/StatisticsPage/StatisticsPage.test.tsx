@@ -3,7 +3,7 @@ import { fireEvent, render, screen } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { INITIAL_PLAYER_STATS_PARAMS } from "@/shared/query/statistics.queries";
-import StatisticsPage from "./Statistics";
+import StatisticsPage from "./StatisticsPage";
 
 // ── Nanostores ──────────────────────────────────────────────────────────────
 vi.mock("@nanostores/react", () => ({

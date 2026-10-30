@@ -15,6 +15,7 @@ and this project does **not** yet follow [Semantic Versioning](https://semver.or
 
 ### Changed
 
+- Pages: page entries and CSS modules take their folder's page name: `GamesOverviewPage.tsx`, `StatisticsPage.tsx` and their tests, plus `GamePage.module.css`, `SettingsPage.module.css`, `RegisterPage.module.css`, `GamesOverviewPage.module.css` and `StatisticsPage.module.css`. The app router test now mocks the games overview page by its real module path. Markup and behaviour are unchanged (#357)
 - Lobby: consolidate roster mutations and ordering (#391).
 
 - Architecture: use public import paths and direct lazy page entries, and enforce the shared lib alias in production code (#214)
