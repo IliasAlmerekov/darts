@@ -24,6 +24,8 @@ describe("provesRemoval", () => {
   it("proves a removal when the lobby game is missing from a short list", () => {
     expect(provesRemoval(finishedGames(), 42)).toBe(true);
     expect(provesRemoval(finishedGames(41, 40), 42)).toBe(true);
+    const oneShortOfFull = Array.from({ length: RECENT_GAMES_LIMIT - 1 }, (_, index) => 50 + index);
+    expect(provesRemoval(finishedGames(...oneShortOfFull), 42)).toBe(true);
   });
 
   it("proves no removal when the lobby game has finished", () => {
