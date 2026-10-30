@@ -101,6 +101,14 @@ export async function mockAdminLoginFlow(page: Page): Promise<void> {
   await mockLoginFlow(page, ADMIN_SESSION_RESPONSE);
 }
 
+/**
+ * Starts signed out; after the login form posts, the session belongs to the player whose
+ * scanned invitation the backend joined. The login answers with the controller fallback.
+ */
+export async function mockInvitedPlayerLoginFlow(page: Page): Promise<void> {
+  await mockLoginFlow(page, REMEMBERED_PLAYER_JOINED_RESPONSE);
+}
+
 async function mockLoginFlow(page: Page, sessionResponse: SessionResponse): Promise<void> {
   let loginCompleted = false;
 

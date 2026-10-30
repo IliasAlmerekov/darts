@@ -2,6 +2,7 @@ import * as v from "valibot";
 import { apiClient, ApiValidationError } from "./client";
 import { ApiError, UnauthorizedError } from "./errors";
 import { integerSchema } from "./schemas";
+import { clientLogger } from "@/shared/services/browser/clientLogger";
 
 // ---------------------------------------------------------------------------
 // Schemas
@@ -55,7 +56,7 @@ const loginStatusSchema = v.pipe(
 /**
  * `POST /api/login`. A successful login answers with the `/api/login/success` body and
  * becomes `user`. Any other 200 means the user is logged in but the body lacks them, so
- * the caller reads the `session`. A failed login is a 401 `LOGIN_INVALID_CREDENTIALS`.
+ * `loginWithCredentials` reads the `session`. A failed login is a 401 `LOGIN_INVALID_CREDENTIALS`.
  */
 const loginResponseSchema = v.union([
   v.pipe(
@@ -96,15 +97,71 @@ const LOGOUT_ENDPOINT = "/logout";
 const REGISTER_ENDPOINT = "/register";
 const AUTH_CHECK_TIMEOUT_MS = 8000;
 
+// A user whose redirect points into the API came from the controller fallback; the
+// target comes from `/api/login/success`.
+const API_REDIRECT_PREFIX = "/api/";
+
 interface GetAuthenticatedUserOptions {
   signal?: AbortSignal;
   timeoutMs?: number;
 }
 
+/** The backend accepted the login, but `/api/login/success` finds no session user. */
+class LoginSessionMissingError extends Error {
+  constructor() {
+    super("Login accepted, but the session holds no user");
+    this.name = "LoginSessionMissingError";
+  }
+}
+
 /**
- * Logs in a user using email/password credentials.
+ * Logs in a user using email/password credentials and resolves with the logged-in user.
+ * When the login answer lacks the user, or a request fails with anything but a 401, the
+ * user comes from the session. Without a session user it rejects: with
+ * `LoginSessionMissingError` after an accepted login, else with the original error.
  */
-export async function loginWithCredentials(credentials: LoginCredentials): Promise<LoginResponse> {
+export async function loginWithCredentials(
+  credentials: LoginCredentials,
+): Promise<AuthenticatedUser> {
+  try {
+    const response = await postLogin(credentials);
+    if (response.type === "user" && !response.user.redirect.startsWith(API_REDIRECT_PREFIX)) {
+      return response.user;
+    }
+
+    const sessionUser = await getAuthenticatedUser();
+    if (sessionUser === null) {
+      throw new LoginSessionMissingError();
+    }
+    return sessionUser;
+  } catch (error) {
+    if (error instanceof LoginSessionMissingError) {
+      throw error;
+    }
+
+    clientLogger.error("auth.login.failed", {
+      error,
+    });
+    if (error instanceof ApiError && error.status === 401) {
+      throw error;
+    }
+
+    let sessionUser: AuthenticatedUser | null = null;
+    try {
+      sessionUser = await getAuthenticatedUser();
+    } catch (sessionCheckError) {
+      clientLogger.error("auth.login.session-check-after-error.failed", {
+        error: sessionCheckError,
+      });
+    }
+    if (sessionUser === null) {
+      throw error;
+    }
+    return sessionUser;
+  }
+}
+
+async function postLogin(credentials: LoginCredentials): Promise<LoginResponse> {
   const payload = new URLSearchParams();
   payload.set("_username", credentials.email);
   payload.set("_password", credentials.password);

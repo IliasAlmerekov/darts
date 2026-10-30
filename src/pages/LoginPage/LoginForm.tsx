@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { Mail, Lock, Eye, EyeOff } from "lucide-react";
-import type { LoginValues } from "./useLogin";
+import type { LoginValues } from "./useLoginPage";
 import styles from "./LoginForm.module.css";
 import { ROUTES } from "@/lib/router/routes";
 

@@ -1,15 +1,20 @@
 // @vitest-environment jsdom
+import { startTransition } from "react";
 import { act, renderHook, waitFor } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { useLoginPage } from "./useLoginPage";
 import { ROUTES } from "@/lib/router/routes";
+import { NetworkError, UnauthorizedError } from "@/shared/api";
+import type { AuthenticatedUser } from "@/shared/api/auth";
+import { authQueries } from "@/shared/query/auth.queries";
 import { queryClient } from "@/shared/query/queryClient";
+import { $currentGameId, setCurrentGameId } from "@/shared/store";
 
 const navigateMock = vi.fn();
-const useLoginMock = vi.fn();
 const useAuthenticatedUserMock = vi.fn();
-const getActiveGameIdMock = vi.fn();
 const useLocationMock = vi.fn();
+const loginWithCredentialsMock = vi.fn();
+const getAuthenticatedUserMock = vi.fn();
 const assignMock = vi.fn();
 
 vi.mock("react-router-dom", async (importOriginal) => {
@@ -21,16 +26,13 @@ vi.mock("react-router-dom", async (importOriginal) => {
   };
 });
 
-vi.mock("./useLogin", () => ({
-  useLogin: () => useLoginMock(),
+vi.mock("@/shared/api/auth", () => ({
+  loginWithCredentials: (...args: unknown[]) => loginWithCredentialsMock(...args),
+  getAuthenticatedUser: (...args: unknown[]) => getAuthenticatedUserMock(...args),
 }));
 
 vi.mock("@/shared/hooks/useAuthenticatedUser", () => ({
   useAuthenticatedUser: () => useAuthenticatedUserMock(),
-}));
-
-vi.mock("@/shared/store", () => ({
-  getActiveGameId: () => getActiveGameIdMock(),
 }));
 
 const loggedInPlayer = {
@@ -42,8 +44,32 @@ const loggedInPlayer = {
 };
 const joinedPlayer = { ...loggedInPlayer, gameId: 42 };
 
+const AUTH_KEY = authQueries.me().queryKey;
+const SEEDED_USER: AuthenticatedUser = {
+  success: true,
+  roles: ["ROLE_ADMIN"],
+  id: 99,
+  redirect: "/start",
+};
+
 function givenAuthCheck(user: unknown, loading = false): void {
   useAuthenticatedUserMock.mockReturnValue({ user, loading, error: null });
+}
+
+async function submitLogin(): Promise<ReturnType<typeof useLoginPage>> {
+  const { result } = renderHook(() => useLoginPage());
+
+  const formData = new FormData();
+  formData.set("_username", "player@test.com");
+  formData.set("_password", "password");
+
+  await act(async () => {
+    startTransition(() => {
+      result.current.formAction(formData);
+    });
+  });
+
+  return result.current;
 }
 
 describe("useLoginPage", () => {
@@ -57,14 +83,8 @@ describe("useLoginPage", () => {
         assign: assignMock,
       },
     });
-    useLoginMock.mockReturnValue({
-      formAction: vi.fn(),
-      loading: false,
-      error: null,
-      values: { email: "", password: "" },
-    });
     givenAuthCheck(null);
-    getActiveGameIdMock.mockReturnValue(null);
+    setCurrentGameId(null);
     useLocationMock.mockReturnValue({
       pathname: "/",
       search: "",
@@ -102,7 +122,7 @@ describe("useLoginPage", () => {
 
   it("does not send a player with a stale stored game to the host start page", async () => {
     givenAuthCheck(joinedPlayer);
-    getActiveGameIdMock.mockReturnValue(99);
+    setCurrentGameId(99);
 
     renderHook(() => useLoginPage());
 
@@ -114,7 +134,7 @@ describe("useLoginPage", () => {
 
   it("sends an admin with a stored game to that game's start page", async () => {
     givenAuthCheck({ success: true, roles: ["ROLE_ADMIN"], id: 1, redirect: "/start" });
-    getActiveGameIdMock.mockReturnValue(99);
+    setCurrentGameId(99);
 
     renderHook(() => useLoginPage());
 
@@ -185,6 +205,92 @@ describe("useLoginPage", () => {
     expect(queryClient.getQueryData(["auth", "me"])).toEqual({
       ...loggedInPlayer,
       redirect: ROUTES.playerProfile,
+    });
+  });
+
+  describe("form login", () => {
+    beforeEach(() => {
+      queryClient.setQueryData(AUTH_KEY, SEEDED_USER);
+    });
+
+    it("stores the logged-in user and the joined game", async () => {
+      loginWithCredentialsMock.mockResolvedValueOnce(joinedPlayer);
+
+      const state = await submitLogin();
+
+      expect(loginWithCredentialsMock).toHaveBeenCalledWith({
+        email: "player@test.com",
+        password: "password",
+      });
+      expect(queryClient.getQueryData(AUTH_KEY)).toEqual(joinedPlayer);
+      expect($currentGameId.get()).toBe(42);
+      expect(state.error).toBeNull();
+    });
+
+    it("keeps a stored Current game id when the logged-in user has no game", async () => {
+      setCurrentGameId(7);
+      loginWithCredentialsMock.mockResolvedValueOnce(loggedInPlayer);
+
+      const state = await submitLogin();
+
+      expect(queryClient.getQueryData(AUTH_KEY)).toEqual(loggedInPlayer);
+      expect($currentGameId.get()).toBe(7);
+      expect(state.error).toBeNull();
+    });
+
+    it("stores the user with the invitation error", async () => {
+      const rejectedInvitation = { ...loggedInPlayer, invitationError: "GAME_ALREADY_STARTED" };
+      loginWithCredentialsMock.mockResolvedValueOnce(rejectedInvitation);
+
+      const state = await submitLogin();
+
+      expect(queryClient.getQueryData(AUTH_KEY)).toEqual(rejectedInvitation);
+      expect(state.error).toBeNull();
+    });
+
+    it("keeps the logged-in user when a pending Remembered login check answers late with no user", async () => {
+      // A fresh cached user would let the check skip its request, so nothing would be in flight.
+      queryClient.removeQueries({ queryKey: AUTH_KEY });
+      let answerSessionCheck: (user: null) => void = () => {};
+      getAuthenticatedUserMock.mockReturnValueOnce(
+        new Promise((resolve) => {
+          answerSessionCheck = resolve;
+        }),
+      );
+      const sessionCheck = queryClient.prefetchQuery(authQueries.me());
+      expect(getAuthenticatedUserMock).toHaveBeenCalledOnce();
+      loginWithCredentialsMock.mockResolvedValueOnce(joinedPlayer);
+
+      await submitLogin();
+      answerSessionCheck(null);
+      await sessionCheck;
+
+      expect(queryClient.getQueryData(AUTH_KEY)).toEqual(joinedPlayer);
+    });
+
+    it("shows the message for the failed request and keeps the typed values", async () => {
+      loginWithCredentialsMock.mockRejectedValueOnce(new NetworkError());
+
+      const state = await submitLogin();
+
+      expect(queryClient.getQueryData(AUTH_KEY)).toEqual(SEEDED_USER);
+      expect(state.error).toBe("Network error. Please check your connection and try again.");
+      expect(state.values).toEqual({ email: "player@test.com", password: "password" });
+    });
+
+    it("shows the credentials message for a 401 LOGIN_INVALID_CREDENTIALS", async () => {
+      loginWithCredentialsMock.mockRejectedValueOnce(
+        new UnauthorizedError("Unauthorized", {
+          success: false,
+          error: "LOGIN_INVALID_CREDENTIALS",
+          message: "Invalid credentials.",
+        }),
+      );
+
+      const state = await submitLogin();
+
+      expect(queryClient.getQueryData(AUTH_KEY)).toEqual(SEEDED_USER);
+      expect(state.error).toBe("Incorrect email or password.");
     });
   });
 });

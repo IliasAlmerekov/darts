@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import { Link } from "react-router-dom";
 import { Mail, Lock, Eye, EyeOff, User } from "lucide-react";
 import clsx from "clsx";
-import type { RegistrationValues } from "./useRegistration";
+import type { RegistrationValues } from "./useRegistrationPage";
 import styles from "./RegisterForm.module.css";
 import { ROUTES } from "@/lib/router/routes";
 import { PASSWORD_MIN_LENGTH } from "@/lib/auth/password";
