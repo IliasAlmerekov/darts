@@ -251,7 +251,7 @@ Mapper rules:
   `toLobbyPlayers`), or a page-private logic file under `src/pages/<Page>/lib/`.
 - JSX files (`src/pages/**/*.tsx`) and render-flow hooks (`src/pages/**/use*.ts`) receive the
   mapped result and import no mapper. Type imports are fine. Known exception:
-  `useGameSummaryPage.ts` (`applyOptimisticUndo`) calls a mapper inside an event handler.
+  `useGameSummaryPage.ts` calls `buildFinishedGameStandings` in a `useMemo`.
   `eslint.config.mjs` ignores this file as existing debt.
 
 ## ETag / conditional fetches

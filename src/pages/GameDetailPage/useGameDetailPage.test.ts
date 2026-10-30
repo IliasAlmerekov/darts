@@ -71,9 +71,7 @@ describe("useGameDetailPage", () => {
 
     const { result } = renderDetailHook();
 
-    expect(result.current.standings).toHaveLength(2);
-    expect(result.current.podiumData).toHaveLength(3);
-    expect(result.current.standings[0]?.rounds[0]).toEqual({});
+    expect(result.current.podiumData.map((entry) => entry.name)).toEqual(["Alice", "Bob", "-"]);
     expect(getFinishedGameMock).not.toHaveBeenCalled();
   });
 
@@ -106,7 +104,7 @@ describe("useGameDetailPage", () => {
     });
 
     await waitFor(() => {
-      expect(result.current.standings.map((player) => player.name)).toEqual(["Beta"]);
+      expect(result.current.podiumData.map((entry) => entry.name)).toEqual(["Beta"]);
     });
   });
 
@@ -117,25 +115,22 @@ describe("useGameDetailPage", () => {
     it.each([
       {
         playerCount: 2,
-        standings: [alice, bob],
         podium: [alice, bob, placeholder],
         leaderboard: [],
       },
       {
         playerCount: 3,
-        standings: [alice, bob, cara],
         podium: [alice, bob, cara],
         leaderboard: [],
       },
       {
         playerCount: 4,
-        standings: [alice, bob, cara, dan],
         podium: [alice, bob, cara],
         leaderboard: [dan],
       },
     ])(
       "should build podium and leaderboard when the game had $playerCount players",
-      ({ playerCount, standings, podium, leaderboard }) => {
+      ({ playerCount, podium, leaderboard }) => {
         testQueryClient.setQueryData(
           gameQueries.finished(42).queryKey,
           buildFinishedPlayerResponses().slice(0, playerCount),
@@ -143,7 +138,6 @@ describe("useGameDetailPage", () => {
 
         const { result } = renderDetailHook();
 
-        expect(result.current.standings).toStrictEqual(standings);
         expect(result.current.podiumData).toStrictEqual(podium);
         expect(result.current.leaderBoardList).toStrictEqual(leaderboard);
       },

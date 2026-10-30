@@ -7,11 +7,13 @@ import { playSound } from "@/shared/services/browser/soundPlayer";
 import { toUserErrorMessage } from "@/lib/error/error-to-user-message";
 import { ROUTES } from "@/lib/router/routes";
 import { parseRouteGameId, tabletGamePath } from "@/lib/router/tabletGameRoute";
-import type { FinishedGameStandings } from "@/lib/game/finishedGameStandings";
+import {
+  buildFinishedGameStandings,
+  type FinishedGameStandings,
+} from "@/lib/game/finishedGameStandings";
 import { clientLogger } from "@/shared/services/browser/clientLogger";
 import { gameQueries } from "@/shared/query/game.queries";
 import { isGameNotNewestError } from "./lib/gameNotNewest";
-import { buildGameSummaryStandings } from "./lib/gameSummaryStandings";
 
 interface UseGameSummaryPageResult extends FinishedGameStandings {
   error: string | null;
@@ -139,8 +141,8 @@ export function useGameSummaryPage(): UseGameSummaryPageResult {
     setIsActionPending(false);
   }, []);
 
-  const { standings, podiumData, leaderBoardList } = useMemo(
-    () => buildGameSummaryStandings(summaryQuery.data),
+  const { podiumData, leaderBoardList } = useMemo(
+    () => buildFinishedGameStandings(summaryQuery.data),
     [summaryQuery.data],
   );
 
@@ -262,7 +264,6 @@ export function useGameSummaryPage(): UseGameSummaryPageResult {
     leaving: leavePath !== null,
     isActionPending,
     podiumData,
-    standings,
     leaderBoardList,
     loadSummary,
     handleUndo,

@@ -2,16 +2,15 @@
 import { render, screen } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import styles from "./GameSummaryPage.module.css";
-import type { WinnerPlayerProps } from "@/types";
+import type { StandingsEntry } from "@/lib/game/finishedGameStandings";
 import GameSummaryPage from ".";
 
 type GameSummaryHookMockResult = {
   error: string | null;
   leaving: boolean;
   isActionPending: boolean;
-  podiumData: WinnerPlayerProps[];
-  standings: WinnerPlayerProps[];
-  leaderBoardList: WinnerPlayerProps[];
+  podiumData: StandingsEntry[];
+  leaderBoardList: StandingsEntry[];
   loadSummary: () => void;
   handleUndo: () => Promise<void>;
   handlePlayAgain: () => Promise<void>;
@@ -25,7 +24,6 @@ const buildSummaryHookMockResult = (
   leaving: false,
   isActionPending: false,
   podiumData: [],
-  standings: [],
   leaderBoardList: [],
   loadSummary: vi.fn(),
   handleUndo: vi.fn(async () => {}),
