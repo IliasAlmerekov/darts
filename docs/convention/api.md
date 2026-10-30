@@ -16,8 +16,8 @@ call sites today:
 - `src/pages/StartPage/startPageLoader.ts`: `getGameThrows` and `getInvitation` in the
   StartPage loader.
 - `src/pages/StartPage/useCreateStartFlow.ts`: `getGameSettings` before a game starts.
-- `src/pages/LoginPage/useLogin.ts`: `getAuthenticatedUser` in the post-login session
-  fallback, before it seeds the cache.
+- `src/shared/api/auth.ts`: `loginWithCredentials` calls `getAuthenticatedUser` in the
+  post-login session fallback.
 - `src/pages/GameSummaryPage/useGameSummaryPage.ts`: `getGameThrows` when a compact undo
   response cannot patch local state.
 - `src/pages/GamePage/useGameSession.ts`: `getGameThrows` after the server rejects a queued
@@ -221,7 +221,7 @@ cache itself:
 - `cancelQueries({ queryKey })`, then `setQueryData(queryKey, value)`, so a read still in
   flight cannot overwrite the new value (`SettingsPage/useGameSettings.ts`, the game page's
   settings save in `GamePage/useGameActions.ts`, `useGamePlayers.ts`,
-  `useRegistration.ts` with `acceptLoggedInUser`).
+  `acceptLoggedInUser.ts` for login and registration).
 - `removeQueries({ queryKey })` drops an entry the write made invalid (undo and rematch
   in `useGameSummaryPage.ts`).
 - `invalidateQueries({ queryKey })` marks a read the write changed on the server when the
