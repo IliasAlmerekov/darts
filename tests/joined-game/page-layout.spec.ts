@@ -60,7 +60,11 @@ test("Verify page layout and styling", async ({ page }) => {
     await expect(hasHorizontalScroll, `${viewport.name} should not overflow`).toBe(false);
 
     // Verify the profile link sits top right, on one line with the single-line title
-    const titleBox = await page.locator("h1").boundingBox();
+    const title = page.locator("h1");
+    const titleBox = await title.boundingBox();
+    const titleLineHeight = await title.evaluate((element) =>
+      Number.parseFloat(getComputedStyle(element).lineHeight),
+    );
     const profileLinkBox = await page.getByRole("link", { name: "My profile" }).boundingBox();
     expect(titleBox, `${viewport.name} title box`).not.toBeNull();
     expect(profileLinkBox, `${viewport.name} profile link box`).not.toBeNull();
@@ -71,7 +75,9 @@ test("Verify page layout and styling", async ({ page }) => {
       expect(profileLinkBox.y, `${viewport.name} link on the title row`).toBeLessThan(
         titleBox.y + titleBox.height,
       );
-      expect(titleBox.height, `${viewport.name} title on one line`).toBeLessThan(50);
+      expect(titleBox.height, `${viewport.name} title on one line`).toBeLessThan(
+        titleLineHeight * 1.5,
+      );
     }
   }
 });

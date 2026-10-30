@@ -144,6 +144,7 @@ describe("JoinedGamePage", () => {
     expect(await screen.findByText("Game #42")).toBeTruthy();
     expect(screen.getByRole("status").textContent).toContain("Waiting for the game to start...");
     expect(getCurrentGame).toHaveBeenCalledTimes(1);
+    expect(screen.getByRole("link", { name: "My profile" })).toBeTruthy();
 
     await advancePolling(2);
 
