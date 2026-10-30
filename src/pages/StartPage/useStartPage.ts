@@ -1,22 +1,13 @@
 import { useCallback, useMemo, useState } from "react";
 import { useNavigate, useParams, useRevalidator } from "react-router-dom";
 import { useStore } from "@nanostores/react";
-import { useGamePlayers } from "./useGamePlayers";
+import { useLobbyRoster } from "./useLobbyRoster";
 import { useCreateStartFlow } from "./useCreateStartFlow";
 import { useGuestFlow } from "./useGuestFlow";
-import { persistPlayerOrder, usePlayerOrderPersistence } from "./usePlayerOrderPersistence";
-import { useIsCurrentGame } from "./useIsCurrentGame";
-import { useStartPageError } from "./useStartPageError";
 import { parseRouteGameId } from "@/lib/router/tabletGameRoute";
 import { $invitation } from "@/shared/store";
-import { leaveRoom } from "@/shared/api/room";
-import { isApiErrorCode } from "@/lib/error/api-error-code";
-import { clientLogger } from "@/shared/services/browser/clientLogger";
-import { toUserErrorMessage } from "@/lib/error/error-to-user-message";
 
-type GamePlayersResult = ReturnType<typeof useGamePlayers>;
-
-export { persistPlayerOrder };
+type GamePlayersResult = ReturnType<typeof useLobbyRoster>;
 
 interface UseStartPageResult {
   invitation: ReturnType<typeof useStore<typeof $invitation>>;
@@ -33,7 +24,7 @@ interface UseStartPageResult {
   guestError: string | null;
   guestSuggestions: string[];
   isAddingGuest: boolean;
-  handleDragEnd: ReturnType<typeof usePlayerOrderPersistence>["handleDragEnd"];
+  handleDragEnd: ReturnType<typeof useLobbyRoster>["reorderPlayers"];
   handleRemovePlayer: (playerId: number, currentGameId: number) => Promise<void>;
   handleStartGame: () => Promise<void>;
   handleCreateRoom: () => Promise<void>;
@@ -56,21 +47,16 @@ export function useStartPage(): UseStartPageResult {
   const invitation = useStore($invitation);
 
   const gameId = useMemo(() => parseRouteGameId(gameIdParam), [gameIdParam]);
+  const [pageError, setPageError] = useState<string | null>(null);
+  const clearPageError = useCallback((): void => setPageError(null), []);
   const {
     players,
     count: playerCount,
-    appendOptimisticPlayer,
-    removeOptimisticPlayer,
-  } = useGamePlayers(gameId, revalidate);
-
-  const isCurrentGame = useIsCurrentGame(gameId);
-  const { pageError, setPageError, clearPageError } = useStartPageError();
-  const { playerOrder, handleDragEnd } = usePlayerOrderPersistence({
-    gameId,
-    players,
-    setPageError,
-    onSeatsNotEditable: revalidate,
-  });
+    playerOrder,
+    addGuest,
+    removePlayer: handleRemovePlayer,
+    reorderPlayers: handleDragEnd,
+  } = useLobbyRoster(gameId, revalidate, setPageError);
   const { creating, starting, handleCreateRoom, handleStartGame } = useCreateStartFlow({
     gameId,
     invitationGameId: invitation?.gameId,
@@ -92,8 +78,7 @@ export function useStartPage(): UseStartPageResult {
   } = useGuestFlow({
     gameId,
     playerCount,
-    appendOptimisticPlayer,
-    onSeatsNotEditable: revalidate,
+    addGuest,
   });
 
   // The loader can send /start/10 to /start (a finished or aborted game) without remounting the
@@ -104,51 +89,6 @@ export function useStartPage(): UseStartPageResult {
     clearPageError();
     closeGuestOverlay();
   }
-
-  const handleRemovePlayer = useCallback(
-    async (playerId: number, activeGameId: number): Promise<void> => {
-      const removedPlayer = players.find((player) => player.id === playerId);
-      removeOptimisticPlayer(playerId);
-
-      try {
-        await leaveRoom(activeGameId, playerId);
-      } catch (error) {
-        if (removedPlayer) {
-          appendOptimisticPlayer(removedPlayer);
-        }
-        const seatsNotEditable = isApiErrorCode(error, "GAME_SEATS_NOT_EDITABLE");
-        if (seatsNotEditable) {
-          clientLogger.warn("room.leave.seats-not-editable", {
-            context: { gameId: activeGameId },
-            error,
-          });
-        }
-        // The route moved to another game while the request ran: its answer is not for this page.
-        if (!isCurrentGame(activeGameId)) {
-          if (!seatsNotEditable) {
-            clientLogger.warn("room.leave.stale-answer", {
-              context: { gameId: activeGameId },
-              error,
-            });
-          }
-          return;
-        }
-        setPageError(toUserErrorMessage(error, "Could not remove player. Please try again."));
-        if (seatsNotEditable) {
-          // The game left the lobby: the route loader sends this tab to the game page.
-          void revalidate();
-        }
-      }
-    },
-    [
-      appendOptimisticPlayer,
-      isCurrentGame,
-      players,
-      removeOptimisticPlayer,
-      revalidate,
-      setPageError,
-    ],
-  );
 
   return {
     invitation,

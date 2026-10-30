@@ -15,6 +15,8 @@ and this project does **not** yet follow [Semantic Versioning](https://semver.or
 
 ### Changed
 
+- Lobby: consolidate roster mutations and ordering (#391).
+
 - Architecture: use public import paths and direct lazy page entries, and enforce the shared lib alias in production code (#214)
 
 - Game: `GamePlayerItem` takes the three resolved throw slots (`throwSlots`) instead of 12 current and previous throw and bust props, `isBust` and `roundsCountLength`. `getPlayerThrowsDisplay` reads the current and previous round itself, formats the `D`/`T` labels and returns a slot per cell (a label, the bust icon, or empty, each with its bust flag), with no React import and no unused `roundsCountLength`. The `usePlayerThrowsDisplay` hook and its test are gone. A row still skips re-rendering when its slots, score, name and flags are unchanged. The scoreboard looks the same (#388)

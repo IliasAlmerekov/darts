@@ -16,6 +16,14 @@ _Avoid_: current game (for the tablet's game), active game
 A game that players are joining and that has not started yet. There is at most one lobby at a time.
 _Avoid_: room, start page
 
+**Roster**:
+The ordered list of players in a lobby. Its order is the throwing order when the game starts.
+_Avoid_: player list, lobby players
+
+**Seat**:
+One player's place in a roster. Seats can change only while the game is a lobby.
+_Avoid_: slot, position (for the place itself)
+
 **Waiting room**:
 The screen a player sees after joining a game, until that game starts.
 _Avoid_: joined page, lobby

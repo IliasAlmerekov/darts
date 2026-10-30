@@ -7,8 +7,17 @@ vi.mock("@/shared/api/game", () => ({
 import { act, render, renderHook, screen, waitFor } from "@testing-library/react";
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import React from "react";
+import type { DragEndEvent } from "@dnd-kit/core";
+import { ApiError } from "@/shared/api";
 import { QueryClientProvider, type QueryClient } from "@tanstack/react-query";
-import { useGamePlayers } from "./useGamePlayers";
+import { useLobbyRoster } from "./useLobbyRoster";
+import { addGuestPlayer, leaveRoom, updatePlayerOrder } from "@/shared/api/room";
+
+vi.mock("@/shared/api/room", () => ({
+  addGuestPlayer: vi.fn(),
+  leaveRoom: vi.fn(),
+  updatePlayerOrder: vi.fn(),
+}));
 import { getGameThrows, type GameThrowsResponse } from "@/shared/api/game";
 import { gameQueries } from "@/shared/query/game.queries";
 import { createQueryClient } from "@/shared/query/queryClient";
@@ -71,7 +80,7 @@ function Providers({ children }: { children: React.ReactNode }): React.JSX.Eleme
 }
 
 function HookConsumer({ gameId }: { gameId: number | null }): React.JSX.Element {
-  const { count } = useGamePlayers(gameId, vi.fn());
+  const { count } = useLobbyRoster(gameId, vi.fn(), vi.fn());
   return <div data-testid="count">{count}</div>;
 }
 
@@ -80,10 +89,13 @@ function renderHookConsumer(gameId: number | null): ReturnType<typeof render> {
 }
 
 function renderGamePlayers(initialGameId: number | null) {
-  return renderHook(({ gameId }: { gameId: number | null }) => useGamePlayers(gameId, vi.fn()), {
-    initialProps: { gameId: initialGameId },
-    wrapper: Providers,
-  });
+  return renderHook(
+    ({ gameId }: { gameId: number | null }) => useLobbyRoster(gameId, vi.fn(), vi.fn()),
+    {
+      initialProps: { gameId: initialGameId },
+      wrapper: Providers,
+    },
+  );
 }
 
 function deferred<T>() {
@@ -98,7 +110,7 @@ function deferred<T>() {
 // Tests
 // ---------------------------------------------------------------------------
 
-describe("useGamePlayers", () => {
+describe("useLobbyRoster", () => {
   beforeEach(() => {
     MockEventSource.last = null;
     vi.mocked(getGameThrows).mockReset();
@@ -109,6 +121,152 @@ describe("useGamePlayers", () => {
 
   afterEach(() => {
     vi.unstubAllGlobals();
+  });
+
+  it("returns add outcomes and revalidates locked seats", async () => {
+    const revalidate = vi.fn();
+    const error = new ApiError("Locked", {
+      status: 409,
+      data: { error: "GAME_SEATS_NOT_EDITABLE" },
+    });
+    testQueryClient.setQueryData(gameQueries.lobbyPlayers(5).queryKey, []);
+    const { result, rerender } = renderHook(
+      ({ gameId }) => useLobbyRoster(gameId, revalidate, vi.fn()),
+      { initialProps: { gameId: 5 }, wrapper: Providers },
+    );
+    vi.mocked(addGuestPlayer).mockResolvedValueOnce({ id: 1, name: "A", position: 0 });
+    await act(async () => {
+      expect(await result.current.addGuest(5, "A")).toEqual({ status: "added" });
+    });
+    vi.mocked(addGuestPlayer).mockRejectedValueOnce(error);
+    await act(async () => {
+      expect(await result.current.addGuest(5, "A")).toEqual({
+        status: "seats-not-editable",
+        error,
+      });
+    });
+    expect(revalidate).toHaveBeenCalledTimes(1);
+    const failure = new Error("network");
+    vi.mocked(addGuestPlayer).mockRejectedValueOnce(failure);
+    await act(async () => {
+      expect(await result.current.addGuest(5, "A")).toEqual({ status: "failed", error: failure });
+    });
+    const pending = deferred<never>();
+    vi.mocked(addGuestPlayer).mockReturnValueOnce(pending.promise);
+    let answer: Promise<unknown>;
+    act(() => {
+      answer = result.current.addGuest(5, "A");
+    });
+    rerender({ gameId: 6 });
+    await act(async () => {
+      pending.resolve(Promise.reject(failure) as never);
+      expect(await answer).toEqual({ status: "stale", error: failure });
+    });
+  });
+
+  it("rolls back a failed removal and revalidates locked seats", async () => {
+    const revalidate = vi.fn();
+    const onError = vi.fn();
+    const error = new ApiError("Locked", {
+      status: 409,
+      data: { error: "GAME_SEATS_NOT_EDITABLE" },
+    });
+    testQueryClient.setQueryData(gameQueries.lobbyPlayers(5).queryKey, [
+      { id: 1, name: "A", position: 0 },
+    ]);
+    const { result } = renderHook(() => useLobbyRoster(5, revalidate, onError), {
+      wrapper: Providers,
+    });
+    vi.mocked(leaveRoom).mockRejectedValueOnce(error);
+    await act(async () => {
+      await result.current.removePlayer(1, 5);
+    });
+    await waitFor(() =>
+      expect(result.current.players).toEqual([{ id: 1, name: "A", position: 0 }]),
+    );
+    expect(revalidate).toHaveBeenCalledOnce();
+    expect(onError).toHaveBeenCalledOnce();
+  });
+
+  it("keeps a newer reorder when an earlier request fails and merges an SSE update", async () => {
+    const first = deferred<void>();
+    const second = deferred<void>();
+    vi.mocked(updatePlayerOrder)
+      .mockReturnValueOnce(first.promise)
+      .mockReturnValueOnce(second.promise);
+    testQueryClient.setQueryData(gameQueries.lobbyPlayers(5).queryKey, [
+      { id: 1, name: "A", position: 0 },
+      { id: 2, name: "B", position: 1 },
+      { id: 3, name: "C", position: 2 },
+    ]);
+    const { result } = renderGamePlayers(5);
+    const drag = (a: number, b: number) =>
+      ({ active: { id: a }, over: { id: b } }) as unknown as DragEndEvent;
+    act(() => {
+      result.current.reorderPlayers(drag(2, 1));
+    });
+    act(() => {
+      result.current.reorderPlayers(drag(3, 1));
+    });
+    act(() => {
+      MockEventSource.last?.dispatch(
+        "players",
+        JSON.stringify({
+          players: [
+            { id: 1, name: "A", position: 0 },
+            { id: 2, name: "B", position: 1 },
+            { id: 3, name: "C", position: 2 },
+            { id: 4, name: "D", position: 3 },
+          ],
+        }),
+      );
+    });
+    await waitFor(() => expect(result.current.playerOrder).toEqual([2, 3, 1, 4]));
+    await act(async () => {
+      first.resolve(Promise.reject(new Error("network")) as never);
+      await first.promise.catch(() => {});
+    });
+    expect(result.current.playerOrder).toEqual([2, 3, 1, 4]);
+    await act(async () => {
+      second.resolve();
+      await second.promise;
+    });
+  });
+
+  it("rolls back a rejected reorder and leaves the new game untouched by a late rejection", async () => {
+    const error = new Error("network");
+    const onError = vi.fn();
+    const pending = deferred<void>();
+    testQueryClient.setQueryData(gameQueries.lobbyPlayers(5).queryKey, [
+      { id: 1, name: "A", position: 0 },
+      { id: 2, name: "B", position: 1 },
+    ]);
+    testQueryClient.setQueryData(gameQueries.lobbyPlayers(6).queryKey, [
+      { id: 3, name: "C", position: 0 },
+    ]);
+    const { result, rerender } = renderHook(
+      ({ gameId }) => useLobbyRoster(gameId, vi.fn(), onError),
+      { initialProps: { gameId: 5 }, wrapper: Providers },
+    );
+    const drag = { active: { id: 2 }, over: { id: 1 } } as unknown as DragEndEvent;
+    vi.mocked(updatePlayerOrder).mockRejectedValueOnce(error);
+    await act(async () => {
+      result.current.reorderPlayers(drag);
+    });
+    expect(result.current.playerOrder).toEqual([1, 2]);
+    expect(onError).toHaveBeenCalledOnce();
+    onError.mockClear();
+    vi.mocked(updatePlayerOrder).mockReturnValueOnce(pending.promise);
+    act(() => {
+      result.current.reorderPlayers(drag);
+    });
+    rerender({ gameId: 6 });
+    await act(async () => {
+      pending.resolve(Promise.reject(error) as never);
+      await pending.promise.catch(() => {});
+    });
+    expect(result.current.playerOrder).toEqual([3]);
+    expect(onError).not.toHaveBeenCalled();
   });
 
   it("should clear players when SSE sends an empty list", async () => {
@@ -237,8 +395,9 @@ describe("useGamePlayers", () => {
     ]);
     const { result } = renderGamePlayers(5);
 
-    act(() => {
-      result.current.appendOptimisticPlayer({ id: 2, name: "Bob" });
+    vi.mocked(addGuestPlayer).mockResolvedValueOnce({ id: 2, name: "Bob", position: null });
+    await act(async () => {
+      await result.current.addGuest(5, "Bob");
     });
 
     expect(testQueryClient.getQueryData(gameQueries.lobbyPlayers(5).queryKey)).toEqual([
@@ -249,8 +408,9 @@ describe("useGamePlayers", () => {
       expect(result.current.count).toBe(2);
     });
 
-    act(() => {
-      result.current.removeOptimisticPlayer(1);
+    vi.mocked(leaveRoom).mockResolvedValueOnce(undefined);
+    await act(async () => {
+      await result.current.removePlayer(1, 5);
     });
 
     expect(testQueryClient.getQueryData(gameQueries.lobbyPlayers(5).queryKey)).toEqual([
