@@ -85,6 +85,29 @@ export default [
     },
   },
   {
+    files: [
+      "src/app/**/*.{ts,tsx}",
+      "src/index.tsx",
+      "src/shared/**/*.{ts,tsx}",
+      "src/pages/**/*.{ts,tsx}",
+    ],
+    ignores: ["**/*.test.{ts,tsx}"],
+    rules: {
+      "no-restricted-syntax": [
+        "error",
+        {
+          selector: "ImportExpression > Literal.source[value=/^@\\/shared\\/lib\\//]",
+          message: "Import shared lib through @/lib/.",
+        },
+        {
+          selector:
+            "ImportExpression > TemplateLiteral.source > TemplateElement:first-child[value.raw=/^@\\/shared\\/lib\\//]",
+          message: "Import shared lib through @/lib/.",
+        },
+      ],
+    },
+  },
+  {
     files: ["src/shared/**/*.{ts,tsx}"],
     rules: {
       "no-restricted-imports": [

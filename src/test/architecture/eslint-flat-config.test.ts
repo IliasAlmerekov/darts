@@ -77,7 +77,9 @@ describe("eslint flat config global ignores", () => {
 });
 
 describe("shared lib import aliases", () => {
-  const eslint = new ESLint();
+  const eslint = new ESLint({
+    overrideConfig: { languageOptions: { parserOptions: { project: null } } },
+  });
 
   it.each([
     "src/index.tsx",
@@ -105,6 +107,70 @@ describe("shared lib import aliases", () => {
     const [result] = await eslint.lintText('import "@/shared/lib/guards/guards";', { filePath });
     expect(result?.messages.some((message) => message.ruleId === "no-restricted-imports")).toBe(
       false,
+    );
+  });
+});
+
+describe("dynamic shared lib imports", () => {
+  const eslint = new ESLint({
+    overrideConfig: { languageOptions: { parserOptions: { project: null } } },
+  });
+
+  it.each([
+    "src/index.tsx",
+    "src/app/App.tsx",
+    "src/shared/lib/guards/guards.ts",
+    "src/pages/StartPage/startPageLoader.ts",
+    "src/pages/StartPage/useIsCurrentGame.ts",
+    "src/pages/StatisticsPage/Statistics.tsx",
+  ])(
+    "rejects dynamic imports in %s",
+    async (filePath) => {
+      for (const code of [
+        'import("@/shared/lib/guards/guards");',
+        "import(`@/shared/lib/guards/guards`);",
+        "import(`@/shared/lib/${name}`);",
+      ]) {
+        const [result] = await eslint.lintText(code, { filePath });
+        expect(result?.messages.some((message) => message.ruleId === "no-restricted-syntax")).toBe(
+          true,
+        );
+      }
+    },
+    120_000,
+  );
+
+  it.each([
+    "src/app/App.test.tsx",
+    "src/shared/ui/navigation-bar/NavigationBar.test.tsx",
+    "src/pages/GamePage/components/SettingsOverlay.test.tsx",
+  ])("allows dynamic imports in %s", async (filePath) => {
+    const [result] = await eslint.lintText('import("@/shared/lib/guards/guards");', { filePath });
+    expect(result?.messages.some((message) => message.ruleId === "no-restricted-syntax")).toBe(
+      false,
+    );
+  });
+
+  it("allows dynamic imports through the short alias", async () => {
+    const [result] = await eslint.lintText('import("@/lib/guards/guards");', {
+      filePath: "src/app/App.tsx",
+    });
+    expect(result?.messages.some((message) => message.ruleId === "no-restricted-syntax")).toBe(
+      false,
+    );
+  });
+});
+
+describe("Playwright URL restrictions", () => {
+  it("still rejects absolute URLs in mocked specs", async () => {
+    const eslint = new ESLint({
+      overrideConfig: { languageOptions: { parserOptions: { project: null } } },
+    });
+    const [result] = await eslint.lintText('const url = "https://example.com";', {
+      filePath: "tests/routing/invalid-game-id.spec.ts",
+    });
+    expect(result?.messages.some((message) => message.ruleId === "no-restricted-syntax")).toBe(
+      true,
     );
   });
 });
