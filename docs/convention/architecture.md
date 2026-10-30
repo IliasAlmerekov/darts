@@ -101,9 +101,12 @@ The API layer has a **two-level public surface**:
   It does not export `apiClient`.
 - `@/shared/api/<domain>` (`auth`, `game`, `room`, `statistics`, `player`) is the per-domain
   public surface. Pages and other shared code import resource calls and DTO types from
-  these modules: `import { getGameThrows } from "@/shared/api/game"`.
+  these modules: `import { getGameThrows } from "@/shared/api/game"`. `throws.ts` and
+  `rematch.ts` are internal files behind `@/shared/api/game`, not domain modules; `game.ts`
+  re-exports them.
 
-Internals -- `client.ts`, `errors.ts`, `types.ts`, `schemas.ts` -- are
+Internals -- `client.ts`, `errors.ts`, `types.ts`, `endpoints.ts`, `schemas.ts`,
+`throws.ts`, `rematch.ts` -- are
 imported only inside `shared/api/`. Everything else uses what the barrel or a domain module
 exports; `apiClient` stays inside `shared/api/` (see `api.md`). Each domain file owns its
 paths (see `api.md`, "Endpoints").
@@ -204,7 +207,7 @@ ls src/
 
 ```bash
 rg -n -g '!**/*.test.{ts,tsx}' -g '!src/shared/api/**' \
-  -e 'from "@/shared/api/(client|errors|types|schemas)"' \
+  -e 'from "@/shared/api/(client|errors|types|endpoints|schemas|throws|rematch)"' \
   -e 'from "@/shared/ui/[^/"]+/' \
   -e 'from "@/(shared/)?types/' \
   src

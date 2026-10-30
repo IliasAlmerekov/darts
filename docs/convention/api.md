@@ -32,12 +32,15 @@ factory.
 src/shared/api/
   client.ts            # apiClient + ApiValidationError + setUnauthorizedHandler
   errors.ts            # typed error classes
+  endpoints.ts         # paths shared by 2+ domain files (currently GAME_ENDPOINT)
   schemas.ts           # Valibot schemas shared by 2+ domain files, integerSchema
   types.ts             # apiClient types (HttpMethod, ApiRequestConfig, QueryParams)
   index.ts             # barrel: cross-cutting public surface
   test-utils.ts        # createMockResponse and respondWith helpers for tests
   auth.ts              # auth flows, DTO types
-  game.ts              # game flows + ETag cache
+  game.ts              # game lifecycle + settings flows; re-exports throws.ts and rematch.ts
+  throws.ts            # internal behind game.ts: throw calls + ETag cache
+  rematch.ts           # internal behind game.ts: rematch calls
   room.ts              # room flows
   statistics.ts        # stats flows
   player.ts            # the player's current game and profile
@@ -60,8 +63,13 @@ The API layer has two levels:
 - `@/shared/api/<domain>`: the public entry for that domain's DTO types, resource functions,
   and per-domain caches.
 
+`throws.ts` and `rematch.ts` are internal files behind `@/shared/api/game`, not public domain
+modules: `game.ts` re-exports them, and consumers import their symbols from
+`@/shared/api/game`, so `vi.mock("@/shared/api/game", ...)` intercepts every game call.
+
 `apiClient` stays inside `shared/api/`: only the domain files call it, and the barrel does not
-export it. Internals (`client.ts`, `errors.ts`, `types.ts`, `schemas.ts`) are
+export it. Internals (`client.ts`, `errors.ts`, `types.ts`, `endpoints.ts`, `schemas.ts`,
+`throws.ts`, `rematch.ts`) are
 never deep-imported from outside `shared/api/`.
 
 ## `apiClient`: single gateway
@@ -252,7 +260,7 @@ Mapper rules:
 
 ## ETag / conditional fetches
 
-`getGameThrowsIfChanged` in `game.ts` is the pattern; a new domain with conditional fetches
+`getGameThrowsIfChanged` in `throws.ts` is the pattern; a new domain with conditional fetches
 mirrors it:
 
 - A per-id version map (`gameStateVersionById = new Map<number, string>()`) lives
