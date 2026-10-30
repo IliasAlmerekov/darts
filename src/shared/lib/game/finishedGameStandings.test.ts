@@ -75,6 +75,14 @@ describe("buildFinishedGameStandings", () => {
     expect(podiumData[0]?.rounds).toBe(3);
   });
 
+  it("treats a negative round count as no rounds played", () => {
+    const { podiumData } = buildFinishedGameStandings([
+      buildFinishedPlayer({ roundsPlayed: -1, roundAverage: 45 }),
+    ]);
+
+    expect(podiumData[0]).toMatchObject({ rounds: 0, threeDartAverage: "-" });
+  });
+
   it.each([
     { case: "with two decimals", roundsPlayed: 2, roundAverage: 60.6, expected: "60.60" },
     { case: "rounded to two decimals", roundsPlayed: 2, roundAverage: 42.345, expected: "42.34" },
