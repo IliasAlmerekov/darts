@@ -3,11 +3,11 @@ import type { AuthenticatedUser } from "@/shared/api/auth";
 import { mapAuthErrorMessage } from "@/lib/error/auth-error-handling";
 import { authQueries } from "@/shared/query/auth.queries";
 
-type UseAuthenticatedUserResult = {
+interface UseAuthenticatedUserResult {
   user: AuthenticatedUser | null;
   loading: boolean;
   error: string | null;
-};
+}
 
 /**
  * Reads the authenticated user from the query cache and exposes loading/error state.

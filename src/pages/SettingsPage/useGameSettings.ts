@@ -41,7 +41,7 @@ interface RouteGameSaveRequest {
   logContext: Record<string, unknown>;
 }
 
-export interface UseGameSettingsReturn {
+export interface UseGameSettingsResult {
   /** Null while the route game's settings are not loaded. */
   selectedGameMode: GameMode | null;
   selectedPoints: number | null;
@@ -58,7 +58,7 @@ export interface UseGameSettingsReturn {
  * Settings of the route game, read from and saved to its query cache entry. Without a game
  * id in the route, the pre-create draft in `$preCreateGameSettings`.
  */
-export function useGameSettings(): UseGameSettingsReturn {
+export function useGameSettings(): UseGameSettingsResult {
   const { id: gameIdParam } = useParams<{ id?: string }>();
   const routeGameId = parseRouteGameId(gameIdParam);
   const queryClient = useQueryClient();

@@ -63,7 +63,7 @@ interface GameSessionCommands {
   updateSettings: (settings: GameSettings) => void;
 }
 
-interface UseGameSessionReturn {
+interface UseGameSessionResult {
   view: GameSessionPageView;
   commands: GameSessionCommands;
 }
@@ -80,7 +80,7 @@ function isAbortError(error: unknown): boolean {
 export function useGameSession(
   gameId: number | null,
   skipFinishOverlay = false,
-): UseGameSessionReturn {
+): UseGameSessionResult {
   // Local to this hook, so each game page instance starts with its own queue.
   const [sessionAtom] = useState(() => atom<GameSession>(createGameSession(null)));
   const session = useStore(sessionAtom);

@@ -2,13 +2,13 @@ import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import { statsQueries, type PlayerStatsParams } from "@/shared/query/statistics.queries";
 import type { PlayerProps } from "@/types";
 
-type UsePlayerStatsResult = {
+interface UsePlayerStatsResult {
   stats: PlayerProps[];
   total: number;
   loading: boolean;
   error: string | null;
   retry: () => void;
-};
+}
 
 const NO_STATS: PlayerProps[] = [];
 

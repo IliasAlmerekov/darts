@@ -12,14 +12,14 @@ export type ProfileState =
   | { status: "error"; message: string; retry: () => void }
   | { status: "success"; profile: PlayerProfile; hitFrequencies: BoardHitFrequencies };
 
-interface UsePlayerProfilePageReturn {
+interface UsePlayerProfilePageResult {
   displayName: string;
   profileState: ProfileState;
   tab: ProfileTab;
   selectTab: (tab: ProfileTab) => void;
 }
 
-export function usePlayerProfilePage(): UsePlayerProfilePageReturn {
+export function usePlayerProfilePage(): UsePlayerProfilePageResult {
   const { user } = useAuthenticatedUser();
   const { data, error, refetch } = useQuery(playerQueries.profile());
   const [searchParams, setSearchParams] = useSearchParams();
