@@ -295,6 +295,17 @@ describe("JoinedGamePage", () => {
     expect(await screen.findByText("Player profile")).toBeTruthy();
   });
 
+  it("should tell a removal when the finished games hold only other games", async () => {
+    setLobbyGameId(42);
+    respondWithCurrentGames(noCurrentGame);
+    vi.mocked(getPlayerProfile).mockResolvedValue(
+      buildPlayerProfile({ recentGames: [buildPlayerProfileGame({ gameId: 41 })] }),
+    );
+    renderPage();
+
+    expect(await screen.findByText("You are no longer in this game")).toBeTruthy();
+  });
+
   it("should open the player profile when the finished-game check fails", async () => {
     setLobbyGameId(42);
     respondWithCurrentGames(noCurrentGame);

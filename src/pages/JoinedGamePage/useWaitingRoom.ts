@@ -52,11 +52,13 @@ export function useWaitingRoom(): UseWaitingRoomResult {
     view = data;
   } else if (hasSeenGame) {
     view = { kind: "removed" };
-  } else if (!mustCheckFinished || finishedCheck.isError) {
+  } else if (!mustCheckFinished) {
     view = { kind: "no-game" };
-  } else if (finishedCheck.data === undefined || !finishedCheck.isFetchedAfterMount) {
+  } else if (!finishedCheck.isFetchedAfterMount) {
     // A profile cached before the game finished would call it a removal.
     view = { kind: "loading" };
+  } else if (finishedCheck.isError || finishedCheck.data === undefined) {
+    view = { kind: "no-game" };
   } else {
     const hasFinished = finishedCheck.data.history.some(
       (game) => game.gameId === earlierLobbyGameId,
