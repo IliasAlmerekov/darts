@@ -1,7 +1,7 @@
 // @vitest-environment node
 import { describe, expect, it } from "vitest";
 import { buildBackendPlayer, buildGameThrowsResponse } from "@/shared/types/game.test-support";
-import type { GameThrowsResponse, PlayerThrow } from "@/types";
+import type { GameThrowsResponse, PlayerThrow } from "@/shared/api/game";
 import {
   applyOptimisticThrow,
   applyOptimisticUndo,

@@ -1,4 +1,4 @@
-import type { GameSettings, GameThrowsResponse } from "@/types";
+import type { GameSettings, GameThrowsResponse } from "@/shared/api/game";
 
 export function mergeGameSettings(
   gameData: GameThrowsResponse | null,

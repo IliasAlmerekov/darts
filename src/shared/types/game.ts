@@ -1,16 +1,3 @@
-export type {
-  GameStatus,
-  GameThrowsResponse,
-  PlayerThrow,
-  ScoreboardDelta,
-  ThrowAckResponse,
-} from "@/shared/api/game";
-
-import type { GameThrowsResponse } from "@/shared/api/game";
-
-/** The three rules a game is played with, as the game state carries them. */
-export type GameSettings = GameThrowsResponse["settings"];
-
 export type GameMode = "single-out" | "double-out" | "triple-out";
 
 // --- Game UI props (merged from ui-props.ts) ---

@@ -3,7 +3,6 @@ import { beforeAll, describe, expect, it } from "vitest";
 const GLOBAL_IGNORES = ["commitlint.config.mjs", "dist/**"];
 const TS_FILES = ["**/*.ts", "**/*.tsx"];
 const SHARED_FILES = ["src/shared/**/*.{ts,tsx}"];
-const SHARED_IGNORES = ["src/shared/types/game.ts", "src/shared/types/player.ts"];
 
 type FlatConfigItem = {
   files?: string[];
@@ -64,7 +63,7 @@ describe("eslint flat config global ignores", () => {
     expect(tsConfig?.languageOptions?.parserOptions?.project).toBe("./tsconfig.eslint.json");
   });
 
-  it("preserves src/shared scoped ignores in the shared override", () => {
+  it("keeps the shared override at full scope, with no ignores", () => {
     const sharedOverride = flatConfig.find((item) => hasFiles(item, SHARED_FILES));
 
     expect(sharedOverride).toBeDefined();
@@ -72,7 +71,6 @@ describe("eslint flat config global ignores", () => {
       throw new Error("Expected shared override config item to be defined.");
     }
 
-    expect(sharedOverride.ignores).toHaveLength(SHARED_IGNORES.length);
-    expect(sharedOverride.ignores).toEqual(expect.arrayContaining(SHARED_IGNORES));
+    expect(sharedOverride.ignores).toBeUndefined();
   });
 });

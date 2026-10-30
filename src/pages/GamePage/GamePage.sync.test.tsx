@@ -37,11 +37,11 @@ import {
   updateGameSettings,
   type ThrowAckResponse,
   type UndoAckResponse,
+  type GameThrowsResponse,
 } from "@/shared/api/game";
 import { playSound } from "@/shared/services/browser/soundPlayer";
 import { setGameData } from "@/shared/store";
 import { buildBackendPlayer, buildGameThrowsResponse } from "@/shared/types/game.test-support";
-import type { GameThrowsResponse } from "@/types";
 import * as gameStore from "@/shared/store/game-state";
 import { QueryClientWrapper } from "@/test/QueryClientWrapper";
 import GamePage from ".";

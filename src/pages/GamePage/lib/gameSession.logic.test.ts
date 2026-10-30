@@ -1,8 +1,12 @@
 // @vitest-environment node
 import { describe, expect, expectTypeOf, it } from "vitest";
 import { buildBackendPlayer, buildGameThrowsResponse } from "@/shared/types/game.test-support";
-import type { GameThrowsResponse } from "@/types";
-import type { ThrowAckResponse, ThrowRequest, UndoAckResponse } from "@/types";
+import type {
+  GameThrowsResponse,
+  ThrowAckResponse,
+  ThrowRequest,
+  UndoAckResponse,
+} from "@/shared/api/game";
 import {
   applyReloadedGame,
   applyThrowAck,

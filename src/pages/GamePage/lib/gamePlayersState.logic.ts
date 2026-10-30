@@ -1,5 +1,6 @@
 import { getFinishedPlayers, mapPlayersToUI } from "@/lib/game/player-mappers";
-import type { GameThrowsResponse, UIPlayer } from "@/types";
+import type { GameThrowsResponse } from "@/shared/api/game";
+import type { UIPlayer } from "@/types";
 import {
   calculateShouldShowFinishOverlay,
   getZeroScorePlayerIds,

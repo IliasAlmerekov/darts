@@ -1,4 +1,5 @@
-import type { BackendPlayer, BackendRoundHistory, UIPlayer, UIRound } from "@/types";
+import type { BackendPlayer, BackendRoundHistory } from "@/shared/api/game";
+import type { UIPlayer, UIRound } from "@/types";
 
 function mapThrowsToRound(throws: BackendRoundHistory["throws"]): UIRound {
   const round: UIRound = {};

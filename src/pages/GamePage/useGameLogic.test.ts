@@ -5,7 +5,7 @@ import {
   hasThrowHistory,
   isLastActivePlayerLeft,
 } from "./lib/gameLogic.helpers";
-import type { GameThrowsResponse } from "@/types";
+import type { GameThrowsResponse } from "@/shared/api/game";
 
 function buildGameData(overrides?: Partial<GameThrowsResponse>): GameThrowsResponse {
   return {

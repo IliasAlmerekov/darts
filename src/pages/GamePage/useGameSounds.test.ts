@@ -9,7 +9,7 @@ vi.mock("@/shared/services/browser/soundPlayer", () => ({
 import { renderHook } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { useGameSounds } from "./useGameSounds";
-import type { GameThrowsResponse, PlayerThrow } from "@/types";
+import type { GameThrowsResponse, PlayerThrow } from "@/shared/api/game";
 
 type PlayerOverrides = Partial<GameThrowsResponse["players"][number]> & {
   throws?: PlayerThrow[];

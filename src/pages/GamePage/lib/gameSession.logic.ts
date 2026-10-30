@@ -6,7 +6,7 @@ import type {
   ThrowAckResponse,
   ThrowRequest,
   UndoAckResponse,
-} from "@/types";
+} from "@/shared/api/game";
 import {
   applyOptimisticThrow,
   applyOptimisticUndo,

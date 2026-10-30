@@ -1,4 +1,5 @@
-import type { GameThrowsResponse, UIPlayer } from "@/types";
+import type { GameThrowsResponse } from "@/shared/api/game";
+import type { UIPlayer } from "@/types";
 
 interface FinishOverlayVisibilityOptions {
   gameData: GameThrowsResponse | null;

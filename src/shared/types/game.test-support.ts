@@ -1,6 +1,10 @@
-import type { FinishedPlayerResponse, GameSettingsResponse } from "./api";
-import type { FinishedGameProps, GameThrowsResponse, WinnerPlayerProps } from "./game";
-import type { BackendPlayer } from "./player";
+import type {
+  BackendPlayer,
+  FinishedPlayerResponse,
+  GameSettingsResponse,
+  GameThrowsResponse,
+} from "@/shared/api/game";
+import type { FinishedGameProps, WinnerPlayerProps } from "./game";
 
 export function buildFinishedGame(overrides: Partial<FinishedGameProps> = {}): FinishedGameProps {
   return {

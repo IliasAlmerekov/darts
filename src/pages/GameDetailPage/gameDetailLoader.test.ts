@@ -6,7 +6,7 @@ vi.mock("@/shared/api/game", () => ({
 
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { makeLoaderArgs } from "@/test/loaderArgs";
-import type { FinishedPlayerResponse } from "@/types";
+import type { FinishedPlayerResponse } from "@/shared/api/game";
 import { gameQueries } from "@/shared/query/game.queries";
 import { queryClient as appQueryClient } from "@/shared/query/queryClient";
 import { gameDetailLoader } from "./gameDetailLoader";

@@ -23,7 +23,7 @@ import {
   setGameSettings,
   setPreCreateGameSettings,
 } from "@/shared/store";
-import type { GameSettingsResponse, GameThrowsResponse } from "@/types";
+import type { GameSettingsResponse, GameThrowsResponse } from "@/shared/api/game";
 import { useGameSettings } from "./useGameSettings";
 
 const getGameSettingsMock = vi.fn();

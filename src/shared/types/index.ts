@@ -1,13 +1,2 @@
-export * from "./api";
 export * from "./player";
-export type {
-  FinishedGameProps,
-  GameDataProps,
-  GameMode,
-  GameSettings,
-  GameThrowsResponse,
-  ScoreboardDelta,
-  ThrowAckResponse,
-  WinnerPlayerProps,
-  PlayerThrow,
-} from "./game";
+export type { FinishedGameProps, GameDataProps, GameMode, WinnerPlayerProps } from "./game";

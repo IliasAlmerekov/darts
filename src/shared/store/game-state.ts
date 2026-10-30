@@ -1,6 +1,6 @@
 import { atom, computed } from "nanostores";
 import type { ReadableAtom } from "nanostores";
-import type { GameSettings, GameThrowsResponse } from "@/types";
+import type { GameSettings, GameThrowsResponse } from "@/shared/api/game";
 import { normalizeGameData } from "../lib/game/gameStateNormalizer";
 
 const gameDataAtom = atom<GameThrowsResponse | null>(null);

@@ -1,5 +1,5 @@
 import { useEffect, useRef } from "react";
-import type { GameThrowsResponse } from "@/types";
+import type { GameThrowsResponse } from "@/shared/api/game";
 import { playSound } from "@/shared/services/browser/soundPlayer";
 
 interface ThrowLike {

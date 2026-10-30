@@ -8,12 +8,16 @@ import {
   setGameSettings,
   setPreCreateGameSettings,
 } from "@/shared/store";
-import { saveGameSettings } from "@/shared/api/game";
+import {
+  saveGameSettings,
+  type GameSettings,
+  type UpdateGameSettingsPayload,
+} from "@/shared/api/game";
 import { parseRouteGameId } from "@/lib/router/tabletGameRoute";
 import { gameQueries } from "@/shared/query/game.queries";
 import { clientLogger } from "@/shared/services/browser/clientLogger";
 import { toUserErrorMessage } from "@/lib/error/error-to-user-message";
-import type { GameMode, GameSettings, UpdateGameSettingsPayload } from "@/types";
+import type { GameMode } from "@/types";
 import { isGameMode, resolveGameMode, toGameModeFlags } from "@/lib/game/gameMode";
 import { isStartScore } from "./lib/points";
 

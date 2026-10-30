@@ -1,5 +1,5 @@
 import type { ParsedThrow } from "@/lib/game/parseThrowValue";
-import type { GameThrowsResponse, PlayerThrow, ScoreboardDelta } from "@/types";
+import type { GameThrowsResponse, PlayerThrow, ScoreboardDelta } from "@/shared/api/game";
 
 function getThrowPoints(throwData: ParsedThrow): number {
   const multiplier = throwData.isTriple ? 3 : throwData.isDouble ? 2 : 1;

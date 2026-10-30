@@ -3,7 +3,7 @@ import type { ReadableAtom } from "nanostores";
 import { DEFAULT_START_SCORE } from "@/lib/game/gameMode";
 import { isRecord } from "@/lib/guards/guards";
 import { clientLogger } from "@/shared/services/browser/clientLogger";
-import type { CreateGameSettingsPayload } from "@/types";
+import type { CreateGameSettingsPayload } from "@/shared/api/game";
 
 export interface Invitation {
   gameId: number;

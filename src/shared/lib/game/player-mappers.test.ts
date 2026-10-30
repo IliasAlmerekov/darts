@@ -1,7 +1,7 @@
 // @vitest-environment node
 import { describe, expect, it } from "vitest";
 import { getFinishedPlayers, mapPlayersToUI } from "./player-mappers";
-import type { GameThrowsResponse } from "@/types";
+import type { GameThrowsResponse } from "@/shared/api/game";
 
 function buildPlayer(
   overrides: Partial<GameThrowsResponse["players"][number]>,

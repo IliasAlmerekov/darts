@@ -6,7 +6,7 @@ import { toUserErrorMessage } from "@/lib/error/error-to-user-message";
 import { clientLogger } from "@/shared/services/browser/clientLogger";
 import { useIsCurrentGame } from "./useIsCurrentGame";
 import { validateGuestUsername } from "./lib/guestUsername";
-import type { AddGuestErrorResponse } from "@/types";
+import type { AddGuestErrorResponse } from "@/shared/api/room";
 
 const MAX_LOBBY_PLAYERS = 10;
 const LOBBY_FULL_MESSAGE = "The lobby is full. Remove a player to add another.";

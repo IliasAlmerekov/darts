@@ -1,7 +1,7 @@
 // @vitest-environment node
 
 import { describe, expect, it } from "vitest";
-import type { GameThrowsResponse } from "@/types";
+import type { GameThrowsResponse } from "@/shared/api/game";
 import { mergeGameSettings } from "./mergeGameSettings";
 
 function createGameData(): GameThrowsResponse {

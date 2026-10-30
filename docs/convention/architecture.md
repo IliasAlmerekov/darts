@@ -49,8 +49,7 @@ app -> pages -> shared
 - A page must not import from another page (no cross-page imports).
 
 `no-restricted-imports` in `eslint.config.mjs` enforces these three rules. Keep them at
-full scope. The `shared/` block currently ignores `src/shared/types/game.ts` and
-`src/shared/types/player.ts`; add no further exclusions.
+full scope, with no exclusions.
 
 `app/` may import from `pages/` (lazy route declarations, page loaders) and from `shared/`.
 
@@ -113,6 +112,8 @@ exports; `apiClient` stays inside `shared/api/` (see `api.md`).
 - Production code imports types through the `@/types` barrel
   (`src/shared/types/index.ts`). Deep imports (`@/shared/types/game`,
   `@/shared/types/api`, etc.) are forbidden in production.
+- API request and response types live in `shared/api/<domain>`; `shared/types` holds
+  client-only types and never imports from `shared/api`.
 - Test files import test-support factories by path:
   `import { buildBackendPlayer } from "@/shared/types/game.test-support"`.
 

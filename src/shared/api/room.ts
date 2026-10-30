@@ -3,7 +3,7 @@ import { apiClient } from "./client";
 import { ApiError } from "./errors";
 import { createInviteEndpoint } from "./endpoints";
 import { integerSchema, invitationResponseSchema, successMessageResponseSchema } from "./schemas";
-import type { AddGuestPayload, CreateGameSettingsPayload } from "@/types";
+import type { CreateGameSettingsPayload } from "./game";
 
 const createRoomResponseSchema = v.object({
   success: v.boolean(),
@@ -25,6 +25,17 @@ const addGuestResponseSchema = v.object({
     isGuest: v.optional(v.boolean()),
   }),
 });
+
+export interface AddGuestPayload {
+  username: string;
+}
+
+export interface AddGuestErrorResponse {
+  success: false;
+  error: "USERNAME_TAKEN";
+  message: string;
+  suggestions?: string[];
+}
 
 interface RoomInvitation {
   gameId: number;
