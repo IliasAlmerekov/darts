@@ -1,6 +1,6 @@
 import * as v from "valibot";
 
-// Schemas shared by 2+ domain files. A schema used by one domain stays in that file.
+// Schemas shared by 2+ files in shared/api/. A schema used by one file stays in that file.
 
 /** Contract `integer`. */
 export const integerSchema = v.pipe(v.number(), v.integer());

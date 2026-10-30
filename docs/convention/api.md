@@ -32,8 +32,8 @@ factory.
 src/shared/api/
   client.ts            # apiClient + ApiValidationError + setUnauthorizedHandler
   errors.ts            # typed error classes
-  endpoints.ts         # paths shared by 2+ domain files (currently GAME_ENDPOINT)
-  schemas.ts           # Valibot schemas shared by 2+ domain files, integerSchema
+  endpoints.ts         # paths shared by 2+ files in shared/api/ (currently GAME_ENDPOINT)
+  schemas.ts           # Valibot schemas shared by 2+ files in shared/api/, integerSchema
   types.ts             # apiClient types (HttpMethod, ApiRequestConfig, QueryParams)
   index.ts             # barrel: cross-cutting public surface
   test-utils.ts        # createMockResponse and respondWith helpers for tests
@@ -67,7 +67,7 @@ The API layer has two levels:
 modules: `game.ts` re-exports them, and consumers import their symbols from
 `@/shared/api/game`, so `vi.mock("@/shared/api/game", ...)` intercepts every game call.
 
-`apiClient` stays inside `shared/api/`: only the domain files call it, and the barrel does not
+`apiClient` stays inside `shared/api/`: only the domain files and their internal files call it, and the barrel does not
 export it. Internals (`client.ts`, `errors.ts`, `types.ts`, `endpoints.ts`, `schemas.ts`,
 `throws.ts`, `rematch.ts`) are
 never deep-imported from outside `shared/api/`.
@@ -128,7 +128,7 @@ ADR 0002 records why responses are described by Valibot schemas.
   `type` of `GameResponseDto`, `ThrowAckDto` and `UndoAckDto` has a contract `default`, so it
   is `v.optional(v.picklist([...]), default)`. A schema may still map a parsed response to a
   client-side result with `v.transform` (`loginResponseSchema` in `auth.ts`).
-- A schema used by 2+ domain files lives in `schemas.ts`.
+- A schema used by 2+ files in `shared/api/` lives in `schemas.ts`.
 - Shared guards in `@/lib/guards/guards` are for code outside the API layer. `shared/api/`
   has no `isXxxResponse` guards.
 
@@ -162,8 +162,8 @@ Two forms coexist:
 - **Static path constant** at the top of the domain file: `const LOGIN_ENDPOINT = "/login";`
 - **Path builder** for path-with-id endpoints: `const GAME_ENDPOINT = (id: number) => ...`
 
-Each domain file owns its paths. A path that a second domain file needs moves to an internal
-`endpoints.ts`, which holds only paths that 2+ domain files use.
+Each file in `shared/api/` owns its paths. A path that a second file there needs moves to an
+internal `endpoints.ts`, which holds only paths that 2+ files in `shared/api/` use.
 
 ## Server reads: TanStack Query
 
@@ -264,7 +264,7 @@ Mapper rules:
 mirrors it:
 
 - A per-id version map (`gameStateVersionById = new Map<number, string>()`) lives
-  module-scoped in the domain file.
+  module-scoped in the file that makes the conditional fetch.
 - Send `If-None-Match` + `query: { since }`, accept 304 via `acceptedStatuses: [304]`, read
   headers via `returnResponse: true`.
 - `setGameStateVersion(gameId, version)` / `resetGameStateVersion(gameId?)` let store
