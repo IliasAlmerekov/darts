@@ -1,4 +1,4 @@
-import React, { useEffect } from "react";
+import React, { useEffect, useRef } from "react";
 import { isRouteErrorResponse, useRouteError } from "react-router-dom";
 import styles from "@/app/ErrorBoundary.module.css";
 import NotFoundPage from "@/app/routes/NotFoundPage";
@@ -47,10 +47,16 @@ function isNotFoundRouteError(error: unknown): boolean {
 export default function ErrorBoundary(): React.JSX.Element {
   const routeError = useRouteError();
   const isNotFound = isNotFoundRouteError(routeError);
+  // StrictMode runs the effect twice in development; the ref outlives that re-run, so one
+  // error object is logged once while a different error is still logged.
+  // The box tells "nothing logged yet" apart from a logged `null` or `undefined` error.
+  const lastLoggedErrorRef = useRef<{ error: unknown } | null>(null);
 
   useEffect(() => {
     // A 404 is an expected answer, not a crash.
     if (isNotFound) return;
+    if (lastLoggedErrorRef.current?.error === routeError) return;
+    lastLoggedErrorRef.current = { error: routeError };
 
     const normalized = normalizeRouteError(routeError);
 
