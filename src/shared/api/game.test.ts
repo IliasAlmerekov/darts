@@ -3,6 +3,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { apiClient, ApiValidationError } from "./client";
 import {
   abortGame,
+  finishGame,
   getFinishedGame,
   getGameSettings,
   getTabletGame,
@@ -302,6 +303,23 @@ describe("game api contract payloads", () => {
       );
 
       await expect(getFinishedGame(42)).rejects.toBeInstanceOf(ApiValidationError);
+    });
+  });
+
+  describe("finishGame", () => {
+    it("posts to the finish endpoint and maps the summary", async () => {
+      const post = vi.spyOn(apiClient, "post").mockImplementationOnce(respondWith(summaryPayload));
+
+      await expect(finishGame(42)).resolves.toEqual(summaryPayload.finishedPlayers);
+      expect(post).toHaveBeenCalledWith("/game/42/finish", undefined, expect.anything());
+    });
+
+    it("rejects with ApiValidationError when finishedPlayers is missing", async () => {
+      vi.spyOn(apiClient, "post").mockImplementationOnce(
+        respondWith({ gameId: 42, winnerRoundsPlayed: 8, winnerRoundAverage: 57.3 }),
+      );
+
+      await expect(finishGame(42)).rejects.toBeInstanceOf(ApiValidationError);
     });
   });
 

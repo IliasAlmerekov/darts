@@ -1,5 +1,5 @@
 import { useCallback, useMemo, useState } from "react";
-import { useLocation, useNavigate, useParams } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import { useGameSession } from "./useGameSession";
 import { useGameSounds } from "./useGameSounds";
 import { useWakeLock } from "./useWakeLock";
@@ -8,7 +8,6 @@ import type { UIPlayer } from "@/types";
 import type { SyncStatus } from "./lib/gameSession.logic";
 import { useGameExitFlow, useGameSettingsFlow } from "./useGameActions";
 import { useGameSummaryNavigation, useInteractionSoundUnlock } from "./useGamePageEffects";
-import { parseLocationState } from "@/lib/router/locationState";
 import { parseRouteGameId } from "@/lib/router/tabletGameRoute";
 
 interface GameSettingsFormValues {
@@ -28,6 +27,7 @@ interface UseGameLogicResult {
   handleCloseSettings: () => void;
   handleContinueGame: () => void;
   handleExitGame: () => Promise<void>;
+  handleFinishGame: () => void;
   handleOpenExitOverlay: () => void;
   handleOpenSettings: () => void;
   handleSaveSettings: (settings: GameSettingsFormValues) => Promise<void>;
@@ -37,6 +37,9 @@ interface UseGameLogicResult {
   handleUndoFromOverlay: () => void;
   isExitOverlayOpen: boolean;
   isExitPending: boolean;
+  isFinishGameDisabled: boolean;
+  isFinishPending: boolean;
+  finishError: string | null;
   isInteractionDisabled: boolean;
   isLoading: boolean;
   isQueueFull: boolean;
@@ -50,28 +53,16 @@ interface UseGameLogicResult {
   syncStatus: SyncStatus;
 }
 
-function isGameLocationState(s: unknown): s is { skipFinishOverlay?: boolean } {
-  return (
-    typeof s === "object" &&
-    s !== null &&
-    (!("skipFinishOverlay" in s) ||
-      typeof (s as Record<string, unknown>).skipFinishOverlay === "boolean")
-  );
-}
-
 /**
  * Orchestrates smaller page-specific hooks into the game page contract.
  */
 export function useGameLogic(): UseGameLogicResult {
   const navigate = useNavigate();
-  const location = useLocation();
   const { id: gameIdParam } = useParams<{ id?: string }>();
 
   const gameId = useMemo(() => parseRouteGameId(gameIdParam), [gameIdParam]);
 
-  const skipFinishOverlay =
-    parseLocationState(location.state, isGameLocationState)?.skipFinishOverlay === true;
-  const { view, commands } = useGameSession(gameId, skipFinishOverlay);
+  const { view, commands } = useGameSession(gameId);
   const { game: gameData, isLoading, error } = view;
   const isGameActive = gameData?.status === "started";
   useGameSounds(gameData);
@@ -136,6 +127,9 @@ export function useGameLogic(): UseGameLogicResult {
     pageError,
     isExitOverlayOpen,
     isExitPending,
+    isFinishGameDisabled: !view.canFinishGame || view.isFinishPending,
+    isFinishPending: view.isFinishPending,
+    finishError: view.finishError,
     isQueueFull: view.isQueueFull,
     syncStatus: view.status,
     handleRetry: commands.retry,
@@ -143,6 +137,7 @@ export function useGameLogic(): UseGameLogicResult {
     handleUndo: commands.undo,
     handleContinueGame: commands.continueGame,
     handleUndoFromOverlay: commands.undoFromOverlay,
+    handleFinishGame: commands.finishGame,
     handleOpenSettings,
     handleCloseSettings,
     handleSaveSettings,

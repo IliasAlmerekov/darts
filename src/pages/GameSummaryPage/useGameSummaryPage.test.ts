@@ -228,9 +228,7 @@ describe("useGameSummaryPage", () => {
     expect(undoLastThrowMock).toHaveBeenCalledWith(42);
     expect($gameData.get()).toBe(shownGame);
     expect(playSound).toHaveBeenCalledWith("undo");
-    expect(navigateMock).toHaveBeenCalledWith("/game/42", {
-      state: { skipFinishOverlay: true },
-    });
+    expect(navigateMock).toHaveBeenCalledWith("/game/42");
   });
 
   it("should not navigate when undo request fails", async () => {

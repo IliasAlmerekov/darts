@@ -3,7 +3,7 @@ import { mockAdminSession } from "../shared/auth-route-mocks";
 import { mockGameState } from "../shared/game-route-mocks";
 import { fulfillJson } from "../shared/json-response";
 import { navigateInApp } from "../shared/in-app-navigation";
-import { mockFinishedGame } from "../shared/summary-mocks";
+import { mockFinishedGame, mockFinishGame } from "../shared/summary-mocks";
 import { mockTabletGame, startedTabletGame } from "../shared/tablet-game-mocks";
 
 // Throw sync rules from ADR 0003.
@@ -17,6 +17,7 @@ interface PlayerScore {
 
 const ALICE = { id: 1, name: "Alice" };
 const BOB = { id: 2, name: "Bob" };
+const CARA = { id: 3, name: "Cara" };
 
 function gameState(gameId: number, scores: PlayerScore[]) {
   const activePlayer = scores.find((player) => player.isActive) ?? null;
@@ -144,6 +145,83 @@ test.describe("Throw sync on the game page", () => {
     await expect(page).toHaveURL(`/summary/${gameId}`);
     await expect(page.getByRole("button", { name: "Play Again" })).toBeVisible();
     expect(finishRequests).toEqual([]);
+  });
+
+  // #395: the first checkout's overlay ends the game on the server.
+  test.describe("Finish game in the finish overlay", () => {
+    const gameId = 1;
+    const threePlayers = (alice: number, active: "Alice" | "Bob"): PlayerScore[] => [
+      ...playerScores(alice, 301, active),
+      { ...CARA, score: 301, isActive: false },
+    ];
+    const finishOverlay = (page: Page): Locator =>
+      page.getByRole("dialog", { name: "Player Finished! Continue Game?" });
+
+    test.beforeEach(async ({ page }) => {
+      await mockAdminSession(page);
+      await mockGameState(page, gameId, gameState(gameId, threePlayers(20, "Alice")));
+      await mockGameSettings(page, gameId);
+    });
+
+    test("waits for the checkout ack, then opens the summary with the winner first", async ({
+      page,
+    }) => {
+      const answerTabletGame = await mockTabletGame(page, startedTabletGame(gameId));
+      let releaseThrow!: () => void;
+      const throwReleased = new Promise<void>((resolve) => {
+        releaseThrow = resolve;
+      });
+      await page.route(`**/api/game/${gameId}/throw/delta`, async (route) => {
+        await throwReleased;
+        await fulfillJson(route, throwAck(gameId, threePlayers(0, "Bob")));
+      });
+      const countFinishRequests = await mockFinishGame(page, gameId, [
+        { playerId: 1, username: "Alice", placement: 1 },
+        { playerId: 2, username: "Bob", placement: 2 },
+        { playerId: 3, username: "Cara", placement: 3 },
+      ]);
+
+      await page.goto(`/game/${gameId}`);
+      await expect(playerCard(page, "Alice")).toContainText("20");
+      await tap(page, "20");
+
+      const finishButton = finishOverlay(page).getByRole("button", { name: "Finish game" });
+      await expect(finishButton).toBeDisabled();
+      answerTabletGame({ game: null, lastFinishedGameId: gameId });
+      releaseThrow();
+      await expect(finishButton).toBeEnabled();
+      await finishButton.click();
+
+      await expect(page).toHaveURL(`/summary/${gameId}`);
+      await expect(page.getByRole("heading", { name: /^(Alice|Bob|Cara)$/ })).toHaveText([
+        "Alice",
+        "Bob",
+        "Cara",
+      ]);
+      expect(countFinishRequests()).toBe(1);
+    });
+
+    test("a failed finish shows an error and Continue keeps the game playable", async ({
+      page,
+    }) => {
+      await mockTabletGame(page, startedTabletGame(gameId));
+      await page.route(`**/api/game/${gameId}/throw/delta`, async (route) => {
+        await fulfillJson(route, throwAck(gameId, threePlayers(0, "Bob")));
+      });
+      await mockFinishGame(page, gameId, [], 500);
+
+      await page.goto(`/game/${gameId}`);
+      await expect(playerCard(page, "Alice")).toContainText("20");
+      await tap(page, "20");
+      await finishOverlay(page).getByRole("button", { name: "Finish game" }).click();
+
+      await expect(finishOverlay(page).getByRole("alert")).toBeVisible();
+      await expect(page).toHaveURL(`/game/${gameId}`);
+      await finishOverlay(page).getByRole("button", { name: "Continue" }).click();
+
+      await expect(finishOverlay(page)).toBeHidden();
+      await expect(page.getByRole("button", { name: "20", exact: true })).toBeEnabled();
+    });
   });
 
   // #95
