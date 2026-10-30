@@ -5,6 +5,11 @@ import reactPlugin from "eslint-plugin-react";
 import reactHooks from "eslint-plugin-react-hooks";
 import jsxA11y from "eslint-plugin-jsx-a11y";
 
+const sharedLibAlias = {
+  group: ["@/shared/lib/*"],
+  message: "Import shared lib through @/lib/.",
+};
+
 export default [
   {
     ignores: ["commitlint.config.mjs", "dist/**"],
@@ -80,12 +85,54 @@ export default [
     },
   },
   {
+    files: [
+      "src/app/**/*.{ts,tsx}",
+      "src/index.tsx",
+      "src/shared/**/*.{ts,tsx}",
+      "src/pages/**/*.{ts,tsx}",
+    ],
+    ignores: ["**/*.test.{ts,tsx}"],
+    rules: {
+      "no-restricted-syntax": [
+        "error",
+        {
+          selector: "ImportExpression > Literal.source[value=/^@\\/shared\\/lib\\//]",
+          message: "Import shared lib through @/lib/.",
+        },
+        {
+          selector:
+            "ImportExpression > TemplateLiteral.source > TemplateElement:first-child[value.raw=/^@\\/shared\\/lib\\//]",
+          message: "Import shared lib through @/lib/.",
+        },
+      ],
+    },
+  },
+  {
     files: ["src/shared/**/*.{ts,tsx}"],
     rules: {
       "no-restricted-imports": [
         "error",
         {
           patterns: ["@/pages/*", "@/app/*", "../pages/*", "../app/*"],
+        },
+      ],
+    },
+  },
+  {
+    files: ["src/app/**/*.{ts,tsx}", "src/index.tsx"],
+    ignores: ["**/*.test.{ts,tsx}"],
+    rules: {
+      "no-restricted-imports": ["error", { patterns: [sharedLibAlias] }],
+    },
+  },
+  {
+    files: ["src/shared/**/*.{ts,tsx}"],
+    ignores: ["**/*.test.{ts,tsx}"],
+    rules: {
+      "no-restricted-imports": [
+        "error",
+        {
+          patterns: [{ group: ["@/pages/*", "@/app/*", "../pages/*", "../app/*"] }, sharedLibAlias],
         },
       ],
     },
@@ -105,6 +152,28 @@ export default [
               group: ["@/app/*", "../app/*"],
               message: "Pages must not import from app/. Move shared logic to shared/.",
             },
+          ],
+        },
+      ],
+    },
+  },
+  {
+    files: ["src/pages/**/*.{ts,tsx}"],
+    ignores: ["**/*.test.{ts,tsx}"],
+    rules: {
+      "no-restricted-imports": [
+        "error",
+        {
+          patterns: [
+            {
+              group: ["@/pages/*", "../pages/*"],
+              message: "Pages must not import from other pages. Use shared/ for cross-page code.",
+            },
+            {
+              group: ["@/app/*", "../app/*"],
+              message: "Pages must not import from app/. Move shared logic to shared/.",
+            },
+            sharedLibAlias,
           ],
         },
       ],
@@ -132,6 +201,7 @@ export default [
               group: ["@/app/*", "../app/*"],
               message: "Pages must not import from app/. Move shared logic to shared/.",
             },
+            sharedLibAlias,
             {
               allowTypeImports: true,
               regex:
