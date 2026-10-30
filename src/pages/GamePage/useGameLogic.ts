@@ -8,7 +8,6 @@ import type { UIPlayer } from "@/types";
 import type { SyncStatus } from "./lib/gameSession.logic";
 import { useGameExitFlow, useGameSettingsFlow } from "./useGameActions";
 import { useGameSummaryNavigation, useInteractionSoundUnlock } from "./useGamePageEffects";
-import { useGamePlayersState } from "./useGamePlayersState";
 import { parseLocationState } from "@/lib/router/locationState";
 import { parseRouteGameId } from "@/lib/router/tabletGameRoute";
 
@@ -70,12 +69,11 @@ export function useGameLogic(): UseGameLogicResult {
 
   const gameId = useMemo(() => parseRouteGameId(gameIdParam), [gameIdParam]);
 
-  const { view, commands } = useGameSession(gameId);
-  const { game: gameData, isLoading, error } = view;
-  const isGameActive = gameData?.status === "started";
   const skipFinishOverlay =
     parseLocationState(location.state, isGameLocationState)?.skipFinishOverlay === true;
-
+  const { view, commands } = useGameSession(gameId, skipFinishOverlay);
+  const { game: gameData, isLoading, error } = view;
+  const isGameActive = gameData?.status === "started";
   useGameSounds(gameData);
   useWakeLock(isGameActive);
   useInteractionSoundUnlock();
@@ -85,23 +83,11 @@ export function useGameLogic(): UseGameLogicResult {
     activePlayer,
     activePlayers,
     finishedPlayers,
-    handleContinueGame,
-    handleUndoFromOverlay,
     isInteractionDisabled,
     isSettingsDisabled,
     isUndoDisabled,
     shouldShowFinishOverlay,
-  } = useGamePlayersState({
-    error,
-    gameData,
-    gameId,
-    handleUndo: commands.undo,
-    isLoading,
-    canThrow: view.canThrow,
-    canUndo: view.canUndo,
-    isSyncing: view.status === "syncing",
-    skipFinishOverlay,
-  });
+  } = view;
   const {
     handleCloseSettings,
     handleOpenSettings,
@@ -155,8 +141,8 @@ export function useGameLogic(): UseGameLogicResult {
     handleRetry: commands.retry,
     handleThrow: commands.throwDart,
     handleUndo: commands.undo,
-    handleContinueGame,
-    handleUndoFromOverlay,
+    handleContinueGame: commands.continueGame,
+    handleUndoFromOverlay: commands.undoFromOverlay,
     handleOpenSettings,
     handleCloseSettings,
     handleSaveSettings,

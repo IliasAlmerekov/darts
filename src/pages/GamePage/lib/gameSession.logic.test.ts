@@ -12,6 +12,8 @@ import {
   applyThrowAck,
   applyUndoResponse,
   createGameSession,
+  dismissFinishedPlayers,
+  undoFromOverlay,
   failSession,
   markFirstLoadFailed,
   markSessionOffline,
@@ -98,6 +100,85 @@ function throwMany(session: GameSession, values: (string | number)[]): GameSessi
 }
 
 describe("gameSession.logic", () => {
+  it("does not queue undo when the game has no throw history", () => {
+    const session = createGameSession(buildGame({ alice: 301, bob: 301 }));
+    expect(getSessionView(session).canUndo).toBe(false);
+    expect(enqueueUndo(session)).toBe(session);
+  });
+
+  it("blocks input while the finish overlay is open and accepts its undo", () => {
+    const game = buildGame({ alice: 20, bob: 301 });
+    game.players.push(buildBackendPlayer({ id: 3, name: "Carol", score: 301 }));
+    const finished = throwMany(createGameSession(game), [20]);
+    expect(getSessionView(finished).activePlayers.map((player) => player.id)).toEqual([2, 3]);
+    expect(getSessionView(finished).finishedPlayers.map((player) => player.id)).toEqual([1]);
+    expect(getSessionView(finished).activePlayer?.id).toBe(2);
+    expect(getSessionView(finished)).toMatchObject({
+      shouldShowFinishOverlay: true,
+      canThrow: false,
+      canUndo: false,
+    });
+    expect(enqueueThrow(finished, 20)).toBeNull();
+    expect(enqueueUndo(finished)).toBe(finished);
+    const undone = undoFromOverlay(finished);
+    expect(scores(getShownGame(undone))).toEqual([20, 301, 301]);
+    expect(getSessionView(undone).shouldShowFinishOverlay).toBe(false);
+    expect(getSessionView(throwMany(undone, [20])).shouldShowFinishOverlay).toBe(true);
+    expect(getSessionView(dismissFinishedPlayers(finished)).shouldShowFinishOverlay).toBe(false);
+  });
+
+  it.each([[[0]], [[0, 0, 0]], [["T20", "T20"]]])(
+    "allows undo and locks settings after throws %s",
+    (values) => {
+      const game = buildGame({
+        alice: values[0] === "T20" ? 101 : 301,
+        bob: values[0] === "T20" ? 101 : 301,
+      });
+      game.settings.startScore = values[0] === "T20" ? 101 : 301;
+      const session = throwMany(createGameSession(game), values);
+      expect(getSessionView(session)).toMatchObject({ canUndo: true, canOpenSettings: false });
+    },
+  );
+
+  it("locks settings while syncing even after undo removes the visible throw", () => {
+    const session = enqueueUndo(
+      send(throwMany(createGameSession(buildGame({ alice: 301, bob: 301 })), [0])),
+    );
+    expect(getSessionView(session)).toMatchObject({
+      status: "syncing",
+      canOpenSettings: false,
+      canUndo: false,
+    });
+  });
+
+  it("keeps dismissals and skip flag through reload and forgets players who leave zero", () => {
+    const game = buildGame({ alice: 0, bob: 301 });
+    game.players.push(buildBackendPlayer({ id: 3, score: 301 }));
+    const dismissed = dismissFinishedPlayers(createGameSession(game));
+    expect(
+      getSessionView(applyReloadedGame(failSession(dismissed), game)).shouldShowFinishOverlay,
+    ).toBe(false);
+    const skipped = createGameSession(game, true);
+    expect(
+      getSessionView(applyReloadedGame(failSession(skipped), game)).shouldShowFinishOverlay,
+    ).toBe(false);
+    const reopened = {
+      ...game,
+      players: game.players.map((player) => (player.id === 1 ? { ...player, score: 20 } : player)),
+    };
+    const reloaded = applyReloadedGame(failSession(dismissed), reopened);
+    expect(getSessionView(applyReloadedGame(reloaded, game)).shouldShowFinishOverlay).toBe(true);
+  });
+
+  it("derives the winner when a finished throw acknowledgement omits it", () => {
+    const sent = send(throwMany(createGameSession(buildGame({ alice: 20, bob: 301 })), [20]));
+    const ack = buildThrowAck(0, 301, 2);
+    ack.scoreboardDelta.status = "finished";
+    ack.scoreboardDelta.winnerId = null;
+    const confirmed = applyThrowAck(sent, ack);
+    expect(confirmed?.confirmed?.winnerId).toBe(1);
+  });
+
   it("shows pending throws replayed over the confirmed game", () => {
     const session = throwMany(createGameSession(buildGame({ alice: 301, bob: 301 })), [
       20,
@@ -169,10 +250,10 @@ describe("gameSession.logic", () => {
   });
 
   it("reports idle without pending requests", () => {
-    expect(getSessionView(createGameSession(buildGame({ alice: 301, bob: 301 })))).toEqual({
+    expect(getSessionView(createGameSession(buildGame({ alice: 301, bob: 301 })))).toMatchObject({
       canRetry: false,
       canThrow: true,
-      canUndo: true,
+      canUndo: false,
       isFinished: false,
       isQueueFull: false,
       status: "idle",
@@ -334,7 +415,7 @@ describe("gameSession.logic", () => {
     }
 
     function sendUndo(game: GameThrowsResponse): GameSession {
-      return send(enqueueUndo(createGameSession(game)));
+      return send(enqueueUndo(createGameSession(game, true)));
     }
 
     function buildThreeSeatAck(alice: number, active: 1 | 3): UndoAckResponse {
@@ -412,7 +493,7 @@ describe("gameSession.logic", () => {
 
     expect(getSessionView(reloaded)).toMatchObject({ canThrow: true, status: "failed" });
     expect(getSessionView(throwMany(reloaded, [20])).status).toBe("syncing");
-    expect(getSessionView(enqueueUndo(reloaded)).status).toBe("syncing");
+    expect(enqueueUndo(reloaded)).toBe(reloaded);
   });
 
   it("stays offline with Retry until a reload works", () => {
@@ -420,7 +501,7 @@ describe("gameSession.logic", () => {
       failSession(send(throwMany(createGameSession(buildGame({ alice: 301, bob: 301 })), [20]))),
     );
 
-    expect(getSessionView(offline)).toEqual({
+    expect(getSessionView(offline)).toMatchObject({
       canRetry: true,
       canThrow: false,
       canUndo: false,
@@ -496,7 +577,7 @@ describe("gameSession.logic", () => {
     expect(enqueueThrow(undone, 20)).not.toBeNull();
   });
 
-  it("keeps throw input open after a checkout while two players are still in", () => {
+  it("blocks throw input after a checkout while two players are still in", () => {
     const game = buildGameThrowsResponse({
       id: 4,
       settings: { startScore: 301, doubleOut: false, tripleOut: false },
@@ -509,8 +590,12 @@ describe("gameSession.logic", () => {
     const checkedOut = throwMany(createGameSession(game), [20]);
 
     expect(scores(getShownGame(checkedOut))).toEqual([0, 301, 301]);
-    expect(getSessionView(checkedOut)).toMatchObject({ canThrow: true, isFinished: false });
-    expect(enqueueThrow(checkedOut, 20)).not.toBeNull();
+    expect(getSessionView(checkedOut)).toMatchObject({
+      canThrow: false,
+      isFinished: false,
+      shouldShowFinishOverlay: true,
+    });
+    expect(enqueueThrow(checkedOut, 20)).toBeNull();
   });
 
   it("rolls back a rejected winning throw and reports no finished game", () => {
