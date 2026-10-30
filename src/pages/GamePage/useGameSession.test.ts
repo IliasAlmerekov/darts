@@ -20,6 +20,7 @@ import {
   getGameThrowsIfChanged,
   recordThrow,
   setGameStateVersion,
+  undoLastThrow,
   type ThrowAckResponse,
   type GameThrowsResponse,
 } from "@/shared/api/game";
@@ -86,6 +87,37 @@ describe("useGameSession", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     resetGameStore();
+  });
+
+  it("dismisses the overlay without sending undo when no throw exists", async () => {
+    const game = buildGame(1, 0);
+    game.players.push(buildBackendPlayer({ id: 3, name: "Cara", score: 301 }));
+    getGameThrowsIfChangedMock.mockResolvedValueOnce(game);
+
+    const { result } = renderHook(() => useGameSession(1));
+    await waitFor(() => expect(result.current.view.shouldShowFinishOverlay).toBe(true));
+    act(() => result.current.commands.undoFromOverlay());
+
+    expect(result.current.view.shouldShowFinishOverlay).toBe(false);
+    expect(undoLastThrow).not.toHaveBeenCalled();
+    expect(playSound).not.toHaveBeenCalledWith("undo");
+  });
+
+  it("forgets dismissed players when another game opens", async () => {
+    getGameThrowsIfChangedMock.mockImplementation((id) => {
+      const game = buildGame(id, 0);
+      game.players.push(buildBackendPlayer({ id: 3, name: "Cara", score: 301 }));
+      return Promise.resolve(game);
+    });
+    const { result, rerender } = renderHook(({ gameId }) => useGameSession(gameId), {
+      initialProps: { gameId: 1 },
+    });
+    await waitFor(() => expect(result.current.view.shouldShowFinishOverlay).toBe(true));
+    act(() => result.current.commands.continueGame());
+    expect(result.current.view.shouldShowFinishOverlay).toBe(false);
+    rerender({ gameId: 2 });
+    await waitFor(() => expect(result.current.view.game?.id).toBe(2));
+    expect(result.current.view.shouldShowFinishOverlay).toBe(true);
   });
 
   it("aborts the load of the previous game and ignores its late answer", async () => {

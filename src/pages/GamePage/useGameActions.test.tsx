@@ -9,7 +9,7 @@ vi.mock("react-router-dom", () => ({
 
 vi.mock("@/shared/api/game", () => ({
   abortGame: vi.fn(),
-  createRematch: vi.fn(),
+  createRematchGame: vi.fn(),
   getGameThrows: vi.fn(),
   updateGameSettings: (...args: unknown[]) => updateGameSettingsMock(...args),
 }));
@@ -30,7 +30,7 @@ import {
   type GameSettingsResponse,
   type GameThrowsResponse,
   abortGame,
-  createRematch,
+  createRematchGame,
   getGameThrows,
 } from "@/shared/api/game";
 import { ApiError } from "@/shared/api";
@@ -167,7 +167,7 @@ describe("useGameExitFlow", () => {
 
   it("should abort, create a rematch and open the new lobby when a started game is left", async () => {
     vi.mocked(abortGame).mockResolvedValueOnce({ success: true, message: "ok" });
-    vi.mocked(createRematch).mockResolvedValueOnce({
+    vi.mocked(createRematchGame).mockResolvedValueOnce({
       success: true,
       gameId: 43,
       invitationLink: "https://example.test/join/abc",
@@ -179,7 +179,7 @@ describe("useGameExitFlow", () => {
     });
 
     expect(abortGame).toHaveBeenCalledWith(42);
-    expect(createRematch).toHaveBeenCalledWith(42);
+    expect(createRematchGame).toHaveBeenCalledWith(42);
     expect(setInvitation).toHaveBeenCalledWith({
       gameId: 43,
       invitationLink: "https://example.test/join/abc",
@@ -202,7 +202,7 @@ describe("useGameExitFlow", () => {
     });
 
     expect(getGameThrows).toHaveBeenCalledWith(42, expect.any(AbortSignal));
-    expect(createRematch).not.toHaveBeenCalled();
+    expect(createRematchGame).not.toHaveBeenCalled();
     expect(navigate).toHaveBeenCalledTimes(1);
     expect(navigate).toHaveBeenCalledWith("/summary/42", {
       state: { finishedGameId: 42 },
@@ -225,7 +225,7 @@ describe("useGameExitFlow", () => {
       await result.current.handleExitGame();
     });
 
-    expect(createRematch).not.toHaveBeenCalled();
+    expect(createRematchGame).not.toHaveBeenCalled();
     expect(navigate).not.toHaveBeenCalled();
     expect(setPageError).toHaveBeenLastCalledWith(
       "This game can no longer be left. Please reload the page.",
@@ -241,7 +241,7 @@ describe("useGameExitFlow", () => {
       const abort = deferred<{ success: boolean; message: string }>();
       const rematch = deferred<{ success: boolean; gameId: number; invitationLink: string }>();
       vi.mocked(abortGame).mockReturnValue(abort.promise);
-      vi.mocked(createRematch).mockReturnValue(rematch.promise);
+      vi.mocked(createRematchGame).mockReturnValue(rematch.promise);
       const { navigate, result } = renderExitFlow();
 
       let calls: Promise<void>[] = [];
@@ -257,7 +257,7 @@ describe("useGameExitFlow", () => {
       });
 
       expect(abortGame).toHaveBeenCalledTimes(1);
-      expect(createRematch).toHaveBeenCalledTimes(1);
+      expect(createRematchGame).toHaveBeenCalledTimes(1);
       expect(setInvitation).toHaveBeenCalledTimes(1);
       expect(navigate).toHaveBeenCalledTimes(1);
       expect(navigate).toHaveBeenCalledWith("/start/43");
@@ -267,7 +267,7 @@ describe("useGameExitFlow", () => {
         await result.current.handleExitGame();
       });
       expect(abortGame).toHaveBeenCalledTimes(1);
-      expect(createRematch).toHaveBeenCalledTimes(1);
+      expect(createRematchGame).toHaveBeenCalledTimes(1);
     });
 
     it("should release the lock and allow a retry when abort fails", async () => {
@@ -437,7 +437,7 @@ describe("useGameExitFlow", () => {
       });
 
       expect(resetRoomStore).not.toHaveBeenCalled();
-      expect(createRematch).not.toHaveBeenCalled();
+      expect(createRematchGame).not.toHaveBeenCalled();
       expect(setInvitation).not.toHaveBeenCalled();
       expect(navigate).not.toHaveBeenCalled();
       expect(setPageError).not.toHaveBeenCalledWith(expect.any(String));
@@ -456,7 +456,7 @@ describe("useGameExitFlow", () => {
       });
 
       expect(resetRoomStore).not.toHaveBeenCalled();
-      expect(createRematch).not.toHaveBeenCalled();
+      expect(createRematchGame).not.toHaveBeenCalled();
       expect(setInvitation).not.toHaveBeenCalled();
       expect(navigate).not.toHaveBeenCalled();
       expect(setPageError).not.toHaveBeenCalledWith(expect.any(String));
@@ -465,11 +465,11 @@ describe("useGameExitFlow", () => {
     it("should set no invitation and not navigate when the page leaves while the rematch is created", async () => {
       const rematch = deferred<typeof rematchOk>();
       vi.mocked(abortGame).mockResolvedValueOnce(abortOk);
-      vi.mocked(createRematch).mockReturnValueOnce(rematch.promise);
+      vi.mocked(createRematchGame).mockReturnValueOnce(rematch.promise);
       const { navigate, rerender, result, setPageError } = renderExitFlow();
 
       const { pending: stale } = await startExit(result.current.handleExitGame);
-      expect(createRematch).toHaveBeenCalledWith(42);
+      expect(createRematchGame).toHaveBeenCalledWith(42);
       rerender({ gameId: 43 });
       await act(async () => {
         rematch.resolve(rematchOk);
@@ -484,7 +484,7 @@ describe("useGameExitFlow", () => {
     it("should allow a new exit for a game the page returns to after its rematch resolved late", async () => {
       const rematch = deferred<typeof rematchOk>();
       vi.mocked(abortGame).mockResolvedValueOnce(abortOk);
-      vi.mocked(createRematch).mockReturnValueOnce(rematch.promise);
+      vi.mocked(createRematchGame).mockReturnValueOnce(rematch.promise);
       const { rerender, result } = renderExitFlow();
 
       const { pending: stale } = await startExit(result.current.handleExitGame);
@@ -505,7 +505,7 @@ describe("useGameExitFlow", () => {
     it("should allow a new exit for a game the page returns to after its exit succeeded late", async () => {
       const abort = deferred<typeof abortOk>();
       vi.mocked(abortGame).mockReturnValueOnce(abort.promise);
-      vi.mocked(createRematch).mockResolvedValueOnce(rematchOk);
+      vi.mocked(createRematchGame).mockResolvedValueOnce(rematchOk);
       const { rerender, result } = renderExitFlow();
 
       const { pending: stale } = await startExit(result.current.handleExitGame);

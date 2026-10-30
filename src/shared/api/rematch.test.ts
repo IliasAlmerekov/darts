@@ -12,18 +12,24 @@ vi.mock("@/shared/api/client", async (importOriginal) => ({
 }));
 
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { createRematch, createRematchGame, startRematch } from "./game";
+import { createRematchGame, startRematch } from "./game";
 
 import { apiClient, ApiValidationError } from "./client";
 import { respondWith } from "./test-utils";
+
+const rematchExample = {
+  success: true,
+  gameId: 777,
+  invitationLink: "/api/invite/join/xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx",
+};
 
 describe("game/rematch api", () => {
   beforeEach(() => {
     vi.clearAllMocks();
   });
 
-  it("returns the minimal rematch payload without hydrating invitation data", async () => {
-    vi.mocked(apiClient.post).mockImplementationOnce(respondWith({ gameId: 777, success: true }));
+  it("returns the contract RematchResponseDto from a single request", async () => {
+    vi.mocked(apiClient.post).mockImplementationOnce(respondWith(rematchExample));
 
     const response = await createRematchGame(520);
 
@@ -33,48 +39,16 @@ describe("game/rematch api", () => {
       undefined,
       expect.objectContaining({ validate: expect.any(Object) }),
     );
-    expect(response).toEqual({
-      success: true,
-      gameId: 777,
-    });
+    expect(response).toEqual(rematchExample);
   });
 
-  it("requests invitation via POST when rematch response has no invitationLink", async () => {
-    vi.mocked(apiClient.post)
-      .mockImplementationOnce(respondWith({ gameId: 777, success: true }))
-      .mockImplementationOnce(
-        respondWith({ success: true, gameId: 777, invitationLink: "/invite/777" }),
-      );
+  it.each([
+    ["a null game id", { ...rematchExample, gameId: null }],
+    ["no invitation link", { success: true, gameId: 777 }],
+  ])("rejects with ApiValidationError when the rematch response has %s", async (_, body) => {
+    vi.mocked(apiClient.post).mockImplementationOnce(respondWith(body));
 
-    const response = await createRematch(520);
-
-    expect(apiClient.post).toHaveBeenNthCalledWith(
-      1,
-      "/room/520/rematch",
-      undefined,
-      expect.objectContaining({ validate: expect.any(Object) }),
-    );
-    expect(apiClient.post).toHaveBeenNthCalledWith(
-      2,
-      "/invite/create/777",
-      undefined,
-      expect.objectContaining({ validate: expect.any(Object) }),
-    );
-    expect(response).toEqual({
-      success: true,
-      gameId: 777,
-      invitationLink: "/invite/777",
-    });
-  });
-
-  it("rejects with ApiError when the contract-valid rematch response has no game id", async () => {
-    vi.mocked(apiClient.post).mockImplementationOnce(
-      // The 201 allows a null game id. An unknown previous game is a 404 `GAME_NOT_FOUND`
-      // instead, which apiClient throws before the schema runs.
-      respondWith({ success: false, gameId: null, message: "Vorheriges Spiel nicht gefunden" }),
-    );
-
-    await expect(createRematchGame(520)).rejects.toMatchObject({ name: "ApiError", status: 200 });
+    await expect(createRematchGame(520)).rejects.toBeInstanceOf(ApiValidationError);
   });
 
   it("rejects with ApiValidationError when the rematch response has no success flag", async () => {
@@ -94,7 +68,7 @@ describe("game/rematch api", () => {
       }),
     );
     vi.mocked(apiClient.post)
-      .mockImplementationOnce(respondWith({ gameId: 777, success: true }))
+      .mockImplementationOnce(respondWith(rematchExample))
       .mockImplementationOnce(
         respondWith({
           id: 777,
@@ -131,6 +105,7 @@ describe("game/rematch api", () => {
     expect(response).toEqual({
       success: true,
       gameId: 777,
+      invitationLink: rematchExample.invitationLink,
       settings: {
         gameId: 520,
         startScore: 501,

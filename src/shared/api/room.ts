@@ -7,7 +7,7 @@ import type { CreateGameSettingsPayload } from "./game";
 
 const createRoomResponseSchema = v.object({
   success: v.boolean(),
-  gameId: v.nullable(integerSchema),
+  gameId: integerSchema,
 });
 
 const updatePlayerOrderResponseSchema = v.object({
@@ -104,14 +104,7 @@ export async function createRoom(payload?: CreateGamePayload): Promise<RoomInvit
   const room = await apiClient.post(CREATE_ROOM_ENDPOINT, body, {
     validate: createRoomResponseSchema,
   });
-  if (room.gameId === null) {
-    throw new ApiError("Create room response has no game id", { status: 200, data: room });
-  }
-  const invite = await apiClient.post(createInviteEndpoint(room.gameId), undefined, {
-    validate: invitationResponseSchema,
-  });
-
-  return toRoomInvitation(invite);
+  return getInvitation(room.gameId);
 }
 
 /**

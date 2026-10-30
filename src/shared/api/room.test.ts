@@ -137,10 +137,10 @@ describe("createRoom", () => {
     await expect(createRoom()).rejects.toBeInstanceOf(ApiValidationError);
   });
 
-  it("rejects with ApiError and skips the invitation when the room has no game id", async () => {
-    vi.mocked(apiClient.post).mockImplementationOnce(respondWith({ success: false, gameId: null }));
+  it("rejects with ApiValidationError and skips the invitation when the room has a null game id", async () => {
+    vi.mocked(apiClient.post).mockImplementationOnce(respondWith({ success: true, gameId: null }));
 
-    await expect(createRoom()).rejects.toBeInstanceOf(ApiError);
+    await expect(createRoom()).rejects.toBeInstanceOf(ApiValidationError);
     expect(apiClient.post).toHaveBeenCalledTimes(1);
   });
 });
