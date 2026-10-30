@@ -59,7 +59,7 @@ function respondWithCurrentGames(
   });
 }
 
-function renderPage(): { unmount: () => void } {
+function renderPage(): { unmount: () => void; router: ReturnType<typeof createMemoryRouter> } {
   const router = createMemoryRouter(
     [
       { path: ROUTES.login, element: <p>Login form</p> },
@@ -68,11 +68,12 @@ function renderPage(): { unmount: () => void } {
     ],
     { initialEntries: [ROUTES.joined] },
   );
-  return render(
+  const { unmount } = render(
     <QueryClientProvider client={createQueryClient()}>
       <RouterProvider router={router} />
     </QueryClientProvider>,
   );
+  return { unmount, router };
 }
 
 async function advancePolling(times = 1): Promise<void> {
@@ -134,6 +135,7 @@ describe("JoinedGamePage", () => {
     expect(screen.getByRole("status").textContent).toContain("Waiting for the game to start...");
     expect(screen.queryByText(/Game #/)).toBeNull();
     expect(screen.queryByText("The game has started")).toBeNull();
+    expect(screen.getByRole("link", { name: "My profile" })).toBeTruthy();
   });
 
   it("should wait in the lobby and ask for the current game every 3 seconds", async () => {
@@ -172,6 +174,7 @@ describe("JoinedGamePage", () => {
 
     expect(await screen.findByText("The game has started")).toBeTruthy();
     expect(screen.getByText("Game #42")).toBeTruthy();
+    expect(screen.getByRole("link", { name: "My profile" })).toBeTruthy();
 
     await advancePolling(2);
 
@@ -188,6 +191,7 @@ describe("JoinedGamePage", () => {
 
     expect(screen.getByText("You are no longer in this game")).toBeTruthy();
     expect(screen.queryByText("Game #42")).toBeNull();
+    expect(screen.queryByRole("link", { name: "My profile" })).toBeNull();
     expect($currentGameId.get()).toBeNull();
 
     await advancePolling(2);
@@ -196,6 +200,24 @@ describe("JoinedGamePage", () => {
     fireEvent.click(screen.getByRole("button", { name: "Go to my profile" }));
 
     expect(await screen.findByText("Player profile")).toBeTruthy();
+  });
+
+  it("should open the player profile from the profile link and come back on browser back", async () => {
+    const { router } = renderPage();
+    await screen.findByText("Game #42");
+
+    const link = screen.getByRole("link", { name: "My profile" });
+    expect(link.getAttribute("href")).toBe(ROUTES.playerProfile);
+    expect(link.getAttribute("title")).toBe("My profile");
+
+    fireEvent.click(link);
+
+    expect(await screen.findByText("Player profile")).toBeTruthy();
+
+    await act(() => router.navigate(-1));
+
+    expect(await screen.findByText("Game #42")).toBeTruthy();
+    expect(router.state.location.pathname).toBe(ROUTES.joined);
   });
 
   it("should open the player profile when there is no current game on load", async () => {
