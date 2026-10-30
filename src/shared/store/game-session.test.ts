@@ -3,7 +3,7 @@ import {
   GAME_ID_STORAGE_KEY,
   INVITATION_STORAGE_KEY,
   PRE_CREATE_SETTINGS_STORAGE_KEY,
-  WAITING_IN_LOBBY_STORAGE_KEY,
+  LOBBY_GAME_ID_STORAGE_KEY,
   type Invitation,
 } from "./game-session";
 import { beforeEach, describe, expect, it, vi } from "vitest";
@@ -55,20 +55,20 @@ describe("game-session store", () => {
     expect(window.sessionStorage.getItem(GAME_ID_STORAGE_KEY)).toBeNull();
   });
 
-  it("should remember a player waiting in a lobby until the room store resets", async () => {
+  it("should remember the lobby game of a waiting player until the room store resets", async () => {
     const roomStore = await import("./game-session");
 
-    expect(roomStore.wasWaitingInLobby()).toBe(false);
+    expect(roomStore.getLobbyGameId()).toBeNull();
 
-    roomStore.setWaitingInLobby(true);
+    roomStore.setLobbyGameId(42);
 
-    expect(roomStore.wasWaitingInLobby()).toBe(true);
-    expect(window.sessionStorage.getItem(WAITING_IN_LOBBY_STORAGE_KEY)).toBe("true");
+    expect(roomStore.getLobbyGameId()).toBe(42);
+    expect(window.sessionStorage.getItem(LOBBY_GAME_ID_STORAGE_KEY)).toBe("42");
 
     roomStore.resetRoomStore();
 
-    expect(roomStore.wasWaitingInLobby()).toBe(false);
-    expect(window.sessionStorage.getItem(WAITING_IN_LOBBY_STORAGE_KEY)).toBeNull();
+    expect(roomStore.getLobbyGameId()).toBeNull();
+    expect(window.sessionStorage.getItem(LOBBY_GAME_ID_STORAGE_KEY)).toBeNull();
   });
 
   it("should hydrate pre-create settings from sessionStorage when the module initializes", async () => {

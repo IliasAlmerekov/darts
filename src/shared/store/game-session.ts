@@ -13,7 +13,7 @@ export interface Invitation {
 export const GAME_ID_STORAGE_KEY = "darts_current_game_id";
 export const INVITATION_STORAGE_KEY = "darts_current_invitation";
 export const PRE_CREATE_SETTINGS_STORAGE_KEY = "darts_pre_create_game_settings";
-export const WAITING_IN_LOBBY_STORAGE_KEY = "darts_waiting_in_lobby";
+export const LOBBY_GAME_ID_STORAGE_KEY = "darts_lobby_game_id";
 
 const DEFAULT_PRE_CREATE_GAME_SETTINGS: CreateGameSettingsPayload = {
   startScore: DEFAULT_START_SCORE,
@@ -264,43 +264,47 @@ export function getActiveGameId(): number | null {
 }
 
 /**
- * Whether the server last said the player waits in a lobby. A game that later disappears
- * from there was taken from the player, not finished. The Waiting room reads it once when it
- * opens, so it lives in session storage alone, without an atom.
+ * The lobby the server last said the player waits in, or null. When that game later
+ * disappears, it either finished or the player was removed from it. The Waiting room reads
+ * it once when it opens, so it lives in session storage alone, without an atom.
  */
-export function wasWaitingInLobby(): boolean {
+export function getLobbyGameId(): number | null {
   if (!canUseSessionStorage()) {
-    return false;
+    return null;
   }
 
   try {
-    return window.sessionStorage.getItem(WAITING_IN_LOBBY_STORAGE_KEY) === "true";
+    const stored = window.sessionStorage.getItem(LOBBY_GAME_ID_STORAGE_KEY);
+    if (stored) {
+      const parsed = Number(stored);
+      return Number.isFinite(parsed) ? parsed : null;
+    }
   } catch (error) {
-    clientLogger.error("game_session_read_waiting_in_lobby_failed", {
-      context: { storageKey: WAITING_IN_LOBBY_STORAGE_KEY },
+    clientLogger.error("game_session_read_lobby_game_id_failed", {
+      context: { storageKey: LOBBY_GAME_ID_STORAGE_KEY },
       error,
     });
-    return false;
   }
+  return null;
 }
 
 /**
- * Persists whether the player waits in a lobby, so it survives a page change and a reload.
+ * Persists the lobby the player waits in, so it survives a page change and a reload.
  */
-export function setWaitingInLobby(waiting: boolean): void {
+export function setLobbyGameId(gameId: number | null): void {
   if (!canUseSessionStorage()) {
     return;
   }
 
   try {
-    if (waiting) {
-      window.sessionStorage.setItem(WAITING_IN_LOBBY_STORAGE_KEY, "true");
+    if (gameId !== null) {
+      window.sessionStorage.setItem(LOBBY_GAME_ID_STORAGE_KEY, String(gameId));
     } else {
-      window.sessionStorage.removeItem(WAITING_IN_LOBBY_STORAGE_KEY);
+      window.sessionStorage.removeItem(LOBBY_GAME_ID_STORAGE_KEY);
     }
   } catch (error) {
-    clientLogger.error("game_session_persist_waiting_in_lobby_failed", {
-      context: { waiting, storageKey: WAITING_IN_LOBBY_STORAGE_KEY },
+    clientLogger.error("game_session_persist_lobby_game_id_failed", {
+      context: { gameId, storageKey: LOBBY_GAME_ID_STORAGE_KEY },
       error,
     });
   }
@@ -312,5 +316,5 @@ export function setWaitingInLobby(waiting: boolean): void {
 export function resetRoomStore(): void {
   setCurrentGameId(null);
   setInvitation(null);
-  setWaitingInLobby(false);
+  setLobbyGameId(null);
 }

@@ -13,6 +13,7 @@ vi.mock("@/shared/api/auth", () => ({
 
 vi.mock("@/shared/api/player", () => ({
   getCurrentGame: vi.fn(),
+  getPlayerProfile: vi.fn(),
 }));
 
 vi.mock("@/shared/services/browser/clientLogger", () => ({
@@ -20,23 +21,25 @@ vi.mock("@/shared/services/browser/clientLogger", () => ({
 }));
 
 import { act, fireEvent, render, screen } from "@testing-library/react";
-import { onlineManager, QueryClientProvider } from "@tanstack/react-query";
+import { onlineManager, QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { createMemoryRouter, RouterProvider } from "react-router-dom";
 import { logout, type AuthenticatedUser } from "@/shared/api/auth";
-import { getCurrentGame } from "@/shared/api/player";
+import { getCurrentGame, getPlayerProfile, type PlayerProfileResponse } from "@/shared/api/player";
+import { toPlayerProfile } from "@/lib/player/profile";
+import { buildPlayerProfile, buildPlayerProfileGame } from "@/shared/types/player.test-support";
 import type { CurrentGame } from "@/lib/player/currentGame";
 import { ApiError, NetworkError, UnauthorizedError } from "@/shared/api";
 import { clientLogger } from "@/shared/services/browser/clientLogger";
 import { ROUTES } from "@/lib/router/routes";
 import { createQueryClient } from "@/shared/query/queryClient";
-import { CURRENT_GAME_POLL_INTERVAL_MS } from "@/shared/query/player.queries";
+import { CURRENT_GAME_POLL_INTERVAL_MS, playerQueries } from "@/shared/query/player.queries";
 import {
   $currentGameId,
   $invitation,
   setCurrentGameId,
   setInvitation,
-  setWaitingInLobby,
-  wasWaitingInLobby,
+  getLobbyGameId,
+  setLobbyGameId,
 } from "@/shared/store";
 import JoinedGamePage from "./index";
 
@@ -66,7 +69,10 @@ function respondWithCurrentGames(
   });
 }
 
-function renderPage(): { unmount: () => void; router: ReturnType<typeof createMemoryRouter> } {
+function renderPage(queryClient: QueryClient = createQueryClient()): {
+  unmount: () => void;
+  router: ReturnType<typeof createMemoryRouter>;
+} {
   const router = createMemoryRouter(
     [
       { path: ROUTES.login, element: <p>Login form</p> },
@@ -76,7 +82,7 @@ function renderPage(): { unmount: () => void; router: ReturnType<typeof createMe
     { initialEntries: [ROUTES.joined] },
   );
   const { unmount } = render(
-    <QueryClientProvider client={createQueryClient()}>
+    <QueryClientProvider client={queryClient}>
       <RouterProvider router={router} />
     </QueryClientProvider>,
   );
@@ -98,10 +104,12 @@ describe("JoinedGamePage", () => {
     vi.useFakeTimers({ toFake: ["setInterval", "clearInterval", "Date"] });
     setInvitation(null);
     setCurrentGameId(null);
-    setWaitingInLobby(false);
+    setLobbyGameId(null);
     vi.mocked(logout).mockReset();
     vi.mocked(clientLogger.error).mockReset();
     vi.mocked(getCurrentGame).mockReset();
+    vi.mocked(getPlayerProfile).mockReset();
+    vi.mocked(getPlayerProfile).mockResolvedValue(buildPlayerProfile({ recentGames: [] }));
     respondWithCurrentGames(lobby(42));
     mockUseAuthenticatedUser.mockReset();
     mockUseAuthenticatedUser.mockReturnValue({ user: null, loading: false, error: null });
@@ -230,7 +238,6 @@ describe("JoinedGamePage", () => {
   });
 
   it("should tell a player removed while the profile was open after browser back", async () => {
-    setCurrentGameId(42);
     respondWithCurrentGames(lobby(42));
     const { router } = renderPage();
     await screen.findByText("Game #42");
@@ -245,15 +252,68 @@ describe("JoinedGamePage", () => {
     expect(router.state.location.pathname).toBe(ROUTES.joined);
   });
 
+  it("should open the player profile when the game started and finished while the profile was open", async () => {
+    respondWithCurrentGames(lobby(42));
+    const { router } = renderPage();
+    await screen.findByText("Game #42");
+
+    fireEvent.click(screen.getByRole("link", { name: "My profile" }));
+    expect(await screen.findByText("Player profile")).toBeTruthy();
+
+    respondWithCurrentGames(noCurrentGame);
+    vi.mocked(getPlayerProfile).mockResolvedValue(
+      buildPlayerProfile({ recentGames: [buildPlayerProfileGame({ gameId: 42 })] }),
+    );
+    await act(() => router.navigate(-1));
+
+    expect(await screen.findByText("Player profile")).toBeTruthy();
+    expect(screen.queryByText("You are no longer in this game")).toBeNull();
+    expect(getLobbyGameId()).toBeNull();
+  });
+
+  it("should not trust a profile cached before the game finished", async () => {
+    const queryClient = createQueryClient();
+    queryClient.setQueryData(
+      playerQueries.profile().queryKey,
+      toPlayerProfile(buildPlayerProfile({ recentGames: [] })),
+    );
+    setLobbyGameId(42);
+    respondWithCurrentGames(noCurrentGame);
+    let answerProfile: (profile: PlayerProfileResponse) => void = () => undefined;
+    vi.mocked(getPlayerProfile).mockReturnValue(
+      new Promise((resolve) => {
+        answerProfile = resolve;
+      }),
+    );
+    renderPage(queryClient);
+
+    await vi.waitFor(() => expect(getPlayerProfile).toHaveBeenCalledTimes(1));
+    expect(screen.queryByText("You are no longer in this game")).toBeNull();
+
+    answerProfile(buildPlayerProfile({ recentGames: [buildPlayerProfileGame({ gameId: 42 })] }));
+
+    expect(await screen.findByText("Player profile")).toBeTruthy();
+  });
+
+  it("should open the player profile when the finished-game check fails", async () => {
+    setLobbyGameId(42);
+    respondWithCurrentGames(noCurrentGame);
+    vi.mocked(getPlayerProfile).mockRejectedValue(new NetworkError("Failed to fetch"));
+    renderPage();
+
+    expect(await screen.findByText("Player profile")).toBeTruthy();
+    expect(screen.queryByText("You are no longer in this game")).toBeNull();
+  });
+
   it("should tell a player removed from the lobby after a reload of the Waiting room", async () => {
     setCurrentGameId(42);
-    setWaitingInLobby(true);
+    setLobbyGameId(42);
     respondWithCurrentGames(noCurrentGame);
     renderPage();
 
     expect(await screen.findByText("You are no longer in this game")).toBeTruthy();
     expect($currentGameId.get()).toBeNull();
-    expect(wasWaitingInLobby()).toBe(false);
+    expect(getLobbyGameId()).toBeNull();
   });
 
   it("should open the player profile on a reload after the started game has ended", async () => {
@@ -269,6 +329,7 @@ describe("JoinedGamePage", () => {
 
     expect(await screen.findByText("Player profile")).toBeTruthy();
     expect(screen.queryByText("You are no longer in this game")).toBeNull();
+    expect(getPlayerProfile).not.toHaveBeenCalled();
   });
 
   it("should open the player profile when there is no current game on load", async () => {

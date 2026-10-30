@@ -4,7 +4,7 @@ import { getCurrentGame, getPlayerProfile } from "@/shared/api/player";
 import type { CurrentGame } from "@/lib/player/currentGame";
 import { toPlayerProfile, type PlayerProfile } from "@/lib/player/profile";
 import { clientLogger } from "@/shared/services/browser/clientLogger";
-import { setServerCurrentGameId, setWaitingInLobby } from "@/shared/store";
+import { setLobbyGameId, setServerCurrentGameId } from "@/shared/store";
 
 export const CURRENT_GAME_POLL_INTERVAL_MS = 3000;
 
@@ -43,7 +43,7 @@ export const playerQueries = {
           // The server decides the current game; other pages read it from the store.
           if (!signal.aborted) {
             setServerCurrentGameId(currentGame.kind === "none" ? null : currentGame.gameId);
-            setWaitingInLobby(currentGame.kind === "lobby");
+            setLobbyGameId(currentGame.kind === "lobby" ? currentGame.gameId : null);
           }
           return currentGame;
         } catch (error: unknown) {

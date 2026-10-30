@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { playerQueries } from "@/shared/query/player.queries";
-import { wasWaitingInLobby } from "@/shared/store";
+import { getLobbyGameId } from "@/shared/store";
 import type { WaitingRoomView } from "./lib/waitingRoomView";
 
 const FAILURES_BEFORE_CONNECTION_LOST = 3;
@@ -22,9 +22,10 @@ interface FailureBaseline {
  */
 export function useWaitingRoom(): UseWaitingRoomResult {
   const { data, dataUpdatedAt, errorUpdateCount } = useQuery(playerQueries.currentGame());
-  // A player removed from the lobby while on the profile page or during a reload still
-  // learns why. The flag drops once the game starts, so a finished game is not a removal.
-  const [hasSeenGame, setHasSeenGame] = useState(wasWaitingInLobby);
+  // The lobby the player waited in before this page opened. The profile page and a reload
+  // stop polling, so its game may have gone in the meantime.
+  const [earlierLobbyGameId] = useState(getLobbyGameId);
+  const [hasSeenGame, setHasSeenGame] = useState(false);
   const [failureBaseline, setFailureBaseline] = useState<FailureBaseline>({
     dataUpdatedAt,
     errorUpdateCount,
@@ -38,14 +39,29 @@ export function useWaitingRoom(): UseWaitingRoomResult {
     setFailureBaseline({ dataUpdatedAt, errorUpdateCount });
   }
 
+  // The current game cannot tell a finished game from a removal; the profile lists the
+  // finished games, so only a game missing there was taken from the player.
+  const mustCheckFinished = data?.kind === "none" && !hasSeenGame && earlierLobbyGameId !== null;
+  const finishedCheck = useQuery({ ...playerQueries.profile(), enabled: mustCheckFinished });
+
   const failuresInARow = errorUpdateCount - failureBaseline.errorUpdateCount;
   let view: WaitingRoomView;
   if (data === undefined) {
     view = { kind: "loading" };
-  } else if (data.kind === "none") {
-    view = { kind: hasSeenGame ? "removed" : "no-game" };
-  } else {
+  } else if (data.kind !== "none") {
     view = data;
+  } else if (hasSeenGame) {
+    view = { kind: "removed" };
+  } else if (!mustCheckFinished || finishedCheck.isError) {
+    view = { kind: "no-game" };
+  } else if (finishedCheck.data === undefined || !finishedCheck.isFetchedAfterMount) {
+    // A profile cached before the game finished would call it a removal.
+    view = { kind: "loading" };
+  } else {
+    const hasFinished = finishedCheck.data.history.some(
+      (game) => game.gameId === earlierLobbyGameId,
+    );
+    view = { kind: hasFinished ? "no-game" : "removed" };
   }
 
   return {
