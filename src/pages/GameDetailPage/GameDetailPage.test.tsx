@@ -22,20 +22,12 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { ROUTES } from "@/lib/router/routes";
 import GameDetailPage from "./GameDetailPage";
 import styles from "./GameDetailPage.module.css";
-import type { WinnerPlayerProps } from "@/types";
+import type { StandingsEntry } from "@/lib/game/finishedGameStandings";
 
 const useGameDetailPageMock = vi.fn();
 
-function buildPlayer(overrides: Partial<WinnerPlayerProps> = {}): WinnerPlayerProps {
-  return {
-    id: 1,
-    name: "Alice",
-    score: 0,
-    isActive: false,
-    index: 0,
-    rounds: [{}],
-    ...overrides,
-  };
+function buildEntry(overrides: Partial<StandingsEntry> = {}): StandingsEntry {
+  return { id: 1, name: "Alice", rounds: 1, threeDartAverage: "60.00", ...overrides };
 }
 
 describe("GameDetailPage", () => {
@@ -45,8 +37,7 @@ describe("GameDetailPage", () => {
 
   it("should render game details when hook returns data", () => {
     useGameDetailPageMock.mockReturnValue({
-      podiumData: [buildPlayer()],
-      standings: [buildPlayer()],
+      podiumData: [buildEntry()],
       leaderBoardList: [],
     });
 
