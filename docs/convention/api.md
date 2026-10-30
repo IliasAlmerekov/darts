@@ -105,9 +105,10 @@ ADR 0002 records why responses are described by Valibot schemas.
 - The response type is inferred from the schema:
   `export type GameSettingsResponse = v.InferOutput<typeof gameSettingsResponseSchema>`.
   No separate interface. Pages import response types from `@/shared/api/<domain>`;
-  `@/types` re-exports none. A mapper's output (`FinishedPlayerResponse`,
-  `RematchResponse`) and an error payload read by a guard (`AddGuestErrorResponse`) are
-  interfaces next to the function that builds or checks them.
+  `@/types` re-exports none. A type a resource function builds (`FinishedPlayerResponse`,
+  `RematchResponse`, `RematchGameResponse`, `StartRematchResponse`,
+  `GameSummaryResponse`) and an error payload read by a guard (`AddGuestErrorResponse`)
+  are hand-written interfaces in the domain file. The guard itself stays with its caller.
 - Follow the contract: a required field is required, an optional field is `v.optional`,
   `nullable: true` is `v.nullable`, `integer` is `integerSchema`. A contract `default` goes
   into `v.optional(schema, default)`, so the output type has the field.
