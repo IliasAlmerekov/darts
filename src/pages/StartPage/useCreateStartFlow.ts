@@ -14,7 +14,7 @@ import {
 import { toUserErrorMessage } from "@/lib/error/error-to-user-message";
 import { ROUTES } from "@/lib/router/routes";
 import { gameQueries } from "@/shared/query/game.queries";
-import type { SetStartPageError } from "./useStartPageError";
+type SetStartPageError = (message: string | null) => void;
 
 const START_SOUND_PATH = "/sounds/start-round-sound.mp3";
 
