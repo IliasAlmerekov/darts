@@ -81,7 +81,6 @@ export default [
   },
   {
     files: ["src/shared/**/*.{ts,tsx}"],
-    ignores: ["src/shared/types/game.ts", "src/shared/types/player.ts"],
     rules: {
       "no-restricted-imports": [
         "error",

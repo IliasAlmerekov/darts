@@ -10,7 +10,7 @@ import { ApiError } from "@/shared/api";
 import { useGameSummaryPage } from "./useGameSummaryPage";
 import { playSound } from "@/shared/services/browser/soundPlayer";
 import { $gameData, resetGameStore, setGameData } from "@/shared/store";
-import type { GameThrowsResponse, UndoAckResponse } from "@/types";
+import type { GameThrowsResponse, UndoAckResponse } from "@/shared/api/game";
 import {
   buildExpectedPodiumPlaceholder,
   buildExpectedStandings,

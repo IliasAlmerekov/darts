@@ -1,4 +1,4 @@
-import type { GameThrowsResponse, ScoreboardDelta } from "@/types";
+import type { GameThrowsResponse, ScoreboardDelta } from "@/shared/api/game";
 
 export function deriveActivePlayerId(data: GameThrowsResponse): number | null {
   const activePlayers = data.players.filter((player) => player.isActive === true);

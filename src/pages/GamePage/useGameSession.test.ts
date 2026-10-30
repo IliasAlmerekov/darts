@@ -21,11 +21,11 @@ import {
   recordThrow,
   setGameStateVersion,
   type ThrowAckResponse,
+  type GameThrowsResponse,
 } from "@/shared/api/game";
 import { playSound } from "@/shared/services/browser/soundPlayer";
 import { $gameData, resetGameStore, setGameData } from "@/shared/store";
 import { buildBackendPlayer, buildGameThrowsResponse } from "@/shared/types/game.test-support";
-import type { GameThrowsResponse } from "@/types";
 import { useGameSession } from "./useGameSession";
 
 const getGameThrowsIfChangedMock = vi.mocked(getGameThrowsIfChanged);

@@ -1,4 +1,4 @@
-import type { GameThrowsResponse } from "@/types";
+import type { GameThrowsResponse } from "@/shared/api/game";
 
 export interface LobbyPlayer {
   id: number;

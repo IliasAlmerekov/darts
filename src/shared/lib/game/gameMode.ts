@@ -1,4 +1,5 @@
-import type { GameMode, UpdateGameSettingsPayload } from "@/types";
+import type { UpdateGameSettingsPayload } from "@/shared/api/game";
+import type { GameMode } from "@/types";
 
 /** Start score of a new game until the admin picks another one. */
 export const DEFAULT_START_SCORE = 301;

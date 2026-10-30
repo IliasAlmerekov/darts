@@ -2,7 +2,7 @@
 import { act, renderHook } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 import { buildBackendPlayer, buildGameThrowsResponse } from "@/shared/types/game.test-support";
-import type { GameThrowsResponse } from "@/types";
+import type { GameThrowsResponse } from "@/shared/api/game";
 import { useGamePlayersState } from "./useGamePlayersState";
 
 function buildGame(gameId: number, aliceScore: number): GameThrowsResponse {

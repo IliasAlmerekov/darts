@@ -1,4 +1,5 @@
-import type { FinishedPlayerResponse, WinnerPlayerProps } from "@/types";
+import type { FinishedPlayerResponse } from "@/shared/api/game";
+import type { WinnerPlayerProps } from "@/types";
 
 const PODIUM_SIZE = 3;
 const TWO_PLAYER_GAME = 2;

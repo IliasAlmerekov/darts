@@ -42,7 +42,7 @@ import {
   setCurrentGameId,
   setGameData,
 } from "@/shared/store";
-import type { GameSettingsResponse, GameThrowsResponse } from "@/types";
+import type { GameSettingsResponse, GameThrowsResponse } from "@/shared/api/game";
 import SettingsPage from ".";
 
 function createGameResponse(): GameThrowsResponse {

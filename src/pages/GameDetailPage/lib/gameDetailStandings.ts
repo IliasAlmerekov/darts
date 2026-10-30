@@ -2,7 +2,7 @@ import {
   buildFinishedGameStandings,
   type FinishedGameStandings,
 } from "@/lib/game/finishedGameStandings";
-import type { FinishedPlayerResponse } from "@/types";
+import type { FinishedPlayerResponse } from "@/shared/api/game";
 
 /**
  * Builds the standings from the finished game query data.

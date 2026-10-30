@@ -12,7 +12,7 @@ import { act, renderHook, waitFor } from "@testing-library/react";
 import { createElement, type ReactNode } from "react";
 import { QueryClientProvider, type QueryClient } from "@tanstack/react-query";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import type { FinishedPlayerResponse } from "@/types";
+import type { FinishedPlayerResponse } from "@/shared/api/game";
 import {
   buildExpectedPodiumPlaceholder,
   buildExpectedStandings,

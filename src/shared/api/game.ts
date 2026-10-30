@@ -8,16 +8,6 @@ import {
   successMessageResponseSchema,
   type SuccessMessageResponse,
 } from "./schemas";
-import type {
-  FinishedPlayerResponse,
-  GameSummaryResponse,
-  ThrowRequest,
-  StartGameRequest,
-  RematchGameResponse,
-  RematchResponse,
-  StartRematchResponse,
-  UpdateGameSettingsPayload,
-} from "@/types";
 import { clientLogger } from "@/shared/services/browser/clientLogger";
 
 // ---------------------------------------------------------------------------
@@ -200,7 +190,7 @@ const rematchResponseSchema = v.object({
   message: v.optional(v.nullable(v.string())),
 });
 
-export type GameStatus = v.InferOutput<typeof gameStatusSchema>;
+type GameStatus = v.InferOutput<typeof gameStatusSchema>;
 export type PlayerThrow = v.InferOutput<typeof playerThrowSchema>;
 export type GameThrowsResponse = v.InferOutput<typeof gameThrowsResponseSchema>;
 export type TabletGameResponse = v.InferOutput<typeof tabletGameResponseSchema>;
@@ -209,6 +199,59 @@ export type GameSettingsResponse = v.InferOutput<typeof gameSettingsResponseSche
 export type ScoreboardDelta = v.InferOutput<typeof scoreboardDeltaSchema>;
 export type ThrowAckResponse = v.InferOutput<typeof throwAckResponseSchema>;
 export type UndoAckResponse = v.InferOutput<typeof undoAckResponseSchema>;
+
+/** The three rules a game is played with, as the game state carries them. */
+export type GameSettings = GameThrowsResponse["settings"];
+export type BackendPlayer = GameThrowsResponse["players"][number];
+export type BackendRoundHistory = BackendPlayer["roundHistory"][number];
+
+export interface StartGameRequest {
+  startScore: number;
+  doubleOut: boolean;
+  tripleOut: boolean;
+  round?: number;
+  status?: GameStatus;
+}
+
+export interface ThrowRequest {
+  playerId: number;
+  value: number;
+  isDouble?: boolean;
+  isTriple?: boolean;
+}
+
+export interface CreateGameSettingsPayload {
+  startScore: number;
+  doubleOut: boolean;
+  tripleOut: boolean;
+}
+
+export type UpdateGameSettingsPayload = Partial<CreateGameSettingsPayload>;
+
+export interface FinishedPlayerResponse {
+  playerId: number;
+  username: string;
+  position: number;
+  placement: number | null;
+  roundsPlayed: number;
+  roundAverage: number;
+}
+
+export type GameSummaryResponse = FinishedPlayerResponse[];
+
+export interface RematchGameResponse {
+  success: boolean;
+  gameId: number;
+  invitationLink?: string;
+}
+
+export interface RematchResponse extends RematchGameResponse {
+  invitationLink: string;
+}
+
+export interface StartRematchResponse extends RematchGameResponse {
+  settings: GameSettingsResponse;
+}
 
 // ---------------------------------------------------------------------------
 // ETag-based conditional game state fetching

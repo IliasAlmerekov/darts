@@ -8,6 +8,8 @@ import {
   resetGameStateVersion,
   setGameStateVersion,
   undoLastThrow,
+  type GameSettings,
+  type GameThrowsResponse,
 } from "@/shared/api/game";
 import { clientLogger } from "@/shared/services/browser/clientLogger";
 import { playSound } from "@/shared/services/browser/soundPlayer";
@@ -20,7 +22,6 @@ import {
   setGameData,
   setLoading,
 } from "@/shared/store";
-import type { GameSettings, GameThrowsResponse } from "@/types";
 import {
   applyReloadedGame,
   applySessionSettings,

@@ -13,7 +13,7 @@ import {
   setLoading,
 } from "./game-state";
 import * as gameStateNormalizer from "../lib/game/gameStateNormalizer";
-import type { GameSettings, GameThrowsResponse } from "@/types";
+import type { GameSettings, GameThrowsResponse } from "@/shared/api/game";
 
 function buildGamePlayer(
   overrides: Partial<GameThrowsResponse["players"][number]> = {},

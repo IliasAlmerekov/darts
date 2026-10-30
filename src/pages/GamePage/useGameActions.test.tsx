@@ -26,9 +26,14 @@ vi.mock("@/shared/services/browser/clientLogger", () => ({
 import { act, renderHook, waitFor } from "@testing-library/react";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import type { GameSettingsResponse, GameThrowsResponse } from "@/types";
+import {
+  type GameSettingsResponse,
+  type GameThrowsResponse,
+  abortGame,
+  createRematch,
+  getGameThrows,
+} from "@/shared/api/game";
 import { ApiError } from "@/shared/api";
-import { abortGame, createRematch, getGameThrows } from "@/shared/api/game";
 import { resetRoomStore, setInvitation } from "@/shared/store";
 import { gameQueries } from "@/shared/query/game.queries";
 import { createQueryClient } from "@/shared/query/queryClient";

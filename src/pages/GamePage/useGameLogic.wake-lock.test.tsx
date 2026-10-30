@@ -37,7 +37,7 @@ vi.mock("@/shared/services/browser/soundPlayer", () => ({
 
 import { act, renderHook, waitFor } from "@testing-library/react";
 import { afterAll, beforeEach, describe, expect, it, vi } from "vitest";
-import type { GameThrowsResponse } from "@/types";
+import type { GameThrowsResponse } from "@/shared/api/game";
 import * as gameStore from "@/shared/store/game-state";
 import * as roomStore from "@/shared/store/game-session";
 import { QueryClientWrapper } from "@/test/QueryClientWrapper";

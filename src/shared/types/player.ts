@@ -1,9 +1,4 @@
-import type { GameThrowsResponse } from "./game";
-
 // --- Player UI types (merged from player-ui.ts) ---
-
-export type BackendPlayer = GameThrowsResponse["players"][number];
-export type BackendRoundHistory = BackendPlayer["roundHistory"][number];
 
 export interface UIRound {
   throw1?: number;

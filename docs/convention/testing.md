@@ -10,7 +10,7 @@ src/test/loaderArgs.ts              # makeLoaderArgs() for calling a route loade
 src/test/QueryClientWrapper.tsx     # render/renderHook wrapper with a fresh query client per mount
 src/test/architecture/              # repo-wide checks (import aliases, ESLint/Stylelint config, clientLogger adoption)
 src/test/playwright/                # Playwright helper logic that needs unit tests (credentials, live preflight)
-src/shared/types/*.test-support.ts  # shared DTO builders
+src/shared/types/*.test-support.ts  # shared builders for API DTOs and client types
 src/shared/api/test-utils.ts        # shared API test helpers (createMockResponse)
 tests/<domain>/*.spec.ts            # mocked Playwright specs (auth, start, game, joined-game, player-profile, ...)
 tests/shared/                       # reusable Playwright fixtures, route mocks, seed spec

@@ -9,12 +9,11 @@ import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import React from "react";
 import { QueryClientProvider, type QueryClient } from "@tanstack/react-query";
 import { useGamePlayers } from "./useGamePlayers";
-import { getGameThrows } from "@/shared/api/game";
+import { getGameThrows, type GameThrowsResponse } from "@/shared/api/game";
 import { gameQueries } from "@/shared/query/game.queries";
 import { createQueryClient } from "@/shared/query/queryClient";
 import { resetGameStore, setGameData } from "@/shared/store";
 import { buildBackendPlayer, buildGameThrowsResponse } from "@/shared/types/game.test-support";
-import type { GameThrowsResponse } from "@/types";
 
 // ---------------------------------------------------------------------------
 // MockEventSource — replaces the global EventSource so real useEventSource

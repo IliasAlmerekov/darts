@@ -49,8 +49,7 @@ app -> pages -> shared
 - A page must not import from another page (no cross-page imports).
 
 `no-restricted-imports` in `eslint.config.mjs` enforces these three rules. Keep them at
-full scope. The `shared/` block currently ignores `src/shared/types/game.ts` and
-`src/shared/types/player.ts`; add no further exclusions.
+full scope, with no exclusions.
 
 `app/` may import from `pages/` (lazy route declarations, page loaders) and from `shared/`.
 
@@ -112,7 +111,10 @@ exports; `apiClient` stays inside `shared/api/` (see `api.md`).
 
 - Production code imports types through the `@/types` barrel
   (`src/shared/types/index.ts`). Deep imports (`@/shared/types/game`,
-  `@/shared/types/api`, etc.) are forbidden in production.
+  etc.) are forbidden in production.
+- API request and response types live in `shared/api/<domain>`; `shared/types` holds
+  client-only types. Its production files never import from `shared/api`; only
+  `*.test-support.ts` factories may.
 - Test files import test-support factories by path:
   `import { buildBackendPlayer } from "@/shared/types/game.test-support"`.
 
@@ -130,9 +132,10 @@ These layers have no barrels. Consumers deep-import by file name:
 
 ### Test-only files
 
-Test-only factories live next to the types as `*.test-support.ts`
-(`src/shared/types/game.test-support.ts`). Only test files (`*.test.ts`, `*.test.tsx`)
-import them; an import from production code would pull fixtures into the runtime bundle.
+Test-only factories live in `src/shared/types/` as `*.test-support.ts`
+(`src/shared/types/game.test-support.ts`). They build client types and API types from
+`shared/api`. Only test files (`*.test.ts`, `*.test.tsx`) import them; an import from
+production code would pull fixtures into the runtime bundle.
 
 ## Path aliases
 
