@@ -46,7 +46,7 @@
                         }
                     },
                     "400": {
-                        "description": "Der Request-Body ist kein g\u00fcltiges JSON (`REQUEST_INVALID_JSON_BODY`).",
+                        "description": "Der Request-Body ist kein g\u00fcltiges JSON (`REQUEST_INVALID_JSON_BODY`), die Lobby hat weniger als 2 oder mehr als 10 Spieler (`GAME_INVALID_PLAYER_COUNT`), `playerPositions` nennt nicht so viele Spieler, wie am Spiel teilnehmen (`GAME_PLAYER_POSITIONS_COUNT_MISMATCH`), oder `playerPositions` enth\u00e4lt eine Spieler-ID doppelt oder eine ID, die nicht zum Spiel geh\u00f6rt (`GAME_INVALID_PLAYER_ORDER`). Das Spiel bleibt unver\u00e4ndert.",
                         "content": {
                             "application/json": {
                                 "schema": {
