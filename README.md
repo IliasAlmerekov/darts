@@ -32,13 +32,13 @@ See [Verification in `AGENTS.md`](AGENTS.md#verification) for details.
 
 ## Build and run files
 
-| File                         | When it is used                                                                                                                    |
-| ---------------------------- | ---------------------------------------------------------------------------------------------------------------------------------- |
-| `compose.dev.yaml`           | Local development. The workspace `compose.yaml` includes it, so `docker compose up -d` starts the Vite dev server on :5173.        |
-| `deploy/frontend.Dockerfile` | Production. The release workflow builds the frontend image from it, see [`deploy/README.md`](deploy/README.md).                    |
-| `deploy/frontend.nginx.conf` | Production. `deploy/frontend.Dockerfile` copies it into the image as the nginx config, see [`deploy/README.md`](deploy/README.md). |
-| `.github/workflows/`         | GitHub Actions. Checks run on every pull request, a release on each version tag, and the live E2E suite on manual dispatch.        |
-| `.gitlab-ci.yml`             | GitLab CI. Checks run on every merge request, and the live E2E job in a pipeline started by hand.                                  |
+| File                         | When it is used                                                                                                                                      |
+| ---------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `compose.dev.yaml`           | Local development. The workspace `compose.yaml` includes it, so `docker compose up -d` starts the Vite dev server on :5173.                          |
+| `deploy/frontend.Dockerfile` | Production. The release workflow builds the frontend image from it. Details in [`deploy/README.md`](deploy/README.md).                               |
+| `deploy/frontend.nginx.conf` | Production. `deploy/frontend.Dockerfile` copies it into the image as the nginx config. Details in [`deploy/README.md`](deploy/README.md).            |
+| `.github/workflows/`         | GitHub Actions. Checks run on every pull request that is ready for review, a release on each version tag, and the live E2E suite on manual dispatch. |
+| `.gitlab-ci.yml`             | GitLab CI. Checks run on every merge request, and the live E2E job in a pipeline started by hand.                                                    |
 
 ## Environment
 
