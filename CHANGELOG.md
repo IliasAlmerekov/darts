@@ -7,6 +7,10 @@ and this project does **not** yet follow [Semantic Versioning](https://semver.or
 
 ## [Unreleased]
 
+### Fixed
+
+- Game: taps on iPad reach the scoreboard at once, and two fast taps on one button (20, 20 or Undo, Undo) both count. `html` and every `button` get `touch-action: manipulation`, so WebKit no longer waits for a double-tap zoom; pinch zoom still works (#421)
+
 ## [0.4.1] - 2026-10-30
 
 ### Fixed
