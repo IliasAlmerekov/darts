@@ -114,7 +114,9 @@
   margin-top: clamp(48px, 10vh, 160px);
   display: flex;
   flex-direction: column;
-  min-height: 0;
+
+  /* The game list has a fixed height; shrinking would hide these rows instead of scrolling. */
+  flex-shrink: 0;
 }
 
 .finishedPlayerItems {
