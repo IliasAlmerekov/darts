@@ -132,6 +132,11 @@ function takePooledAudio(soundType: SoundType, config: SoundConfig): HTMLAudioEl
 
   const pooled = pool.elements[index];
   if (pooled !== undefined) {
+    // A file that failed to load, say while the tablet was offline, leaves the element
+    // rejecting every play() until load() fetches the file again.
+    if (pooled.error !== null) {
+      pooled.load();
+    }
     return pooled;
   }
 

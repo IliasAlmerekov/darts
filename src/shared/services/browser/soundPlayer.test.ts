@@ -14,8 +14,10 @@ type AudioInstance = {
   volume: number;
   currentTime: number;
   readyState: number;
+  error: { code: number } | null;
   play: ReturnType<typeof vi.fn>;
   pause: ReturnType<typeof vi.fn>;
+  load: ReturnType<typeof vi.fn>;
   addEventListener: ReturnType<typeof vi.fn>;
 };
 
@@ -33,8 +35,10 @@ function createAudioMock(options?: {
     volume: number;
     declare currentTime: number;
     readyState: number;
+    error: { code: number } | null = null;
     play: ReturnType<typeof vi.fn>;
     pause: ReturnType<typeof vi.fn>;
+    load: ReturnType<typeof vi.fn>;
     addEventListener: ReturnType<typeof vi.fn>;
 
     constructor(src = "") {
@@ -53,8 +57,17 @@ function createAudioMock(options?: {
         },
       });
 
-      this.play = vi.fn(options?.playImplementation ?? (() => Promise.resolve()));
+      // Like a browser: an element whose file failed to load rejects every play until load().
+      this.play = vi.fn(() =>
+        this.error !== null
+          ? Promise.reject(new DOMException("failed to load", "NotSupportedError"))
+          : (options?.playImplementation ?? (() => Promise.resolve()))(),
+      );
       this.pause = vi.fn();
+      this.load = vi.fn(() => {
+        this.error = null;
+        this.readyState = 0;
+      });
       this.addEventListener = vi.fn();
 
       audioInstances.push(this);
@@ -324,6 +337,24 @@ describe("soundPlayer", () => {
     expect(throwAudios.every((audio) => audio.currentTime === 2.3)).toBe(true);
   });
 
+  it("reloads a pooled audio element whose file failed to load, so it plays again", async () => {
+    vi.stubGlobal("Audio", createAudioMock({ readyState: 1 }));
+    const { playSound } = await loadSoundPlayerModule();
+
+    playSound("win");
+    const failed = audioInstances.find((audio) => audio.src === "/sounds/win-sound.mp3");
+    if (failed === undefined) throw new Error("win audio missing");
+    // The tablet was offline, so the browser could not fetch the file (MEDIA_ERR_SRC_NOT_SUPPORTED).
+    failed.error = { code: 4 };
+
+    // Three more plays bring the pool of three back round to the failed element.
+    playSound("win");
+    playSound("win");
+    playSound("win");
+
+    await expect(failed.play.mock.results.at(-1)?.value).resolves.toBeUndefined();
+  });
+
   it("rewinds a reused audio element that has no configured start time", async () => {
     vi.stubGlobal("Audio", createAudioMock({ readyState: 1 }));
     const { playSound } = await loadSoundPlayerModule();
@@ -338,5 +369,6 @@ describe("soundPlayer", () => {
     expect(audioInstances.slice(1)).toHaveLength(3);
     expect(first?.currentTime).toBe(0);
     expect(first?.play).toHaveBeenCalledTimes(2);
+    expect(first?.load).not.toHaveBeenCalled();
   });
 });
