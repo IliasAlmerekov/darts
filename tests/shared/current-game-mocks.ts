@@ -43,3 +43,27 @@ export async function mockCurrentGame(
     currentBody = nextBody;
   };
 }
+
+/** Body of `GET /api/player/games/{gameId}/seat`. */
+interface GameSeatBody {
+  gameId: number;
+  status: "lobby" | "started" | "finished" | "aborted";
+  seated: boolean;
+}
+
+export const gameSeat = (
+  gameId: number,
+  status: GameSeatBody["status"],
+  seated: boolean,
+): GameSeatBody => ({ gameId, status, seated });
+
+/** Answers the Waiting room's seat lookup with `body`. */
+export async function mockGameSeat(page: Page, body: GameSeatBody): Promise<void> {
+  await page.route("**/api/player/games/*/seat", async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify(body),
+    });
+  });
+}

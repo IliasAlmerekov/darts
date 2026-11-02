@@ -13,6 +13,7 @@ vi.mock("@/shared/api/auth", () => ({
 
 vi.mock("@/shared/api/player", () => ({
   getCurrentGame: vi.fn(),
+  getPlayerGameSeat: vi.fn(),
 }));
 
 vi.mock("@/shared/services/browser/clientLogger", () => ({
@@ -23,7 +24,7 @@ import { act, fireEvent, render, screen } from "@testing-library/react";
 import { onlineManager, QueryClientProvider } from "@tanstack/react-query";
 import { createMemoryRouter, RouterProvider } from "react-router-dom";
 import { logout, type AuthenticatedUser } from "@/shared/api/auth";
-import { getCurrentGame } from "@/shared/api/player";
+import { getCurrentGame, getPlayerGameSeat, type GameSeatResponse } from "@/shared/api/player";
 import type { CurrentGame } from "@/lib/player/currentGame";
 import { ApiError, NetworkError, UnauthorizedError } from "@/shared/api";
 import { clientLogger } from "@/shared/services/browser/clientLogger";
@@ -36,6 +37,11 @@ import JoinedGamePage from "./index";
 const lobby = (gameId: number): CurrentGame => ({ kind: "lobby", gameId });
 const started = (gameId: number): CurrentGame => ({ kind: "started", gameId });
 const noCurrentGame: CurrentGame = { kind: "none" };
+const seat = (status: GameSeatResponse["status"], seated: boolean): GameSeatResponse => ({
+  gameId: 42,
+  status,
+  seated,
+});
 
 function buildAuthenticatedUser(overrides: Partial<AuthenticatedUser> = {}): AuthenticatedUser {
   return {
@@ -59,7 +65,7 @@ function respondWithCurrentGames(
   });
 }
 
-function renderPage(): { unmount: () => void } {
+function renderPage(): { unmount: () => void; router: ReturnType<typeof createMemoryRouter> } {
   const router = createMemoryRouter(
     [
       { path: ROUTES.login, element: <p>Login form</p> },
@@ -68,11 +74,12 @@ function renderPage(): { unmount: () => void } {
     ],
     { initialEntries: [ROUTES.joined] },
   );
-  return render(
+  const { unmount } = render(
     <QueryClientProvider client={createQueryClient()}>
       <RouterProvider router={router} />
     </QueryClientProvider>,
   );
+  return { unmount, router };
 }
 
 async function advancePolling(times = 1): Promise<void> {
@@ -93,6 +100,8 @@ describe("JoinedGamePage", () => {
     vi.mocked(logout).mockReset();
     vi.mocked(clientLogger.error).mockReset();
     vi.mocked(getCurrentGame).mockReset();
+    vi.mocked(getPlayerGameSeat).mockReset();
+    vi.mocked(getPlayerGameSeat).mockResolvedValue(seat("lobby", false));
     respondWithCurrentGames(lobby(42));
     mockUseAuthenticatedUser.mockReset();
     mockUseAuthenticatedUser.mockReturnValue({ user: null, loading: false, error: null });
@@ -134,6 +143,7 @@ describe("JoinedGamePage", () => {
     expect(screen.getByRole("status").textContent).toContain("Waiting for the game to start...");
     expect(screen.queryByText(/Game #/)).toBeNull();
     expect(screen.queryByText("The game has started")).toBeNull();
+    expect(screen.getByRole("link", { name: "My profile" })).toBeTruthy();
   });
 
   it("should wait in the lobby and ask for the current game every 3 seconds", async () => {
@@ -142,6 +152,7 @@ describe("JoinedGamePage", () => {
     expect(await screen.findByText("Game #42")).toBeTruthy();
     expect(screen.getByRole("status").textContent).toContain("Waiting for the game to start...");
     expect(getCurrentGame).toHaveBeenCalledTimes(1);
+    expect(screen.getByRole("link", { name: "My profile" })).toBeTruthy();
 
     await advancePolling(2);
 
@@ -172,6 +183,7 @@ describe("JoinedGamePage", () => {
 
     expect(await screen.findByText("The game has started")).toBeTruthy();
     expect(screen.getByText("Game #42")).toBeTruthy();
+    expect(screen.getByRole("link", { name: "My profile" })).toBeTruthy();
 
     await advancePolling(2);
 
@@ -186,8 +198,10 @@ describe("JoinedGamePage", () => {
 
     await advancePolling();
 
-    expect(screen.getByText("You are no longer in this game")).toBeTruthy();
+    expect(await screen.findByText("You are no longer in this game")).toBeTruthy();
+    expect(getPlayerGameSeat).toHaveBeenCalledWith(42, expect.any(AbortSignal));
     expect(screen.queryByText("Game #42")).toBeNull();
+    expect(screen.queryByRole("link", { name: "My profile" })).toBeNull();
     expect($currentGameId.get()).toBeNull();
 
     await advancePolling(2);
@@ -198,12 +212,96 @@ describe("JoinedGamePage", () => {
     expect(await screen.findByText("Player profile")).toBeTruthy();
   });
 
+  it("should open the player profile from the profile link and come back on browser back", async () => {
+    const { router } = renderPage();
+    await screen.findByText("Game #42");
+
+    const link = screen.getByRole("link", { name: "My profile" });
+    expect(link.getAttribute("href")).toBe(ROUTES.playerProfile);
+    expect(link.getAttribute("title")).toBe("My profile");
+
+    fireEvent.click(link);
+
+    expect(await screen.findByText("Player profile")).toBeTruthy();
+
+    await act(() => router.navigate(-1));
+
+    expect(await screen.findByText("Game #42")).toBeTruthy();
+    expect(router.state.location.pathname).toBe(ROUTES.joined);
+  });
+
   it("should open the player profile when there is no current game on load", async () => {
     respondWithCurrentGames(noCurrentGame);
     renderPage();
 
     expect(await screen.findByText("Player profile")).toBeTruthy();
     expect(screen.queryByText("You are no longer in this game")).toBeNull();
+    expect(getPlayerGameSeat).not.toHaveBeenCalled();
+  });
+
+  it("should tell a player removed while on the profile once they come back", async () => {
+    const { router } = renderPage();
+    await screen.findByText("Game #42");
+    fireEvent.click(screen.getByRole("link", { name: "My profile" }));
+    await screen.findByText("Player profile");
+
+    respondWithCurrentGames(noCurrentGame);
+    await act(() => router.navigate(-1));
+
+    expect(await screen.findByText("You are no longer in this game")).toBeTruthy();
+    expect(router.state.location.pathname).toBe(ROUTES.joined);
+    expect(screen.queryByRole("link", { name: "My profile" })).toBeNull();
+    expect(getPlayerGameSeat).toHaveBeenCalledWith(42, expect.any(AbortSignal));
+  });
+
+  it.each([
+    ["the lobby", seat("lobby", false)],
+    ["the started game", seat("started", false)],
+  ])("should tell a player who lost the seat in %s on load", async (_case, answer) => {
+    setCurrentGameId(42);
+    respondWithCurrentGames(noCurrentGame);
+    vi.mocked(getPlayerGameSeat).mockResolvedValue(answer);
+    renderPage();
+
+    expect(await screen.findByText("You are no longer in this game")).toBeTruthy();
+  });
+
+  it.each([
+    ["the player still holds a seat in the lobby", () => Promise.resolve(seat("lobby", true))],
+    ["the player still holds a seat in the game", () => Promise.resolve(seat("started", true))],
+    ["the game has finished", () => Promise.resolve(seat("finished", true))],
+    ["the game was aborted", () => Promise.resolve(seat("aborted", true))],
+    [
+      "the finished game no longer seats the player",
+      () => Promise.resolve(seat("finished", false)),
+    ],
+    [
+      "the game is not found",
+      () => Promise.reject(new ApiError("Game not found", { status: 404 })),
+    ],
+    ["the lookup fails", () => Promise.reject(new NetworkError("Failed to fetch"))],
+  ])("should open the player profile without a removal when %s", async (_case, answer) => {
+    setCurrentGameId(42);
+    respondWithCurrentGames(noCurrentGame);
+    vi.mocked(getPlayerGameSeat).mockImplementation(answer);
+    renderPage();
+
+    expect(await screen.findByText("Player profile")).toBeTruthy();
+    expect(screen.queryByText("You are no longer in this game")).toBeNull();
+    expect(getPlayerGameSeat).toHaveBeenCalledWith(42, expect.any(AbortSignal));
+  });
+
+  it("should log a seat lookup that fails for an unexpected reason", async () => {
+    const serverError = new ApiError("Server error", { status: 500 });
+    setCurrentGameId(42);
+    respondWithCurrentGames(noCurrentGame);
+    vi.mocked(getPlayerGameSeat).mockRejectedValue(serverError);
+    renderPage();
+
+    expect(await screen.findByText("Player profile")).toBeTruthy();
+    expect(clientLogger.error).toHaveBeenCalledWith("player.game-seat.fetch.failed", {
+      error: serverError,
+    });
   });
 
   it("should follow a changed game id and keep polling", async () => {

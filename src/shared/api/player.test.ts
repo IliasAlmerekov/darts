@@ -7,7 +7,7 @@ vi.mock("@/shared/api/client", async (importOriginal) => ({
 }));
 
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { getCurrentGame, getPlayerProfile } from "./player";
+import { getCurrentGame, getPlayerGameSeat, getPlayerProfile } from "./player";
 import { apiClient, ApiValidationError } from "./client";
 import { respondWith } from "./test-utils";
 
@@ -242,5 +242,46 @@ describe("getPlayerProfile", () => {
     );
 
     await expect(getPlayerProfile()).rejects.toBeInstanceOf(ApiValidationError);
+  });
+});
+
+// Contract examples: GET /api/player/games/{gameId}/seat
+const seatedExample = { gameId: 12, status: "lobby", seated: true };
+const removedExample = { gameId: 12, status: "lobby", seated: false };
+const abortedExample = { gameId: 12, status: "aborted", seated: true };
+
+describe("getPlayerGameSeat", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it("asks for the player's seat in the given game", async () => {
+    const controller = new AbortController();
+    vi.mocked(apiClient.get).mockImplementationOnce(respondWith(seatedExample));
+
+    await expect(getPlayerGameSeat(12, controller.signal)).resolves.toEqual(seatedExample);
+    expect(apiClient.get).toHaveBeenCalledWith("/player/games/12/seat", {
+      signal: controller.signal,
+      validate: expect.any(Object),
+    });
+  });
+
+  it.each([removedExample, abortedExample])(
+    "returns the contract example $status, seated $seated",
+    async (example) => {
+      vi.mocked(apiClient.get).mockImplementationOnce(respondWith(example));
+
+      await expect(getPlayerGameSeat(12)).resolves.toEqual(example);
+    },
+  );
+
+  it.each([
+    { gameId: 12, status: "deleted", seated: true },
+    { gameId: 12, status: "lobby" },
+    { gameId: 12, status: "lobby", seated: null },
+  ])("rejects with ApiValidationError for $status, seated $seated", async (payload) => {
+    vi.mocked(apiClient.get).mockImplementationOnce(respondWith(payload));
+
+    await expect(getPlayerGameSeat(12)).rejects.toBeInstanceOf(ApiValidationError);
   });
 });

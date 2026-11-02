@@ -1,7 +1,8 @@
-import { queryOptions, type Query } from "@tanstack/react-query";
-import { NetworkError, TimeoutError, UnauthorizedError } from "@/shared/api";
-import { getCurrentGame, getPlayerProfile } from "@/shared/api/player";
+import { queryOptions, skipToken, type Query } from "@tanstack/react-query";
+import { ApiError, NetworkError, TimeoutError, UnauthorizedError } from "@/shared/api";
+import { getCurrentGame, getPlayerGameSeat, getPlayerProfile } from "@/shared/api/player";
 import type { CurrentGame } from "@/lib/player/currentGame";
+import { toGameSeat, type GameSeat } from "@/lib/player/gameSeat";
 import { toPlayerProfile, type PlayerProfile } from "@/lib/player/profile";
 import { clientLogger } from "@/shared/services/browser/clientLogger";
 import { setServerCurrentGameId } from "@/shared/store";
@@ -52,6 +53,28 @@ export const playerQueries = {
           throw error;
         }
       },
+    }),
+  /** The player's seat in a game they belonged to; no game skips the lookup. */
+  gameSeat: (gameId: number | null) =>
+    queryOptions({
+      queryKey: ["player", "gameSeat", gameId] as const,
+      // A cached seat from an earlier visit could hide a removal made since.
+      gcTime: 0,
+      queryFn:
+        gameId === null
+          ? skipToken
+          : async ({ signal }): Promise<GameSeat> => {
+              try {
+                return toGameSeat(await getPlayerGameSeat(gameId, signal));
+              } catch (error: unknown) {
+                // A game the server no longer knows is an answer, not a failure.
+                const isGameNotFound = error instanceof ApiError && error.status === 404;
+                if (!signal.aborted && !isGameNotFound) {
+                  clientLogger.error("player.game-seat.fetch.failed", { error });
+                }
+                throw error;
+              }
+            },
     }),
   /** The player's own statistics and recent finished games. */
   profile: () =>

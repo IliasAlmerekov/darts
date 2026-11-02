@@ -1,8 +1,8 @@
 import type { CurrentGame } from "@/lib/player/currentGame";
 
 /**
- * What the Waiting room shows. A player who had a game in this visit and lost it was
- * removed; one who never had a game has none.
+ * What the Waiting room shows. A player whose last game still runs without them was
+ * removed; one whose game is over, or who never had one, has none.
  */
 export type WaitingRoomView =
   | { kind: "loading" }
