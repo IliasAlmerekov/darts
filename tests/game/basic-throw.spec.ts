@@ -866,8 +866,12 @@ test.describe("Basic Throw Mechanics and Validation", () => {
 
     await openGame(page);
 
-    await page.keyboard.press("Tab");
-    await expect(page.getByRole("button", { name: "Back to Home" })).toBeFocused();
+    // The game opens with focus on the active player, so the keyboard user starts there.
+    await expect(playerCard(page, "Player 1")).toBeFocused();
+
+    const backToHome = page.getByRole("button", { name: "Back to Home" });
+    await backToHome.focus();
+    await expect(backToHome).toBeFocused();
 
     await page.keyboard.press("Tab");
     await expect(page.getByRole("button", { name: "Settings" })).toBeFocused();

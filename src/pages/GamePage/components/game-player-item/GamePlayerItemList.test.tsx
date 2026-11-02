@@ -35,12 +35,20 @@ const createPlayer = (id: number, name: string, isActive: boolean): WinnerPlayer
 
 describe("GamePlayerItemList", () => {
   const scrollIntoViewMock = vi.fn();
+  // What the browser shows at a point; jsdom has no layout, so tests say it.
+  const elementFromPointMock = vi.fn<(x: number, y: number) => Element | null>();
 
   beforeEach(() => {
     scrollIntoViewMock.mockReset();
     Object.defineProperty(HTMLElement.prototype, "scrollIntoView", {
       configurable: true,
       value: scrollIntoViewMock,
+    });
+    // By default the active player is fully on screen.
+    elementFromPointMock.mockImplementation(() => document.querySelector('[aria-current="true"]'));
+    Object.defineProperty(document, "elementFromPoint", {
+      configurable: true,
+      value: elementFromPointMock,
     });
   });
 
@@ -109,7 +117,45 @@ describe("GamePlayerItemList", () => {
     expect(scrollIntoViewMock.mock.instances[0]).toBe(activePlayer);
   });
 
-  it("should not scroll again when active player id stays the same across rerenders", () => {
+  it("should scroll back to the active player after a throw when a tap stopped the scroll short", () => {
+    vi.useFakeTimers();
+
+    const { rerender } = render(
+      <GamePlayerItemList
+        userMap={[createPlayer(1, "Player 1", true), createPlayer(2, "Player 2", false)]}
+        round={1}
+      />,
+    );
+    vi.runAllTimers();
+    expect(scrollIntoViewMock).toHaveBeenCalledTimes(1);
+
+    // On iPad a tap stops a smooth scroll midway, and the sticky keypad covers the player.
+    const activePlayer = screen.getByRole("group", { name: "Player 1" });
+    const keypad = document.createElement("div");
+    document.body.append(keypad);
+    elementFromPointMock.mockReturnValue(keypad);
+
+    rerender(
+      <GamePlayerItemList
+        userMap={[
+          { ...createPlayer(1, "Player 1", true), score: 281 },
+          createPlayer(2, "Player 2", false),
+        ]}
+        round={1}
+      />,
+    );
+    vi.runAllTimers();
+
+    expect(scrollIntoViewMock).toHaveBeenCalledTimes(2);
+    expect(scrollIntoViewMock.mock.instances[1]).toBe(activePlayer);
+    expect(scrollIntoViewMock).toHaveBeenLastCalledWith({
+      behavior: "smooth",
+      block: "center",
+      inline: "nearest",
+    });
+  });
+
+  it("should not scroll again while the active player stays on screen across rerenders", () => {
     vi.useFakeTimers();
 
     const { rerender } = render(

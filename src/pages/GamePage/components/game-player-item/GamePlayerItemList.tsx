@@ -6,6 +6,17 @@ import { getPlayerThrowsDisplay } from "../../lib/playerThrowsDisplay.logic";
 import GamePlayerItem from "./GamePlayerItem";
 import styles from "./GamePlayerItem.module.css";
 
+/**
+ * Whether the user can see both the top and the bottom edge of `element`. Asks the browser
+ * what it shows at those points, so the sticky keypad, a clipping scroll container and the
+ * viewport edge all count, whichever of them hides the card.
+ */
+function isOnScreen(element: HTMLElement): boolean {
+  const { left, right, top, bottom } = element.getBoundingClientRect();
+  const x = (left + right) / 2;
+  return [top + 1, bottom - 1].every((y) => element.contains(document.elementFromPoint(x, y)));
+}
+
 interface GamePlayerItemListProps {
   userMap: WinnerPlayerProps[];
   round: number;
@@ -19,16 +30,11 @@ function GamePlayerItemListComponent({
   const previousActivePlayerIdRef = useRef<number | null>(null);
   const activePlayerElementRef = useRef<HTMLDivElement | null>(null);
 
+  // Runs after every throw, not only on a turn change: on iPad a tap stops a smooth scroll
+  // midway, and the next throw has to finish the trip to the active player.
   useIsomorphicLayoutEffect(() => {
     if (activePlayerId === null) {
       previousActivePlayerIdRef.current = activePlayerId;
-      return;
-    }
-
-    const didActivePlayerChange = previousActivePlayerIdRef.current !== activePlayerId;
-    previousActivePlayerIdRef.current = activePlayerId;
-
-    if (!didActivePlayerChange) {
       return;
     }
 
@@ -38,8 +44,21 @@ function GamePlayerItemListComponent({
     firstAnimationFrameId = window.requestAnimationFrame(() => {
       secondAnimationFrameId = window.requestAnimationFrame(() => {
         const activePlayerElement = activePlayerElementRef.current;
-        activePlayerElement?.focus({ preventScroll: true });
-        activePlayerElement?.scrollIntoView({
+        if (activePlayerElement === null) {
+          return;
+        }
+
+        // Recorded only once the frame runs, so a throw that cancels it still moves focus.
+        const didActivePlayerChange = previousActivePlayerIdRef.current !== activePlayerId;
+        previousActivePlayerIdRef.current = activePlayerId;
+
+        if (didActivePlayerChange) {
+          activePlayerElement.focus({ preventScroll: true });
+        } else if (isOnScreen(activePlayerElement)) {
+          return;
+        }
+
+        activePlayerElement.scrollIntoView({
           behavior: "smooth",
           block: "center",
           inline: "nearest",
@@ -51,7 +70,7 @@ function GamePlayerItemListComponent({
       window.cancelAnimationFrame(firstAnimationFrameId);
       window.cancelAnimationFrame(secondAnimationFrameId);
     };
-  }, [activePlayerId]);
+  }, [activePlayerId, userMap]);
 
   return (
     <>

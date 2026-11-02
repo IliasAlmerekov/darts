@@ -7,6 +7,10 @@ and this project does **not** yet follow [Semantic Versioning](https://semver.or
 
 ## [Unreleased]
 
+### Fixed
+
+- Game: a tap during the turn-change scroll on iPad no longer leaves the active player off screen; the next throw finishes the scroll (#441)
+
 ## [0.4.4] - 2026-11-02
 
 ### Added
