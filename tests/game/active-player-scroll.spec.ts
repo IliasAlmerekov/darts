@@ -129,10 +129,10 @@ for (const { label, device, pageScrolls } of viewports) {
       await openGame(page, buildState(10, 6), buildState(10, 7));
       await changeTurnToPlayerSeven(page);
 
-      const scrollTops = await readScrollTops(page);
-      expect(scrollTops.list).toBeGreaterThan(0);
+      // The card can be in view before the smooth scroll starts, so wait for the list to move.
+      await expect.poll(async () => (await readScrollTops(page)).list).toBeGreaterThan(0);
       if (!pageScrolls) {
-        expect(scrollTops.page).toBe(0);
+        expect((await readScrollTops(page)).page).toBe(0);
       }
     });
 
