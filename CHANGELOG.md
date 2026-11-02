@@ -7,6 +7,8 @@ and this project does **not** yet follow [Semantic Versioning](https://semver.or
 
 ## [Unreleased]
 
+## [0.4.4] - 2026-11-02
+
 ### Added
 
 - Settings: a Sound group turns game sounds on or off on this device; the choice stays after a reload (#434)
