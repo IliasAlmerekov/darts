@@ -351,8 +351,16 @@ describe("soundPlayer", () => {
     playSound("win");
     playSound("win");
     playSound("win");
+    await Promise.resolve();
+    await Promise.resolve();
 
-    await expect(failed.play.mock.results.at(-1)?.value).resolves.toBeUndefined();
+    const winAudios = audioInstances.filter((audio) => audio.src === "/sounds/win-sound.mp3");
+    expect(winAudios).toHaveLength(3);
+    expect(failed.play).toHaveBeenCalledTimes(2);
+    expect(clientLogger.warn).not.toHaveBeenCalledWith(
+      "sound-player.playback-failed",
+      expect.anything(),
+    );
   });
 
   it("rewinds a reused audio element that has no configured start time", async () => {
