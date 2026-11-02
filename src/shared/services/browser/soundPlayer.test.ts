@@ -14,8 +14,10 @@ type AudioInstance = {
   volume: number;
   currentTime: number;
   readyState: number;
+  error: { code: number } | null;
   play: ReturnType<typeof vi.fn>;
   pause: ReturnType<typeof vi.fn>;
+  load: ReturnType<typeof vi.fn>;
   addEventListener: ReturnType<typeof vi.fn>;
 };
 
@@ -33,8 +35,10 @@ function createAudioMock(options?: {
     volume: number;
     declare currentTime: number;
     readyState: number;
+    error: { code: number } | null = null;
     play: ReturnType<typeof vi.fn>;
     pause: ReturnType<typeof vi.fn>;
+    load: ReturnType<typeof vi.fn>;
     addEventListener: ReturnType<typeof vi.fn>;
 
     constructor(src = "") {
@@ -53,8 +57,17 @@ function createAudioMock(options?: {
         },
       });
 
-      this.play = vi.fn(options?.playImplementation ?? (() => Promise.resolve()));
+      // Like a browser: an element whose file failed to load rejects every play until load().
+      this.play = vi.fn(() =>
+        this.error !== null
+          ? Promise.reject(new DOMException("failed to load", "NotSupportedError"))
+          : (options?.playImplementation ?? (() => Promise.resolve()))(),
+      );
       this.pause = vi.fn();
+      this.load = vi.fn(() => {
+        this.error = null;
+        this.readyState = 0;
+      });
       this.addEventListener = vi.fn();
 
       audioInstances.push(this);
@@ -307,5 +320,93 @@ describe("soundPlayer", () => {
       new StorageEvent("storage", { key: "darts.soundEnabled", newValue: null }),
     );
     expect(isSoundEnabled()).toBe(true);
+  });
+
+  it("reuses a fixed set of audio elements, so a long game does not pile them up", async () => {
+    vi.stubGlobal("Audio", createAudioMock({ readyState: 1 }));
+    const { playSound } = await loadSoundPlayerModule();
+
+    for (let i = 0; i < 10; i += 1) {
+      playSound("throw");
+    }
+
+    const throwAudios = audioInstances.slice(1);
+    expect(throwAudios).toHaveLength(3);
+    const plays = throwAudios.reduce((sum, audio) => sum + audio.play.mock.calls.length, 0);
+    expect(plays).toBe(10);
+    expect(throwAudios.every((audio) => audio.currentTime === 2.3)).toBe(true);
+  });
+
+  it("reloads a pooled audio element whose file failed to load, so it plays again", async () => {
+    vi.stubGlobal("Audio", createAudioMock({ readyState: 1 }));
+    const { playSound } = await loadSoundPlayerModule();
+
+    playSound("win");
+    const failed = audioInstances.find((audio) => audio.src === "/sounds/win-sound.mp3");
+    if (failed === undefined) throw new Error("win audio missing");
+    // The tablet was offline, so the browser could not fetch the file (MEDIA_ERR_SRC_NOT_SUPPORTED).
+    failed.error = { code: 4 };
+
+    // Three more plays bring the pool of three back round to the failed element.
+    playSound("win");
+    playSound("win");
+    playSound("win");
+    await Promise.resolve();
+    await Promise.resolve();
+
+    const winAudios = audioInstances.filter((audio) => audio.src === "/sounds/win-sound.mp3");
+    expect(winAudios).toHaveLength(3);
+    expect(failed.play).toHaveBeenCalledTimes(2);
+    expect(clientLogger.warn).not.toHaveBeenCalledWith(
+      "sound-player.playback-failed",
+      expect.anything(),
+    );
+  });
+
+  it("waits for metadata once per element, however often a sound that has not loaded is replayed", async () => {
+    vi.stubGlobal("Audio", createAudioMock());
+    const { playSound } = await loadSoundPlayerModule();
+    const metadataWaits = (audio: AudioInstance | undefined) =>
+      audio?.addEventListener.mock.calls.filter(([type]) => type === "loadedmetadata") ?? [];
+
+    // Seven throws play the first pooled element three times while its file never loads.
+    for (let i = 0; i < 7; i += 1) {
+      playSound("throw");
+    }
+    const first = audioInstances[1];
+    expect(metadataWaits(first)).toHaveLength(1);
+
+    // Metadata arrives and the start time is applied.
+    if (first === undefined) throw new Error("throw audio missing");
+    const onMetadata: unknown = metadataWaits(first)[0]?.[1];
+    if (typeof onMetadata !== "function") throw new Error("metadata listener missing");
+    first.readyState = 1;
+    onMetadata();
+    expect(first.currentTime).toBe(2.3);
+
+    // The file later fails; three throws later the reuse reloads it and waits for metadata again.
+    first.error = { code: 4 };
+    playSound("throw");
+    playSound("throw");
+    playSound("throw");
+    expect(first.readyState).toBe(0);
+    expect(metadataWaits(first)).toHaveLength(2);
+  });
+
+  it("rewinds a reused audio element that has no configured start time", async () => {
+    vi.stubGlobal("Audio", createAudioMock({ readyState: 1 }));
+    const { playSound } = await loadSoundPlayerModule();
+
+    playSound("error");
+    const first = audioInstances[1];
+    if (first) first.currentTime = 1.5;
+    playSound("error");
+    playSound("error");
+    playSound("error");
+
+    expect(audioInstances.slice(1)).toHaveLength(3);
+    expect(first?.currentTime).toBe(0);
+    expect(first?.play).toHaveBeenCalledTimes(2);
+    expect(first?.load).not.toHaveBeenCalled();
   });
 });
