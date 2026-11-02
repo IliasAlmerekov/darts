@@ -106,6 +106,40 @@ export function setSoundEnabled(enabled: boolean): void {
   }
 }
 
+/**
+ * Audio elements kept per sound. WebKit on iPad slows down with every element it keeps, so a
+ * new `Audio` per throw made taps late by the middle of a game (#432). Three per sound let
+ * the throws of one turn overlap; the fourth play restarts the oldest from its start.
+ */
+const AUDIO_POOL_SIZE = 3;
+
+interface AudioPool {
+  elements: HTMLAudioElement[];
+  plays: number;
+}
+
+const audioPools = new Map<SoundType, AudioPool>();
+
+function takePooledAudio(soundType: SoundType, config: SoundConfig): HTMLAudioElement {
+  let pool = audioPools.get(soundType);
+  if (pool === undefined) {
+    pool = { elements: [], plays: 0 };
+    audioPools.set(soundType, pool);
+  }
+
+  const index = pool.plays % AUDIO_POOL_SIZE;
+  pool.plays += 1;
+
+  const pooled = pool.elements[index];
+  if (pooled !== undefined) {
+    return pooled;
+  }
+
+  const audio = new Audio(config.path);
+  pool.elements[index] = audio;
+  return audio;
+}
+
 function logSoundWarning(
   event: string,
   soundType: SoundType,
@@ -122,16 +156,12 @@ function logSoundWarning(
   });
 }
 
-function applyConfiguredStartTime(
+function applyStartTime(
   audio: HTMLAudioElement,
+  startTime: number,
   soundType: SoundType,
   config: SoundConfig,
 ): void {
-  const startTime = config.startTime;
-  if (startTime === undefined) {
-    return;
-  }
-
   try {
     audio.currentTime = startTime;
   } catch (error) {
@@ -139,24 +169,31 @@ function applyConfiguredStartTime(
   }
 }
 
+/**
+ * Moves the audio to the configured start, or to 0. A pooled element may still be playing
+ * from its last use, and `play()` alone would leave it running instead of starting over.
+ */
 function configureAudioStartTime(
   audio: HTMLAudioElement,
   soundType: SoundType,
   config: SoundConfig,
 ): void {
-  if (config.startTime === undefined) {
+  const startTime = config.startTime ?? 0;
+
+  if (audio.readyState >= HAVE_METADATA_READY_STATE) {
+    applyStartTime(audio, startTime, soundType, config);
     return;
   }
 
-  if (audio.readyState >= HAVE_METADATA_READY_STATE) {
-    applyConfiguredStartTime(audio, soundType, config);
+  // Not loaded yet, so it has never played: without a configured start it begins at 0.
+  if (config.startTime === undefined) {
     return;
   }
 
   audio.addEventListener(
     "loadedmetadata",
     () => {
-      applyConfiguredStartTime(audio, soundType, config);
+      applyStartTime(audio, startTime, soundType, config);
     },
     { once: true },
   );
@@ -210,7 +247,7 @@ export function playSound(soundType: SoundType): void {
   }
 
   try {
-    const audio = new Audio(config.path);
+    const audio = takePooledAudio(soundType, config);
     audio.volume = config.volume ?? 0.4;
 
     configureAudioStartTime(audio, soundType, config);

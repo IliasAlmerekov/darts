@@ -11,6 +11,10 @@ and this project does **not** yet follow [Semantic Versioning](https://semver.or
 
 - Settings: a Sound group turns game sounds on or off on this device; the choice stays after a reload (#434)
 
+### Fixed
+
+- Game: taps on iPad no longer get slower as a game goes on; the sound player keeps three audio elements per sound instead of a new one per throw (#432)
+
 ## [0.4.3] - 2026-11-02
 
 ### Fixed

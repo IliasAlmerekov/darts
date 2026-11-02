@@ -308,4 +308,35 @@ describe("soundPlayer", () => {
     );
     expect(isSoundEnabled()).toBe(true);
   });
+
+  it("reuses a fixed set of audio elements, so a long game does not pile them up", async () => {
+    vi.stubGlobal("Audio", createAudioMock({ readyState: 1 }));
+    const { playSound } = await loadSoundPlayerModule();
+
+    for (let i = 0; i < 10; i += 1) {
+      playSound("throw");
+    }
+
+    const throwAudios = audioInstances.slice(1);
+    expect(throwAudios).toHaveLength(3);
+    const plays = throwAudios.reduce((sum, audio) => sum + audio.play.mock.calls.length, 0);
+    expect(plays).toBe(10);
+    expect(throwAudios.every((audio) => audio.currentTime === 2.3)).toBe(true);
+  });
+
+  it("rewinds a reused audio element that has no configured start time", async () => {
+    vi.stubGlobal("Audio", createAudioMock({ readyState: 1 }));
+    const { playSound } = await loadSoundPlayerModule();
+
+    playSound("error");
+    const first = audioInstances[1];
+    if (first) first.currentTime = 1.5;
+    playSound("error");
+    playSound("error");
+    playSound("error");
+
+    expect(audioInstances.slice(1)).toHaveLength(3);
+    expect(first?.currentTime).toBe(0);
+    expect(first?.play).toHaveBeenCalledTimes(2);
+  });
 });
