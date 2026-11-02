@@ -1,13 +1,13 @@
 import type { GameSeatResponse } from "@/shared/api/player";
 
-/** The player's place in a game they belonged to. */
-export type GameSeat = "seated" | "removed" | "over";
+/** What became of the player's seat in a game they belonged to. */
+export type SeatOutcome = "seated" | "removed" | "over";
 
 /**
  * Reads the seat lookup. Only a game that still runs without the player is a removal; a
  * finished or aborted game is over, whatever its seats say.
  */
-export function toGameSeat(response: GameSeatResponse): GameSeat {
+export function toSeatOutcome(response: GameSeatResponse): SeatOutcome {
   if (response.status === "finished" || response.status === "aborted") {
     return "over";
   }

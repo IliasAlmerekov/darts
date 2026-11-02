@@ -304,6 +304,20 @@ describe("JoinedGamePage", () => {
     });
   });
 
+  it.each([
+    ["an unknown game", new ApiError("Game not found", { status: 404 })],
+    ["a lost connection", new NetworkError("Failed to fetch")],
+    ["an expired session", new UnauthorizedError("Unauthorized")],
+  ])("should not log a seat lookup that fails with %s", async (_case, error) => {
+    setCurrentGameId(42);
+    respondWithCurrentGames(noCurrentGame);
+    vi.mocked(getPlayerGameSeat).mockRejectedValue(error);
+    renderPage();
+
+    expect(await screen.findByText("Player profile")).toBeTruthy();
+    expect(clientLogger.error).not.toHaveBeenCalled();
+  });
+
   it("should follow a changed game id and keep polling", async () => {
     setCurrentGameId(42);
     respondWithCurrentGames(lobby(42), lobby(43));
