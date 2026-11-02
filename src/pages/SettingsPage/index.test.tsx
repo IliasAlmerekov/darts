@@ -3,6 +3,22 @@
 const getGameSettingsMock = vi.hoisted(() => vi.fn());
 const saveGameSettingsMock = vi.hoisted(() => vi.fn());
 const getTabletGameMock = vi.hoisted(() => vi.fn());
+const isSoundEnabledMock = vi.hoisted(() => vi.fn(() => true));
+const setSoundEnabledMock = vi.hoisted(() => vi.fn());
+const soundListeners = vi.hoisted(() => new Set<() => void>());
+
+vi.mock("@/shared/services/browser/soundPlayer", () => ({
+  isSoundEnabled: () => isSoundEnabledMock(),
+  setSoundEnabled: (enabled: boolean) => {
+    setSoundEnabledMock(enabled);
+    isSoundEnabledMock.mockReturnValue(enabled);
+    soundListeners.forEach((listener) => listener());
+  },
+  subscribeSoundEnabled: (listener: () => void) => {
+    soundListeners.add(listener);
+    return () => soundListeners.delete(listener);
+  },
+}));
 
 vi.mock("@/shared/api/game", () => ({
   getGameSettings: (...args: unknown[]) => getGameSettingsMock(...args),
@@ -15,7 +31,7 @@ vi.mock("@/shared/ui/admin-layout", () => ({
 }));
 
 import React, { useLayoutEffect } from "react";
-import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { act, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { QueryClientProvider, type QueryClient } from "@tanstack/react-query";
 import {
   createMemoryRouter,
@@ -143,10 +159,14 @@ function isPressed(name: string): boolean {
 }
 
 // The Game Mode and Points buttons carry aria-pressed; Retry does not.
+/** Game setting options. The Sound group is a device setting and never waits for the game. */
 function getOptionButtons(): HTMLElement[] {
+  const soundGroup = screen.queryByRole("heading", { name: "Sound" })?.closest("section");
   return screen
     .getAllByRole("button")
-    .filter((button) => button.getAttribute("aria-pressed") !== null);
+    .filter(
+      (button) => button.getAttribute("aria-pressed") !== null && !soundGroup?.contains(button),
+    );
 }
 
 function expectOptionsEnabled(): void {
@@ -230,6 +250,7 @@ function renderTabletSettingsRouter(initialEntry: string): ReturnType<typeof cre
 describe("SettingsPage", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    isSoundEnabledMock.mockReturnValue(true);
     testQueryClient = createQueryClient();
     resetGameStore();
     resetRoomStore();
@@ -951,4 +972,49 @@ describe("SettingsPage", () => {
       });
     },
   );
+
+  describe("Sound", () => {
+    it("should turn game sound off on this device and show Off as selected", () => {
+      isSoundEnabledMock.mockReturnValue(true);
+      renderSettingsPage("/settings");
+      const sound = screen.getByRole("heading", { name: "Sound" }).closest("section");
+      if (sound === null) throw new Error("Sound group missing");
+      const on = within(sound).getByRole("button", { name: "On" });
+      const off = within(sound).getByRole("button", { name: "Off" });
+      expect(on.getAttribute("aria-pressed")).toBe("true");
+
+      fireEvent.click(off);
+
+      expect(setSoundEnabledMock).toHaveBeenCalledWith(false);
+      expect(off.getAttribute("aria-pressed")).toBe("true");
+      expect(on.getAttribute("aria-pressed")).toBe("false");
+    });
+
+    it("should show Off when sound was turned off earlier", () => {
+      isSoundEnabledMock.mockReturnValue(false);
+      renderSettingsPage("/settings");
+      const sound = screen.getByRole("heading", { name: "Sound" }).closest("section");
+      if (sound === null) throw new Error("Sound group missing");
+
+      expect(within(sound).getByRole("button", { name: "Off" }).getAttribute("aria-pressed")).toBe(
+        "true",
+      );
+    });
+
+    it("should show Off when another tab turns sound off while Settings is open", () => {
+      isSoundEnabledMock.mockReturnValue(true);
+      renderSettingsPage("/settings");
+      const sound = screen.getByRole("heading", { name: "Sound" }).closest("section");
+      if (sound === null) throw new Error("Sound group missing");
+
+      isSoundEnabledMock.mockReturnValue(false);
+      act(() => {
+        soundListeners.forEach((listener) => listener());
+      });
+
+      expect(within(sound).getByRole("button", { name: "Off" }).getAttribute("aria-pressed")).toBe(
+        "true",
+      );
+    });
+  });
 });

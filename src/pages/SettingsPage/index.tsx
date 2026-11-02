@@ -1,10 +1,20 @@
-import React from "react";
+import React, { useSyncExternalStore } from "react";
 import { ErrorState } from "@/shared/ui/error-state";
 import styles from "./SettingsPage.module.css";
 import { SettingsTabs } from "./components/SettingsTabs";
 import { GAME_MODE_OPTIONS } from "@/lib/game/gameMode";
 import { POINTS_OPTIONS } from "./lib/points";
 import { useGameSettings } from "./useGameSettings";
+import {
+  isSoundEnabled,
+  setSoundEnabled,
+  subscribeSoundEnabled,
+} from "@/shared/services/browser/soundPlayer";
+
+const SOUND_OPTIONS = [
+  { label: "On", id: "on" },
+  { label: "Off", id: "off" },
+] as const;
 
 function SettingsPage(): React.JSX.Element {
   const {
@@ -17,6 +27,11 @@ function SettingsPage(): React.JSX.Element {
     selectGameMode,
     selectPoints,
   } = useGameSettings();
+  const soundOn = useSyncExternalStore(subscribeSoundEnabled, isSoundEnabled);
+
+  const selectSound = (id: string | number): void => {
+    setSoundEnabled(id === "on");
+  };
 
   const errorStateClassProps =
     styles.settingsError !== undefined ? { className: styles.settingsError } : {};
@@ -55,6 +70,12 @@ function SettingsPage(): React.JSX.Element {
             onChange={selectPoints}
             disabled={isDisabled}
             mobileLayout="grid"
+          />
+          <SettingsTabs
+            title="Sound"
+            options={SOUND_OPTIONS}
+            selectedId={soundOn ? "on" : "off"}
+            onChange={selectSound}
           />
         </div>
       </section>

@@ -14,9 +14,9 @@ import {
 import { toUserErrorMessage } from "@/lib/error/error-to-user-message";
 import { ROUTES } from "@/lib/router/routes";
 import { gameQueries } from "@/shared/query/game.queries";
-type SetStartPageError = (message: string | null) => void;
+import { playSound } from "@/shared/services/browser/soundPlayer";
 
-const START_SOUND_PATH = "/sounds/start-round-sound.mp3";
+type SetStartPageError = (message: string | null) => void;
 
 interface UseCreateStartFlowParams {
   gameId: number | null;
@@ -30,16 +30,6 @@ interface UseCreateStartFlowResult {
   starting: boolean;
   handleCreateRoom: () => Promise<void>;
   handleStartGame: () => Promise<void>;
-}
-
-function playStartSound(): void {
-  const audio = new Audio(START_SOUND_PATH);
-  audio.volume = 0.4;
-  try {
-    void audio.play().catch(() => undefined);
-  } catch {
-    // Audio playback is best-effort and may be unavailable in tests or blocked browsers.
-  }
 }
 
 /**
@@ -68,7 +58,7 @@ export function useCreateStartFlow({
     setPageError(null);
 
     try {
-      playStartSound();
+      playSound("start");
       const settings = await getGameSettings(gameId);
 
       await startGame(gameId, {
