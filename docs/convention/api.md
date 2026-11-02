@@ -246,7 +246,7 @@ Mapper rules:
 - Mappers live in `src/shared/lib/<domain>/`: `shared/lib/game/` holds `gameStateNormalizer`,
   `mergeGameSettings`, `player-mappers` (`mapPlayersToUI`), `roundAverage`, `parseThrowValue`,
   `finishedGameStandings`, `lobbyPlayers` (`toLobbyPlayers`); `shared/lib/player/` holds
-  `currentGame` and `profile`.
+  `currentGame`, `gameSeat` and `profile`.
 - Every mapper has a co-located `*.test.ts`.
 - Mappers are called from an API domain function (`getCurrentGame` in `player.ts` calls
   `toCurrentGame`), a `queryFn` in `src/shared/query/` (`playerQueries.profile` calls

@@ -1,8 +1,10 @@
 import { test, expect } from "../shared/test";
 import { mockRememberedPlayerSession } from "../shared/auth-route-mocks";
 import {
+  gameSeat,
   lobbyCurrentGame,
   mockCurrentGame,
+  mockGameSeat,
   NO_CURRENT_GAME,
   startedCurrentGame,
 } from "../shared/current-game-mocks";
@@ -31,6 +33,7 @@ test.describe("Waiting room", () => {
 
   test("tells a removed player and opens the player profile", async ({ page }) => {
     const answerCurrentGame = await mockCurrentGame(page, lobbyCurrentGame(42));
+    await mockGameSeat(page, gameSeat(42, "lobby", false));
 
     await page.goto("/joined");
 
@@ -48,11 +51,67 @@ test.describe("Waiting room", () => {
 
   test("opens the player profile when there is no current game", async ({ page }) => {
     await mockCurrentGame(page, NO_CURRENT_GAME);
+    await mockGameSeat(page, gameSeat(42, "finished", true));
 
     await page.goto("/joined");
 
     await expect(page).toHaveURL("/playerprofile");
   });
+
+  test("opens the profile from the profile link and keeps the player in the game", async ({
+    page,
+  }) => {
+    await mockCurrentGame(page, lobbyCurrentGame(42));
+
+    await page.goto("/joined");
+    await expect(page.getByText("Game #42")).toBeVisible();
+
+    await page.getByRole("link", { name: "My profile" }).click();
+    await expect(page).toHaveURL("/playerprofile");
+
+    await page.goBack();
+
+    await expect(page).toHaveURL("/joined");
+    await expect(page.getByText("Game #42")).toBeVisible();
+  });
+
+  test("tells a player removed while on the profile once they come back", async ({ page }) => {
+    const answerCurrentGame = await mockCurrentGame(page, lobbyCurrentGame(42));
+    await mockGameSeat(page, gameSeat(42, "lobby", false));
+
+    await page.goto("/joined");
+    await expect(page.getByText("Game #42")).toBeVisible();
+    await page.getByRole("link", { name: "My profile" }).click();
+    await expect(page).toHaveURL("/playerprofile");
+
+    answerCurrentGame(NO_CURRENT_GAME);
+    await page.goBack();
+
+    await expect(
+      page.getByRole("heading", { name: "You are no longer in this game" }),
+    ).toBeVisible();
+    await expect(page.getByRole("link", { name: "My profile" })).toHaveCount(0);
+  });
+
+  for (const status of ["finished", "aborted"] as const) {
+    test(`opens the profile without a removal when the game was ${status} meanwhile`, async ({
+      page,
+    }) => {
+      const answerCurrentGame = await mockCurrentGame(page, lobbyCurrentGame(42));
+      await mockGameSeat(page, gameSeat(42, status, true));
+
+      await page.goto("/joined");
+      await expect(page.getByText("Game #42")).toBeVisible();
+      await page.getByRole("link", { name: "My profile" }).click();
+      await expect(page).toHaveURL("/playerprofile");
+
+      answerCurrentGame(NO_CURRENT_GAME);
+      await page.goBack();
+
+      await expect(page).toHaveURL("/playerprofile");
+      await expect(page.getByText("You are no longer in this game")).toHaveCount(0);
+    });
+  }
 
   test("shows a red lost-connection line while requests fail", async ({ page }) => {
     let isDown = false;

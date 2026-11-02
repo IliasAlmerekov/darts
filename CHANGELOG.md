@@ -10,6 +10,9 @@ and this project does **not** yet follow [Semantic Versioning](https://semver.or
 ### Fixed
 
 - Game: a tap during the turn-change scroll on iPad no longer leaves the active player off screen; the next throw finishes the scroll (#441)
+### Added
+
+- Waiting room: a "My profile" icon link at the top right of the card opens the Player profile in the loading, lobby and started views; browser back returns to the Waiting room, and the player stays in the game. The removed view keeps "Go to my profile" as its only way out. A player removed from the lobby while on the profile sees the removal on return; a game finished or aborted meanwhile opens the profile instead, decided by the new seat lookup `GET /api/player/games/{gameId}/seat` (#381)
 
 ## [0.4.4] - 2026-11-02
 

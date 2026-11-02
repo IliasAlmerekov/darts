@@ -10,6 +10,15 @@ const currentGameResponseSchema = v.object({
 
 export type CurrentGameResponse = v.InferOutput<typeof currentGameResponseSchema>;
 
+/** Contract `GameSeatResponseDto`: the game's status and whether the player holds a seat in it. */
+const gameSeatResponseSchema = v.object({
+  gameId: integerSchema,
+  status: v.picklist(["lobby", "started", "finished", "aborted"]),
+  seated: v.boolean(),
+});
+
+export type GameSeatResponse = v.InferOutput<typeof gameSeatResponseSchema>;
+
 /** Contract `PlayerProfileParticipantDto`. `playerId` is null for a Guest. */
 const playerProfileParticipantSchema = v.object({
   playerId: v.optional(v.nullable(integerSchema)),
@@ -141,6 +150,7 @@ export type PlayerProfileGame = PlayerProfileResponse["recentGames"][number];
 
 const CURRENT_GAME_ENDPOINT = "/player/current-game";
 const PROFILE_ENDPOINT = "/player/profile";
+const GAME_SEAT_ENDPOINT = (gameId: number) => `/player/games/${gameId}/seat`;
 
 // ---------------------------------------------------------------------------
 // Player
@@ -164,5 +174,18 @@ export async function getPlayerProfile(signal?: AbortSignal): Promise<PlayerProf
   return apiClient.get(PROFILE_ENDPOINT, {
     ...(signal ? { signal } : {}),
     validate: playerProfileResponseSchema,
+  });
+}
+
+/**
+ * Reads a game's status and whether the logged-in player still holds a seat in it.
+ */
+export async function getPlayerGameSeat(
+  gameId: number,
+  signal?: AbortSignal,
+): Promise<GameSeatResponse> {
+  return apiClient.get(GAME_SEAT_ENDPOINT(gameId), {
+    ...(signal ? { signal } : {}),
+    validate: gameSeatResponseSchema,
   });
 }
