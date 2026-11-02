@@ -70,6 +70,7 @@ async function loadSoundPlayerModule() {
 describe("soundPlayer", () => {
   beforeEach(() => {
     audioInstances.length = 0;
+    window.localStorage.clear();
   });
 
   afterEach(() => {
@@ -183,5 +184,109 @@ describe("soundPlayer", () => {
       },
       error: expect.any(Error),
     });
+  });
+
+  it("plays sounds by default", async () => {
+    vi.stubGlobal("Audio", createAudioMock({ readyState: 1 }));
+    const { isSoundEnabled, playSound } = await loadSoundPlayerModule();
+
+    playSound("throw");
+
+    expect(isSoundEnabled()).toBe(true);
+    expect(audioInstances.at(-1)?.play).toHaveBeenCalledTimes(1);
+  });
+
+  it("plays nothing once sound is turned off, and keeps that after a reload", async () => {
+    vi.stubGlobal("Audio", createAudioMock({ readyState: 1 }));
+    const first = await loadSoundPlayerModule();
+    first.setSoundEnabled(false);
+
+    const reloaded = await loadSoundPlayerModule();
+    reloaded.playSound("throw");
+    reloaded.playSound("win");
+
+    expect(reloaded.isSoundEnabled()).toBe(false);
+    expect(audioInstances).toHaveLength(0);
+  });
+
+  it("plays again after sound is turned back on", async () => {
+    vi.stubGlobal("Audio", createAudioMock({ readyState: 1 }));
+    const { playSound, setSoundEnabled } = await loadSoundPlayerModule();
+    setSoundEnabled(false);
+    setSoundEnabled(true);
+
+    playSound("undo");
+
+    expect(audioInstances.at(-1)?.src).toBe("/sounds/undo-sound.mp3");
+    expect(audioInstances.at(-1)?.play).toHaveBeenCalledTimes(1);
+  });
+
+  it("keeps sound on when the device storage cannot be read", async () => {
+    vi.stubGlobal("Audio", createAudioMock({ readyState: 1 }));
+    const getItem = vi.spyOn(Storage.prototype, "getItem").mockImplementation(() => {
+      throw new DOMException("denied", "SecurityError");
+    });
+    const { isSoundEnabled } = await loadSoundPlayerModule();
+
+    expect(isSoundEnabled()).toBe(true);
+    getItem.mockRestore();
+  });
+
+  it("does not prime audio while sound is off, and primes it once sound is back on", async () => {
+    vi.stubGlobal("Audio", createAudioMock({ readyState: 1 }));
+    const { setSoundEnabled, unlockSounds } = await loadSoundPlayerModule();
+    setSoundEnabled(false);
+
+    unlockSounds();
+    expect(audioInstances).toHaveLength(0);
+
+    setSoundEnabled(true);
+    unlockSounds();
+    expect(audioInstances).toHaveLength(1);
+  });
+
+  it("logs an unexpected storage read failure and keeps sound on", async () => {
+    vi.stubGlobal("Audio", createAudioMock({ readyState: 1 }));
+    const getItem = vi.spyOn(Storage.prototype, "getItem").mockImplementation(() => {
+      throw new Error("storage broken");
+    });
+    const { isSoundEnabled } = await loadSoundPlayerModule();
+    getItem.mockRestore();
+
+    expect(isSoundEnabled()).toBe(true);
+    expect(clientLogger.error).toHaveBeenCalledWith("sound-player.setting.read-failed", {
+      error: expect.any(Error),
+    });
+  });
+
+  it("keeps sound off until a reload and logs when the choice cannot be saved", async () => {
+    vi.stubGlobal("Audio", createAudioMock({ readyState: 1 }));
+    const { isSoundEnabled, setSoundEnabled } = await loadSoundPlayerModule();
+    const setItem = vi.spyOn(Storage.prototype, "setItem").mockImplementation(() => {
+      throw new Error("quota exceeded");
+    });
+
+    setSoundEnabled(false);
+    setItem.mockRestore();
+
+    expect(isSoundEnabled()).toBe(false);
+    expect(clientLogger.error).toHaveBeenCalledWith("sound-player.setting.write-failed", {
+      error: expect.any(Error),
+    });
+  });
+
+  it("follows a choice made in another tab of the same device", async () => {
+    vi.stubGlobal("Audio", createAudioMock({ readyState: 1 }));
+    const { isSoundEnabled } = await loadSoundPlayerModule();
+
+    window.dispatchEvent(
+      new StorageEvent("storage", { key: "darts.soundEnabled", newValue: "false" }),
+    );
+    expect(isSoundEnabled()).toBe(false);
+
+    window.dispatchEvent(
+      new StorageEvent("storage", { key: "darts.soundEnabled", newValue: null }),
+    );
+    expect(isSoundEnabled()).toBe(true);
   });
 });
