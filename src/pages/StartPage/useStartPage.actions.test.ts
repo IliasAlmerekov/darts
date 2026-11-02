@@ -26,6 +26,7 @@ vi.mock("@/shared/api/room", () => ({
   addGuestPlayer: vi.fn(),
 }));
 
+import { setSoundEnabled } from "@/shared/services/browser/soundPlayer";
 import { act, renderHook, waitFor } from "@testing-library/react";
 import { MemoryRouter, Routes, Route } from "react-router-dom";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
@@ -117,10 +118,18 @@ class MockEventSource {
 // MockAudio — browser API boundary stub
 // ---------------------------------------------------------------------------
 
+const audioSources: string[] = [];
+
 class MockAudio {
   volume = 1;
+  currentTime = 0;
+  readyState = 1;
   play = vi.fn().mockResolvedValue(undefined);
-  constructor() {}
+  pause = vi.fn();
+  addEventListener = vi.fn();
+  constructor(src = "") {
+    audioSources.push(src);
+  }
 }
 
 // ---------------------------------------------------------------------------
@@ -192,6 +201,8 @@ describe("useStartPage action guards", () => {
     queryClient.clear();
     vi.stubGlobal("EventSource", MockEventSource);
     vi.stubGlobal("Audio", MockAudio);
+    audioSources.length = 0;
+    setSoundEnabled(true);
     vi.mocked(getGameThrows).mockResolvedValue(buildGameThrowsResponse());
     vi.mocked(getInvitation).mockResolvedValue({ gameId: 0, invitationLink: "" });
     vi.mocked(updatePlayerOrder).mockResolvedValue(undefined);
@@ -266,6 +277,27 @@ describe("useStartPage action guards", () => {
       status: "started",
     });
     expect(navigateMock).toHaveBeenCalledWith("/game/10");
+  });
+
+  it("should play the start sound only while game sound is on", async () => {
+    setInvitation({ gameId: 10, invitationLink: "/invite/10" });
+    vi.mocked(getGameSettings).mockResolvedValue(buildGameSettingsResponse());
+    vi.mocked(startGame).mockResolvedValue(undefined);
+    const { result } = renderHook(() => useStartPage(), {
+      wrapper: makeWrapper("/start/10"),
+    });
+
+    setSoundEnabled(false);
+    await act(async () => {
+      await result.current.handleStartGame();
+    });
+    expect(audioSources).toEqual([]);
+
+    setSoundEnabled(true);
+    await act(async () => {
+      await result.current.handleStartGame();
+    });
+    expect(audioSources).toContain("/sounds/start-round-sound.mp3");
   });
 
   it("should prevent duplicate createRoom calls while first request is pending", async () => {

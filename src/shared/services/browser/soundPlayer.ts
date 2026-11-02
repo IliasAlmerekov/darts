@@ -1,6 +1,6 @@
 import { clientLogger } from "./clientLogger";
 
-export type SoundType = "throw" | "undo" | "error" | "win";
+export type SoundType = "start" | "throw" | "undo" | "error" | "win";
 
 interface SoundConfig {
   path: string;
@@ -9,6 +9,10 @@ interface SoundConfig {
 }
 
 const SOUND_CONFIGS: Record<SoundType, SoundConfig> = {
+  start: {
+    path: "/sounds/start-round-sound.mp3",
+    volume: 0.4,
+  },
   throw: {
     path: "/sounds/throw-sound.mp3",
     volume: 0.4,
