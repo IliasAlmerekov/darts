@@ -3,7 +3,7 @@ import styles from "./GameSummaryPage.module.css";
 import { Button } from "@/shared/ui/button";
 import { ErrorState } from "@/shared/ui/error-state";
 import { Podium } from "@/shared/ui/podium";
-import Undo from "@/assets/icons/undolinkbutton.svg";
+import Undo from "@/assets/icons/undo-button.svg";
 import React from "react";
 import { useGameSummaryPage } from "./useGameSummaryPage";
 
