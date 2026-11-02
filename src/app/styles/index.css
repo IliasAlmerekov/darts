@@ -104,10 +104,10 @@ html {
   scrollbar-gutter: stable;
 }
 
-/* Without this, WebKit on iPad holds each tap while it waits for a double-tap zoom,
-   and two fast taps on one button (20, 20 or Undo, Undo) become a zoom gesture.
-   Buttons get it too, because an `overflow` container such as `.keyboard` cuts them
-   off from the `html` value. Pinch zoom still works. */
+/* Asks touch browsers not to wait for a double-tap zoom on a tap. Buttons get it too,
+   because an `overflow` container such as `.keyboard` cuts them off from the `html`
+   value. Pinch zoom still works. WebKit on iPad ignores it on the game keypad, so
+   `NumberButton` acts on touchend there (#421). */
 html,
 button {
   touch-action: manipulation;

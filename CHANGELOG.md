@@ -7,6 +7,10 @@ and this project does **not** yet follow [Semantic Versioning](https://semver.or
 
 ## [Unreleased]
 
+### Fixed
+
+- Game: on iPad, fast taps on one keypad button no longer wait or zoom the page; the keypad acts on touchend, because WebKit ignored `touch-action` there (#421)
+
 ## [0.4.2] - 2026-10-31
 
 ### Fixed
