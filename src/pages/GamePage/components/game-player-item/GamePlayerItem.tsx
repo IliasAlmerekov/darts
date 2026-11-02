@@ -18,7 +18,7 @@ interface GamePlayerItemProps {
 const BUST_ICON = <img src={bustIconX} alt="Bust icon" />;
 
 function renderSlotContent(slot: ThrowSlot): React.ReactNode {
-  if (slot.kind === "value") return slot.label;
+  if (slot.kind === "value" || slot.kind === "suggestion") return slot.label;
   if (slot.kind === "bust-icon") return BUST_ICON;
   return null;
 }
@@ -34,6 +34,9 @@ function GamePlayerItem({
   itemRef,
 }: GamePlayerItemProps): React.JSX.Element {
   const [slot1, slot2, slot3] = throwSlots;
+  const suggestion = throwSlots
+    .filter((slot) => slot.kind === "suggestion")
+    .map((slot) => slot.label);
 
   return (
     <div
@@ -43,6 +46,7 @@ function GamePlayerItem({
       data-active-player={isActive ? "true" : undefined}
       role="group"
       aria-label={name}
+      aria-describedby={suggestion.length > 0 ? "checkout-score" : undefined}
       aria-current={isActive ? "true" : undefined}
       tabIndex={isActive ? -1 : undefined}
     >
@@ -63,24 +67,30 @@ function GamePlayerItem({
           })}
         >
           <div
+            aria-hidden={slot1.kind === "suggestion" ? true : undefined}
             className={clsx(styles.divDisplay, styles.copyLarge, {
               [styles.handleBust ?? ""]: slot1.isBust && !isActive,
+              [styles.suggestion ?? ""]: slot1.kind === "suggestion",
             })}
           >
             {renderSlotContent(slot1)}
           </div>
 
           <div
+            aria-hidden={slot2.kind === "suggestion" ? true : undefined}
             className={clsx(styles.divDisplay, styles.copyLarge, {
               [styles.handleBust ?? ""]: slot2.isBust && !isActive,
+              [styles.suggestion ?? ""]: slot2.kind === "suggestion",
             })}
           >
             {renderSlotContent(slot2)}
           </div>
 
           <div
+            aria-hidden={slot3.kind === "suggestion" ? true : undefined}
             className={clsx(styles.divDisplay, styles.copyLarge, {
               [styles.handleBust ?? ""]: slot3.isBust && !isActive,
+              [styles.suggestion ?? ""]: slot3.kind === "suggestion",
             })}
           >
             {renderSlotContent(slot3)}
@@ -95,7 +105,15 @@ function GamePlayerItem({
           >
             Score
           </div>
-          <div className={styles.valueDisplay}>{value}</div>
+          <div
+            className={styles.valueDisplay}
+            id={suggestion.length > 0 ? "checkout-score" : undefined}
+          >
+            {value}
+            {suggestion.length > 0 ? (
+              <span className={styles.visuallyHidden}> Checkout: {suggestion.join(", ")}</span>
+            ) : null}
+          </div>
         </div>
       </div>
     </div>
@@ -103,7 +121,7 @@ function GamePlayerItem({
 }
 
 function getSlotLabel(slot: ThrowSlot): string | undefined {
-  return slot.kind === "value" ? slot.label : undefined;
+  return slot.kind === "value" || slot.kind === "suggestion" ? slot.label : undefined;
 }
 
 function isSameSlot(previousSlot: ThrowSlot, nextSlot: ThrowSlot): boolean {

@@ -231,7 +231,9 @@ describe("GamePage throw sync", () => {
     winningThrow.reject(stateVersionConflict());
 
     await waitFor(() => {
-      expect(within(playerCard("Alice")).getByText("19")).toBeTruthy();
+      expect(
+        within(playerCard("Alice")).getByText("19", { selector: "div:not([aria-hidden])" }),
+      ).toBeTruthy();
     });
     expect(screen.queryByText(/Summary page/)).toBeNull();
   });
@@ -259,7 +261,9 @@ describe("GamePage throw sync", () => {
     await waitFor(() => {
       expect(screen.queryByText("Player Finished! Continue Game?")).toBeNull();
     });
-    expect(within(playerCard("Alice")).getByText("19")).toBeTruthy();
+    expect(
+      within(playerCard("Alice")).getByText("19", { selector: "div:not([aria-hidden])" }),
+    ).toBeTruthy();
     expect(screen.queryByText(/Summary page/)).toBeNull();
   });
 
@@ -498,7 +502,9 @@ describe("GamePage throw sync", () => {
     renderGamePage();
 
     await waitFor(() => {
-      expect(within(playerCard("Alice")).getByText("20")).toBeTruthy();
+      expect(
+        within(playerCard("Alice")).getByText("20", { selector: "div:not([aria-hidden])" }),
+      ).toBeTruthy();
     });
     expect(screen.queryByText(/Summary page/)).toBeNull();
   });

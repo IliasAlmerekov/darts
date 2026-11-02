@@ -1,6 +1,9 @@
 // @vitest-environment jsdom
 import { render, screen } from "@testing-library/react";
 import { describe, expect, it, vi, beforeEach, afterEach } from "vitest";
+import { mapPlayersToUI } from "@/lib/game/player-mappers";
+import { buildBackendPlayer, buildGameThrowsResponse } from "@/shared/types/game.test-support";
+import { applyOptimisticThrow, applyOptimisticUndo } from "../../lib/optimisticThrow.logic";
 import type { WinnerPlayerProps } from "@/types";
 import GamePlayerItemList from "./GamePlayerItemList";
 
@@ -220,5 +223,87 @@ describe("GamePlayerItemList", () => {
     );
 
     expect(rowRenders.count - rendersAfterMount).toBe(1);
+  });
+  it("updates the accessible suggestion with the active score and suppresses it when finished", () => {
+    const player = { ...createPlayer(1, "Player 1", true), score: 70 };
+    const { rerender } = render(
+      <GamePlayerItemList userMap={[player]} round={1} mode="double-out" />,
+    );
+    expect(screen.getByText("Checkout: T10, D20")).toBeTruthy();
+    expect(screen.getByRole("group", { name: "Player 1" }).getAttribute("aria-describedby")).toBe(
+      "checkout-score",
+    );
+    expect(screen.getByText("T10").getAttribute("aria-hidden")).toBe("true");
+    rerender(
+      <GamePlayerItemList
+        userMap={[{ ...player, score: 30, throwCount: 2, rounds: [{ throw1: 20, throw2: 20 }] }]}
+        round={1}
+        mode="double-out"
+      />,
+    );
+    expect(screen.getByText("Checkout: D15")).toBeTruthy();
+    rerender(<GamePlayerItemList userMap={[player]} round={1} mode="double-out" gameFinished />);
+    expect(screen.queryByText(/Checkout:/)).toBeNull();
+  });
+  it("ignores a previous turn when the active player has no throws", () => {
+    const player = {
+      ...createPlayer(1, "Player 1", true),
+      score: 170,
+      rounds: [{ throw1: 20, throw2: 20, throw3: 20 }],
+    };
+    render(<GamePlayerItemList userMap={[player]} round={1} mode="double-out" />);
+    expect(screen.getByText("Checkout: T20, T20, D25")).toBeTruthy();
+  });
+
+  it("hides suggestions for waiting and finished players and unreachable scores", () => {
+    render(
+      <GamePlayerItemList
+        userMap={[
+          { ...createPlayer(1, "Waiting", false), score: 30 },
+          { ...createPlayer(2, "Finished", true), score: 30, isPlaying: false },
+          { ...createPlayer(3, "Bogey", true), score: 169 },
+        ]}
+        round={1}
+        mode="double-out"
+      />,
+    );
+    expect(screen.queryByText(/Checkout:/)).toBeNull();
+  });
+  it("tracks optimistic throws, busts and undo", () => {
+    const state = buildGameThrowsResponse({
+      settings: { startScore: 301, doubleOut: true, tripleOut: false },
+      players: [
+        buildBackendPlayer({ id: 1, name: "Alice", score: 70, isActive: true }),
+        buildBackendPlayer({ id: 2, name: "Bob", score: 30 }),
+      ],
+    });
+    const view = (game: typeof state) => (
+      <GamePlayerItemList
+        userMap={mapPlayersToUI(game.players, game.currentRound)}
+        round={game.currentRound}
+        mode="double-out"
+      />
+    );
+    const { rerender } = render(view(state));
+    expect(screen.getByText("Checkout: T10, D20")).toBeTruthy();
+    const afterThrow = applyOptimisticThrow(state, { value: 20, isDouble: false, isTriple: false });
+    expect(afterThrow).not.toBeNull();
+    if (!afterThrow) return;
+    rerender(view(afterThrow));
+    expect(screen.getByText("Checkout: D25")).toBeTruthy();
+    const afterBust = applyOptimisticThrow(afterThrow, {
+      value: 20,
+      isDouble: false,
+      isTriple: true,
+    });
+    expect(afterBust).not.toBeNull();
+    if (!afterBust) return;
+    rerender(view(afterBust));
+    expect(screen.getByText("Checkout: D15")).toBeTruthy();
+    const afterUndo = applyOptimisticUndo(afterBust);
+    expect(afterUndo).not.toBeNull();
+    if (!afterUndo) return;
+    rerender(view(afterUndo));
+    expect(screen.getByText("Checkout: D25")).toBeTruthy();
   });
 });

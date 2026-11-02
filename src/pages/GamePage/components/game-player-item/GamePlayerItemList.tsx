@@ -1,5 +1,6 @@
 import React, { useRef } from "react";
 import clsx from "clsx";
+import type { GameMode } from "@/types";
 import type { WinnerPlayerProps } from "@/types";
 import useIsomorphicLayoutEffect from "@/lib/useIsomorphicLayoutEffect";
 import { getPlayerThrowsDisplay } from "../../lib/playerThrowsDisplay.logic";
@@ -20,11 +21,15 @@ function isOnScreen(element: HTMLElement): boolean {
 interface GamePlayerItemListProps {
   userMap: WinnerPlayerProps[];
   round: number;
+  mode?: GameMode;
+  gameFinished?: boolean;
 }
 
 function GamePlayerItemListComponent({
   userMap,
   round,
+  mode,
+  gameFinished = false,
 }: GamePlayerItemListProps): React.JSX.Element {
   const activePlayerId = userMap.find((item) => item.isActive)?.id ?? null;
   const previousActivePlayerIdRef = useRef<number | null>(null);
@@ -89,6 +94,9 @@ function GamePlayerItemListComponent({
             previousRound: item.rounds[round - 2],
             isActive: item.isActive,
             isBust: item.isBust,
+            ...(item.isPlaying !== false && !gameFinished && mode
+              ? { score: item.score, throwCount: item.throwCount, mode }
+              : {}),
           })}
           isPlaying={item.isPlaying}
           {...(item.isActive ? { id: "playerid", itemRef: activePlayerElementRef } : {})}
@@ -101,5 +109,8 @@ function GamePlayerItemListComponent({
 export default React.memo(
   GamePlayerItemListComponent,
   (previousProps, nextProps) =>
-    previousProps.round === nextProps.round && previousProps.userMap === nextProps.userMap,
+    previousProps.round === nextProps.round &&
+    previousProps.userMap === nextProps.userMap &&
+    previousProps.mode === nextProps.mode &&
+    previousProps.gameFinished === nextProps.gameFinished,
 );
