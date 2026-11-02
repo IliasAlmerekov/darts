@@ -117,43 +117,54 @@ describe("GamePlayerItemList", () => {
     expect(scrollIntoViewMock.mock.instances[0]).toBe(activePlayer);
   });
 
-  it("should scroll back to the active player after a throw when a tap stopped the scroll short", () => {
-    vi.useFakeTimers();
+  // A tap that stops the scroll can leave either edge hidden: the top above the viewport,
+  // or the bottom under the sticky keypad. Each edge alone must trigger the second scroll.
+  it.each(["top", "bottom"] as const)(
+    "should scroll back to the active player after a throw when a tap left its %s edge hidden",
+    (hiddenEdge) => {
+      vi.useFakeTimers();
 
-    const { rerender } = render(
-      <GamePlayerItemList
-        userMap={[createPlayer(1, "Player 1", true), createPlayer(2, "Player 2", false)]}
-        round={1}
-      />,
-    );
-    vi.runAllTimers();
-    expect(scrollIntoViewMock).toHaveBeenCalledTimes(1);
+      const { rerender } = render(
+        <GamePlayerItemList
+          userMap={[createPlayer(1, "Player 1", true), createPlayer(2, "Player 2", false)]}
+          round={1}
+        />,
+      );
+      vi.runAllTimers();
+      expect(scrollIntoViewMock).toHaveBeenCalledTimes(1);
 
-    // On iPad a tap stops a smooth scroll midway, and the sticky keypad covers the player.
-    const activePlayer = screen.getByRole("group", { name: "Player 1" });
-    const keypad = document.createElement("div");
-    document.body.append(keypad);
-    elementFromPointMock.mockReturnValue(keypad);
+      // The card spans y 100..200; something else covers the hidden edge's half.
+      const activePlayer = screen.getByRole("group", { name: "Player 1" });
+      vi.spyOn(activePlayer, "getBoundingClientRect").mockReturnValue(
+        new DOMRect(0, 100, 100, 100),
+      );
+      const cover = document.createElement("div");
+      document.body.append(cover);
+      elementFromPointMock.mockImplementation((_x, y) => {
+        const isTopHalf = y < 150;
+        return isTopHalf === (hiddenEdge === "top") ? cover : activePlayer;
+      });
 
-    rerender(
-      <GamePlayerItemList
-        userMap={[
-          { ...createPlayer(1, "Player 1", true), score: 281 },
-          createPlayer(2, "Player 2", false),
-        ]}
-        round={1}
-      />,
-    );
-    vi.runAllTimers();
+      rerender(
+        <GamePlayerItemList
+          userMap={[
+            { ...createPlayer(1, "Player 1", true), score: 281 },
+            createPlayer(2, "Player 2", false),
+          ]}
+          round={1}
+        />,
+      );
+      vi.runAllTimers();
 
-    expect(scrollIntoViewMock).toHaveBeenCalledTimes(2);
-    expect(scrollIntoViewMock.mock.instances[1]).toBe(activePlayer);
-    expect(scrollIntoViewMock).toHaveBeenLastCalledWith({
-      behavior: "smooth",
-      block: "center",
-      inline: "nearest",
-    });
-  });
+      expect(scrollIntoViewMock).toHaveBeenCalledTimes(2);
+      expect(scrollIntoViewMock.mock.instances[1]).toBe(activePlayer);
+      expect(scrollIntoViewMock).toHaveBeenLastCalledWith({
+        behavior: "smooth",
+        block: "center",
+        inline: "nearest",
+      });
+    },
+  );
 
   it("should not scroll again while the active player stays on screen across rerenders", () => {
     vi.useFakeTimers();
