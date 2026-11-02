@@ -120,6 +120,9 @@ interface AudioPool {
 
 const audioPools = new Map<SoundType, AudioPool>();
 
+/** Pooled elements with a start time waiting for `loadedmetadata`. */
+const audiosAwaitingMetadata = new WeakSet<HTMLAudioElement>();
+
 function takePooledAudio(soundType: SoundType, config: SoundConfig): HTMLAudioElement {
   let pool = audioPools.get(soundType);
   if (pool === undefined) {
@@ -195,9 +198,16 @@ function configureAudioStartTime(
     return;
   }
 
+  // A file that never loads would otherwise collect one listener per replay.
+  if (audiosAwaitingMetadata.has(audio)) {
+    return;
+  }
+
+  audiosAwaitingMetadata.add(audio);
   audio.addEventListener(
     "loadedmetadata",
     () => {
+      audiosAwaitingMetadata.delete(audio);
       applyStartTime(audio, startTime, soundType, config);
     },
     { once: true },
