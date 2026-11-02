@@ -68,14 +68,20 @@ export function getCheckoutSuggestion(
   for (let length = 1; length <= dartsLeft; length += 1) {
     const candidates = routes(remaining, length, mode);
     if (candidates.length === 0) continue;
-    const compareLastDart = (a: Segment[], b: Segment[]): number =>
-      lastRank(a[a.length - 1]!, mode) - lastRank(b[b.length - 1]!, mode);
+    const compareLastDart = (a: Segment[], b: Segment[]): number => {
+      const lastA = a.at(-1);
+      const lastB = b.at(-1);
+      return lastA && lastB ? lastRank(lastA, mode) - lastRank(lastB, mode) : 0;
+    };
     const comparePlanB = (a: Segment[], b: Segment[]): number =>
       Number(hasPlanB(b, remaining, dartsLeft, mode)) -
       Number(hasPlanB(a, remaining, dartsLeft, mode));
     const compareEarlierDarts = (a: Segment[], b: Segment[]): number => {
       for (let i = 0; i < a.length - 1; i += 1) {
-        const difference = earlierRank(a[i]!) - earlierRank(b[i]!);
+        const dartA = a[i];
+        const dartB = b[i];
+        if (!dartA || !dartB) break;
+        const difference = earlierRank(dartA) - earlierRank(dartB);
         if (difference !== 0) return difference;
       }
       return 0;
@@ -88,7 +94,9 @@ export function getCheckoutSuggestion(
       }
       return 0;
     });
-    const result = candidates[0]!.map(
+    const best = candidates[0];
+    if (!best) continue;
+    const result = best.map(
       (s) => `${s.ring === "single" ? "" : s.ring === "double" ? "D" : "T"}${s.number}`,
     );
     cache.set(key, result);

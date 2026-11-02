@@ -38,10 +38,11 @@ describe("checkout suggestion", () => {
     expect(getCheckoutSuggestion(81, 3, "double-out")).toEqual(["T15", "D18"]);
   });
   it("uses all remaining darts for Plan B", () => {
-    expect(getCheckoutSuggestion(70, 3, "double-out")).toEqual(["T10", "D20"]);
+    expect(getCheckoutSuggestion(56, 2, "single-out")).toEqual(["D18", "20"]);
+    expect(getCheckoutSuggestion(56, 3, "single-out")).toEqual(["T12", "20"]);
   });
   it("compares earlier darts in order", () => {
-    expect(getCheckoutSuggestion(170, 3, "double-out")).toEqual(["T20", "T20", "D25"]);
+    expect(getCheckoutSuggestion(103, 3, "single-out")).toEqual(["T20", "18", "25"]);
   });
   it("finds a shortest legal route for every score and dart count", () => {
     const segments = [
