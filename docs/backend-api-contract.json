@@ -1391,6 +1391,96 @@
                 }
             }
         },
+        "/api/player/games/{gameId}/seat": {
+            "get": {
+                "tags": [
+                    "Player"
+                ],
+                "summary": "Returns a game's status and whether the player still holds a seat in it, so the Waiting\nroom can tell a removal from a finished or aborted game. Nothing about other players.",
+                "operationId": "get_app_player_game_seat",
+                "parameters": [
+                    {
+                        "name": "gameId",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer",
+                            "pattern": "\\d+",
+                            "example": 12
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Status des Spiels und ob der Spieler darin noch einen Platz hat.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/GameSeatResponseDto"
+                                },
+                                "examples": {
+                                    "seated": {
+                                        "summary": "Spieler sitzt in der Lobby",
+                                        "value": {
+                                            "gameId": 12,
+                                            "status": "lobby",
+                                            "seated": true
+                                        }
+                                    },
+                                    "removed": {
+                                        "summary": "Admin hat den Spieler aus der Lobby entfernt",
+                                        "value": {
+                                            "gameId": 12,
+                                            "status": "lobby",
+                                            "seated": false
+                                        }
+                                    },
+                                    "finished": {
+                                        "summary": "Spiel ist beendet",
+                                        "value": {
+                                            "gameId": 12,
+                                            "status": "finished",
+                                            "seated": true
+                                        }
+                                    },
+                                    "aborted": {
+                                        "summary": "Spiel wurde abgebrochen",
+                                        "value": {
+                                            "gameId": 12,
+                                            "status": "aborted",
+                                            "seated": true
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Nicht angemeldet."
+                    },
+                    "403": {
+                        "description": "Angemeldet ohne `ROLE_PLAYER` (z. B. der Admin) (`ACCESS_DENIED`).",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ApiError"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Spiel nicht gefunden (`GAME_NOT_FOUND`).",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ApiError"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
         "/api/player/profile": {
             "get": {
                 "tags": [
@@ -3035,6 +3125,31 @@
                             "started",
                             null
                         ]
+                    }
+                },
+                "type": "object"
+            },
+            "GameSeatResponseDto": {
+                "required": [
+                    "gameId",
+                    "status",
+                    "seated"
+                ],
+                "properties": {
+                    "gameId": {
+                        "type": "integer"
+                    },
+                    "status": {
+                        "type": "string",
+                        "enum": [
+                            "lobby",
+                            "started",
+                            "finished",
+                            "aborted"
+                        ]
+                    },
+                    "seated": {
+                        "type": "boolean"
                     }
                 },
                 "type": "object"

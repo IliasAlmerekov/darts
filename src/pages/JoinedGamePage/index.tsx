@@ -1,5 +1,6 @@
 import React from "react";
-import { Navigate, useNavigate } from "react-router-dom";
+import { Link, Navigate, useNavigate } from "react-router-dom";
+import userIcon from "@/assets/icons/user.svg";
 import { useAuthenticatedUser } from "@/shared/hooks/useAuthenticatedUser";
 import { ROUTES } from "@/lib/router/routes";
 import { ErrorState } from "@/shared/ui/error-state";
@@ -58,6 +59,16 @@ function JoinedGamePage(): React.JSX.Element {
               <div className={styles.header}>
                 <span className={styles.checkIcon} aria-hidden="true" />
                 <h1 className={styles.title}>Joined game</h1>
+                {view.kind !== "removed" && (
+                  <Link
+                    to={ROUTES.playerProfile}
+                    className={styles.profileLink}
+                    aria-label="My profile"
+                    title="My profile"
+                  >
+                    <img src={userIcon} alt="" className={styles.profileIcon} />
+                  </Link>
+                )}
               </div>
 
               <div className={styles.info}>
