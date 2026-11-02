@@ -14,6 +14,13 @@ and this project does **not** yet follow [Semantic Versioning](https://semver.or
 ### Fixed
 
 - Game: only the player list scrolls now, so the header and keypad stay in place and the active player is no longer hidden under the keypad after a turn change (#443)
+### Changed
+
+- Assets: the undo icons `undo-copy.svg` and `undolinkbutton.svg` are now `undo-dark.svg` and `undo-button.svg` (#358)
+
+### Removed
+
+- Assets: 14 icons and the CircularXX Black and Italic font files that nothing referenced (#358)
 
 ## [0.4.4] - 2026-11-02
 
