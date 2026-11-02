@@ -131,11 +131,14 @@
   text-align: center;
 }
 
+/* A fixed height makes .gameContent the only scroll container, so the keypad never covers
+   the active player (#443). The keypad pads its own bottom edge. */
 .gamePage {
   display: flex;
   flex-direction: column;
-  min-height: 100dvh;
-  padding: var(--page-padding);
+  box-sizing: border-box;
+  height: 100dvh;
+  padding: var(--page-padding) var(--page-padding) 0;
   gap: var(--space-md);
 }
 
