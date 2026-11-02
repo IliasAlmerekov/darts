@@ -275,6 +275,25 @@ describe("soundPlayer", () => {
     });
   });
 
+  it("tells subscribers when sound is turned on or off, here or in another tab", async () => {
+    vi.stubGlobal("Audio", createAudioMock({ readyState: 1 }));
+    const { isSoundEnabled, setSoundEnabled, subscribeSoundEnabled } =
+      await loadSoundPlayerModule();
+    const seen: boolean[] = [];
+    const unsubscribe = subscribeSoundEnabled(() => seen.push(isSoundEnabled()));
+
+    setSoundEnabled(false);
+    window.dispatchEvent(
+      new StorageEvent("storage", { key: "darts.soundEnabled", newValue: "true" }),
+    );
+    window.dispatchEvent(new StorageEvent("storage", { key: "other.key", newValue: "x" }));
+    expect(seen).toEqual([false, true]);
+
+    unsubscribe();
+    setSoundEnabled(false);
+    expect(seen).toEqual([false, true]);
+  });
+
   it("follows a choice made in another tab of the same device", async () => {
     vi.stubGlobal("Audio", createAudioMock({ readyState: 1 }));
     const { isSoundEnabled } = await loadSoundPlayerModule();

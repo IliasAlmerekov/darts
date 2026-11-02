@@ -64,14 +64,28 @@ function readSoundEnabled(): boolean {
 }
 
 let soundEnabled = readSoundEnabled();
+const soundEnabledListeners = new Set<() => void>();
+
+function updateSoundEnabled(enabled: boolean): void {
+  soundEnabled = enabled;
+  soundEnabledListeners.forEach((listener) => listener());
+}
 
 // A game open in another tab of the same tablet follows the choice made on Settings.
 if (typeof window !== "undefined") {
   window.addEventListener("storage", (event) => {
     if (event.key === SOUND_ENABLED_STORAGE_KEY) {
-      soundEnabled = parseSoundEnabled(event.newValue);
+      updateSoundEnabled(parseSoundEnabled(event.newValue));
     }
   });
+}
+
+/** Calls `listener` after every sound on/off change; returns the unsubscribe function. */
+export function subscribeSoundEnabled(listener: () => void): () => void {
+  soundEnabledListeners.add(listener);
+  return () => {
+    soundEnabledListeners.delete(listener);
+  };
 }
 
 /** Whether `playSound` plays anything on this device. On unless the user turned it off. */
@@ -81,7 +95,7 @@ export function isSoundEnabled(): boolean {
 
 /** Turns game sounds on or off on this device and remembers the choice. */
 export function setSoundEnabled(enabled: boolean): void {
-  soundEnabled = enabled;
+  updateSoundEnabled(enabled);
   try {
     window.localStorage.setItem(SOUND_ENABLED_STORAGE_KEY, String(enabled));
   } catch (error) {

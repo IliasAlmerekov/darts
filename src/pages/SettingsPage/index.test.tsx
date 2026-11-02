@@ -5,10 +5,19 @@ const saveGameSettingsMock = vi.hoisted(() => vi.fn());
 const getTabletGameMock = vi.hoisted(() => vi.fn());
 const isSoundEnabledMock = vi.hoisted(() => vi.fn(() => true));
 const setSoundEnabledMock = vi.hoisted(() => vi.fn());
+const soundListeners = vi.hoisted(() => new Set<() => void>());
 
 vi.mock("@/shared/services/browser/soundPlayer", () => ({
   isSoundEnabled: () => isSoundEnabledMock(),
-  setSoundEnabled: (enabled: boolean) => setSoundEnabledMock(enabled),
+  setSoundEnabled: (enabled: boolean) => {
+    setSoundEnabledMock(enabled);
+    isSoundEnabledMock.mockReturnValue(enabled);
+    soundListeners.forEach((listener) => listener());
+  },
+  subscribeSoundEnabled: (listener: () => void) => {
+    soundListeners.add(listener);
+    return () => soundListeners.delete(listener);
+  },
 }));
 
 vi.mock("@/shared/api/game", () => ({
@@ -986,6 +995,22 @@ describe("SettingsPage", () => {
       renderSettingsPage("/settings");
       const sound = screen.getByRole("heading", { name: "Sound" }).closest("section");
       if (sound === null) throw new Error("Sound group missing");
+
+      expect(within(sound).getByRole("button", { name: "Off" }).getAttribute("aria-pressed")).toBe(
+        "true",
+      );
+    });
+
+    it("should show Off when another tab turns sound off while Settings is open", () => {
+      isSoundEnabledMock.mockReturnValue(true);
+      renderSettingsPage("/settings");
+      const sound = screen.getByRole("heading", { name: "Sound" }).closest("section");
+      if (sound === null) throw new Error("Sound group missing");
+
+      isSoundEnabledMock.mockReturnValue(false);
+      act(() => {
+        soundListeners.forEach((listener) => listener());
+      });
 
       expect(within(sound).getByRole("button", { name: "Off" }).getAttribute("aria-pressed")).toBe(
         "true",
