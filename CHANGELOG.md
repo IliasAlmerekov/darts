@@ -22,6 +22,7 @@ and this project does **not** yet follow [Semantic Versioning](https://semver.or
 
 ### Fixed
 
+- Summary: Play Again reads the finished game's settings before it asks for the rematch, so a failed read leaves nothing behind and a retry works; when the rematch lobby cannot be started, the summary shows the error and then opens that lobby's start page instead of a stale tablet game (#436)
 - Game: only the player list scrolls now, so the header and keypad stay in place and the active player is no longer hidden under the keypad after a turn change (#443)
 - Game: a tap during the turn-change scroll on iPad no longer leaves the active player off screen; the next throw finishes the scroll (#441)
 

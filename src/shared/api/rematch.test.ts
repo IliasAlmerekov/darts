@@ -12,9 +12,10 @@ vi.mock("@/shared/api/client", async (importOriginal) => ({
 }));
 
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { createRematchGame, startRematch } from "./game";
+import { createRematchGame, RematchNotStartedError, startRematch } from "./game";
 
 import { apiClient, ApiValidationError } from "./client";
+import { ApiError } from "./errors";
 import { respondWith } from "./test-utils";
 
 const rematchExample = {
@@ -82,6 +83,9 @@ describe("game/rematch api", () => {
 
     const response = await startRematch(520);
 
+    expect(vi.mocked(apiClient.get).mock.invocationCallOrder[0]).toBeLessThan(
+      vi.mocked(apiClient.post).mock.invocationCallOrder[0] ?? 0,
+    );
     expect(apiClient.get).toHaveBeenCalledWith(
       "/game/520/settings",
       expect.objectContaining({ validate: expect.any(Object) }),
@@ -113,6 +117,61 @@ describe("game/rematch api", () => {
         tripleOut: false,
         status: "finished",
       },
+    });
+  });
+
+  describe("when a step of the rematch fails", () => {
+    const settingsExample = {
+      gameId: 520,
+      startScore: 501,
+      doubleOut: true,
+      tripleOut: false,
+      status: "finished",
+    };
+    const serverError = (): ApiError => new ApiError("Server error", { status: 500 });
+
+    it("should reject with the settings error and request no lobby when the settings read fails", async () => {
+      const settingsError = serverError();
+      vi.mocked(apiClient.get).mockRejectedValueOnce(settingsError);
+
+      await expect(startRematch(520)).rejects.toBe(settingsError);
+      expect(apiClient.post).not.toHaveBeenCalled();
+    });
+
+    it("should reject with ApiValidationError and request no lobby when the settings are invalid", async () => {
+      vi.mocked(apiClient.get).mockImplementationOnce(
+        respondWith({ ...settingsExample, startScore: "501" }),
+      );
+
+      await expect(startRematch(520)).rejects.toBeInstanceOf(ApiValidationError);
+      expect(apiClient.post).not.toHaveBeenCalled();
+    });
+
+    it("should reject with the rematch error and start nothing when the lobby request fails", async () => {
+      const rematchError = serverError();
+      vi.mocked(apiClient.get).mockImplementationOnce(respondWith(settingsExample));
+      vi.mocked(apiClient.post).mockRejectedValueOnce(rematchError);
+
+      await expect(startRematch(520)).rejects.toBe(rematchError);
+      expect(apiClient.post).toHaveBeenCalledTimes(1);
+      expect(apiClient.post).not.toHaveBeenCalledWith(
+        "/game/777/start",
+        expect.anything(),
+        expect.anything(),
+      );
+    });
+
+    it("should reject with RematchNotStartedError for the new lobby when the start fails", async () => {
+      const startError = serverError();
+      vi.mocked(apiClient.get).mockImplementationOnce(respondWith(settingsExample));
+      vi.mocked(apiClient.post)
+        .mockImplementationOnce(respondWith(rematchExample))
+        .mockRejectedValueOnce(startError);
+
+      const error: unknown = await startRematch(520).catch((err: unknown) => err);
+
+      expect(error).toBeInstanceOf(RematchNotStartedError);
+      expect(error).toMatchObject({ gameId: 777, cause: startError });
     });
   });
 });

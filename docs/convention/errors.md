@@ -38,9 +38,10 @@ Each concern stays in its file above. User-facing message mapping lives only in
 
 ## Domain errors
 
-Domain-specific `Error` subclasses model control flow, not HTTP. The app has one today:
+Domain-specific `Error` subclasses model control flow, not HTTP. The app has two today:
 `LoginSessionMissingError` in `auth.ts`, for a login the backend accepted without a session
-user. A new one follows these rules:
+user, and `RematchNotStartedError` in `rematch.ts`, for a rematch lobby the server created but
+did not start. A new one follows these rules:
 
 - It sits next to the flow that owns it.
 - It sets `this.name` in the constructor.
