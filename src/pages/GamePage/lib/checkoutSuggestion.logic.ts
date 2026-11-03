@@ -73,9 +73,17 @@ export function getCheckoutSuggestion(
       const lastB = b.at(-1);
       return lastA && lastB ? lastRank(lastA, mode) - lastRank(lastB, mode) : 0;
     };
+    // hasPlanB depends only on a route's first dart, so the sort computes it once per segment.
+    const planBByFirstDart = new Map<Segment | undefined, boolean>();
+    const planB = (route: Segment[]): boolean => {
+      const known = planBByFirstDart.get(route[0]);
+      if (known !== undefined) return known;
+      const result = hasPlanB(route, remaining, dartsLeft, mode);
+      planBByFirstDart.set(route[0], result);
+      return result;
+    };
     const comparePlanB = (a: Segment[], b: Segment[]): number =>
-      Number(hasPlanB(b, remaining, dartsLeft, mode)) -
-      Number(hasPlanB(a, remaining, dartsLeft, mode));
+      Number(planB(b)) - Number(planB(a));
     const compareEarlierDarts = (a: Segment[], b: Segment[]): number => {
       for (let i = 0; i < a.length - 1; i += 1) {
         const dartA = a[i];
