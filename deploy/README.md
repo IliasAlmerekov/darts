@@ -226,5 +226,5 @@ change `compose.yaml` or the `Caddyfile`, so it cannot add host mounts, privileg
 or other services. It can still ship a malicious frontend or backend image. That image
 runs inside the fixed stack: no host mounts besides the read-only avatar folder, no extra
 privileges, access to the database, the session volume and the `app_secret` and
-`mysql_password` secrets. Protect the deploy
-key and the `azure-production` environment reviewers accordingly.
+`mysql_password` secrets. Protect the deploy key and the `azure-production` environment
+reviewers accordingly.
