@@ -9,6 +9,7 @@ and this project does **not** yet follow [Semantic Versioning](https://semver.or
 
 ### Added
 
+- Player profile and Statistics: the player's avatar from `GET /api/player/{id}/avatar` shows in the profile circle and left of each name on Statistics, with the user icon when there is no picture; production mounts the avatar folder named by `AVATAR_HOST_DIR` read-only into the backend (#429)
 - Game: show checkout suggestions in empty throw slots (#427)
 - Waiting room: a "My profile" icon link at the top right of the card opens the Player profile in the loading, lobby and started views; browser back returns to the Waiting room, and the player stays in the game. The removed view keeps "Go to my profile" as its only way out. A player removed from the lobby while on the profile sees the removal on return; a game finished or aborted meanwhile opens the profile instead, decided by the new seat lookup `GET /api/player/games/{gameId}/seat` (#381)
 
