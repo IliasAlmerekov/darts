@@ -28,7 +28,7 @@ check_avatars_env() {
         [[ $key == AVATAR_HOST_DIR ]] || die "Unknown avatars.env key: $key"
         [[ -z $seen ]] || die 'Duplicate avatars.env key: AVATAR_HOST_DIR'
         [[ $value =~ ^/[A-Za-z0-9._/-]+$ ]] || die 'AVATAR_HOST_DIR in avatars.env must be an absolute path.'
-        [[ -d $value && ! -L $value ]] || die "AVATAR_HOST_DIR $value is not an existing directory."
+        [[ -d $value ]] || die "AVATAR_HOST_DIR $value is not an existing directory."
         seen=1
     done < "$avatars_env"
     [[ -n $seen ]] || die "$avatars_env lacks AVATAR_HOST_DIR."
