@@ -212,9 +212,12 @@ export function useGameSummaryPage(): UseGameSummaryPageResult {
       });
       navigate(ROUTES.game(rematch.gameId));
     } catch (err) {
-      if (err instanceof RematchNotStartedError) {
+      const failure = err instanceof RematchNotStartedError ? err.cause : err;
+      if (isGameNotNewestError(failure)) {
+        leaveOldGame("rematch-start");
+      } else if (err instanceof RematchNotStartedError) {
         // The lobby exists with the roster and settings, so the players start it by hand.
-        clientLogger.error("game-summary.rematch.start.failed", {
+        clientLogger.error("game-summary.rematch.lobby-start.failed", {
           context: { finishedGameId: finishedGameIdFromRoute, lobbyGameId: err.gameId },
           error: err.cause,
         });
@@ -223,11 +226,6 @@ export function useGameSummaryPage(): UseGameSummaryPageResult {
           path: ROUTES.start(err.gameId),
           lobbyGameId: err.gameId,
         });
-        setActionError(toUserErrorMessage(err.cause, "Could not start a rematch."));
-        return;
-      }
-      if (isGameNotNewestError(err)) {
-        leaveOldGame("rematch-start");
       } else {
         clientLogger.error("game-summary.rematch.start.failed", {
           context: { finishedGameId: finishedGameIdFromRoute },
@@ -235,7 +233,7 @@ export function useGameSummaryPage(): UseGameSummaryPageResult {
         });
         unlockAction();
       }
-      setActionError(toUserErrorMessage(err, "Could not start a rematch."));
+      setActionError(toUserErrorMessage(failure, "Could not start a rematch."));
     }
   }, [
     finishedGameIdFromRoute,

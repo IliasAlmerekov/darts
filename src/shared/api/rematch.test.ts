@@ -138,6 +138,15 @@ describe("game/rematch api", () => {
       expect(apiClient.post).not.toHaveBeenCalled();
     });
 
+    it("should reject with ApiValidationError and request no lobby when the settings are invalid", async () => {
+      vi.mocked(apiClient.get).mockImplementationOnce(
+        respondWith({ ...settingsExample, startScore: "501" }),
+      );
+
+      await expect(startRematch(520)).rejects.toBeInstanceOf(ApiValidationError);
+      expect(apiClient.post).not.toHaveBeenCalled();
+    });
+
     it("should reject with the rematch error and start nothing when the lobby request fails", async () => {
       const rematchError = serverError();
       vi.mocked(apiClient.get).mockImplementationOnce(respondWith(settingsExample));

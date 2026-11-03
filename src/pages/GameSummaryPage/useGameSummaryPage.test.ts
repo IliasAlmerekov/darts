@@ -9,6 +9,7 @@ import { gameQueries } from "@/shared/query/game.queries";
 import { ApiError } from "@/shared/api";
 import { useGameSummaryPage } from "./useGameSummaryPage";
 import { playSound } from "@/shared/services/browser/soundPlayer";
+import { clientLogger } from "@/shared/services/browser/clientLogger";
 import { $gameData, resetGameStore, setGameData } from "@/shared/store";
 import {
   RematchNotStartedError,
@@ -842,9 +843,11 @@ describe("useGameSummaryPage", () => {
 
     afterEach(() => {
       vi.useRealTimers();
+      vi.restoreAllMocks();
     });
 
     it("should show the start error and keep the actions locked", async () => {
+      const logError = vi.spyOn(clientLogger, "error").mockImplementation(() => undefined);
       const { result } = renderSummaryHook();
 
       await act(async () => {
@@ -858,6 +861,10 @@ describe("useGameSummaryPage", () => {
       expect(result.current.leaving).toBe(true);
       expect(result.current.isActionPending).toBe(true);
       expect(startRematchMock).toHaveBeenCalledTimes(1);
+      expect(logError).toHaveBeenCalledWith("game-summary.rematch.lobby-start.failed", {
+        context: { finishedGameId: 42, lobbyGameId: 77 },
+        error: expect.any(ApiError),
+      });
     });
 
     it("should keep the standings and the lobby state until it opens the new lobby", async () => {
@@ -897,6 +904,28 @@ describe("useGameSummaryPage", () => {
       expect(resetRoomStoreMock).toHaveBeenCalledTimes(1);
       expect(setCurrentGameIdMock).toHaveBeenCalledWith(77);
       expect(testQueryClient.getQueryData(["finishedGame", 42])).toBeUndefined();
+    });
+
+    // ADR-0004: a 409 GAME_NOT_NEWEST on rematch start opens the tablet game, not the lobby.
+    it("should move to the tablet game when the start answers 409 GAME_NOT_NEWEST", async () => {
+      startRematchMock.mockRejectedValue(
+        new RematchNotStartedError(
+          77,
+          new ApiError("Conflict", { status: 409, data: { error: "GAME_NOT_NEWEST" } }),
+        ),
+      );
+      const { result } = renderSummaryHook();
+
+      await act(async () => {
+        await result.current.handlePlayAgain();
+      });
+      act(() => {
+        vi.advanceTimersByTime(2_000);
+      });
+
+      expect(result.current.error).toBe("This game can no longer be changed.");
+      expect(navigateMock).toHaveBeenCalledWith("/game/57", { replace: true });
+      expect(setCurrentGameIdMock).not.toHaveBeenCalled();
     });
   });
 

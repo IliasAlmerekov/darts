@@ -25,7 +25,7 @@ One player's place in a roster. Seats can change only while the game is a lobby.
 _Avoid_: slot, position (for the place itself)
 
 **Rematch**:
-A lobby the server returns for the newest finished or aborted game, with that game's players and settings. Play Again starts it at once; Back to start opens it.
+A lobby the server returns for the newest finished or aborted game, with that game's players and settings. Play Again starts it at once; Back To Start opens it.
 
 **Waiting room**:
 The screen a player sees after joining a game, until that game starts.
