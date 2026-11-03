@@ -17,8 +17,20 @@ interface GamePlayerItemProps {
 
 const BUST_ICON = <img src={bustIconX} alt="Bust icon" />;
 
+// CircularXX digits sit lower than its capitals, so the D/T ring letter is scaled to digit height.
+function renderSuggestion(label: string): React.ReactNode {
+  const ring = /^[DT]/.test(label) ? label.slice(0, 1) : "";
+  return (
+    <span className={styles.suggestion}>
+      {ring ? <span className={styles.suggestionRing}>{ring}</span> : null}
+      {label.slice(ring.length)}
+    </span>
+  );
+}
+
 function renderSlotContent(slot: ThrowSlot): React.ReactNode {
-  if (slot.kind === "value" || slot.kind === "suggestion") return slot.label;
+  if (slot.kind === "value") return slot.label;
+  if (slot.kind === "suggestion") return renderSuggestion(slot.label);
   if (slot.kind === "bust-icon") return BUST_ICON;
   return null;
 }
@@ -70,7 +82,6 @@ function GamePlayerItem({
             aria-hidden={slot1.kind === "suggestion" ? true : undefined}
             className={clsx(styles.divDisplay, styles.copyLarge, {
               [styles.handleBust ?? ""]: slot1.isBust && !isActive,
-              [styles.suggestion ?? ""]: slot1.kind === "suggestion",
             })}
           >
             {renderSlotContent(slot1)}
@@ -80,7 +91,6 @@ function GamePlayerItem({
             aria-hidden={slot2.kind === "suggestion" ? true : undefined}
             className={clsx(styles.divDisplay, styles.copyLarge, {
               [styles.handleBust ?? ""]: slot2.isBust && !isActive,
-              [styles.suggestion ?? ""]: slot2.kind === "suggestion",
             })}
           >
             {renderSlotContent(slot2)}
@@ -90,7 +100,6 @@ function GamePlayerItem({
             aria-hidden={slot3.kind === "suggestion" ? true : undefined}
             className={clsx(styles.divDisplay, styles.copyLarge, {
               [styles.handleBust ?? ""]: slot3.isBust && !isActive,
-              [styles.suggestion ?? ""]: slot3.kind === "suggestion",
             })}
           >
             {renderSlotContent(slot3)}

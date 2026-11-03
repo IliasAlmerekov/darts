@@ -233,7 +233,7 @@ describe("GamePlayerItemList", () => {
     expect(screen.getByRole("group", { name: "Player 1" }).getAttribute("aria-describedby")).toBe(
       "checkout-score",
     );
-    expect(screen.getByText("T10").getAttribute("aria-hidden")).toBe("true");
+    expect(screen.getByText("10").closest('[aria-hidden="true"]')?.textContent).toBe("T10");
     rerender(
       <GamePlayerItemList
         userMap={[{ ...player, score: 30, throwCount: 2, rounds: [{ throw1: 20, throw2: 20 }] }]}
