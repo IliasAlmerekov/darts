@@ -40,8 +40,12 @@ function earlierRank(s: Segment): number {
   if (s.ring === "triple" && s.number === 19) return -999;
   return -s.points * 3 + (s.ring === "single" ? 0 : s.ring === "triple" ? 1 : 2);
 }
-function hasPlanB(route: Segment[], score: number, dartsLeft: number, mode: GameMode): boolean {
-  const first = route[0];
+function hasPlanB(
+  first: Segment | undefined,
+  score: number,
+  dartsLeft: number,
+  mode: GameMode,
+): boolean {
   if (!first || first.ring === "single" || dartsLeft === 1) return true;
   const next = score - first.number;
   if (next <= 0 || isDeadScore(next, mode)) return false;
@@ -73,13 +77,13 @@ export function getCheckoutSuggestion(
       const lastB = b.at(-1);
       return lastA && lastB ? lastRank(lastA, mode) - lastRank(lastB, mode) : 0;
     };
-    // hasPlanB depends only on a route's first dart, so the sort computes it once per segment.
+    // Plan B depends only on a route's first dart, so the sort computes it once per segment.
     const planBByFirstDart = new Map<Segment | undefined, boolean>();
-    const planB = (route: Segment[]): boolean => {
-      const known = planBByFirstDart.get(route[0]);
+    const planB = ([first]: Segment[]): boolean => {
+      const known = planBByFirstDart.get(first);
       if (known !== undefined) return known;
-      const result = hasPlanB(route, remaining, dartsLeft, mode);
-      planBByFirstDart.set(route[0], result);
+      const result = hasPlanB(first, remaining, dartsLeft, mode);
+      planBByFirstDart.set(first, result);
       return result;
     };
     const comparePlanB = (a: Segment[], b: Segment[]): number =>
