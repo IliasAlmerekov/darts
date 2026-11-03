@@ -1,41 +1,12 @@
 import { deriveActivePlayerId, deriveWinnerId } from "@/lib/game/gameStateNormalizer";
+import { resolveGameMode } from "@/lib/game/gameMode";
+import { allowsCheckoutWith, isDeadScore } from "./outRule.logic";
 import type { ParsedThrow } from "@/lib/game/parseThrowValue";
 import type { GameThrowsResponse, PlayerThrow, ScoreboardDelta } from "@/shared/api/game";
 
 function getThrowPoints(throwData: ParsedThrow): number {
   const multiplier = throwData.isTriple ? 3 : throwData.isDouble ? 2 : 1;
   return throwData.value * multiplier;
-}
-
-function isUnreachableRemainder(
-  nextScore: number,
-  settings: GameThrowsResponse["settings"],
-): boolean {
-  if (nextScore === 1) {
-    return settings.doubleOut || settings.tripleOut;
-  }
-
-  return nextScore === 2 && settings.tripleOut;
-}
-
-function canCheckout(
-  nextScore: number,
-  throwData: ParsedThrow,
-  settings: GameThrowsResponse["settings"],
-): boolean {
-  if (nextScore !== 0) {
-    return true;
-  }
-
-  if (settings.doubleOut && !throwData.isDouble) {
-    return false;
-  }
-
-  if (settings.tripleOut && !throwData.isTriple) {
-    return false;
-  }
-
-  return true;
 }
 
 function getSpentPointsInCurrentRound(currentRoundThrows: readonly PlayerThrow[]): number {
@@ -127,10 +98,15 @@ export function applyOptimisticThrow(
 
   const points = getThrowPoints(throwData);
   const projectedScore = activePlayer.score - points;
+  const mode = resolveGameMode(
+    currentGameData.settings.doubleOut,
+    currentGameData.settings.tripleOut,
+  );
+  const ring = throwData.isTriple ? "triple" : throwData.isDouble ? "double" : "single";
   const isBust =
     projectedScore < 0 ||
-    isUnreachableRemainder(projectedScore, currentGameData.settings) ||
-    !canCheckout(projectedScore, throwData, currentGameData.settings);
+    isDeadScore(projectedScore, mode) ||
+    (projectedScore === 0 && !allowsCheckoutWith(ring, mode));
 
   const updatedState: GameThrowsResponse = {
     ...currentGameData,

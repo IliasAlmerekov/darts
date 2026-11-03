@@ -1,9 +1,12 @@
+import { getCheckoutSuggestion } from "./checkoutSuggestion.logic";
+import type { GameMode } from "@/types";
 import type { WinnerPlayerProps } from "@/types";
 
 type PlayerRound = WinnerPlayerProps["rounds"][number];
 
 /** What one of a scoreboard row's three throw cells shows, and whether it is bust-styled. */
 export type ThrowSlot =
+  | { kind: "suggestion"; label: string; isBust: false }
   | { kind: "value"; label: string; isBust: boolean }
   | { kind: "bust-icon"; isBust: boolean }
   | { kind: "empty"; isBust: boolean };
@@ -24,6 +27,9 @@ interface PlayerThrowsDisplayOptions {
   previousRound: PlayerRound | undefined;
   isActive: boolean;
   isBust?: boolean | undefined;
+  score?: number;
+  throwCount?: number;
+  mode?: GameMode;
 }
 
 function mapTriple<T, U>(triple: Triple<T>, map: (item: T, index: SlotIndex) => U): Triple<U> {
@@ -74,8 +80,11 @@ export function getPlayerThrowsDisplay({
   previousRound,
   isActive,
   isBust = false,
+  score,
+  throwCount,
+  mode,
 }: PlayerThrowsDisplayOptions): ThrowSlots {
-  const current = readRoundThrows(currentRound);
+  const current = readRoundThrows(isActive && throwCount === 0 ? undefined : currentRound);
   const previous = readRoundThrows(previousRound);
   const hasCurrentThrows = current.some((roundThrow) => roundThrow.label !== undefined);
 
@@ -105,12 +114,22 @@ export function getPlayerThrowsDisplay({
   if (!isActive && bustFlags[0]) firstBustIconIndex = 1;
   else if (!isActive && bustFlags[1]) firstBustIconIndex = 2;
 
+  const suggestion =
+    isActive && score !== undefined && throwCount !== undefined && mode
+      ? getCheckoutSuggestion(score, 3 - throwCount, mode)
+      : null;
+
   return mapTriple(labels, (label, index): ThrowSlot => {
     const slotIsBust = bustFlags[index];
     if (firstBustIconIndex !== undefined && index >= firstBustIconIndex) {
       return { kind: "bust-icon", isBust: slotIsBust };
     }
-    if (label === undefined) return { kind: "empty", isBust: slotIsBust };
+    if (label === undefined) {
+      const suggestedLabel = suggestion?.[index - (throwCount ?? 0)];
+      return suggestedLabel
+        ? { kind: "suggestion", label: suggestedLabel, isBust: false }
+        : { kind: "empty", isBust: slotIsBust };
+    }
     return { kind: "value", label, isBust: slotIsBust };
   });
 }

@@ -2,7 +2,7 @@ import React from "react";
 import { ErrorState } from "@/shared/ui/error-state";
 import { toUserErrorMessage } from "@/lib/error/error-to-user-message";
 import { ROUTES } from "@/lib/router/routes";
-import { DEFAULT_START_SCORE } from "@/lib/game/gameMode";
+import { DEFAULT_START_SCORE, resolveGameMode } from "@/lib/game/gameMode";
 import GamePlayerItemList from "./components/game-player-item/GamePlayerItemList";
 import FinishedGamePlayerItemList from "./components/game-player-item/FinishedGamePlayerItemList";
 // shortcut: HeaderSection stays the first section import so LinkButton's CSS loads before
@@ -121,7 +121,12 @@ function GamePage(): React.JSX.Element {
         <div className={styles.gameContent}>
           {gameData && (
             <>
-              <GamePlayerItemList userMap={activePlayers} round={gameData.currentRound} />
+              <GamePlayerItemList
+                userMap={activePlayers}
+                round={gameData.currentRound}
+                mode={resolveGameMode(gameData.settings.doubleOut, gameData.settings.tripleOut)}
+                gameFinished={gameData.status === "finished"}
+              />
               <FinishedGamePlayerItemList userMap={finishedPlayers} />
             </>
           )}
