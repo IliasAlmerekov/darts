@@ -154,6 +154,25 @@ Images, the release archive and the server use the version without the `v`, so
 `darts-frontend:0.1.3` ships from tag `v0.1.3`. A tag like `0.1.0` or `v0.1.0-rc.1` does
 not start the workflow.
 
+## Avatars
+
+The backend serves each player's avatar from a folder on the VM. `compose.yaml` mounts the
+host folder named by `AVATAR_HOST_DIR` read-only at `/app/var/avatars` in the `backend`
+service and sets `AVATAR_DIR=/app/var/avatars`. `AVATAR_HOST_DIR` is required: Compose
+refuses to start the stack without it. It is not a `release.env` key, so CI cannot choose
+which host folder the backend sees; Compose reads it from the environment of the command
+that runs it.
+
+Each file in the folder follows one rule:
+
+- one file per player, named `<email in lower case>.png` or `<email in lower case>.jpg`,
+  for example `jane.doe@example.com.png`;
+- square, at most 256×256 px and 100 KB.
+
+When a player has both files, the `.png` wins. A player without a file sees the user icon.
+The app has no upload: copy a new or changed picture into the folder, and the next request
+serves it.
+
 ## First administrator
 
 The command needs an interactive terminal:
@@ -191,6 +210,7 @@ loses all data.
 The CI deploy key can upload an archive and run the rollout, nothing else. It cannot
 change `compose.yaml` or the `Caddyfile`, so it cannot add host mounts, privileged mode
 or other services. It can still ship a malicious frontend or backend image. That image
-runs inside the fixed stack: no host mounts, no extra privileges, access to the database,
-the session volume and the `app_secret` and `mysql_password` secrets. Protect the deploy
+runs inside the fixed stack: no host mounts besides the read-only avatar folder, no extra
+privileges, access to the database, the session volume and the `app_secret` and
+`mysql_password` secrets. Protect the deploy
 key and the `azure-production` environment reviewers accordingly.

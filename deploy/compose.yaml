@@ -51,11 +51,13 @@ services:
       SYMFONY_TRUSTED_PROXIES: REMOTE_ADDR
       MAILER_DSN: "null://null"
       MESSENGER_TRANSPORT_DSN: "sync://"
+      AVATAR_DIR: /app/var/avatars
     secrets:
       - app_secret
       - mysql_password
     volumes:
       - sessions:/app/var/sessions
+      - ${AVATAR_HOST_DIR:?Set AVATAR_HOST_DIR}:/app/var/avatars:ro
     depends_on:
       mysql:
         condition: service_healthy
