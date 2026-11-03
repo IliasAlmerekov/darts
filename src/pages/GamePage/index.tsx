@@ -1,4 +1,5 @@
-import React from "react";
+import React, { useCallback, useMemo, useState } from "react";
+import { useNavigate, useParams } from "react-router-dom";
 import { ErrorState } from "@/shared/ui/error-state";
 import { toUserErrorMessage } from "@/lib/error/error-to-user-message";
 import { ROUTES } from "@/lib/router/routes";
@@ -11,44 +12,43 @@ import { HeaderSection } from "./components/HeaderSection";
 import { KeyboardSection } from "./components/KeyboardSection";
 import { OverlaysSection } from "./components/OverlaysSection";
 import styles from "./GamePage.module.css";
-import { useGameLogic } from "./useGameLogic";
+import { useGameSession } from "./useGameSession";
+import { useGameSounds } from "./useGameSounds";
+import { useWakeLock } from "./useWakeLock";
+import { useGameExitFlow, useGameSettingsFlow } from "./useGameActions";
+import { useGameSummaryNavigation, useInteractionSoundUnlock } from "./useGamePageEffects";
+import { parseRouteGameId } from "@/lib/router/tabletGameRoute";
 
 function GamePage(): React.JSX.Element {
+  const navigate = useNavigate();
+  const { id: gameIdParam } = useParams<{ id?: string }>();
+  const gameId = useMemo(() => parseRouteGameId(gameIdParam), [gameIdParam]);
+  const { view, commands } = useGameSession(gameId);
+  useGameSounds(view.game);
+  useWakeLock(view.game?.status === "started");
+  useInteractionSoundUnlock();
+  const [pageError, setPageError] = useState<string | null>(null);
   const {
-    gameId,
-    gameData,
-    error,
-    activePlayers,
-    finishedPlayers,
-    shouldShowFinishOverlay,
-    isInteractionDisabled,
-    isUndoDisabled,
-    isSettingsDisabled,
-    isSettingsOpen,
+    handleCloseSettings,
+    handleOpenSettings,
+    handleSaveSettings,
     isSavingSettings,
+    isSettingsOpen,
     settingsError,
-    pageError,
+  } = useGameSettingsFlow({
+    gameData: view.game,
+    gameId,
+    updateGameSettings: commands.updateSettings,
+  });
+  const {
+    handleCloseExitOverlay,
+    handleExitGame,
+    handleOpenExitOverlay,
     isExitOverlayOpen,
     isExitPending,
-    isFinishGameDisabled,
-    isFinishPending,
-    finishError,
-    isQueueFull,
-    syncStatus,
-    handleRetry,
-    handleThrow,
-    handleUndo,
-    handleContinueGame,
-    handleUndoFromOverlay,
-    handleFinishGame,
-    handleOpenSettings,
-    handleCloseSettings,
-    handleSaveSettings,
-    handleOpenExitOverlay,
-    handleCloseExitOverlay,
-    clearPageError,
-    handleExitGame,
-  } = useGameLogic();
+  } = useGameExitFlow({ gameId, navigate, setPageError });
+  useGameSummaryNavigation({ gameId, isFinished: view.isFinished, navigate });
+  const clearPageError = useCallback(() => setPageError(null), []);
 
   if (gameId === null) {
     return (
@@ -63,15 +63,15 @@ function GamePage(): React.JSX.Element {
     );
   }
 
-  if (error && !gameData) {
-    const message = toUserErrorMessage(error, "Could not load game data.");
+  if (view.error && !view.game) {
+    const message = toUserErrorMessage(view.error, "Could not load game data.");
     return (
       <div className={styles.gamePageHeader}>
         <ErrorState
           variant="page"
           title="Could not load game"
           message={message}
-          primaryAction={{ label: "Retry", onClick: handleRetry }}
+          primaryAction={{ label: "Retry", onClick: commands.retry }}
           secondaryAction={{ label: "Back to start", to: ROUTES.start() }}
         />
       </div>
@@ -81,21 +81,21 @@ function GamePage(): React.JSX.Element {
   return (
     <>
       <OverlaysSection
-        shouldShowFinishOverlay={shouldShowFinishOverlay}
-        isFinishGameDisabled={isFinishGameDisabled}
-        isFinishPending={isFinishPending}
-        finishError={finishError}
+        shouldShowFinishOverlay={view.shouldShowFinishOverlay}
+        isFinishGameDisabled={!view.canFinishGame || view.isFinishPending}
+        isFinishPending={view.isFinishPending}
+        finishError={view.finishError}
         isExitOverlayOpen={isExitOverlayOpen}
         isExitPending={isExitPending}
         isSettingsOpen={isSettingsOpen}
         settingsError={settingsError}
         isSavingSettings={isSavingSettings}
-        initialStartScore={gameData?.settings.startScore ?? DEFAULT_START_SCORE}
-        initialDoubleOut={gameData?.settings.doubleOut ?? false}
-        initialTripleOut={gameData?.settings.tripleOut ?? false}
-        handleContinueGame={handleContinueGame}
-        handleUndoFromOverlay={handleUndoFromOverlay}
-        handleFinishGame={handleFinishGame}
+        initialStartScore={view.game?.settings.startScore ?? DEFAULT_START_SCORE}
+        initialDoubleOut={view.game?.settings.doubleOut ?? false}
+        initialTripleOut={view.game?.settings.tripleOut ?? false}
+        handleContinueGame={commands.continueGame}
+        handleUndoFromOverlay={commands.undoFromOverlay}
+        handleFinishGame={commands.finishGame}
         handleCloseExitOverlay={handleCloseExitOverlay}
         handleExitGame={handleExitGame}
         handleCloseSettings={handleCloseSettings}
@@ -115,31 +115,31 @@ function GamePage(): React.JSX.Element {
         <HeaderSection
           handleOpenExitOverlay={handleOpenExitOverlay}
           handleOpenSettings={handleOpenSettings}
-          isSettingsDisabled={isSettingsDisabled}
+          isSettingsDisabled={view.isSettingsDisabled}
         />
 
         <div className={styles.gameContent}>
-          {gameData && (
+          {view.game && (
             <>
               <GamePlayerItemList
-                userMap={activePlayers}
-                round={gameData.currentRound}
-                mode={resolveGameMode(gameData.settings.doubleOut, gameData.settings.tripleOut)}
-                gameFinished={gameData.status === "finished"}
+                userMap={view.activePlayers}
+                round={view.game.currentRound}
+                mode={resolveGameMode(view.game.settings.doubleOut, view.game.settings.tripleOut)}
+                gameFinished={view.game.status === "finished"}
               />
-              <FinishedGamePlayerItemList userMap={finishedPlayers} />
+              <FinishedGamePlayerItemList userMap={view.finishedPlayers} />
             </>
           )}
         </div>
 
         <KeyboardSection
-          onUndo={handleUndo}
-          onThrow={handleThrow}
-          onRetry={handleRetry}
-          isUndoDisabled={isUndoDisabled}
-          isInteractionDisabled={isInteractionDisabled}
-          isQueueFull={isQueueFull}
-          syncStatus={syncStatus}
+          onUndo={commands.undo}
+          onThrow={commands.throwDart}
+          onRetry={commands.retry}
+          isUndoDisabled={view.isUndoDisabled}
+          isInteractionDisabled={view.isInteractionDisabled}
+          isQueueFull={view.isQueueFull}
+          syncStatus={view.status}
         />
       </div>
     </>

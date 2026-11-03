@@ -1,10 +1,13 @@
 import { test, expect, type Locator, type Page } from "../shared/test";
 import { mockAdminSession } from "../shared/auth-route-mocks";
-import { mockGameState } from "../shared/game-route-mocks";
 import { fulfillJson } from "../shared/json-response";
 import { navigateInApp } from "../shared/in-app-navigation";
-import { mockFinishedGame, mockFinishGame } from "../shared/summary-mocks";
+import { mockFinishedGame } from "../shared/summary-mocks";
 import { mockTabletGame, startedTabletGame } from "../shared/tablet-game-mocks";
+
+import { installScriptedTransportRoutes } from "../shared/game-routes";
+import { createScriptedGameBackend } from "../../src/shared/types/gameSession.test-support";
+import type { GameThrowsResponse } from "../../src/shared/api/game";
 
 // Throw sync rules from ADR 0003.
 
@@ -19,10 +22,11 @@ const ALICE = { id: 1, name: "Alice" };
 const BOB = { id: 2, name: "Bob" };
 const CARA = { id: 3, name: "Cara" };
 
-function gameState(gameId: number, scores: PlayerScore[]) {
+function gameState(gameId: number, scores: PlayerScore[]): GameThrowsResponse {
   const activePlayer = scores.find((player) => player.isActive) ?? null;
 
   return {
+    type: "full-state",
     id: gameId,
     status: "started",
     currentRound: 1,
@@ -43,52 +47,29 @@ function gameState(gameId: number, scores: PlayerScore[]) {
   };
 }
 
-/**
- * The backend's ack for a throw. A throw that leaves at most one active player finishes the
- * game in the same request: the ack says `finished` and every player has a placement.
- */
-function throwAck(gameId: number, scores: PlayerScore[]) {
-  const winner = scores.find((player) => player.score === 0) ?? null;
-  const isFinished = scores.filter((player) => player.score > 0).length <= 1;
-  const finishingOrder = [
-    ...scores.filter((player) => player.score === 0),
-    ...scores.filter((player) => player.score > 0),
-  ];
-  const placementOf = (player: PlayerScore): number | null => {
-    if (isFinished) {
-      return finishingOrder.indexOf(player) + 1;
-    }
-    return player.score === 0 ? 1 : null;
-  };
-
+function serverState(gameId: number, scores: PlayerScore[], finished = false): GameThrowsResponse {
+  const state = gameState(gameId, scores);
   return {
-    success: true,
-    gameId,
-    stateVersion: `v-${scores.map((player) => player.score).join("-")}`,
-    throw: null,
-    scoreboardDelta: {
-      changedPlayers: scores.map((player, index) => ({
-        playerId: player.id,
-        name: player.name,
-        score: player.score,
-        position: index,
-        placement: placementOf(player),
-        isActive: player.isActive,
-        isGuest: false,
-        isBust: false,
-      })),
-      winnerId: winner?.id ?? null,
-      status: isFinished ? "finished" : "started",
-      currentRound: 1,
-    },
-    serverTs: "2026-10-23T10:00:00Z",
+    ...state,
+    status: finished ? "finished" : "started",
+    winnerId: scores[0]?.score === 0 ? 1 : null,
+    players: state.players.map((player, index) => ({
+      ...player,
+      placement: finished ? index + 1 : player.placement,
+    })),
   };
 }
 
-/** The backend's ack for an undo: a throw ack without the throw. */
-function undoAck(gameId: number, scores: PlayerScore[]) {
-  const { success, stateVersion, scoreboardDelta, serverTs } = throwAck(gameId, scores);
-  return { type: "ack", success, gameId, stateVersion, scoreboardDelta, serverTs };
+async function installScript(
+  page: Page,
+  gameId: number,
+  initial: GameThrowsResponse,
+  onThrow?: () => void,
+) {
+  const backend = createScriptedGameBackend();
+  backend.loads.push(initial);
+  await installScriptedTransportRoutes(page, gameId, backend, onThrow);
+  return backend;
 }
 
 const playerScores = (
@@ -122,7 +103,7 @@ test.describe("Throw sync on the game page", () => {
   test("shows a checkout suggestion on the active card", async ({ page }) => {
     await mockAdminSession(page);
     await mockTabletGame(page, startedTabletGame(1));
-    await mockGameState(page, 1, gameState(1, playerScores(20, 301)));
+    await installScript(page, 1, gameState(1, playerScores(20, 301)));
     await page.goto("/game/1");
     await expect(playerCard(page, "Alice")).toContainText("Checkout: 20");
   });
@@ -132,13 +113,15 @@ test.describe("Throw sync on the game page", () => {
     const gameId = 1;
     await mockAdminSession(page);
     const answerTabletGame = await mockTabletGame(page, startedTabletGame(gameId));
-    await mockGameState(page, gameId, gameState(gameId, playerScores(20, 301)));
+    const backend = await installScript(
+      page,
+      gameId,
+      gameState(gameId, playerScores(20, 301)),
+      () => answerTabletGame({ game: null, lastFinishedGameId: gameId }),
+    );
+    backend.throws.push(serverState(gameId, playerScores(0, 301, "Bob"), true));
     await mockGameSettings(page, gameId);
     await mockFinishedGame(page, gameId);
-    await page.route(`**/api/game/${gameId}/throw/delta`, async (route) => {
-      answerTabletGame({ game: null, lastFinishedGameId: gameId });
-      await fulfillJson(route, throwAck(gameId, playerScores(0, 301, "Bob")));
-    });
     const finishRequests: string[] = [];
     page.on("request", (request) => {
       if (request.url().endsWith(`/api/game/${gameId}/finish`)) {
@@ -165,9 +148,10 @@ test.describe("Throw sync on the game page", () => {
     const finishOverlay = (page: Page): Locator =>
       page.getByRole("dialog", { name: "Player Finished! Continue Game?" });
 
+    let backend: ReturnType<typeof createScriptedGameBackend>;
     test.beforeEach(async ({ page }) => {
       await mockAdminSession(page);
-      await mockGameState(page, gameId, gameState(gameId, threePlayers(20, "Alice")));
+      backend = await installScript(page, gameId, gameState(gameId, threePlayers(20, "Alice")));
       await mockGameSettings(page, gameId);
     });
 
@@ -179,14 +163,32 @@ test.describe("Throw sync on the game page", () => {
       const throwReleased = new Promise<void>((resolve) => {
         releaseThrow = resolve;
       });
-      await page.route(`**/api/game/${gameId}/throw/delta`, async (route) => {
-        await throwReleased;
-        await fulfillJson(route, throwAck(gameId, threePlayers(0, "Bob")));
-      });
-      const countFinishRequests = await mockFinishGame(page, gameId, [
-        { playerId: 1, username: "Alice", placement: 1 },
-        { playerId: 2, username: "Bob", placement: 2 },
-        { playerId: 3, username: "Cara", placement: 3 },
+      backend.throws.push(throwReleased.then(() => serverState(gameId, threePlayers(0, "Bob"))));
+      backend.finishes.push([
+        {
+          playerId: 1,
+          username: "Alice",
+          position: 0,
+          placement: 1,
+          roundsPlayed: 5,
+          roundAverage: 60.2,
+        },
+        {
+          playerId: 2,
+          username: "Bob",
+          position: 1,
+          placement: 2,
+          roundsPlayed: 5,
+          roundAverage: 60.2,
+        },
+        {
+          playerId: 3,
+          username: "Cara",
+          position: 2,
+          placement: 3,
+          roundsPlayed: 5,
+          roundAverage: 60.2,
+        },
       ]);
 
       await page.goto(`/game/${gameId}`);
@@ -206,17 +208,15 @@ test.describe("Throw sync on the game page", () => {
         "Bob",
         "Cara",
       ]);
-      expect(countFinishRequests()).toBe(1);
+      expect(backend.requests.filter((request) => request.kind === "finish")).toHaveLength(1);
     });
 
     test("a failed finish shows an error and Continue keeps the game playable", async ({
       page,
     }) => {
       await mockTabletGame(page, startedTabletGame(gameId));
-      await page.route(`**/api/game/${gameId}/throw/delta`, async (route) => {
-        await fulfillJson(route, throwAck(gameId, threePlayers(0, "Bob")));
-      });
-      await mockFinishGame(page, gameId, [], 500);
+      backend.throws.push(serverState(gameId, threePlayers(0, "Bob")));
+      backend.finishes.push(new Error("Server error"));
 
       await page.goto(`/game/${gameId}`);
       await expect(playerCard(page, "Alice")).toContainText("20");
@@ -238,16 +238,13 @@ test.describe("Throw sync on the game page", () => {
   }) => {
     await mockAdminSession(page);
     const answerTabletGame = await mockTabletGame(page, startedTabletGame(1));
-    await mockGameState(page, 1, gameState(1, playerScores(301, 301)));
-    await mockGameState(page, 2, gameState(2, playerScores(301, 301)));
+    const backend = await installScript(page, 1, gameState(1, playerScores(301, 301)));
+    await installScript(page, 2, gameState(2, playerScores(301, 301)));
     let releaseThrow!: () => void;
     const throwReleased = new Promise<void>((resolve) => {
       releaseThrow = resolve;
     });
-    await page.route("**/api/game/1/throw/delta", async (route) => {
-      await throwReleased;
-      await fulfillJson(route, throwAck(1, playerScores(281, 301)));
-    });
+    backend.throws.push(throwReleased.then(() => serverState(1, playerScores(281, 301))));
 
     await page.goto("/game/1");
     await tap(page, "20");
@@ -273,10 +270,10 @@ test.describe("Throw sync on the game page", () => {
     const gameId = 1;
     await mockAdminSession(page);
     await mockTabletGame(page, startedTabletGame(gameId));
-    await mockGameState(page, gameId, gameState(gameId, playerScores(301, 301)));
-    await page.route(`**/api/game/${gameId}/throw/delta`, async (route) => {
-      await route.fulfill({ status: 500, contentType: "application/json", body: "{}" });
-    });
+    const initial = gameState(gameId, playerScores(301, 301));
+    const backend = await installScript(page, gameId, initial);
+    backend.loads.push(initial);
+    backend.throws.push(new Error("Server error"));
 
     await page.goto(`/game/${gameId}`);
     await expect(playerCard(page, "Alice")).toContainText("301");
@@ -296,17 +293,11 @@ test.describe("Throw sync on the game page", () => {
     const acks = [playerScores(281, 301), playerScores(261, 301), playerScores(241, 301, "Bob")];
     await mockAdminSession(page);
     await mockTabletGame(page, startedTabletGame(gameId));
-    await mockGameState(page, gameId, gameState(gameId, playerScores(301, 301)));
-    await page.route(`**/api/game/${gameId}/throw/delta`, async (route) => {
-      await new Promise((resolve) => setTimeout(resolve, delayMs));
-      if (route.request().method() === "DELETE") {
-        await fulfillJson(route, undoAck(gameId, playerScores(261, 301)));
-        return;
-      }
-
-      const ack = acks.shift() ?? playerScores(241, 301, "Bob");
-      await fulfillJson(route, throwAck(gameId, ack));
-    });
+    const backend = await installScript(page, gameId, gameState(gameId, playerScores(301, 301)));
+    const delayed = (state: GameThrowsResponse): Promise<GameThrowsResponse> =>
+      new Promise((resolve) => setTimeout(() => resolve(state), delayMs));
+    backend.throws.push(...acks.map((scores) => () => delayed(serverState(gameId, scores))));
+    backend.undos.push(() => delayed(serverState(gameId, playerScores(261, 301))));
 
     await page.goto(`/game/${gameId}`);
     await expect(playerCard(page, "Alice")).toContainText("301");

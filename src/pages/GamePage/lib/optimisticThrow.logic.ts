@@ -1,4 +1,8 @@
-import { deriveActivePlayerId, deriveWinnerId } from "@/lib/game/gameStateNormalizer";
+import {
+  deriveActivePlayerId,
+  deriveWinnerId,
+  normalizeActiveFlags,
+} from "@/lib/game/gameStateNormalizer";
 import { resolveGameMode } from "@/lib/game/gameMode";
 import { allowsCheckoutWith, isDeadScore } from "./outRule.logic";
 import type { ParsedThrow } from "@/lib/game/parseThrowValue";
@@ -207,18 +211,6 @@ export function applyOptimisticThrow(
   }
 
   return updatedState;
-}
-
-function normalizeActiveFlags(
-  players: GameThrowsResponse["players"],
-  activePlayerId: number | null,
-): GameThrowsResponse["players"] {
-  if (
-    activePlayerId === null ||
-    players.every((player) => player.isActive === (player.id === activePlayerId))
-  )
-    return players;
-  return players.map((player) => ({ ...player, isActive: player.id === activePlayerId }));
 }
 
 export function applyScoreboardDelta(

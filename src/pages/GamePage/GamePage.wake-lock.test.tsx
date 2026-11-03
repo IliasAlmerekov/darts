@@ -1,8 +1,7 @@
 // @vitest-environment jsdom
 
 const navigateMock = vi.hoisted(() => vi.fn());
-const getGameThrowsIfChangedMock = vi.hoisted(() => vi.fn());
-const resetGameStateVersionMock = vi.hoisted(() => vi.fn());
+const getGameThrowsMock = vi.hoisted(() => vi.fn());
 const abortGameMock = vi.hoisted(() => vi.fn());
 const createRematchGameMock = vi.hoisted(() => vi.fn());
 const updateGameSettingsMock = vi.hoisted(() => vi.fn());
@@ -21,11 +20,9 @@ vi.mock("react-router-dom", async () => {
 vi.mock("@/shared/api/game", () => ({
   abortGame: (...args: unknown[]) => abortGameMock(...args),
   createRematchGame: (...args: unknown[]) => createRematchGameMock(...args),
-  getGameThrows: vi.fn(),
-  getGameThrowsIfChanged: (...args: unknown[]) => getGameThrowsIfChangedMock(...args),
+  finishGame: vi.fn(),
+  getGameThrows: (...args: unknown[]) => getGameThrowsMock(...args),
   recordThrow: vi.fn(),
-  resetGameStateVersion: (...args: unknown[]) => resetGameStateVersionMock(...args),
-  setGameStateVersion: vi.fn(),
   undoLastThrow: vi.fn(),
   updateGameSettings: (...args: unknown[]) => updateGameSettingsMock(...args),
 }));
@@ -35,13 +32,14 @@ vi.mock("@/shared/services/browser/soundPlayer", () => ({
   unlockSounds: vi.fn(),
 }));
 
-import { act, renderHook, waitFor } from "@testing-library/react";
+import { act, render, waitFor } from "@testing-library/react";
 import { afterAll, beforeEach, describe, expect, it, vi } from "vitest";
 import type { GameThrowsResponse } from "@/shared/api/game";
 import * as gameStore from "@/shared/store/game-state";
 import * as roomStore from "@/shared/store/game-session";
 import { QueryClientWrapper } from "@/test/QueryClientWrapper";
-import { useGameLogic } from "./useGameLogic";
+import GamePage from ".";
+import { MemoryRouter } from "react-router-dom";
 
 function setNavigatorWakeLock(request: (type?: WakeLockType) => Promise<WakeLockSentinel>): void {
   Object.defineProperty(navigator, "wakeLock", {
@@ -143,13 +141,14 @@ afterAll(() => {
   restoreNavigatorWakeLock();
 });
 
-describe("useGameLogic wake-lock wiring", () => {
+describe("GamePage wake-lock wiring", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    Element.prototype.scrollIntoView = vi.fn();
     window.sessionStorage.clear();
     gameStore.resetGameStore();
     roomStore.resetRoomStore();
-    getGameThrowsIfChangedMock.mockResolvedValue(null);
+    getGameThrowsMock.mockImplementation(() => new Promise(() => {}));
     createRematchGameMock.mockResolvedValue({
       success: true,
       gameId: 4,
@@ -170,18 +169,18 @@ describe("useGameLogic wake-lock wiring", () => {
     const requestMock = vi.fn().mockResolvedValue(createMockWakeLockSentinel(releaseMock));
 
     setNavigatorWakeLock(requestMock);
-    getGameThrowsIfChangedMock.mockResolvedValue(buildGameData("started"));
+    getGameThrowsMock.mockResolvedValue(buildGameData("started"));
 
-    const { result } = renderHook(() => useGameLogic(), { wrapper: QueryClientWrapper });
+    render(
+      <MemoryRouter>
+        <GamePage />
+      </MemoryRouter>,
+      { wrapper: QueryClientWrapper },
+    );
 
     await waitFor(() => {
       expect(requestMock).toHaveBeenCalledWith("screen");
     });
-
-    expect(result.current.gameId).toBe(1);
-    expect(result.current.handleThrow).toBeTypeOf("function");
-    expect(result.current.handleUndo).toBeTypeOf("function");
-    expect(result.current.handleRetry).toBeTypeOf("function");
   });
 
   it.each([
@@ -194,9 +193,14 @@ describe("useGameLogic wake-lock wiring", () => {
       .mockResolvedValue(createMockWakeLockSentinel(vi.fn().mockResolvedValue(undefined)));
 
     setNavigatorWakeLock(requestMock);
-    getGameThrowsIfChangedMock.mockResolvedValue(gameData);
+    if (gameData !== null) getGameThrowsMock.mockResolvedValue(gameData);
 
-    renderHook(() => useGameLogic(), { wrapper: QueryClientWrapper });
+    render(
+      <MemoryRouter>
+        <GamePage />
+      </MemoryRouter>,
+      { wrapper: QueryClientWrapper },
+    );
     await act(async () => {
       await flushMicrotasks();
     });
@@ -209,16 +213,23 @@ describe("useGameLogic wake-lock wiring", () => {
     const requestMock = vi.fn().mockResolvedValue(createMockWakeLockSentinel(releaseMock));
 
     setNavigatorWakeLock(requestMock);
-    getGameThrowsIfChangedMock.mockResolvedValue(buildGameData("started"));
+    let resolveLoad: (game: GameThrowsResponse) => void = () => {};
+    gameStore.setGameData(buildGameData("started"));
+    getGameThrowsMock.mockReturnValue(
+      new Promise<GameThrowsResponse>((resolve) => {
+        resolveLoad = resolve;
+      }),
+    );
 
-    renderHook(() => useGameLogic(), { wrapper: QueryClientWrapper });
-
-    await waitFor(() => {
-      expect(requestMock).toHaveBeenCalledWith("screen");
-    });
-
-    act(() => {
-      gameStore.setGameData(buildGameData("finished"));
+    render(
+      <MemoryRouter>
+        <GamePage />
+      </MemoryRouter>,
+      { wrapper: QueryClientWrapper },
+    );
+    await waitFor(() => expect(requestMock).toHaveBeenCalledWith("screen"));
+    await act(async () => {
+      resolveLoad(buildGameData("finished"));
     });
 
     await waitFor(() => {
@@ -231,18 +242,22 @@ describe("useGameLogic wake-lock wiring", () => {
     const requestMock = vi.fn().mockResolvedValue(createMockWakeLockSentinel(releaseMock));
 
     setNavigatorWakeLock(requestMock);
-    getGameThrowsIfChangedMock.mockResolvedValue(buildGameData("lobby"));
-
-    renderHook(() => useGameLogic(), { wrapper: QueryClientWrapper });
-
-    await waitFor(() => {
-      expect(gameStore.$gameData.get()?.status).toBe("lobby");
-    });
-
+    let resolveLoad: (game: GameThrowsResponse) => void = () => {};
+    gameStore.setGameData(buildGameData("lobby"));
+    getGameThrowsMock.mockReturnValue(
+      new Promise<GameThrowsResponse>((resolve) => {
+        resolveLoad = resolve;
+      }),
+    );
+    render(
+      <MemoryRouter>
+        <GamePage />
+      </MemoryRouter>,
+      { wrapper: QueryClientWrapper },
+    );
     expect(requestMock).not.toHaveBeenCalled();
-
-    act(() => {
-      gameStore.setGameData(buildGameData("started"));
+    await act(async () => {
+      resolveLoad(buildGameData("started"));
     });
 
     await waitFor(() => {
@@ -255,9 +270,14 @@ describe("useGameLogic wake-lock wiring", () => {
     const requestMock = vi.fn().mockResolvedValue(createMockWakeLockSentinel(releaseMock));
 
     setNavigatorWakeLock(requestMock);
-    getGameThrowsIfChangedMock.mockResolvedValue(buildGameData("started"));
+    getGameThrowsMock.mockResolvedValue(buildGameData("started"));
 
-    const { unmount } = renderHook(() => useGameLogic(), { wrapper: QueryClientWrapper });
+    const { unmount } = render(
+      <MemoryRouter>
+        <GamePage />
+      </MemoryRouter>,
+      { wrapper: QueryClientWrapper },
+    );
 
     await waitFor(() => {
       expect(requestMock).toHaveBeenCalledWith("screen");
