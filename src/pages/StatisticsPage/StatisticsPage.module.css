@@ -116,7 +116,7 @@
 @media (width <= 600px) {
   .playerRow {
     width: 100%;
-    grid-template-columns: minmax(32px, 44px) auto minmax(96px, 1fr) minmax(64px, auto);
+    grid-template-columns: minmax(32px, 44px) auto minmax(72px, 1fr) minmax(64px, auto);
     grid-template-areas:
       "number avatar name score"
       "number avatar games score";
