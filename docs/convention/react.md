@@ -38,14 +38,15 @@ not used.
 
 ## Hooks
 
-- **Location:** a page-private hook lives next to its page (`src/pages/<Page>/use*.ts`). A
+- **Location:** a page-private hook lives in the page root when the entry calls it, and in
+  the folder of the part it serves otherwise (`architecture.md`, "Page structure"). A
   hook used by 2+ pages moves to `src/shared/hooks/`. App-shell hooks live in `src/app/`
   (`useStatisticsPrefetch.ts`).
 - **Return shape:** a hook that returns more than one value declares
   `interface Use<Name>Result { ... }` and annotates its return type with it
   (`src/pages/GamePage/useGameSession.ts`).
-- **Pure helpers belong in `lib/`.** A `use*` file holds hooks; a pure function moves to
-  the page's `lib/` or `src/shared/lib/`.
+- **Pure helpers get their own file.** A `use*` file holds hooks; a pure function moves to
+  its own file in the same folder, or to `src/shared/lib/`.
 
 ## Server reads
 

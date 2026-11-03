@@ -4,5 +4,12 @@
   "prettier.configPath": ".prettierrc",
   "python.testing.unittestArgs": ["-v", "-s", "./tests", "-p", "*test.py"],
   "python.testing.pytestEnabled": false,
-  "python.testing.unittestEnabled": true
+  "python.testing.unittestEnabled": true,
+  "explorer.fileNesting.enabled": true,
+  "explorer.fileNesting.expand": false,
+  "explorer.fileNesting.patterns": {
+    "*.tsx": "${capture}.test.tsx, ${capture}.*.test.tsx, ${capture}.module.css",
+    "*.ts": "${capture}.test.ts, ${capture}.test.tsx, ${capture}.*.test.ts, ${capture}.*.test.tsx, ${capture}.test-support.ts",
+    "index.tsx": "${dirname}.module.css, ${dirname}.test.tsx, ${dirname}.*.test.tsx, index.test.tsx"
+  }
 }

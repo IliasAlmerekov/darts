@@ -252,7 +252,8 @@ Mapper rules:
   `toCurrentGame`), a `queryFn` in `src/shared/query/` (`playerQueries.profile` calls
   `toPlayerProfile`), a store action (`setGameData(data)`
   calls `normalizeGameData(data)`), a route loader (`startPageLoader.ts` calls
-  `toLobbyPlayers`), or a page-private logic file under `src/pages/<Page>/lib/`.
+  `toLobbyPlayers`), or a page-private logic file under `src/pages/<Page>/` that is
+  neither JSX nor a `use*` file.
 - JSX files (`src/pages/**/*.tsx`) and render-flow hooks (`src/pages/**/use*.ts`) receive the
   mapped result and import no mapper. Type imports are fine. Known exception:
   `useGameSummaryPage.ts` calls `buildFinishedGameStandings` in a `useMemo`.
