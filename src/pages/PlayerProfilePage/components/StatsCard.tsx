@@ -1,16 +1,17 @@
 import React from "react";
 import clsx from "clsx";
-import avatarIcon from "@/assets/icons/user-blue.svg";
 import barChartIcon from "@/assets/icons/bar-chart.svg";
 import gamepadIcon from "@/assets/icons/gamepad.svg";
 import targetIcon from "@/assets/icons/target.svg";
 import trophyIcon from "@/assets/icons/trophy.svg";
 import { LogoutButton } from "@/shared/ui/logout-button";
+import { PlayerAvatar } from "@/shared/ui/player-avatar";
 import type { PlayerProfile } from "@/lib/player/profile";
 import type { ProfileState } from "../usePlayerProfilePage";
 import styles from "./StatsCard.module.css";
 
 interface StatsCardProps {
+  playerId: number | null;
   displayName: string;
   profileState: ProfileState;
   className?: string | undefined;
@@ -82,6 +83,7 @@ function readStat(profileState: ProfileState, stat: keyof PlayerProfile["stats"]
 }
 
 export function StatsCard({
+  playerId,
   displayName,
   profileState,
   className,
@@ -91,9 +93,7 @@ export function StatsCard({
   return (
     <section className={clsx(styles.statsCard, className)} aria-label="Player stats">
       <div className={styles.identity}>
-        <span className={styles.avatar}>
-          <img className={styles.avatarIcon} src={avatarIcon} alt="" width={80} height={80} />
-        </span>
+        <PlayerAvatar className={styles.avatar} playerId={playerId} />
         <h2 className={styles.displayName}>{displayName}</h2>
         {profile === null || profile.memberSince === null ? null : (
           <p className={styles.memberSince} role="group" aria-label="Member since">

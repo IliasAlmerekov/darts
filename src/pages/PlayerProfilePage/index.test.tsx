@@ -106,6 +106,19 @@ function pointTitles(chart: HTMLElement): string[] {
   );
 }
 
+/** The decorative images in the card's identity block: the avatar or its fallback icon. */
+function avatarImages(): HTMLElement[] {
+  const card = screen.getByRole("region", { name: "Player stats" });
+  const name = within(card).getByRole("heading", { level: 2 });
+  return within(card)
+    .getAllByRole("presentation")
+    .filter((image) => image.compareDocumentPosition(name) & Node.DOCUMENT_POSITION_FOLLOWING);
+}
+
+function avatarSources(): Array<string | null> {
+  return avatarImages().map((image) => image.getAttribute("src"));
+}
+
 function block(name: string): HTMLElement {
   return screen.getByRole("region", { name });
 }
@@ -157,6 +170,23 @@ describe("PlayerProfilePage", () => {
     renderPage();
 
     expect(screen.getByRole("heading", { level: 2, name: "alice@example.com" })).toBeTruthy();
+  });
+
+  it("shows the player's avatar in the stats card circle", () => {
+    renderPage();
+
+    expect(avatarSources()).toEqual(["/api/player/42/avatar"]);
+  });
+
+  it("shows the user icon in the circle when the avatar fails to load", () => {
+    renderPage();
+    const [avatar] = avatarImages();
+    if (avatar === undefined) throw new Error("avatar image missing");
+    expect(avatar.getAttribute("src")).toBe("/api/player/42/avatar");
+
+    fireEvent.error(avatar);
+
+    expect(avatarSources()).toEqual(["user-blue.svg"]);
   });
 
   it("shows a dash for the average when the player has no finished game", async () => {
@@ -405,7 +435,13 @@ describe("PlayerProfilePage", () => {
       ...screen.getByRole("tabpanel", { name: "Overview" }).querySelectorAll("img"),
     ];
     expect(new Set(profileImages.map((image) => image.getAttribute("src")))).toEqual(
-      new Set(["user-blue.svg", "gamepad.svg", "trophy.svg", "bar-chart.svg", "target.svg"]),
+      new Set([
+        "/api/player/42/avatar",
+        "gamepad.svg",
+        "trophy.svg",
+        "bar-chart.svg",
+        "target.svg",
+      ]),
     );
   });
 
