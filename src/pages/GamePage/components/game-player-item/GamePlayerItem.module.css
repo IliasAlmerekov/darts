@@ -222,6 +222,7 @@
 @media (forced-colors: active) {
   .suggestion {
     color: GrayText;
+    opacity: 1;
   }
 }
 
