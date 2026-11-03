@@ -214,7 +214,7 @@ export function useGameSummaryPage(): UseGameSummaryPageResult {
     } catch (err) {
       if (err instanceof RematchNotStartedError) {
         // The lobby exists with the roster and settings, so the players start it by hand.
-        clientLogger.warn("game-summary.rematch.start.not-started", {
+        clientLogger.error("game-summary.rematch.start.failed", {
           context: { finishedGameId: finishedGameIdFromRoute, lobbyGameId: err.gameId },
           error: err.cause,
         });

@@ -145,6 +145,11 @@ describe("game/rematch api", () => {
 
       await expect(startRematch(520)).rejects.toBe(rematchError);
       expect(apiClient.post).toHaveBeenCalledTimes(1);
+      expect(apiClient.post).not.toHaveBeenCalledWith(
+        "/game/777/start",
+        expect.anything(),
+        expect.anything(),
+      );
     });
 
     it("should reject with RematchNotStartedError for the new lobby when the start fails", async () => {

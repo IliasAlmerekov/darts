@@ -900,7 +900,7 @@ describe("useGameSummaryPage", () => {
     });
   });
 
-  it("should unlock the actions and allow another Play Again when the settings read fails", async () => {
+  it("should unlock the actions and allow another Play Again when startRematch fails before a lobby exists", async () => {
     startRematchMock.mockRejectedValueOnce(new ApiError("Server error", { status: 500 }));
     const { result } = renderSummaryHook();
 
