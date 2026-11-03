@@ -4,13 +4,14 @@
 #   sudo ./init-server.sh "ssh-ed25519 AAAA... darts-deploy@github"
 #
 # Creates the darts-deploy user, its restricted SSH key, the /opt/darts tree,
-# runtime secrets (only when missing), the stack definition in /opt/darts/config,
+# runtime secrets and /opt/darts/config/avatars.env (only when missing), the
+# avatar folder, the stack definition in /opt/darts/config,
 # the rollout and rollback commands, and the sudoers rule that lets darts-deploy
 # run the rollout command and nothing else.
 # Re-running it replaces the installed scripts, compose.yaml, Caddyfile, the key
 # and the sudoers rule. That re-run is the only way a compose or Caddy change
 # reaches the server; release archives never carry these files.
-# It never regenerates an existing secret.
+# It never regenerates an existing secret or rewrites an existing avatars.env.
 set -euo pipefail
 umask 022
 
@@ -85,6 +86,17 @@ for file in compose.yaml Caddyfile; do
     install -o root -g root -m 0644 "$script_dir/$file" "$base/config/.$file.new"
     mv -f -- "$base/config/.$file.new" "$base/config/$file"
 done
+
+# Avatar folder and the setting that names it. The server admin owns avatars.env;
+# a re-run keeps an existing file. The folder is world-readable because the
+# backend container reads it under its own UID.
+install -d -o root -g root -m 0755 "$base/avatars"
+if [[ ! -e $base/config/avatars.env && ! -L $base/config/avatars.env ]]; then
+    printf 'AVATAR_HOST_DIR=%s\n' "$base/avatars" > "$base/config/.avatars.env.new"
+    chown root:root "$base/config/.avatars.env.new"
+    chmod 0644 "$base/config/.avatars.env.new"
+    mv -f -- "$base/config/.avatars.env.new" "$base/config/avatars.env"
+fi
 
 install -o root -g root -m 0755 "$script_dir/rollout.sh" "$base/bin/rollout"
 install -o root -g root -m 0755 "$script_dir/rollback.sh" "$base/bin/rollback"

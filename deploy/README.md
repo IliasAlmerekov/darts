@@ -29,12 +29,13 @@ CI uploads `darts-release-<tag>-<commit>-<run id>.tar.gz` to `/opt/darts/incomin
 - `images.sha256`: checksums of `release.env` and `images.tar.gz`
 
 The rollout rejects an archive with any other member, including `compose.yaml` or
-`Caddyfile`. The stack definition lives only in `/opt/darts/config` on the server, owned
-by root. The rollout runs:
+`Caddyfile`. The stack definition and `avatars.env` live only in `/opt/darts/config` on
+the server, owned by root. The rollout runs:
 
 ```sh
 docker compose --project-directory /opt/darts/config \
-  --env-file /opt/darts/releases/<release>/release.env -f /opt/darts/config/compose.yaml ...
+  --env-file /opt/darts/releases/<release>/release.env \
+  --env-file /opt/darts/config/avatars.env -f /opt/darts/config/compose.yaml ...
 ```
 
 The rollout extracts it into `/opt/darts/releases/<tag>-<commit>-<run id>` and points
@@ -68,6 +69,8 @@ The script creates:
 - `/opt/darts/{bin,releases,config}` owned by root, and `/opt/darts/secrets` (mode 0700).
 - `/opt/darts/config/compose.yaml` and `/opt/darts/config/Caddyfile`, root-owned, mode 0644.
 - `app_secret`, `mysql_password` and `mysql_root_password`, only if they do not exist yet.
+- `/opt/darts/avatars` (root-owned, mode 0755), and `/opt/darts/config/avatars.env` with
+  `AVATAR_HOST_DIR=/opt/darts/avatars` (root-owned, mode 0644), only if it does not exist yet.
 - `/opt/darts/bin/rollout` and `/opt/darts/bin/rollback`, root-owned, mode 0755.
 - `/etc/sudoers.d/darts-deploy`, checked with `visudo -cf`. It allows only
   `sudo /opt/darts/bin/rollout /opt/darts/incoming/*`. The script checks the argument again.
@@ -84,7 +87,8 @@ release at once:
 
 ```sh
 sudo docker compose --project-directory /opt/darts/config \
-  --env-file /opt/darts/current/release.env -f /opt/darts/config/compose.yaml \
+  --env-file /opt/darts/current/release.env \
+  --env-file /opt/darts/config/avatars.env -f /opt/darts/config/compose.yaml \
   up -d --wait --remove-orphans
 ```
 
@@ -95,7 +99,8 @@ check the headers with `curl -I https://<APP_HOSTNAME>/`:
 
 ```sh
 sudo docker compose --project-directory /opt/darts/config \
-  --env-file /opt/darts/current/release.env -f /opt/darts/config/compose.yaml \
+  --env-file /opt/darts/current/release.env \
+  --env-file /opt/darts/config/avatars.env -f /opt/darts/config/compose.yaml \
   up -d --force-recreate --no-deps --wait proxy
 ```
 
@@ -159,9 +164,16 @@ not start the workflow.
 The backend serves each player's avatar from a folder on the VM. `compose.yaml` mounts the
 host folder named by `AVATAR_HOST_DIR` read-only at `/app/var/avatars` in the `backend`
 service and sets `AVATAR_DIR=/app/var/avatars`. `AVATAR_HOST_DIR` is required: Compose
-refuses to start the stack without it. It is not a `release.env` key, so CI cannot choose
-which host folder the backend sees; Compose reads it from the environment of the command
-that runs it.
+refuses to start the stack without it.
+
+`AVATAR_HOST_DIR` comes from `/opt/darts/config/avatars.env`, which every Compose command
+passes as a second `--env-file` after `release.env`. `init-server.sh` writes it once with
+`AVATAR_HOST_DIR=/opt/darts/avatars` and never overwrites it. The server admin edits it
+with `sudo`; CI never does, so a release cannot choose which host folder the backend sees.
+The rollout and the rollback stop before they touch the stack when the file is missing,
+not owned by root, writable by group or others, or holds anything but one
+`AVATAR_HOST_DIR` line with an absolute path. A changed folder takes effect with the next
+rollout or rollback, or at once with the `up -d` command under "Changing compose.yaml".
 
 Each file in the folder follows one rule:
 
@@ -170,7 +182,8 @@ Each file in the folder follows one rule:
 - square, at most 256×256 px and 100 KB.
 
 When a player has both files, the `.png` wins. A player without a file sees the user icon.
-The app has no upload: copy a new or changed picture into the folder, and the next request
+The app has no upload: copy a new or changed picture into the folder, readable by others
+(mode 0644), because the backend container reads it under its own user. The next request
 serves it.
 
 ## First administrator
@@ -179,7 +192,8 @@ The command needs an interactive terminal:
 
 ```sh
 sudo docker compose --project-directory /opt/darts/config \
-  --env-file /opt/darts/current/release.env -f /opt/darts/config/compose.yaml \
+  --env-file /opt/darts/current/release.env \
+  --env-file /opt/darts/config/avatars.env -f /opt/darts/config/compose.yaml \
   run --rm backend php bin/console app:create-admin
 ```
 
