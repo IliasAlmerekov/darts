@@ -26,7 +26,7 @@ function scoreboardDelta(game: GameThrowsResponse): ThrowAckResponse["scoreboard
   };
 }
 
-export function scriptedThrowAck(gameId: number, game: GameThrowsResponse): ThrowAckResponse {
+function scriptedThrowAck(gameId: number, game: GameThrowsResponse): ThrowAckResponse {
   return {
     type: "ack",
     success: true,
@@ -38,7 +38,7 @@ export function scriptedThrowAck(gameId: number, game: GameThrowsResponse): Thro
   };
 }
 
-export function scriptedUndoAck(gameId: number, game: GameThrowsResponse): UndoAckResponse {
+function scriptedUndoAck(gameId: number, game: GameThrowsResponse): UndoAckResponse {
   return {
     type: "ack",
     success: true,

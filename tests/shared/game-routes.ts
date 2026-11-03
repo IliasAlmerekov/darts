@@ -198,7 +198,7 @@ export const installGameRoutes = async (page: Page, options: RouteOptions): Prom
   });
 };
 
-export async function fulfillScriptedGameAck(
+async function fulfillScriptedGameAck(
   route: Route,
   ack: ThrowAckResponse | UndoAckResponse,
 ): Promise<void> {
