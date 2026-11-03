@@ -10,7 +10,11 @@ import { ApiError } from "@/shared/api";
 import { useGameSummaryPage } from "./useGameSummaryPage";
 import { playSound } from "@/shared/services/browser/soundPlayer";
 import { $gameData, resetGameStore, setGameData } from "@/shared/store";
-import type { GameThrowsResponse, UndoAckResponse } from "@/shared/api/game";
+import {
+  RematchNotStartedError,
+  type GameThrowsResponse,
+  type UndoAckResponse,
+} from "@/shared/api/game";
 import {
   buildExpectedPodiumPlaceholder,
   buildExpectedStandings,
@@ -41,7 +45,9 @@ vi.mock("@nanostores/react", () => ({
   useStore: (store: { get: () => unknown }) => store.get(),
 }));
 
-vi.mock("@/shared/api/game", () => ({
+vi.mock("@/shared/api/game", async (importOriginal) => ({
+  RematchNotStartedError: (await importOriginal<typeof import("@/shared/api/game")>())
+    .RematchNotStartedError,
   getFinishedGame: (...args: unknown[]) => getFinishedGameMock(...args),
   getGameSettings: (...args: unknown[]) => getGameSettingsMock(...args),
   createRematchGame: (...args: unknown[]) => createRematchGameMock(...args),
@@ -814,6 +820,104 @@ describe("useGameSummaryPage", () => {
       expect(result.current.leaving).toBe(false);
       expect(navigateMock).not.toHaveBeenCalled();
     });
+  });
+
+  describe("when Play Again creates the lobby but cannot start it", () => {
+    const startFailed = (): RematchNotStartedError =>
+      new RematchNotStartedError(77, new ApiError("Server error", { status: 500 }));
+
+    beforeEach(() => {
+      vi.useFakeTimers();
+      // A stale cached tablet game must not decide where the page goes.
+      testQueryClient.setQueryData(gameQueries.tablet().queryKey, {
+        game: { id: 57, status: "started" },
+        lastFinishedGameId: 56,
+      });
+      testQueryClient.setQueryData(
+        ["finishedGame", 42],
+        buildFinishedPlayerResponses().slice(0, 2),
+      );
+      startRematchMock.mockRejectedValue(startFailed());
+    });
+
+    afterEach(() => {
+      vi.useRealTimers();
+    });
+
+    it("should show the start error and keep the actions locked", async () => {
+      const { result } = renderSummaryHook();
+
+      await act(async () => {
+        await result.current.handlePlayAgain();
+      });
+      await act(async () => {
+        await result.current.handlePlayAgain();
+      });
+
+      expect(result.current.error).toBe("Server error. Please try again later.");
+      expect(result.current.leaving).toBe(true);
+      expect(result.current.isActionPending).toBe(true);
+      expect(startRematchMock).toHaveBeenCalledTimes(1);
+    });
+
+    it("should keep the standings and the lobby state until it opens the new lobby", async () => {
+      const [alice, bob] = buildExpectedStandings();
+      const { result } = renderSummaryHook();
+
+      await act(async () => {
+        await result.current.handlePlayAgain();
+      });
+      act(() => {
+        vi.advanceTimersByTime(1_999);
+      });
+
+      expect(result.current.podiumData).toStrictEqual([
+        alice,
+        bob,
+        buildExpectedPodiumPlaceholder(),
+      ]);
+      expect(testQueryClient.getQueryData(["finishedGame", 42])).toBeDefined();
+      expect(resetRoomStoreMock).not.toHaveBeenCalled();
+      expect(setCurrentGameIdMock).not.toHaveBeenCalled();
+      expect(navigateMock).not.toHaveBeenCalled();
+    });
+
+    it("should open the new lobby's start page after the delay", async () => {
+      const { result } = renderSummaryHook();
+
+      await act(async () => {
+        await result.current.handlePlayAgain();
+      });
+      act(() => {
+        vi.advanceTimersByTime(2_000);
+      });
+
+      expect(navigateMock).toHaveBeenCalledTimes(1);
+      expect(navigateMock).toHaveBeenCalledWith("/start/77", { replace: true });
+      expect(resetRoomStoreMock).toHaveBeenCalledTimes(1);
+      expect(setCurrentGameIdMock).toHaveBeenCalledWith(77);
+      expect(testQueryClient.getQueryData(["finishedGame", 42])).toBeUndefined();
+    });
+  });
+
+  it("should unlock the actions and allow another Play Again when the settings read fails", async () => {
+    startRematchMock.mockRejectedValueOnce(new ApiError("Server error", { status: 500 }));
+    const { result } = renderSummaryHook();
+
+    await act(async () => {
+      await result.current.handlePlayAgain();
+    });
+
+    expect(result.current.error).toBe("Server error. Please try again later.");
+    expect(result.current.isActionPending).toBe(false);
+    expect(result.current.leaving).toBe(false);
+
+    await act(async () => {
+      await result.current.handlePlayAgain();
+    });
+
+    expect(startRematchMock).toHaveBeenCalledTimes(2);
+    expect(navigateMock).toHaveBeenCalledWith("/game/77");
   });
 
   describe("handlePlayAgain", () => {

@@ -1,7 +1,12 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useNavigate, useParams } from "react-router-dom";
-import { createRematchGame, startRematch, undoLastThrow } from "@/shared/api/game";
+import {
+  createRematchGame,
+  RematchNotStartedError,
+  startRematch,
+  undoLastThrow,
+} from "@/shared/api/game";
 import { setCurrentGameId, setInvitation, resetRoomStore } from "@/shared/store";
 import { playSound } from "@/shared/services/browser/soundPlayer";
 import { toUserErrorMessage } from "@/lib/error/error-to-user-message";
@@ -50,9 +55,13 @@ export function useGameSummaryPage(): UseGameSummaryPageResult {
   const [releasedGameId, setReleasedGameId] = useState<number | null>(null);
   // Synchronous, so a second tap before the next render finds the lock taken.
   const actionInFlightRef = useRef<boolean>(false);
-  const [leaveState, setLeaveState] = useState<{ gameId: number | null; path: string } | null>(
-    null,
-  );
+  // `lobbyGameId` is set when the page leaves for a rematch lobby the server created but did
+  // not start; the client state moves to that lobby only when the page leaves.
+  const [leaveState, setLeaveState] = useState<{
+    gameId: number | null;
+    path: string;
+    lobbyGameId: number | null;
+  } | null>(null);
 
   const finishedGameIdFromRoute = useMemo(
     () => parseRouteGameId(summaryGameIdParam),
@@ -60,15 +69,9 @@ export function useGameSummaryPage(): UseGameSummaryPageResult {
   );
 
   // A late 409 for a game the route has left must not move the summary now on screen.
-  const leavePath = leaveState?.gameId === finishedGameIdFromRoute ? leaveState.path : null;
-
-  useEffect(() => {
-    if (leavePath === null) return;
-    const timer = window.setTimeout(() => {
-      navigate(leavePath, { replace: true });
-    }, LEAVE_OLD_GAME_DELAY_MS);
-    return () => window.clearTimeout(timer);
-  }, [leavePath, navigate]);
+  const leaveTarget = leaveState?.gameId === finishedGameIdFromRoute ? leaveState : null;
+  const leavePath = leaveTarget?.path ?? null;
+  const leaveLobbyGameId = leaveTarget?.lobbyGameId ?? null;
 
   // An action error belongs to the game it happened on, so it never follows a route change.
   const actionError =
@@ -109,6 +112,20 @@ export function useGameSummaryPage(): UseGameSummaryPageResult {
     [client],
   );
 
+  useEffect(() => {
+    if (leavePath === null) return;
+    const timer = window.setTimeout(() => {
+      // Released only now: the summary keeps its standings on screen until the page leaves.
+      if (leaveLobbyGameId !== null && finishedGameIdFromRoute !== null) {
+        resetRoomStore();
+        releaseFinishedGame(finishedGameIdFromRoute);
+        setCurrentGameId(leaveLobbyGameId);
+      }
+      navigate(leavePath, { replace: true });
+    }, LEAVE_OLD_GAME_DELAY_MS);
+    return () => window.clearTimeout(timer);
+  }, [finishedGameIdFromRoute, leaveLobbyGameId, leavePath, navigate, releaseFinishedGame]);
+
   // A 409 GAME_NOT_NEWEST means another game started after this one. The cached tablet game
   // may be out of date or missing (then the path is /start); either way the target route's
   // loader reads it again and redirects to the real tablet game.
@@ -121,6 +138,7 @@ export function useGameSummaryPage(): UseGameSummaryPageResult {
       setLeaveState({
         gameId: finishedGameIdFromRoute,
         path: tabletGamePath("game", tabletGame?.game ?? null),
+        lobbyGameId: null,
       });
     },
     [client, finishedGameIdFromRoute],
@@ -194,6 +212,20 @@ export function useGameSummaryPage(): UseGameSummaryPageResult {
       });
       navigate(ROUTES.game(rematch.gameId));
     } catch (err) {
+      if (err instanceof RematchNotStartedError) {
+        // The lobby exists with the roster and settings, so the players start it by hand.
+        clientLogger.warn("game-summary.rematch.start.not-started", {
+          context: { finishedGameId: finishedGameIdFromRoute, lobbyGameId: err.gameId },
+          error: err.cause,
+        });
+        setLeaveState({
+          gameId: finishedGameIdFromRoute,
+          path: ROUTES.start(err.gameId),
+          lobbyGameId: err.gameId,
+        });
+        setActionError(toUserErrorMessage(err.cause, "Could not start a rematch."));
+        return;
+      }
       if (isGameNotNewestError(err)) {
         leaveOldGame("rematch-start");
       } else {
