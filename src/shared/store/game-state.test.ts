@@ -1,16 +1,12 @@
 // @vitest-environment node
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import {
-  $error,
   $gameData,
   $gameSettings,
-  $isLoading,
   getCachedGameSettings,
-  setError,
   resetGameStore,
   setGameData,
   setGameSettings,
-  setLoading,
 } from "./game-state";
 import * as gameStateNormalizer from "../lib/game/gameStateNormalizer";
 import type { GameSettings, GameThrowsResponse } from "@/shared/api/game";
@@ -96,9 +92,7 @@ describe("game-state store", () => {
   });
 
   describe("setGameData", () => {
-    it("should set normalized game data and clear error when fresh game data arrives", () => {
-      setError(new Error("previous error"));
-
+    it("should set normalized game data when fresh game data arrives", () => {
       setGameData({
         ...mockGameData,
         status: "finished",
@@ -123,7 +117,6 @@ describe("game-state store", () => {
 
       expect($gameData.get()?.winnerId).toBe(1);
       expect($gameSettings.get()).toEqual(mockGameData.settings);
-      expect($error.get()).toBeNull();
     });
 
     it("should trust the only active player flag when activePlayerId is stale", () => {
@@ -244,63 +237,15 @@ describe("game-state store", () => {
       expect(cachedAfterFirst).toBe(settings1);
       expect(cachedAfterSecond).toBe(settings1);
     });
-
-    it("should preserve an existing error when settings updates are not the error source", () => {
-      setGameData(mockGameData);
-      const error = new Error("existing error");
-      setError(error);
-
-      setGameSettings(
-        {
-          startScore: 301,
-          doubleOut: false,
-          tripleOut: true,
-        },
-        1,
-      );
-
-      expect($error.get()).toBe(error);
-    });
-  });
-
-  describe("setLoading", () => {
-    it("should set loading state to true when loading starts", () => {
-      setLoading(true);
-      expect($isLoading.get()).toBe(true);
-    });
-
-    it("should set loading state to false when loading finishes", () => {
-      setLoading(true);
-      setLoading(false);
-      expect($isLoading.get()).toBe(false);
-    });
-  });
-
-  describe("setError", () => {
-    it("should set error when an error is provided", () => {
-      const error = new Error("test error");
-      setError(error);
-      expect($error.get()).toBe(error);
-    });
-
-    it("should clear error when set to null", () => {
-      setError(new Error("test"));
-      setError(null);
-      expect($error.get()).toBeNull();
-    });
   });
 
   describe("resetGameStore", () => {
     it("should reset all state to initial values when resetGameStore is called", () => {
       setGameData(mockGameData);
-      setLoading(true);
-      setError(new Error("error"));
 
       resetGameStore();
 
       expect($gameData.get()).toBeNull();
-      expect($isLoading.get()).toBe(false);
-      expect($error.get()).toBeNull();
       expect(getCachedGameSettings(1)).toBeNull();
     });
   });

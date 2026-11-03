@@ -1,4 +1,5 @@
-import React from "react";
+import React, { useCallback, useMemo, useState } from "react";
+import { useNavigate, useParams } from "react-router-dom";
 import { ErrorState } from "@/shared/ui/error-state";
 import { toUserErrorMessage } from "@/lib/error/error-to-user-message";
 import { ROUTES } from "@/lib/router/routes";
@@ -11,12 +12,20 @@ import { HeaderSection } from "./components/HeaderSection";
 import { KeyboardSection } from "./components/KeyboardSection";
 import { OverlaysSection } from "./components/OverlaysSection";
 import styles from "./GamePage.module.css";
-import { useGameLogic } from "./useGameLogic";
+import { useGameSession } from "./useGameSession";
+import { useGameSounds } from "./useGameSounds";
+import { useWakeLock } from "./useWakeLock";
+import { useGameExitFlow, useGameSettingsFlow } from "./useGameActions";
+import { useGameSummaryNavigation, useInteractionSoundUnlock } from "./useGamePageEffects";
+import { parseRouteGameId } from "@/lib/router/tabletGameRoute";
 
 function GamePage(): React.JSX.Element {
+  const navigate = useNavigate();
+  const { id: gameIdParam } = useParams<{ id?: string }>();
+  const gameId = useMemo(() => parseRouteGameId(gameIdParam), [gameIdParam]);
+  const { view, commands } = useGameSession(gameId);
   const {
-    gameId,
-    gameData,
+    game: gameData,
     error,
     activePlayers,
     finishedPlayers,
@@ -24,31 +33,41 @@ function GamePage(): React.JSX.Element {
     isInteractionDisabled,
     isUndoDisabled,
     isSettingsDisabled,
-    isSettingsOpen,
-    isSavingSettings,
-    settingsError,
-    pageError,
-    isExitOverlayOpen,
-    isExitPending,
-    isFinishGameDisabled,
     isFinishPending,
     finishError,
     isQueueFull,
-    syncStatus,
-    handleRetry,
-    handleThrow,
-    handleUndo,
-    handleContinueGame,
-    handleUndoFromOverlay,
-    handleFinishGame,
-    handleOpenSettings,
+    status: syncStatus,
+  } = view;
+  const isFinishGameDisabled = !view.canFinishGame || view.isFinishPending;
+  const {
+    retry: handleRetry,
+    throwDart: handleThrow,
+    undo: handleUndo,
+    continueGame: handleContinueGame,
+    undoFromOverlay: handleUndoFromOverlay,
+    finishGame: handleFinishGame,
+  } = commands;
+  useGameSounds(gameData);
+  useWakeLock(gameData?.status === "started");
+  useInteractionSoundUnlock();
+  const [pageError, setPageError] = useState<string | null>(null);
+  const {
     handleCloseSettings,
+    handleOpenSettings,
     handleSaveSettings,
-    handleOpenExitOverlay,
+    isSavingSettings,
+    isSettingsOpen,
+    settingsError,
+  } = useGameSettingsFlow({ gameData, gameId, updateGameSettings: commands.updateSettings });
+  const {
     handleCloseExitOverlay,
-    clearPageError,
     handleExitGame,
-  } = useGameLogic();
+    handleOpenExitOverlay,
+    isExitOverlayOpen,
+    isExitPending,
+  } = useGameExitFlow({ gameId, navigate, setPageError });
+  useGameSummaryNavigation({ gameId, isFinished: view.isFinished, navigate });
+  const clearPageError = useCallback(() => setPageError(null), []);
 
   if (gameId === null) {
     return (

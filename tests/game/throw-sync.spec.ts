@@ -6,6 +6,10 @@ import { navigateInApp } from "../shared/in-app-navigation";
 import { mockFinishedGame, mockFinishGame } from "../shared/summary-mocks";
 import { mockTabletGame, startedTabletGame } from "../shared/tablet-game-mocks";
 
+import { fulfillScriptedGameAck } from "../shared/game-routes";
+import { scriptedThrowAck, scriptedUndoAck } from "../../src/shared/types/gameSession.test-support";
+import type { GameThrowsResponse } from "../../src/shared/api/game";
+
 // Throw sync rules from ADR 0003.
 
 interface PlayerScore {
@@ -19,10 +23,11 @@ const ALICE = { id: 1, name: "Alice" };
 const BOB = { id: 2, name: "Bob" };
 const CARA = { id: 3, name: "Cara" };
 
-function gameState(gameId: number, scores: PlayerScore[]) {
+function gameState(gameId: number, scores: PlayerScore[]): GameThrowsResponse {
   const activePlayer = scores.find((player) => player.isActive) ?? null;
 
   return {
+    type: "full-state",
     id: gameId,
     status: "started",
     currentRound: 1,
@@ -61,34 +66,27 @@ function throwAck(gameId: number, scores: PlayerScore[]) {
     return player.score === 0 ? 1 : null;
   };
 
-  return {
-    success: true,
-    gameId,
-    stateVersion: `v-${scores.map((player) => player.score).join("-")}`,
-    throw: null,
-    scoreboardDelta: {
-      changedPlayers: scores.map((player, index) => ({
-        playerId: player.id,
-        name: player.name,
-        score: player.score,
-        position: index,
-        placement: placementOf(player),
-        isActive: player.isActive,
-        isGuest: false,
-        isBust: false,
-      })),
-      winnerId: winner?.id ?? null,
-      status: isFinished ? "finished" : "started",
-      currentRound: 1,
-    },
-    serverTs: "2026-10-23T10:00:00Z",
-  };
+  const state = gameState(gameId, scores);
+  return scriptedThrowAck(gameId, {
+    ...state,
+    status: isFinished ? "finished" : "started",
+    winnerId: winner?.id ?? null,
+    players: state.players.map((player, index) => ({
+      ...player,
+      placement: placementOf(scores[index] ?? player),
+    })),
+  });
 }
 
 /** The backend's ack for an undo: a throw ack without the throw. */
 function undoAck(gameId: number, scores: PlayerScore[]) {
-  const { success, stateVersion, scoreboardDelta, serverTs } = throwAck(gameId, scores);
-  return { type: "ack", success, gameId, stateVersion, scoreboardDelta, serverTs };
+  const ack = throwAck(gameId, scores);
+  const state = gameState(gameId, scores);
+  return scriptedUndoAck(gameId, {
+    ...state,
+    status: ack.scoreboardDelta.status,
+    winnerId: ack.scoreboardDelta.winnerId,
+  });
 }
 
 const playerScores = (
@@ -137,7 +135,7 @@ test.describe("Throw sync on the game page", () => {
     await mockFinishedGame(page, gameId);
     await page.route(`**/api/game/${gameId}/throw/delta`, async (route) => {
       answerTabletGame({ game: null, lastFinishedGameId: gameId });
-      await fulfillJson(route, throwAck(gameId, playerScores(0, 301, "Bob")));
+      await fulfillScriptedGameAck(route, throwAck(gameId, playerScores(0, 301, "Bob")));
     });
     const finishRequests: string[] = [];
     page.on("request", (request) => {
@@ -181,7 +179,7 @@ test.describe("Throw sync on the game page", () => {
       });
       await page.route(`**/api/game/${gameId}/throw/delta`, async (route) => {
         await throwReleased;
-        await fulfillJson(route, throwAck(gameId, threePlayers(0, "Bob")));
+        await fulfillScriptedGameAck(route, throwAck(gameId, threePlayers(0, "Bob")));
       });
       const countFinishRequests = await mockFinishGame(page, gameId, [
         { playerId: 1, username: "Alice", placement: 1 },
@@ -214,7 +212,7 @@ test.describe("Throw sync on the game page", () => {
     }) => {
       await mockTabletGame(page, startedTabletGame(gameId));
       await page.route(`**/api/game/${gameId}/throw/delta`, async (route) => {
-        await fulfillJson(route, throwAck(gameId, threePlayers(0, "Bob")));
+        await fulfillScriptedGameAck(route, throwAck(gameId, threePlayers(0, "Bob")));
       });
       await mockFinishGame(page, gameId, [], 500);
 
@@ -246,7 +244,7 @@ test.describe("Throw sync on the game page", () => {
     });
     await page.route("**/api/game/1/throw/delta", async (route) => {
       await throwReleased;
-      await fulfillJson(route, throwAck(1, playerScores(281, 301)));
+      await fulfillScriptedGameAck(route, throwAck(1, playerScores(281, 301)));
     });
 
     await page.goto("/game/1");
@@ -300,12 +298,12 @@ test.describe("Throw sync on the game page", () => {
     await page.route(`**/api/game/${gameId}/throw/delta`, async (route) => {
       await new Promise((resolve) => setTimeout(resolve, delayMs));
       if (route.request().method() === "DELETE") {
-        await fulfillJson(route, undoAck(gameId, playerScores(261, 301)));
+        await fulfillScriptedGameAck(route, undoAck(gameId, playerScores(261, 301)));
         return;
       }
 
       const ack = acks.shift() ?? playerScores(241, 301, "Bob");
-      await fulfillJson(route, throwAck(gameId, ack));
+      await fulfillScriptedGameAck(route, throwAck(gameId, ack));
     });
 
     await page.goto(`/game/${gameId}`);

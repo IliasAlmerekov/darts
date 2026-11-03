@@ -4,13 +4,9 @@ import type { GameSettings, GameThrowsResponse } from "@/shared/api/game";
 import { normalizeGameData } from "../lib/game/gameStateNormalizer";
 
 const gameDataAtom = atom<GameThrowsResponse | null>(null);
-const isLoadingAtom = atom<boolean>(false);
-const errorAtom = atom<Error | null>(null);
 const gameSettingsByGameIdAtom = atom<{ gameId: number; settings: GameSettings } | null>(null);
 
 export const $gameData: ReadableAtom<GameThrowsResponse | null> = gameDataAtom;
-export const $isLoading: ReadableAtom<boolean> = isLoadingAtom;
-export const $error: ReadableAtom<Error | null> = errorAtom;
 
 export const $gameSettings = computed(gameDataAtom, (gameData) => {
   return gameData?.settings ?? null;
@@ -37,7 +33,7 @@ export function getCachedGameSettings(gameId: number): GameSettings | null {
 }
 
 /**
- * Replaces the game data and clears any previous error.
+ * Replaces the game data.
  */
 export function setGameData(data: GameThrowsResponse | null): void {
   const normalizedData = normalizeGameData(data);
@@ -45,7 +41,6 @@ export function setGameData(data: GameThrowsResponse | null): void {
   if (normalizedData !== null) {
     setCachedGameSettings(normalizedData.id, normalizedData.settings);
   }
-  errorAtom.set(null);
 }
 
 /**
@@ -79,25 +74,9 @@ export function setGameSettings(settings: GameSettings, expectedGameId?: number)
 }
 
 /**
- * Sets the loading state for game data requests.
- */
-export function setLoading(loading: boolean): void {
-  isLoadingAtom.set(loading);
-}
-
-/**
- * Stores an error produced while fetching game data.
- */
-export function setError(error: Error | null): void {
-  errorAtom.set(error);
-}
-
-/**
- * Clears game data and resets loading/error flags.
+ * Clears game data and cached settings.
  */
 export function resetGameStore(): void {
   gameDataAtom.set(null);
-  isLoadingAtom.set(false);
-  errorAtom.set(null);
   gameSettingsByGameIdAtom.set(null);
 }

@@ -14,6 +14,8 @@ and this project does **not** yet follow [Semantic Versioning](https://semver.or
 
 ### Changed
 
+- Game: move throw synchronization and recovery into a single game session (#450)
+
 - Assets: the undo icons `undo-copy.svg` and `undolinkbutton.svg` are now `undo-dark.svg` and `undo-button.svg` (#358)
 
 ### Removed

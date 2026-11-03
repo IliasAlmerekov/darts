@@ -113,8 +113,7 @@ An unbounded `Record<id, data>` cache that grows on every fetch is forbidden.
 
 An error atom is cleared **only** by:
 
-1. The success branch of the operation that set it (`setGameData` clears `errorAtom`, as
-   the success counterpart of `setError`),
+1. The success branch of the operation that set it,
 2. a dedicated clearer named for the action, or
 3. the domain reset (`resetGameStore`).
 

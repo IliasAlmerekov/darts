@@ -1,7 +1,7 @@
 // seed: tests/seed.spec.ts
 
-import { expect, test, type Locator, type Page, type Request, type Route } from "../shared/test";
-import { mockTabletGame, startedTabletGame } from "../shared/tablet-game-mocks";
+import { expect, test, type Locator, type Page } from "../shared/test";
+import { installGameRoutes } from "../shared/game-routes";
 
 type PlayerThrow = {
   value: number;
@@ -41,15 +41,6 @@ type MockGameState = {
     doubleOut: boolean;
     tripleOut: boolean;
   };
-};
-
-type RouteOptions = {
-  gameId?: number;
-  initialState: MockGameState;
-  throwStates?: MockGameState[];
-  undoStates?: MockGameState[];
-  undoResponseDelayMs?: number;
-  onUndoRequest?: (request: Request) => void;
 };
 
 const createPlayer = (
@@ -130,21 +121,6 @@ const createState = (overrides: Partial<MockGameState> = {}): MockGameState => (
   ...overrides,
 });
 
-const createScoreboardDelta = (state: MockGameState) => ({
-  changedPlayers: state.players.map((player) => ({
-    playerId: player.id,
-    name: player.name,
-    score: player.score,
-    position: player.position,
-    isActive: player.isActive,
-    isGuest: false,
-    isBust: player.isBust,
-  })),
-  winnerId: state.winnerId,
-  status: state.status,
-  currentRound: state.currentRound,
-});
-
 const playerCard = (page: Page, name: string): Locator => page.getByRole("group", { name });
 
 const undoButton = (page: Page): Locator => page.getByRole("button", { name: "Undo" });
@@ -160,87 +136,6 @@ const mockAuth = async (page: Page): Promise<void> => {
         id: 1,
         username: "testuser",
         redirect: "/start",
-      }),
-    });
-  });
-};
-
-const installGameRoutes = async (page: Page, options: RouteOptions): Promise<void> => {
-  const gameId = options.gameId ?? 1;
-  let currentState: MockGameState = options.initialState;
-  const throwStates = [...(options.throwStates ?? [])];
-  const undoStates = [...(options.undoStates ?? [])];
-  let throwSequence = 0;
-  let undoSequence = 0;
-
-  await mockTabletGame(page, startedTabletGame(gameId));
-
-  await page.route(`**/api/game/${gameId}*`, async (route: Route, request: Request) => {
-    if (request.method() !== "GET") {
-      await route.fallback();
-      return;
-    }
-
-    await route.fulfill({
-      status: 200,
-      contentType: "application/json",
-      headers: {
-        "X-Game-State-Version": `v${throwSequence + 1}`,
-      },
-      body: JSON.stringify(currentState),
-    });
-  });
-
-  const answerUndo = async (route: Route, request: Request): Promise<void> => {
-    options.onUndoRequest?.(request);
-    const nextState = undoStates.shift();
-    if (nextState) {
-      currentState = nextState;
-    }
-
-    if (options.undoResponseDelayMs) {
-      await new Promise((resolve) => setTimeout(resolve, options.undoResponseDelayMs));
-    }
-
-    undoSequence += 1;
-
-    await route.fulfill({
-      status: 200,
-      contentType: "application/json",
-      body: JSON.stringify({
-        type: "ack",
-        success: true,
-        gameId,
-        stateVersion: `undo-v${undoSequence}`,
-        scoreboardDelta: createScoreboardDelta(currentState),
-        serverTs: new Date().toISOString(),
-      }),
-    });
-  };
-
-  await page.route(`**/api/game/${gameId}/throw/delta`, async (route: Route, request: Request) => {
-    if (request.method() === "DELETE") {
-      await answerUndo(route, request);
-      return;
-    }
-
-    const nextState = throwStates.shift();
-    if (nextState) {
-      currentState = nextState;
-    }
-
-    throwSequence += 1;
-
-    await route.fulfill({
-      status: 200,
-      contentType: "application/json",
-      body: JSON.stringify({
-        success: true,
-        gameId,
-        stateVersion: `throw-v${throwSequence}`,
-        throw: null,
-        scoreboardDelta: createScoreboardDelta(currentState),
-        serverTs: new Date().toISOString(),
       }),
     });
   });

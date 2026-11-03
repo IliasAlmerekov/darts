@@ -1,7 +1,6 @@
 // @vitest-environment jsdom
 
-const getGameThrowsIfChangedMock = vi.hoisted(() => vi.fn());
-const resetGameStateVersionMock = vi.hoisted(() => vi.fn());
+const getGameThrowsMock = vi.hoisted(() => vi.fn());
 const abortGameMock = vi.hoisted(() => vi.fn());
 const createRematchGameMock = vi.hoisted(() => vi.fn());
 const updateGameSettingsMock = vi.hoisted(() => vi.fn());
@@ -9,11 +8,9 @@ const updateGameSettingsMock = vi.hoisted(() => vi.fn());
 vi.mock("@/shared/api/game", () => ({
   abortGame: (...args: unknown[]) => abortGameMock(...args),
   createRematchGame: (...args: unknown[]) => createRematchGameMock(...args),
-  getGameThrows: vi.fn(),
-  getGameThrowsIfChanged: (...args: unknown[]) => getGameThrowsIfChangedMock(...args),
+  finishGame: vi.fn(),
+  getGameThrows: (...args: unknown[]) => getGameThrowsMock(...args),
   recordThrow: vi.fn(),
-  resetGameStateVersion: (...args: unknown[]) => resetGameStateVersionMock(...args),
-  setGameStateVersion: vi.fn(),
   undoLastThrow: vi.fn(),
   updateGameSettings: (...args: unknown[]) => updateGameSettingsMock(...args),
 }));
@@ -162,7 +159,7 @@ describe("GamePage", () => {
     window.sessionStorage.clear();
     gameStore.resetGameStore();
     roomStore.resetRoomStore();
-    getGameThrowsIfChangedMock.mockResolvedValue(null);
+    getGameThrowsMock.mockImplementation(() => new Promise(() => {}));
     createRematchGameMock.mockResolvedValue({
       success: true,
       gameId: 5,
@@ -176,7 +173,7 @@ describe("GamePage", () => {
   });
 
   it("should open no EventSource while the game is running", async () => {
-    getGameThrowsIfChangedMock.mockResolvedValue(buildGameData({ id: 3 }));
+    getGameThrowsMock.mockResolvedValue(buildGameData({ id: 3 }));
 
     renderGamePage("/game/3");
 
@@ -190,11 +187,11 @@ describe("GamePage", () => {
     expect(screen.getByRole("alert")).toBeTruthy();
     expect(screen.getByText("Game not available")).toBeTruthy();
     expect(screen.getByRole("link", { name: "Back to start" }).getAttribute("href")).toBe("/start");
-    expect(getGameThrowsIfChangedMock).not.toHaveBeenCalled();
+    expect(getGameThrowsMock).not.toHaveBeenCalled();
   });
 
   it("should render the load error and recover when retry succeeds", async () => {
-    getGameThrowsIfChangedMock
+    getGameThrowsMock
       .mockRejectedValueOnce(new Error("Network request failed"))
       .mockResolvedValueOnce(buildGameData({ id: 9 }));
 
@@ -205,7 +202,7 @@ describe("GamePage", () => {
     fireEvent.click(screen.getByRole("button", { name: "Retry" }));
 
     await waitFor(() => {
-      expect(getGameThrowsIfChangedMock).toHaveBeenCalledTimes(2);
+      expect(getGameThrowsMock).toHaveBeenCalledTimes(2);
     });
     await waitFor(() => {
       expect(screen.queryByText("Could not load game")).toBeNull();
@@ -215,7 +212,7 @@ describe("GamePage", () => {
   });
 
   it("should show a dismissible page error when exiting the game fails", async () => {
-    getGameThrowsIfChangedMock.mockResolvedValue(buildGameData({ id: 2 }));
+    getGameThrowsMock.mockResolvedValue(buildGameData({ id: 2 }));
     abortGameMock.mockRejectedValue(new Error("Abort failed"));
 
     renderGamePage("/game/2");
@@ -237,7 +234,7 @@ describe("GamePage", () => {
   });
 
   it("should open the exit overlay when the back button is clicked", async () => {
-    getGameThrowsIfChangedMock.mockResolvedValue(buildGameData({ id: 2 }));
+    getGameThrowsMock.mockResolvedValue(buildGameData({ id: 2 }));
 
     renderGamePage("/game/2");
 
@@ -249,7 +246,7 @@ describe("GamePage", () => {
   });
 
   it("should disable Yes on the exit overlay while the exit runs", async () => {
-    getGameThrowsIfChangedMock.mockResolvedValue(buildGameData({ id: 2 }));
+    getGameThrowsMock.mockResolvedValue(buildGameData({ id: 2 }));
     abortGameMock.mockReturnValue(new Promise(() => {}));
 
     renderGamePage("/game/2");

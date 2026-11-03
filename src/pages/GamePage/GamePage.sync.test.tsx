@@ -4,11 +4,9 @@
 
 vi.mock("@/shared/api/game", () => ({
   abortGame: vi.fn(),
+  finishGame: vi.fn(),
   getGameThrows: vi.fn(),
-  getGameThrowsIfChanged: vi.fn(),
   recordThrow: vi.fn(),
-  resetGameStateVersion: vi.fn(),
-  setGameStateVersion: vi.fn(),
   undoLastThrow: vi.fn(),
   updateGameSettings: vi.fn(),
 }));
@@ -31,7 +29,6 @@ import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from "vites
 import { ApiError } from "@/shared/api";
 import {
   getGameThrows,
-  getGameThrowsIfChanged,
   recordThrow,
   undoLastThrow,
   updateGameSettings,
@@ -46,7 +43,6 @@ import * as gameStore from "@/shared/store/game-state";
 import { QueryClientWrapper } from "@/test/QueryClientWrapper";
 import GamePage from ".";
 
-const getGameThrowsIfChangedMock = vi.mocked(getGameThrowsIfChanged);
 const getGameThrowsMock = vi.mocked(getGameThrows);
 const recordThrowMock = vi.mocked(recordThrow);
 const undoLastThrowMock = vi.mocked(undoLastThrow);
@@ -188,7 +184,7 @@ function playerCard(name: string): HTMLElement {
 }
 
 async function openGame(game: GameThrowsResponse): Promise<void> {
-  getGameThrowsIfChangedMock.mockResolvedValue(game);
+  getGameThrowsMock.mockResolvedValue(game);
   renderGamePage();
   await screen.findByRole("group", { name: "Alice" });
 }
@@ -305,7 +301,7 @@ describe("GamePage throw sync", () => {
   it("opens no summary when the winning throw ack arrives after the page moved to another game", async () => {
     const winningThrow = createDeferred<ThrowAckResponse>();
     recordThrowMock.mockReturnValueOnce(winningThrow.promise);
-    getGameThrowsIfChangedMock.mockImplementation((id) =>
+    getGameThrowsMock.mockImplementation((id) =>
       Promise.resolve({ ...buildGame({ alice: 19, bob: 301 }), id }),
     );
     const router = createMemoryRouter(
@@ -338,7 +334,7 @@ describe("GamePage throw sync", () => {
   });
 
   it("opens the summary for a game the server already finished", async () => {
-    getGameThrowsIfChangedMock.mockResolvedValue({
+    getGameThrowsMock.mockResolvedValue({
       ...buildGame({ alice: 0, bob: 301 }),
       status: "finished",
       winnerId: 1,
@@ -414,7 +410,7 @@ describe("GamePage throw sync", () => {
     recordThrowMock.mockRejectedValueOnce(new TypeError("Failed to fetch"));
     await openGame(buildGame({ alice: 301, bob: 301 }));
     getGameThrowsMock.mockRejectedValue(new TypeError("Failed to fetch"));
-    getGameThrowsIfChangedMock.mockRejectedValue(new TypeError("Failed to fetch"));
+    getGameThrowsMock.mockRejectedValue(new TypeError("Failed to fetch"));
 
     tap("20");
 
@@ -423,7 +419,7 @@ describe("GamePage throw sync", () => {
     expect(screen.getByRole("button", { name: "20" }).hasAttribute("disabled")).toBe(true);
 
     getGameThrowsMock.mockResolvedValue(buildGame({ alice: 301, bob: 301 }));
-    getGameThrowsIfChangedMock.mockResolvedValue(buildGame({ alice: 301, bob: 301 }));
+    getGameThrowsMock.mockResolvedValue(buildGame({ alice: 301, bob: 301 }));
     fireEvent.click(retryButton);
 
     // Input can come back before the reload answers, so wait for the reloaded score too.
@@ -438,8 +434,8 @@ describe("GamePage throw sync", () => {
     recordThrowMock.mockRejectedValueOnce(
       new ApiError("Request failed", { status: 409, data: { error: "GAME_THROW_NOT_ALLOWED" } }),
     );
-    getGameThrowsMock.mockResolvedValue(buildGame({ alice: 250, bob: 301 }));
     await openGame(buildGame({ alice: 301, bob: 301 }));
+    getGameThrowsMock.mockResolvedValue(buildGame({ alice: 250, bob: 301 }));
 
     tap("20");
 
@@ -449,8 +445,8 @@ describe("GamePage throw sync", () => {
   });
 
   it("keeps throw and undo input disabled until the first load answers, also with a cached game", async () => {
-    const firstLoad = createDeferred<GameThrowsResponse | null>();
-    getGameThrowsIfChangedMock.mockReturnValueOnce(firstLoad.promise);
+    const firstLoad = createDeferred<GameThrowsResponse>();
+    getGameThrowsMock.mockReturnValueOnce(firstLoad.promise);
     // Alice holds a throw, so Undo is enabled once the load answers.
     const gameWithThrow = buildGameWithAliceThrow();
     setGameData(gameWithThrow);
@@ -471,7 +467,7 @@ describe("GamePage throw sync", () => {
 
   // #98: a cached copy keeps the scoreboard on screen, so the failure needs the status line.
   it("offers Retry when the first load fails while the store shows the game", async () => {
-    getGameThrowsIfChangedMock
+    getGameThrowsMock
       .mockRejectedValueOnce(new TypeError("Failed to fetch"))
       .mockResolvedValue(buildGame({ alice: 250, bob: 301 }));
     getGameThrowsMock.mockResolvedValue(buildGame({ alice: 250, bob: 301 }));
@@ -498,7 +494,7 @@ describe("GamePage throw sync", () => {
   // The summary's Undo reopens the game on the server and leaves the finished copy in the store.
   it("loads a game the summary reopened instead of returning to the summary", async () => {
     setGameData({ ...buildGame({ alice: 0, bob: 40 }), status: "finished", winnerId: 1 });
-    getGameThrowsIfChangedMock.mockResolvedValue(buildGame({ alice: 20, bob: 40 }));
+    getGameThrowsMock.mockResolvedValue(buildGame({ alice: 20, bob: 40 }));
     renderGamePage();
 
     await waitFor(() => {
