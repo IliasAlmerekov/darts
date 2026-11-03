@@ -122,6 +122,7 @@ describe("useLobbyRoster", () => {
 
   afterEach(() => {
     vi.unstubAllGlobals();
+    vi.restoreAllMocks();
   });
 
   it("returns add outcomes and revalidates locked seats", async () => {
@@ -496,6 +497,66 @@ describe("useLobbyRoster", () => {
       expect(screen.getByTestId("count").textContent).toBe("1");
     });
   });
+
+  it.each([
+    ["an object username", { id: 3, username: { first: "Mallory" }, position: 0 }],
+    ["a string position", { id: 3, username: "Mallory", position: "0" }],
+  ])(
+    "should keep the last valid roster when an SSE players event has %s",
+    async (_case, badPlayer) => {
+      const log = vi.spyOn(clientLogger, "error").mockImplementation(() => {});
+      const close = vi.spyOn(MockEventSource.prototype, "close");
+      testQueryClient.setQueryData(gameQueries.lobbyPlayers(5).queryKey, []);
+      const { result } = renderGamePlayers(5);
+      const stream = MockEventSource.last;
+
+      act(() => {
+        stream?.dispatch(
+          "players",
+          JSON.stringify({
+            players: [
+              { id: 1, username: "Alice", position: 1 },
+              { id: 2, username: "Bob", position: 0 },
+            ],
+          }),
+        );
+      });
+      await waitFor(() =>
+        expect(result.current.players).toEqual([
+          { id: 2, name: "Bob", position: 0 },
+          { id: 1, name: "Alice", position: 1 },
+        ]),
+      );
+
+      const malformed = JSON.stringify({
+        players: [{ id: 1, username: "Alice", position: 1 }, badPlayer],
+      });
+      act(() => {
+        stream?.dispatch("players", malformed);
+      });
+
+      expect(result.current.players).toEqual([
+        { id: 2, name: "Bob", position: 0 },
+        { id: 1, name: "Alice", position: 1 },
+      ]);
+      expect(log).toHaveBeenCalledWith("room.players.sse-invalid-payload", {
+        context: { raw: malformed },
+      });
+      expect(getGameThrows).not.toHaveBeenCalled();
+      expect(close).not.toHaveBeenCalled();
+      expect(MockEventSource.last).toBe(stream);
+
+      act(() => {
+        stream?.dispatch(
+          "players",
+          JSON.stringify({ players: [{ id: 4, username: "Dave", position: 0 }] }),
+        );
+      });
+      await waitFor(() =>
+        expect(result.current.players).toEqual([{ id: 4, name: "Dave", position: 0 }]),
+      );
+    },
+  );
 
   it("should read the players the start page loader cached without a request of its own", () => {
     testQueryClient.setQueryData(gameQueries.lobbyPlayers(5).queryKey, [

@@ -4,6 +4,7 @@ import { addGuestPlayer, leaveRoom, updatePlayerOrder } from "@/shared/api/room"
 import { isApiErrorCode } from "@/lib/error/api-error-code";
 import { toUserErrorMessage } from "@/lib/error/error-to-user-message";
 import { mergePlayerOrder, orderByPosition } from "./lib/playerOrder";
+import { parsePlayersEvent } from "./lib/playersEvent";
 import { useIsCurrentGame } from "./useIsCurrentGame";
 import { useCallback, useMemo, useRef, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
@@ -12,50 +13,11 @@ import { sortLobbyPlayers, type LobbyPlayer } from "@/lib/game/lobbyPlayers";
 import { clientLogger } from "@/shared/services/browser/clientLogger";
 import { gameQueries } from "@/shared/query/game.queries";
 
-interface RawPlayer {
-  id: number;
-  username?: string;
-  name?: string;
-  position?: number | null;
-}
-
 type OptimisticPlayer = {
   id: number;
   name: string;
   position?: number | null;
 };
-
-type PlayersEventPayload = {
-  players?: RawPlayer[];
-  items?: RawPlayer[];
-};
-
-function isRawPlayer(value: unknown): value is RawPlayer {
-  return (
-    typeof value === "object" &&
-    value !== null &&
-    typeof (value as Record<string, unknown>).id === "number"
-  );
-}
-
-function isPlayersEventPayload(value: unknown): value is PlayersEventPayload {
-  if (typeof value !== "object" || value === null) {
-    return false;
-  }
-  const obj = value as Record<string, unknown>;
-  if ("players" in obj && !Array.isArray(obj.players)) {
-    return false;
-  }
-  if ("items" in obj && !Array.isArray(obj.items)) {
-    return false;
-  }
-  const list = Array.isArray(obj.items)
-    ? obj.items
-    : Array.isArray(obj.players)
-      ? obj.players
-      : null;
-  return list === null || list.every(isRawPlayer);
-}
 
 export type AddGuestResult =
   | { status: "added" }
@@ -117,24 +79,16 @@ export function useLobbyRoster(
   const handlePlayers = useCallback(
     (event: MessageEvent<string>) => {
       try {
-        const parsed: unknown = JSON.parse(event.data);
-        if (!isPlayersEventPayload(parsed)) {
+        const roster = parsePlayersEvent(JSON.parse(event.data));
+        if (roster === "invalid") {
           clientLogger.error("room.players.sse-invalid-payload", {
             context: { raw: event.data },
           });
           return;
         }
-        const payload = parsed;
-        const list = payload.items ?? payload.players;
-
-        if (Array.isArray(list)) {
+        if (roster !== "no-roster") {
           streamVersionRef.current += 1;
-          const mappedPlayers = list.map((player, index) => ({
-            id: player.id,
-            name: player.username ?? player.name ?? "",
-            position: player.position ?? index,
-          }));
-          updatePlayers(() => sortLobbyPlayers(mappedPlayers));
+          updatePlayers(() => sortLobbyPlayers(roster));
         }
       } catch (error) {
         clientLogger.error("room.players.sse-parse.failed", {
