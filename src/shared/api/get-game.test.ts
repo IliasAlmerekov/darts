@@ -5,21 +5,9 @@ vi.mock("@/shared/services/browser/clientLogger", () => ({
 
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { clientLogger } from "@/shared/services/browser/clientLogger";
-import {
-  getFinishedGame,
-  getGameSettings,
-  getGameThrows,
-  getGameThrowsIfChanged,
-  resetGameStateVersion,
-} from "./game";
-import {
-  apiClient,
-  ApiValidationError,
-  clearUnauthorizedHandler,
-  setUnauthorizedHandler,
-} from "./client";
-import { TimeoutError } from "./errors";
-import { createMockResponse, respondWith } from "./test-utils";
+import { getFinishedGame, getGameSettings, getGameThrows } from "./game";
+import { apiClient, ApiValidationError, clearUnauthorizedHandler } from "./client";
+import { respondWith } from "./test-utils";
 
 function createValidGameResponse(overrides: Partial<Record<string, unknown>> = {}) {
   return {
@@ -53,9 +41,8 @@ function createValidGameResponse(overrides: Partial<Record<string, unknown>> = {
   };
 }
 
-describe("getGameThrowsIfChanged", () => {
+describe("game reads", () => {
   beforeEach(() => {
-    resetGameStateVersion();
     clearUnauthorizedHandler();
     vi.restoreAllMocks();
     vi.mocked(clientLogger.warn).mockReset();
@@ -237,146 +224,5 @@ describe("getGameThrowsIfChanged", () => {
     await getFinishedGame(520);
 
     expect(vi.mocked(clientLogger.warn)).not.toHaveBeenCalled();
-  });
-
-  it("routes conditional game fetches through apiClient.request and forwards AbortSignal", async () => {
-    const controller = new AbortController();
-    const responseBody = createValidGameResponse();
-    const requestSpy = vi.spyOn(apiClient, "request").mockImplementationOnce(
-      respondWith(
-        responseBody,
-        createMockResponse({
-          body: responseBody,
-          status: 200,
-          headers: new Headers({
-            "content-type": "application/json",
-            "X-Game-State-Version": "v1",
-          }),
-          url: "http://localhost/api/game/520",
-        }),
-      ),
-    );
-    const fetchTrap = vi
-      .spyOn(globalThis, "fetch")
-      .mockRejectedValue(new Error("raw fetch should not be used by getGameThrowsIfChanged"));
-
-    const data = await getGameThrowsIfChanged(520, controller.signal);
-
-    expect(data).toEqual({ type: "full-state", ...responseBody });
-    expect(requestSpy).toHaveBeenCalledWith(
-      "/game/520",
-      expect.objectContaining({
-        method: "GET",
-        signal: controller.signal,
-        validate: expect.any(Object),
-      }),
-    );
-    expect(fetchTrap).not.toHaveBeenCalled();
-  });
-
-  it("sends cached state version through apiClient.request and returns null for 304", async () => {
-    const controller = new AbortController();
-    const responseBody = createValidGameResponse();
-    const requestSpy = vi
-      .spyOn(apiClient, "request")
-      .mockImplementationOnce(
-        respondWith(
-          responseBody,
-          createMockResponse({
-            body: responseBody,
-            status: 200,
-            headers: new Headers({ "content-type": "application/json", ETag: "etag-v1" }),
-            url: "http://localhost/api/game/520",
-          }),
-        ),
-      )
-      .mockImplementationOnce(
-        respondWith(
-          null,
-          createMockResponse({
-            status: 304,
-            headers: new Headers({ ETag: "etag-v1" }),
-            url: "http://localhost/api/game/520?since=etag-v1",
-          }),
-        ),
-      );
-    const fetchTrap = vi
-      .spyOn(globalThis, "fetch")
-      .mockRejectedValue(new Error("raw fetch should not be used by getGameThrowsIfChanged"));
-
-    await getGameThrowsIfChanged(520);
-    const result = await getGameThrowsIfChanged(520, controller.signal);
-
-    expect(result).toBeNull();
-    expect(requestSpy).toHaveBeenNthCalledWith(
-      2,
-      "/game/520",
-      expect.objectContaining({
-        method: "GET",
-        signal: controller.signal,
-        query: { since: "etag-v1" },
-        headers: expect.objectContaining({
-          "If-None-Match": "etag-v1",
-        }),
-        validate: expect.any(Object),
-      }),
-    );
-    expect(fetchTrap).not.toHaveBeenCalled();
-  });
-
-  it("surfaces TimeoutError from apiClient.request for conditional game fetches", async () => {
-    const timeoutError = new TimeoutError(
-      "Request timed out after 30000ms",
-      "http://localhost/api/game/520",
-    );
-
-    vi.spyOn(apiClient, "request").mockRejectedValueOnce(timeoutError);
-    vi.spyOn(globalThis, "fetch").mockRejectedValue(
-      new Error("raw fetch should not be used by getGameThrowsIfChanged"),
-    );
-
-    await expect(getGameThrowsIfChanged(520)).rejects.toBe(timeoutError);
-  });
-
-  it("rejects with ApiValidationError when conditional fetch returns invalid response shape", async () => {
-    vi.spyOn(apiClient, "request").mockImplementationOnce(respondWith({ id: 520, players: [] }));
-
-    await expect(getGameThrowsIfChanged(520)).rejects.toBeInstanceOf(ApiValidationError);
-  });
-
-  it("rejects with ApiError when a 200 conditional fetch has no body", async () => {
-    vi.spyOn(apiClient, "request").mockImplementationOnce(respondWith(null));
-
-    await expect(getGameThrowsIfChanged(520)).rejects.toMatchObject({
-      name: "ApiError",
-      status: 200,
-    });
-  });
-
-  it("rethrows AbortError without converting it to NetworkError", async () => {
-    const abortError = Object.assign(new Error("aborted"), { name: "AbortError" });
-    vi.spyOn(apiClient, "request").mockRejectedValueOnce(abortError);
-
-    await expect(getGameThrowsIfChanged(520)).rejects.toMatchObject({
-      name: "AbortError",
-    });
-  });
-
-  it("propagates UnauthorizedError from apiClient.request", async () => {
-    const unauthorizedHandler = vi.fn();
-    setUnauthorizedHandler(unauthorizedHandler);
-
-    vi.spyOn(apiClient, "request").mockRejectedValueOnce(
-      Object.assign(new Error("Unauthorized"), {
-        name: "UnauthorizedError",
-        status: 401,
-      }),
-    );
-
-    await expect(getGameThrowsIfChanged(520)).rejects.toMatchObject({
-      name: "UnauthorizedError",
-      status: 401,
-    });
-    expect(unauthorizedHandler).not.toHaveBeenCalled();
   });
 });

@@ -1,19 +1,23 @@
 import { normalizeGameData } from "@/lib/game/gameStateNormalizer";
 import { parseThrowValue, type ParsedThrow } from "@/lib/game/parseThrowValue";
-import type {
-  GameSettings,
-  GameThrowsResponse,
-  ThrowAckResponse,
-  ThrowRequest,
-  UndoAckResponse,
-} from "@/shared/api/game";
+import { getFinishedPlayers, mapPlayersToUI } from "@/lib/game/player-mappers";
+import type { UIPlayer } from "@/types";
 import {
   applyOptimisticThrow,
   applyOptimisticUndo,
   applyScoreboardDelta,
 } from "./optimisticThrow.logic";
-import { getFinishedPlayers, mapPlayersToUI } from "@/lib/game/player-mappers";
-import type { UIPlayer } from "@/types";
+import type {
+  GameSettings,
+  GameSummaryResponse,
+  GameThrowsResponse,
+  ThrowAckResponse,
+  ThrowRequest,
+  UndoAckResponse,
+} from "@/shared/api/game";
+import type { ClientLogger } from "@/shared/services/browser/clientLogger";
+import type { SoundType } from "@/shared/services/browser/soundPlayer";
+import { toUserErrorMessage } from "@/lib/error/error-to-user-message";
 
 /** True when any player has a throw in the current round or in a finished round. */
 function hasThrowHistory(gameData: GameThrowsResponse | null): boolean {
@@ -44,8 +48,7 @@ function isLastActivePlayerLeft(gameData: GameThrowsResponse | null): boolean {
 /** ADR 0003: two full turns may wait for the server. */
 const MAX_UNCONFIRMED_THROWS = 6;
 
-export type PendingOp =
-  { kind: "throw"; playerId: number; throwData: ParsedThrow } | { kind: "undo" };
+type PendingOp = { kind: "throw"; playerId: number; throwData: ParsedThrow } | { kind: "undo" };
 
 /**
  * State after a rejected request. `reloading`: the game is being read again. `failed`: the
@@ -55,7 +58,7 @@ export type PendingOp =
  */
 type Recovery = "none" | "reloading" | "failed" | "offline" | "loadFailed";
 
-export interface GameSession {
+interface GameSession {
   /** The game as the server acknowledged it. */
   confirmed: GameThrowsResponse | null;
   /** Throws and undos the server has not acknowledged yet, in tap order. */
@@ -77,7 +80,7 @@ export interface GameSession {
  */
 export type SyncStatus = "idle" | "syncing" | "failed" | "offline" | "loadFailed";
 
-export interface GameSessionView {
+interface QueueView {
   status: SyncStatus;
   canThrow: boolean;
   canUndo: boolean;
@@ -94,7 +97,7 @@ export interface GameSessionView {
   activePlayer: GameThrowsResponse["players"][number] | null;
 }
 
-export function createGameSession(game: GameThrowsResponse | null): GameSession {
+function createState(game: GameThrowsResponse | null): GameSession {
   return {
     confirmed: normalizeGameData(game),
     pending: [],
@@ -113,7 +116,7 @@ function applyOp(game: GameThrowsResponse, op: PendingOp): GameThrowsResponse {
 }
 
 /** The scoreboard on screen: the pending throws and undos replayed over the confirmed game. */
-export function getShownGame(session: GameSession): GameThrowsResponse | null {
+function getShownGame(session: GameSession): GameThrowsResponse | null {
   if (session.confirmed === null) {
     return null;
   }
@@ -125,7 +128,7 @@ function countUnconfirmedThrows(session: GameSession): number {
   return session.pending.filter((op) => op.kind === "throw").length;
 }
 
-export function getSessionView(session: GameSession): GameSessionView {
+function getGameSessionView(session: GameSession): QueueView {
   const isWaitingForRetry = session.recovery === "offline" || session.recovery === "loadFailed";
   const isBlocked = isWaitingForRetry || session.recovery === "reloading";
   const isQueueFull = countUnconfirmedThrows(session) >= MAX_UNCONFIRMED_THROWS;
@@ -183,9 +186,9 @@ function clearFailedNotice(recovery: Recovery): Recovery {
  * Queues a throw for the active player of the shown game. Returns null when the throw cannot
  * be taken now. Throws `ApiError` for a value the keyboard cannot produce.
  */
-export function enqueueThrow(session: GameSession, value: string | number): GameSession | null {
+function enqueueThrow(session: GameSession, value: string | number): GameSession | null {
   const shown = getShownGame(session);
-  if (!getSessionView(session).canThrow || shown === null || shown.activePlayerId === null) {
+  if (!getGameSessionView(session).canThrow || shown === null || shown.activePlayerId === null) {
     return null;
   }
 
@@ -211,8 +214,8 @@ export function enqueueThrow(session: GameSession, value: string | number): Game
  * Steps the shown game back by one throw. An unsent throw leaves the queue and the server never
  * sees it; otherwise an undo request joins the queue.
  */
-export function enqueueUndo(session: GameSession): GameSession {
-  if (!getSessionView(session).canUndo) {
+function enqueueUndo(session: GameSession): GameSession {
+  if (!getGameSessionView(session).canUndo) {
     return session;
   }
 
@@ -228,12 +231,12 @@ export function enqueueUndo(session: GameSession): GameSession {
 }
 
 /** The overlay's Continue: play goes on, and later checkouts open no overlay. */
-export function closeFinishOverlay(session: GameSession): GameSession {
+function closeFinishOverlay(session: GameSession): GameSession {
   return { ...session, finishOverlayPlayerId: null };
 }
 
 /** The server finished the game from the overlay's Finish game, so the summary may open. */
-export function markGameFinished(session: GameSession): GameSession {
+function markGameFinished(session: GameSession): GameSession {
   if (session.confirmed === null) {
     return session;
   }
@@ -241,7 +244,7 @@ export function markGameFinished(session: GameSession): GameSession {
   return { ...session, confirmed: { ...session.confirmed, status: "finished" } };
 }
 
-export function undoFromOverlay(session: GameSession): GameSession {
+function undoOverlay(session: GameSession): GameSession {
   if (
     session.recovery === "reloading" ||
     session.recovery === "offline" ||
@@ -253,7 +256,7 @@ export function undoFromOverlay(session: GameSession): GameSession {
 }
 
 /** Marks the oldest pending op as sent and returns it, or null when nothing may be sent now. */
-export function takeNextOp(session: GameSession): { session: GameSession; op: PendingOp } | null {
+function takeNextOp(session: GameSession): { session: GameSession; op: PendingOp } | null {
   const head = session.pending[0];
   if (head === undefined || session.isHeadSent || session.recovery !== "none") {
     return null;
@@ -262,7 +265,7 @@ export function takeNextOp(session: GameSession): { session: GameSession; op: Pe
   return { session: { ...session, isHeadSent: true }, op: head };
 }
 
-export function toThrowRequest(op: Extract<PendingOp, { kind: "throw" }>): ThrowRequest {
+function toThrowRequest(op: Extract<PendingOp, { kind: "throw" }>): ThrowRequest {
   return { playerId: op.playerId, ...op.throwData };
 }
 
@@ -274,7 +277,7 @@ function confirmHead(session: GameSession, confirmed: GameThrowsResponse): GameS
  * Applies the server's answer to the sent throw. Returns null when the answer disagrees with
  * the client, such as another active player, so the caller reloads the game.
  */
-export function applyThrowAck(session: GameSession, ack: ThrowAckResponse): GameSession | null {
+function applyThrowAck(session: GameSession, ack: ThrowAckResponse): GameSession | null {
   const head = session.pending[0];
   const { confirmed } = session;
   if (
@@ -304,7 +307,7 @@ export function applyThrowAck(session: GameSession, ack: ThrowAckResponse): Game
  * Applies the server's answer to the sent undo. Returns null when the answer disagrees with
  * the client, so the caller reloads the game.
  */
-export function applyUndoResponse(session: GameSession, ack: UndoAckResponse): GameSession | null {
+function applyUndoResponse(session: GameSession, ack: UndoAckResponse): GameSession | null {
   const head = session.pending[0];
   const { confirmed } = session;
   if (
@@ -331,7 +334,7 @@ export function applyUndoResponse(session: GameSession, ack: UndoAckResponse): G
 }
 
 /** Drops every pending op after a rejected request; the caller reloads the game next. */
-export function failSession(session: GameSession): GameSession {
+function failSession(session: GameSession): GameSession {
   return { ...session, pending: [], isHeadSent: false, recovery: "reloading" };
 }
 
@@ -339,7 +342,7 @@ export function failSession(session: GameSession): GameSession {
  * Starts another reload after the server could not be reached. After a failed first load the
  * session drops the Retry state, and the caller loads the game again.
  */
-export function retrySession(session: GameSession): GameSession {
+function retrySession(session: GameSession): GameSession {
   if (session.recovery === "offline") {
     return { ...session, recovery: "reloading" };
   }
@@ -347,23 +350,23 @@ export function retrySession(session: GameSession): GameSession {
   return session.recovery === "loadFailed" ? { ...session, recovery: "none" } : session;
 }
 
-export function applyReloadedGame(session: GameSession, game: GameThrowsResponse): GameSession {
+function applyReloadedGame(session: GameSession, game: GameThrowsResponse): GameSession {
   return {
-    ...createGameSession(game),
+    ...createState(game),
     recovery: session.recovery === "none" ? "none" : "failed",
   };
 }
 
-export function markSessionOffline(session: GameSession): GameSession {
+function markSessionOffline(session: GameSession): GameSession {
   return { ...session, recovery: "offline" };
 }
 
 /** The first load failed while the store showed a copy of the game (#98). */
-export function markFirstLoadFailed(session: GameSession): GameSession {
+function markFirstLoadFailed(session: GameSession): GameSession {
   return { ...session, recovery: "loadFailed" };
 }
 
-export function applySessionSettings(session: GameSession, settings: GameSettings): GameSession {
+function applySessionSettings(session: GameSession, settings: GameSettings): GameSession {
   if (session.confirmed === null) {
     return session;
   }
@@ -378,5 +381,251 @@ export function applySessionSettings(session: GameSession, settings: GameSetting
         tripleOut: settings.tripleOut,
       },
     },
+  };
+}
+
+export interface GameSessionTransport {
+  loadGame: (id: number, signal: AbortSignal) => Promise<GameThrowsResponse>;
+  recordThrow: (id: number, request: ThrowRequest) => Promise<ThrowAckResponse>;
+  undoLastThrow: (id: number) => Promise<UndoAckResponse>;
+  finishGame: (id: number, signal: AbortSignal) => Promise<GameSummaryResponse>;
+}
+
+interface Options {
+  gameId: number;
+  cachedGame: GameThrowsResponse | null;
+  transport: GameSessionTransport;
+  playSound: (sound: SoundType) => void;
+  log: ClientLogger;
+  onGameChange: (game: GameThrowsResponse | null) => void;
+  onFinished: (summary: GameSummaryResponse) => void;
+}
+
+export interface GameSessionView extends QueueView {
+  game: GameThrowsResponse | null;
+  isLoading: boolean;
+  error: Error | null;
+  isInteractionDisabled: boolean;
+  isUndoDisabled: boolean;
+  isSettingsDisabled: boolean;
+  isFinishPending: boolean;
+  finishError: string | null;
+}
+
+export interface GameSessionController {
+  getView: () => GameSessionView;
+  subscribe: (listener: () => void) => () => void;
+  dispose: () => void;
+  throwDart: (value: string | number) => void;
+  undo: () => void;
+  continueGame: () => void;
+  undoFromOverlay: () => void;
+  finishGame: () => void;
+  retry: () => void;
+  updateSettings: (settings: GameSettings) => void;
+}
+
+export function createGameSession(options: Options): GameSessionController {
+  const { gameId, transport, playSound, log, onGameChange, onFinished } = options;
+  const controller = new AbortController();
+  const listeners = new Set<() => void>();
+  const cached = options.cachedGame;
+  let state = createState(cached?.id === gameId && cached.status !== "finished" ? cached : null);
+  let loading = true;
+  let error: Error | null = null;
+  let finishPending = false;
+  let finishError: string | null = null;
+  let disposed = false;
+  function notify(): void {
+    if (!disposed) listeners.forEach((listener) => listener());
+  }
+  function commit(next: GameSession): void {
+    const previous = state;
+    state = next;
+    if (next.confirmed !== previous.confirmed || next.pending !== previous.pending)
+      onGameChange(getShownGame(next));
+    if (
+      getGameSessionView(next).shouldShowFinishOverlay &&
+      !getGameSessionView(previous).shouldShowFinishOverlay
+    ) {
+      finishPending = false;
+      finishError = null;
+    }
+    notify();
+  }
+  function getView(): GameSessionView {
+    const view = getGameSessionView(state);
+    const game = getShownGame(state);
+    return {
+      ...view,
+      game,
+      isLoading: loading,
+      error,
+      isInteractionDisabled: loading || !!error || !game || !view.canThrow,
+      isUndoDisabled: loading || !!error || !game || !view.canUndo,
+      isSettingsDisabled: !game || !view.canOpenSettings,
+      isFinishPending: finishPending,
+      finishError,
+      canThrow: !loading && !error && view.canThrow,
+      canUndo: !loading && !error && view.canUndo,
+    };
+  }
+  async function load(first: boolean): Promise<void> {
+    if (first) {
+      loading = true;
+      error = null;
+      notify();
+    }
+    try {
+      const game = await transport.loadGame(gameId, controller.signal);
+      if (disposed) return;
+      if (game.id !== gameId) throw new Error("Game response does not match the requested game");
+      commit(applyReloadedGame(state, game));
+    } catch (caught) {
+      if (disposed) return;
+      if (first) {
+        const fetchError =
+          caught instanceof Error ? caught : new Error("Failed to fetch game data");
+        log.error("game.fetch.failed", { context: { gameId }, error: fetchError });
+        if (state.confirmed !== null) commit(markFirstLoadFailed(state));
+        else error = fetchError;
+      } else {
+        log.error("game.sync.reload.failed", { context: { gameId }, error: caught });
+        commit(markSessionOffline(state));
+      }
+    } finally {
+      if (!disposed && first) {
+        loading = false;
+        notify();
+      }
+    }
+  }
+  function recover(): void {
+    commit(failSession(state));
+    playSound("error");
+    void load(false);
+  }
+  async function sendNext(): Promise<void> {
+    for (let next = takeNextOp(state); next !== null; next = takeNextOp(state)) {
+      commit(next.session);
+      try {
+        let applied: GameSession | null;
+        if (next.op.kind === "throw") {
+          const ack = await transport.recordThrow(gameId, toThrowRequest(next.op));
+          if (disposed) return;
+          applied = applyThrowAck(state, ack);
+        } else {
+          const ack = await transport.undoLastThrow(gameId);
+          if (disposed) return;
+          applied = applyUndoResponse(state, ack);
+        }
+        if (applied === null) {
+          log.warn("game.sync.ack-mismatch", { context: { gameId, op: next.op.kind } });
+          recover();
+          return;
+        }
+        commit(applied);
+      } catch (caught) {
+        if (disposed) return;
+        log.error("game.sync.failed", { context: { gameId, op: next.op.kind }, error: caught });
+        recover();
+        return;
+      }
+    }
+  }
+  function throwDart(value: string | number): void {
+    if (disposed || !getView().canThrow) return;
+    try {
+      const next = enqueueThrow(state, value);
+      if (next !== null) {
+        commit(next);
+        void sendNext();
+        return;
+      }
+      log.error("game.throw.missing-active-player", {
+        context: { gameId, activePlayerId: getShownGame(state)?.activePlayerId ?? null },
+      });
+      recover();
+    } catch (caught) {
+      log.error("game.throw.invalid-value", { context: { gameId }, error: caught });
+      playSound("error");
+    }
+  }
+  function undo(): void {
+    if (disposed || !getView().canUndo) return;
+    commit(enqueueUndo(state));
+    playSound("undo");
+    void sendNext();
+  }
+  function continueGame(): void {
+    if (disposed || finishPending) return;
+    finishError = null;
+    commit(closeFinishOverlay(state));
+  }
+  function undoFromOverlay(): void {
+    if (disposed || finishPending) return;
+    finishError = null;
+    const previous = state;
+    const next = undoOverlay(state);
+    commit(next);
+    if (next.pending !== previous.pending) {
+      playSound("undo");
+      void sendNext();
+    }
+  }
+  async function finishGame(): Promise<void> {
+    if (disposed || finishPending || !getGameSessionView(state).canFinishGame) return;
+    finishPending = true;
+    finishError = null;
+    notify();
+    try {
+      const summary = await transport.finishGame(gameId, controller.signal);
+      if (disposed) return;
+      onFinished(summary);
+      commit(markGameFinished(state));
+    } catch (caught) {
+      if (disposed) return;
+      finishPending = false;
+      log.error("game.finish.failed", { context: { gameId }, error: caught });
+      finishError = toUserErrorMessage(caught, "Could not finish the game. Please try again.");
+      notify();
+    }
+  }
+  function retry(): void {
+    if (disposed) return;
+    const first = state.recovery !== "offline";
+    commit(retrySession(state));
+    void load(first);
+  }
+  function updateSettings(settings: GameSettings): void {
+    if (disposed) return;
+    commit(applySessionSettings(state, settings));
+  }
+  void load(true);
+  return {
+    getView,
+    subscribe: (listener: () => void): (() => void) => {
+      if (!disposed) {
+        listeners.add(listener);
+        listener();
+      }
+      return () => {
+        listeners.delete(listener);
+      };
+    },
+    dispose: (): void => {
+      disposed = true;
+      controller.abort();
+      listeners.clear();
+    },
+    throwDart,
+    undo,
+    continueGame,
+    undoFromOverlay,
+    finishGame: (): void => {
+      void finishGame();
+    },
+    retry,
+    updateSettings,
   };
 }

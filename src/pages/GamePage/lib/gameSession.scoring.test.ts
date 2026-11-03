@@ -1,0 +1,772 @@
+// @vitest-environment node
+import { describe, expect, it } from "vitest";
+import { buildBackendPlayer, buildGameThrowsResponse } from "@/shared/types/game.test-support";
+import type { GameThrowsResponse, PlayerThrow } from "@/shared/api/game";
+import { createGameSession } from "./gameSession.logic";
+import { createScriptedGameBackend } from "@/shared/types/gameSession.test-support";
+import { vi } from "vitest";
+
+async function sessionWith(game: GameThrowsResponse) {
+  const transport = createScriptedGameBackend();
+  transport.loads.push(game);
+  const session = createGameSession({
+    gameId: game.id,
+    cachedGame: null,
+    transport,
+    playSound: vi.fn(),
+    log: { error: vi.fn(), warn: vi.fn() },
+    onGameChange: vi.fn(),
+    onFinished: vi.fn(),
+  });
+  for (let i = 0; i < 8; i++) await Promise.resolve();
+  return { session, transport };
+}
+async function undoInSession(game: GameThrowsResponse): Promise<GameThrowsResponse | null> {
+  const { session, transport } = await sessionWith(game);
+  transport.undos.push(new Promise(() => {}));
+  const before = session.getView().game;
+  session.undo();
+  const after = session.getView().game;
+  session.dispose();
+  return after === before ? null : after;
+}
+async function throwInSession(
+  game: GameThrowsResponse,
+  dart: { value: number; isDouble: boolean; isTriple: boolean },
+): Promise<GameThrowsResponse | null> {
+  const { session, transport } = await sessionWith(game);
+  transport.throws.push(new Promise(() => {}));
+  session.throwDart(
+    dart.isDouble ? `D${dart.value}` : dart.isTriple ? `T${dart.value}` : dart.value,
+  );
+  const result = session.getView().game;
+  session.dispose();
+  return result;
+}
+
+function buildGameData(overrides: Partial<GameThrowsResponse> = {}): GameThrowsResponse {
+  return {
+    type: "full-state",
+    id: 1,
+    status: "started",
+    currentRound: 1,
+    activePlayerId: 1,
+    currentThrowCount: 0,
+    winnerId: null,
+    settings: {
+      startScore: 301,
+      doubleOut: false,
+      tripleOut: false,
+    },
+    players: [
+      {
+        id: 1,
+        name: "P1",
+        score: 301,
+        isActive: true,
+        isBust: false,
+        position: null,
+        placement: null,
+        throwsInCurrentRound: 0,
+        currentRoundThrows: [],
+        roundHistory: [],
+        isGuest: false,
+      },
+      {
+        id: 2,
+        name: "P2",
+        score: 301,
+        isActive: false,
+        isBust: false,
+        position: null,
+        placement: null,
+        throwsInCurrentRound: 0,
+        currentRoundThrows: [],
+        roundHistory: [],
+        isGuest: false,
+      },
+    ],
+    ...overrides,
+  };
+}
+
+function singleThrow(value: number): PlayerThrow {
+  return { value, isDouble: false, isTriple: false, isBust: false };
+}
+
+function buildTurnState({
+  rule,
+  turnStartScore,
+  priorThrowValues,
+  activeIndex,
+}: {
+  rule: "single" | "double" | "triple";
+  turnStartScore: number;
+  priorThrowValues: readonly number[];
+  activeIndex: 0 | 1;
+}): GameThrowsResponse {
+  const base = buildGameData();
+  const priorThrows = priorThrowValues.map(singleThrow);
+  const spent = priorThrowValues.reduce((sum, value) => sum + value, 0);
+  const players = base.players.map((player, index) => {
+    if (index !== activeIndex) {
+      return { ...player, isActive: false, score: 100 };
+    }
+    return {
+      ...player,
+      isActive: true,
+      score: turnStartScore - spent,
+      throwsInCurrentRound: priorThrows.length,
+      currentRoundThrows: priorThrows,
+    };
+  });
+  const activePlayer = players[activeIndex];
+  if (activePlayer === undefined) {
+    throw new Error("Expected an active player.");
+  }
+  return {
+    ...base,
+    activePlayerId: activePlayer.id,
+    currentThrowCount: priorThrows.length,
+    settings: {
+      startScore: 301,
+      doubleOut: rule === "double",
+      tripleOut: rule === "triple",
+    },
+    players,
+  };
+}
+
+function expectBustAtTurnStart({
+  gameState,
+  nextState,
+  activeIndex,
+  turnStartScore,
+  priorThrowValues,
+  lastThrowValue,
+}: {
+  gameState: GameThrowsResponse;
+  nextState: GameThrowsResponse | null;
+  activeIndex: 0 | 1;
+  turnStartScore: number;
+  priorThrowValues: readonly number[];
+  lastThrowValue: number;
+}): void {
+  const otherIndex = activeIndex === 0 ? 1 : 0;
+  const wrapped = activeIndex === 1;
+  const bustPlayer = nextState?.players[activeIndex];
+  const roundHistory = bustPlayer?.roundHistory ?? [];
+  const lastRound = roundHistory[roundHistory.length - 1];
+
+  expect(bustPlayer?.score).toBe(turnStartScore);
+  expect(bustPlayer?.isBust).toBe(true);
+  expect(bustPlayer?.isActive).toBe(false);
+  expect(bustPlayer?.currentRoundThrows).toEqual([]);
+  expect(bustPlayer?.throwsInCurrentRound).toBe(0);
+  expect(lastRound?.throws).toHaveLength(priorThrowValues.length + 1);
+  expect(lastRound?.throws.at(-1)).toEqual({
+    value: lastThrowValue,
+    isDouble: false,
+    isTriple: false,
+    isBust: true,
+  });
+  expect(nextState?.activePlayerId).toBe(gameState.players[otherIndex]?.id);
+  expect(nextState?.players[otherIndex]?.isActive).toBe(true);
+  expect(nextState?.currentThrowCount).toBe(0);
+  expect(nextState?.currentRound).toBe(gameState.currentRound + (wrapped ? 1 : 0));
+}
+
+describe("session scoring and undo", () => {
+  it("should apply optimistic undo by restoring the removed throw score when the active player has throws in the current round", async () => {
+    const gameState = buildGameData({
+      currentThrowCount: 2,
+      players: [
+        {
+          id: 1,
+          name: "P1",
+          score: 250,
+          isActive: true,
+          isBust: false,
+          position: null,
+          placement: null,
+          throwsInCurrentRound: 2,
+          currentRoundThrows: [
+            { value: 20, isDouble: false, isTriple: false, isBust: false },
+            { value: 31, isDouble: false, isTriple: false, isBust: false },
+          ],
+          roundHistory: [],
+          isGuest: false,
+        },
+        {
+          id: 2,
+          name: "P2",
+          score: 301,
+          isActive: false,
+          isBust: false,
+          position: null,
+          placement: null,
+          throwsInCurrentRound: 0,
+          currentRoundThrows: [],
+          roundHistory: [],
+          isGuest: false,
+        },
+      ],
+    });
+
+    const nextState = await undoInSession(gameState);
+
+    expect(nextState?.currentThrowCount).toBe(1);
+    expect(nextState?.players[0]?.score).toBe(281);
+    expect(nextState?.players[0]?.throwsInCurrentRound).toBe(1);
+    expect(nextState?.players[0]?.currentRoundThrows).toEqual([
+      { value: 20, isDouble: false, isTriple: false, isBust: false },
+    ]);
+  });
+
+  it("should drop the undone throw from the current round in roundHistory as the server lists it there too", async () => {
+    const miss = { value: 0, isDouble: false, isTriple: false, isBust: false };
+    const firstRound = {
+      round: 1,
+      throws: [
+        { ...miss, value: 20 },
+        { ...miss, value: 20 },
+      ],
+    };
+    const gameState = buildGameData({
+      currentRound: 2,
+      currentThrowCount: 1,
+      players: [
+        {
+          id: 1,
+          name: "P1",
+          score: 261,
+          isActive: true,
+          isBust: false,
+          position: null,
+          placement: null,
+          throwsInCurrentRound: 1,
+          currentRoundThrows: [miss],
+          roundHistory: [firstRound, { round: 2, throws: [miss] }],
+          isGuest: false,
+        },
+        {
+          id: 2,
+          name: "P2",
+          score: 301,
+          isActive: false,
+          isBust: false,
+          position: null,
+          placement: null,
+          throwsInCurrentRound: 0,
+          currentRoundThrows: [],
+          roundHistory: [],
+          isGuest: false,
+        },
+      ],
+    });
+
+    const nextState = await undoInSession(gameState);
+
+    expect(nextState?.players[0]?.currentRoundThrows).toEqual([]);
+    expect(nextState?.players[0]?.roundHistory).toEqual([firstRound]);
+  });
+
+  it("should restore the previous player when undoing a completed winning throw", async () => {
+    const gameState = buildGameData({
+      status: "started",
+      currentRound: 3,
+      currentThrowCount: 0,
+      activePlayerId: 2,
+      winnerId: 1,
+      players: [
+        {
+          id: 1,
+          name: "P1",
+          score: 0,
+          isActive: false,
+          isBust: false,
+          position: 1,
+          placement: 1,
+          throwsInCurrentRound: 0,
+          currentRoundThrows: [],
+          roundHistory: [
+            {
+              round: 3,
+              throws: [{ value: 20, isDouble: false, isTriple: false, isBust: false }],
+            },
+          ],
+          isGuest: false,
+        },
+        {
+          id: 2,
+          name: "P2",
+          score: 301,
+          isActive: true,
+          isBust: false,
+          position: null,
+          placement: null,
+          throwsInCurrentRound: 0,
+          currentRoundThrows: [],
+          roundHistory: [],
+          isGuest: false,
+        },
+      ],
+    });
+
+    const nextState = await undoInSession(gameState);
+
+    expect(nextState?.status).toBe("started");
+    expect(nextState?.winnerId).toBeNull();
+    expect(nextState?.activePlayerId).toBe(1);
+    expect(nextState?.currentRound).toBe(3);
+    expect(nextState?.currentThrowCount).toBe(0);
+    expect(nextState?.players[0]?.score).toBe(20);
+    expect(nextState?.players[0]?.position).toBe(1);
+    expect(nextState?.players[0]?.placement).toBeNull();
+    expect(nextState?.players[0]?.isActive).toBe(true);
+    expect(nextState?.players[0]?.roundHistory).toEqual([]);
+  });
+
+  it("should restore a completed bust turn to in-progress throws when undoing the bust throw", async () => {
+    const gameState = buildGameData({
+      currentRound: 7,
+      currentThrowCount: 0,
+      activePlayerId: 2,
+      players: [
+        {
+          id: 1,
+          name: "P1",
+          score: 101,
+          isActive: false,
+          isBust: true,
+          position: null,
+          placement: null,
+          throwsInCurrentRound: 0,
+          currentRoundThrows: [],
+          roundHistory: [
+            {
+              round: 7,
+              throws: [
+                { value: 20, isDouble: false, isTriple: false, isBust: false },
+                { value: 20, isDouble: false, isTriple: false, isBust: false },
+                { value: 70, isDouble: false, isTriple: false, isBust: true },
+              ],
+            },
+          ],
+          isGuest: false,
+        },
+        {
+          id: 2,
+          name: "P2",
+          score: 301,
+          isActive: true,
+          isBust: false,
+          position: null,
+          placement: null,
+          throwsInCurrentRound: 0,
+          currentRoundThrows: [],
+          roundHistory: [],
+          isGuest: false,
+        },
+      ],
+    });
+
+    const nextState = await undoInSession(gameState);
+
+    expect(nextState?.activePlayerId).toBe(1);
+    expect(nextState?.currentRound).toBe(7);
+    expect(nextState?.currentThrowCount).toBe(2);
+    expect(nextState?.players[0]?.score).toBe(61);
+    expect(nextState?.players[0]?.isBust).toBe(false);
+    expect(nextState?.players[0]?.throwsInCurrentRound).toBe(2);
+    expect(nextState?.players[0]?.currentRoundThrows).toEqual([
+      { value: 20, isDouble: false, isTriple: false, isBust: false },
+      { value: 20, isDouble: false, isTriple: false, isBust: false },
+    ]);
+    expect(nextState?.players[0]?.roundHistory).toEqual([]);
+  });
+
+  it("should optimistically finish a turn and activate the next player when the third throw is applied", async () => {
+    const gameState = buildGameData({
+      currentThrowCount: 2,
+      players: [
+        {
+          id: 1,
+          name: "P1",
+          score: 281,
+          isActive: true,
+          isBust: false,
+          position: null,
+          placement: null,
+          throwsInCurrentRound: 2,
+          currentRoundThrows: [
+            { value: 10, isDouble: false, isTriple: false, isBust: false },
+            { value: 10, isDouble: false, isTriple: false, isBust: false },
+          ],
+          roundHistory: [],
+          isGuest: false,
+        },
+        {
+          id: 2,
+          name: "P2",
+          score: 301,
+          isActive: false,
+          isBust: false,
+          position: null,
+          placement: null,
+          throwsInCurrentRound: 0,
+          currentRoundThrows: [],
+          roundHistory: [],
+          isGuest: false,
+        },
+      ],
+    });
+
+    const nextState = await throwInSession(gameState, {
+      value: 20,
+      isDouble: false,
+      isTriple: false,
+    });
+
+    expect(nextState?.activePlayerId).toBe(2);
+    expect(nextState?.currentThrowCount).toBe(0);
+    expect(nextState?.players[0]?.currentRoundThrows).toEqual([]);
+    expect(nextState?.players[0]?.throwsInCurrentRound).toBe(0);
+    expect(nextState?.players[0]?.roundHistory).toHaveLength(1);
+    expect(nextState?.players[1]?.isActive).toBe(true);
+  });
+
+  describe("unreachable checkout remainders", () => {
+    const dartCases = [
+      { dart: 1, turnStartScore: 2, priorThrowValues: [] },
+      { dart: 2, turnStartScore: 21, priorThrowValues: [19] },
+      { dart: 3, turnStartScore: 40, priorThrowValues: [19, 19] },
+    ] as const;
+    const orderCases = [
+      { order: "not last in order", activeIndex: 0 },
+      { order: "last in order", activeIndex: 1 },
+    ] as const;
+
+    describe.each(dartCases)("double-out on dart $dart", (dartCase) => {
+      it.each(orderCases)(
+        "should bust and restore the turn start score when leaving 1 and the player is $order",
+        async ({ activeIndex }) => {
+          const gameState = buildTurnState({ rule: "double", ...dartCase, activeIndex });
+
+          const nextState = await throwInSession(gameState, {
+            value: 1,
+            isDouble: false,
+            isTriple: false,
+          });
+
+          expectBustAtTurnStart({
+            gameState,
+            nextState,
+            activeIndex,
+            turnStartScore: dartCase.turnStartScore,
+            priorThrowValues: dartCase.priorThrowValues,
+            lastThrowValue: 1,
+          });
+        },
+      );
+    });
+
+    describe.each([
+      { left: 1, turnStartScore: 2 },
+      { left: 2, turnStartScore: 3 },
+    ])("triple-out leaving $left", ({ turnStartScore }) => {
+      it.each(orderCases)(
+        "should bust and restore the turn start score when the player is $order",
+        async ({ activeIndex }) => {
+          const gameState = buildTurnState({
+            rule: "triple",
+            turnStartScore,
+            priorThrowValues: [],
+            activeIndex,
+          });
+
+          const nextState = await throwInSession(gameState, {
+            value: 1,
+            isDouble: false,
+            isTriple: false,
+          });
+
+          expectBustAtTurnStart({
+            gameState,
+            nextState,
+            activeIndex,
+            turnStartScore,
+            priorThrowValues: [],
+            lastThrowValue: 1,
+          });
+        },
+      );
+    });
+
+    it.each([
+      { left: 1, turnStartScore: 2 },
+      { left: 2, turnStartScore: 3 },
+    ])(
+      "should keep the player active with the reduced score when single-out leaves $left",
+      async ({ left, turnStartScore }) => {
+        const gameState = buildTurnState({
+          rule: "single",
+          turnStartScore,
+          priorThrowValues: [],
+          activeIndex: 0,
+        });
+
+        const nextState = await throwInSession(gameState, {
+          value: 1,
+          isDouble: false,
+          isTriple: false,
+        });
+
+        expect(nextState?.players[0]?.score).toBe(left);
+        expect(nextState?.players[0]?.isActive).toBe(true);
+        expect(nextState?.players[0]?.isBust).toBe(false);
+        expect(nextState?.players[0]?.currentRoundThrows.at(-1)?.isBust).toBe(false);
+        expect(nextState?.activePlayerId).toBe(gameState.activePlayerId);
+      },
+    );
+
+    it("should finish the player when double-out ends on a double", async () => {
+      const gameState = buildTurnState({
+        rule: "double",
+        turnStartScore: 2,
+        priorThrowValues: [],
+        activeIndex: 0,
+      });
+
+      const nextState = await throwInSession(gameState, {
+        value: 1,
+        isDouble: true,
+        isTriple: false,
+      });
+
+      expect(nextState?.players[0]?.score).toBe(0);
+      expect(nextState?.players[0]?.isBust).toBe(false);
+      expect(nextState?.players[0]?.placement).toBe(1);
+      expect(nextState?.players[0]?.position).toBeNull();
+      expect(nextState?.activePlayerId).toBe(2);
+    });
+
+    it("should finish the player when triple-out ends on a triple", async () => {
+      const gameState = buildTurnState({
+        rule: "triple",
+        turnStartScore: 3,
+        priorThrowValues: [],
+        activeIndex: 0,
+      });
+
+      const nextState = await throwInSession(gameState, {
+        value: 1,
+        isDouble: false,
+        isTriple: true,
+      });
+
+      expect(nextState?.players[0]?.score).toBe(0);
+      expect(nextState?.players[0]?.isBust).toBe(false);
+      expect(nextState?.players[0]?.placement).toBe(1);
+      expect(nextState?.players[0]?.position).toBeNull();
+      expect(nextState?.activePlayerId).toBe(2);
+    });
+  });
+});
+
+describe("session undo after a completed turn", () => {
+  function turn(
+    round: number,
+    ...values: number[]
+  ): GameThrowsResponse["players"][number]["roundHistory"][number] {
+    return { round, throws: values.map(singleThrow) };
+  }
+
+  function seat(
+    id: number,
+    overrides: Partial<GameThrowsResponse["players"][number]>,
+  ): GameThrowsResponse["players"][number] {
+    return buildBackendPlayer({ id, name: `P${id}`, score: 200, position: null, ...overrides });
+  }
+
+  it("should undo the latest turn and pass over a finished player that was skipped", async () => {
+    const gameState = buildGameData({
+      currentRound: 3,
+      activePlayerId: 3,
+      players: [
+        seat(1, { score: 100, roundHistory: [turn(1, 20), turn(2, 20), turn(3, 20, 20, 20)] }),
+        seat(2, { score: 0, position: 1, roundHistory: [turn(1, 20, 20, 20)] }),
+        seat(3, { score: 150, isActive: true, roundHistory: [turn(1, 20), turn(2, 20)] }),
+      ],
+    });
+
+    const nextState = await undoInSession(gameState);
+
+    expect(nextState?.activePlayerId).toBe(1);
+    expect(nextState?.currentRound).toBe(3);
+    expect(nextState?.players.map((player) => player.isActive)).toEqual([true, false, false]);
+    expect(nextState?.players.map((player) => player.score)).toEqual([120, 0, 150]);
+    expect(nextState?.players.map((player) => player.currentRoundThrows)).toEqual([
+      [singleThrow(20), singleThrow(20)],
+      [],
+      [],
+    ]);
+    expect(nextState?.players.map((player) => player.roundHistory)).toEqual([
+      [turn(1, 20), turn(2, 20)],
+      [turn(1, 20, 20, 20)],
+      [turn(1, 20), turn(2, 20)],
+    ]);
+  });
+
+  it("should undo the last seat's turn of the previous round when the first seat is active", async () => {
+    const gameState = buildGameData({
+      currentRound: 2,
+      activePlayerId: 1,
+      players: [
+        seat(1, { isActive: true, roundHistory: [turn(1, 20)] }),
+        seat(2, { roundHistory: [turn(1, 20)] }),
+        seat(3, { score: 180, roundHistory: [turn(1, 20, 20)] }),
+      ],
+    });
+
+    const nextState = await undoInSession(gameState);
+
+    expect(nextState?.activePlayerId).toBe(3);
+    expect(nextState?.currentRound).toBe(1);
+    expect(nextState?.players[2]?.score).toBe(200);
+    expect(nextState?.players[2]?.currentRoundThrows).toEqual([singleThrow(20)]);
+    expect(nextState?.players[2]?.roundHistory).toEqual([]);
+  });
+
+  it("should pass over a later seat that finished before the previous round", async () => {
+    const gameState = buildGameData({
+      currentRound: 3,
+      activePlayerId: 1,
+      players: [
+        seat(1, { isActive: true, roundHistory: [turn(1, 20), turn(2, 20)] }),
+        seat(2, { roundHistory: [turn(1, 20), turn(2, 20)] }),
+        seat(3, { score: 180, roundHistory: [turn(1, 20), turn(2, 20, 20)] }),
+        seat(4, { score: 0, position: 1, roundHistory: [turn(1, 20, 20, 20)] }),
+      ],
+    });
+
+    const nextState = await undoInSession(gameState);
+
+    expect(nextState?.activePlayerId).toBe(3);
+    expect(nextState?.currentRound).toBe(2);
+    expect(nextState?.players[3]?.roundHistory).toEqual([turn(1, 20, 20, 20)]);
+    expect(nextState?.players[2]?.roundHistory).toEqual([turn(1, 20)]);
+  });
+
+  it("keeps the game unchanged when no player has a recent turn to undo", async () => {
+    const gameState = buildGameData({
+      currentRound: 3,
+      activePlayerId: 3,
+      players: [
+        seat(1, { roundHistory: [turn(1, 20)] }),
+        seat(2, { roundHistory: [turn(1, 20)] }),
+        seat(3, { isActive: true }),
+      ],
+    });
+
+    const { session } = await sessionWith(gameState);
+    const before = session.getView().game;
+    session.undo();
+    expect(session.getView().game).toBe(before);
+    session.dispose();
+  });
+});
+
+describe("placement on optimistic checkout", () => {
+  it("assigns the next free placement without changing any turn position", async () => {
+    const state = buildGameData({
+      activePlayerId: 2,
+      players: [
+        buildBackendPlayer({ id: 1, score: 0, position: 0, placement: 1 }),
+        buildBackendPlayer({ id: 2, score: 20, position: 1, placement: null, isActive: true }),
+        buildBackendPlayer({ id: 3, score: 100, position: 2, placement: null }),
+      ],
+    });
+    const result = await throwInSession(state, { value: 20, isDouble: false, isTriple: false });
+    expect(result?.players.map(({ position, placement }) => ({ position, placement }))).toEqual([
+      { position: 0, placement: 1 },
+      { position: 1, placement: 2 },
+      { position: 2, placement: null },
+    ]);
+    expect(state.players[1]?.placement).toBeNull();
+  });
+});
+
+const dart = { value: 20, isDouble: false, isTriple: false, isBust: false };
+
+describe("placement after undo", () => {
+  it.each(["current", "completed"])(
+    "keeps the winner and finished status after a non-winning %s round throw",
+    async (round) => {
+      const state = buildGameThrowsResponse({
+        status: "finished",
+        activePlayerId: 2,
+        winnerId: 1,
+        players: [
+          buildBackendPlayer({ id: 1, score: 0, position: 1, placement: 1 }),
+          buildBackendPlayer({
+            id: 2,
+            score: 80,
+            position: 0,
+            placement: 2,
+            isActive: true,
+            currentRoundThrows: round === "current" ? [dart] : [],
+            throwsInCurrentRound: round === "current" ? 1 : 0,
+            roundHistory: [{ round: 1, throws: [dart] }],
+          }),
+          buildBackendPlayer({ id: 3, score: 50, position: 2, placement: 3 }),
+        ],
+      });
+      const result = await undoInSession(state);
+      expect(result).toMatchObject({ status: "finished", winnerId: 1 });
+      expect(
+        result?.players.map(({ score, placement, position }) => ({ score, placement, position })),
+      ).toEqual([
+        { score: 0, placement: 1, position: 1 },
+        { score: 100, placement: null, position: 0 },
+        { score: 50, placement: null, position: 2 },
+      ]);
+      expect(state.players.map((player) => player.placement)).toEqual([1, 2, 3]);
+    },
+  );
+
+  it.each(["current", "completed"])(
+    "clears the winner after undoing their %s round checkout and leaves all turn positions unchanged",
+    async (round) => {
+      const state = buildGameThrowsResponse({
+        status: "finished",
+        activePlayerId: 1,
+        winnerId: 1,
+        players: [
+          buildBackendPlayer({
+            id: 1,
+            score: 0,
+            position: 1,
+            placement: 1,
+            isActive: true,
+            currentRoundThrows: round === "current" ? [dart] : [],
+            throwsInCurrentRound: round === "current" ? 1 : 0,
+            roundHistory: [{ round: 1, throws: [dart] }],
+          }),
+          buildBackendPlayer({ id: 2, score: 0, position: 0, placement: 2 }),
+          buildBackendPlayer({ id: 3, score: 50, position: 2, placement: 3 }),
+        ],
+      });
+      const result = await undoInSession(state);
+      expect(result).toMatchObject({ status: "started", winnerId: null });
+      expect(
+        result?.players.map(({ score, placement, position }) => ({ score, placement, position })),
+      ).toEqual([
+        { score: 20, placement: null, position: 1 },
+        { score: 0, placement: 2, position: 0 },
+        { score: 50, placement: null, position: 2 },
+      ]);
+      expect(state.players.map((player) => player.placement)).toEqual([1, 2, 3]);
+    },
+  );
+});

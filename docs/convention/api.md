@@ -39,7 +39,7 @@ src/shared/api/
   test-utils.ts        # createMockResponse and respondWith helpers for tests
   auth.ts              # auth flows, DTO types
   game.ts              # game lifecycle + settings flows; re-exports throws.ts and rematch.ts
-  throws.ts            # internal behind game.ts: throw calls + ETag cache
+  throws.ts            # internal behind game.ts: throw calls
   rematch.ts           # internal behind game.ts: rematch calls
   room.ts              # room flows
   statistics.ts        # stats flows
@@ -259,17 +259,9 @@ Mapper rules:
   `useGameSummaryPage.ts` calls `buildFinishedGameStandings` in a `useMemo`.
   `eslint.config.mjs` ignores this file as existing debt.
 
-## ETag / conditional fetches
+## Game reads
 
-`getGameThrowsIfChanged` in `throws.ts` is the pattern; a new domain with conditional fetches
-mirrors it:
-
-- A per-id version map (`gameStateVersionById = new Map<number, string>()`) lives
-  module-scoped in the file that makes the conditional fetch.
-- Send `If-None-Match` + `query: { since }`, accept 304 via `acceptedStatuses: [304]`, read
-  headers via `returnResponse: true`.
-- `setGameStateVersion(gameId, version)` / `resetGameStateVersion(gameId?)` let store
-  actions and hooks manage the cache key.
+Read the game unconditionally with `getGameThrows`. The session reloads after a rejected throw or undo.
 
 ## Error -> user message
 

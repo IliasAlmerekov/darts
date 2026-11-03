@@ -3,10 +3,7 @@
 vi.mock("@/shared/api/game", () => ({
   finishGame: vi.fn(),
   getGameThrows: vi.fn(),
-  getGameThrowsIfChanged: vi.fn(),
   recordThrow: vi.fn(),
-  resetGameStateVersion: vi.fn(),
-  setGameStateVersion: vi.fn(),
   undoLastThrow: vi.fn(),
 }));
 
@@ -18,13 +15,10 @@ import React from "react";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { act, renderHook, waitFor } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { ApiError } from "@/shared/api";
 import {
   finishGame,
   getGameThrows,
-  getGameThrowsIfChanged,
   recordThrow,
-  setGameStateVersion,
   type GameSummaryResponse,
   type ThrowAckResponse,
   type GameThrowsResponse,
@@ -32,12 +26,10 @@ import {
 import { gameQueries } from "@/shared/query/game.queries";
 import { createQueryClient } from "@/shared/query/queryClient";
 import { QueryClientWrapper } from "@/test/QueryClientWrapper";
-import { playSound } from "@/shared/services/browser/soundPlayer";
 import { $gameData, resetGameStore, setGameData } from "@/shared/store";
 import { buildBackendPlayer, buildGameThrowsResponse } from "@/shared/types/game.test-support";
 import { useGameSession } from "./useGameSession";
 
-const getGameThrowsIfChangedMock = vi.mocked(getGameThrowsIfChanged);
 const getGameThrowsMock = vi.mocked(getGameThrows);
 const recordThrowMock = vi.mocked(recordThrow);
 const finishGameMock = vi.mocked(finishGame);
@@ -141,7 +133,7 @@ describe("useGameSession", () => {
     }
 
     async function renderCheckedOutGame(client = createQueryClient()) {
-      getGameThrowsIfChangedMock.mockResolvedValueOnce(buildCheckoutGame());
+      getGameThrowsMock.mockResolvedValueOnce(buildCheckoutGame());
       const ack = createDeferred<ThrowAckResponse>();
       recordThrowMock.mockReturnValueOnce(ack.promise);
       const rendered = renderHook(() => useGameSession(1), {
@@ -178,64 +170,12 @@ describe("useGameSession", () => {
       await waitFor(() => expect(result.current.view.isFinished).toBe(true));
       expect(client.getQueryData(gameQueries.finished(1).queryKey)).toEqual(summary);
     });
-
-    it("shows an error after a failed finish and keeps the game playable", async () => {
-      const { result, ack } = await renderCheckedOutGame();
-      ack.resolve(buildCheckoutAck());
-      await waitFor(() => expect(result.current.view.canFinishGame).toBe(true));
-      finishGameMock.mockRejectedValueOnce(new ApiError("Server error", { status: 500 }));
-
-      act(() => result.current.commands.finishGame());
-      await waitFor(() => expect(result.current.view.finishError).not.toBeNull());
-
-      expect(result.current.view).toMatchObject({
-        isFinishPending: false,
-        isFinished: false,
-        shouldShowFinishOverlay: true,
-        canFinishGame: true,
-      });
-      act(() => result.current.commands.continueGame());
-      expect(result.current.view).toMatchObject({
-        shouldShowFinishOverlay: false,
-        canThrow: true,
-        finishError: null,
-      });
-    });
-
-    it("opens the next first checkout without the error of an earlier finish", async () => {
-      getGameThrowsIfChangedMock.mockImplementation((gameId) =>
-        Promise.resolve(gameId === 1 ? buildCheckoutGame() : buildGame(gameId)),
-      );
-      recordThrowMock.mockImplementation(() => Promise.resolve(buildCheckoutAck()));
-      finishGameMock.mockRejectedValueOnce(new ApiError("Server error", { status: 500 }));
-      const { result, rerender } = renderHook(({ gameId }) => useGameSession(gameId), {
-        wrapper: QueryClientWrapper,
-        initialProps: { gameId: 1 },
-      });
-      await waitFor(() => expect(result.current.view.canThrow).toBe(true));
-      act(() => result.current.commands.throwDart(20));
-      await waitFor(() => expect(result.current.view.canFinishGame).toBe(true));
-      act(() => result.current.commands.finishGame());
-      await waitFor(() => expect(result.current.view.finishError).not.toBeNull());
-
-      rerender({ gameId: 2 });
-      await waitFor(() => expect(result.current.view.game?.id).toBe(2));
-      rerender({ gameId: 1 });
-      await waitFor(() => expect(result.current.view.canThrow).toBe(true));
-      act(() => result.current.commands.throwDart(20));
-
-      expect(result.current.view).toMatchObject({
-        shouldShowFinishOverlay: true,
-        isFinishPending: false,
-        finishError: null,
-      });
-    });
   });
 
   it("aborts the load of the previous game and ignores its late answer", async () => {
-    const firstLoad = createDeferred<GameThrowsResponse | null>();
-    const secondLoad = createDeferred<GameThrowsResponse | null>();
-    getGameThrowsIfChangedMock.mockImplementation((gameId) =>
+    const firstLoad = createDeferred<GameThrowsResponse>();
+    const secondLoad = createDeferred<GameThrowsResponse>();
+    getGameThrowsMock.mockImplementation((gameId) =>
       gameId === 1 ? firstLoad.promise : secondLoad.promise,
     );
     setGameData(buildGame(1));
@@ -250,7 +190,7 @@ describe("useGameSession", () => {
     await waitFor(() => {
       expect(result.current.view.game).toBeNull();
     });
-    const firstSignal = getGameThrowsIfChangedMock.mock.calls[0]?.[1];
+    const firstSignal = getGameThrowsMock.mock.calls[0]?.[1];
     expect(firstSignal?.aborted).toBe(true);
 
     secondLoad.resolve(buildGame(2));
@@ -265,96 +205,10 @@ describe("useGameSession", () => {
     expect($gameData.get()?.id).toBe(2);
   });
 
-  it("ignores a throw acknowledgement that arrives after the page left the game (#95)", async () => {
-    const ack = createDeferred<ThrowAckResponse>();
-    recordThrowMock.mockReturnValueOnce(ack.promise);
-    getGameThrowsIfChangedMock.mockImplementation((gameId) => Promise.resolve(buildGame(gameId)));
-
-    const { result, rerender } = renderHook(({ gameId }) => useGameSession(gameId), {
-      wrapper: QueryClientWrapper,
-      initialProps: { gameId: 1 },
-    });
-    await waitFor(() => {
-      expect(result.current.view.canThrow).toBe(true);
-    });
-
-    act(() => {
-      result.current.commands.throwDart(20);
-    });
-    expect(result.current.view.game?.players[0]?.score).toBe(281);
-
-    rerender({ gameId: 2 });
-    await waitFor(() => {
-      expect(result.current.view.game?.id).toBe(2);
-    });
-
-    ack.resolve(buildThrowAck(1));
-    await flushResponses();
-
-    expect(result.current.view.game?.id).toBe(2);
-    expect(result.current.view.game?.players[0]?.score).toBe(301);
-    expect(result.current.view.status).toBe("idle");
-    expect(setGameStateVersion).not.toHaveBeenCalled();
-  });
-
-  it("reloads the game when the shown game has no active player to throw for", async () => {
-    const game = buildGame(1);
-    getGameThrowsIfChangedMock.mockResolvedValueOnce({
-      ...game,
-      activePlayerId: null,
-      players: game.players.map((player) => ({ ...player, isActive: false })),
-    });
-    getGameThrowsMock.mockResolvedValueOnce(buildGame(1, 281));
-
-    const { result } = renderHook(() => useGameSession(1), { wrapper: QueryClientWrapper });
-    await waitFor(() => {
-      expect(result.current.view.canThrow).toBe(true);
-    });
-
-    act(() => {
-      result.current.commands.throwDart(20);
-    });
-
-    await waitFor(() => {
-      expect(result.current.view.status).toBe("failed");
-    });
-    expect(getGameThrowsMock).toHaveBeenCalledWith(1, expect.any(AbortSignal));
-    expect(recordThrowMock).not.toHaveBeenCalled();
-    expect(playSound).toHaveBeenCalledWith("error");
-    expect(result.current.view.game?.activePlayerId).toBe(1);
-    expect(result.current.view.game?.players[0]?.score).toBe(281);
-    expect(result.current.view.canThrow).toBe(true);
-  });
-
-  it("drops a reload in flight when the game id is cleared", async () => {
-    const reload = createDeferred<GameThrowsResponse | null>();
-    getGameThrowsIfChangedMock
-      .mockResolvedValueOnce(buildGame(1))
-      .mockImplementationOnce(() => reload.promise);
-
-    const { result, rerender } = renderHook(({ gameId }) => useGameSession(gameId), {
-      wrapper: QueryClientWrapper,
-      initialProps: { gameId: 1 as number | null },
-    });
-    await waitFor(() => {
-      expect(result.current.view.game?.id).toBe(1);
-    });
-
-    act(() => {
-      result.current.commands.retry();
-    });
-    expect(getGameThrowsIfChangedMock).toHaveBeenCalledTimes(2);
-
-    rerender({ gameId: null });
-    await waitFor(() => {
-      expect(result.current.view.game).toBeNull();
-    });
-
-    reload.resolve(buildGame(1, 100));
-    await flushResponses();
-
-    expect(result.current.view.game).toBeNull();
-    expect(result.current.view.isLoading).toBe(false);
-    expect(result.current.view.error).toBeNull();
+  it("clears a finished cached game before the first load answers", () => {
+    setGameData({ ...buildGame(1), status: "finished" });
+    getGameThrowsMock.mockReturnValue(new Promise(() => {}));
+    renderHook(() => useGameSession(1), { wrapper: QueryClientWrapper });
+    expect($gameData.get()).toBeNull();
   });
 });

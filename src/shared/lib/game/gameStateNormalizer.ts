@@ -34,7 +34,7 @@ export function deriveActivePlayerId(data: GameThrowsResponse): number | null {
   return null;
 }
 
-function normalizeActiveFlags(
+export function normalizeActiveFlags(
   players: GameThrowsResponse["players"],
   activePlayerId: number | null,
 ): GameThrowsResponse["players"] {
