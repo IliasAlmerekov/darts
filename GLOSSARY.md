@@ -31,6 +31,10 @@ A lobby the server returns for the newest finished or aborted game, with that ga
 The screen a player sees after joining a game, until that game starts.
 _Avoid_: joined page, lobby
 
+**Checkout suggestion**:
+The darts with which the active participant can check out using the darts left in the current turn, shown in their empty throw slots.
+_Avoid_: hint, tip, finish route
+
 ## Accounts
 
 **Remembered login**:

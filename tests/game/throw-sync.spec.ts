@@ -119,6 +119,14 @@ const tap = async (page: Page, name: string): Promise<void> => {
 };
 
 test.describe("Throw sync on the game page", () => {
+  test("shows a checkout suggestion on the active card", async ({ page }) => {
+    await mockAdminSession(page);
+    await mockTabletGame(page, startedTabletGame(1));
+    await mockGameState(page, 1, gameState(1, playerScores(20, 301)));
+    await page.goto("/game/1");
+    await expect(playerCard(page, "Alice")).toContainText("Checkout: 20");
+  });
+
   // #96: the server finishes the game with the winning throw; the client sends no /finish.
   test("winning throw ack opens the summary", async ({ page }) => {
     const gameId = 1;
