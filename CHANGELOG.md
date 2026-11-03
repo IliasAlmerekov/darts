@@ -14,6 +14,7 @@ and this project does **not** yet follow [Semantic Versioning](https://semver.or
 
 ### Changed
 
+- Docs: page files are grouped by the part of the page they serve, and VS Code nests tests and styles under their file (#456)
 - Assets: the undo icons `undo-copy.svg` and `undolinkbutton.svg` are now `undo-dark.svg` and `undo-button.svg` (#358)
 
 ### Removed

@@ -55,20 +55,40 @@ full scope, with no exclusions.
 
 ## Page structure
 
-Each page lives in its own folder under `src/pages/<PageName>/`:
+Each page lives in its own folder under `src/pages/<PageName>/`. The page root shows how
+the page is assembled; every other file sits in a folder named after the part of the page
+it serves.
 
 ```
 src/pages/StartPage/
-  StartPage.tsx              # entry component (or `index.tsx`)
-  StartPage.module.css
-  components/                # page-private UI
-  lib/                       # page-private helpers
-  use<XYZ>.ts                # page-private hooks
-  *.test.ts / *.test.tsx     # co-located unit tests
+  StartPage.tsx              # entry: assembles the page (or `index.tsx`)
+  StartPage.module.css       # the entry's styles
+  StartPage.test.tsx
+  useStartPage.ts            # the page hook the entry calls
+  startPageLoader.ts         # the route loader
+  startPageLoader.test.ts
+  roster/                    # one folder per part of the page
+    useLobbyRoster.ts
+    useLobbyRoster.test.tsx
+    playerOrder.ts
+    playerOrder.test.ts
+  components/                # page-private UI that serves the whole page
+  lib/                       # page-private helpers that serve the whole page
 ```
 
 Rules:
 
+- **Page root**: the entry, its CSS Module, the page hook the entry calls, the route
+  loader, and the tests of these files.
+- **Part folders**: every other file goes into a folder named after the part it serves,
+  either a `GLOSSARY.md` term (`roster/`, `standings/`) or a visible piece of the screen
+  (`keyboard/`, `overlays/`). The folder holds that part's components, hooks, helpers,
+  styles and tests, so a change to one part stays in one folder. Folder names are
+  kebab-case. Name a folder by responsibility, never by file type: a `tests/`, `css/` or
+  `hooks/` folder splits one part across several folders.
+- **Whole-page code**: UI and helpers that serve the whole page rather than one part live
+  in `components/` and `lib/`. A small page with no separate parts has only these two.
+- A test sits next to the file it tests, in every folder.
 - The page entry is either `<PageName>.tsx` or `index.tsx`. Both forms coexist in
   `App.tsx` on purpose: the `lazy(() => import(...))` target follows the file actually
   present.
