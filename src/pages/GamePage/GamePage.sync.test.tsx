@@ -542,6 +542,23 @@ describe("GamePage settings lock", () => {
     return screen.getByRole("button", { name: "Settings" });
   }
 
+  it("disables Settings while retrying a failed load without a cached game", async () => {
+    const retry = createDeferred<GameThrowsResponse>();
+    getGameThrowsMock
+      .mockRejectedValueOnce(new Error("offline"))
+      .mockReturnValueOnce(retry.promise);
+    renderGamePage();
+
+    fireEvent.click(await screen.findByRole("button", { name: "Retry" }));
+
+    expect(settingsButton().hasAttribute("disabled")).toBe(true);
+    await act(async () => {
+      retry.resolve(buildGame({ alice: 301, bob: 301 }));
+      await retry.promise;
+    });
+    expect(settingsButton().hasAttribute("disabled")).toBe(false);
+  });
+
   it("disables Settings after a miss, before and after the server confirms it", async () => {
     const miss = createDeferred<ThrowAckResponse>();
     recordThrowMock.mockReturnValueOnce(miss.promise);

@@ -463,7 +463,7 @@ export function createGameSession(options: Options): GameSessionController {
       error,
       isInteractionDisabled: loading || !!error || !game || !view.canThrow,
       isUndoDisabled: loading || !!error || !game || !view.canUndo,
-      isSettingsDisabled: !view.canOpenSettings,
+      isSettingsDisabled: !game || !view.canOpenSettings,
       isFinishPending: finishPending,
       finishError,
       canThrow: !loading && !error && view.canThrow,

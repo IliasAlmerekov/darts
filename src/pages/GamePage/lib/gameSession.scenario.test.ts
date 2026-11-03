@@ -65,6 +65,28 @@ it("blocks input over a cached game until the first load answers", async () => {
   expect(session.getView().canThrow).toBe(true);
 });
 
+it("keeps settings available for a cached game while loading", () => {
+  const context = setup(game());
+  const load = deferred<GameThrowsResponse>();
+  context.transport.loads.push(load.promise);
+  const session = context.start();
+  expect(session.getView().isSettingsDisabled).toBe(false);
+  session.dispose();
+});
+
+it("disables settings during retry when the first load has no cached game", async () => {
+  const context = setup();
+  const retry = deferred<GameThrowsResponse>();
+  context.transport.loads.push(new Error("offline"), retry.promise);
+  const session = context.start();
+  await flush();
+  expect(session.getView().error).toBeInstanceOf(Error);
+  session.retry();
+  expect(session.getView().game).toBeNull();
+  expect(session.getView().isSettingsDisabled).toBe(true);
+  session.dispose();
+});
+
 it("offers retry after a cached first load fails", async () => {
   const context = setup(game());
   context.transport.loads.push(new Error("offline"), game());
