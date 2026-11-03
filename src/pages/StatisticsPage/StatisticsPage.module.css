@@ -19,7 +19,7 @@
   display: grid;
   box-sizing: border-box;
   grid-template-columns:
-    minmax(48px, 64px) auto minmax(160px, 1fr) minmax(120px, 180px)
+    minmax(48px, 64px) auto minmax(96px, 1fr) minmax(120px, 180px)
     minmax(120px, 180px);
   align-items: center;
   padding: var(--space-sm) var(--space-sm);
@@ -35,9 +35,10 @@
   color: var(--darkgrey);
 }
 
+/* 96px from 1024px wide; smaller below, so the row fits down to 601px. */
 .playerAvatar {
-  width: 96px;
-  height: 96px;
+  width: clamp(48px, 9.375vw, 96px);
+  height: clamp(48px, 9.375vw, 96px);
   border: 3px solid var(--white);
   box-shadow: 0 2px 8px rgb(0 0 0 / 15%);
 }
@@ -115,7 +116,7 @@
 @media (width <= 600px) {
   .playerRow {
     width: 100%;
-    grid-template-columns: minmax(32px, 44px) auto minmax(120px, 1fr) minmax(64px, auto);
+    grid-template-columns: minmax(32px, 44px) auto minmax(96px, 1fr) minmax(64px, auto);
     grid-template-areas:
       "number avatar name score"
       "number avatar games score";
