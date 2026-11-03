@@ -429,7 +429,8 @@ export function createGameSession(options: Options): GameSessionController {
   const { gameId, transport, playSound, log, onGameChange, onFinished } = options;
   const controller = new AbortController();
   const listeners = new Set<() => void>();
-  let state = createState(options.cachedGame);
+  const cached = options.cachedGame;
+  let state = createState(cached?.id === gameId && cached.status !== "finished" ? cached : null);
   let loading = true;
   let error: Error | null = null;
   let finishPending = false;
@@ -478,6 +479,7 @@ export function createGameSession(options: Options): GameSessionController {
     try {
       const game = await transport.loadGame(gameId, controller.signal);
       if (disposed) return;
+      if (game.id !== gameId) throw new Error("Game response does not match the requested game");
       commit(applyReloadedGame(state, game));
     } catch (caught) {
       if (disposed) return;

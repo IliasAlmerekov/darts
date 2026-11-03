@@ -6,7 +6,7 @@ import type {
   UndoAckResponse,
 } from "@/shared/api/game";
 
-type Step<T> = T | Error | Promise<T>;
+type Step<T> = T | Error | Promise<T> | (() => Promise<T>);
 
 function scoreboardDelta(game: GameThrowsResponse): ThrowAckResponse["scoreboardDelta"] {
   return {
@@ -49,11 +49,14 @@ export function scriptedUndoAck(gameId: number, game: GameThrowsResponse): UndoA
   };
 }
 
-async function take<T>(steps: Step<T>[], name: string): Promise<T> {
+async function take<T extends GameThrowsResponse | GameSummaryResponse>(
+  steps: Step<T>[],
+  name: string,
+): Promise<T> {
   const step = steps.shift();
   if (step === undefined) throw new Error(`No scripted ${name} response`);
   if (step instanceof Error) throw step;
-  return step;
+  return typeof step === "function" ? step() : step;
 }
 
 interface ScriptedGameBackend {

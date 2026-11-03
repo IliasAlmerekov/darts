@@ -169,3 +169,39 @@ describe("applyScoreboardDelta", () => {
     });
   });
 });
+
+it.each([undefined, null, 2])(
+  "applies placement %s without changing turn position",
+  (placement) => {
+    const state = buildDeltaGameData({
+      players: [buildDeltaPlayer({ id: 1, position: 0, placement: 1, isActive: true })],
+    });
+    const delta = {
+      changedPlayers: [
+        {
+          playerId: 1,
+          name: "Alice",
+          score: 0,
+          isActive: true,
+          isGuest: false,
+          ...(placement === undefined ? {} : { placement }),
+        },
+      ],
+      currentRound: 3,
+      status: "started" as const,
+      winnerId: null,
+    };
+    const result = applyScoreboardDelta(state, delta);
+    expect(result.players[0]).toMatchObject({
+      position: 0,
+      placement: placement === undefined ? 1 : placement,
+    });
+    const changed = applyScoreboardDelta(result, {
+      ...delta,
+      changedPlayers: [
+        { playerId: 1, name: "Alice", score: 0, isActive: true, isGuest: false, placement: 3 },
+      ],
+    });
+    expect(changed.players[0]).toMatchObject({ position: 0, placement: 3 });
+  },
+);

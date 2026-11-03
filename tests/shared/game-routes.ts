@@ -103,13 +103,12 @@ export const installGameRoutes = async (page: Page, options: RouteOptions): Prom
       currentState = options.conflictRefetchState;
     }
 
+    backend.loads.push(serverState());
+    const game = await backend.loadGame(gameId, new AbortController().signal);
     await route.fulfill({
       status: 200,
       contentType: "application/json",
-      headers: {
-        "X-Game-State-Version": `v${getCount}`,
-      },
-      body: JSON.stringify(currentState),
+      body: JSON.stringify(game),
     });
   });
 
@@ -204,4 +203,59 @@ export async function fulfillScriptedGameAck(
   ack: ThrowAckResponse | UndoAckResponse,
 ): Promise<void> {
   await route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify(ack) });
+}
+
+export async function installScriptedTransportRoutes(
+  page: Page,
+  gameId: number,
+  backend: ReturnType<typeof createScriptedGameBackend>,
+  onThrow?: () => void,
+): Promise<void> {
+  let lastGame: GameThrowsResponse | undefined;
+  await page.route(`**/api/game/${gameId}`, async (route) => {
+    try {
+      if (backend.loads.length === 0 && lastGame) backend.loads.push(lastGame);
+      const game = await backend.loadGame(gameId, new AbortController().signal);
+      lastGame = game;
+      await route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify(game),
+      });
+    } catch {
+      await route.fulfill({ status: 500, contentType: "application/json", body: "{}" });
+    }
+  });
+  await page.route(`**/api/game/${gameId}/throw/delta`, async (route) => {
+    try {
+      const request = route.request();
+      if (request.method() === "DELETE") {
+        const ack = await backend.undoLastThrow(gameId);
+        await fulfillScriptedGameAck(route, ack);
+      } else {
+        onThrow?.();
+        const ack = await backend.recordThrow(gameId, request.postDataJSON());
+        await fulfillScriptedGameAck(route, ack);
+      }
+    } catch {
+      await route.fulfill({ status: 500, contentType: "application/json", body: "{}" });
+    }
+  });
+  await page.route(`**/api/game/${gameId}/finish`, async (route) => {
+    try {
+      const summary = await backend.finishGame(gameId, new AbortController().signal);
+      await route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify({
+          gameId,
+          winnerRoundsPlayed: 5,
+          winnerRoundAverage: 60.2,
+          finishedPlayers: summary,
+        }),
+      });
+    } catch {
+      await route.fulfill({ status: 500, contentType: "application/json", body: "{}" });
+    }
+  });
 }

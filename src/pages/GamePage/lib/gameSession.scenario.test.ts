@@ -327,3 +327,37 @@ it("undoes the first checkout from the overlay and opens it again on a new check
   await flush();
   expect(session.getView().shouldShowFinishOverlay).toBe(true);
 });
+
+it("rejects a first load for another game and offers retry over cached state", async () => {
+  const context = setup(game());
+  context.transport.loads.push({ ...game(), id: 99 });
+  const session = context.start();
+  await flush();
+  expect(session.getView().game?.id).toBe(4);
+  expect(session.getView().status).toBe("loadFailed");
+  expect(session.getView().canThrow).toBe(false);
+  expect(context.onGameChange).not.toHaveBeenCalled();
+});
+
+it("rejects a reload for another game and stays offline for retry", async () => {
+  const context = setup();
+  context.transport.loads.push(game(), { ...game(), id: 99 });
+  context.transport.throws.push(new Error("conflict"));
+  const session = context.start();
+  await flush();
+  context.onGameChange.mockClear();
+  session.throwDart(1);
+  await flush();
+  expect(session.getView().game?.id).toBe(4);
+  expect(session.getView().status).toBe("offline");
+  expect(session.getView().canThrow).toBe(false);
+  expect(context.onGameChange.mock.calls.every(([shown]) => shown?.id === 4)).toBe(true);
+});
+
+it("does not show a cached game belonging to another session", () => {
+  const context = setup({ ...game(), id: 99 });
+  context.transport.loads.push(new Promise(() => {}));
+  const session = context.start();
+  expect(session.getView().game).toBeNull();
+  expect(session.getView().canThrow).toBe(false);
+});
