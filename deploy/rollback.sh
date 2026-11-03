@@ -45,7 +45,7 @@ target=$(readlink -f "$base/previous")
     die 'No verified previous release exists.'
 [[ -f $config/compose.yaml && -f $config/Caddyfile ]] || die "$config is incomplete. Run init-server.sh."
 check_avatars_env
-docker compose --project-directory "$config" --env-file "$target/release.env" --env-file "$avatars_env" \
+env -u AVATAR_HOST_DIR docker compose --project-directory "$config" --env-file "$target/release.env" --env-file "$avatars_env" \
     -f "$config/compose.yaml" up -d --wait --wait-timeout 300 --remove-orphans
 hostname=$(sed -n 's/^APP_HOSTNAME=//p' "$target/release.env")
 curl --fail --silent --show-error --retry 12 --retry-delay 5 --retry-all-errors \

@@ -80,7 +80,7 @@ check_avatars_env
 # server's avatars.env. The project directory makes ./Caddyfile in compose.yaml
 # resolve inside $config.
 compose_for() {
-    docker compose --project-directory "$config" --env-file "$1/release.env" --env-file "$avatars_env" \
+    env -u AVATAR_HOST_DIR docker compose --project-directory "$config" --env-file "$1/release.env" --env-file "$avatars_env" \
         -f "$config/compose.yaml" "${@:2}"
 }
 
