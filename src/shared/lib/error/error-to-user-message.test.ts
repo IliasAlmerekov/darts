@@ -95,6 +95,22 @@ describe("toUserErrorMessage", () => {
     ).toBe("The lobby is full. Remove a player to add another.");
   });
 
+  it("should map the concurrent change code to a try again message", () => {
+    expect(
+      toUserErrorMessage(
+        new ApiError("Conflict", {
+          status: 409,
+          data: {
+            success: false,
+            error: "CONCURRENT_CHANGE",
+            message: "A concurrent request changed the same data. Retry the request.",
+          },
+        }),
+        "Could not save. Please try again.",
+      ),
+    ).toBe("Another request changed this at the same time. Please try again.");
+  });
+
   it("should map the out rule lock code to a message that the out rule is locked", () => {
     expect(
       toUserErrorMessage(

@@ -82,6 +82,17 @@ describe("mapAuthErrorMessage", () => {
 
     expect(result).toBe("Email or username is already taken.");
   });
+
+  it.each(["login", "registration"] as const)(
+    "asks to reopen the invitation link for a 409 CONCURRENT_CHANGE in the %s flow",
+    (flow) => {
+      const result = mapAuthErrorMessage({ flow, error: backendError(409, "CONCURRENT_CHANGE") });
+
+      expect(result).toBe(
+        "Another request changed this at the same time. If you used an invitation, reopen the invitation link and try again.",
+      );
+    },
+  );
 });
 
 describe("mapAuthErrorMessage violations", () => {

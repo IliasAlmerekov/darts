@@ -65,6 +65,10 @@ function mapTextToMessage(rawText: string): string | null {
     return "The lobby is full. Remove a player to add another.";
   }
 
+  if (text.includes("concurrent change")) {
+    return "Another request changed this at the same time. Please try again.";
+  }
+
   return null;
 }
 
