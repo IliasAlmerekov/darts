@@ -110,10 +110,10 @@ export async function createRoom(payload?: CreateGamePayload): Promise<RoomInvit
 /**
  * Leaves a game room as a specific player.
  */
-export async function leaveRoom(gameId: number, playerId?: number): Promise<void> {
-  const query = typeof playerId === "number" ? { playerId } : undefined;
+export async function leaveRoom(gameId: number, playerId: number): Promise<void> {
+  // The backend answers a leave without playerId with 400 (darts-backend#279).
   await apiClient.delete(ROOM_ENDPOINT(gameId), {
-    ...(query ? { query } : {}),
+    query: { playerId },
     validate: successMessageResponseSchema,
   });
 }
