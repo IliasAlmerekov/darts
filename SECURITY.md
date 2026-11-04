@@ -27,7 +27,7 @@ P1 is High, and P2 is Medium.
   They choose the screen; the backend decides access. A route guard is a finding only when
   the backend leaves the same data open.
 - The local default `VITE_API_TARGET=http://localhost:8001` in `.env.example` and
-  `vite.config.ts`. It is the dev proxy target.
+  `vite.config.mts`. It is the dev proxy target.
 - The invitation link in `sessionStorage` on the admin tablet. The tablet shows it as a QR
   code to every player anyway.
 - Test credentials read from `PLAYWRIGHT_TEST_*` environment variables.
@@ -91,7 +91,7 @@ the API. A change that serves the API from another origin, proxies `/api` to a h
 than the backend, or exposes source maps or `.env` files is a P0.
 
 The Vite dev proxy forwards `/api` traffic, cookies included, to `VITE_API_TARGET`. A
-committed `.env`, or a target in `.env.example` or `vite.config.ts` that is not a local
+committed `.env`, or a target in `.env.example` or `vite.config.mts` that is not a local
 host, is a P0.
 
 ### Dependencies

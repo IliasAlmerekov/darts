@@ -147,7 +147,7 @@ Rules:
 
 ## Coverage
 
-`npm run coverage` fails below the thresholds in `vite.config.ts` (`test.coverage.thresholds`).
+`npm run coverage` fails below the thresholds in `vite.config.mts` (`test.coverage.thresholds`).
 
 Rules:
 

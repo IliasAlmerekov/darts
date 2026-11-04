@@ -163,7 +163,7 @@ production code would pull fixtures into the runtime bundle.
 
 ## Path aliases
 
-Defined in `tsconfig.json` and mirrored in `vite.config.ts`:
+Defined in `tsconfig.json` and mirrored in `vite.config.mts`:
 
 | Alias        | Resolves to                 | Use for                                     |
 | ------------ | --------------------------- | ------------------------------------------- |
