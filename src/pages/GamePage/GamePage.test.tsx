@@ -1,4 +1,5 @@
 // @vitest-environment jsdom
+import { FakeEventSource } from "@/test/FakeEventSource";
 
 const getGameThrowsMock = vi.hoisted(() => vi.fn());
 const abortGameMock = vi.hoisted(() => vi.fn());
@@ -28,42 +29,6 @@ import * as gameStore from "@/shared/store/game-state";
 import * as roomStore from "@/shared/store/game-session";
 import { QueryClientWrapper } from "@/test/QueryClientWrapper";
 import GamePage from ".";
-
-class MockEventSource implements EventSource {
-  static CONNECTING = 0 as const;
-  static OPEN = 1 as const;
-  static CLOSED = 2 as const;
-  static instances: MockEventSource[] = [];
-
-  readonly CONNECTING = 0 as const;
-  readonly OPEN = 1 as const;
-  readonly CLOSED = 2 as const;
-
-  onerror: ((this: EventSource, event: Event) => unknown) | null = null;
-  onmessage: ((this: EventSource, event: MessageEvent<string>) => unknown) | null = null;
-  onopen: ((this: EventSource, event: Event) => unknown) | null = null;
-  readyState: 0 | 1 | 2 = MockEventSource.CONNECTING;
-  url: string;
-  withCredentials: boolean;
-
-  constructor(url: string | URL, eventSourceInitDict?: EventSourceInit) {
-    this.url = String(url);
-    this.withCredentials = eventSourceInitDict?.withCredentials ?? false;
-    MockEventSource.instances.push(this);
-  }
-
-  addEventListener(): void {}
-
-  close(): void {
-    this.readyState = MockEventSource.CLOSED;
-  }
-
-  dispatchEvent(): boolean {
-    return true;
-  }
-
-  removeEventListener(): void {}
-}
 
 function buildGameData(overrides: Partial<GameThrowsResponse> = {}): GameThrowsResponse {
   return {
@@ -133,7 +98,7 @@ let originalScrollIntoView: typeof HTMLElement.prototype.scrollIntoView | undefi
 beforeAll(() => {
   originalEventSource = globalThis.EventSource;
   originalScrollIntoView = HTMLElement.prototype.scrollIntoView;
-  vi.stubGlobal("EventSource", MockEventSource);
+  vi.stubGlobal("EventSource", FakeEventSource);
   HTMLElement.prototype.scrollIntoView = vi.fn();
 });
 
@@ -155,7 +120,7 @@ afterAll(() => {
 describe("GamePage", () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    MockEventSource.instances = [];
+    FakeEventSource.instances = [];
     window.sessionStorage.clear();
     gameStore.resetGameStore();
     roomStore.resetRoomStore();
@@ -178,7 +143,7 @@ describe("GamePage", () => {
     renderGamePage("/game/3");
 
     expect(await screen.findByRole("button", { name: "Back to Home" })).toBeTruthy();
-    expect(MockEventSource.instances).toHaveLength(0);
+    expect(FakeEventSource.instances).toHaveLength(0);
   });
 
   it("should render the missing game identifier error when the route param is absent", () => {

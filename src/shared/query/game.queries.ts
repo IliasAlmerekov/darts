@@ -6,7 +6,7 @@ import {
   getTabletGame,
   type GameSettings,
 } from "@/shared/api/game";
-import { toLobbyPlayers } from "@/lib/game/lobbyPlayers";
+import { toRoster } from "@/lib/game/roster";
 import { clientLogger } from "@/shared/services/browser/clientLogger";
 
 const FINISHED_GAME_KEY = "finishedGame";
@@ -75,7 +75,7 @@ export const gameQueries = {
    * Players of a game in its lobby. The start page loader, the room's SSE stream and the
    * optimistic player changes write this key.
    */
-  lobbyPlayers: (gameId: number) =>
+  roster: (gameId: number) =>
     queryOptions({
       queryKey: ["game", gameId, "players"] as const,
       // The store, lobby stream and optimistic roster changes keep this entry current.
@@ -83,7 +83,7 @@ export const gameQueries = {
       queryFn: async ({ signal }) => {
         try {
           const gameState = await getGameThrows(gameId, signal);
-          return toLobbyPlayers(gameState.players);
+          return toRoster(gameState.players);
         } catch (error: unknown) {
           if (!signal.aborted) {
             clientLogger.error("room.players.fetch.failed", {

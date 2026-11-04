@@ -148,18 +148,18 @@ describe("startPageLoader — invitation already loaded", () => {
 
   it("drops lobby players cached on an earlier visit, so the page reads them again", async () => {
     $invitationGet.mockReturnValue({ gameId: 42, invitationLink: "/invite/42" });
-    queryClient.setQueryData(gameQueries.lobbyPlayers(42).queryKey, [
+    queryClient.setQueryData(gameQueries.roster(42).queryKey, [
       { id: 1, name: "Alice", position: 0 },
     ]);
 
     await startPageLoader(makeArgs("42"));
 
-    expect(queryClient.getQueryData(gameQueries.lobbyPlayers(42).queryKey)).toBeUndefined();
+    expect(queryClient.getQueryData(gameQueries.roster(42).queryKey)).toBeUndefined();
   });
 
   it("keeps the lobby players while a page observes them", async () => {
     $invitationGet.mockReturnValue({ gameId: 42, invitationLink: "/invite/42" });
-    const { queryKey } = gameQueries.lobbyPlayers(42);
+    const { queryKey } = gameQueries.roster(42);
     const players = [{ id: 1, name: "Alice", position: 0 }];
     queryClient.setQueryData(queryKey, players);
     const observer = new QueryObserver(queryClient, {

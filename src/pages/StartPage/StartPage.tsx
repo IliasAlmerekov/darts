@@ -8,6 +8,7 @@ import {
   KeyboardSensor,
   useSensor,
   useSensors,
+  type DragEndEvent,
 } from "@dnd-kit/core";
 import {
   SortableContext,
@@ -61,7 +62,7 @@ function StartPage(): React.JSX.Element {
     guestError,
     guestSuggestions,
     isAddingGuest,
-    handleDragEnd,
+    reorder,
     handleRemovePlayer,
     handleStartGame,
     handleCreateRoom,
@@ -72,6 +73,13 @@ function StartPage(): React.JSX.Element {
     handleGuestSuggestion,
     handleAddGuest,
   } = useStartPage();
+
+  const handleDragEnd = ({ active, over }: DragEndEvent): void => {
+    if (!over) return;
+    const playerId = Number(active.id);
+    const overPlayerId = Number(over.id);
+    if (Number.isFinite(playerId) && Number.isFinite(overPlayerId)) reorder(playerId, overPlayerId);
+  };
 
   const handleRemovePlayerFromList = React.useCallback(
     (playerId: number): void => {
@@ -184,7 +192,6 @@ function StartPage(): React.JSX.Element {
                     playerCount={playerCount}
                     onRemovePlayer={handleRemovePlayerFromList}
                     dragEnd={false}
-                    playerOrder={playerOrder}
                     maxPlayers={10}
                   />
                 </SortableContext>

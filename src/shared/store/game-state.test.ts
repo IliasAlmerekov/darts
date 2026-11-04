@@ -1,6 +1,6 @@
 // @vitest-environment node
 import { beforeEach, describe, expect, it } from "vitest";
-import { toLobbyPlayers } from "@/lib/game/lobbyPlayers";
+import { toRoster } from "@/lib/game/roster";
 import { gameQueries } from "@/shared/query/game.queries";
 import { queryClient } from "@/shared/query/queryClient";
 import { buildBackendPlayer, buildGameThrowsResponse } from "@/shared/types/game.test-support";
@@ -17,8 +17,8 @@ describe("game store query bridge", () => {
     acceptGame(game);
     expect($gameData.get()).toEqual(game);
     expect(queryClient.getQueryData(gameQueries.settings(game.id).queryKey)).toEqual(game.settings);
-    expect(queryClient.getQueryData(gameQueries.lobbyPlayers(game.id).queryKey)).toEqual(
-      toLobbyPlayers(game.players),
+    expect(queryClient.getQueryData(gameQueries.roster(game.id).queryKey)).toEqual(
+      toRoster(game.players),
     );
 
     const settings = { startScore: 301, doubleOut: true, tripleOut: false };

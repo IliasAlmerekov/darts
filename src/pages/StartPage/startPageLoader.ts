@@ -48,7 +48,7 @@ export async function startPageLoader({
     // may miss players. Without it the page starts from the game store and reads once.
     // A mounted start page observes the list and its stream keeps it current (a revalidation
     // after the stream closed lands here), so only an unobserved list is dropped.
-    const { queryKey } = gameQueries.lobbyPlayers(gameId);
+    const { queryKey } = gameQueries.roster(gameId);
     if (!queryClient.getQueryCache().find({ queryKey })?.getObserversCount()) {
       queryClient.removeQueries({ queryKey });
     }

@@ -116,6 +116,15 @@ describe("DTO mapper imports", () => {
     overrideConfig: { languageOptions: { parserOptions: { project: null } } },
   });
 
+  it("rejects the roster mapper in render-flow hooks", async () => {
+    const [result] = await eslint.lintText('import { toRoster } from "@/lib/game/roster";', {
+      filePath: "src/pages/StartPage/roster/useRoster.ts",
+    });
+    expect(result?.messages.some((message) => message.ruleId === "no-restricted-imports")).toBe(
+      true,
+    );
+  });
+
   it("rejects the scoreboard mapper in render-flow hooks", async () => {
     const [result] = await eslint.lintText(
       'import { applyScoreboardDelta } from "@/lib/game/applyScoreboardDelta";',

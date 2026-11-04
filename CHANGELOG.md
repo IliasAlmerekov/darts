@@ -16,6 +16,8 @@ and this project does **not** yet follow [Semantic Versioning](https://semver.or
 
 ### Changed
 
+- Roster: keep seat order in the query cache and reconcile room stream updates (#452).
+
 - Game: centralize game state and settings cache writes (#453)
 - API: `leaveRoom` requires the `playerId`, as the backend now answers a leave without one with 400 (#463)
 - Tooling: update frontend dependencies and Stylelint (#465)

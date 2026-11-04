@@ -1,17 +1,22 @@
 import { arrayMove } from "@dnd-kit/sortable";
-import type { DragEndEvent } from "@dnd-kit/core";
-import { addGuestPlayer, leaveRoom, updatePlayerOrder } from "@/shared/api/room";
+import {
+  addGuestPlayer,
+  leaveRoom,
+  updatePlayerOrder,
+  type AddGuestPayload,
+} from "@/shared/api/room";
 import { isApiErrorCode } from "@/lib/error/api-error-code";
 import { toUserErrorMessage } from "@/lib/error/error-to-user-message";
-import { mergePlayerOrder, orderByPosition } from "./playerOrder";
-import { parsePlayersEvent } from "./playersEvent";
+import { parsePlayersEvent } from "@/shared/api/room";
 import { useIsCurrentGame } from "../lib/useIsCurrentGame";
-import { useCallback, useMemo, useRef, useState } from "react";
+import { useCallback, useMemo, useRef } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEventSource, type EventSourceListener } from "@/shared/hooks/useEventSource";
-import { sortLobbyPlayers, type LobbyPlayer } from "@/lib/game/lobbyPlayers";
+import { sortRoster, type Seat } from "@/lib/game/roster";
 import { clientLogger } from "@/shared/services/browser/clientLogger";
 import { gameQueries } from "@/shared/query/game.queries";
+import { writeRoster } from "@/shared/query/roster";
+import useIsomorphicLayoutEffect from "@/lib/useIsomorphicLayoutEffect";
 
 type OptimisticPlayer = {
   id: number;
@@ -21,55 +26,52 @@ type OptimisticPlayer = {
 
 export type AddGuestResult =
   | { status: "added" }
-  | { status: "stale"; error: unknown }
+  | { status: "stale"; error: unknown; seatsNotEditable?: true }
   | { status: "seats-not-editable"; error: unknown }
   | { status: "failed"; error: unknown };
 
-interface UseLobbyRosterResult {
-  players: LobbyPlayer[];
-  count: number;
-  playerOrder: number[];
-  addGuest: (gameId: number, username: string) => Promise<AddGuestResult>;
-  removePlayer: (playerId: number, gameId: number) => Promise<void>;
-  reorderPlayers: (event: DragEndEvent) => void;
+interface UseRosterResult {
+  seats: Seat[];
+  add: (payload: AddGuestPayload) => Promise<AddGuestResult>;
+  remove: (playerId: number) => Promise<void>;
+  reorder: (playerId: number, overPlayerId: number) => void;
 }
 
-const NO_PLAYERS: LobbyPlayer[] = [];
+const NO_PLAYERS: Seat[] = [];
 
 /**
  * `onStreamClosed` runs when the room stream ends with `EventSource.CLOSED`, which means the
  * game left the lobby or the backend failed. The stream keeps reconnecting with backoff.
  */
-export function useLobbyRoster(
+export function useRoster(
   gameId: number | null,
-  onStreamClosed: () => void | Promise<unknown>,
-  onError: (message: string) => void,
-): UseLobbyRosterResult {
+  {
+    onStreamClosed,
+    onError,
+  }: { onStreamClosed: () => void | Promise<unknown>; onError: (message: string) => void },
+): UseRosterResult {
   const queryClient = useQueryClient();
   const isCurrentGame = useIsCurrentGame(gameId);
   const requestIdRef = useRef(0);
+  const pendingReorderRef = useRef<{ gameId: number; requestId: number } | null>(null);
   const streamVersionRef = useRef(0);
+  useIsomorphicLayoutEffect(() => {
+    requestIdRef.current += 1;
+    pendingReorderRef.current = null;
+  }, [gameId]);
   const { data: players = NO_PLAYERS } = useQuery({
-    ...gameQueries.lobbyPlayers(gameId ?? 0),
+    ...gameQueries.roster(gameId ?? 0),
     enabled: gameId !== null,
   });
 
-  const [playerOrder, setPlayerOrder] = useState<number[]>(() => orderByPosition(players));
-  const [orderedPlayers, setOrderedPlayers] = useState(players);
-  if (orderedPlayers !== players) {
-    setOrderedPlayers(players);
-    setPlayerOrder((previous) => mergePlayerOrder(previous, players));
-  }
-
   const updatePlayers = useCallback(
-    (update: (currentPlayers: LobbyPlayer[]) => LobbyPlayer[]): void => {
+    (update: (currentPlayers: Seat[]) => Seat[]): void => {
       if (gameId === null) {
         return;
       }
-      const { queryKey } = gameQueries.lobbyPlayers(gameId);
-      // A read still in flight started before this write, so its response would be older.
-      void queryClient.cancelQueries({ queryKey });
-      queryClient.setQueryData(queryKey, (currentPlayers) => update(currentPlayers ?? NO_PLAYERS));
+      const { queryKey } = gameQueries.roster(gameId);
+      const currentPlayers = queryClient.getQueryData(queryKey) ?? NO_PLAYERS;
+      writeRoster(gameId, update(currentPlayers));
     },
     [gameId, queryClient],
   );
@@ -88,7 +90,16 @@ export function useLobbyRoster(
         }
         if (roster !== "no-roster") {
           streamVersionRef.current += 1;
-          updatePlayers(() => sortLobbyPlayers(roster));
+          updatePlayers((current) => {
+            if (pendingReorderRef.current?.gameId !== gameId) return roster;
+            const incoming = new Map(roster.map((seat) => [seat.id, seat]));
+            const kept = current.flatMap((seat) => {
+              const updated = incoming.get(seat.id);
+              incoming.delete(seat.id);
+              return updated ? [updated] : [];
+            });
+            return [...kept, ...incoming.values()].map((seat, position) => ({ ...seat, position }));
+          });
         }
       } catch (error) {
         clientLogger.error("room.players.sse-parse.failed", {
@@ -97,7 +108,7 @@ export function useLobbyRoster(
         });
       }
     },
-    [updatePlayers],
+    [gameId, updatePlayers],
   );
 
   const listeners = useMemo<readonly EventSourceListener[]>(() => {
@@ -115,13 +126,13 @@ export function useLobbyRoster(
           currentPlayers.length > 0
             ? Math.max(...currentPlayers.map((existingPlayer) => existingPlayer.position ?? 0)) + 1
             : 0;
-        const nextPlayer: LobbyPlayer = {
+        const nextPlayer: Seat = {
           id: player.id,
           name: player.name,
           position: player.position ?? fallbackPosition,
         };
 
-        return sortLobbyPlayers([...currentPlayers, nextPlayer]);
+        return sortRoster([...currentPlayers, nextPlayer]);
       });
     },
     [updatePlayers],
@@ -142,11 +153,13 @@ export function useLobbyRoster(
       request: () => Promise<T>;
       rollback?: () => void;
       shouldRollback?: () => boolean;
+      isRequestCurrent?: () => boolean;
       seatsLog?: string;
       failureLog?: string;
     }): Promise<
       | { status: "success"; value: T }
-      | { status: "stale" | "seats-not-editable" | "failed"; error: unknown }
+      | { status: "stale"; error: unknown; seatsNotEditable?: true }
+      | { status: "seats-not-editable" | "failed"; error: unknown }
     > => {
       try {
         return { status: "success", value: await options.request() };
@@ -158,7 +171,13 @@ export function useLobbyRoster(
         if (seatsNotEditable && options.seatsLog) {
           clientLogger.warn(options.seatsLog, { context: { gameId: options.gameId }, error });
         }
-        if (!isCurrentGame(options.gameId)) return { status: "stale", error };
+        if (
+          !isCurrentGame(options.gameId) ||
+          (options.isRequestCurrent && !options.isRequestCurrent())
+        )
+          return seatsNotEditable
+            ? { status: "stale", error, seatsNotEditable: true }
+            : { status: "stale", error };
         if (seatsNotEditable) {
           void onStreamClosed();
           return { status: "seats-not-editable", error };
@@ -170,24 +189,31 @@ export function useLobbyRoster(
   );
 
   const addGuest = useCallback(
-    async (activeGameId: number, username: string): Promise<AddGuestResult> => {
+    async (payload: AddGuestPayload): Promise<AddGuestResult> => {
+      if (gameId === null) return { status: "failed", error: new Error("No active game") };
+      const activeGameId = gameId;
       const result = await mutateSeat({
         gameId: activeGameId,
-        request: () => addGuestPlayer(activeGameId, { username }),
+        request: () => addGuestPlayer(activeGameId, payload),
         seatsLog: "room.guest.seats-not-editable",
       });
       if (result.status === "success") {
+        if (!isCurrentGame(activeGameId)) return { status: "stale", error: null };
         appendOptimisticPlayer(result.value);
         return { status: "added" };
       }
       return result;
     },
-    [appendOptimisticPlayer, mutateSeat],
+    [appendOptimisticPlayer, gameId, isCurrentGame, mutateSeat],
   );
 
   const removePlayer = useCallback(
-    async (playerId: number, activeGameId: number): Promise<void> => {
-      const removed = players.find((player) => player.id === playerId);
+    async (playerId: number): Promise<void> => {
+      if (gameId === null) return;
+      const activeGameId = gameId;
+      const removed = queryClient
+        .getQueryData(gameQueries.roster(activeGameId).queryKey)
+        ?.find((player) => player.id === playerId);
       const streamVersion = streamVersionRef.current;
       removeOptimisticPlayer(playerId);
       const result = await mutateSeat({
@@ -215,24 +241,29 @@ export function useLobbyRoster(
         onError(toUserErrorMessage(result.error, "Could not remove player. Please try again."));
       }
     },
-    [appendOptimisticPlayer, mutateSeat, onError, players, removeOptimisticPlayer],
+    [appendOptimisticPlayer, gameId, mutateSeat, onError, queryClient, removeOptimisticPlayer],
   );
 
   const reorderPlayers = useCallback(
-    (event: DragEndEvent): void => {
-      const { active, over } = event;
-      if (!over || active.id === over.id) return;
-      const items = playerOrder;
-      const activeId = Number(active.id);
-      const overId = Number(over.id);
+    (activeId: number, overId: number): void => {
+      if (activeId === overId) return;
+      if (gameId === null) return;
+      const current = queryClient.getQueryData(gameQueries.roster(gameId).queryKey) ?? NO_PLAYERS;
+      const items = current.map(({ id }) => id);
       if (!Number.isFinite(activeId) || !Number.isFinite(overId)) return;
       const oldIndex = items.indexOf(activeId);
       const newIndex = items.indexOf(overId);
       if (oldIndex === -1 || newIndex === -1) return;
       const nextOrder = arrayMove(items, oldIndex, newIndex);
-      setPlayerOrder(nextOrder);
       if (gameId !== null) {
         const requestId = ++requestIdRef.current;
+        pendingReorderRef.current = { gameId, requestId };
+        const previous = current;
+        const ordered = arrayMove(current, oldIndex, newIndex).map((seat, position) => ({
+          ...seat,
+          position,
+        }));
+        updatePlayers(() => ordered);
         void mutateSeat({
           gameId,
           request: () =>
@@ -241,12 +272,24 @@ export function useLobbyRoster(
               nextOrder.map((playerId, position) => ({ playerId, position })),
             ),
           rollback: () => {
-            const current = queryClient.getQueryData(gameQueries.lobbyPlayers(gameId).queryKey);
-            setPlayerOrder(mergePlayerOrder(items, current ?? NO_PLAYERS));
+            updatePlayers((currentSeats) => {
+              const incoming = new Map(currentSeats.map((seat) => [seat.id, seat]));
+              const kept = previous.flatMap((seat) => {
+                const updated = incoming.get(seat.id);
+                incoming.delete(seat.id);
+                return updated ? [updated] : [];
+              });
+              return [...kept, ...incoming.values()].map((seat, position) => ({
+                ...seat,
+                position,
+              }));
+            });
           },
           shouldRollback: () => requestIdRef.current === requestId && isCurrentGame(gameId),
+          isRequestCurrent: () => requestIdRef.current === requestId,
           failureLog: "room.player-order.persist.failed",
         }).then((result) => {
+          if (pendingReorderRef.current?.requestId === requestId) pendingReorderRef.current = null;
           if (result.status !== "success" && result.status !== "stale")
             onError(
               toUserErrorMessage(result.error, "Could not update player order. Please try again."),
@@ -254,10 +297,10 @@ export function useLobbyRoster(
         });
       }
     },
-    [gameId, isCurrentGame, mutateSeat, onError, playerOrder, queryClient],
+    [gameId, isCurrentGame, mutateSeat, onError, queryClient, updatePlayers],
   );
 
   useEventSource(url, listeners, { withCredentials: true, onClosed: onStreamClosed });
 
-  return { players, count: players.length, playerOrder, addGuest, removePlayer, reorderPlayers };
+  return { seats: players, add: addGuest, remove: removePlayer, reorder: reorderPlayers };
 }

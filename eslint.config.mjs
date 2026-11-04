@@ -212,8 +212,8 @@ export default [
             {
               // These modules also hold UI-to-UI helpers (sortLobbyPlayers, getFinishedPlayers), so only
               // their DTO mappers are banned.
-              regex: "^@/(shared/lib|lib)/game/(lobbyPlayers|player-mappers)(\\.ts)?$",
-              importNames: ["toLobbyPlayers", "mapPlayersToUI"],
+              regex: "^@/(shared/lib|lib)/game/(roster|player-mappers)(\\.ts)?$",
+              importNames: ["toRoster", "mapPlayersToUI"],
               message:
                 "Render-flow files must not call DTO mappers. Call them from an API function, queryFn, store action, route loader or page lib/ file (docs/convention/api.md, Mappers).",
             },

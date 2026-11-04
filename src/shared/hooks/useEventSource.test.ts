@@ -1,54 +1,8 @@
 // @vitest-environment jsdom
+import { FakeEventSource } from "@/test/FakeEventSource";
 import { act, renderHook } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { useEventSource } from "./useEventSource";
-
-class MockEventSource {
-  static CONNECTING = 0 as const;
-  static OPEN = 1 as const;
-  static CLOSED = 2 as const;
-  static instances: MockEventSource[] = [];
-
-  onopen: (() => void) | null = null;
-  onerror: (() => void) | null = null;
-  readyState: 0 | 1 | 2 = MockEventSource.CONNECTING;
-  close = vi.fn(() => {
-    this.readyState = MockEventSource.CLOSED;
-  });
-  url: string;
-  withCredentials: boolean;
-  private listeners: Map<string, (event: MessageEvent<string>) => void> = new Map();
-
-  constructor(url: string, options?: { withCredentials?: boolean }) {
-    this.url = url;
-    this.withCredentials = options?.withCredentials ?? false;
-    MockEventSource.instances.push(this);
-  }
-
-  addEventListener(type: string, handler: (event: MessageEvent<string>) => void): void {
-    this.listeners.set(type, handler);
-  }
-
-  removeEventListener(type: string, handler: (event: MessageEvent<string>) => void): void {
-    if (this.listeners.get(type) === handler) {
-      this.listeners.delete(type);
-    }
-  }
-
-  emit(type: string, data: string): void {
-    const handler = this.listeners.get(type);
-    handler?.(new MessageEvent(type, { data }));
-  }
-
-  simulateOpen(): void {
-    this.onopen?.();
-  }
-
-  simulateError(readyState: 0 | 1 | 2 = MockEventSource.CONNECTING): void {
-    this.readyState = readyState;
-    this.onerror?.();
-  }
-}
 
 interface StreamProps {
   url: string | null;
@@ -56,9 +10,9 @@ interface StreamProps {
 
 describe("useEventSource", () => {
   beforeEach(() => {
-    MockEventSource.instances = [];
+    FakeEventSource.instances = [];
     vi.clearAllMocks();
-    vi.stubGlobal("EventSource", MockEventSource);
+    vi.stubGlobal("EventSource", FakeEventSource);
     vi.useFakeTimers();
   });
 
@@ -71,7 +25,7 @@ describe("useEventSource", () => {
     const listeners = [{ event: "message", handler: vi.fn() }] as const;
     const { result } = renderHook(() => useEventSource(null, listeners));
 
-    expect(MockEventSource.instances).toHaveLength(0);
+    expect(FakeEventSource.instances).toHaveLength(0);
     expect(result.current).toEqual({ error: null, isConnected: false });
   });
 
@@ -81,10 +35,10 @@ describe("useEventSource", () => {
     renderHook(() => useEventSource("/stream", listeners));
 
     act(() => {
-      MockEventSource.instances[0]?.emit("players", JSON.stringify({ players: [] }));
+      FakeEventSource.instances[0]?.emit("players", JSON.stringify({ players: [] }));
     });
 
-    expect(MockEventSource.instances[0]?.withCredentials).toBe(false);
+    expect(FakeEventSource.instances[0]?.withCredentials).toBe(false);
     expect(handler).toHaveBeenCalledTimes(1);
   });
 
@@ -95,30 +49,30 @@ describe("useEventSource", () => {
     );
 
     act(() => {
-      MockEventSource.instances[0]?.simulateOpen();
+      FakeEventSource.instances[0]?.simulateOpen();
     });
 
     expect(result.current).toEqual({ error: null, isConnected: true });
 
     act(() => {
-      MockEventSource.instances[0]?.simulateError();
+      FakeEventSource.instances[0]?.simulateError();
     });
 
     expect(result.current.isConnected).toBe(false);
     expect(result.current.error?.message).toBe("[useEventSource] EventSource connection failed");
-    expect(MockEventSource.instances[0]?.close).toHaveBeenCalledTimes(1);
+    expect(FakeEventSource.instances[0]?.close).toHaveBeenCalledTimes(1);
 
     act(() => {
       vi.advanceTimersByTime(999);
     });
 
-    expect(MockEventSource.instances).toHaveLength(1);
+    expect(FakeEventSource.instances).toHaveLength(1);
 
     act(() => {
       vi.advanceTimersByTime(1);
     });
 
-    expect(MockEventSource.instances).toHaveLength(2);
+    expect(FakeEventSource.instances).toHaveLength(2);
   });
 
   it("should reset the explicit error when reconnect succeeds", () => {
@@ -126,14 +80,14 @@ describe("useEventSource", () => {
     const { result } = renderHook(() => useEventSource("/stream", listeners));
 
     act(() => {
-      MockEventSource.instances[0]?.simulateError();
+      FakeEventSource.instances[0]?.simulateError();
     });
 
     expect(result.current.error?.message).toBe("[useEventSource] EventSource connection failed");
 
     act(() => {
       vi.advanceTimersByTime(1000);
-      MockEventSource.instances[1]?.simulateOpen();
+      FakeEventSource.instances[1]?.simulateOpen();
     });
 
     expect(result.current).toEqual({ error: null, isConnected: true });
@@ -152,11 +106,11 @@ describe("useEventSource", () => {
     );
 
     act(() => {
-      MockEventSource.instances[0]?.simulateError();
+      FakeEventSource.instances[0]?.simulateError();
     });
     act(() => {
       vi.advanceTimersByTime(1000);
-      MockEventSource.instances[1]?.simulateOpen();
+      FakeEventSource.instances[1]?.simulateOpen();
     });
     expect(renders.at(-1)?.result).toEqual({ error: null, isConnected: true });
 
@@ -168,7 +122,7 @@ describe("useEventSource", () => {
     for (const { result } of newUrlRenders) {
       expect(result).toEqual({ error: null, isConnected: false });
     }
-    expect(MockEventSource.instances.map(({ url }) => url)).toEqual([
+    expect(FakeEventSource.instances.map(({ url }) => url)).toEqual([
       "/stream-a",
       "/stream-a",
       "/stream-b",
@@ -188,7 +142,7 @@ describe("useEventSource", () => {
     );
 
     act(() => {
-      MockEventSource.instances[0]?.simulateOpen();
+      FakeEventSource.instances[0]?.simulateOpen();
     });
     expect(results.at(-1)).toEqual({ error: null, isConnected: true });
 
@@ -208,11 +162,11 @@ describe("useEventSource", () => {
       useEventSource("/secure-stream", listeners, { withCredentials: true }),
     );
 
-    expect(MockEventSource.instances[0]?.withCredentials).toBe(true);
+    expect(FakeEventSource.instances[0]?.withCredentials).toBe(true);
 
     unmount();
 
-    expect(MockEventSource.instances[0]?.close).toHaveBeenCalledTimes(1);
+    expect(FakeEventSource.instances[0]?.close).toHaveBeenCalledTimes(1);
   });
 
   it("should cancel a pending reconnect when unmounted", () => {
@@ -220,7 +174,7 @@ describe("useEventSource", () => {
     const { unmount } = renderHook(() => useEventSource("/stream", listeners));
 
     act(() => {
-      MockEventSource.instances[0]?.simulateError();
+      FakeEventSource.instances[0]?.simulateError();
     });
 
     unmount();
@@ -229,7 +183,7 @@ describe("useEventSource", () => {
       vi.advanceTimersByTime(5000);
     });
 
-    expect(MockEventSource.instances).toHaveLength(1);
+    expect(FakeEventSource.instances).toHaveLength(1);
   });
 
   describe("onClosed", () => {
@@ -239,17 +193,17 @@ describe("useEventSource", () => {
       renderHook(() => useEventSource("/stream", listeners, { onClosed }));
 
       act(() => {
-        MockEventSource.instances[0]?.simulateError(MockEventSource.CLOSED);
+        FakeEventSource.instances[0]?.simulateError(FakeEventSource.CLOSED);
       });
 
       expect(onClosed).toHaveBeenCalledTimes(1);
-      expect(MockEventSource.instances).toHaveLength(1);
+      expect(FakeEventSource.instances).toHaveLength(1);
 
       act(() => {
         vi.advanceTimersByTime(1000);
       });
 
-      expect(MockEventSource.instances).toHaveLength(2);
+      expect(FakeEventSource.instances).toHaveLength(2);
     });
 
     it("should not call onClosed when the error leaves the source connecting", () => {
@@ -258,7 +212,7 @@ describe("useEventSource", () => {
       renderHook(() => useEventSource("/stream", listeners, { onClosed }));
 
       act(() => {
-        MockEventSource.instances[0]?.simulateError(MockEventSource.CONNECTING);
+        FakeEventSource.instances[0]?.simulateError(FakeEventSource.CONNECTING);
       });
 
       expect(onClosed).not.toHaveBeenCalled();
@@ -276,11 +230,11 @@ describe("useEventSource", () => {
 
       rerender({ onClosed: secondOnClosed });
 
-      expect(MockEventSource.instances).toHaveLength(1);
-      expect(MockEventSource.instances[0]?.close).not.toHaveBeenCalled();
+      expect(FakeEventSource.instances).toHaveLength(1);
+      expect(FakeEventSource.instances[0]?.close).not.toHaveBeenCalled();
 
       act(() => {
-        MockEventSource.instances[0]?.simulateError(MockEventSource.CLOSED);
+        FakeEventSource.instances[0]?.simulateError(FakeEventSource.CLOSED);
       });
 
       expect(firstOnClosed).not.toHaveBeenCalled();
@@ -295,14 +249,14 @@ describe("useEventSource", () => {
       );
 
       act(() => {
-        MockEventSource.instances[0]?.simulateError(MockEventSource.CLOSED);
+        FakeEventSource.instances[0]?.simulateError(FakeEventSource.CLOSED);
       });
       rerender({ url: null });
       act(() => {
         vi.advanceTimersByTime(30_000);
       });
 
-      expect(MockEventSource.instances).toHaveLength(1);
+      expect(FakeEventSource.instances).toHaveLength(1);
     });
   });
 });

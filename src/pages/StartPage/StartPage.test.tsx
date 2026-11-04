@@ -1,4 +1,5 @@
 // @vitest-environment jsdom
+import { FakeEventSource } from "@/test/FakeEventSource";
 
 vi.mock("react-router-dom", async (importOriginal) => {
   const original = await importOriginal<Record<string, unknown>>();
@@ -46,48 +47,8 @@ import {
 import { buildBackendPlayer, buildGameThrowsResponse } from "@/shared/types/game.test-support";
 
 // ---------------------------------------------------------------------------
-// MockEventSource — browser API boundary stub
+// FakeEventSource — browser API boundary stub
 // ---------------------------------------------------------------------------
-
-type EventHandler = (event: MessageEvent<string>) => void;
-
-class MockEventSource {
-  static last: MockEventSource | null = null;
-
-  onopen: (() => void) | null = null;
-  onerror: (() => void) | null = null;
-
-  private handlers = new Map<string, EventHandler[]>();
-
-  constructor(_url: string, _init?: EventSourceInit) {
-    MockEventSource.last = this;
-  }
-
-  addEventListener(event: string, handler: EventHandler): void {
-    const existing = this.handlers.get(event) ?? [];
-    this.handlers.set(event, [...existing, handler]);
-  }
-
-  removeEventListener(event: string, handler: EventHandler): void {
-    const existing = this.handlers.get(event) ?? [];
-    this.handlers.set(
-      event,
-      existing.filter((h) => h !== handler),
-    );
-  }
-
-  dispatch(event: string, data: string): void {
-    const eventHandlers = this.handlers.get(event) ?? [];
-    const messageEvent = new MessageEvent(event, { data });
-    for (const handler of eventHandlers) {
-      handler(messageEvent);
-    }
-  }
-
-  close(): void {
-    // noop
-  }
-}
 
 // ---------------------------------------------------------------------------
 // MockAudio — browser API boundary stub
@@ -108,7 +69,7 @@ class MockAudio {
 // `asyncUtilTimeout` once other test files flake on the same default.
 const LOBBY_LOAD_TIMEOUT_MS = 3000;
 
-function findLobbyPlayer(name: string): Promise<HTMLElement> {
+function findSeat(name: string): Promise<HTMLElement> {
   return screen.findByText(name, undefined, { timeout: LOBBY_LOAD_TIMEOUT_MS });
 }
 
@@ -132,13 +93,13 @@ function renderStartPage(path: string): void {
 describe("StartPage", () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    MockEventSource.last = null;
+    FakeEventSource.last = null;
     sessionStorage.clear();
     resetRoomStore();
     resetGameStore();
     resetPreCreateGameSettings();
     queryClient.clear();
-    vi.stubGlobal("EventSource", MockEventSource);
+    vi.stubGlobal("EventSource", FakeEventSource);
     vi.stubGlobal("Audio", MockAudio);
     vi.mocked(getGameThrows).mockResolvedValue(buildGameThrowsResponse());
     vi.mocked(getInvitation).mockResolvedValue({ gameId: 0, invitationLink: "" });
@@ -172,7 +133,7 @@ describe("StartPage", () => {
 
     renderStartPage("/start/1");
 
-    await findLobbyPlayer("Player 10");
+    await findSeat("Player 10");
 
     expect(screen.getByRole("button", { name: "Play as a guest" })).toHaveProperty(
       "disabled",
@@ -320,7 +281,7 @@ describe("StartPage", () => {
     });
 
     // Wait for players to load (so start is enabled)
-    await findLobbyPlayer("Player 2");
+    await findSeat("Player 2");
     expect(screen.getByRole("button", { name: "Start" })).toHaveProperty("disabled", false);
 
     await act(async () => {
@@ -342,6 +303,6 @@ describe("StartPage", () => {
 
     renderStartPage("/start/1");
 
-    await findLobbyPlayer("Alex");
+    await findSeat("Alex");
   });
 });
