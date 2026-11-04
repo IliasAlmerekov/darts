@@ -11,7 +11,7 @@ vi.mock("@/shared/api/client", async (importOriginal) => ({
   },
 }));
 
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, expectTypeOf, it, vi } from "vitest";
 import { addGuestPlayer, createRoom, getInvitation, leaveRoom, updatePlayerOrder } from "./room";
 import { apiClient, ApiValidationError } from "./client";
 import { ApiError } from "./errors";
@@ -166,6 +166,10 @@ describe("leaveRoom", () => {
     vi.mocked(apiClient.delete).mockImplementationOnce(respondWith({ success: true }));
 
     await expect(leaveRoom(123, 7)).rejects.toBeInstanceOf(ApiValidationError);
+  });
+
+  it("requires the playerId, as the backend answers a leave without one with 400", () => {
+    expectTypeOf(leaveRoom).parameters.toEqualTypeOf<[gameId: number, playerId: number]>();
   });
 });
 
