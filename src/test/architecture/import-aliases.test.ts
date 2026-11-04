@@ -19,11 +19,11 @@ function walkSrc(dir: string, result: string[] = []): string[] {
 }
 
 describe("import aliases — TICKET-10: удаление alias @/store", () => {
-  describe("vite.config.ts", () => {
+  describe("vite.config.mts", () => {
     let viteConfig: string;
 
     beforeAll(() => {
-      viteConfig = fs.readFileSync(path.join(ROOT, "vite.config.ts"), "utf-8");
+      viteConfig = fs.readFileSync(path.join(ROOT, "vite.config.mts"), "utf-8");
     });
 
     it("should not contain @/store alias key", () => {

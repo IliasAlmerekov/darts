@@ -16,6 +16,7 @@ and this project does **not** yet follow [Semantic Versioning](https://semver.or
 
 ### Changed
 
+- Tooling: update frontend dependencies and Stylelint (#465)
 - Game: move throw synchronization and recovery into a single game session (#450)
 - Docs: page files are grouped by the part of the page they serve, and VS Code nests tests and styles under their file (#456)
 - Assets: the undo icons `undo-copy.svg` and `undolinkbutton.svg` are now `undo-dark.svg` and `undo-button.svg` (#358)
@@ -26,6 +27,7 @@ and this project does **not** yet follow [Semantic Versioning](https://semver.or
 
 ### Fixed
 
+- Build: load the Vite config with the native loader without warnings (#465)
 - Deploy: accept avatar directories that grant the backend access through an ACL on Ubuntu with Rust coreutils (#429)
 - Deploy: build the backend commit that serves player avatars, so the released app can load pictures instead of always showing the fallback (#429)
 - Start page: a malformed `players` event from the room stream is ignored as a whole and keeps the last valid lobby roster, instead of crashing the page or scrambling the player order (#437)

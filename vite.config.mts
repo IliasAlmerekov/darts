@@ -1,7 +1,10 @@
 /// <reference types="vitest/config" />
 import { defineConfig, loadEnv } from "vite";
 import react from "@vitejs/plugin-react";
-import path from "path";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
+
+const configDir = path.dirname(fileURLToPath(import.meta.url));
 
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), "");
@@ -11,13 +14,13 @@ export default defineConfig(({ mode }) => {
     plugins: [react()],
     resolve: {
       alias: {
-        "@/app": path.resolve(__dirname, "./src/app"),
-        "@/assets": path.resolve(__dirname, "./src/assets"),
-        "@/pages": path.resolve(__dirname, "./src/pages"),
-        "@/shared": path.resolve(__dirname, "./src/shared"),
-        "@/lib": path.resolve(__dirname, "./src/shared/lib"),
-        "@/types": path.resolve(__dirname, "./src/shared/types"),
-        "@": path.resolve(__dirname, "./src"),
+        "@/app": path.resolve(configDir, "./src/app"),
+        "@/assets": path.resolve(configDir, "./src/assets"),
+        "@/pages": path.resolve(configDir, "./src/pages"),
+        "@/shared": path.resolve(configDir, "./src/shared"),
+        "@/lib": path.resolve(configDir, "./src/shared/lib"),
+        "@/types": path.resolve(configDir, "./src/shared/types"),
+        "@": path.resolve(configDir, "./src"),
       },
     },
     server: {
