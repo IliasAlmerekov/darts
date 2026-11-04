@@ -26,6 +26,9 @@ readonly releases=$base/releases
 readonly secrets=$base/secrets
 readonly config=$base/config
 readonly avatars_env=$config/avatars.env
+# The backend container runs as symfony, UID and GID 10001 (app/Dockerfile in darts-backend).
+# This holds only while Docker maps container IDs 1:1 to host IDs (no userns-remap, not rootless).
+readonly backend_uid=10001
 readonly semver='(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)'
 readonly release_name_re="^${semver}-[0-9a-f]{40}-[0-9]+\$"
 readonly archive_re="^${incoming}/darts-release-(${semver}-[0-9a-f]{40}-[0-9]+)\\.tar\\.gz\$"
@@ -58,6 +61,7 @@ done
 # parse it strictly instead of sourcing it.
 check_avatars_env() {
     local line key value seen=''
+    command -v setpriv > /dev/null || die 'setpriv is not installed.'
     [[ -e $avatars_env || -L $avatars_env ]] ||
         die "$avatars_env is missing. Run init-server.sh, or create it with AVATAR_HOST_DIR=<absolute path>."
     [[ ! -L $avatars_env && -f $avatars_env ]] || die "$avatars_env is not a regular file."
@@ -70,6 +74,10 @@ check_avatars_env() {
         [[ -z $seen ]] || die 'Duplicate avatars.env key: AVATAR_HOST_DIR'
         [[ $value =~ ^/[A-Za-z0-9._/-]+$ ]] || die 'AVATAR_HOST_DIR in avatars.env must be an absolute path.'
         [[ -d $value ]] || die "AVATAR_HOST_DIR $value is not an existing directory."
+        # Test the folder from inside it: the bind mount needs no search right on its parents.
+        (cd -- "$value" &&
+            setpriv --reuid="$backend_uid" --regid="$backend_uid" --clear-groups test -r . -a -x .) ||
+            die "AVATAR_HOST_DIR $value is not readable and searchable by the backend user (UID $backend_uid)."
         seen=1
     done < "$avatars_env"
     [[ -n $seen ]] || die "$avatars_env lacks AVATAR_HOST_DIR."

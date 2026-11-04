@@ -173,9 +173,11 @@ with `sudo`; CI never does, so a release cannot choose which host folder the bac
 The rollout and the rollback stop before they touch the stack when the file is missing,
 not owned by root, writable by group or others, or holds anything but one
 `AVATAR_HOST_DIR` line with an absolute path, or when that path is not an existing
-directory; Compose never creates a missing folder, so a typo fails the deploy instead of
-showing every player the user icon. A changed folder takes effect with the next
-rollout or rollback, or at once with the `up -d` command under "Changing compose.yaml".
+directory that the backend user (UID 10001) can read and search; Compose never creates a
+missing folder, so a typo or a closed folder fails the deploy instead of showing every
+player the user icon. The parent folders may stay closed to that user, because the bind
+mount does not pass through them. A changed folder takes effect with the next rollout or
+rollback, or at once with the `up -d` command under "Changing compose.yaml".
 
 Each file in the folder follows one rule:
 

@@ -28,7 +28,7 @@ script_dir=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)
 
 command -v docker > /dev/null || die 'Docker is not installed.'
 docker compose version > /dev/null || die 'The Docker Compose plugin is not installed.'
-for tool in flock curl sha256sum python3 visudo ssh-keygen openssl; do
+for tool in flock curl sha256sum python3 visudo ssh-keygen openssl setpriv; do
     command -v "$tool" > /dev/null || die "$tool is not installed."
 done
 for file in rollout.sh rollback.sh compose.yaml Caddyfile; do
