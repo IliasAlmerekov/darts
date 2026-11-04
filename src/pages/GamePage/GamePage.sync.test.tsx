@@ -115,8 +115,22 @@ function buildThrowAck(scores: { alice: number; bob: number }): ThrowAckResponse
     throw: null,
     scoreboardDelta: {
       changedPlayers: [
-        { playerId: 1, name: "Alice", score: scores.alice, isActive: true, isGuest: false },
-        { playerId: 2, name: "Bob", score: scores.bob, isActive: false, isGuest: false },
+        {
+          playerId: 1,
+          name: "Alice",
+          score: scores.alice,
+          isActive: true,
+          isGuest: false,
+          isBust: null,
+        },
+        {
+          playerId: 2,
+          name: "Bob",
+          score: scores.bob,
+          isActive: false,
+          isGuest: false,
+          isBust: null,
+        },
       ],
       winnerId: null,
       status: "started",
@@ -139,8 +153,24 @@ function buildWinningAck(): ThrowAckResponse {
   const ack = buildThrowAck({ alice: 0, bob: 301 });
   ack.scoreboardDelta = {
     changedPlayers: [
-      { playerId: 1, name: "Alice", score: 0, isActive: false, isGuest: false, position: 1 },
-      { playerId: 2, name: "Bob", score: 301, isActive: true, isGuest: false, position: 2 },
+      {
+        playerId: 1,
+        name: "Alice",
+        score: 0,
+        isActive: false,
+        isGuest: false,
+        isBust: null,
+        position: 1,
+      },
+      {
+        playerId: 2,
+        name: "Bob",
+        score: 301,
+        isActive: true,
+        isGuest: false,
+        isBust: null,
+        position: 2,
+      },
     ],
     winnerId: 1,
     status: "finished",

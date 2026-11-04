@@ -67,8 +67,8 @@ function buildThrowAck(gameId: number): ThrowAckResponse {
     throw: null,
     scoreboardDelta: {
       changedPlayers: [
-        { playerId: 1, name: "Alice", score: 281, isActive: true, isGuest: false },
-        { playerId: 2, name: "Bob", score: 301, isActive: false, isGuest: false },
+        { playerId: 1, name: "Alice", score: 281, isActive: true, isGuest: false, isBust: null },
+        { playerId: 2, name: "Bob", score: 301, isActive: false, isGuest: false, isBust: null },
       ],
       winnerId: null,
       status: "started",
@@ -116,8 +116,8 @@ describe("useGameSession", () => {
         ...buildThrowAck(1),
         scoreboardDelta: {
           changedPlayers: [
-            { playerId: 1, name: "Alice", score: 0, isActive: false, isGuest: false },
-            { playerId: 2, name: "Bob", score: 301, isActive: true, isGuest: false },
+            { playerId: 1, name: "Alice", score: 0, isActive: false, isGuest: false, isBust: null },
+            { playerId: 2, name: "Bob", score: 301, isActive: true, isGuest: false, isBust: null },
           ],
           winnerId: 1,
           status: "started",

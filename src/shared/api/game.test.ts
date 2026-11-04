@@ -111,6 +111,13 @@ const minimalScoreboardDelta = {
   currentRound: 1,
 };
 
+/** `minimalScoreboardDelta` after parsing: the contract defaults filled in. */
+const parsedMinimalScoreboardDelta = {
+  ...minimalScoreboardDelta,
+  changedPlayers: [{ ...minimalScoreboardDelta.changedPlayers[0], isBust: null }],
+  winnerId: null,
+};
+
 /** Contract `ThrowAckDto` with only the required keys. */
 const minimalThrowAckPayload = {
   success: true,
@@ -404,7 +411,7 @@ describe("game api contract payloads", () => {
       await expect(recordThrow(42, { playerId: 7, value: 20 })).resolves.toEqual(throwAckPayload);
     });
 
-    it("fills the type default, null for a missing throw and winnerId, and leaves position and isBust absent", async () => {
+    it("fills the type default, null for a missing throw, winnerId and isBust, and leaves position absent", async () => {
       vi.spyOn(apiClient, "post").mockImplementationOnce(respondWith(minimalThrowAckPayload));
 
       const ack = await recordThrow(42, { playerId: 7, value: 20 });
@@ -413,10 +420,9 @@ describe("game api contract payloads", () => {
         type: "ack",
         ...minimalThrowAckPayload,
         throw: null,
-        scoreboardDelta: { ...minimalScoreboardDelta, winnerId: null },
+        scoreboardDelta: parsedMinimalScoreboardDelta,
       });
       expect(ack.scoreboardDelta.changedPlayers[0]).not.toHaveProperty("position");
-      expect(ack.scoreboardDelta.changedPlayers[0]).not.toHaveProperty("isBust");
     });
 
     it.each(malformedAckCases)(
@@ -478,13 +484,13 @@ describe("game api contract payloads", () => {
       );
     });
 
-    it("fills the ack type default and null winnerId for an ack with only the required keys", async () => {
+    it("fills the ack type default and null winnerId and isBust for an ack with only the required keys", async () => {
       vi.spyOn(apiClient, "delete").mockImplementationOnce(respondWith(minimalUndoAckPayload));
 
       await expect(undoLastThrow(42)).resolves.toEqual({
         type: "ack",
         ...minimalUndoAckPayload,
-        scoreboardDelta: { ...minimalScoreboardDelta, winnerId: null },
+        scoreboardDelta: parsedMinimalScoreboardDelta,
       });
     });
 

@@ -62,7 +62,9 @@ const mockDeltaGameData = buildDeltaGameData();
 describe("applyScoreboardDelta", () => {
   it("keeps a player's position when the delta omits it", () => {
     const nextGameData = applyScoreboardDelta(mockDeltaGameData, {
-      changedPlayers: [{ playerId: 2, name: "Bob", score: 341, isActive: true, isGuest: false }],
+      changedPlayers: [
+        { playerId: 2, name: "Bob", score: 341, isActive: true, isGuest: false, isBust: null },
+      ],
       winnerId: null,
       status: "started",
       currentRound: 3,
@@ -71,10 +73,38 @@ describe("applyScoreboardDelta", () => {
     expect(nextGameData.players[1]?.position).toBe(1);
   });
 
+  it.each([
+    ["keeps the bust flag when the delta's isBust is null", null, true],
+    ["takes the delta's isBust when it is a boolean", false, false],
+  ])("%s", (_label, isBust, expected) => {
+    const state = buildDeltaGameData({
+      players: [buildDeltaPlayer({ id: 2, name: "Bob", isBust: true })],
+    });
+
+    const nextGameData = applyScoreboardDelta(state, {
+      changedPlayers: [
+        { playerId: 2, name: "Bob", score: 341, isActive: true, isGuest: false, isBust },
+      ],
+      winnerId: null,
+      status: "started",
+      currentRound: 3,
+    });
+
+    expect(nextGameData.players[0]?.isBust).toBe(expected);
+  });
+
   it("clears a player's position when the delta sets it to null", () => {
     const nextGameData = applyScoreboardDelta(mockDeltaGameData, {
       changedPlayers: [
-        { playerId: 2, name: "Bob", score: 341, position: null, isActive: true, isGuest: false },
+        {
+          playerId: 2,
+          name: "Bob",
+          score: 341,
+          position: null,
+          isActive: true,
+          isGuest: false,
+          isBust: null,
+        },
       ],
       winnerId: null,
       status: "started",
@@ -184,6 +214,7 @@ it.each([undefined, null, 2])(
           score: 0,
           isActive: true,
           isGuest: false,
+          isBust: null,
           ...(placement === undefined ? {} : { placement }),
         },
       ],
@@ -199,7 +230,15 @@ it.each([undefined, null, 2])(
     const changed = applyScoreboardDelta(result, {
       ...delta,
       changedPlayers: [
-        { playerId: 1, name: "Alice", score: 0, isActive: true, isGuest: false, placement: 3 },
+        {
+          playerId: 1,
+          name: "Alice",
+          score: 0,
+          isActive: true,
+          isGuest: false,
+          isBust: null,
+          placement: 3,
+        },
       ],
     });
     expect(changed.players[0]).toMatchObject({ position: 0, placement: 3 });
