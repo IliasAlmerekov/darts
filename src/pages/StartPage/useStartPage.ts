@@ -1,9 +1,9 @@
 import { useCallback, useMemo, useState } from "react";
 import { useNavigate, useParams, useRevalidator } from "react-router-dom";
 import { useStore } from "@nanostores/react";
-import { useLobbyRoster } from "./useLobbyRoster";
-import { useCreateStartFlow } from "./useCreateStartFlow";
-import { useGuestFlow } from "./useGuestFlow";
+import { useLobbyRoster } from "./roster/useLobbyRoster";
+import { useCreateStartFlow } from "./create/useCreateStartFlow";
+import { useGuestFlow } from "./guest/useGuestFlow";
 import { parseRouteGameId } from "@/lib/router/tabletGameRoute";
 import { $invitation } from "@/shared/store";
 

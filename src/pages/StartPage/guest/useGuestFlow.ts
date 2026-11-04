@@ -3,9 +3,9 @@ import { ApiError } from "@/shared/api";
 import { isApiErrorCode } from "@/lib/error/api-error-code";
 import { toUserErrorMessage } from "@/lib/error/error-to-user-message";
 import { clientLogger } from "@/shared/services/browser/clientLogger";
-import type { AddGuestResult } from "./useLobbyRoster";
-import { useIsCurrentGame } from "./useIsCurrentGame";
-import { validateGuestUsername } from "./lib/guestUsername";
+import type { AddGuestResult } from "../roster/useLobbyRoster";
+import { useIsCurrentGame } from "../lib/useIsCurrentGame";
+import { validateGuestUsername } from "./guestUsername";
 import type { AddGuestErrorResponse } from "@/shared/api/room";
 
 const MAX_LOBBY_PLAYERS = 10;
