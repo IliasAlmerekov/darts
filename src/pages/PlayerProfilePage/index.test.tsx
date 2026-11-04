@@ -16,7 +16,8 @@ vi.mock("@/shared/api/auth", () => ({
   logout: vi.fn(),
 }));
 
-vi.mock("@/shared/api/player", () => ({
+vi.mock("@/shared/api/player", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@/shared/api/player")>()),
   getPlayerProfile: vi.fn(),
 }));
 

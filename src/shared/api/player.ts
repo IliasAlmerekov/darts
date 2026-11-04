@@ -1,6 +1,6 @@
 import * as v from "valibot";
 import { toCurrentGame, type CurrentGame } from "@/lib/player/currentGame";
-import { apiClient } from "./client";
+import { API_BASE_URL, apiClient } from "./client";
 import { integerSchema } from "./schemas";
 
 const currentGameResponseSchema = v.object({
@@ -151,10 +151,19 @@ export type PlayerProfileGame = PlayerProfileResponse["recentGames"][number];
 const CURRENT_GAME_ENDPOINT = "/player/current-game";
 const PROFILE_ENDPOINT = "/player/profile";
 const GAME_SEAT_ENDPOINT = (gameId: number) => `/player/games/${gameId}/seat`;
+const AVATAR_ENDPOINT = (playerId: number) => `/player/${playerId}/avatar`;
 
 // ---------------------------------------------------------------------------
 // Player
 // ---------------------------------------------------------------------------
+
+/**
+ * The URL of the player's avatar picture, for an `<img src>`. The browser loads it with the
+ * session cookie; it never goes through `apiClient`, so no schema checks the bytes.
+ */
+export function playerAvatarUrl(playerId: number): string {
+  return `${API_BASE_URL}${AVATAR_ENDPOINT(playerId)}`;
+}
 
 /**
  * Reads the Lobby or Started game the logged-in player currently belongs to.

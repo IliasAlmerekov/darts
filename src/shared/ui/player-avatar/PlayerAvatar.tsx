@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import clsx from "clsx";
 import fallbackIcon from "@/assets/icons/user-blue.svg";
+import { playerAvatarUrl } from "@/shared/api/player";
 import styles from "./PlayerAvatar.module.css";
 
 interface PlayerAvatarProps {
@@ -24,7 +25,7 @@ export function PlayerAvatar({ playerId, className }: PlayerAvatarProps): React.
       {showPicture ? (
         <img
           className={styles.picture}
-          src={`/api/player/${playerId}/avatar`}
+          src={playerAvatarUrl(playerId)}
           alt=""
           onError={() => setFailedPlayerId(playerId)}
         />

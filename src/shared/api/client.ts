@@ -32,7 +32,8 @@ function resolveApiBaseUrl(): string {
   return normalizedBaseUrl.endsWith("/api") ? normalizedBaseUrl : `${normalizedBaseUrl}/api`;
 }
 
-const API_BASE_URL = resolveApiBaseUrl();
+/** `/api`, or `VITE_API_BASE_URL` with `/api` appended when it lacks it. */
+export const API_BASE_URL = resolveApiBaseUrl();
 
 export class ApiValidationError extends Error {
   constructor(public readonly raw: unknown) {
