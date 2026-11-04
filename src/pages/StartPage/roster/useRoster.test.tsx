@@ -485,6 +485,62 @@ describe("useRoster", () => {
     });
   });
 
+  it("keeps the dragged order until every overlapping reorder has settled", async () => {
+    const first = deferred<void>();
+    const second = deferred<void>();
+    vi.mocked(apiClient.post)
+      .mockImplementationOnce(async (...args) => {
+        await first.promise;
+        return respondWith({ success: true })(...args);
+      })
+      .mockImplementationOnce(async (...args) => {
+        await second.promise;
+        return respondWith({ success: true })(...args);
+      });
+    testQueryClient.setQueryData(gameQueries.roster(5).queryKey, [
+      { id: 1, name: "A", position: 0 },
+      { id: 2, name: "B", position: 1 },
+      { id: 3, name: "C", position: 2 },
+    ]);
+    const { result } = renderGamePlayers(5);
+    act(() => result.current.reorder(2, 1));
+    act(() => result.current.reorder(3, 1));
+    await act(async () => {
+      second.resolve();
+      await second.promise;
+    });
+    act(() =>
+      FakeEventSource.last?.dispatch(
+        "players",
+        JSON.stringify({
+          players: [
+            { id: 1, name: "A", position: 0 },
+            { id: 3, name: "C", position: 1 },
+            { id: 4, name: "D", position: 2 },
+          ],
+        }),
+      ),
+    );
+    await waitFor(() => expect(result.current.seats.map(({ id }) => id)).toEqual([3, 1, 4]));
+    await act(async () => {
+      first.resolve();
+      await first.promise;
+    });
+    act(() =>
+      FakeEventSource.last?.dispatch(
+        "players",
+        JSON.stringify({
+          players: [
+            { id: 1, name: "A", position: 0 },
+            { id: 3, name: "C", position: 1 },
+            { id: 4, name: "D", position: 2 },
+          ],
+        }),
+      ),
+    );
+    await waitFor(() => expect(result.current.seats.map(({ id }) => id)).toEqual([1, 3, 4]));
+  });
+
   it("rolls back a rejected reorder and leaves the new game untouched by a late rejection", async () => {
     const error = new Error("network");
     const onError = vi.fn();

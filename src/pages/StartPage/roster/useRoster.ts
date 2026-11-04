@@ -53,7 +53,7 @@ export function useRoster(
   const queryClient = useQueryClient();
   const isCurrentGame = useIsCurrentGame(gameId);
   const requestIdRef = useRef(0);
-  const pendingReorderRef = useRef<{ gameId: number; requestId: number } | null>(null);
+  const pendingReorderRef = useRef<{ gameId: number; requestIds: Set<number> } | null>(null);
   const streamVersionRef = useRef(0);
   useIsomorphicLayoutEffect(() => {
     requestIdRef.current += 1;
@@ -257,7 +257,10 @@ export function useRoster(
       const nextOrder = arrayMove(items, oldIndex, newIndex);
       if (gameId !== null) {
         const requestId = ++requestIdRef.current;
-        pendingReorderRef.current = { gameId, requestId };
+        if (pendingReorderRef.current?.gameId !== gameId) {
+          pendingReorderRef.current = { gameId, requestIds: new Set() };
+        }
+        pendingReorderRef.current.requestIds.add(requestId);
         const previous = current;
         const ordered = arrayMove(current, oldIndex, newIndex).map((seat, position) => ({
           ...seat,
@@ -289,7 +292,11 @@ export function useRoster(
           isRequestCurrent: () => requestIdRef.current === requestId,
           failureLog: "room.player-order.persist.failed",
         }).then((result) => {
-          if (pendingReorderRef.current?.requestId === requestId) pendingReorderRef.current = null;
+          const pending = pendingReorderRef.current;
+          if (pending?.gameId === gameId) {
+            pending.requestIds.delete(requestId);
+            if (pending.requestIds.size === 0) pendingReorderRef.current = null;
+          }
           if (result.status !== "success" && result.status !== "stale")
             onError(
               toUserErrorMessage(result.error, "Could not update player order. Please try again."),
