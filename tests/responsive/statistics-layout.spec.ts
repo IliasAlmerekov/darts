@@ -54,30 +54,36 @@ test.describe("Responsive Statistics layout", () => {
         .locator('[class*="playerList"]')
         .evaluate((list) => list.scrollWidth > list.clientWidth + 1);
       await expect(listOverflows, `${viewport.name} rows should stay inside the list`).toBe(false);
-    }
-  });
 
-  test("The average stays clear of a long name on a 320px phone", async ({ page }) => {
-    await page.setViewportSize({ width: 320, height: 640 });
-    await page.goto("/statistics");
-
-    const name = page.getByText(LONG_NAME);
-    const average = page.getByRole("group", { name: "three-dart average" }).first();
-    await expect(average).toContainText("100.00");
-
-    const [nameBox, averageBox] = await Promise.all([name.boundingBox(), average.boundingBox()]);
-    expect(nameBox).not.toBeNull();
-    expect(averageBox).not.toBeNull();
-    if (nameBox && averageBox) {
+      // The name's grid cell never overlaps the average; its text can spill out of it.
+      const longNameRow = page.locator('[class*="playerRow"]').filter({ hasText: LONG_NAME });
+      await expect(longNameRow.getByRole("group", { name: "three-dart average" })).toContainText(
+        "100.00",
+      );
+      const { nameText, average } = await longNameRow.evaluate((row) => {
+        const name = row.querySelector('[class*="playerName"]');
+        const averageGroup = row.querySelector('[aria-label="three-dart average"]');
+        if (!name || !averageGroup) throw new Error("name or average missing in the row");
+        const range = document.createRange();
+        range.selectNodeContents(name);
+        const toBox = ({ left, right, top, bottom }: DOMRect) => ({ left, right, top, bottom });
+        return {
+          nameText: toBox(range.getBoundingClientRect()),
+          average: toBox(averageGroup.getBoundingClientRect()),
+        };
+      });
       const overlaps =
-        nameBox.x < averageBox.x + averageBox.width &&
-        averageBox.x < nameBox.x + nameBox.width &&
-        nameBox.y < averageBox.y + averageBox.height &&
-        averageBox.y < nameBox.y + nameBox.height;
-      expect(
-        overlaps,
-        `name ${JSON.stringify(nameBox)}, average ${JSON.stringify(averageBox)}`,
-      ).toBe(false);
+        nameText.left < average.right &&
+        average.left < nameText.right &&
+        nameText.top < average.bottom &&
+        average.top < nameText.bottom;
+      // Soft, so one run reports every width that overlaps.
+      expect
+        .soft(
+          overlaps,
+          `${viewport.name}: name text ${JSON.stringify(nameText)}, average ${JSON.stringify(average)}`,
+        )
+        .toBe(false);
     }
   });
 });
