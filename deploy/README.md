@@ -161,6 +161,13 @@ not start the workflow.
 
 ## Avatars
 
+Run `sudo bash deploy/test-avatars.sh` on a disposable Linux host or container with
+`bash`, `coreutils`, `util-linux`, `acl` and `python3` installed to test the rollout and rollback
+avatar preflight. CI runs it in the `deploy-tests` job. It tests real UID 10001 access,
+ACL grants and denials, closed parents, invalid settings and rejection before Docker.
+The test replaces only the scripts' installation path and the Docker command, and writes
+to a temporary directory. It never starts containers or changes `/opt/darts`.
+
 The backend serves each player's avatar from a folder on the VM. `compose.yaml` mounts the
 host folder named by `AVATAR_HOST_DIR` read-only at `/app/var/avatars` in the `backend`
 service and sets `AVATAR_DIR=/app/var/avatars`. `AVATAR_HOST_DIR` is required: Compose

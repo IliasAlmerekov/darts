@@ -9,6 +9,7 @@ and this project does **not** yet follow [Semantic Versioning](https://semver.or
 
 ### Added
 
+- Deploy: CI tests avatar directory permissions and configuration in rollout and rollback, including ACLs and closed parent directories (#429)
 - Player profile and Statistics: the player's avatar from `GET /api/player/{id}/avatar` shows in the profile circle and left of each name on Statistics, with the user icon when there is no picture; production mounts the avatar folder named by `AVATAR_HOST_DIR` read-only into the backend (#429)
 - Game: show checkout suggestions in empty throw slots (#427)
 - Waiting room: a "My profile" icon link at the top right of the card opens the Player profile in the loading, lobby and started views; browser back returns to the Waiting room, and the player stays in the game. The removed view keeps "Go to my profile" as its only way out. A player removed from the lobby while on the profile sees the removal on return; a game finished or aborted meanwhile opens the profile instead, decided by the new seat lookup `GET /api/player/games/{gameId}/seat` (#381)
@@ -25,6 +26,7 @@ and this project does **not** yet follow [Semantic Versioning](https://semver.or
 
 ### Fixed
 
+- Deploy: build the backend commit that serves player avatars, so the released app can load pictures instead of always showing the fallback (#429)
 - Start page: a malformed `players` event from the room stream is ignored as a whole and keeps the last valid lobby roster, instead of crashing the page or scrambling the player order (#437)
 - Summary: Play Again reads the finished game's settings before it asks for the rematch, so a failed read leaves nothing behind and a retry works; when the rematch lobby cannot be started, the summary shows the error and then opens that lobby's start page instead of a stale tablet game (#436)
 - Game: only the player list scrolls now, so the header and keypad stay in place and the active player is no longer hidden under the keypad after a turn change (#443)
