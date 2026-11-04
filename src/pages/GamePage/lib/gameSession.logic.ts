@@ -1,12 +1,8 @@
-import { normalizeGameData } from "@/lib/game/gameStateNormalizer";
+import { applyScoreboardDelta } from "@/lib/game/applyScoreboardDelta";
 import { parseThrowValue, type ParsedThrow } from "@/lib/game/parseThrowValue";
 import { getFinishedPlayers, mapPlayersToUI } from "@/lib/game/player-mappers";
 import type { UIPlayer } from "@/types";
-import {
-  applyOptimisticThrow,
-  applyOptimisticUndo,
-  applyScoreboardDelta,
-} from "./optimisticThrow.logic";
+import { applyOptimisticThrow, applyOptimisticUndo } from "./optimisticThrow.logic";
 import type {
   GameSettings,
   GameSummaryResponse,
@@ -99,7 +95,7 @@ interface QueueView {
 
 function createState(game: GameThrowsResponse | null): GameSession {
   return {
-    confirmed: normalizeGameData(game),
+    confirmed: game,
     pending: [],
     isHeadSent: false,
     recovery: "none",

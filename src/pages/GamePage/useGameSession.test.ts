@@ -26,7 +26,7 @@ import {
 import { gameQueries } from "@/shared/query/game.queries";
 import { createQueryClient } from "@/shared/query/queryClient";
 import { QueryClientWrapper } from "@/test/QueryClientWrapper";
-import { $gameData, resetGameStore, setGameData } from "@/shared/store";
+import { $gameData, resetGameStore, acceptGame } from "@/shared/store";
 import { buildBackendPlayer, buildGameThrowsResponse } from "@/shared/types/game.test-support";
 import { useGameSession } from "./useGameSession";
 
@@ -178,7 +178,7 @@ describe("useGameSession", () => {
     getGameThrowsMock.mockImplementation((gameId) =>
       gameId === 1 ? firstLoad.promise : secondLoad.promise,
     );
-    setGameData(buildGame(1));
+    acceptGame(buildGame(1));
 
     const { result, rerender } = renderHook(({ gameId }) => useGameSession(gameId), {
       wrapper: QueryClientWrapper,
@@ -206,7 +206,7 @@ describe("useGameSession", () => {
   });
 
   it("clears a finished cached game before the first load answers", () => {
-    setGameData({ ...buildGame(1), status: "finished" });
+    acceptGame({ ...buildGame(1), status: "finished" });
     getGameThrowsMock.mockReturnValue(new Promise(() => {}));
     renderHook(() => useGameSession(1), { wrapper: QueryClientWrapper });
     expect($gameData.get()).toBeNull();

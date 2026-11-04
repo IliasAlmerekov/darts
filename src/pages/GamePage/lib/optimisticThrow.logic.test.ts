@@ -1,7 +1,7 @@
 // @vitest-environment node
 import { describe, expect, it } from "vitest";
 import type { GameThrowsResponse } from "@/shared/api/game";
-import { applyScoreboardDelta } from "./optimisticThrow.logic";
+import { applyScoreboardDelta } from "@/lib/game/applyScoreboardDelta";
 
 type GamePlayer = GameThrowsResponse["players"][number];
 

@@ -1,3 +1,4 @@
+import { normalizeGameData } from "@/lib/game/gameStateNormalizer";
 import * as v from "valibot";
 import { apiClient } from "./client";
 import { GAME_ENDPOINT } from "./endpoints";
@@ -155,10 +156,11 @@ export async function getGameThrows(
   gameId: number,
   signal?: AbortSignal,
 ): Promise<GameThrowsResponse> {
-  return apiClient.get(GAME_ENDPOINT(gameId), {
+  const game = await apiClient.get(GAME_ENDPOINT(gameId), {
     ...(signal ? { signal } : {}),
     validate: gameThrowsResponseSchema,
   });
+  return normalizeGameData(game);
 }
 
 /**

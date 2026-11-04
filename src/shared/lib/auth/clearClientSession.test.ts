@@ -10,7 +10,7 @@ import {
   setCurrentGameId,
   setInvitation,
 } from "@/shared/store/game-session";
-import { $gameData, resetGameStore, setGameData } from "@/shared/store/game-state";
+import { $gameData, resetGameStore, acceptGame } from "@/shared/store/game-state";
 import { buildGameThrowsResponse } from "@/shared/types/game.test-support";
 
 describe("clearClientSession", () => {
@@ -31,7 +31,7 @@ describe("clearClientSession", () => {
   it("clears the room store, the stored game id and the game store", () => {
     setCurrentGameId(7);
     setInvitation({ gameId: 7, invitationLink: "/invite/7" });
-    setGameData(buildGameThrowsResponse());
+    acceptGame(buildGameThrowsResponse());
 
     clearClientSession();
 

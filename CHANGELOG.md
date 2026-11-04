@@ -16,6 +16,7 @@ and this project does **not** yet follow [Semantic Versioning](https://semver.or
 
 ### Changed
 
+- Game: centralize game state and settings cache writes (#453)
 - API: `leaveRoom` requires the `playerId`, as the backend now answers a leave without one with 400 (#463)
 - Tooling: update frontend dependencies and Stylelint (#465)
 - Game: move throw synchronization and recovery into a single game session (#450)

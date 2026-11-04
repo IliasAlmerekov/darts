@@ -48,13 +48,13 @@ Rules:
 
 ## Naming
 
-| Concept            | Form                                     | Example                                              |
-| ------------------ | ---------------------------------------- | ---------------------------------------------------- |
-| Internal mutable   | `<name>Atom` (camelCase, no prefix)      | `currentGameIdAtom`, `gameDataAtom`, `errorAtom`     |
-| Public readable    | `$<name>` (`$` prefix)                   | `$currentGameId`, `$gameData`, `$invitation`         |
-| Computed atom      | `$<name>` (`$` prefix, same as readable) | `$gameSettings`                                      |
-| Action function    | verb-first, imperative, named by intent  | `setGameData`, `resetRoomStore`, `resetGameStore`    |
-| Pure read function | verb-first, returns plain value          | `getCachedGameSettings(gameId)`, `getActiveGameId()` |
+| Concept            | Form                                     | Example                                          |
+| ------------------ | ---------------------------------------- | ------------------------------------------------ |
+| Internal mutable   | `<name>Atom` (camelCase, no prefix)      | `currentGameIdAtom`, `gameDataAtom`, `errorAtom` |
+| Public readable    | `$<name>` (`$` prefix)                   | `$currentGameId`, `$gameData`, `$invitation`     |
+| Computed atom      | `$<name>` (`$` prefix, same as readable) | `$someDerivedValue`                              |
+| Action function    | verb-first, imperative, named by intent  | `acceptGame`, `resetRoomStore`, `resetGameStore` |
+| Pure read function | verb-first, returns plain value          | `getActiveGameId()`                              |
 
 ## Reading
 
@@ -83,27 +83,28 @@ Forbidden:
 - Returning JSX whose values came from `.get()` instead of `useStore` -- the component
   will not re-render on store changes.
 - Subscribing to both a base atom and a `computed` derived from it in the same component
-  (e.g. `useStore($gameData)` + `useStore($gameSettings)`, where the latter is
-  `computed(gameDataAtom, ...)`). Pick one.
+  when one derives from the other. Pick one.
 
 ## Computed atoms
 
 Use `computed(...)` for any value that is a pure function of other atoms:
 
 ```ts
-export const $gameSettings = computed(gameDataAtom, (gameData) => ...);
+export const $someDerivedValue = computed(someAtom, (value) => ...);
 ```
 
 Subscribe to the `computed` directly via `useStore`; do not recompute its output in
 component memoization.
 
+The game store mirrors its accepted game and confirmed settings to the settings query key.
+It also writes the lobby players key for an accepted lobby game. Query factories do not read
+the store.
+
 ## Cache atoms
 
 Per-id caches must have a **bounded** shape. Two accepted forms:
 
-- Single-slot cache (`{ id, value } | null`), replaced atomically. Example: the internal
-  `gameSettingsByGameIdAtom` in `game-state.ts` keeps the latest entry only, read through
-  `getCachedGameSettings(gameId)`.
+- Single-slot cache (`{ id, value } | null`), replaced atomically.
 - Bounded `Map`/`Record` with explicit eviction, the policy living next to the atom in the
   store file.
 

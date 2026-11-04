@@ -37,7 +37,9 @@ import {
   type GameThrowsResponse,
 } from "@/shared/api/game";
 import { playSound } from "@/shared/services/browser/soundPlayer";
-import { setGameData } from "@/shared/store";
+import { acceptGame } from "@/shared/store";
+import { gameQueries } from "@/shared/query/game.queries";
+import { queryClient } from "@/shared/query/queryClient";
 import { buildBackendPlayer, buildGameThrowsResponse } from "@/shared/types/game.test-support";
 import * as gameStore from "@/shared/store/game-state";
 import { QueryClientWrapper } from "@/test/QueryClientWrapper";
@@ -479,7 +481,7 @@ describe("GamePage throw sync", () => {
     getGameThrowsMock.mockReturnValueOnce(firstLoad.promise);
     // Alice holds a throw, so Undo is enabled once the load answers.
     const gameWithThrow = buildGameWithAliceThrow();
-    setGameData(gameWithThrow);
+    acceptGame(gameWithThrow);
     renderGamePage();
 
     expect(within(playerCard("Alice")).getByText("281")).toBeTruthy();
@@ -501,7 +503,7 @@ describe("GamePage throw sync", () => {
       .mockRejectedValueOnce(new TypeError("Failed to fetch"))
       .mockResolvedValue(buildGame({ alice: 250, bob: 301 }));
     getGameThrowsMock.mockResolvedValue(buildGame({ alice: 250, bob: 301 }));
-    setGameData(buildGame({ alice: 281, bob: 301 }));
+    acceptGame(buildGame({ alice: 281, bob: 301 }));
     renderGamePage();
 
     const retryButton = await screen.findByRole("button", { name: "Retry" });
@@ -523,7 +525,7 @@ describe("GamePage throw sync", () => {
 
   // The summary's Undo reopens the game on the server and leaves the finished copy in the store.
   it("loads a game the summary reopened instead of returning to the summary", async () => {
-    setGameData({ ...buildGame({ alice: 0, bob: 40 }), status: "finished", winnerId: 1 });
+    acceptGame({ ...buildGame({ alice: 0, bob: 40 }), status: "finished", winnerId: 1 });
     getGameThrowsMock.mockResolvedValue(buildGame({ alice: 20, bob: 40 }));
     renderGamePage();
 
@@ -562,6 +564,23 @@ describe("GamePage throw sync", () => {
 
 // #321: the server locks the out rule once the game has a throw.
 describe("GamePage settings lock", () => {
+  it("mirrors saved settings to the game store and query", async () => {
+    const settings = { startScore: 301, doubleOut: true, tripleOut: false };
+    updateGameSettingsMock.mockResolvedValueOnce({
+      gameId: GAME_ID,
+      status: "started",
+      ...settings,
+    });
+    await openGame(buildGame({ alice: 301, bob: 301 }));
+
+    fireEvent.click(screen.getByRole("button", { name: "Settings" }));
+    tap("Save");
+
+    await waitFor(() => expect(gameStore.$gameData.get()?.settings).toMatchObject(settings));
+    expect(queryClient.getQueryData(gameQueries.settings(GAME_ID).queryKey)).toMatchObject(
+      settings,
+    );
+  });
   beforeEach(() => {
     vi.resetAllMocks();
     window.sessionStorage.clear();

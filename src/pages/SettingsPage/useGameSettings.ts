@@ -3,9 +3,8 @@ import { useParams } from "react-router-dom";
 import { useStore } from "@nanostores/react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
-  $gameData,
   $preCreateGameSettings,
-  setGameSettings,
+  acceptGameSettings,
   setPreCreateGameSettings,
 } from "@/shared/store";
 import {
@@ -62,7 +61,6 @@ export function useGameSettings(): UseGameSettingsResult {
   const { id: gameIdParam } = useParams<{ id?: string }>();
   const routeGameId = parseRouteGameId(gameIdParam);
   const queryClient = useQueryClient();
-  const gameData = useStore($gameData);
   const preCreateGameSettings = useStore($preCreateGameSettings);
   const [pendingSaveGameIds, setPendingSaveGameIds] = useState<ReadonlySet<number>>(
     () => new Set(),
@@ -71,15 +69,13 @@ export function useGameSettings(): UseGameSettingsResult {
   // The lock itself: one pending save per game locks that game only. The state above renders it.
   const pendingSaveGameIdsRef = useRef(new Set<number>());
 
-  // The query starts from the game store copy, so a game in the store needs no read.
-  const isRouteGameInStore = routeGameId !== null && gameData?.id === routeGameId;
   const {
     data: routeGameSettings,
     error: loadError,
     refetch,
   } = useQuery({
     ...gameQueries.settings(routeGameId ?? 0),
-    enabled: routeGameId !== null && !isRouteGameInStore,
+    enabled: routeGameId !== null,
   });
 
   // A save error belongs to its game, so a route move to another game drops it.
@@ -107,9 +103,7 @@ export function useGameSettings(): UseGameSettingsResult {
 
       try {
         const response = await saveGameSettings(payload, gameId);
-        void queryClient.cancelQueries({ queryKey });
-        queryClient.setQueryData(queryKey, response);
-        setGameSettings(response, gameId);
+        acceptGameSettings(gameId, response);
       } catch (error) {
         // A later save, also one from a remounted page, may have replaced the optimistic value.
         if (queryClient.getQueryState(queryKey)?.dataUpdateCount === optimisticWrite) {

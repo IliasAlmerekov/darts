@@ -14,13 +14,13 @@ import { createElement, type ReactNode } from "react";
 import { QueryClientProvider, type QueryClient } from "@tanstack/react-query";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { gameQueries } from "@/shared/query/game.queries";
-import { createQueryClient } from "@/shared/query/queryClient";
+import { queryClient } from "@/shared/query/queryClient";
 import {
   $gameData,
   $preCreateGameSettings,
   resetGameStore,
-  setGameData,
-  setGameSettings,
+  acceptGame,
+  acceptGameSettings,
   setPreCreateGameSettings,
 } from "@/shared/store";
 import type { GameSettingsResponse, GameThrowsResponse } from "@/shared/api/game";
@@ -87,7 +87,8 @@ async function renderLoadedHook(): Promise<
 describe("useGameSettings", () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    testQueryClient = createQueryClient();
+    queryClient.clear();
+    testQueryClient = queryClient;
     routeParams = { id: "1" };
     resetGameStore();
     setPreCreateGameSettings({ startScore: 301, doubleOut: false, tripleOut: false });
@@ -292,7 +293,7 @@ describe("useGameSettings", () => {
 
   it("keeps a later save's equal response when an earlier save from an unmounted page fails", async () => {
     // The game store holds the game, so a remounted page reads the cache without a refetch.
-    setGameData(gameResponse(1, { startScore: 401, doubleOut: false, tripleOut: true }));
+    acceptGame(gameResponse(1, { startScore: 401, doubleOut: false, tripleOut: true }));
     const saved = { startScore: 501, doubleOut: false, tripleOut: true };
     const firstSave = deferred<GameSettingsResponse>();
     saveGameSettingsMock
@@ -318,8 +319,8 @@ describe("useGameSettings", () => {
   });
 
   it("reads the game store's settings when the settings cache holds another game", () => {
-    setGameData(gameResponse(2, { startScore: 501, doubleOut: true, tripleOut: false }));
-    setGameSettings({ startScore: 101, doubleOut: false, tripleOut: false }, 1);
+    acceptGame(gameResponse(2, { startScore: 501, doubleOut: true, tripleOut: false }));
+    acceptGameSettings(1, { startScore: 101, doubleOut: false, tripleOut: false });
     routeParams = { id: "2" };
 
     const hook = renderHook(() => useGameSettings(), { wrapper });

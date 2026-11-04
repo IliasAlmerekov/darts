@@ -1,6 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { useQueryClient } from "@tanstack/react-query";
 import {
   abortGame,
   createRematchGame,
@@ -13,7 +12,6 @@ import { clientLogger } from "@/shared/services/browser/clientLogger";
 import { toUserErrorMessage } from "@/lib/error/error-to-user-message";
 import { ROUTES } from "@/lib/router/routes";
 import { resetRoomStore, setInvitation } from "@/shared/store";
-import { gameQueries } from "@/shared/query/game.queries";
 import { isGameAbortNotAllowedError } from "./lib/gameAbortNotAllowed";
 
 interface GameSettingsFormValues {
@@ -69,7 +67,6 @@ export function useGameSettingsFlow({
   gameId,
   updateGameSettings: syncGameSettings,
 }: UseGameSettingsFlowOptions): UseGameSettingsFlowResult {
-  const queryClient = useQueryClient();
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isSavingSettings, setIsSavingSettings] = useState(false);
   const [settingsError, setSettingsError] = useState<string | null>(null);
@@ -94,10 +91,6 @@ export function useGameSettingsFlow({
       try {
         const updatedSettings = await updateGameSettings(gameId, settings);
         syncGameSettings(updatedSettings);
-        // The settings page reads this entry and does not refetch while the game is in the store.
-        const { queryKey } = gameQueries.settings(gameId);
-        void queryClient.cancelQueries({ queryKey });
-        queryClient.setQueryData(queryKey, updatedSettings);
         setIsSettingsOpen(false);
       } catch (error) {
         setSettingsError(toUserErrorMessage(error, "Failed to update settings"));
@@ -105,7 +98,7 @@ export function useGameSettingsFlow({
         setIsSavingSettings(false);
       }
     },
-    [gameData, gameId, queryClient, syncGameSettings],
+    [gameData, gameId, syncGameSettings],
   );
 
   return {

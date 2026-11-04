@@ -9,7 +9,7 @@ import { startPageLoader } from "./startPageLoader";
 
 // ── store mocks ───────────────────────────────────────────────────────────────
 
-const setGameDataMock = vi.fn();
+const acceptGameMock = vi.fn();
 const setInvitationMock = vi.fn();
 
 const $invitationGet = vi.fn(() => null as { gameId: number; invitationLink: string } | null);
@@ -17,8 +17,7 @@ const $invitationGet = vi.fn(() => null as { gameId: number; invitationLink: str
 vi.mock("@/shared/store", () => ({
   $gameData: { get: () => null },
   $invitation: { get: () => $invitationGet() },
-  getCachedGameSettings: () => null,
-  setGameData: (...args: unknown[]) => setGameDataMock(...args),
+  acceptGame: (...args: unknown[]) => acceptGameMock(...args),
   setInvitation: (...args: unknown[]) => setInvitationMock(...args),
   setServerCurrentGameId: vi.fn(),
 }));
@@ -124,7 +123,7 @@ describe("startPageLoader — follows the tablet game", () => {
 
     expect(result).toBeNull();
     expect(getGameThrowsMock).not.toHaveBeenCalled();
-    expect(setGameDataMock).not.toHaveBeenCalled();
+    expect(acceptGameMock).not.toHaveBeenCalled();
   });
 });
 
@@ -199,10 +198,10 @@ describe("startPageLoader — fetch and store update", () => {
     expect(invitationSignal).toBe(throwsSignal);
   });
 
-  it("calls setGameData with fetched game data", async () => {
+  it("calls acceptGame with fetched game data", async () => {
     await startPageLoader(makeArgs("42"));
 
-    expect(setGameDataMock).toHaveBeenCalledWith(lobbyGame(42));
+    expect(acceptGameMock).toHaveBeenCalledWith(lobbyGame(42));
   });
 
   it("calls setInvitation after successful fetch", async () => {
@@ -211,7 +210,7 @@ describe("startPageLoader — fetch and store update", () => {
     expect(setInvitationMock).toHaveBeenCalledWith({ gameId: 42, invitationLink: "/invite/42" });
   });
 
-  it("writes the fetched players into the lobby players query in position order", async () => {
+  it("passes the fetched players to the store", async () => {
     getGameThrowsMock.mockResolvedValue({
       ...lobbyGame(42),
       players: [
@@ -222,10 +221,14 @@ describe("startPageLoader — fetch and store update", () => {
 
     await startPageLoader(makeArgs("42"));
 
-    expect(queryClient.getQueryData(gameQueries.lobbyPlayers(42).queryKey)).toEqual([
-      { id: 1, name: "Alice", position: 0 },
-      { id: 2, name: "Bob", position: 1 },
-    ]);
+    expect(acceptGameMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        players: [
+          { id: 2, name: "Bob", position: 1 },
+          { id: 1, name: "Alice", position: 0 },
+        ],
+      }),
+    );
   });
 
   it("returns null on full success", async () => {
@@ -241,7 +244,7 @@ describe("startPageLoader — game left the lobby between the reads", () => {
     const result = await startPageLoader(makeArgs("42"));
 
     expect(redirectLocation(result)).toBe("/game/42");
-    expect(setGameDataMock).not.toHaveBeenCalled();
+    expect(acceptGameMock).not.toHaveBeenCalled();
   });
 
   it("returns null without storing the game when it has finished", async () => {
@@ -255,7 +258,7 @@ describe("startPageLoader — game left the lobby between the reads", () => {
     const result = await startPageLoader(makeArgs("42"));
 
     expect(result).toBeNull();
-    expect(setGameDataMock).not.toHaveBeenCalled();
+    expect(acceptGameMock).not.toHaveBeenCalled();
   });
 });
 
@@ -266,7 +269,7 @@ describe("startPageLoader — getGameThrows error handling", () => {
     const result = await startPageLoader(makeArgs("42"));
 
     expect(result).toBeNull();
-    expect(setGameDataMock).not.toHaveBeenCalled();
+    expect(acceptGameMock).not.toHaveBeenCalled();
   });
 
   it("re-throws AbortError so React Router can handle navigation cancellation", async () => {
@@ -292,7 +295,7 @@ describe("startPageLoader — getInvitation error handling", () => {
     const result = await startPageLoader(makeArgs("42"));
 
     expect(result).toBeNull();
-    expect(setGameDataMock).toHaveBeenCalled();
+    expect(acceptGameMock).toHaveBeenCalled();
     expect(setInvitationMock).not.toHaveBeenCalled();
   });
 

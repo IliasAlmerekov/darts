@@ -10,7 +10,7 @@ import { ApiError } from "@/shared/api";
 import { useGameSummaryPage } from "./useGameSummaryPage";
 import { playSound } from "@/shared/services/browser/soundPlayer";
 import { clientLogger } from "@/shared/services/browser/clientLogger";
-import { $gameData, resetGameStore, setGameData } from "@/shared/store";
+import { $gameData, resetGameStore, acceptGame } from "@/shared/store";
 import {
   RematchNotStartedError,
   type GameThrowsResponse,
@@ -223,7 +223,7 @@ describe("useGameSummaryPage", () => {
 
   // #123: the game page owns the game state, so it reads the reopened game from the server.
   it("should undo on the server and open the game without writing the game store", async () => {
-    setGameData(buildFinishedGameState());
+    acceptGame(buildFinishedGameState());
     const shownGame = $gameData.get();
 
     const { result } = renderSummaryHook();
@@ -324,7 +324,7 @@ describe("useGameSummaryPage", () => {
   });
 
   it("should not overwrite shared game state when starting a rematch", async () => {
-    setGameData(buildFinishedGameState());
+    acceptGame(buildFinishedGameState());
     const shownGame = $gameData.get();
     const { result } = renderSummaryHook();
 
@@ -513,7 +513,7 @@ describe("useGameSummaryPage", () => {
   });
 
   it("should not overwrite shared game state when returning to start from summary", async () => {
-    setGameData(buildFinishedGameState());
+    acceptGame(buildFinishedGameState());
     const shownGame = $gameData.get();
     const { result } = renderSummaryHook();
 

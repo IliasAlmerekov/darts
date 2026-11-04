@@ -21,8 +21,8 @@ vi.mock("@/shared/api/room", () => ({
 }));
 import { getGameThrows, type GameThrowsResponse } from "@/shared/api/game";
 import { gameQueries } from "@/shared/query/game.queries";
-import { createQueryClient } from "@/shared/query/queryClient";
-import { resetGameStore, setGameData } from "@/shared/store";
+import { queryClient } from "@/shared/query/queryClient";
+import { resetGameStore, acceptGame } from "@/shared/store";
 import { buildBackendPlayer, buildGameThrowsResponse } from "@/shared/types/game.test-support";
 
 // ---------------------------------------------------------------------------
@@ -115,7 +115,8 @@ describe("useLobbyRoster", () => {
   beforeEach(() => {
     MockEventSource.last = null;
     vi.mocked(getGameThrows).mockReset();
-    testQueryClient = createQueryClient();
+    queryClient.clear();
+    testQueryClient = queryClient;
     resetGameStore();
     vi.stubGlobal("EventSource", MockEventSource);
   });
@@ -571,7 +572,7 @@ describe("useLobbyRoster", () => {
 
   it("should start from the game store when it holds the same game", () => {
     vi.mocked(getGameThrows).mockReturnValue(new Promise<GameThrowsResponse>(() => {}));
-    setGameData(
+    acceptGame(
       buildGameThrowsResponse({
         id: 5,
         status: "lobby",
