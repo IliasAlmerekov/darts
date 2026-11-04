@@ -34,8 +34,9 @@ check_avatars_env() {
         [[ $value =~ ^/[A-Za-z0-9._/-]+$ ]] || die 'AVATAR_HOST_DIR in avatars.env must be an absolute path.'
         [[ -d $value ]] || die "AVATAR_HOST_DIR $value is not an existing directory."
         # Test the folder from inside it: the bind mount needs no search right on its parents.
+        # Use shell builtins: Ubuntu's external Rust test rejects ACL-granted access.
         (cd -- "$value" &&
-            setpriv --reuid="$backend_uid" --regid="$backend_uid" --clear-groups test -r . -a -x .) ||
+            setpriv --reuid="$backend_uid" --regid="$backend_uid" --clear-groups /bin/sh -c 'test -r . && test -x .') ||
             die "AVATAR_HOST_DIR $value is not readable and searchable by the backend user (UID $backend_uid)."
         seen=1
     done < "$avatars_env"

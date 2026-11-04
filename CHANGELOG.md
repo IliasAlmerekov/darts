@@ -26,6 +26,7 @@ and this project does **not** yet follow [Semantic Versioning](https://semver.or
 
 ### Fixed
 
+- Deploy: accept avatar directories that grant the backend access through an ACL on Ubuntu with Rust coreutils (#429)
 - Deploy: build the backend commit that serves player avatars, so the released app can load pictures instead of always showing the fallback (#429)
 - Start page: a malformed `players` event from the room stream is ignored as a whole and keeps the last valid lobby roster, instead of crashing the page or scrambling the player order (#437)
 - Summary: Play Again reads the finished game's settings before it asks for the rematch, so a failed read leaves nothing behind and a retry works; when the rematch lobby cannot be started, the summary shows the error and then opens that lobby's start page instead of a stale tablet game (#436)
