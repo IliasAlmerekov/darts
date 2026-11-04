@@ -3,6 +3,13 @@ import { isRecord } from "@/lib/guards/guards";
 
 const DEFAULT_ERROR_MESSAGE = "Something went wrong. Please try again.";
 
+// The backend could not read the request; the user cannot fix that, so the caller's fallback is the text.
+const UNREADABLE_REQUEST_CODES = new Set([
+  "BAD_REQUEST",
+  "UNSUPPORTED_MEDIA_TYPE",
+  "REQUEST_REJECTED",
+]);
+
 function normalizeText(value: string): string {
   return value.trim().toLowerCase().replace(/[_-]+/g, " ");
 }
@@ -121,6 +128,10 @@ export function toUserErrorMessage(error: unknown, fallback = DEFAULT_ERROR_MESS
 
     const payloadText = extractApiPayloadText(error.data);
     if (payloadText) {
+      if (UNREADABLE_REQUEST_CODES.has(payloadText)) {
+        return fallback;
+      }
+
       return mapTextToMessage(payloadText) ?? payloadText;
     }
 

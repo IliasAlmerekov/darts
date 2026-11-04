@@ -27,6 +27,7 @@ and this project does **not** yet follow [Semantic Versioning](https://semver.or
 
 ### Fixed
 
+- Errors: the backend codes `BAD_REQUEST`, `UNSUPPORTED_MEDIA_TYPE` and `REQUEST_REJECTED` show the screen's own error text instead of the raw code (#462)
 - Build: load the Vite config with the native loader without warnings (#465)
 - Errors: a `409 CONCURRENT_CHANGE` from the backend shows "Another request changed this at the same time. Please try again." instead of the raw code; on login and registration it also asks to reopen the invitation link (#459)
 - Deploy: accept avatar directories that grant the backend access through an ACL on Ubuntu with Rust coreutils (#429)

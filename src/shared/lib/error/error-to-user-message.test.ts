@@ -95,6 +95,22 @@ describe("toUserErrorMessage", () => {
     ).toBe("The lobby is full. Remove a player to add another.");
   });
 
+  it.each([
+    [400, "BAD_REQUEST"],
+    [415, "UNSUPPORTED_MEDIA_TYPE"],
+    [413, "REQUEST_REJECTED"],
+  ])("should show the caller's fallback for a %i %s", (status, code) => {
+    expect(
+      toUserErrorMessage(
+        new ApiError(code, {
+          status,
+          data: { success: false, error: code, message: "Developer text." },
+        }),
+        "Could not save. Please try again.",
+      ),
+    ).toBe("Could not save. Please try again.");
+  });
+
   it("should map the concurrent change code to a try again message", () => {
     expect(
       toUserErrorMessage(
