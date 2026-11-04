@@ -16,6 +16,7 @@ and this project does **not** yet follow [Semantic Versioning](https://semver.or
 
 ### Changed
 
+- API: `leaveRoom` requires the `playerId`, as the backend now answers a leave without one with 400 (#463)
 - Tooling: update frontend dependencies and Stylelint (#465)
 - Game: move throw synchronization and recovery into a single game session (#450)
 - Docs: page files are grouped by the part of the page they serve, and VS Code nests tests and styles under their file (#456)
@@ -27,6 +28,7 @@ and this project does **not** yet follow [Semantic Versioning](https://semver.or
 
 ### Fixed
 
+- Errors: the backend codes `BAD_REQUEST`, `UNSUPPORTED_MEDIA_TYPE` and `REQUEST_REJECTED` show the screen's own error text instead of the raw code (#462)
 - Build: load the Vite config with the native loader without warnings (#465)
 - Errors: a `409 CONCURRENT_CHANGE` from the backend shows "Another request changed this at the same time. Please try again." instead of the raw code; on login and registration it also asks to reopen the invitation link (#459)
 - Deploy: accept avatar directories that grant the backend access through an ACL on Ubuntu with Rust coreutils (#429)
