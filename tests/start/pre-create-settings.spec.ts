@@ -47,5 +47,23 @@ test.describe("Pre-create game settings", () => {
       doubleOut: true,
       tripleOut: false,
     });
+
+    const settingsRequests: string[] = [];
+    page.on("request", (request) => {
+      if (
+        request.method() === "GET" &&
+        new URL(request.url()).pathname === "/api/game/520/settings"
+      ) {
+        settingsRequests.push(request.url());
+      }
+    });
+    await page.getByRole("link", { name: "Settings" }).click();
+    await expect(page).toHaveURL("/settings/520");
+    await expect(page.getByRole("button", { name: "Double-out" })).toHaveAttribute(
+      "aria-pressed",
+      "true",
+    );
+    await expect(page.getByRole("button", { name: "501" })).toHaveAttribute("aria-pressed", "true");
+    expect(settingsRequests).toEqual([]);
   });
 });

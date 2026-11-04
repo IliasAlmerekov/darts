@@ -249,11 +249,10 @@ Mapper rules:
   `finishedGameStandings`, `lobbyPlayers` (`toLobbyPlayers`); `shared/lib/player/` holds
   `currentGame`, `gameSeat` and `profile`.
 - Every mapper has a co-located `*.test.ts`.
-- Mappers are called from an API domain function (`getCurrentGame` in `player.ts` calls
-  `toCurrentGame`), a `queryFn` in `src/shared/query/` (`playerQueries.profile` calls
-  `toPlayerProfile`), a store action (`acceptGame(data)`
-  calls `normalizeGameData(data)`), a route loader (`startPageLoader.ts` calls
-  `toLobbyPlayers`), or a page-private logic file under `src/pages/<Page>/` that is
+- Mappers are called from an API domain function (`getGameThrows` calls `normalizeGameData`),
+  a `queryFn` in `src/shared/query/` (`playerQueries.profile` calls `toPlayerProfile`),
+  a store action (`acceptGame` calls `toLobbyPlayers`), a route loader, or a page-private
+  logic file under `src/pages/<Page>/` that is
   neither JSX nor a `use*` file.
 - JSX files (`src/pages/**/*.tsx`) and render-flow hooks (`src/pages/**/use*.ts`) receive the
   mapped result and import no mapper. Type imports are fine. Known exception:

@@ -53,6 +53,7 @@ export const gameQueries = {
   settings: (gameId: number) =>
     queryOptions({
       queryKey: ["game", gameId, "settings"] as const,
+      // The store and confirmed settings saves keep this entry current.
       staleTime: Infinity,
       queryFn: async ({ signal }) => {
         try {
@@ -77,6 +78,7 @@ export const gameQueries = {
   lobbyPlayers: (gameId: number) =>
     queryOptions({
       queryKey: ["game", gameId, "players"] as const,
+      // The store, lobby stream and optimistic roster changes keep this entry current.
       staleTime: Infinity,
       queryFn: async ({ signal }) => {
         try {
