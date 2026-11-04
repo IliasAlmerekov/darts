@@ -84,11 +84,13 @@ describe("mapAuthErrorMessage", () => {
   });
 
   it.each(["login", "registration"] as const)(
-    "asks to try again for a 409 CONCURRENT_CHANGE in the %s flow",
+    "asks to reopen the invitation link for a 409 CONCURRENT_CHANGE in the %s flow",
     (flow) => {
       const result = mapAuthErrorMessage({ flow, error: backendError(409, "CONCURRENT_CHANGE") });
 
-      expect(result).toBe("Another request changed this at the same time. Please try again.");
+      expect(result).toBe(
+        "Another request changed this at the same time. If you used an invitation, reopen the invitation link and try again.",
+      );
     },
   );
 });

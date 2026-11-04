@@ -25,7 +25,9 @@ const AUTH_ERROR_MESSAGES = {
   // The backend sends this code for a cross-origin request and for a form without
   // `_csrf_token`, so the text blames neither.
   requestBlocked: "Your request was blocked. Please reload the page and try again.",
-  concurrentChange: "Another request changed this at the same time. Please try again.",
+  // A rolled-back game join has already spent the invitation, so a plain retry joins no game.
+  concurrentChange:
+    "Another request changed this at the same time. If you used an invitation, reopen the invitation link and try again.",
   server: "Server error. Please try again later.",
   network: "Network error. Please check your connection and try again.",
 } as const;
