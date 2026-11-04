@@ -6,8 +6,8 @@ vi.mock("@/shared/api/client", async (importOriginal) => ({
   },
 }));
 
-import { beforeEach, describe, expect, it, vi } from "vitest";
-import { getCurrentGame, getPlayerGameSeat, getPlayerProfile } from "./player";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { getCurrentGame, getPlayerGameSeat, getPlayerProfile, playerAvatarUrl } from "./player";
 import { apiClient, ApiValidationError } from "./client";
 import { respondWith } from "./test-utils";
 
@@ -283,5 +283,27 @@ describe("getPlayerGameSeat", () => {
     vi.mocked(apiClient.get).mockImplementationOnce(respondWith(payload));
 
     await expect(getPlayerGameSeat(12)).rejects.toBeInstanceOf(ApiValidationError);
+  });
+});
+
+describe("playerAvatarUrl", () => {
+  afterEach(() => {
+    vi.unstubAllEnvs();
+    vi.resetModules();
+  });
+
+  it("points at the avatar under /api by default", () => {
+    expect(playerAvatarUrl(7)).toBe("/api/player/7/avatar");
+  });
+
+  it("points at the avatar under VITE_API_BASE_URL when it is set", async () => {
+    vi.stubEnv("VITE_API_BASE_URL", "https://darts.example/");
+    // The base URL is read when client.ts loads, so load it again, unmocked.
+    vi.doUnmock("@/shared/api/client");
+    vi.resetModules();
+
+    const { playerAvatarUrl: avatarUrlFromEnv } = await import("./player");
+
+    expect(avatarUrlFromEnv(7)).toBe("https://darts.example/api/player/7/avatar");
   });
 });

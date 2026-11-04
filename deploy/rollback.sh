@@ -9,8 +9,39 @@
 set -euo pipefail
 readonly base=/opt/darts
 readonly config=$base/config
+readonly avatars_env=$config/avatars.env
+# The backend container runs as symfony, UID and GID 10001 (app/Dockerfile in darts-backend).
+# This holds only while Docker maps container IDs 1:1 to host IDs (no userns-remap, not rootless).
+readonly backend_uid=10001
 
 die() { echo "rollback: $*" >&2; exit 1; }
+
+# Server-side settings that CI must not choose. Root writes avatars.env (init-server.sh);
+# parse it strictly instead of sourcing it.
+check_avatars_env() {
+    local line key value seen=''
+    command -v setpriv > /dev/null || die 'setpriv is not installed.'
+    [[ -e $avatars_env || -L $avatars_env ]] ||
+        die "$avatars_env is missing. Run init-server.sh, or create it with AVATAR_HOST_DIR=<absolute path>."
+    [[ ! -L $avatars_env && -f $avatars_env ]] || die "$avatars_env is not a regular file."
+    [[ $(stat -c '%u' -- "$avatars_env") == 0 ]] || die "$avatars_env is not owned by root."
+    (( (8#$(stat -c '%a' -- "$avatars_env") & 8#022) == 0 )) || die "$avatars_env is writable by group or others."
+    while IFS= read -r line || [[ -n $line ]]; do
+        [[ $line =~ ^([A-Z_]+)=(.*)$ ]] || die "Bad avatars.env line: $line"
+        key=${BASH_REMATCH[1]} value=${BASH_REMATCH[2]}
+        [[ $key == AVATAR_HOST_DIR ]] || die "Unknown avatars.env key: $key"
+        [[ -z $seen ]] || die 'Duplicate avatars.env key: AVATAR_HOST_DIR'
+        [[ $value =~ ^/[A-Za-z0-9._/-]+$ ]] || die 'AVATAR_HOST_DIR in avatars.env must be an absolute path.'
+        [[ -d $value ]] || die "AVATAR_HOST_DIR $value is not an existing directory."
+        # Test the folder from inside it: the bind mount needs no search right on its parents.
+        # Use shell builtins: Ubuntu's external Rust test rejects ACL-granted access.
+        (cd -- "$value" &&
+            setpriv --reuid="$backend_uid" --regid="$backend_uid" --clear-groups /bin/sh -c 'test -r . && test -x .') ||
+            die "AVATAR_HOST_DIR $value is not readable and searchable by the backend user (UID $backend_uid)."
+        seen=1
+    done < "$avatars_env"
+    [[ -n $seen ]] || die "$avatars_env lacks AVATAR_HOST_DIR."
+}
 
 [[ $(id -u) = 0 ]] || die 'Run as root (sudo).'
 [[ $# == 1 && $1 = --schema-compatible ]] ||
@@ -22,8 +53,9 @@ target=$(readlink -f "$base/previous")
 [[ ${target%/*} == "$base/releases" && -f $target/release.env ]] ||
     die 'No verified previous release exists.'
 [[ -f $config/compose.yaml && -f $config/Caddyfile ]] || die "$config is incomplete. Run init-server.sh."
-docker compose --project-directory "$config" --env-file "$target/release.env" -f "$config/compose.yaml" \
-    up -d --wait --wait-timeout 300 --remove-orphans
+check_avatars_env
+env -u AVATAR_HOST_DIR docker compose --project-directory "$config" --env-file "$target/release.env" --env-file "$avatars_env" \
+    -f "$config/compose.yaml" up -d --wait --wait-timeout 300 --remove-orphans
 hostname=$(sed -n 's/^APP_HOSTNAME=//p' "$target/release.env")
 curl --fail --silent --show-error --retry 12 --retry-delay 5 --retry-all-errors \
     --resolve "$hostname:443:127.0.0.1" "https://$hostname/api/health" > /dev/null

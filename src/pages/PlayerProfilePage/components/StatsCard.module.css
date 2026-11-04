@@ -17,17 +17,8 @@
 }
 
 .avatar {
-  display: grid;
-  place-items: center;
   width: 168px;
   height: 168px;
-  border-radius: var(--radius-pill);
-  background: var(--color-primary-soft);
-}
-
-.avatarIcon {
-  width: 80px;
-  height: 80px;
 }
 
 .displayName {
@@ -126,10 +117,5 @@
   .avatar {
     width: 120px;
     height: 120px;
-  }
-
-  .avatarIcon {
-    width: 56px;
-    height: 56px;
   }
 }

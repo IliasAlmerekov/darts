@@ -417,7 +417,7 @@
                     {
                         "name": "playerId",
                         "in": "query",
-                        "description": "Spieler-ID, die entfernt werden soll. Wenn nicht angegeben, wird der authentifizierte User oder der Request-Body verwendet.",
+                        "description": "Spieler-ID, die entfernt werden soll. Hat Vorrang vor der playerId im Request-Body; fehlen beide, wird der authentifizierte User verwendet.",
                         "required": false,
                         "schema": {
                             "type": "integer",
@@ -428,7 +428,7 @@
                     }
                 ],
                 "requestBody": {
-                    "description": "Alternative \u00dcbergabe der playerId (falls nicht als Query-Parameter).",
+                    "description": "Alternative \u00dcbergabe der playerId, wenn kein Query-Parameter gesetzt ist.",
                     "required": false,
                     "content": {
                         "application/json": {
@@ -1339,6 +1339,68 @@
                     }
                 },
                 "security": []
+            }
+        },
+        "/api/player/{id}/avatar": {
+            "get": {
+                "tags": [
+                    "Player"
+                ],
+                "operationId": "get_app_player_avatar",
+                "parameters": [
+                    {
+                        "name": "If-None-Match",
+                        "in": "header",
+                        "required": false,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "pattern": "\\d+"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Avatar image. Cache-Control is private, no-cache; ETag identifies the bytes.",
+                        "content": {
+                            "image/png": {},
+                            "image/jpeg": {}
+                        }
+                    },
+                    "304": {
+                        "description": "Avatar unchanged."
+                    },
+                    "401": {
+                        "description": "Authentication required."
+                    },
+                    "404": {
+                        "description": "Avatar not found.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ApiError"
+                                }
+                            }
+                        }
+                    },
+                    "503": {
+                        "description": "Avatar directory unavailable.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ApiError"
+                                }
+                            }
+                        }
+                    }
+                }
             }
         },
         "/api/player/current-game": {
@@ -2475,8 +2537,7 @@
                     "name",
                     "score",
                     "isActive",
-                    "isBust",
-                    "isGuest"
+                    "isBust"
                 ],
                 "properties": {
                     "id": {
@@ -2536,7 +2597,8 @@
                         "default": []
                     },
                     "isGuest": {
-                        "type": "boolean"
+                        "type": "boolean",
+                        "default": false
                     }
                 },
                 "type": "object"
@@ -2589,21 +2651,16 @@
                     "settings": {
                         "type": "object",
                         "additionalProperties": {
-                            "nullable": true,
                             "oneOf": [
                                 {
                                     "oneOf": [
                                         {
                                             "type": "array",
-                                            "items": {
-                                                "nullable": true
-                                            }
+                                            "items": {}
                                         },
                                         {
                                             "type": "object",
-                                            "additionalProperties": {
-                                                "nullable": true
-                                            }
+                                            "additionalProperties": {}
                                         }
                                     ]
                                 },
@@ -2615,6 +2672,13 @@
                                 },
                                 {
                                     "type": "string"
+                                },
+                                {
+                                    "type": "object",
+                                    "nullable": true,
+                                    "enum": [
+                                        null
+                                    ]
                                 }
                             ]
                         }
@@ -2687,10 +2751,16 @@
                         "nullable": true
                     },
                     "winner": {
-                        "nullable": true,
                         "oneOf": [
                             {
                                 "$ref": "#/components/schemas/GameSummaryWinnerDto"
+                            },
+                            {
+                                "type": "object",
+                                "nullable": true,
+                                "enum": [
+                                    null
+                                ]
                             }
                         ]
                     },
@@ -2988,7 +3058,8 @@
                     },
                     "isBust": {
                         "type": "boolean",
-                        "nullable": true
+                        "nullable": true,
+                        "default": null
                     }
                 },
                 "type": "object"
@@ -3047,10 +3118,16 @@
                         "type": "string"
                     },
                     "throw": {
-                        "nullable": true,
                         "oneOf": [
                             {
                                 "$ref": "#/components/schemas/ThrowDeltaDto"
+                            },
+                            {
+                                "type": "object",
+                                "nullable": true,
+                                "enum": [
+                                    null
+                                ]
                             }
                         ]
                     },
@@ -3091,10 +3168,16 @@
                         "type": "string"
                     },
                     "undoneThrow": {
-                        "nullable": true,
                         "oneOf": [
                             {
                                 "$ref": "#/components/schemas/ThrowDeltaDto"
+                            },
+                            {
+                                "type": "object",
+                                "nullable": true,
+                                "enum": [
+                                    null
+                                ]
                             }
                         ]
                     },
@@ -3376,10 +3459,16 @@
                     },
                     "mostHitSegment": {
                         "description": "Segment mit den meisten Treffern, bei Gleichstand das h\u00f6here; `null` ohne Treffer.",
-                        "nullable": true,
                         "oneOf": [
                             {
                                 "$ref": "#/components/schemas/PlayerProfileMostHitSegmentDto"
+                            },
+                            {
+                                "type": "object",
+                                "nullable": true,
+                                "enum": [
+                                    null
+                                ]
                             }
                         ]
                     },
@@ -3393,10 +3482,16 @@
                     },
                     "highestFinish": {
                         "description": "H\u00f6chstes Finish \u00fcber alle Out-Regeln, bei Gleichstand das mit weniger Darts, dann das fr\u00fchere; `null` ohne Finish.",
-                        "nullable": true,
                         "oneOf": [
                             {
                                 "$ref": "#/components/schemas/PlayerProfileFinishDto"
+                            },
+                            {
+                                "type": "object",
+                                "nullable": true,
+                                "enum": [
+                                    null
+                                ]
                             }
                         ]
                     }
@@ -3511,10 +3606,16 @@
                 ],
                 "properties": {
                     "game": {
-                        "nullable": true,
                         "oneOf": [
                             {
                                 "$ref": "#/components/schemas/TabletGameDto"
+                            },
+                            {
+                                "type": "object",
+                                "nullable": true,
+                                "enum": [
+                                    null
+                                ]
                             }
                         ]
                     },

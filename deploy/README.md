@@ -29,12 +29,13 @@ CI uploads `darts-release-<tag>-<commit>-<run id>.tar.gz` to `/opt/darts/incomin
 - `images.sha256`: checksums of `release.env` and `images.tar.gz`
 
 The rollout rejects an archive with any other member, including `compose.yaml` or
-`Caddyfile`. The stack definition lives only in `/opt/darts/config` on the server, owned
-by root. The rollout runs:
+`Caddyfile`. The stack definition and `avatars.env` live only in `/opt/darts/config` on
+the server, owned by root. The rollout runs:
 
 ```sh
-docker compose --project-directory /opt/darts/config \
-  --env-file /opt/darts/releases/<release>/release.env -f /opt/darts/config/compose.yaml ...
+env -u AVATAR_HOST_DIR docker compose --project-directory /opt/darts/config \
+  --env-file /opt/darts/releases/<release>/release.env \
+  --env-file /opt/darts/config/avatars.env -f /opt/darts/config/compose.yaml ...
 ```
 
 The rollout extracts it into `/opt/darts/releases/<tag>-<commit>-<run id>` and points
@@ -68,6 +69,8 @@ The script creates:
 - `/opt/darts/{bin,releases,config}` owned by root, and `/opt/darts/secrets` (mode 0700).
 - `/opt/darts/config/compose.yaml` and `/opt/darts/config/Caddyfile`, root-owned, mode 0644.
 - `app_secret`, `mysql_password` and `mysql_root_password`, only if they do not exist yet.
+- `/opt/darts/avatars` (root-owned, mode 0755), and `/opt/darts/config/avatars.env` with
+  `AVATAR_HOST_DIR=/opt/darts/avatars` (root-owned, mode 0644), only if it does not exist yet.
 - `/opt/darts/bin/rollout` and `/opt/darts/bin/rollback`, root-owned, mode 0755.
 - `/etc/sudoers.d/darts-deploy`, checked with `visudo -cf`. It allows only
   `sudo /opt/darts/bin/rollout /opt/darts/incoming/*`. The script checks the argument again.
@@ -83,8 +86,9 @@ The next rollout or rollback uses the new stack definition. To apply it to the r
 release at once:
 
 ```sh
-sudo docker compose --project-directory /opt/darts/config \
-  --env-file /opt/darts/current/release.env -f /opt/darts/config/compose.yaml \
+sudo env -u AVATAR_HOST_DIR docker compose --project-directory /opt/darts/config \
+  --env-file /opt/darts/current/release.env \
+  --env-file /opt/darts/config/avatars.env -f /opt/darts/config/compose.yaml \
   up -d --wait --remove-orphans
 ```
 
@@ -94,8 +98,9 @@ leave the proxy running, and `restart` keeps the old mount. Recreate the proxy a
 check the headers with `curl -I https://<APP_HOSTNAME>/`:
 
 ```sh
-sudo docker compose --project-directory /opt/darts/config \
-  --env-file /opt/darts/current/release.env -f /opt/darts/config/compose.yaml \
+sudo env -u AVATAR_HOST_DIR docker compose --project-directory /opt/darts/config \
+  --env-file /opt/darts/current/release.env \
+  --env-file /opt/darts/config/avatars.env -f /opt/darts/config/compose.yaml \
   up -d --force-recreate --no-deps --wait proxy
 ```
 
@@ -154,13 +159,52 @@ Images, the release archive and the server use the version without the `v`, so
 `darts-frontend:0.1.3` ships from tag `v0.1.3`. A tag like `0.1.0` or `v0.1.0-rc.1` does
 not start the workflow.
 
+## Avatars
+
+Run `sudo bash deploy/test-avatars.sh` on a disposable Linux host or container with
+`bash`, `coreutils`, `util-linux`, `acl` and `python3` installed to test the rollout and rollback
+avatar preflight. CI runs it in the `deploy-tests` job. It tests real UID 10001 access,
+ACL grants and denials, closed parents, invalid settings and rejection before Docker.
+The test replaces only the scripts' installation path and the Docker command, and writes
+to a temporary directory. It never starts containers or changes `/opt/darts`.
+
+The backend serves each player's avatar from a folder on the VM. `compose.yaml` mounts the
+host folder named by `AVATAR_HOST_DIR` read-only at `/app/var/avatars` in the `backend`
+service and sets `AVATAR_DIR=/app/var/avatars`. `AVATAR_HOST_DIR` is required: Compose
+refuses to start the stack without it.
+
+`AVATAR_HOST_DIR` comes from `/opt/darts/config/avatars.env`, which every Compose command
+passes as a second `--env-file` after `release.env`. `init-server.sh` writes it once with
+`AVATAR_HOST_DIR=/opt/darts/avatars` and never overwrites it. The server admin edits it
+with `sudo`; CI never does, so a release cannot choose which host folder the backend sees.
+The rollout and the rollback stop before they touch the stack when the file is missing,
+not owned by root, writable by group or others, or holds anything but one
+`AVATAR_HOST_DIR` line with an absolute path, or when that path is not an existing
+directory that the backend user (UID 10001) can read and search; Compose never creates a
+missing folder, so a typo or a closed folder fails the deploy instead of showing every
+player the user icon. The parent folders may stay closed to that user, because the bind
+mount does not pass through them. A changed folder takes effect with the next rollout or
+rollback, or at once with the `up -d` command under "Changing compose.yaml".
+
+Each file in the folder follows one rule:
+
+- one file per player, named `<email in lower case>.png` or `<email in lower case>.jpg`,
+  for example `jane.doe@example.com.png`;
+- square, at most 256×256 px and 100 KB.
+
+When a player has both files, the `.png` wins. A player without a file sees the user icon.
+The app has no upload: copy a new or changed picture into the folder, readable by others
+(mode 0644), because the backend container reads it under its own user. The next request
+serves it.
+
 ## First administrator
 
 The command needs an interactive terminal:
 
 ```sh
-sudo docker compose --project-directory /opt/darts/config \
-  --env-file /opt/darts/current/release.env -f /opt/darts/config/compose.yaml \
+sudo env -u AVATAR_HOST_DIR docker compose --project-directory /opt/darts/config \
+  --env-file /opt/darts/current/release.env \
+  --env-file /opt/darts/config/avatars.env -f /opt/darts/config/compose.yaml \
   run --rm backend php bin/console app:create-admin
 ```
 
@@ -191,6 +235,7 @@ loses all data.
 The CI deploy key can upload an archive and run the rollout, nothing else. It cannot
 change `compose.yaml` or the `Caddyfile`, so it cannot add host mounts, privileged mode
 or other services. It can still ship a malicious frontend or backend image. That image
-runs inside the fixed stack: no host mounts, no extra privileges, access to the database,
-the session volume and the `app_secret` and `mysql_password` secrets. Protect the deploy
-key and the `azure-production` environment reviewers accordingly.
+runs inside the fixed stack: no host mounts besides the read-only avatar folder, no extra
+privileges, access to the database, the session volume and the `app_secret` and
+`mysql_password` secrets. Protect the deploy key and the `azure-production` environment
+reviewers accordingly.

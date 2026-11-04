@@ -74,13 +74,32 @@ export const PLAYER_PROFILE: PlayerProfileBody = {
   registeredAt: "2026-09-01T08:15:00+00:00",
 };
 
-/** Answers the Player profile's request with `PLAYER_PROFILE`. */
+/**
+ * Answers the Player profile's requests: the profile with `PLAYER_PROFILE`, and the avatar
+ * with `404`, so the card shows the user icon of a player without a picture.
+ */
 export async function mockPlayerProfile(page: Page): Promise<void> {
   await page.route("**/api/player/profile", async (route) => {
     await route.fulfill({
       status: 200,
       contentType: "application/json",
       body: JSON.stringify(PLAYER_PROFILE),
+    });
+  });
+  await mockMissingAvatars(page);
+}
+
+/** Answers every avatar request with `404`, so each player shows the user icon. */
+export async function mockMissingAvatars(page: Page): Promise<void> {
+  await page.route("**/api/player/*/avatar", async (route) => {
+    await route.fulfill({
+      status: 404,
+      contentType: "application/json",
+      body: JSON.stringify({
+        success: false,
+        error: "PLAYER_NOT_FOUND",
+        message: "Avatar not found.",
+      }),
     });
   });
 }

@@ -37,6 +37,9 @@ export default defineConfig(({ mode }) => {
       environment: "jsdom",
       globals: true,
       include: ["src/**/*.test.{ts,tsx}"],
+      // Unit tests expect the default `/api` base, so a VITE_API_BASE_URL
+      // from the shell or a .env file must not reach them.
+      env: { VITE_API_BASE_URL: "" },
       coverage: {
         provider: "v8",
         reporter: ["text", "lcov", "html"],

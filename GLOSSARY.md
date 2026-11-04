@@ -45,6 +45,10 @@ _Avoid_: remember me, persistent session
 The page a player lands on after logging in without an invitation and without a current game. It shows the player's own statistics and recent finished games.
 _Avoid_: player page, default page
 
+**Avatar**:
+The picture of a player's character, taken from the company's set of employee pictures by the player's email. A player whose email has no picture has no avatar; a guest never has one. A player sees their own avatar, the admin sees every player's.
+_Avoid_: Character picture, profile picture, photo
+
 **Hit frequency**:
 How often a player hits a board segment compared with the segment they hit most, in five steps from Very high to Very low.
 _Avoid_: heat, hit rate

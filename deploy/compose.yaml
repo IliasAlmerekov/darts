@@ -51,11 +51,19 @@ services:
       SYMFONY_TRUSTED_PROXIES: REMOTE_ADDR
       MAILER_DSN: "null://null"
       MESSENGER_TRANSPORT_DSN: "sync://"
+      AVATAR_DIR: /app/var/avatars
     secrets:
       - app_secret
       - mysql_password
     volumes:
       - sessions:/app/var/sessions
+      # Long syntax: a missing folder fails the start instead of mounting a new empty one.
+      - type: bind
+        source: ${AVATAR_HOST_DIR:?Set AVATAR_HOST_DIR}
+        target: /app/var/avatars
+        read_only: true
+        bind:
+          create_host_path: false
     depends_on:
       mysql:
         condition: service_healthy

@@ -27,8 +27,9 @@ const throwDeltaSchema = v.object({
 });
 
 /**
- * Contract `ScoreboardPlayerDeltaDto`. Missing `position`, `placement` and `isBust` stay
- * absent. An omitted field is unchanged; an explicit null clears position or placement.
+ * Contract `ScoreboardPlayerDeltaDto`. Missing `position` and `placement` stay absent: an
+ * omitted field is unchanged, an explicit null clears it. A missing `isBust` becomes the
+ * contract default `null`, which leaves the player's bust flag unchanged.
  */
 const scoreboardPlayerDeltaSchema = v.object({
   playerId: integerSchema,
@@ -38,7 +39,7 @@ const scoreboardPlayerDeltaSchema = v.object({
   placement: v.optional(v.nullable(integerSchema)),
   isActive: v.boolean(),
   isGuest: v.boolean(),
-  isBust: v.optional(v.nullable(v.boolean())),
+  isBust: v.optional(v.nullable(v.boolean()), null),
 });
 
 /** Contract `ScoreboardDeltaDto`. */

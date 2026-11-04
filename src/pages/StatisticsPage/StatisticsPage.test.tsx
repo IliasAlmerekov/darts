@@ -46,6 +46,9 @@ vi.mock("@/shared/ui/pagination", () => ({
   ),
 }));
 
+// Vite inlines small SVGs as data URLs; the file name keeps the assertions readable.
+vi.mock("@/assets/icons/user-blue.svg", () => ({ default: "user-blue.svg" }));
+
 // ── Hook mock ────────────────────────────────────────────────────────────────
 const usePlayerStatsMock = vi.fn();
 
@@ -314,5 +317,56 @@ describe("StatisticsPage", () => {
     const average = screen.getByRole("group", { name: "three-dart average" });
     expect(average.textContent).toBe("Ø AVG55.50");
     expect(screen.getByText("10")).toBeTruthy();
+  });
+
+  it("should show each player's avatar left of the name", () => {
+    usePlayerStatsMock.mockReturnValue({
+      loading: false,
+      error: null,
+      stats: PLAYERS,
+      total: 2,
+      retry: vi.fn(),
+    });
+
+    renderPage();
+
+    const avatars = screen.getAllByRole("presentation");
+    expect(avatars.map((image) => image.getAttribute("src"))).toEqual([
+      "/api/player/1/avatar",
+      "/api/player/2/avatar",
+    ]);
+    const [aliceAvatar, bobAvatar] = avatars;
+    if (aliceAvatar === undefined || bobAvatar === undefined) throw new Error("avatar missing");
+    const alice = screen.getByText("Alice");
+    expect(
+      aliceAvatar.compareDocumentPosition(alice) & Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
+    expect(
+      alice.compareDocumentPosition(bobAvatar) & Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
+  });
+
+  it("should show the user icon in the same circle when an avatar fails to load", () => {
+    usePlayerStatsMock.mockReturnValue({
+      loading: false,
+      error: null,
+      stats: PLAYERS,
+      total: 2,
+      retry: vi.fn(),
+    });
+
+    renderPage();
+    const [aliceAvatar] = screen.getAllByRole("presentation");
+    if (aliceAvatar === undefined) throw new Error("avatar missing");
+    const circle = aliceAvatar.parentElement;
+
+    fireEvent.error(aliceAvatar);
+
+    const avatars = screen.getAllByRole("presentation");
+    expect(avatars.map((image) => image.getAttribute("src"))).toEqual([
+      "user-blue.svg",
+      "/api/player/2/avatar",
+    ]);
+    expect(avatars[0]?.parentElement).toBe(circle);
   });
 });

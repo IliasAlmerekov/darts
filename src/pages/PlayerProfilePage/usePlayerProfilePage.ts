@@ -13,6 +13,8 @@ export type ProfileState =
   | { status: "success"; profile: PlayerProfile; hitFrequencies: BoardHitFrequencies };
 
 interface UsePlayerProfilePageResult {
+  /** Null until the logged-in user is known. */
+  playerId: number | null;
   displayName: string;
   profileState: ProfileState;
   tab: ProfileTab;
@@ -51,6 +53,7 @@ export function usePlayerProfilePage(): UsePlayerProfilePageResult {
           };
 
   return {
+    playerId: user?.id ?? null,
     displayName: getDisplayName(user),
     profileState,
     tab: parseProfileTab(searchParams.get("tab")),

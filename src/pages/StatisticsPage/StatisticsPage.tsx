@@ -8,6 +8,7 @@ import {
   PaginationNext,
   PaginationPrevious,
 } from "@/shared/ui/pagination";
+import { PlayerAvatar } from "@/shared/ui/player-avatar";
 import type { SortMethod } from "@/shared/ui/sort-tabs";
 import { StatisticsHeaderControls } from "@/shared/ui/statistics-header-controls";
 import type { PlayerStatsParams } from "@/shared/query/statistics.queries";
@@ -108,6 +109,7 @@ export default function StatisticsPage(): React.JSX.Element {
             {sorted.map((player, index) => (
               <div key={player.playerId} className={styles.playerRow}>
                 <div className={styles.playerNumber}>{offset + index + 1}.</div>
+                <PlayerAvatar className={styles.playerAvatar} playerId={player.playerId ?? null} />
                 <div className={styles.playerName}>{player.name}</div>
                 <div className={styles.playerStats}>
                   <div className={styles.roundStat} role="group" aria-label="three-dart average">

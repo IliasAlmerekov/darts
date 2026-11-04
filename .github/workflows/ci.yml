@@ -13,6 +13,20 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  deploy-tests:
+    if: github.event.pull_request.draft == false
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Install ACL tools
+        run: sudo apt-get update && sudo apt-get install -y acl
+
+      - name: Test avatar deployment preflight
+        run: sudo bash deploy/test-avatars.sh
+
   check:
     if: github.event.pull_request.draft == false
     runs-on: ubuntu-latest

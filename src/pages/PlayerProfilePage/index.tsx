@@ -6,7 +6,7 @@ import { usePlayerProfilePage } from "./usePlayerProfilePage";
 import styles from "./PlayerProfilePage.module.css";
 
 function PlayerProfilePage(): React.JSX.Element {
-  const { displayName, profileState, tab, selectTab } = usePlayerProfilePage();
+  const { playerId, displayName, profileState, tab, selectTab } = usePlayerProfilePage();
   const tabsId = useId();
 
   return (
@@ -17,7 +17,12 @@ function PlayerProfilePage(): React.JSX.Element {
       </header>
       <main className={styles.playerProfile}>
         <h1 className={styles.pageTitle}>Player Profile</h1>
-        <StatsCard className={styles.card} displayName={displayName} profileState={profileState} />
+        <StatsCard
+          className={styles.card}
+          playerId={playerId}
+          displayName={displayName}
+          profileState={profileState}
+        />
         <ProfileTabPanel
           className={styles.panel}
           idPrefix={tabsId}
