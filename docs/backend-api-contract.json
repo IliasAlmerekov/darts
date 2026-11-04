@@ -81,6 +81,16 @@
                                 }
                             }
                         }
+                    },
+                    "409": {
+                        "description": "Eine parallele Anfrage hat dieselben Daten gesperrt, und MySQL hat die Transaktion als Deadlock oder nach einem Lock-Wait-Timeout zur\u00fcckgerollt (`CONCURRENT_CHANGE`). Der Request kann wiederholt werden.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ApiError"
+                                }
+                            }
+                        }
                     }
                 }
             }
@@ -125,7 +135,7 @@
                         }
                     },
                     "409": {
-                        "description": "Das Spiel ist in der Lobby oder abgebrochen (`GAME_FINISH_NOT_ALLOWED`). Ein bereits beendetes Spiel bleibt unver\u00e4ndert (200)."
+                        "description": "Das Spiel ist in der Lobby oder abgebrochen (`GAME_FINISH_NOT_ALLOWED`). Ein bereits beendetes Spiel bleibt unver\u00e4ndert (200). Eine parallele Anfrage hat dieselben Daten gesperrt, und MySQL hat die Transaktion als Deadlock oder nach einem Lock-Wait-Timeout zur\u00fcckgerollt (`CONCURRENT_CHANGE`). Der Request kann wiederholt werden."
                     }
                 }
             }
@@ -170,7 +180,7 @@
                         }
                     },
                     "409": {
-                        "description": "Das Spiel ist weder beendet noch gestartet (`GAME_REOPEN_NOT_ALLOWED`), oder es ist beendet, aber nicht das neueste Spiel (`GAME_NOT_NEWEST`)."
+                        "description": "Das Spiel ist weder beendet noch gestartet (`GAME_REOPEN_NOT_ALLOWED`), oder es ist beendet, aber nicht das neueste Spiel (`GAME_NOT_NEWEST`). Eine parallele Anfrage hat dieselben Daten gesperrt, und MySQL hat die Transaktion als Deadlock oder nach einem Lock-Wait-Timeout zur\u00fcckgerollt (`CONCURRENT_CHANGE`). Der Request kann wiederholt werden."
                     }
                 }
             }
@@ -317,7 +327,7 @@
                         }
                     },
                     "409": {
-                        "description": "Das Spiel ist in der Lobby oder beendet (`GAME_ABORT_NOT_ALLOWED`). Ein bereits abgebrochenes Spiel bleibt unver\u00e4ndert (200)."
+                        "description": "Das Spiel ist in der Lobby oder beendet (`GAME_ABORT_NOT_ALLOWED`). Ein bereits abgebrochenes Spiel bleibt unver\u00e4ndert (200). Eine parallele Anfrage hat dieselben Daten gesperrt, und MySQL hat die Transaktion als Deadlock oder nach einem Lock-Wait-Timeout zur\u00fcckgerollt (`CONCURRENT_CHANGE`). Der Request kann wiederholt werden."
                     }
                 }
             }
@@ -392,7 +402,7 @@
                         "description": "Eine ID in `playerIds` geh\u00f6rt zu keinem Benutzer (`PLAYER_NOT_FOUND`). Es wird keine Lobby angelegt."
                     },
                     "409": {
-                        "description": "Die neue Lobby h\u00e4tte mehr als 10 Spieler (`GAME_ROOM_FULL`). Es wird keine Lobby angelegt. Eine offene Lobby ignoriert `playerIds`."
+                        "description": "Die neue Lobby h\u00e4tte mehr als 10 Spieler (`GAME_ROOM_FULL`). Es wird keine Lobby angelegt. Eine offene Lobby ignoriert `playerIds`. Eine parallele Anfrage hat dieselben Daten gesperrt, und MySQL hat die Transaktion als Deadlock oder nach einem Lock-Wait-Timeout zur\u00fcckgerollt (`CONCURRENT_CHANGE`). Der Request kann wiederholt werden."
                     }
                 }
             }
@@ -463,7 +473,7 @@
                         "description": "Spieler wurde im Spiel nicht gefunden."
                     },
                     "409": {
-                        "description": "Das Spiel ist nicht mehr in der Lobby (`GAME_SEATS_NOT_EDITABLE`). Der Spieler bleibt im Spiel."
+                        "description": "Das Spiel ist nicht mehr in der Lobby (`GAME_SEATS_NOT_EDITABLE`). Der Spieler bleibt im Spiel. Eine parallele Anfrage hat dieselben Daten gesperrt, und MySQL hat die Transaktion als Deadlock oder nach einem Lock-Wait-Timeout zur\u00fcckgerollt (`CONCURRENT_CHANGE`). Der Request kann wiederholt werden."
                     },
                     "422": {
                         "description": "Der Request-Body ist ung\u00fcltig und besteht die Validierung nicht. Das wird vor dem Status gepr\u00fcft, also auch au\u00dferhalb der Lobby mit 422 statt 409 beantwortet.",
@@ -555,7 +565,7 @@
                         }
                     },
                     "409": {
-                        "description": "Username ist bereits vergeben (`USERNAME_TAKEN`), das Spiel ist nicht mehr in der Lobby (`GAME_SEATS_NOT_EDITABLE`) oder hat schon 10 Spieler (`GAME_ROOM_FULL`). Gepr\u00fcft wird in dieser Reihenfolge: Status, volle Lobby, Name. Es wird weder ein Gast noch ein Platz angelegt.",
+                        "description": "Username ist bereits vergeben (`USERNAME_TAKEN`), das Spiel ist nicht mehr in der Lobby (`GAME_SEATS_NOT_EDITABLE`) oder hat schon 10 Spieler (`GAME_ROOM_FULL`). Gepr\u00fcft wird in dieser Reihenfolge: Status, volle Lobby, Name. Es wird weder ein Gast noch ein Platz angelegt. Eine parallele Anfrage hat dieselben Daten gesperrt, und MySQL hat die Transaktion als Deadlock oder nach einem Lock-Wait-Timeout zur\u00fcckgerollt (`CONCURRENT_CHANGE`). Der Request kann wiederholt werden.",
                         "content": {
                             "application/json": {
                                 "schema": {
@@ -669,7 +679,7 @@
                         "description": "Spiel nicht gefunden."
                     },
                     "409": {
-                        "description": "Das Spiel ist nicht mehr in der Lobby (`GAME_SEATS_NOT_EDITABLE`), auch bei leerem `positions`. Die Positionen bleiben unver\u00e4ndert."
+                        "description": "Das Spiel ist nicht mehr in der Lobby (`GAME_SEATS_NOT_EDITABLE`), auch bei leerem `positions`. Die Positionen bleiben unver\u00e4ndert. Eine parallele Anfrage hat dieselben Daten gesperrt, und MySQL hat die Transaktion als Deadlock oder nach einem Lock-Wait-Timeout zur\u00fcckgerollt (`CONCURRENT_CHANGE`). Der Request kann wiederholt werden."
                     },
                     "400": {
                         "description": "Der Request-Body ist kein g\u00fcltiges JSON (`REQUEST_INVALID_JSON_BODY`).",
@@ -779,7 +789,7 @@
                         }
                     },
                     "409": {
-                        "description": "Das alte Spiel ist nicht das neueste Spiel, oder es ist weder beendet noch abgebrochen (`GAME_NOT_NEWEST`). Eine offene Lobby ist immer das neueste Spiel."
+                        "description": "Das alte Spiel ist nicht das neueste Spiel, oder es ist weder beendet noch abgebrochen (`GAME_NOT_NEWEST`). Eine offene Lobby ist immer das neueste Spiel. Eine parallele Anfrage hat dieselben Daten gesperrt, und MySQL hat die Transaktion als Deadlock oder nach einem Lock-Wait-Timeout zur\u00fcckgerollt (`CONCURRENT_CHANGE`). Der Request kann wiederholt werden."
                     }
                 }
             }
@@ -903,7 +913,7 @@
                         }
                     },
                     "409": {
-                        "description": "Das Spiel ist gestartet und der Request sendet `startScore` (`GAME_START_SCORE_CHANGE_NOT_ALLOWED`), oder das Spiel hat schon einen Wurf und der Request sendet `outMode`, `doubleOut` oder `tripleOut`, auch mit dem aktuellen Wert (`GAME_OUT_RULE_CHANGE_NOT_ALLOWED`). Nachdem Undo jeden Wurf entfernt hat, ist die Out-Regel wieder \u00e4nderbar."
+                        "description": "Das Spiel ist gestartet und der Request sendet `startScore` (`GAME_START_SCORE_CHANGE_NOT_ALLOWED`), oder das Spiel hat schon einen Wurf und der Request sendet `outMode`, `doubleOut` oder `tripleOut`, auch mit dem aktuellen Wert (`GAME_OUT_RULE_CHANGE_NOT_ALLOWED`). Nachdem Undo jeden Wurf entfernt hat, ist die Out-Regel wieder \u00e4nderbar. Eine parallele Anfrage hat dieselben Daten gesperrt, und MySQL hat die Transaktion als Deadlock oder nach einem Lock-Wait-Timeout zur\u00fcckgerollt (`CONCURRENT_CHANGE`). Der Request kann wiederholt werden."
                     }
                 }
             }
@@ -1051,7 +1061,7 @@
                         }
                     },
                     "409": {
-                        "description": "Wurf ist im aktuellen Zustand nicht erlaubt."
+                        "description": "Wurf ist im aktuellen Zustand nicht erlaubt. Eine parallele Anfrage hat dieselben Daten gesperrt, und MySQL hat die Transaktion als Deadlock oder nach einem Lock-Wait-Timeout zur\u00fcckgerollt (`CONCURRENT_CHANGE`). Der Request kann wiederholt werden."
                     },
                     "400": {
                         "description": "Der Request-Body ist kein g\u00fcltiges JSON (`REQUEST_INVALID_JSON_BODY`).",
@@ -1124,7 +1134,7 @@
                         }
                     },
                     "409": {
-                        "description": "Das Spiel ist in der Lobby oder abgebrochen (`GAME_THROW_NOT_ALLOWED`); es wird nichts gel\u00f6scht. Oder der letzte Wurf hat das Spiel beendet, und das Spiel ist nicht das neueste Spiel (`GAME_NOT_NEWEST`). Das R\u00fcckg\u00e4ngigmachen w\u00fcrde das laufende Spiel abbrechen."
+                        "description": "Das Spiel ist in der Lobby oder abgebrochen (`GAME_THROW_NOT_ALLOWED`); es wird nichts gel\u00f6scht. Oder der letzte Wurf hat das Spiel beendet, und das Spiel ist nicht das neueste Spiel (`GAME_NOT_NEWEST`). Das R\u00fcckg\u00e4ngigmachen w\u00fcrde das laufende Spiel abbrechen. Eine parallele Anfrage hat dieselben Daten gesperrt, und MySQL hat die Transaktion als Deadlock oder nach einem Lock-Wait-Timeout zur\u00fcckgerollt (`CONCURRENT_CHANGE`). Der Request kann wiederholt werden."
                     }
                 }
             }
@@ -1295,6 +1305,16 @@
                     },
                     "403": {
                         "description": "Zugriff verweigert: Nur ROLE_ADMIN (das Tablet) darf diese Route nutzen (`ACCESS_DENIED`).",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ApiError"
+                                }
+                            }
+                        }
+                    },
+                    "409": {
+                        "description": "Eine parallele Anfrage hat dieselben Daten gesperrt, und MySQL hat die Transaktion als Deadlock oder nach einem Lock-Wait-Timeout zur\u00fcckgerollt (`CONCURRENT_CHANGE`). Der Request kann wiederholt werden.",
                         "content": {
                             "application/json": {
                                 "schema": {
@@ -1691,7 +1711,7 @@
                         }
                     },
                     "409": {
-                        "description": "E-Mail-Adresse oder Benutzername geh\u00f6ren schon zu einem Konto. Die Antwort nennt nicht, welches Feld betroffen ist. Es wird kein Konto angelegt und niemand angemeldet.",
+                        "description": "E-Mail-Adresse oder Benutzername geh\u00f6ren schon zu einem Konto. Die Antwort nennt nicht, welches Feld betroffen ist. Es wird kein Konto angelegt und niemand angemeldet. Auch: Eine parallele Anfrage hat dieselben Daten gesperrt, und MySQL hat die Transaktion als Deadlock oder nach einem Lock-Wait-Timeout zur\u00fcckgerollt (`CONCURRENT_CHANGE`). Rollt schon das Anlegen des Kontos zur\u00fcck, gibt es kein Konto, und die Registrierung kann wiederholt werden. Rollt erst der Beitritt zum Spiel zur\u00fcck, ist die Einladung schon verbraucht: Ein erneuter Request tritt dem Spiel nicht bei, daf\u00fcr muss der Einladungslink neu ge\u00f6ffnet werden. Das Konto ist in diesem Fall schon angelegt, eine erneute Registrierung antwortet mit `REGISTRATION_ACCOUNT_EXISTS`.",
                         "content": {
                             "application/json": {
                                 "schema": {
@@ -1736,7 +1756,7 @@
                                         },
                                         "error": {
                                             "type": "string",
-                                            "example": "HTTP_ERROR"
+                                            "example": "UNSUPPORTED_MEDIA_TYPE"
                                         },
                                         "message": {
                                             "type": "string",
@@ -1920,6 +1940,16 @@
                                 }
                             }
                         }
+                    },
+                    "409": {
+                        "description": "Vor allem bei POST mit gespeicherter Einladung: Eine parallele Anfrage hat dieselben Daten gesperrt, und MySQL hat die Transaktion als Deadlock oder nach einem Lock-Wait-Timeout zur\u00fcckgerollt (`CONCURRENT_CHANGE`). Der Request kann wiederholt werden. Rollt erst der Beitritt zum Spiel zur\u00fcck, ist die Einladung schon verbraucht: Ein erneuter Request tritt dem Spiel nicht bei, daf\u00fcr muss der Einladungslink neu ge\u00f6ffnet werden.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ApiError"
+                                }
+                            }
+                        }
                     }
                 },
                 "security": []
@@ -2054,6 +2084,16 @@
                                 }
                             }
                         }
+                    },
+                    "409": {
+                        "description": "Vor allem bei POST mit gespeicherter Einladung: Eine parallele Anfrage hat dieselben Daten gesperrt, und MySQL hat die Transaktion als Deadlock oder nach einem Lock-Wait-Timeout zur\u00fcckgerollt (`CONCURRENT_CHANGE`). Der Request kann wiederholt werden. Rollt erst der Beitritt zum Spiel zur\u00fcck, ist die Einladung schon verbraucht: Ein erneuter Request tritt dem Spiel nicht bei, daf\u00fcr muss der Einladungslink neu ge\u00f6ffnet werden.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ApiError"
+                                }
+                            }
+                        }
                     }
                 },
                 "security": []
@@ -2134,6 +2174,16 @@
                     },
                     "401": {
                         "description": "Keine Session (`AUTHENTICATION_REQUIRED`).",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ApiError"
+                                }
+                            }
+                        }
+                    },
+                    "409": {
+                        "description": "Vor allem mit gespeicherter Einladung: Eine parallele Anfrage hat dieselben Daten gesperrt, und MySQL hat die Transaktion als Deadlock oder nach einem Lock-Wait-Timeout zur\u00fcckgerollt (`CONCURRENT_CHANGE`). Der Request kann wiederholt werden. Rollt erst der Beitritt zum Spiel zur\u00fcck, ist die Einladung schon verbraucht: Ein erneuter Request tritt dem Spiel nicht bei, daf\u00fcr muss der Einladungslink neu ge\u00f6ffnet werden.",
                         "content": {
                             "application/json": {
                                 "schema": {

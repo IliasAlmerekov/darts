@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import React from "react";
 import { createMemoryRouter, data, RouterProvider } from "react-router-dom";
-import { act, render, screen } from "@testing-library/react";
+import { act, render, screen, waitFor } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import ErrorBoundary from "@/app/ErrorBoundary";
 import { clientLogger } from "@/shared/services/browser/clientLogger";
@@ -127,9 +127,12 @@ describe("ErrorBoundary", () => {
     render(<RouterProvider router={router} />);
 
     expect(await screen.findByText("Something went wrong")).toBeTruthy();
-    expect(clientLogger.error).toHaveBeenCalledWith(
-      "route_error_boundary_crash",
-      expect.objectContaining({ context: expect.objectContaining({ status: 500 }) }),
+    // The loader rejects outside act, so the logging effect can run after the text appears.
+    await waitFor(() =>
+      expect(clientLogger.error).toHaveBeenCalledWith(
+        "route_error_boundary_crash",
+        expect.objectContaining({ context: expect.objectContaining({ status: 500 }) }),
+      ),
     );
   });
 
