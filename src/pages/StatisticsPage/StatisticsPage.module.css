@@ -35,11 +35,10 @@
   color: var(--darkgrey);
 }
 
-/* 96px from 1024px wide; smaller below, so the row fits down to 601px. */
 .playerAvatar {
-  width: clamp(48px, 9.375vw, 96px);
-  height: clamp(48px, 9.375vw, 96px);
-  border: 3px solid var(--white);
+  width: 64px;
+  height: 64px;
+  border: 2px solid var(--white);
   box-shadow: 0 2px 8px rgb(0 0 0 / 15%);
 }
 
@@ -132,9 +131,8 @@
 
   .playerAvatar {
     grid-area: avatar;
-    width: 48px;
-    height: 48px;
-    border-width: 2px;
+    width: 40px;
+    height: 40px;
   }
 
   .playerName {
