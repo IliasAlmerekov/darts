@@ -333,6 +333,13 @@ describe("useStartPage action guards", () => {
       gameId: 55,
       invitationLink: "/invite/55",
     });
+    vi.mocked(getGameSettings).mockClear();
+    await expect(queryClient.fetchQuery(gameQueries.settings(55))).resolves.toMatchObject({
+      startScore: 501,
+      doubleOut: true,
+      tripleOut: false,
+    });
+    expect(getGameSettings).not.toHaveBeenCalled();
     expect(navigateMock).toHaveBeenCalledWith("/start/55");
   });
 

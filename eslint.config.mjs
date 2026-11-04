@@ -205,7 +205,7 @@ export default [
             {
               allowTypeImports: true,
               regex:
-                "^@/(shared/lib|lib)/(game/(finishedGameStandings|gameStateNormalizer|mergeGameSettings|parseThrowValue|roundAverage)|player/(currentGame|gameSeat|profile))(\\.ts)?$",
+                "^@/(shared/lib|lib)/(game/(applyScoreboardDelta|finishedGameStandings|gameStateNormalizer|parseThrowValue|roundAverage)|player/(currentGame|gameSeat|profile))(\\.ts)?$",
               message:
                 "Render-flow files must not call DTO mappers. Call them from an API function, queryFn, store action, route loader or page lib/ file (docs/convention/api.md, Mappers).",
             },

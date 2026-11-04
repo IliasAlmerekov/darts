@@ -10,7 +10,7 @@ import {
 import { gameQueries } from "@/shared/query/game.queries";
 import { clientLogger } from "@/shared/services/browser/clientLogger";
 import { playSound } from "@/shared/services/browser/soundPlayer";
-import { $gameData, resetGameStore, setGameData } from "@/shared/store";
+import { $gameData, resetGameStore, acceptGame } from "@/shared/store";
 import {
   createGameSession,
   type GameSessionTransport,
@@ -75,7 +75,7 @@ export function useGameSession(gameId: number | null): UseGameSessionResult {
       transport,
       playSound,
       log: clientLogger,
-      onGameChange: setGameData,
+      onGameChange: acceptGame,
       onFinished: (summary) => {
         const { queryKey } = gameQueries.finished(gameId);
         void queryClient.cancelQueries({ queryKey });

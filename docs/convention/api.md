@@ -208,10 +208,11 @@ game id, room store, game store) stays in Nanostores (`state.md`).
   `src/app/useStatisticsPrefetch.ts`).
 - The query cache is the single source for a server value that only queries hold (the
   authenticated user has no `$user` mirror). The game store is the exception: it holds the
-  game state the client owns (ADR 0001), and two queries bridge to it. `gameQueries.settings`
-  seeds from `$gameData` or `getCachedGameSettings`, and `gameQueries.lobbyPlayers` seeds from `$gameData`,
-  both through `initialData`. `startPageLoader` writes one response to `setGameData` and to
-  the lobby players query. The game page's throw queue, optimistic throws, and undo stay outside queries.
+  game state the client owns (ADR 0001). The game store writes the settings and lobby players
+  query keys when it accepts a game, and writes the settings key for confirmed settings.
+  Query factories do not read the store. Lobby SSE and optimistic roster updates write the
+  lobby players key; settings saves retain their optimistic write and rollback. The game
+  session owns its throw queue, optimistic throws, and undo.
 
 ### Writing
 
@@ -244,15 +245,14 @@ function are not mappers, and render-flow hooks may call them:
 Mapper rules:
 
 - Mappers live in `src/shared/lib/<domain>/`: `shared/lib/game/` holds `gameStateNormalizer`,
-  `mergeGameSettings`, `player-mappers` (`mapPlayersToUI`), `roundAverage`, `parseThrowValue`,
+  `applyScoreboardDelta`, `player-mappers` (`mapPlayersToUI`), `roundAverage`, `parseThrowValue`,
   `finishedGameStandings`, `lobbyPlayers` (`toLobbyPlayers`); `shared/lib/player/` holds
   `currentGame`, `gameSeat` and `profile`.
 - Every mapper has a co-located `*.test.ts`.
-- Mappers are called from an API domain function (`getCurrentGame` in `player.ts` calls
-  `toCurrentGame`), a `queryFn` in `src/shared/query/` (`playerQueries.profile` calls
-  `toPlayerProfile`), a store action (`setGameData(data)`
-  calls `normalizeGameData(data)`), a route loader (`startPageLoader.ts` calls
-  `toLobbyPlayers`), or a page-private logic file under `src/pages/<Page>/` that is
+- Mappers are called from an API domain function (`getGameThrows` calls `normalizeGameData`),
+  a `queryFn` in `src/shared/query/` (`playerQueries.profile` calls `toPlayerProfile`),
+  a store action (`acceptGame` calls `toLobbyPlayers`), a route loader, or a page-private
+  logic file under `src/pages/<Page>/` that is
   neither JSX nor a `use*` file.
 - JSX files (`src/pages/**/*.tsx`) and render-flow hooks (`src/pages/**/use*.ts`) receive the
   mapped result and import no mapper. Type imports are fine. Known exception:

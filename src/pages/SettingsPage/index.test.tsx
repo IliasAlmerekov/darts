@@ -45,18 +45,17 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { ApiError } from "@/shared/api";
 import { gameQueries } from "@/shared/query/game.queries";
 import { queryClient } from "@/shared/query/queryClient";
-import { createQueryClient } from "@/shared/query/queryClient";
 import { tabletGameLoader } from "@/shared/query/tabletGameLoader";
 import {
   $currentGameId,
   $gameData,
   $preCreateGameSettings,
   setPreCreateGameSettings,
-  setGameSettings,
+  acceptGameSettings,
   resetGameStore,
   resetRoomStore,
   setCurrentGameId,
-  setGameData,
+  acceptGame,
 } from "@/shared/store";
 import type { GameSettingsResponse, GameThrowsResponse } from "@/shared/api/game";
 import SettingsPage from ".";
@@ -183,7 +182,7 @@ async function startSaveOnGameOneThenMoveToGameTwo(gameOneClick: string): Promis
   const pendingSave = createDeferred<GameSettingsResponse>();
   saveGameSettingsMock.mockImplementationOnce(() => pendingSave.promise);
   getGameSettingsMock.mockResolvedValue(GAME_ONE_SETTINGS);
-  setGameData({ ...createGameResponse(), id: 2, settings: GAME_TWO_SETTINGS });
+  acceptGame({ ...createGameResponse(), id: 2, settings: GAME_TWO_SETTINGS });
   testQueryClient.setQueryData(gameQueries.settings(2).queryKey, GAME_TWO_SETTINGS);
   const router = renderSettingsRouter("/settings/1");
   await waitFor(() => {
@@ -251,7 +250,8 @@ describe("SettingsPage", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     isSoundEnabledMock.mockReturnValue(true);
-    testQueryClient = createQueryClient();
+    queryClient.clear();
+    testQueryClient = queryClient;
     resetGameStore();
     resetRoomStore();
     setPreCreateGameSettings({
@@ -266,7 +266,7 @@ describe("SettingsPage", () => {
 
   it("should hydrate from the active game in store without fetching settings again", async () => {
     setCurrentGameId(42);
-    setGameData({
+    acceptGame({
       ...createGameResponse(),
       id: 42,
       settings: {
@@ -286,6 +286,17 @@ describe("SettingsPage", () => {
     });
 
     expect(getGameSettingsMock).not.toHaveBeenCalled();
+  });
+
+  it("fetches settings once when the store has the game but its query was removed", async () => {
+    acceptGame({ ...createGameResponse(), id: 42 });
+    queryClient.removeQueries({ queryKey: gameQueries.settings(42).queryKey });
+    getGameSettingsMock.mockResolvedValueOnce(createSettingsResponse({ startScore: 401 }));
+
+    renderSettingsPage("/settings/42");
+
+    await waitFor(() => expect(isPressed("401")).toBe(true));
+    expect(getGameSettingsMock).toHaveBeenCalledTimes(1);
   });
 
   it("should fetch canonical settings on direct route access when the game is not in the store", async () => {
@@ -345,18 +356,12 @@ describe("SettingsPage", () => {
     });
   });
 
-  it("should show cached route settings immediately while canonical settings refresh in the background", async () => {
-    setGameSettings(
-      {
-        startScore: 101,
-        doubleOut: false,
-        tripleOut: true,
-      },
-      42,
-    );
-    const pendingLoad = createDeferred<GameSettingsResponse>();
-    getGameSettingsMock.mockImplementationOnce(() => pendingLoad.promise);
-
+  it("shows cached route settings without a request", () => {
+    acceptGameSettings(42, {
+      startScore: 101,
+      doubleOut: false,
+      tripleOut: true,
+    });
     renderSettingsPage("/settings/42");
 
     expect(screen.getByRole("button", { name: "Triple-out" }).getAttribute("aria-pressed")).toBe(
@@ -365,23 +370,7 @@ describe("SettingsPage", () => {
     expect(screen.getByRole("button", { name: "101" }).getAttribute("aria-pressed")).toBe("true");
     expect(screen.getByRole("button", { name: "101" }).getAttribute("disabled")).toBeNull();
 
-    await waitFor(() => {
-      expect(getGameSettingsMock).toHaveBeenCalledWith(42, expect.any(AbortSignal));
-    });
-
-    pendingLoad.resolve(
-      createSettingsResponse({
-        startScore: 101,
-        doubleOut: true,
-        tripleOut: false,
-      }),
-    );
-
-    await waitFor(() => {
-      expect(screen.getByRole("button", { name: "Double-out" }).getAttribute("aria-pressed")).toBe(
-        "true",
-      );
-    });
+    expect(getGameSettingsMock).not.toHaveBeenCalled();
   });
 
   it("should update the pre-create draft from /settings when there is no active gameId", async () => {
@@ -459,7 +448,7 @@ describe("SettingsPage", () => {
       game: { id: 42, status: "lobby" },
       lastFinishedGameId: null,
     });
-    setGameData({
+    acceptGame({
       ...createGameResponse(),
       id: 99,
       settings: {
@@ -693,12 +682,13 @@ describe("SettingsPage", () => {
   });
 
   it("should keep the save response when a settings read that started earlier resolves later", async () => {
-    setGameSettings(createSettingsResponse({ startScore: 301 }), 42);
+    acceptGameSettings(42, createSettingsResponse({ startScore: 301 }));
     const pendingLoad = createDeferred<GameSettingsResponse>();
     getGameSettingsMock.mockImplementationOnce(() => pendingLoad.promise);
     saveGameSettingsMock.mockResolvedValueOnce(createSettingsResponse({ startScore: 501 }));
 
     renderSettingsPage("/settings/42");
+    void testQueryClient.refetchQueries({ queryKey: gameQueries.settings(42).queryKey });
     await waitFor(() => {
       expect(getGameSettingsMock).toHaveBeenCalledWith(42, expect.any(AbortSignal));
     });
@@ -753,7 +743,7 @@ describe("SettingsPage", () => {
 
   it("should not send game 1's game mode in a points save for game 2 made right after the route commit", async () => {
     getGameSettingsMock.mockResolvedValue(createSettingsResponse({ gameId: 1, tripleOut: true }));
-    setGameData({ ...createGameResponse(), id: 2, settings: GAME_TWO_SETTINGS });
+    acceptGame({ ...createGameResponse(), id: 2, settings: GAME_TWO_SETTINGS });
     testQueryClient.setQueryData(gameQueries.settings(2).queryKey, GAME_TWO_SETTINGS);
     // Its layout effect runs after the page's and before the passive effects that hydrate game 2.
     function ClickPointsOnGameTwoCommit(): null {
@@ -850,7 +840,7 @@ describe("SettingsPage", () => {
 
   it("should show no load error after the route moves from a failed game to the game in the store", async () => {
     getGameSettingsMock.mockRejectedValueOnce(new Error("Network down"));
-    setGameData({ ...createGameResponse(), id: 2, settings: GAME_TWO_SETTINGS });
+    acceptGame({ ...createGameResponse(), id: 2, settings: GAME_TWO_SETTINGS });
     const router = renderSettingsRouter("/settings/1");
     await screen.findByRole("alert");
 

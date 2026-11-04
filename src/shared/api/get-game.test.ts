@@ -74,6 +74,14 @@ describe("game reads", () => {
     });
   });
 
+  it("normalizes the active player on a game read", async () => {
+    vi.spyOn(apiClient, "get").mockImplementationOnce(
+      respondWith(createValidGameResponse({ activePlayerId: null })),
+    );
+
+    expect((await getGameThrows(520)).activePlayerId).toBe(1);
+  });
+
   it("forwards AbortSignal through getGameSettings", async () => {
     const controller = new AbortController();
     vi.spyOn(apiClient, "get").mockImplementationOnce(

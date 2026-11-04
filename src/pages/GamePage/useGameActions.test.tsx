@@ -14,11 +14,6 @@ vi.mock("@/shared/api/game", () => ({
   updateGameSettings: (...args: unknown[]) => updateGameSettingsMock(...args),
 }));
 
-vi.mock("@/shared/store", () => ({
-  resetRoomStore: vi.fn(),
-  setInvitation: vi.fn(),
-}));
-
 vi.mock("@/shared/services/browser/clientLogger", () => ({
   clientLogger: { error: clientLoggerErrorMock, warn: vi.fn() },
 }));
@@ -28,15 +23,17 @@ import { QueryClientProvider } from "@tanstack/react-query";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import {
   type GameSettingsResponse,
+  type GameSettings,
   type GameThrowsResponse,
   abortGame,
   createRematchGame,
   getGameThrows,
 } from "@/shared/api/game";
 import { ApiError } from "@/shared/api";
-import { resetRoomStore, setInvitation } from "@/shared/store";
+import * as store from "@/shared/store";
+import { $gameData, acceptGame, resetRoomStore, setInvitation } from "@/shared/store";
 import { gameQueries } from "@/shared/query/game.queries";
-import { createQueryClient } from "@/shared/query/queryClient";
+import { queryClient } from "@/shared/query/queryClient";
 import { useGameExitFlow, useGameSettingsFlow } from "./useGameActions";
 
 function createGameData(): GameThrowsResponse {
@@ -74,11 +71,15 @@ function createGameData(): GameThrowsResponse {
 describe("useGameSettingsFlow", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    queryClient.clear();
   });
 
   it("should merge compact settings response into game state and the settings cache when settings are saved", async () => {
-    const queryClient = createQueryClient();
-    const updateGameSettingsStore = vi.fn();
+    const game = createGameData();
+    acceptGame(game);
+    const updateGameSettingsStore = (settings: GameSettings): void => {
+      acceptGame({ ...game, settings });
+    };
     const updatedSettings: GameSettingsResponse = {
       gameId: 42,
       status: "started",
@@ -120,7 +121,7 @@ describe("useGameSettingsFlow", () => {
       });
     });
 
-    expect(updateGameSettingsStore).toHaveBeenCalledWith(updatedSettings);
+    expect($gameData.get()?.settings).toEqual(updatedSettings);
     expect(queryClient.getQueryData(gameQueries.settings(42).queryKey)).toEqual(updatedSettings);
     expect(result.current.isSettingsOpen).toBe(false);
     expect(result.current.settingsError).toBeNull();
@@ -128,6 +129,8 @@ describe("useGameSettingsFlow", () => {
 });
 
 describe("useGameExitFlow", () => {
+  vi.spyOn(store, "resetRoomStore").mockImplementation(() => {});
+  vi.spyOn(store, "setInvitation").mockImplementation(() => {});
   const abortNotAllowed = () =>
     new ApiError("Conflict", { status: 409, data: { error: "GAME_ABORT_NOT_ALLOWED" } });
 

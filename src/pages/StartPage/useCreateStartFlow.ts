@@ -8,7 +8,7 @@ import {
   $preCreateGameSettings,
   resetGameStore,
   setCurrentGameId,
-  setGameSettings,
+  acceptGameSettings,
   setInvitation,
 } from "@/shared/store";
 import { toUserErrorMessage } from "@/lib/error/error-to-user-message";
@@ -95,7 +95,7 @@ export function useCreateStartFlow({
         tripleOut: preCreateGameSettings.tripleOut,
       });
 
-      setGameSettings(preCreateGameSettings, response.gameId);
+      acceptGameSettings(response.gameId, preCreateGameSettings);
       setInvitation(response);
       setCurrentGameId(response.gameId);
       // The new room is the tablet game now, so the next route reads it again.

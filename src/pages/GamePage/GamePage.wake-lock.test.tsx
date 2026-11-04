@@ -214,7 +214,7 @@ describe("GamePage wake-lock wiring", () => {
 
     setNavigatorWakeLock(requestMock);
     let resolveLoad: (game: GameThrowsResponse) => void = () => {};
-    gameStore.setGameData(buildGameData("started"));
+    gameStore.acceptGame(buildGameData("started"));
     getGameThrowsMock.mockReturnValue(
       new Promise<GameThrowsResponse>((resolve) => {
         resolveLoad = resolve;
@@ -243,7 +243,7 @@ describe("GamePage wake-lock wiring", () => {
 
     setNavigatorWakeLock(requestMock);
     let resolveLoad: (game: GameThrowsResponse) => void = () => {};
-    gameStore.setGameData(buildGameData("lobby"));
+    gameStore.acceptGame(buildGameData("lobby"));
     getGameThrowsMock.mockReturnValue(
       new Promise<GameThrowsResponse>((resolve) => {
         resolveLoad = resolve;

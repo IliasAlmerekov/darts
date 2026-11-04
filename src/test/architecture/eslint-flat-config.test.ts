@@ -111,6 +111,22 @@ describe("shared lib import aliases", () => {
   });
 });
 
+describe("DTO mapper imports", () => {
+  const eslint = new ESLint({
+    overrideConfig: { languageOptions: { parserOptions: { project: null } } },
+  });
+
+  it("rejects the scoreboard mapper in render-flow hooks", async () => {
+    const [result] = await eslint.lintText(
+      'import { applyScoreboardDelta } from "@/lib/game/applyScoreboardDelta";',
+      { filePath: "src/pages/GamePage/useGameSession.ts" },
+    );
+    expect(result?.messages.some((message) => message.ruleId === "no-restricted-imports")).toBe(
+      true,
+    );
+  });
+});
+
 describe("dynamic shared lib imports", () => {
   const eslint = new ESLint({
     overrideConfig: { languageOptions: { parserOptions: { project: null } } },

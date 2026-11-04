@@ -82,6 +82,8 @@ export function deriveWinnerId(data: GameThrowsResponse): number | null {
   return null;
 }
 
+export function normalizeGameData(data: GameThrowsResponse): GameThrowsResponse;
+export function normalizeGameData(data: null): null;
 export function normalizeGameData(data: GameThrowsResponse | null): GameThrowsResponse | null {
   if (data === null) {
     return null;

@@ -146,7 +146,7 @@ paths (see `api.md`, "Endpoints").
 
 `@/shared/store` is a barrel (`index.ts`) that re-exports every store domain. Production
 code outside `shared/` imports through it:
-`import { $gameData, setGameData } from "@/shared/store"`.
+`import { $gameData, acceptGame } from "@/shared/store"`.
 
 ### `shared/{hooks,services,lib}/`
 
