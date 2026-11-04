@@ -87,10 +87,12 @@ for file in compose.yaml Caddyfile; do
     mv -f -- "$base/config/.$file.new" "$base/config/$file"
 done
 
-# Avatar folder and the setting that names it. The server admin owns avatars.env;
-# a re-run keeps an existing file. The folder is world-readable because the
-# backend container reads it under its own UID.
-install -d -o root -g root -m 0755 "$base/avatars"
+# Avatar folder and the setting that names it. The server admin owns both; a
+# re-run keeps an existing folder and file with their owner and mode. A new
+# folder is world-readable because the backend container reads it under its own UID.
+if [[ ! -e $base/avatars && ! -L $base/avatars ]]; then
+    install -d -o root -g root -m 0755 "$base/avatars"
+fi
 if [[ ! -e $base/config/avatars.env && ! -L $base/config/avatars.env ]]; then
     printf 'AVATAR_HOST_DIR=%s\n' "$base/avatars" > "$base/config/.avatars.env.new"
     chown root:root "$base/config/.avatars.env.new"
