@@ -58,7 +58,7 @@ const gamePlayerSchema = v.object({
   throwsInCurrentRound: v.optional(integerSchema, 0),
   currentRoundThrows: v.optional(v.array(playerThrowSchema), []),
   roundHistory: v.optional(v.array(roundHistorySchema), []),
-  isGuest: v.boolean(),
+  isGuest: v.optional(v.boolean(), false),
 });
 
 /** Contract `GameResponseDto`. */

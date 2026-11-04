@@ -239,7 +239,7 @@ describe("game api contract payloads", () => {
       });
     });
 
-    it("rejects with ApiValidationError when a player has no isGuest flag", async () => {
+    it("reads a player without an isGuest flag as not a guest, the contract default", async () => {
       vi.spyOn(apiClient, "patch").mockImplementationOnce(
         respondWith({
           ...minimalGamePayload,
@@ -247,7 +247,9 @@ describe("game api contract payloads", () => {
         }),
       );
 
-      await expect(reopenGame(42)).rejects.toBeInstanceOf(ApiValidationError);
+      const result = await reopenGame(42);
+
+      expect(result.players[0]?.isGuest).toBe(false);
     });
   });
 
