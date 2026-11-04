@@ -86,6 +86,11 @@ export async function mockPlayerProfile(page: Page): Promise<void> {
       body: JSON.stringify(PLAYER_PROFILE),
     });
   });
+  await mockMissingAvatars(page);
+}
+
+/** Answers every avatar request with `404`, so each player shows the user icon. */
+export async function mockMissingAvatars(page: Page): Promise<void> {
   await page.route("**/api/player/*/avatar", async (route) => {
     await route.fulfill({
       status: 404,
