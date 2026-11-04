@@ -33,7 +33,7 @@ The rollout rejects an archive with any other member, including `compose.yaml` o
 the server, owned by root. The rollout runs:
 
 ```sh
-docker compose --project-directory /opt/darts/config \
+env -u AVATAR_HOST_DIR docker compose --project-directory /opt/darts/config \
   --env-file /opt/darts/releases/<release>/release.env \
   --env-file /opt/darts/config/avatars.env -f /opt/darts/config/compose.yaml ...
 ```
@@ -86,7 +86,7 @@ The next rollout or rollback uses the new stack definition. To apply it to the r
 release at once:
 
 ```sh
-sudo docker compose --project-directory /opt/darts/config \
+sudo env -u AVATAR_HOST_DIR docker compose --project-directory /opt/darts/config \
   --env-file /opt/darts/current/release.env \
   --env-file /opt/darts/config/avatars.env -f /opt/darts/config/compose.yaml \
   up -d --wait --remove-orphans
@@ -98,7 +98,7 @@ leave the proxy running, and `restart` keeps the old mount. Recreate the proxy a
 check the headers with `curl -I https://<APP_HOSTNAME>/`:
 
 ```sh
-sudo docker compose --project-directory /opt/darts/config \
+sudo env -u AVATAR_HOST_DIR docker compose --project-directory /opt/darts/config \
   --env-file /opt/darts/current/release.env \
   --env-file /opt/darts/config/avatars.env -f /opt/darts/config/compose.yaml \
   up -d --force-recreate --no-deps --wait proxy
@@ -193,7 +193,7 @@ serves it.
 The command needs an interactive terminal:
 
 ```sh
-sudo docker compose --project-directory /opt/darts/config \
+sudo env -u AVATAR_HOST_DIR docker compose --project-directory /opt/darts/config \
   --env-file /opt/darts/current/release.env \
   --env-file /opt/darts/config/avatars.env -f /opt/darts/config/compose.yaml \
   run --rm backend php bin/console app:create-admin
