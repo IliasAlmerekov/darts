@@ -274,6 +274,16 @@
                     "304": {
                         "description": "Spielzustand hat sich seit der letzten Version nicht ge\u00e4ndert."
                     },
+                    "400": {
+                        "description": "`since` ist kein einzelner String (`BAD_REQUEST`).",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ApiError"
+                                }
+                            }
+                        }
+                    },
                     "403": {
                         "description": "Zugriff verweigert: Nur ROLE_ADMIN (das Tablet) darf diese Route nutzen (`ACCESS_DENIED`).",
                         "content": {
@@ -427,7 +437,7 @@
                     {
                         "name": "playerId",
                         "in": "query",
-                        "description": "Spieler-ID, die entfernt werden soll. Hat Vorrang vor der playerId im Request-Body; fehlen beide, wird der authentifizierte User verwendet.",
+                        "description": "Spieler-ID, die entfernt werden soll. Hat Vorrang vor der playerId im Request-Body. Fehlen beide, antwortet der Endpoint mit 400 (`REQUEST_PLAYER_ID_REQUIRED`).",
                         "required": false,
                         "schema": {
                             "type": "integer",
@@ -470,7 +480,14 @@
                         }
                     },
                     "404": {
-                        "description": "Spieler wurde im Spiel nicht gefunden."
+                        "description": "Das Spiel existiert nicht (`GAME_NOT_FOUND`) oder der Spieler sitzt nicht in diesem Spiel (`GAME_PLAYER_NOT_FOUND`).",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ApiError"
+                                }
+                            }
+                        }
                     },
                     "409": {
                         "description": "Das Spiel ist nicht mehr in der Lobby (`GAME_SEATS_NOT_EDITABLE`). Der Spieler bleibt im Spiel. Eine parallele Anfrage hat dieselben Daten gesperrt, und MySQL hat die Transaktion als Deadlock oder nach einem Lock-Wait-Timeout zur\u00fcckgerollt (`CONCURRENT_CHANGE`). Der Request kann wiederholt werden."
@@ -959,7 +976,14 @@
                         }
                     },
                     "400": {
-                        "description": "`limit` oder `offset` ist keine ganze Zahl."
+                        "description": "`limit` oder `offset` ist keine ganze Zahl (`BAD_REQUEST`).",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ApiError"
+                                }
+                            }
+                        }
                     }
                 }
             }
@@ -1016,7 +1040,14 @@
                         }
                     },
                     "400": {
-                        "description": "`limit` oder `offset` ist keine ganze Zahl."
+                        "description": "`limit` oder `offset` ist keine ganze Zahl, oder `sort` ist kein einzelner String (`BAD_REQUEST`).",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ApiError"
+                                }
+                            }
+                        }
                     }
                 }
             }
