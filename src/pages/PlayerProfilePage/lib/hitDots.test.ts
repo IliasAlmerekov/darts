@@ -188,6 +188,35 @@ describe("toHitDots", () => {
     },
   );
 
+  it.each(["T20", "D20", "T1", "D3"] as const)(
+    "spreads the dots of %s along the ring and across its width",
+    (field) => {
+      const spot = polar(field, boardFieldSpot(field));
+      const dots = toHitDots(board({ [field]: 500 })).map((dot) => polar(field, dot));
+      // The distance along the ring from the spot, in millimetres.
+      const along = dots.map(
+        ({ radius, offset }) => (radius * (offset - spot.offset) * Math.PI) / 180,
+      );
+      const rmsAlong = Math.sqrt(along.reduce((sum, value) => sum + value ** 2, 0) / along.length);
+      const radii = dots.map(({ radius }) => radius);
+
+      expect(rmsAlong).toBeGreaterThan(3);
+      expect(rmsAlong).toBeLessThan(10);
+      // The ring leaves 3.4 mm of room across it; the dots use most of it.
+      expect(Math.max(...radii) - Math.min(...radii)).toBeGreaterThan(2.5);
+    },
+  );
+
+  it.each(["BULL", "BULLSEYE"] as const)("spreads the dots of %s over its ring", (field) => {
+    const dots = toHitDots(board({ [field]: 200 }));
+    const radii = dots.map(({ x, y }) => Math.hypot(x, y));
+    const quadrants = new Set(dots.map(({ x, y }) => `${Math.sign(x)}${Math.sign(y)}`));
+
+    expect(quadrants.size).toBe(4);
+    // Bull leaves 3.4 mm of room across its ring, Bullseye a 4.1 mm radius.
+    expect(Math.max(...radii) - Math.min(...radii)).toBeGreaterThan(2.5);
+  });
+
   it("puts no dot on a board field without hits", () => {
     expect(toHitDots(board({}))).toEqual([]);
   });
