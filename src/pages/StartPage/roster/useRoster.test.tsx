@@ -226,7 +226,7 @@ describe("useRoster", () => {
     await waitFor(() => expect(result.current.seats).toEqual([{ id: 1, name: "A", position: 0 }]));
   });
 
-  it("restores a removed seat with no position after other unpositioned seats", async () => {
+  it("restores a removed seat with no position to its original order", async () => {
     testQueryClient.setQueryData(gameQueries.roster(5).queryKey, [
       { id: 1, name: "A", position: null },
       { id: 2, name: "B", position: null },
@@ -236,12 +236,10 @@ describe("useRoster", () => {
     await act(async () => {
       await result.current.remove(1);
     });
-    await waitFor(() =>
-      expect(result.current.seats).toEqual([
-        { id: 2, name: "B", position: null },
-        { id: 1, name: "A", position: null },
-      ]),
-    );
+    expect(testQueryClient.getQueryData(gameQueries.roster(5).queryKey)).toEqual([
+      { id: 1, name: "A", position: null },
+      { id: 2, name: "B", position: null },
+    ]);
   });
 
   it("logs unexpected removal failures", async () => {

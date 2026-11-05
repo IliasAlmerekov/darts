@@ -209,17 +209,24 @@ export function useRoster(
     async (playerId: number): Promise<void> => {
       if (gameId === null) return;
       const activeGameId = gameId;
-      const removed = queryClient
-        .getQueryData(gameQueries.roster(activeGameId).queryKey)
-        ?.find((player) => player.id === playerId);
+      const roster =
+        queryClient.getQueryData(gameQueries.roster(activeGameId).queryKey) ?? NO_PLAYERS;
+      const removedIndex = roster.findIndex((player) => player.id === playerId);
+      const removed = roster[removedIndex];
       const streamVersion = streamVersionRef.current;
       removeOptimisticPlayer(playerId);
       const result = await mutateSeat({
         gameId: activeGameId,
         request: () => leaveRoom(activeGameId, playerId),
         rollback: () => {
-          if (removed && streamVersionRef.current === streamVersion)
-            appendOptimisticPlayer(removed);
+          if (removed && streamVersionRef.current === streamVersion) {
+            updatePlayers((current) => {
+              if (current.some((seat) => seat.id === playerId)) return current;
+              const restored = [...current];
+              restored.splice(removedIndex, 0, removed);
+              return restored;
+            });
+          }
         },
         seatsLog: "room.leave.seats-not-editable",
       });
@@ -239,7 +246,7 @@ export function useRoster(
         onError(toUserErrorMessage(result.error, "Could not remove player. Please try again."));
       }
     },
-    [appendOptimisticPlayer, gameId, mutateSeat, onError, queryClient, removeOptimisticPlayer],
+    [gameId, mutateSeat, onError, queryClient, removeOptimisticPlayer, updatePlayers],
   );
 
   const reorderPlayers = useCallback(
