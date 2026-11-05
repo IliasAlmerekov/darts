@@ -10,6 +10,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { getCurrentGame, getPlayerGameSeat, getPlayerProfile, playerAvatarUrl } from "./player";
 import { apiClient, ApiValidationError } from "./client";
 import { respondWith } from "./test-utils";
+import { BOARD_FIELDS } from "@/shared/types/player.test-support";
 
 // Contract examples: GET /api/player/current-game
 const lobbyExample = { gameId: 12, status: "lobby" };
@@ -62,13 +63,6 @@ describe("getCurrentGame", () => {
 // Contract example: GET /api/player/profile
 const SEGMENTS = [
   ...Array.from({ length: 20 }, (_, index) => String(index + 1)),
-  "BULL",
-  "BULLSEYE",
-];
-const BOARD_FIELDS = [
-  ...Array.from({ length: 20 }, (_, index) =>
-    ["S", "D", "T"].map((ring) => `${ring}${index + 1}`),
-  ).flat(),
   "BULL",
   "BULLSEYE",
 ];

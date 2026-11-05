@@ -30,7 +30,11 @@ export function buildPlayerProfileGame(
 }
 
 const NUMBERS = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20] as const;
-const BOARD_FIELDS = [
+/**
+ * The 62 board fields of `hitDistribution` in contract order: `S1`, `D1`, `T1` up to `T20`,
+ * then `BULL` and `BULLSEYE`.
+ */
+export const BOARD_FIELDS = [
   ...NUMBERS.flatMap((number) =>
     (["S", "D", "T"] as const).map((ring) => `${ring}${number}` as const),
   ),
