@@ -19,7 +19,7 @@ export const HIT_DOT_RADIUS = 2;
 const DOT_BUDGET = 600;
 /** The spread of a number field's dots around its spot, in millimetres per axis. */
 const SPREAD = 6;
-/** Draws per dot before a dot that keeps leaving its board field is pulled back in. */
+/** Draws per dot before a dot that keeps leaving its board field falls back to a fixed point. */
 const MAX_DRAWS = 12;
 
 export interface HitDot {
@@ -40,10 +40,6 @@ interface Point {
 function shares(seed: string): [number, number] {
   const value = hash(seed);
   return [((value & 0xffff) + 1) / 0x10000, (value >>> 16) / 0x10000];
-}
-
-function clamp(value: number, low: number, high: number): number {
-  return Math.min(high, Math.max(low, value));
 }
 
 /**
@@ -87,36 +83,83 @@ function maxOffset(radius: number): number {
   return SEGMENT_ANGLE / 2 - (Math.asin(HIT_DOT_RADIUS / radius) * 180) / Math.PI;
 }
 
+/** A point `radius` from the centre and `degrees` clockwise from the top. */
+function pointAt(radius: number, degrees: number): Point {
+  const radians = ((degrees - 90) * Math.PI) / 180;
+  return { x: radius * Math.cos(radians), y: radius * Math.sin(radians) };
+}
+
+/** A point's distance from the centre and its angle off the centre line at `centre`. */
+function polarOf({ x, y }: Point, centre: number): { radius: number; offset: number } {
+  // 0° points up (negative y), angles grow clockwise, as on the board.
+  const angle = (Math.atan2(x, -y) * 180) / Math.PI;
+  return { radius: Math.hypot(x, y), offset: ((((angle - centre) % 360) + 540) % 360) - 180 };
+}
+
 /**
- * A dot of `S1` to `T20`: a Gaussian draw around the board field's spot. A draw that
- * leaves the board field is drawn again from the next seed; after `MAX_DRAWS` the last
- * draw is clamped to the field's ring and segment edges.
+ * A dot of a treble or double. The ring leaves a dot centre only 4 mm of room across it, so
+ * the radius is drawn evenly across that room and only the offset along the ring follows a
+ * Gaussian around the spot. An offset past the segment edge is drawn again from the next
+ * seed; after `MAX_DRAWS` the dot takes the spot's offset.
  */
-function numberFieldDot(field: NumberField, index: number): Point {
-  const spot = boardFieldSpot(field);
-  const [low, high] = dotRadii(field, spot);
-  const centre = segmentCentre(field);
-  let radius = 0;
-  let offset = 0;
+function ringDot(seed: string, spot: Point, centre: number, [low, high]: [number, number]): Point {
+  const [, across] = shares(seed);
+  const radius = low + (high - low) * across;
+  const limit = maxOffset(radius);
+  const spotOffset = polarOf(spot, centre).offset;
   for (let draw = 0; draw < MAX_DRAWS; draw += 1) {
-    const [first, second] = shares(`${field}:${index}:${draw}`);
+    const [first, second] = shares(`${seed}:${draw}`);
+    const along = SPREAD * Math.sqrt(-2 * Math.log(first)) * Math.cos(2 * Math.PI * second);
+    const offset = spotOffset + (along / radius) * (180 / Math.PI);
+    if (Math.abs(offset) <= limit) {
+      return pointAt(radius, centre + offset);
+    }
+  }
+  return pointAt(radius, centre + spotOffset);
+}
+
+/**
+ * A dot of a single: a Gaussian draw around the spot. A draw that leaves the single field
+ * is drawn again from the next seed; after `MAX_DRAWS` the dot sits at the spot's offset,
+ * at an even share of the radii where that offset clears the segment edge.
+ */
+function singleDot(
+  seed: string,
+  spot: Point,
+  centre: number,
+  [low, high]: [number, number],
+): Point {
+  for (let draw = 0; draw < MAX_DRAWS; draw += 1) {
+    const [first, second] = shares(`${seed}:${draw}`);
     // Box-Muller: a normal distance and a uniform direction.
     const distance = SPREAD * Math.sqrt(-2 * Math.log(first));
     const direction = 2 * Math.PI * second;
-    const x = spot.x + distance * Math.cos(direction);
-    const y = spot.y + distance * Math.sin(direction);
-    radius = Math.hypot(x, y);
-    // 0° points up (negative y), angles grow clockwise, as on the board.
-    const angle = (Math.atan2(x, -y) * 180) / Math.PI;
-    offset = ((((angle - centre) % 360) + 540) % 360) - 180;
+    const point = {
+      x: spot.x + distance * Math.cos(direction),
+      y: spot.y + distance * Math.sin(direction),
+    };
+    const { radius, offset } = polarOf(point, centre);
     if (radius >= low && radius <= high && Math.abs(offset) <= maxOffset(radius)) {
-      return { x, y };
+      return point;
     }
   }
-  radius = clamp(radius, low, high);
-  const limit = maxOffset(radius);
-  const radians = ((centre + clamp(offset, -limit, limit) - 90) * Math.PI) / 180;
-  return { x: radius * Math.cos(radians), y: radius * Math.sin(radians) };
+  const spotOffset = polarOf(spot, centre).offset;
+  const clear =
+    HIT_DOT_RADIUS / Math.sin(((SEGMENT_ANGLE / 2 - Math.abs(spotOffset)) * Math.PI) / 180);
+  const inner = Math.max(low, clear);
+  const [, across] = shares(seed);
+  return pointAt(inner + (high - inner) * across, centre + spotOffset);
+}
+
+/** A dot of `S1` to `T20`, clustered around the board field's spot. */
+function numberFieldDot(field: NumberField, index: number): Point {
+  const spot = boardFieldSpot(field);
+  const radii = dotRadii(field, spot);
+  const centre = segmentCentre(field);
+  const seed = `${field}:${index}`;
+  return field.startsWith("S")
+    ? singleDot(seed, spot, centre, radii)
+    : ringDot(seed, spot, centre, radii);
 }
 
 /** A dot of Bull or Bullseye, spread evenly over its ring, the dot radius inside it. */
@@ -127,8 +170,7 @@ function centreDot(field: "BULL" | "BULLSEYE", index: number): Point {
       ? [0, BULL_RADIUS - HIT_DOT_RADIUS]
       : [BULL_RADIUS + HIT_DOT_RADIUS, OUTER_BULL_RADIUS - HIT_DOT_RADIUS];
   const radius = Math.sqrt(inner ** 2 + (outer ** 2 - inner ** 2) * area);
-  const radians = 2 * Math.PI * direction;
-  return { x: radius * Math.cos(radians), y: radius * Math.sin(radians) };
+  return pointAt(radius, 360 * direction);
 }
 
 /**

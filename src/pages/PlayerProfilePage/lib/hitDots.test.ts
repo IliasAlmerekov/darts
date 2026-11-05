@@ -84,6 +84,20 @@ function fieldsOutside(dots: HitDot[]): BoardField[] {
   return [...new Set(outside.map((dot) => dot.field))];
 }
 
+/** The share of number-field dots whose whole dot touches a ring or segment edge. */
+function shareOnEdge(dots: HitDot[]): number {
+  const onEdge = dots.filter((dot) => {
+    if (dot.field === "BULL" || dot.field === "BULLSEYE") return false;
+    const [inner, outer] = ringOf(dot.field);
+    const { radius, offset } = polar(dot.field, dot);
+    const toEdge = radius * Math.sin(((HALF_SEGMENT - Math.abs(offset)) * Math.PI) / 180);
+    return (
+      Math.min(radius - DOT_RADIUS - inner, outer - radius - DOT_RADIUS, toEdge - DOT_RADIUS) < 0.01
+    );
+  });
+  return onEdge.length / dots.length;
+}
+
 describe("toHitDots", () => {
   it.each(["S20", "D20", "T20", "BULL", "BULLSEYE"] as const)(
     "keeps every whole dot of %s inside its board field",
@@ -104,6 +118,16 @@ describe("toHitDots", () => {
       expect(fieldsOutside(dots)).toEqual([]);
     },
   );
+
+  it("scatters treble and double dots inside the ring instead of lining them up on its edges", () => {
+    // One board each: 500 hits fit the budget, 2000 would not.
+    const dots = (["T20", "D20", "T1", "D3"] as const).flatMap((field) =>
+      toHitDots(board({ [field]: 500 })),
+    );
+
+    expect(dots).toHaveLength(2000);
+    expect(shareOnEdge(dots)).toBeLessThan(0.01);
+  });
 
   it("returns the same positions for the same hit distribution", () => {
     const hits = board({ T20: 40, S20: 25, D16: 12, BULL: 7, BULLSEYE: 3 });
