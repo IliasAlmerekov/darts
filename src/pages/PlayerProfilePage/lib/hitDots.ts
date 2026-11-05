@@ -13,8 +13,12 @@ import {
 } from "./boardFieldSpot";
 import type { BoardField, NumberField } from "./hitFrequency";
 
-/** A hit dot's radius in board millimetres: 2 mm of travel each way in an 8 mm ring. */
+/** A hit dot's radius in board millimetres. */
 export const HIT_DOT_RADIUS = 2;
+/** The width of a hit dot's outline in board millimetres. */
+export const HIT_DOT_OUTLINE = 0.6;
+// SVG centres the outline on the circle, so half of it paints past the radius.
+const DOT_EDGE = HIT_DOT_RADIUS + HIT_DOT_OUTLINE / 2;
 /** The most dots a board draws before each board field's share shrinks. */
 const DOT_BUDGET = 600;
 /** The spread of a number field's dots around its spot, in millimetres per axis. */
@@ -64,7 +68,7 @@ function dotCounts(hitDistribution: PlayerProfile["hitDistribution"]): number[] 
   return parts.map((part) => (part.hits > 0 ? Math.max(1, part.count) : 0));
 }
 
-/** The radii a number field's dot centres may take, the dot radius inside its ring. */
+/** The radii a number field's dot centres may take, the painted dot inside its ring. */
 function dotRadii(field: NumberField, spot: Point): [number, number] {
   const ring = field.charAt(0);
   const [inner, outer] =
@@ -75,12 +79,12 @@ function dotRadii(field: NumberField, spot: Point): [number, number] {
         : Math.hypot(spot.x, spot.y) < TREBLE_INNER
           ? [OUTER_BULL_RADIUS, TREBLE_INNER]
           : [TREBLE_OUTER, DOUBLE_INNER];
-  return [inner + HIT_DOT_RADIUS, outer - HIT_DOT_RADIUS];
+  return [inner + DOT_EDGE, outer - DOT_EDGE];
 }
 
 /** How far off the centre line, in degrees, a dot centre at `radius` clears the segment edge. */
 function maxOffset(radius: number): number {
-  return SEGMENT_ANGLE / 2 - (Math.asin(HIT_DOT_RADIUS / radius) * 180) / Math.PI;
+  return SEGMENT_ANGLE / 2 - (Math.asin(DOT_EDGE / radius) * 180) / Math.PI;
 }
 
 /** A point `radius` from the centre and `degrees` clockwise from the top. */
@@ -97,7 +101,7 @@ function polarOf({ x, y }: Point, centre: number): { radius: number; offset: num
 }
 
 /**
- * A dot of a treble or double. The ring leaves a dot centre only 4 mm of room across it, so
+ * A dot of a treble or double. The ring leaves a dot centre only 3.4 mm of room across it, so
  * the radius is drawn evenly across that room and only the offset along the ring follows a
  * Gaussian around the spot. An offset past the segment edge is drawn again from the next
  * seed; after `MAX_DRAWS` the dot takes the spot's offset.
@@ -144,8 +148,7 @@ function singleDot(
     }
   }
   const spotOffset = polarOf(spot, centre).offset;
-  const clear =
-    HIT_DOT_RADIUS / Math.sin(((SEGMENT_ANGLE / 2 - Math.abs(spotOffset)) * Math.PI) / 180);
+  const clear = DOT_EDGE / Math.sin(((SEGMENT_ANGLE / 2 - Math.abs(spotOffset)) * Math.PI) / 180);
   const inner = Math.max(low, clear);
   const [, across] = shares(seed);
   return pointAt(inner + (high - inner) * across, centre + spotOffset);
@@ -162,13 +165,13 @@ function numberFieldDot(field: NumberField, index: number): Point {
     : ringDot(seed, spot, centre, radii);
 }
 
-/** A dot of Bull or Bullseye, spread evenly over its ring, the dot radius inside it. */
+/** A dot of Bull or Bullseye, spread evenly over its ring, the painted dot inside it. */
 function centreDot(field: "BULL" | "BULLSEYE", index: number): Point {
   const [area, direction] = shares(`${field}:${index}`);
   const [inner, outer] =
     field === "BULLSEYE"
-      ? [0, BULL_RADIUS - HIT_DOT_RADIUS]
-      : [BULL_RADIUS + HIT_DOT_RADIUS, OUTER_BULL_RADIUS - HIT_DOT_RADIUS];
+      ? [0, BULL_RADIUS - DOT_EDGE]
+      : [BULL_RADIUS + DOT_EDGE, OUTER_BULL_RADIUS - DOT_EDGE];
   const radius = Math.sqrt(inner ** 2 + (outer ** 2 - inner ** 2) * area);
   return pointAt(radius, 360 * direction);
 }

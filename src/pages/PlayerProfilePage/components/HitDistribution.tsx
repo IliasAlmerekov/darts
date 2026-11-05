@@ -12,7 +12,7 @@ import {
   TREBLE_INNER,
   TREBLE_OUTER,
 } from "../lib/boardFieldSpot";
-import { HIT_DOT_RADIUS, type HitDot } from "../lib/hitDots";
+import { HIT_DOT_OUTLINE, HIT_DOT_RADIUS, type HitDot } from "../lib/hitDots";
 import {
   HIT_FREQUENCY_LABELS,
   type BoardHitFrequencies,
@@ -165,6 +165,7 @@ export function HitDistribution({
               cx={x}
               cy={y}
               r={HIT_DOT_RADIUS}
+              strokeWidth={HIT_DOT_OUTLINE}
             />
           ))}
         </g>

@@ -14,11 +14,12 @@ const BOARD_ORDER = [
   20, 1, 18, 4, 13, 6, 10, 15, 2, 17, 3, 19, 7, 16, 8, 11, 14, 9, 12, 5,
 ] as const;
 const HALF_SEGMENT = 9;
-const DOT_RADIUS = 2;
+// A dot paints 2.3 mm from its centre: radius 2 plus half its 0.6 mm outline.
+const DOT_EDGE = 2.3;
 // Ring radii in board millimetres.
 const RINGS = {
   // A disc: a dot may cover the centre point.
-  bullseye: [-DOT_RADIUS, 6.4],
+  bullseye: [-DOT_EDGE, 6.4],
   bull: [6.4, 16],
   innerSingle: [16, 99],
   treble: [99, 107],
@@ -52,7 +53,7 @@ function polar(field: NumberField, { x, y }: { x: number; y: number }): Polar {
 }
 
 function dotFitsRing(radius: number, [inner, outer]: readonly [number, number]): boolean {
-  return radius - DOT_RADIUS >= inner - EPSILON && radius + DOT_RADIUS <= outer + EPSILON;
+  return radius - DOT_EDGE >= inner - EPSILON && radius + DOT_EDGE <= outer + EPSILON;
 }
 
 /** The ring a board field's dots must stay in; a single keeps to the side of its spot. */
@@ -76,9 +77,7 @@ function fieldsOutside(dots: HitDot[]): BoardField[] {
     // The distance from the dot's centre to the nearer segment edge line.
     const toEdge = radius * Math.sin(((HALF_SEGMENT - Math.abs(offset)) * Math.PI) / 180);
     return (
-      !dotFitsRing(radius, ring) ||
-      Math.abs(offset) >= HALF_SEGMENT ||
-      toEdge < DOT_RADIUS - EPSILON
+      !dotFitsRing(radius, ring) || Math.abs(offset) >= HALF_SEGMENT || toEdge < DOT_EDGE - EPSILON
     );
   });
   return [...new Set(outside.map((dot) => dot.field))];
@@ -91,9 +90,7 @@ function shareOnEdge(dots: HitDot[]): number {
     const [inner, outer] = ringOf(dot.field);
     const { radius, offset } = polar(dot.field, dot);
     const toEdge = radius * Math.sin(((HALF_SEGMENT - Math.abs(offset)) * Math.PI) / 180);
-    return (
-      Math.min(radius - DOT_RADIUS - inner, outer - radius - DOT_RADIUS, toEdge - DOT_RADIUS) < 0.01
-    );
+    return Math.min(radius - DOT_EDGE - inner, outer - radius - DOT_EDGE, toEdge - DOT_EDGE) < 0.01;
   });
   return onEdge.length / dots.length;
 }

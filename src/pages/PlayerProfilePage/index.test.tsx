@@ -422,15 +422,16 @@ describe("PlayerProfilePage", () => {
     ];
     const outside = hitDots().filter((dot) => {
       const radius = Math.hypot(Number(dot.getAttribute("cx")), Number(dot.getAttribute("cy")));
-      const dotRadius = Number(dot.getAttribute("r"));
+      // The outline is centred on the circle, so half of it paints past the radius.
+      const edge = Number(dot.getAttribute("r")) + Number(dot.getAttribute("stroke-width")) / 2;
       return !rings.some(
-        ([inner, outer]) =>
-          radius - dotRadius >= inner - 1e-9 && radius + dotRadius <= outer + 1e-9,
+        ([inner, outer]) => radius - edge >= inner - 1e-9 && radius + edge <= outer + 1e-9,
       );
     });
 
     // 20 trebles and 20 doubles with 5 hits each.
     expect(hitDots()).toHaveLength(200);
+    expect(hitDots().every((dot) => dot.getAttribute("stroke-width") === "0.6")).toBe(true);
     expect(outside).toEqual([]);
   });
 

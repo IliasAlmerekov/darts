@@ -57,7 +57,6 @@
 .hitDot {
   fill: var(--darkblue);
   stroke: var(--white);
-  stroke-width: 0.6;
 }
 
 .heatVeryHigh {
