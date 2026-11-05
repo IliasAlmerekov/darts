@@ -400,13 +400,14 @@ describe("PlayerProfilePage", () => {
     expect(heatSpots()).toHaveLength(4);
   });
 
-  it("draws each treble and double hit as a dot inside its ring", async () => {
+  it("draws each treble and double hit as a dot inside its own ring", async () => {
     vi.mocked(getPlayerProfile).mockResolvedValue(
       buildProfile({
         stats: buildPlayerProfileStats({
+          // Different counts per ring, so trebles drawn on the double ring would show.
           hitDistribution: buildPlayerProfileStats().hitDistribution.map(({ field }) => ({
             field,
-            hits: field.startsWith("T") || field.startsWith("D") ? 5 : 0,
+            hits: field.startsWith("T") ? 3 : field.startsWith("D") ? 5 : 0,
           })),
         }),
       }),
@@ -416,23 +417,18 @@ describe("PlayerProfilePage", () => {
     await screen.findByRole("img", { name: "Dartboard heatmap, most hits on 20" });
 
     // Treble ring 99 to 107 mm, double ring 162 to 170 mm from the centre.
-    const rings: [number, number][] = [
-      [99, 107],
-      [162, 170],
-    ];
-    const outside = hitDots().filter((dot) => {
+    const inRing = (dot: Element, [inner, outer]: [number, number]): boolean => {
       const radius = Math.hypot(Number(dot.getAttribute("cx")), Number(dot.getAttribute("cy")));
       // The outline is centred on the circle, so half of it paints past the radius.
       const edge = Number(dot.getAttribute("r")) + Number(dot.getAttribute("stroke-width")) / 2;
-      return !rings.some(
-        ([inner, outer]) => radius - edge >= inner - 1e-9 && radius + edge <= outer + 1e-9,
-      );
-    });
+      return radius - edge >= inner - 1e-9 && radius + edge <= outer + 1e-9;
+    };
 
-    // 20 trebles and 20 doubles with 5 hits each.
-    expect(hitDots()).toHaveLength(200);
+    // 20 trebles with 3 hits each and 20 doubles with 5.
+    expect(hitDots()).toHaveLength(160);
     expect(hitDots().every((dot) => dot.getAttribute("stroke-width") === "0.6")).toBe(true);
-    expect(outside).toEqual([]);
+    expect(hitDots().filter((dot) => inRing(dot, [99, 107]))).toHaveLength(60);
+    expect(hitDots().filter((dot) => inRing(dot, [162, 170]))).toHaveLength(100);
   });
 
   it("draws one hidden dot per hit above the heat spots and keeps the legend", async () => {
