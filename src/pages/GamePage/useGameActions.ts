@@ -12,7 +12,7 @@ import { clientLogger } from "@/shared/services/browser/clientLogger";
 import { toUserErrorMessage } from "@/lib/error/error-to-user-message";
 import { ROUTES } from "@/lib/router/routes";
 import { resetRoomStore, setInvitation } from "@/shared/store";
-import { isGameAbortNotAllowedError } from "./lib/gameAbortNotAllowed";
+import { isApiErrorCode } from "@/lib/error/api-error-code";
 
 interface GameSettingsFormValues {
   doubleOut: boolean;
@@ -190,7 +190,8 @@ export function useGameExitFlow({
       navigate(ROUTES.start(rematch.gameId));
     } catch (error) {
       const isFinished =
-        isGameAbortNotAllowedError(error) && (await isGameFinished(gameId, controller.signal));
+        isApiErrorCode(error, "GAME_ABORT_NOT_ALLOWED") &&
+        (await isGameFinished(gameId, controller.signal));
       if (controller.signal.aborted) {
         // The page left this game. Release only this call's lock: a later game's stays.
         releaseExitLock();

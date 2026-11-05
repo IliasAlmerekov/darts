@@ -16,6 +16,8 @@ and this project does **not** yet follow [Semantic Versioning](https://semver.or
 
 ### Changed
 
+- Summary: move actions into one workflow and share game start cleanup between rematches and the start page (#451)
+
 - Agent rules: `## Review feedback` in `AGENTS.md` has agents comment `@coderabbitai review` once a PR is open and after each push of fixes for CodeRabbit findings, because CodeRabbit no longer reviews this repo on its own with fewer than 10 stars. It says when a review is finished and when the loop ends (#474)
 - Roster: keep seat order in the query cache and reconcile room stream updates (#452)
 - Game: centralize game state and settings cache writes (#453)

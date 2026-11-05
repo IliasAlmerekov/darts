@@ -3,15 +3,15 @@ import { useStore } from "@nanostores/react";
 import { useQueryClient } from "@tanstack/react-query";
 import type { NavigateFunction } from "react-router-dom";
 import { createRoom } from "@/shared/api/room";
-import { getGameSettings, startGame } from "@/shared/api/game";
+import { getGameSettings } from "@/shared/api/game";
 import {
   $preCreateGameSettings,
-  resetGameStore,
   setCurrentGameId,
   acceptGameSettings,
   setInvitation,
 } from "@/shared/store";
 import { toUserErrorMessage } from "@/lib/error/error-to-user-message";
+import { startLobbyGame } from "@/lib/game/startLobbyGame";
 import { ROUTES } from "@/lib/router/routes";
 import { gameQueries } from "@/shared/query/game.queries";
 import { playSound } from "@/shared/services/browser/soundPlayer";
@@ -61,15 +61,7 @@ export function useCreateStartFlow({
       playSound("start");
       const settings = await getGameSettings(gameId);
 
-      await startGame(gameId, {
-        startScore: settings.startScore,
-        doubleOut: settings.doubleOut,
-        tripleOut: settings.tripleOut,
-        round: 1,
-        status: "started",
-      });
-
-      resetGameStore();
+      await startLobbyGame(gameId, settings);
       navigate(ROUTES.game(gameId));
     } catch (error) {
       setPageError(toUserErrorMessage(error, "Could not start game. Please try again."));

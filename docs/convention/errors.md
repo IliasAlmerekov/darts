@@ -40,7 +40,7 @@ Each concern stays in its file above. User-facing message mapping lives only in
 
 Domain-specific `Error` subclasses model control flow, not HTTP. The app has two today:
 `LoginSessionMissingError` in `auth.ts`, for a login the backend accepted without a session
-user, and `RematchNotStartedError` in `rematch.ts`, for a rematch lobby the server created but
+user, and `RematchNotStartedError` in `startLobbyGame.ts`, for a rematch lobby the server created but
 did not start. A new one follows these rules:
 
 - It sits next to the flow that owns it.

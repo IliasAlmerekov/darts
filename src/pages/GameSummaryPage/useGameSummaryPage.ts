@@ -1,24 +1,11 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import { useNavigate, useParams } from "react-router-dom";
-import {
-  createRematchGame,
-  RematchNotStartedError,
-  startRematch,
-  undoLastThrow,
-} from "@/shared/api/game";
-import { setCurrentGameId, setInvitation, resetRoomStore } from "@/shared/store";
-import { playSound } from "@/shared/services/browser/soundPlayer";
 import { toUserErrorMessage } from "@/lib/error/error-to-user-message";
-import { ROUTES } from "@/lib/router/routes";
-import { parseRouteGameId, tabletGamePath } from "@/lib/router/tabletGameRoute";
-import {
-  buildFinishedGameStandings,
-  type FinishedGameStandings,
-} from "@/lib/game/finishedGameStandings";
-import { clientLogger } from "@/shared/services/browser/clientLogger";
+import { parseRouteGameId } from "@/lib/router/tabletGameRoute";
+import type { FinishedGameStandings } from "@/lib/game/finishedGameStandings";
 import { gameQueries } from "@/shared/query/game.queries";
-import { isGameNotNewestError } from "./lib/gameNotNewest";
+import { enterRematchLobby, runSummaryAction, type SummaryAction } from "./lib/summaryActions";
 
 interface UseGameSummaryPageResult extends FinishedGameStandings {
   error: string | null;
@@ -38,23 +25,20 @@ interface UseGameSummaryPageResult extends FinishedGameStandings {
 // Time to read the message before the page moves to the tablet game.
 const LEAVE_OLD_GAME_DELAY_MS = 2_000;
 
-type SummaryAction = "undo" | "rematch" | "rematch-start";
-
 /**
  * Loads summary data for a finished game and provides rematch actions.
  */
 export function useGameSummaryPage(): UseGameSummaryPageResult {
   const navigate = useNavigate();
-  const client = useQueryClient();
   const { id: summaryGameIdParam } = useParams<{ id?: string }>();
   const [actionErrorState, setActionErrorState] = useState<{
     gameId: number | null;
     message: string;
   } | null>(null);
-  const [isActionPending, setIsActionPending] = useState<boolean>(false);
+  const [pendingGameId, setPendingGameId] = useState<number | null>(null);
   const [releasedGameId, setReleasedGameId] = useState<number | null>(null);
   // Synchronous, so a second tap before the next render finds the lock taken.
-  const actionInFlightRef = useRef<boolean>(false);
+  const actionInFlightRef = useRef<{ gameId: number; active: boolean } | null>(null);
   // `lobbyGameId` is set when the page leaves for a rematch lobby the server created but did
   // not start; the client state moves to that lobby only when the page leaves.
   const [leaveState, setLeaveState] = useState<{
@@ -67,6 +51,19 @@ export function useGameSummaryPage(): UseGameSummaryPageResult {
     () => parseRouteGameId(summaryGameIdParam),
     [summaryGameIdParam],
   );
+
+  useEffect(() => {
+    return () => {
+      setLeaveState(null);
+      setActionErrorState(null);
+      const owner = actionInFlightRef.current;
+      if (owner?.gameId === finishedGameIdFromRoute) {
+        owner.active = false;
+        actionInFlightRef.current = null;
+        setPendingGameId(null);
+      }
+    };
+  }, [finishedGameIdFromRoute]);
 
   // A late 409 for a game the route has left must not move the summary now on screen.
   const leaveTarget = leaveState?.gameId === finishedGameIdFromRoute ? leaveState : null;
@@ -86,7 +83,7 @@ export function useGameSummaryPage(): UseGameSummaryPageResult {
   const isRouteGameQueryEnabled =
     finishedGameIdFromRoute !== null && finishedGameIdFromRoute !== releasedGameId;
   const summaryQuery = useQuery({
-    ...gameQueries.finished(finishedGameIdFromRoute ?? 0),
+    ...gameQueries.finishedStandings(finishedGameIdFromRoute ?? 0),
     enabled: isRouteGameQueryEnabled,
   });
   const { refetch } = summaryQuery;
@@ -102,187 +99,62 @@ export function useGameSummaryPage(): UseGameSummaryPageResult {
     await refetch();
   }, [refetch, setActionError]);
 
-  const releaseFinishedGame = useCallback(
-    (gameId: number): void => {
-      setReleasedGameId(gameId);
-      client.removeQueries({ queryKey: gameQueries.finished(gameId).queryKey });
-      // Undo and rematch change the tablet game, so the next route reads it again.
-      void client.invalidateQueries({ queryKey: gameQueries.tablet().queryKey });
-    },
-    [client],
-  );
-
   useEffect(() => {
     if (leavePath === null) return;
     const timer = window.setTimeout(() => {
       // Released only now: the summary keeps its standings on screen until the page leaves.
       if (leaveLobbyGameId !== null && finishedGameIdFromRoute !== null) {
-        resetRoomStore();
-        releaseFinishedGame(finishedGameIdFromRoute);
-        setCurrentGameId(leaveLobbyGameId);
+        setReleasedGameId(finishedGameIdFromRoute);
+        enterRematchLobby(finishedGameIdFromRoute, leaveLobbyGameId);
       }
       navigate(leavePath, { replace: true });
     }, LEAVE_OLD_GAME_DELAY_MS);
     return () => window.clearTimeout(timer);
-  }, [finishedGameIdFromRoute, leaveLobbyGameId, leavePath, navigate, releaseFinishedGame]);
+  }, [finishedGameIdFromRoute, leaveLobbyGameId, leavePath, navigate]);
 
-  // A 409 GAME_NOT_NEWEST means another game started after this one. The cached tablet game
-  // may be out of date or missing (then the path is /start); either way the target route's
-  // loader reads it again and redirects to the real tablet game.
-  const leaveOldGame = useCallback(
-    (action: SummaryAction): void => {
-      clientLogger.warn("game-summary.action.not-newest", {
-        context: { finishedGameId: finishedGameIdFromRoute, action },
-      });
-      const tabletGame = client.getQueryData(gameQueries.tablet().queryKey);
-      setLeaveState({
-        gameId: finishedGameIdFromRoute,
-        path: tabletGamePath("game", tabletGame?.game ?? null),
-        lobbyGameId: null,
-      });
+  const { podiumData, leaderBoardList } = summaryQuery.data ?? {
+    podiumData: [],
+    leaderBoardList: [],
+  };
+
+  const runAction = useCallback(
+    async (action: SummaryAction): Promise<void> => {
+      if (finishedGameIdFromRoute === null || actionInFlightRef.current !== null) return;
+      const owner = { gameId: finishedGameIdFromRoute, active: true };
+      actionInFlightRef.current = owner;
+      setPendingGameId(finishedGameIdFromRoute);
+      setActionError(null);
+      const outcome = await runSummaryAction(action, finishedGameIdFromRoute, () => owner.active);
+      if (!owner.active) return;
+      if (outcome.kind === "navigate") {
+        setReleasedGameId(finishedGameIdFromRoute);
+        navigate(outcome.path);
+      } else {
+        setActionError(outcome.message);
+        if (outcome.kind === "leave") {
+          setLeaveState({
+            gameId: finishedGameIdFromRoute,
+            path: outcome.path,
+            lobbyGameId: outcome.lobbyGameId,
+          });
+        } else {
+          owner.active = false;
+          actionInFlightRef.current = null;
+          setPendingGameId(null);
+        }
+      }
     },
-    [client, finishedGameIdFromRoute],
+    [finishedGameIdFromRoute, navigate, setActionError],
   );
 
-  // The lock stays taken after a success and after a 409 GAME_NOT_NEWEST: the summary stays on
-  // screen while the page moves away, and a tap in that time must not start a second mutation.
-  // Any other failure releases it, so the player can try again.
-  const lockAction = useCallback((): boolean => {
-    if (actionInFlightRef.current) return false;
-    actionInFlightRef.current = true;
-    setIsActionPending(true);
-    return true;
-  }, []);
-
-  const unlockAction = useCallback((): void => {
-    actionInFlightRef.current = false;
-    setIsActionPending(false);
-  }, []);
-
-  const { podiumData, leaderBoardList } = useMemo(
-    () => buildFinishedGameStandings(summaryQuery.data),
-    [summaryQuery.data],
-  );
-
-  const handleUndo = useCallback(async (): Promise<void> => {
-    if (finishedGameIdFromRoute === null || !lockAction()) return;
-
-    try {
-      setActionError(null);
-      // The game page owns the game state and reads the reopened game from the server.
-      await undoLastThrow(finishedGameIdFromRoute);
-
-      playSound("undo");
-      releaseFinishedGame(finishedGameIdFromRoute);
-      navigate(ROUTES.game(finishedGameIdFromRoute));
-    } catch (err) {
-      if (isGameNotNewestError(err)) {
-        leaveOldGame("undo");
-      } else {
-        clientLogger.error("game-summary.undo-reopen.failed", {
-          context: { finishedGameId: finishedGameIdFromRoute },
-          error: err,
-        });
-        unlockAction();
-      }
-      setActionError(toUserErrorMessage(err, "Could not reopen game and undo throw."));
-    }
-  }, [
-    finishedGameIdFromRoute,
-    leaveOldGame,
-    lockAction,
-    navigate,
-    releaseFinishedGame,
-    setActionError,
-    unlockAction,
-  ]);
-
-  const handlePlayAgain = useCallback(async (): Promise<void> => {
-    if (finishedGameIdFromRoute === null || !lockAction()) return;
-
-    try {
-      setActionError(null);
-      const rematch = await startRematch(finishedGameIdFromRoute);
-
-      releaseFinishedGame(finishedGameIdFromRoute);
-      setCurrentGameId(rematch.gameId);
-      setInvitation({
-        gameId: rematch.gameId,
-        invitationLink: rematch.invitationLink,
-      });
-      navigate(ROUTES.game(rematch.gameId));
-    } catch (err) {
-      const failure = err instanceof RematchNotStartedError ? err.cause : err;
-      if (isGameNotNewestError(failure)) {
-        leaveOldGame("rematch-start");
-      } else if (err instanceof RematchNotStartedError) {
-        // The lobby exists with the roster and settings, so the players start it by hand.
-        clientLogger.error("game-summary.rematch.lobby-start.failed", {
-          context: { finishedGameId: finishedGameIdFromRoute, lobbyGameId: err.gameId },
-          error: err.cause,
-        });
-        setLeaveState({
-          gameId: finishedGameIdFromRoute,
-          path: ROUTES.start(err.gameId),
-          lobbyGameId: err.gameId,
-        });
-      } else {
-        clientLogger.error("game-summary.rematch.start.failed", {
-          context: { finishedGameId: finishedGameIdFromRoute },
-          error: err,
-        });
-        unlockAction();
-      }
-      setActionError(toUserErrorMessage(failure, "Could not start a rematch."));
-    }
-  }, [
-    finishedGameIdFromRoute,
-    leaveOldGame,
-    lockAction,
-    navigate,
-    releaseFinishedGame,
-    setActionError,
-    unlockAction,
-  ]);
-
-  const handleBackToStart = useCallback(async (): Promise<void> => {
-    if (finishedGameIdFromRoute === null || !lockAction()) return;
-
-    try {
-      setActionError(null);
-      const rematch = await createRematchGame(finishedGameIdFromRoute);
-
-      // A failed rematch, such as 409 GAME_NOT_NEWEST, leaves the open room untouched.
-      resetRoomStore();
-      releaseFinishedGame(finishedGameIdFromRoute);
-      setCurrentGameId(rematch.gameId);
-      navigate(ROUTES.start(rematch.gameId));
-    } catch (err) {
-      if (isGameNotNewestError(err)) {
-        leaveOldGame("rematch");
-      } else {
-        clientLogger.error("game-summary.rematch.return-to-start.failed", {
-          context: { finishedGameId: finishedGameIdFromRoute },
-          error: err,
-        });
-        unlockAction();
-      }
-      setActionError(toUserErrorMessage(err, "Could not return to start."));
-    }
-  }, [
-    finishedGameIdFromRoute,
-    leaveOldGame,
-    lockAction,
-    navigate,
-    releaseFinishedGame,
-    setActionError,
-    unlockAction,
-  ]);
+  const handleUndo = useCallback(() => runAction("undo"), [runAction]);
+  const handlePlayAgain = useCallback(() => runAction("rematch-start"), [runAction]);
+  const handleBackToStart = useCallback(() => runAction("rematch"), [runAction]);
 
   return {
     error,
     leaving: leavePath !== null,
-    isActionPending,
+    isActionPending: pendingGameId !== null && pendingGameId === finishedGameIdFromRoute,
     podiumData,
     leaderBoardList,
     loadSummary,

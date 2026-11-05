@@ -186,7 +186,6 @@ export default [
       // Tests run mappers as the real store does, so their expectations follow the mapper.
       "src/pages/**/*.test.{ts,tsx}",
       // Existing debt: this hook calls a mapper inside a useMemo.
-      "src/pages/GameSummaryPage/useGameSummaryPage.ts",
     ],
     rules: {
       "no-restricted-imports": [

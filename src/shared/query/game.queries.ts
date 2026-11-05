@@ -6,6 +6,7 @@ import {
   getTabletGame,
   type GameSettings,
 } from "@/shared/api/game";
+import { buildFinishedGameStandings } from "@/lib/game/finishedGameStandings";
 import { toRoster } from "@/lib/game/roster";
 import { clientLogger } from "@/shared/services/browser/clientLogger";
 
@@ -32,6 +33,11 @@ export const gameQueries = {
         }
       },
     }),
+
+  finishedStandings: (gameId: number) => ({
+    ...gameQueries.finished(gameId),
+    select: buildFinishedGameStandings,
+  }),
 
   /** The tablet game, the one in the lobby or started. The admin routes follow it. */
   tablet: () =>

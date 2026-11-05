@@ -6,7 +6,7 @@ vi.mock("@/shared/api/game", () => ({
   getFinishedGame: vi.fn(),
   getGameSettings: vi.fn(),
   getTabletGame: vi.fn(),
-  startRematch: vi.fn(),
+  startGame: vi.fn(),
   undoLastThrow: vi.fn(),
 }));
 
@@ -19,7 +19,7 @@ import {
   getFinishedGame,
   getGameSettings,
   getTabletGame,
-  startRematch,
+  startGame,
   undoLastThrow,
 } from "@/shared/api/game";
 import { queryClient } from "@/shared/query/queryClient";
@@ -32,7 +32,7 @@ const getFinishedGameMock = vi.mocked(getFinishedGame);
 const getGameSettingsMock = vi.mocked(getGameSettings);
 const getTabletGameMock = vi.mocked(getTabletGame);
 const createRematchGameMock = vi.mocked(createRematchGame);
-const startRematchMock = vi.mocked(startRematch);
+const startGameMock = vi.mocked(startGame);
 const undoLastThrowMock = vi.mocked(undoLastThrow);
 
 function renderSummaryRoute(path = "/summary/42"): ReturnType<typeof render> {
@@ -171,7 +171,7 @@ describe("GameSummaryPage route", () => {
 
       fireEvent.click(screen.getByRole("button", { name: "Play Again" }));
 
-      expect(startRematchMock).not.toHaveBeenCalled();
+      expect(startGameMock).not.toHaveBeenCalled();
     });
 
     it("should not create a rematch room from Back To Start", async () => {

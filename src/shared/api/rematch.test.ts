@@ -12,7 +12,8 @@ vi.mock("@/shared/api/client", async (importOriginal) => ({
 }));
 
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { createRematchGame, RematchNotStartedError, startRematch } from "./game";
+import { createRematchGame } from "./game";
+import { RematchNotStartedError, startRematch } from "@/lib/game/startLobbyGame";
 
 import { apiClient, ApiValidationError } from "./client";
 import { ApiError } from "./errors";

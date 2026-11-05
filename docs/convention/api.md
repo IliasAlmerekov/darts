@@ -16,11 +16,9 @@ call sites today:
 - `src/pages/StartPage/startPageLoader.ts`: `getGameThrows` and `getInvitation` in the
   StartPage loader.
 - `src/shared/query/roster.ts`: `getGameThrows` to recover after overlapping reorder failures.
-- `src/pages/StartPage/useCreateStartFlow.ts`: `getGameSettings` before a game starts.
+- `src/pages/StartPage/create/useCreateStartFlow.ts` and `src/shared/lib/game/startLobbyGame.ts`: `getGameSettings` before a game or rematch starts.
 - `src/shared/api/auth.ts`: `loginWithCredentials` calls `getAuthenticatedUser` in the
   post-login session fallback.
-- `src/pages/GameSummaryPage/useGameSummaryPage.ts`: `getGameThrows` when a compact undo
-  response cannot patch local state.
 - `src/pages/GamePage/useGameSession.ts`: `getGameThrows` after the server rejects a queued
   throw or undo.
 
@@ -71,7 +69,8 @@ modules: `game.ts` re-exports them, and consumers import their symbols from
 `apiClient` stays inside `shared/api/`: only the domain files and their internal files call it, and the barrel does not
 export it. Internals (`client.ts`, `errors.ts`, `types.ts`, `endpoints.ts`, `schemas.ts`,
 `throws.ts`, `rematch.ts`) are
-never deep-imported from outside `shared/api/`.
+never deep-imported from production code outside `shared/api/`. Workflow integration tests may
+mock `apiClient` with `respondWith` to exercise the full flow.
 
 ## `apiClient`: single gateway
 
@@ -115,7 +114,7 @@ ADR 0002 records why responses are described by Valibot schemas.
   `@/shared/api/<domain>`; `@/types` re-exports none.
 - Types without a schema are hand-written types in the same domain file: a type a
   resource function builds (`FinishedPlayerResponse`, `RematchResponse`,
-  `RematchGameResponse`, `StartRematchResponse`, `GameSummaryResponse`), an error payload
+  `RematchGameResponse`, `GameSummaryResponse`), an error payload
   read by a guard (`AddGuestErrorResponse`), and request bodies and payloads
   (`StartGameRequest`, `ThrowRequest`, `CreateGameSettingsPayload`). The guard itself
   stays with its caller.
@@ -225,10 +224,10 @@ cache itself:
   settings save in `GamePage/useGameActions.ts`, `shared/query/roster.ts`,
   `acceptLoggedInUser.ts` for login and registration).
 - `removeQueries({ queryKey })` drops an entry the write made invalid (undo and rematch
-  in `useGameSummaryPage.ts`).
+  in `GameSummaryPage/lib/summaryActions.ts`).
 - `invalidateQueries({ queryKey })` marks a read the write changed on the server when the
-  response does not carry its new value. Undo, rematch and room create invalidate
-  `gameQueries.tablet()` (`useGameSummaryPage.ts`, `useCreateStartFlow.ts`).
+  response does not carry its new value. Undo, rematch, game start and room create invalidate
+  `gameQueries.tablet()` (`summaryActions.ts`, `startLobbyGame.ts`, `useCreateStartFlow.ts`).
 - `useLogout` and the 401 handler call `clearClientSession()` in
   `src/shared/lib/auth/clearClientSession.ts`, which runs
   `queryClient.clear()`: every cached read belongs to the old session.
@@ -251,18 +250,19 @@ Mapper rules:
   `currentGame`, `gameSeat` and `profile`.
 - Every mapper has a co-located `*.test.ts`.
 - Mappers are called from an API domain function (`getGameThrows` calls `normalizeGameData`),
-  a `queryFn` in `src/shared/query/` (`playerQueries.profile` calls `toPlayerProfile`),
+  a `queryFn` or `select` in `src/shared/query/` (`playerQueries.profile` calls `toPlayerProfile`,
+  `gameQueries.finishedStandings` selects standings),
   a store action (`acceptGame` calls `toRoster`), a route loader, or a page-private
   logic file under `src/pages/<Page>/` that is
   neither JSX nor a `use*` file.
 - JSX files (`src/pages/**/*.tsx`) and render-flow hooks (`src/pages/**/use*.ts`) receive the
-  mapped result and import no mapper. Type imports are fine. Known exception:
-  `useGameSummaryPage.ts` calls `buildFinishedGameStandings` in a `useMemo`.
-  `eslint.config.mjs` ignores this file as existing debt.
+  mapped result and import no mapper. Type imports are fine.
 
 ## Game reads
 
 Read the game unconditionally with `getGameThrows`. The session reloads after a rejected throw or undo.
+
+`StartRematchResponse` is a workflow result in `src/shared/lib/game/startLobbyGame.ts`.
 
 ## Error -> user message
 
@@ -295,7 +295,7 @@ rg -n '\bfetch\s*\(' src --glob '!src/shared/api/client.ts' --glob '!**/*.test.{
 **2. `apiClient` used outside `src/shared/api/`:**
 
 ```bash
-rg -n '\bapiClient\b' src --glob '!src/shared/api/**'
+rg -n '\bapiClient\b' src --glob '!src/shared/api/**' --glob '!**/*.test.{ts,tsx}'
 ```
 
 **3. Bare `data as T` / `response as T` casts inside `shared/api/`:**

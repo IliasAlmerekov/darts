@@ -1,1013 +1,307 @@
 // @vitest-environment jsdom
-import { act, renderHook, waitFor } from "@testing-library/react";
+import { act, renderHook } from "@testing-library/react";
+import { createElement, type ReactNode } from "react";
+import { QueryClientProvider } from "@tanstack/react-query";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import type { ReactNode } from "react";
-import { createElement } from "react";
-import { QueryClientProvider, type QueryClient } from "@tanstack/react-query";
-import { createQueryClient } from "@/shared/query/queryClient";
+import * as gameApi from "@/shared/api/game";
 import { gameQueries } from "@/shared/query/game.queries";
-import { ApiError } from "@/shared/api";
+import { createQueryClient } from "@/shared/query/queryClient";
 import { useGameSummaryPage } from "./useGameSummaryPage";
-import { playSound } from "@/shared/services/browser/soundPlayer";
-import { clientLogger } from "@/shared/services/browser/clientLogger";
-import { $gameData, resetGameStore, acceptGame } from "@/shared/store";
-import {
-  RematchNotStartedError,
-  type GameThrowsResponse,
-  type UndoAckResponse,
-} from "@/shared/api/game";
-import {
-  buildExpectedPodiumPlaceholder,
-  buildExpectedStandings,
-  buildFinishedPlayerResponses,
-} from "@/shared/types/game.test-support";
-
-const navigateMock = vi.fn();
-const getFinishedGameMock = vi.fn();
-const getGameSettingsMock = vi.fn();
-const createRematchGameMock = vi.fn();
-const startRematchMock = vi.fn();
-const undoLastThrowMock = vi.fn();
-const getTabletGameMock = vi.fn();
-const setCurrentGameIdMock = vi.fn();
-const setInvitationMock = vi.fn();
-const resetRoomStoreMock = vi.fn();
-
-// Mutable state for router — allows per-test overrides without vi.doMock
-let routeParams: { id?: string | undefined } = { id: "42" };
-let testQueryClient: QueryClient;
+import { enterRematchLobby, runSummaryAction } from "./lib/summaryActions";
 
 vi.mock("react-router-dom", () => ({
-  useNavigate: () => navigateMock,
-  useParams: () => routeParams,
+  useNavigate: () => navigate,
+  useParams: () => ({ id: routeId }),
 }));
-
-vi.mock("@nanostores/react", () => ({
-  useStore: (store: { get: () => unknown }) => store.get(),
-}));
-
-vi.mock("@/shared/api/game", async (importOriginal) => ({
-  RematchNotStartedError: (await importOriginal<typeof import("@/shared/api/game")>())
-    .RematchNotStartedError,
-  getFinishedGame: (...args: unknown[]) => getFinishedGameMock(...args),
-  getGameSettings: (...args: unknown[]) => getGameSettingsMock(...args),
-  createRematchGame: (...args: unknown[]) => createRematchGameMock(...args),
-  startRematch: (...args: unknown[]) => startRematchMock(...args),
-  undoLastThrow: (...args: unknown[]) => undoLastThrowMock(...args),
-  getTabletGame: (...args: unknown[]) => getTabletGameMock(...args),
-}));
-
-vi.mock("@/shared/store", async (importOriginal) => {
-  const original = await importOriginal<Record<string, unknown>>();
-  return {
-    ...original,
-    setCurrentGameId: (...args: unknown[]) => setCurrentGameIdMock(...args),
-    setInvitation: (...args: unknown[]) => setInvitationMock(...args),
-    resetRoomStore: (...args: unknown[]) => resetRoomStoreMock(...args),
-  };
-});
-
-vi.mock("@/shared/services/browser/soundPlayer", () => ({
-  playSound: vi.fn(),
-}));
-
-function buildFinishedGameState(): GameThrowsResponse {
-  return {
-    type: "full-state",
-    id: 42,
-    status: "finished",
-    currentRound: 7,
-    activePlayerId: 1,
-    currentThrowCount: 0,
-    winnerId: 1,
-    settings: { startScore: 301, doubleOut: false, tripleOut: false },
-    players: [
-      {
-        id: 1,
-        name: "Alice",
-        score: 0,
-        isActive: true,
-        isBust: false,
-        position: 1,
-        placement: 1,
-        throwsInCurrentRound: 0,
-        currentRoundThrows: [],
-        roundHistory: [
-          {
-            round: 7,
-            throws: [
-              { value: 20, isDouble: false, isTriple: false, isBust: false },
-              { value: 20, isDouble: false, isTriple: false, isBust: false },
-              { value: 20, isDouble: false, isTriple: false, isBust: false },
-            ],
-          },
-        ],
-        isGuest: false,
-      },
-      {
-        id: 2,
-        name: "Bob",
-        score: 40,
-        isActive: false,
-        isBust: false,
-        position: null,
-        placement: null,
-        throwsInCurrentRound: 0,
-        currentRoundThrows: [],
-        roundHistory: [],
-        isGuest: false,
-      },
-    ],
-  };
-}
-
-function buildUndoAck(overrides: Partial<UndoAckResponse> = {}): UndoAckResponse {
-  return {
-    type: "ack",
-    success: true,
-    gameId: 42,
-    stateVersion: "undo-v1",
-    scoreboardDelta: {
-      changedPlayers: [],
-      winnerId: null,
-      status: "started",
-      currentRound: 7,
-    },
-    serverTs: "2026-03-10T10:00:00.000Z",
-    ...overrides,
-  };
-}
-
+vi.mock("./lib/summaryActions", () => ({ runSummaryAction: vi.fn(), enterRematchLobby: vi.fn() }));
+let routeId = "42";
+const navigate = vi.fn();
+const client = createQueryClient();
 function wrapper({ children }: { children: ReactNode }): ReactNode {
-  return createElement(QueryClientProvider, { client: testQueryClient }, children);
-}
-
-type SummaryHook = ReturnType<typeof useGameSummaryPage>;
-
-const SUMMARY_ACTIONS = [
-  {
-    action: "Undo",
-    run: (hook: SummaryHook) => hook.handleUndo(),
-    request: undoLastThrowMock,
-    response: (): unknown => buildUndoAck(),
-  },
-  {
-    action: "Play Again",
-    run: (hook: SummaryHook) => hook.handlePlayAgain(),
-    request: startRematchMock,
-    response: (): unknown => ({ success: true, gameId: 77, invitationLink: "/invite/77" }),
-  },
-  {
-    action: "Back To Start",
-    run: (hook: SummaryHook) => hook.handleBackToStart(),
-    request: createRematchGameMock,
-    response: (): unknown => ({ success: true, gameId: 77, invitationLink: "/invite/77" }),
-  },
-];
-
-const ORDERED_ACTION_PAIRS = SUMMARY_ACTIONS.flatMap((first) =>
-  SUMMARY_ACTIONS.map((second) => ({ first, second })),
-);
-
-function countSummaryRequests(): number {
-  return SUMMARY_ACTIONS.reduce((count, { request }) => count + request.mock.calls.length, 0);
-}
-
-function renderSummaryHook() {
-  return renderHook(() => useGameSummaryPage(), { wrapper });
-}
-
-function finishedPlayer(playerId: number, username: string) {
-  return { playerId, username, position: 1, placement: 1, roundsPlayed: 5, roundAverage: 60.2 };
-}
-
-function deferred<T>() {
-  let resolve!: (value: T) => void;
-  const promise = new Promise<T>((res) => {
-    resolve = res;
-  });
-  return { promise, resolve };
+  return createElement(QueryClientProvider, { client }, children);
 }
 
 describe("useGameSummaryPage", () => {
   beforeEach(() => {
-    vi.clearAllMocks();
-    resetGameStore();
-    setCurrentGameIdMock.mockReset();
-    setInvitationMock.mockReset();
-    resetRoomStoreMock.mockReset();
-
-    // Reset mutable router/store state to defaults before each test
-    routeParams = { id: "42" };
-    testQueryClient = createQueryClient();
-    getTabletGameMock.mockResolvedValue({ game: null, lastFinishedGameId: 42 });
-
-    getFinishedGameMock.mockResolvedValue([]);
-    startRematchMock.mockResolvedValue({
-      success: true,
-      gameId: 77,
-      settings: {
-        startScore: 301,
-        doubleOut: false,
-        tripleOut: false,
-      },
-      invitationLink: "/invite/77",
-    });
-    createRematchGameMock.mockResolvedValue({
-      success: true,
-      gameId: 77,
-      invitationLink: "/invite/77",
-    });
-    undoLastThrowMock.mockResolvedValue(buildUndoAck());
+    vi.resetAllMocks();
+    client.clear();
+    routeId = "42";
+    client.setQueryData(gameQueries.finished(42).queryKey, []);
+    client.setQueryData(gameQueries.finished(43).queryKey, []);
+  });
+  afterEach(() => {
+    vi.useRealTimers();
+    vi.restoreAllMocks();
   });
 
-  // #123: the game page owns the game state, so it reads the reopened game from the server.
-  it("should undo on the server and open the game without writing the game store", async () => {
-    acceptGame(buildFinishedGameState());
-    const shownGame = $gameData.get();
-
-    const { result } = renderSummaryHook();
-
-    await act(async () => {
-      await result.current.handleUndo();
-    });
-
-    expect(undoLastThrowMock).toHaveBeenCalledWith(42);
-    expect($gameData.get()).toBe(shownGame);
-    expect(playSound).toHaveBeenCalledWith("undo");
-    expect(navigateMock).toHaveBeenCalledWith("/game/42");
-  });
-
-  it("should not navigate when undo request fails", async () => {
-    undoLastThrowMock.mockRejectedValueOnce(new Error("undo failed"));
-
-    const { result } = renderSummaryHook();
-
-    await act(async () => {
-      await result.current.handleUndo();
-    });
-
-    expect(undoLastThrowMock).toHaveBeenCalledWith(42);
-    expect(navigateMock).not.toHaveBeenCalledWith("/game/42");
-  });
-
-  // #100
-  it("should run no other summary action while Undo is pending, even in the same tick", async () => {
-    undoLastThrowMock.mockReturnValue(new Promise(() => {}));
-    const { result } = renderSummaryHook();
-
-    await act(async () => {
-      void result.current.handleUndo();
-      void result.current.handleUndo();
+  it("keeps the lock while an action runs and after navigation", async () => {
+    let finish: (value: { kind: "navigate"; path: string }) => void = () => {};
+    vi.mocked(runSummaryAction).mockReturnValue(
+      new Promise((resolve) => {
+        finish = resolve;
+      }),
+    );
+    const { result } = renderHook(() => useGameSummaryPage(), { wrapper });
+    let pending: Promise<void> = Promise.resolve();
+    act(() => {
+      pending = result.current.handleUndo();
       void result.current.handlePlayAgain();
-      void result.current.handleBackToStart();
     });
-
-    expect(undoLastThrowMock).toHaveBeenCalledTimes(1);
-    expect(startRematchMock).not.toHaveBeenCalled();
-    expect(createRematchGameMock).not.toHaveBeenCalled();
+    expect(result.current.isActionPending).toBe(true);
+    expect(runSummaryAction).toHaveBeenCalledTimes(1);
+    await act(async () => {
+      finish({ kind: "navigate", path: "/game/42" });
+      await pending;
+    });
+    expect(navigate).toHaveBeenCalledWith("/game/42");
     expect(result.current.isActionPending).toBe(true);
   });
 
-  // #100: every pair of competing taps, the second while the first request still waits.
-  it.each(ORDERED_ACTION_PAIRS)(
-    "should send one request and navigate once for $first.action then $second.action",
-    async ({ first, second }) => {
-      const firstResponse = deferred<unknown>();
-      first.request.mockReturnValueOnce(firstResponse.promise);
-      const { result } = renderSummaryHook();
-
-      let firstRun: Promise<void> = Promise.resolve();
-      await act(async () => {
-        firstRun = first.run(result.current);
-      });
-      await act(async () => {
-        await second.run(result.current);
-      });
-      await act(async () => {
-        firstResponse.resolve(first.response());
-        await firstRun;
-      });
-
-      expect(first.request).toHaveBeenCalledTimes(1);
-      expect(countSummaryRequests()).toBe(1);
-      expect(navigateMock).toHaveBeenCalledTimes(1);
-    },
-  );
-
-  it("should allow another summary action once Undo has failed", async () => {
-    undoLastThrowMock.mockRejectedValueOnce(new Error("undo failed"));
-    const { result } = renderSummaryHook();
-
+  it("shows a failure and unlocks for a retry", async () => {
+    vi.mocked(runSummaryAction).mockResolvedValue({ kind: "failed", message: "Failed" });
+    const { result } = renderHook(() => useGameSummaryPage(), { wrapper });
     await act(async () => {
-      await result.current.handleUndo();
+      await result.current.handleBackToStart();
     });
+    expect(result.current.error).toBe("Failed");
     expect(result.current.isActionPending).toBe(false);
-
     await act(async () => {
       await result.current.handleBackToStart();
     });
-
-    expect(createRematchGameMock).toHaveBeenCalledWith(42);
+    expect(runSummaryAction).toHaveBeenCalledTimes(2);
   });
 
-  it("should navigate to game route when startRematch resolves successfully", async () => {
-    const { result } = renderSummaryHook();
-
+  it("keeps the lock and enters a created lobby only after the delay", async () => {
+    vi.useFakeTimers();
+    vi.mocked(runSummaryAction).mockResolvedValue({
+      kind: "leave",
+      path: "/start/77",
+      lobbyGameId: 77,
+      message: "Failed",
+    });
+    const { result } = renderHook(() => useGameSummaryPage(), { wrapper });
     await act(async () => {
       await result.current.handlePlayAgain();
     });
-
-    expect(startRematchMock).toHaveBeenCalledWith(42);
-    expect(setCurrentGameIdMock).toHaveBeenCalledWith(77);
-    expect(navigateMock).toHaveBeenCalledWith("/game/77");
-  });
-
-  it("should not overwrite shared game state when starting a rematch", async () => {
-    acceptGame(buildFinishedGameState());
-    const shownGame = $gameData.get();
-    const { result } = renderSummaryHook();
-
-    await act(async () => {
-      await result.current.handlePlayAgain();
-    });
-
-    expect($gameData.get()).toBe(shownGame);
-    expect(setInvitationMock).toHaveBeenCalledWith({
-      gameId: 77,
-      invitationLink: "/invite/77",
-    });
-  });
-
-  it("should not navigate when startRematch fails", async () => {
-    startRematchMock.mockRejectedValueOnce(new Error("server error"));
-
-    const { result } = renderSummaryHook();
-
-    await act(async () => {
-      await result.current.handlePlayAgain();
-    });
-
-    expect(startRematchMock).toHaveBeenCalled();
-    expect(navigateMock).not.toHaveBeenCalled();
-    expect(result.current.error).toBeTruthy();
-  });
-
-  it("should prevent concurrent handlePlayAgain calls when rematch start is already pending", async () => {
-    let resolveStartRematch:
-      | ((value: {
-          success: boolean;
-          gameId: number;
-          settings: { startScore: number; doubleOut: boolean; tripleOut: boolean };
-          invitationLink: string;
-        }) => void)
-      | null = null;
-    startRematchMock.mockImplementation(
-      () =>
-        new Promise((resolve) => {
-          resolveStartRematch = resolve;
-        }),
-    );
-
-    const { result } = renderSummaryHook();
-
-    let firstCall: Promise<void> | null = null;
-    await act(async () => {
-      firstCall = result.current.handlePlayAgain();
-    });
-
-    await act(async () => {
-      await result.current.handlePlayAgain();
-    });
-
-    await act(async () => {
-      if (resolveStartRematch === null || firstCall === null) {
-        throw new Error("Fixture error: rematch promise was not initialized");
-      }
-      resolveStartRematch({
-        success: true,
-        gameId: 77,
-        invitationLink: "/invite/77",
-        settings: {
-          startScore: 301,
-          doubleOut: false,
-          tripleOut: false,
-        },
-      });
-      await firstCall;
-    });
-
-    expect(startRematchMock).toHaveBeenCalledTimes(1);
-  });
-
-  it("should call navigate only after startRematch resolves when rematch start is pending", async () => {
-    let resolveStartRematch:
-      | ((value: {
-          success: boolean;
-          gameId: number;
-          settings: { startScore: number; doubleOut: boolean; tripleOut: boolean };
-          invitationLink: string;
-        }) => void)
-      | null = null;
-    startRematchMock.mockImplementation(
-      () =>
-        new Promise((resolve) => {
-          resolveStartRematch = resolve;
-        }),
-    );
-
-    const { result } = renderSummaryHook();
-
-    let callPromise: Promise<void> | null = null;
-    await act(async () => {
-      callPromise = result.current.handlePlayAgain();
-    });
-
-    expect(navigateMock).not.toHaveBeenCalled();
-
-    await act(async () => {
-      if (resolveStartRematch === null || callPromise === null) {
-        throw new Error("Fixture error: rematch promise was not initialized");
-      }
-      resolveStartRematch({
-        success: true,
-        gameId: 77,
-        invitationLink: "/invite/77",
-        settings: {
-          startScore: 301,
-          doubleOut: false,
-          tripleOut: false,
-        },
-      });
-      await callPromise;
-    });
-
-    expect(navigateMock).toHaveBeenCalledWith("/game/77");
-  });
-
-  // #100: the next route's loader runs after the navigation, and the summary stays on screen
-  // until it ends, so a tap in that window must not start a second mutation.
-  it.each(SUMMARY_ACTIONS)(
-    "should run no other summary action after $action has succeeded",
-    async ({ run }) => {
-      const { result } = renderSummaryHook();
-
-      await act(async () => {
-        await run(result.current);
-      });
-      for (const other of SUMMARY_ACTIONS) {
-        await act(async () => {
-          await other.run(result.current);
-        });
-      }
-
-      expect(countSummaryRequests()).toBe(1);
-      expect(navigateMock).toHaveBeenCalledTimes(1);
-      expect(result.current.isActionPending).toBe(true);
-    },
-  );
-
-  it("should keep isActionPending true while startRematch runs and after it succeeds", async () => {
-    let resolveStartRematch:
-      | ((value: {
-          success: boolean;
-          gameId: number;
-          settings: { startScore: number; doubleOut: boolean; tripleOut: boolean };
-          invitationLink: string;
-        }) => void)
-      | null = null;
-    startRematchMock.mockImplementation(
-      () =>
-        new Promise((resolve) => {
-          resolveStartRematch = resolve;
-        }),
-    );
-
-    const { result } = renderSummaryHook();
-
-    let callPromise: Promise<void> | null = null;
-    await act(async () => {
-      callPromise = result.current.handlePlayAgain();
-    });
-
+    expect(result.current.error).toBe("Failed");
+    expect(result.current.leaving).toBe(true);
     expect(result.current.isActionPending).toBe(true);
+    act(() => {
+      vi.advanceTimersByTime(1999);
+    });
+    expect(enterRematchLobby).not.toHaveBeenCalled();
+    act(() => {
+      vi.advanceTimersByTime(1);
+    });
+    expect(enterRematchLobby).toHaveBeenCalledWith(42, 77);
+    expect(navigate).toHaveBeenCalledWith("/start/77", { replace: true });
+  });
+
+  it.each([
+    { kind: "failed" as const, message: "Failed" },
+    { kind: "leave" as const, path: "/start/77", lobbyGameId: 77, message: "Failed" },
+  ])("clears the old game's $kind state when the route changes", async (outcome) => {
+    vi.useFakeTimers();
+    vi.mocked(runSummaryAction).mockResolvedValue(outcome);
+    const { result, rerender } = renderHook(() => useGameSummaryPage(), { wrapper });
 
     await act(async () => {
-      if (resolveStartRematch === null || callPromise === null) {
-        throw new Error("Fixture error: rematch promise was not initialized");
-      }
-      resolveStartRematch({
-        success: true,
-        gameId: 77,
-        invitationLink: "/invite/77",
-        settings: {
-          startScore: 301,
-          doubleOut: false,
-          tripleOut: false,
-        },
-      });
-      await callPromise;
+      await result.current.handlePlayAgain();
     });
+    expect(result.current.error).toBe("Failed");
+    expect(result.current.leaving).toBe(outcome.kind === "leave");
 
-    expect(result.current.isActionPending).toBe(true);
-  });
-
-  it("should not overwrite shared game state when returning to start from summary", async () => {
-    acceptGame(buildFinishedGameState());
-    const shownGame = $gameData.get();
-    const { result } = renderSummaryHook();
-
-    await act(async () => {
-      await result.current.handleBackToStart();
-    });
-
-    expect(resetRoomStoreMock).toHaveBeenCalledTimes(1);
-    expect($gameData.get()).toBe(shownGame);
-    expect(setCurrentGameIdMock).toHaveBeenCalledWith(77);
-    expect(setInvitationMock).not.toHaveBeenCalled();
-    expect(navigateMock).toHaveBeenCalledWith("/start/77");
-  });
-
-  it("should keep the room store when the rematch is rejected because the game is not the newest", async () => {
-    createRematchGameMock.mockRejectedValueOnce(
-      new ApiError("Conflict", { status: 409, data: { error: "GAME_NOT_NEWEST" } }),
-    );
-    const { result } = renderSummaryHook();
-
-    await act(async () => {
-      await result.current.handleBackToStart();
-    });
-
-    expect(resetRoomStoreMock).not.toHaveBeenCalled();
-    expect(setCurrentGameIdMock).not.toHaveBeenCalled();
-    expect(navigateMock).not.toHaveBeenCalled();
-    expect(result.current.error).not.toBeNull();
-  });
-
-  it("should keep action handlers referentially stable when dependencies do not change", async () => {
-    const { result } = renderSummaryHook();
-    const initialHandleUndo = result.current.handleUndo;
-    const initialHandlePlayAgain = result.current.handlePlayAgain;
-    const initialHandleBackToStart = result.current.handleBackToStart;
-
-    await waitFor(() => {
-      expect(getFinishedGameMock).toHaveBeenCalledWith(42, expect.any(AbortSignal));
-    });
-
-    expect(result.current.handleUndo).toBe(initialHandleUndo);
-    expect(result.current.handlePlayAgain).toBe(initialHandlePlayAgain);
-    expect(result.current.handleBackToStart).toBe(initialHandleBackToStart);
-  });
-
-  it("should fetch the summary through the finishedGame query", async () => {
-    getFinishedGameMock.mockResolvedValueOnce([finishedPlayer(3, "Carol")]);
-
-    const { result } = renderSummaryHook();
-
-    await waitFor(() => {
-      expect(result.current.podiumData).toEqual([
-        { id: 3, name: "Carol", rounds: 5, threeDartAverage: "60.20" },
-      ]);
-    });
-    expect(getFinishedGameMock).toHaveBeenCalledWith(42, expect.any(AbortSignal));
-    expect(testQueryClient.getQueryData(["finishedGame", 42])).toEqual([
-      finishedPlayer(3, "Carol"),
-    ]);
-  });
-
-  it("should read the summary seeded by the game page without waiting for the network", () => {
-    testQueryClient.setQueryData(["finishedGame", 42], [finishedPlayer(2, "Bob")]);
-
-    const { result } = renderSummaryHook();
-
-    expect(result.current.podiumData).toEqual([expect.objectContaining({ id: 2, name: "Bob" })]);
-    expect(getFinishedGameMock).not.toHaveBeenCalled();
-  });
-
-  it("should show game B when game A's response arrives after B's", async () => {
-    const gameA = deferred<ReturnType<typeof finishedPlayer>[]>();
-    const gameB = deferred<ReturnType<typeof finishedPlayer>[]>();
-    getFinishedGameMock.mockImplementation((id: number) =>
-      id === 1 ? gameA.promise : gameB.promise,
-    );
-    routeParams = { id: "1" };
-    const { result, rerender } = renderSummaryHook();
-
-    routeParams = { id: "2" };
+    routeId = "43";
     rerender();
-    await act(async () => {
-      gameB.resolve([finishedPlayer(20, "Beta")]);
-      await gameB.promise;
-    });
-    await act(async () => {
-      gameA.resolve([finishedPlayer(10, "Alpha")]);
-      await gameA.promise;
-    });
-
-    await waitFor(() => {
-      expect(result.current.podiumData.map((entry) => entry.name)).toEqual(["Beta"]);
-    });
-  });
-
-  it("should not show game A's standings while game B loads", async () => {
-    getFinishedGameMock.mockImplementation((id: number) =>
-      id === 1 ? Promise.resolve([finishedPlayer(10, "Alpha")]) : new Promise(() => {}),
-    );
-    routeParams = { id: "1" };
-    const { result, rerender } = renderSummaryHook();
-    await waitFor(() => {
-      expect(result.current.podiumData.map((entry) => entry.name)).toEqual(["Alpha"]);
-    });
-
-    routeParams = { id: "2" };
-    rerender();
-
-    expect(result.current.podiumData).toEqual([]);
-  });
-
-  it("should drop an action error from game A when the route moves to game B", async () => {
-    undoLastThrowMock.mockRejectedValueOnce(new Error("boom"));
-    routeParams = { id: "1" };
-    const { result, rerender } = renderSummaryHook();
-    await act(async () => {
-      await result.current.handleUndo();
-    });
-    expect(result.current.error).not.toBeNull();
-
-    routeParams = { id: "2" };
-    rerender();
-
     expect(result.current.error).toBeNull();
-  });
-
-  it("should remove the finishedGame entry when undo succeeds", async () => {
-    testQueryClient.setQueryData(["finishedGame", 42], [finishedPlayer(1, "Alice")]);
-    const { result } = renderSummaryHook();
-
-    await act(async () => {
-      await result.current.handleUndo();
-    });
-
-    expect(testQueryClient.getQueryData(["finishedGame", 42])).toBeUndefined();
-  });
-
-  it("should keep the finishedGame entry when undo fails", async () => {
-    testQueryClient.setQueryData(["finishedGame", 42], [finishedPlayer(1, "Alice")]);
-    undoLastThrowMock.mockRejectedValueOnce(new Error("boom"));
-    const { result } = renderSummaryHook();
-
-    await act(async () => {
-      await result.current.handleUndo();
-    });
-
-    expect(testQueryClient.getQueryData(["finishedGame", 42])).toBeDefined();
-  });
-
-  it("should remove the finishedGame entry when a rematch starts", async () => {
-    testQueryClient.setQueryData(["finishedGame", 42], [finishedPlayer(1, "Alice")]);
-    const { result } = renderSummaryHook();
-
-    await act(async () => {
-      await result.current.handlePlayAgain();
-    });
-
-    expect(testQueryClient.getQueryData(["finishedGame", 42])).toBeUndefined();
-  });
-
-  it("should remove the finishedGame entry when returning to start", async () => {
-    testQueryClient.setQueryData(["finishedGame", 42], [finishedPlayer(1, "Alice")]);
-    const { result } = renderSummaryHook();
-
-    await act(async () => {
-      await result.current.handleBackToStart();
-    });
-
-    expect(testQueryClient.getQueryData(["finishedGame", 42])).toBeUndefined();
-  });
-
-  it.each(SUMMARY_ACTIONS)(
-    "should make routes read the tablet game again after $action succeeds",
-    async ({ run }) => {
-      testQueryClient.setQueryData(gameQueries.tablet().queryKey, {
-        game: null,
-        lastFinishedGameId: 42,
-      });
-      const { result } = renderSummaryHook();
-
-      await act(async () => {
-        await run(result.current);
-      });
-
-      expect(navigateMock).toHaveBeenCalled();
-      expect(testQueryClient.getQueryState(gameQueries.tablet().queryKey)?.isInvalidated).toBe(
-        true,
-      );
-    },
-  );
-
-  describe("when the game is no longer the newest game", () => {
-    const notNewest = (): ApiError =>
-      new ApiError("Conflict", { status: 409, data: { error: "GAME_NOT_NEWEST" } });
-
-    beforeEach(() => {
-      vi.useFakeTimers();
-      testQueryClient.setQueryData(gameQueries.tablet().queryKey, {
-        game: { id: 57, status: "started" },
-        lastFinishedGameId: 56,
-      });
-      undoLastThrowMock.mockRejectedValue(notNewest());
-      startRematchMock.mockRejectedValue(notNewest());
-      createRematchGameMock.mockRejectedValue(notNewest());
-    });
-
-    afterEach(() => {
-      vi.useRealTimers();
-    });
-
-    it.each(SUMMARY_ACTIONS)(
-      "should show that the game is locked, then move to the tablet game on $action",
-      async ({ run }) => {
-        const { result } = renderSummaryHook();
-
-        await act(async () => {
-          await run(result.current);
-        });
-
-        expect(result.current.error).toBe("This game can no longer be changed.");
-        expect(result.current.leaving).toBe(true);
-        // The page disables its actions through this lock alone while it moves away.
-        expect(result.current.isActionPending).toBe(true);
-        expect(navigateMock).not.toHaveBeenCalled();
-
-        act(() => {
-          vi.advanceTimersByTime(2_000);
-        });
-
-        expect(navigateMock).toHaveBeenCalledWith("/game/57", { replace: true });
-      },
-    );
-
-    // The server refuses every change to this game, and the page moves away from it.
-    it.each(SUMMARY_ACTIONS)(
-      "should run no other summary action after $action got a 409",
-      async ({ run }) => {
-        const { result } = renderSummaryHook();
-
-        await act(async () => {
-          await run(result.current);
-        });
-        for (const other of SUMMARY_ACTIONS) {
-          await act(async () => {
-            await other.run(result.current);
-          });
-        }
-
-        expect(countSummaryRequests()).toBe(1);
-        expect(result.current.isActionPending).toBe(true);
-      },
-    );
-
-    it("should not move away after the page unmounts", async () => {
-      const { result, unmount } = renderSummaryHook();
-      await act(async () => {
-        await result.current.handleUndo();
-      });
-      expect(result.current.leaving).toBe(true);
-
-      unmount();
+    expect(result.current.leaving).toBe(false);
+    act(() => {
       vi.advanceTimersByTime(2_000);
-
-      expect(navigateMock).not.toHaveBeenCalled();
     });
+    expect(navigate).not.toHaveBeenCalled();
+    expect(enterRematchLobby).not.toHaveBeenCalled();
+  });
 
-    it("should not move away from another summary when a late 409 arrives for the previous game", async () => {
-      let rejectUndo!: (error: unknown) => void;
-      undoLastThrowMock.mockReturnValueOnce(
-        new Promise((_, reject) => {
-          rejectUndo = reject;
+  it("ignores a leave result that arrives after the route changes", async () => {
+    vi.useFakeTimers();
+    let finish: (value: {
+      kind: "leave";
+      path: string;
+      lobbyGameId: number;
+      message: string;
+    }) => void = () => {};
+    vi.mocked(runSummaryAction).mockReturnValue(
+      new Promise((resolve) => {
+        finish = resolve;
+      }),
+    );
+    const { result, rerender } = renderHook(() => useGameSummaryPage(), { wrapper });
+    let pending = Promise.resolve();
+    act(() => {
+      pending = result.current.handlePlayAgain();
+    });
+    routeId = "43";
+    rerender();
+    await act(async () => {
+      finish({ kind: "leave", path: "/start/77", lobbyGameId: 77, message: "Failed" });
+      await pending;
+    });
+    expect(result.current.error).toBeNull();
+    expect(result.current.leaving).toBe(false);
+    act(() => {
+      vi.advanceTimersByTime(2_000);
+    });
+    expect(navigate).not.toHaveBeenCalled();
+    expect(enterRematchLobby).not.toHaveBeenCalled();
+  });
+
+  it("does not refetch the released finished game after navigation", async () => {
+    const fetchFinished = vi.spyOn(gameApi, "getFinishedGame").mockResolvedValue([]);
+    vi.mocked(runSummaryAction).mockResolvedValue({ kind: "navigate", path: "/game/42" });
+    const { result } = renderHook(() => useGameSummaryPage(), { wrapper });
+    await act(async () => {
+      await result.current.handleUndo();
+    });
+    await act(async () => {
+      await client.invalidateQueries({ queryKey: gameQueries.finished(42).queryKey });
+    });
+    expect(fetchFinished).not.toHaveBeenCalled();
+  });
+
+  it.each([
+    { kind: "navigate" as const, path: "/game/42" },
+    { kind: "leave" as const, path: "/start/77", lobbyGameId: 77, message: "old" },
+    { kind: "failed" as const, message: "old" },
+  ])("lets the new route act when an old $kind result arrives", async (oldOutcome) => {
+    let finish: (value: typeof oldOutcome) => void = () => {};
+    vi.mocked(runSummaryAction).mockReturnValueOnce(
+      new Promise((resolve) => {
+        finish = resolve;
+      }),
+    );
+    let finishNew: (value: { kind: "failed"; message: string }) => void = () => {};
+    vi.mocked(runSummaryAction).mockReturnValueOnce(
+      new Promise((resolve) => {
+        finishNew = resolve;
+      }),
+    );
+    const { result, rerender } = renderHook(() => useGameSummaryPage(), { wrapper });
+    let oldPending = Promise.resolve();
+    act(() => {
+      oldPending = result.current.handleUndo();
+    });
+    routeId = "43";
+    rerender();
+    let newPending = Promise.resolve();
+    act(() => {
+      newPending = result.current.handlePlayAgain();
+    });
+    expect(runSummaryAction).toHaveBeenCalledTimes(2);
+    await act(async () => {
+      finish(oldOutcome);
+      await oldPending;
+    });
+    expect(navigate).not.toHaveBeenCalled();
+    expect(result.current.error).toBeNull();
+    expect(result.current.leaving).toBe(false);
+    expect(result.current.isActionPending).toBe(true);
+    await act(async () => {
+      finishNew({ kind: "failed", message: "new" });
+      await newPending;
+    });
+    expect(result.current.error).toBe("new");
+    expect(result.current.isActionPending).toBe(false);
+  });
+
+  it("does not let a result from an earlier visit unlock a later visit to the same game", async () => {
+    let finishOld: (value: { kind: "failed"; message: string }) => void = () => {};
+    let finishNew: (value: { kind: "failed"; message: string }) => void = () => {};
+    vi.mocked(runSummaryAction)
+      .mockReturnValueOnce(
+        new Promise((resolve) => {
+          finishOld = resolve;
+        }),
+      )
+      .mockReturnValueOnce(
+        new Promise((resolve) => {
+          finishNew = resolve;
         }),
       );
-      const { result, rerender } = renderSummaryHook();
-      let undo = Promise.resolve();
-      act(() => {
-        undo = result.current.handleUndo();
-      });
-
-      routeParams = { id: "43" };
-      rerender();
-      await act(async () => {
-        rejectUndo(notNewest());
-        await undo;
-      });
-      act(() => {
-        vi.advanceTimersByTime(2_000);
-      });
-
-      expect(result.current.leaving).toBe(false);
-      expect(navigateMock).not.toHaveBeenCalled();
+    const { result, rerender } = renderHook(() => useGameSummaryPage(), { wrapper });
+    let oldPending = Promise.resolve();
+    act(() => {
+      oldPending = result.current.handleUndo();
     });
-
-    it("should stay on the summary when another action error happens", async () => {
-      undoLastThrowMock.mockRejectedValue(new Error("network down"));
-      const { result } = renderSummaryHook();
-
-      await act(async () => {
-        await result.current.handleUndo();
-      });
-      act(() => {
-        vi.advanceTimersByTime(2_000);
-      });
-
-      expect(result.current.leaving).toBe(false);
-      expect(navigateMock).not.toHaveBeenCalled();
-    });
-  });
-
-  describe("when Play Again creates the lobby but cannot start it", () => {
-    const startFailed = (): RematchNotStartedError =>
-      new RematchNotStartedError(77, new ApiError("Server error", { status: 500 }));
-
-    beforeEach(() => {
-      vi.useFakeTimers();
-      // A stale cached tablet game must not decide where the page goes.
-      testQueryClient.setQueryData(gameQueries.tablet().queryKey, {
-        game: { id: 57, status: "started" },
-        lastFinishedGameId: 56,
-      });
-      testQueryClient.setQueryData(
-        ["finishedGame", 42],
-        buildFinishedPlayerResponses().slice(0, 2),
-      );
-      startRematchMock.mockRejectedValue(startFailed());
-    });
-
-    afterEach(() => {
-      vi.useRealTimers();
-      vi.restoreAllMocks();
-    });
-
-    it("should show the start error and keep the actions locked", async () => {
-      const logError = vi.spyOn(clientLogger, "error").mockImplementation(() => undefined);
-      const { result } = renderSummaryHook();
-
-      await act(async () => {
-        await result.current.handlePlayAgain();
-      });
-      await act(async () => {
-        await result.current.handlePlayAgain();
-      });
-
-      expect(result.current.error).toBe("Server error. Please try again later.");
-      expect(result.current.leaving).toBe(true);
-      expect(result.current.isActionPending).toBe(true);
-      expect(startRematchMock).toHaveBeenCalledTimes(1);
-      expect(logError).toHaveBeenCalledWith("game-summary.rematch.lobby-start.failed", {
-        context: { finishedGameId: 42, lobbyGameId: 77 },
-        error: expect.any(ApiError),
-      });
-    });
-
-    it("should keep the standings and the lobby state until it opens the new lobby", async () => {
-      const [alice, bob] = buildExpectedStandings();
-      const { result } = renderSummaryHook();
-
-      await act(async () => {
-        await result.current.handlePlayAgain();
-      });
-      act(() => {
-        vi.advanceTimersByTime(1_999);
-      });
-
-      expect(result.current.podiumData).toStrictEqual([
-        alice,
-        bob,
-        buildExpectedPodiumPlaceholder(),
-      ]);
-      expect(testQueryClient.getQueryData(["finishedGame", 42])).toBeDefined();
-      expect(resetRoomStoreMock).not.toHaveBeenCalled();
-      expect(setCurrentGameIdMock).not.toHaveBeenCalled();
-      expect(navigateMock).not.toHaveBeenCalled();
-    });
-
-    it("should open the new lobby's start page after the delay", async () => {
-      const { result } = renderSummaryHook();
-
-      await act(async () => {
-        await result.current.handlePlayAgain();
-      });
-      act(() => {
-        vi.advanceTimersByTime(2_000);
-      });
-
-      expect(navigateMock).toHaveBeenCalledTimes(1);
-      expect(navigateMock).toHaveBeenCalledWith("/start/77", { replace: true });
-      expect(resetRoomStoreMock).toHaveBeenCalledTimes(1);
-      expect(setCurrentGameIdMock).toHaveBeenCalledWith(77);
-      expect(testQueryClient.getQueryData(["finishedGame", 42])).toBeUndefined();
-    });
-
-    // ADR-0004: a 409 GAME_NOT_NEWEST on rematch start opens the tablet game, not the lobby.
-    it("should move to the tablet game when the start answers 409 GAME_NOT_NEWEST", async () => {
-      startRematchMock.mockRejectedValue(
-        new RematchNotStartedError(
-          77,
-          new ApiError("Conflict", { status: 409, data: { error: "GAME_NOT_NEWEST" } }),
-        ),
-      );
-      const { result } = renderSummaryHook();
-
-      await act(async () => {
-        await result.current.handlePlayAgain();
-      });
-      act(() => {
-        vi.advanceTimersByTime(2_000);
-      });
-
-      expect(result.current.error).toBe("This game can no longer be changed.");
-      expect(navigateMock).toHaveBeenCalledWith("/game/57", { replace: true });
-      expect(setCurrentGameIdMock).not.toHaveBeenCalled();
-    });
-  });
-
-  it("should unlock the actions and allow another Play Again when startRematch fails before a lobby exists", async () => {
-    startRematchMock.mockRejectedValueOnce(new ApiError("Server error", { status: 500 }));
-    const { result } = renderSummaryHook();
-
-    await act(async () => {
-      await result.current.handlePlayAgain();
-    });
-
-    expect(result.current.error).toBe("Server error. Please try again later.");
+    routeId = "43";
+    rerender();
+    routeId = "42";
+    rerender();
     expect(result.current.isActionPending).toBe(false);
-    expect(result.current.leaving).toBe(false);
-
+    let newPending = Promise.resolve();
+    act(() => {
+      newPending = result.current.handlePlayAgain();
+    });
+    expect(runSummaryAction).toHaveBeenCalledTimes(2);
     await act(async () => {
-      await result.current.handlePlayAgain();
+      finishOld({ kind: "failed", message: "old" });
+      await oldPending;
     });
-
-    expect(startRematchMock).toHaveBeenCalledTimes(2);
-    expect(navigateMock).toHaveBeenCalledWith("/game/77");
+    expect(result.current.error).toBeNull();
+    expect(result.current.isActionPending).toBe(true);
+    await act(async () => {
+      finishNew({ kind: "failed", message: "new" });
+      await newPending;
+    });
+    expect(result.current.error).toBe("new");
   });
 
-  describe("handlePlayAgain", () => {
-    it("should call rematch adapter when finished game id is available", async () => {
-      const { result } = renderSummaryHook();
-
-      await act(async () => {
-        await result.current.handlePlayAgain();
-      });
-
-      expect(startRematchMock).toHaveBeenCalledWith(42);
-      expect(startRematchMock).toHaveBeenCalledTimes(1);
-    });
-
-    it("should not call rematch adapter when finishedGameId is absent", async () => {
-      routeParams = { id: undefined };
-
-      const { result } = renderSummaryHook();
-
-      await act(async () => {
-        await result.current.handlePlayAgain();
-      });
-
-      expect(startRematchMock).not.toHaveBeenCalled();
-    });
-  });
-
-  describe("standings", () => {
-    const [alice, bob, cara, dan] = buildExpectedStandings();
-    const placeholder = buildExpectedPodiumPlaceholder();
-
-    it.each([
-      {
-        playerCount: 2,
-        podium: [alice, bob, placeholder],
-        leaderboard: [],
-      },
-      {
-        playerCount: 3,
-        podium: [alice, bob, cara],
-        leaderboard: [],
-      },
-      {
-        playerCount: 4,
-        podium: [alice, bob, cara],
-        leaderboard: [dan],
-      },
-    ])(
-      "should build podium and leaderboard when the game had $playerCount players",
-      async ({ playerCount, podium, leaderboard }) => {
-        getFinishedGameMock.mockResolvedValueOnce(
-          buildFinishedPlayerResponses().slice(0, playerCount),
-        );
-
-        const { result } = renderSummaryHook();
-
-        await waitFor(() => {
-          expect(result.current.podiumData).toStrictEqual(podium);
-        });
-        expect(result.current.leaderBoardList).toStrictEqual(leaderboard);
-      },
+  it("ignores an action result after unmount", async () => {
+    let finish: (value: { kind: "navigate"; path: string }) => void = () => {};
+    vi.mocked(runSummaryAction).mockReturnValueOnce(
+      new Promise((resolve) => {
+        finish = resolve;
+      }),
     );
+    const { result, unmount } = renderHook(() => useGameSummaryPage(), { wrapper });
+    let pending = Promise.resolve();
+    act(() => {
+      pending = result.current.handleUndo();
+    });
+    unmount();
+    await act(async () => {
+      finish({ kind: "navigate", path: "/game/42" });
+      await pending;
+    });
+    expect(navigate).not.toHaveBeenCalled();
+  });
+
+  it.each([
+    { kind: "failed" as const, message: "old" },
+    { kind: "leave" as const, path: "/start/77", lobbyGameId: 77, message: "old" },
+  ])("does not revive a completed $kind result on returning to the same game", async (outcome) => {
+    vi.useFakeTimers();
+    vi.mocked(runSummaryAction)
+      .mockResolvedValueOnce(outcome)
+      .mockResolvedValueOnce({ kind: "failed", message: "new" });
+    const { result, rerender } = renderHook(() => useGameSummaryPage(), { wrapper });
+    await act(async () => {
+      await result.current.handleUndo();
+    });
+    routeId = "43";
+    rerender();
+    routeId = "42";
+    rerender();
+    expect(result.current.error).toBeNull();
+    expect(result.current.leaving).toBe(false);
+    expect(result.current.isActionPending).toBe(false);
+    act(() => {
+      vi.advanceTimersByTime(2_000);
+    });
+    expect(navigate).not.toHaveBeenCalled();
+    expect(enterRematchLobby).not.toHaveBeenCalled();
+    await act(async () => {
+      await result.current.handleUndo();
+    });
+    expect(result.current.error).toBe("new");
   });
 });
