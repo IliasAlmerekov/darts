@@ -109,6 +109,39 @@ describe("useRoster", () => {
     await waitFor(() => expect(result.current.seats.map(({ id }) => id)).toEqual([1, 2]));
   });
 
+  it("preserves the dragged order and updates membership when the loader revalidates", async () => {
+    const pending = deferred<void>();
+    vi.mocked(apiClient.post).mockImplementationOnce(async (...args) => {
+      await pending.promise;
+      return respondWith({ success: true })(...args);
+    });
+    testQueryClient.setQueryData(gameQueries.roster(5).queryKey, [
+      { id: 1, name: "A", position: 0 },
+      { id: 2, name: "B", position: 1 },
+      { id: 3, name: "C", position: 2 },
+    ]);
+    const { result } = renderGamePlayers(5);
+    act(() => result.current.reorder(3, 1));
+    act(() =>
+      acceptGame(
+        buildGameThrowsResponse({
+          id: 5,
+          status: "lobby",
+          players: [
+            buildBackendPlayer({ id: 1, name: "A", position: 0 }),
+            buildBackendPlayer({ id: 3, name: "C", position: 1 }),
+            buildBackendPlayer({ id: 4, name: "D", position: 2 }),
+          ],
+        }),
+      ),
+    );
+    await waitFor(() => expect(result.current.seats.map(({ id }) => id)).toEqual([3, 1, 4]));
+    await act(async () => {
+      pending.resolve();
+      await pending.promise;
+    });
+  });
+
   it("keeps the dragged order while the stream removes and adds seats", async () => {
     const pending = deferred<void>();
     vi.mocked(apiClient.post).mockImplementationOnce(async (...args) => {
@@ -458,6 +491,19 @@ describe("useRoster", () => {
   it("keeps a newer reorder when an earlier request fails and merges an SSE update", async () => {
     const first = deferred<void>();
     const second = deferred<void>();
+    vi.mocked(apiClient.get).mockImplementationOnce(
+      respondWith(
+        buildGameThrowsResponse({
+          id: 5,
+          players: [
+            buildBackendPlayer({ id: 2, name: "B", position: 0 }),
+            buildBackendPlayer({ id: 3, name: "C", position: 1 }),
+            buildBackendPlayer({ id: 1, name: "A", position: 2 }),
+            buildBackendPlayer({ id: 4, name: "D", position: 3 }),
+          ],
+        }),
+      ),
+    );
     vi.mocked(apiClient.post)
       .mockReturnValueOnce(first.promise)
       .mockImplementationOnce(async (...args) => {
@@ -504,6 +550,18 @@ describe("useRoster", () => {
   it("keeps the dragged order until every overlapping reorder has settled", async () => {
     const first = deferred<void>();
     const second = deferred<void>();
+    vi.mocked(apiClient.get).mockImplementationOnce(
+      respondWith(
+        buildGameThrowsResponse({
+          id: 5,
+          players: [
+            buildBackendPlayer({ id: 1, name: "A", position: 0 }),
+            buildBackendPlayer({ id: 3, name: "C", position: 1 }),
+            buildBackendPlayer({ id: 4, name: "D", position: 2 }),
+          ],
+        }),
+      ),
+    );
     vi.mocked(apiClient.post)
       .mockImplementationOnce(async (...args) => {
         await first.promise;
@@ -555,6 +613,378 @@ describe("useRoster", () => {
       ),
     );
     await waitFor(() => expect(result.current.seats.map(({ id }) => id)).toEqual([1, 3, 4]));
+  });
+
+  it("reloads the server order after both overlapping reorders fail", async () => {
+    const first = deferred<void>();
+    const second = deferred<void>();
+    vi.mocked(apiClient.post)
+      .mockReturnValueOnce(first.promise)
+      .mockReturnValueOnce(second.promise);
+    vi.mocked(apiClient.get).mockImplementationOnce(
+      respondWith(
+        buildGameThrowsResponse({
+          id: 5,
+          status: "lobby",
+          players: [
+            buildBackendPlayer({ id: 1, name: "A", position: 0 }),
+            buildBackendPlayer({ id: 2, name: "B", position: 1 }),
+            buildBackendPlayer({ id: 3, name: "C", position: 2 }),
+          ],
+        }),
+      ),
+    );
+    testQueryClient.setQueryData(gameQueries.roster(5).queryKey, [
+      { id: 1, name: "A", position: 0 },
+      { id: 2, name: "B", position: 1 },
+      { id: 3, name: "C", position: 2 },
+    ]);
+    const { result } = renderGamePlayers(5);
+    act(() => result.current.reorder(2, 1));
+    act(() => result.current.reorder(3, 1));
+    await act(async () => {
+      second.resolve(Promise.reject(new Error("second")) as never);
+      await second.promise.catch(() => {});
+    });
+    await act(async () => {
+      first.resolve(Promise.reject(new Error("first")) as never);
+      await first.promise.catch(() => {});
+    });
+    await waitFor(() => expect(result.current.seats.map(({ id }) => id)).toEqual([1, 2, 3]));
+    expect(apiClient.get).toHaveBeenCalledWith(
+      "/game/5",
+      expect.objectContaining({ signal: expect.any(AbortSignal) }),
+    );
+  });
+
+  it("reloads the final server order when successful requests finish out of order", async () => {
+    const first = deferred<void>();
+    const second = deferred<void>();
+    vi.mocked(apiClient.post)
+      .mockImplementationOnce(async (...args) => {
+        await first.promise;
+        return respondWith({ success: true })(...args);
+      })
+      .mockImplementationOnce(async (...args) => {
+        await second.promise;
+        return respondWith({ success: true })(...args);
+      });
+    vi.mocked(apiClient.get).mockImplementationOnce(
+      respondWith(
+        buildGameThrowsResponse({
+          id: 5,
+          players: [
+            buildBackendPlayer({ id: 2, name: "B", position: 0 }),
+            buildBackendPlayer({ id: 1, name: "A", position: 1 }),
+            buildBackendPlayer({ id: 3, name: "C", position: 2 }),
+          ],
+        }),
+      ),
+    );
+    testQueryClient.setQueryData(gameQueries.roster(5).queryKey, [
+      { id: 1, name: "A", position: 0 },
+      { id: 2, name: "B", position: 1 },
+      { id: 3, name: "C", position: 2 },
+    ]);
+    const { result } = renderGamePlayers(5);
+    act(() => result.current.reorder(2, 1));
+    act(() => result.current.reorder(3, 1));
+    await act(async () => {
+      second.resolve();
+      await second.promise;
+    });
+    await act(async () => {
+      first.resolve();
+      await first.promise;
+    });
+    await waitFor(() => expect(result.current.seats.map(({ id }) => id)).toEqual([2, 1, 3]));
+    expect(apiClient.get).toHaveBeenCalledOnce();
+  });
+
+  it("keeps stream membership when recovery returns an older player list", async () => {
+    const first = deferred<void>();
+    const second = deferred<void>();
+    vi.mocked(apiClient.post)
+      .mockReturnValueOnce(first.promise)
+      .mockReturnValueOnce(second.promise);
+    vi.mocked(apiClient.get).mockImplementationOnce(
+      respondWith(
+        buildGameThrowsResponse({
+          id: 5,
+          players: [
+            buildBackendPlayer({ id: 1, name: "A", position: 0 }),
+            buildBackendPlayer({ id: 2, name: "B", position: 1 }),
+            buildBackendPlayer({ id: 3, name: "C", position: 2 }),
+          ],
+        }),
+      ),
+    );
+    testQueryClient.setQueryData(gameQueries.roster(5).queryKey, [
+      { id: 1, name: "A", position: 0 },
+      { id: 2, name: "B", position: 1 },
+      { id: 3, name: "C", position: 2 },
+    ]);
+    const { result } = renderGamePlayers(5);
+    act(() => result.current.reorder(2, 1));
+    act(() => result.current.reorder(3, 1));
+    act(() =>
+      FakeEventSource.last?.dispatch(
+        "players",
+        JSON.stringify({
+          players: [
+            { id: 1, name: "A", position: 0 },
+            { id: 3, name: "C", position: 1 },
+            { id: 4, name: "D", position: 2 },
+          ],
+        }),
+      ),
+    );
+    await act(async () => {
+      second.resolve(Promise.reject(new Error("second")) as never);
+      await second.promise.catch(() => {});
+    });
+    await act(async () => {
+      first.resolve(Promise.reject(new Error("first")) as never);
+      await first.promise.catch(() => {});
+    });
+    await waitFor(() => expect(result.current.seats.map(({ id }) => id)).toEqual([1, 3, 4]));
+  });
+
+  it("keeps a stream update that arrives while the recovery read is pending", async () => {
+    const first = deferred<void>();
+    const second = deferred<void>();
+    const read = deferred<GameThrowsResponse>();
+    vi.mocked(apiClient.post)
+      .mockReturnValueOnce(first.promise)
+      .mockReturnValueOnce(second.promise);
+    vi.mocked(apiClient.get).mockImplementationOnce(async (...args) =>
+      respondWith(await read.promise)(...args),
+    );
+    testQueryClient.setQueryData(gameQueries.roster(5).queryKey, [
+      { id: 1, name: "A", position: 0 },
+      { id: 2, name: "B", position: 1 },
+      { id: 3, name: "C", position: 2 },
+    ]);
+    const { result } = renderGamePlayers(5);
+    act(() => result.current.reorder(2, 1));
+    act(() => result.current.reorder(3, 1));
+    await act(async () => {
+      second.resolve(Promise.reject(new Error("second")) as never);
+      await second.promise.catch(() => {});
+    });
+    await act(async () => {
+      first.resolve(Promise.reject(new Error("first")) as never);
+      await first.promise.catch(() => {});
+    });
+    await waitFor(() => expect(apiClient.get).toHaveBeenCalledOnce());
+    act(() =>
+      FakeEventSource.last?.dispatch(
+        "players",
+        JSON.stringify({
+          players: [
+            { id: 3, name: "C", position: 0 },
+            { id: 1, name: "A", position: 1 },
+            { id: 4, name: "D", position: 2 },
+          ],
+        }),
+      ),
+    );
+    await act(async () => {
+      read.resolve(
+        buildGameThrowsResponse({
+          id: 5,
+          players: [
+            buildBackendPlayer({ id: 1, name: "A", position: 0 }),
+            buildBackendPlayer({ id: 2, name: "B", position: 1 }),
+            buildBackendPlayer({ id: 3, name: "C", position: 2 }),
+          ],
+        }),
+      );
+      await read.promise;
+    });
+    await waitFor(() => expect(result.current.seats.map(({ id }) => id)).toEqual([3, 1, 4]));
+  });
+
+  it("reloads an older successful reorder when the newer reorder fails first", async () => {
+    const first = deferred<void>();
+    const second = deferred<void>();
+    vi.mocked(apiClient.post)
+      .mockImplementationOnce(async (...args) => {
+        await first.promise;
+        return respondWith({ success: true })(...args);
+      })
+      .mockReturnValueOnce(second.promise);
+    vi.mocked(apiClient.get).mockImplementationOnce(
+      respondWith(
+        buildGameThrowsResponse({
+          id: 5,
+          players: [
+            buildBackendPlayer({ id: 2, name: "B", position: 0 }),
+            buildBackendPlayer({ id: 1, name: "A", position: 1 }),
+            buildBackendPlayer({ id: 3, name: "C", position: 2 }),
+          ],
+        }),
+      ),
+    );
+    testQueryClient.setQueryData(gameQueries.roster(5).queryKey, [
+      { id: 1, name: "A", position: 0 },
+      { id: 2, name: "B", position: 1 },
+      { id: 3, name: "C", position: 2 },
+    ]);
+    const { result } = renderGamePlayers(5);
+    act(() => result.current.reorder(2, 1));
+    act(() => result.current.reorder(3, 1));
+    await act(async () => {
+      second.resolve(Promise.reject(new Error("second")) as never);
+      await second.promise.catch(() => {});
+    });
+    await act(async () => {
+      first.resolve();
+      await first.promise;
+    });
+    await waitFor(() => expect(apiClient.get).toHaveBeenCalledOnce());
+    await waitFor(() => expect(result.current.seats.map(({ id }) => id)).toEqual([2, 1, 3]));
+  });
+
+  it("discards a recovery read after a newer reorder starts", async () => {
+    const first = deferred<void>();
+    const second = deferred<void>();
+    const read = deferred<GameThrowsResponse>();
+    vi.mocked(apiClient.post)
+      .mockReturnValueOnce(first.promise)
+      .mockReturnValueOnce(second.promise)
+      .mockImplementationOnce(respondWith({ success: true }));
+    vi.mocked(apiClient.get).mockImplementationOnce(async (...args) =>
+      respondWith(await read.promise)(...args),
+    );
+    testQueryClient.setQueryData(gameQueries.roster(5).queryKey, [
+      { id: 1, name: "A", position: 0 },
+      { id: 2, name: "B", position: 1 },
+      { id: 3, name: "C", position: 2 },
+    ]);
+    const { result } = renderGamePlayers(5);
+    act(() => result.current.reorder(2, 1));
+    act(() => result.current.reorder(3, 1));
+    await act(async () => {
+      second.resolve(Promise.reject(new Error("second")) as never);
+      await second.promise.catch(() => {});
+    });
+    await act(async () => {
+      first.resolve(Promise.reject(new Error("first")) as never);
+      await first.promise.catch(() => {});
+    });
+    await waitFor(() => expect(apiClient.get).toHaveBeenCalledOnce());
+    await act(async () => result.current.reorder(3, 2));
+    await act(async () => {
+      read.resolve(
+        buildGameThrowsResponse({
+          id: 5,
+          players: [
+            buildBackendPlayer({ id: 1, name: "A", position: 0 }),
+            buildBackendPlayer({ id: 2, name: "B", position: 1 }),
+            buildBackendPlayer({ id: 3, name: "C", position: 2 }),
+          ],
+        }),
+      );
+      await read.promise;
+    });
+    await waitFor(() => expect(result.current.seats.map(({ id }) => id)).toEqual([3, 2, 1]));
+  });
+
+  it("retries recovery when a guest is added during the read", async () => {
+    const first = deferred<void>();
+    const second = deferred<void>();
+    const read = deferred<GameThrowsResponse>();
+    vi.mocked(apiClient.post)
+      .mockReturnValueOnce(first.promise)
+      .mockReturnValueOnce(second.promise)
+      .mockImplementationOnce(
+        respondWith({ success: true, player: { id: 4, name: "D", position: null } }),
+      );
+    vi.mocked(apiClient.get)
+      .mockImplementationOnce(async (...args) => respondWith(await read.promise)(...args))
+      .mockImplementationOnce(
+        respondWith(
+          buildGameThrowsResponse({
+            id: 5,
+            players: [
+              buildBackendPlayer({ id: 1, name: "A", position: 0 }),
+              buildBackendPlayer({ id: 2, name: "B", position: 1 }),
+              buildBackendPlayer({ id: 3, name: "C", position: 2 }),
+              buildBackendPlayer({ id: 4, name: "D", position: null }),
+            ],
+          }),
+        ),
+      );
+    testQueryClient.setQueryData(gameQueries.roster(5).queryKey, [
+      { id: 1, name: "A", position: 0 },
+      { id: 2, name: "B", position: 1 },
+      { id: 3, name: "C", position: 2 },
+    ]);
+    const { result } = renderGamePlayers(5);
+    act(() => result.current.reorder(2, 1));
+    act(() => result.current.reorder(3, 1));
+    await act(async () => {
+      second.resolve(Promise.reject(new Error("second")) as never);
+      await second.promise.catch(() => {});
+    });
+    await act(async () => {
+      first.resolve(Promise.reject(new Error("first")) as never);
+      await first.promise.catch(() => {});
+    });
+    await waitFor(() => expect(apiClient.get).toHaveBeenCalledOnce());
+    await act(async () => {
+      await result.current.add({ username: "D" });
+    });
+    await act(async () => {
+      read.resolve(
+        buildGameThrowsResponse({
+          id: 5,
+          players: [
+            buildBackendPlayer({ id: 1, name: "A", position: 0 }),
+            buildBackendPlayer({ id: 2, name: "B", position: 1 }),
+            buildBackendPlayer({ id: 3, name: "C", position: 2 }),
+          ],
+        }),
+      );
+      await read.promise;
+    });
+    await waitFor(() => expect(apiClient.get).toHaveBeenCalledTimes(2));
+    await waitFor(() => expect(result.current.seats.map(({ id }) => id)).toEqual([1, 2, 3, 4]));
+  });
+
+  it("reports a failed recovery read", async () => {
+    const first = deferred<void>();
+    const second = deferred<void>();
+    const readError = new Error("read failed");
+    vi.mocked(apiClient.post)
+      .mockReturnValueOnce(first.promise)
+      .mockReturnValueOnce(second.promise);
+    vi.mocked(apiClient.get).mockRejectedValueOnce(readError);
+    const log = vi.spyOn(clientLogger, "error").mockImplementation(() => {});
+    const onError = vi.fn();
+    testQueryClient.setQueryData(gameQueries.roster(5).queryKey, [
+      { id: 1, name: "A", position: 0 },
+      { id: 2, name: "B", position: 1 },
+      { id: 3, name: "C", position: 2 },
+    ]);
+    const { result } = renderHook(() => useRoster(5, { onStreamClosed: vi.fn(), onError }), {
+      wrapper: Providers,
+    });
+    act(() => result.current.reorder(2, 1));
+    act(() => result.current.reorder(3, 1));
+    await act(async () => {
+      second.resolve(Promise.reject(new Error("second")) as never);
+      await second.promise.catch(() => {});
+    });
+    await act(async () => {
+      first.resolve(Promise.reject(new Error("first")) as never);
+      await first.promise.catch(() => {});
+    });
+    await waitFor(() =>
+      expect(log).toHaveBeenCalledWith("room.player-order.reload.failed", { error: readError }),
+    );
+    expect(onError).toHaveBeenCalledWith("Could not refresh player order. Please try again.");
   });
 
   it("rolls back a rejected reorder and leaves the new game untouched by a late rejection", async () => {
@@ -632,6 +1062,154 @@ describe("useRoster", () => {
     });
     await waitFor(() => expect(result.current.seats.map(({ id }) => id)).toEqual([1, 2]));
     expect(onError).not.toHaveBeenCalled();
+  });
+
+  it("does not roll back a reorder after the hook unmounts", async () => {
+    let rejectOrder: (error: Error) => void = () => {};
+    vi.mocked(apiClient.post).mockReturnValueOnce(
+      new Promise((_resolve, reject) => {
+        rejectOrder = reject;
+      }),
+    );
+    const original = [
+      { id: 1, name: "A", position: 0 },
+      { id: 2, name: "B", position: 1 },
+    ];
+    testQueryClient.setQueryData(gameQueries.roster(5).queryKey, original);
+    const { result, unmount } = renderGamePlayers(5);
+    act(() => result.current.reorder(2, 1));
+    unmount();
+    const newer = [
+      { id: 2, name: "B", position: 0 },
+      { id: 1, name: "A", position: 1 },
+    ];
+    testQueryClient.setQueryData(gameQueries.roster(5).queryKey, newer);
+    await act(async () => {
+      rejectOrder(new Error("network"));
+    });
+    expect(testQueryClient.getQueryData(gameQueries.roster(5).queryKey)).toEqual(newer);
+  });
+
+  it("does not restore a removed seat after the hook unmounts", async () => {
+    let rejectRemoval: (error: Error) => void = () => {};
+    vi.mocked(apiClient.delete).mockReturnValueOnce(
+      new Promise((_resolve, reject) => {
+        rejectRemoval = reject;
+      }),
+    );
+    testQueryClient.setQueryData(gameQueries.roster(5).queryKey, [
+      { id: 1, name: "A", position: 0 },
+      { id: 2, name: "B", position: 1 },
+    ]);
+    const { result, unmount } = renderGamePlayers(5);
+    act(() => {
+      void result.current.remove(1);
+    });
+    unmount();
+    const newer = [{ id: 2, name: "B", position: 0 }];
+    testQueryClient.setQueryData(gameQueries.roster(5).queryKey, newer);
+    await act(async () => {
+      rejectRemoval(new Error("network"));
+    });
+    expect(testQueryClient.getQueryData(gameQueries.roster(5).queryKey)).toEqual(newer);
+  });
+
+  it("ignores a removal failure after leaving and returning to the same game", async () => {
+    const pending = deferred<void>();
+    vi.mocked(apiClient.delete).mockReturnValueOnce(pending.promise);
+    testQueryClient.setQueryData(gameQueries.roster(5).queryKey, [
+      { id: 1, name: "A", position: 0 },
+      { id: 2, name: "B", position: 1 },
+    ]);
+    testQueryClient.setQueryData(gameQueries.roster(6).queryKey, []);
+    const { result, rerender } = renderGamePlayers(5);
+    let removal: Promise<void> = Promise.resolve();
+    act(() => {
+      removal = result.current.remove(1);
+    });
+    rerender({ gameId: 6 });
+    rerender({ gameId: 5 });
+    const newer = [{ id: 2, name: "B", position: 0 }];
+    testQueryClient.setQueryData(gameQueries.roster(5).queryKey, newer);
+    await act(async () => {
+      pending.resolve(Promise.reject(new Error("old")) as never);
+      await removal;
+    });
+    expect(testQueryClient.getQueryData(gameQueries.roster(5).queryKey)).toEqual(newer);
+  });
+
+  it("ignores an add response after leaving and returning to the same game", async () => {
+    const pending = deferred<void>();
+    vi.mocked(apiClient.post).mockImplementationOnce(async (...args) => {
+      await pending.promise;
+      return respondWith({ success: true, player: { id: 1, name: "A", position: null } })(...args);
+    });
+    testQueryClient.setQueryData(gameQueries.roster(5).queryKey, []);
+    testQueryClient.setQueryData(gameQueries.roster(6).queryKey, []);
+    const { result, rerender } = renderGamePlayers(5);
+    let addition: Promise<unknown> = Promise.resolve();
+    act(() => {
+      addition = result.current.add({ username: "A" });
+    });
+    rerender({ gameId: 6 });
+    rerender({ gameId: 5 });
+    await act(async () => {
+      pending.resolve();
+      await pending.promise;
+    });
+    expect(await addition).toEqual({ status: "stale", error: null });
+    expect(testQueryClient.getQueryData(gameQueries.roster(5).queryKey)).toEqual([]);
+  });
+
+  it("ignores an old failure while new reorders run after returning to the game", async () => {
+    const old = deferred<void>();
+    const first = deferred<void>();
+    const second = deferred<void>();
+    vi.mocked(apiClient.get).mockImplementationOnce(
+      respondWith(
+        buildGameThrowsResponse({
+          id: 5,
+          players: [
+            buildBackendPlayer({ id: 1, name: "A", position: 0 }),
+            buildBackendPlayer({ id: 3, name: "C", position: 1 }),
+            buildBackendPlayer({ id: 2, name: "B", position: 2 }),
+          ],
+        }),
+      ),
+    );
+    vi.mocked(apiClient.post)
+      .mockReturnValueOnce(old.promise)
+      .mockImplementationOnce(async (...args) => {
+        await first.promise;
+        return respondWith({ success: true })(...args);
+      })
+      .mockImplementationOnce(async (...args) => {
+        await second.promise;
+        return respondWith({ success: true })(...args);
+      });
+    testQueryClient.setQueryData(gameQueries.roster(5).queryKey, [
+      { id: 1, name: "A", position: 0 },
+      { id: 2, name: "B", position: 1 },
+      { id: 3, name: "C", position: 2 },
+    ]);
+    testQueryClient.setQueryData(gameQueries.roster(6).queryKey, []);
+    const { result, rerender } = renderGamePlayers(5);
+    act(() => result.current.reorder(2, 1));
+    rerender({ gameId: 6 });
+    rerender({ gameId: 5 });
+    act(() => result.current.reorder(3, 2));
+    act(() => result.current.reorder(1, 3));
+    await act(async () => {
+      old.resolve(Promise.reject(new Error("old")) as never);
+      await old.promise.catch(() => {});
+    });
+    await act(async () => {
+      first.resolve();
+      await first.promise;
+      second.resolve();
+      await second.promise;
+    });
+    await waitFor(() => expect(apiClient.get).toHaveBeenCalledTimes(1));
   });
 
   it("should clear players when SSE sends an empty list", async () => {

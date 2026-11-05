@@ -15,7 +15,7 @@ import { useEventSource, type EventSourceListener } from "@/shared/hooks/useEven
 import { sortRoster, type Seat } from "@/lib/game/roster";
 import { clientLogger } from "@/shared/services/browser/clientLogger";
 import { gameQueries } from "@/shared/query/game.queries";
-import { writeRoster } from "@/shared/query/roster";
+import { holdRosterOrder, mergeRosterOrder, readRoster, writeRoster } from "@/shared/query/roster";
 import useIsomorphicLayoutEffect from "@/lib/useIsomorphicLayoutEffect";
 
 type OptimisticPlayer = {
@@ -53,11 +53,28 @@ export function useRoster(
   const queryClient = useQueryClient();
   const isCurrentGame = useIsCurrentGame(gameId);
   const requestIdRef = useRef(0);
-  const pendingReorderRef = useRef<{ gameId: number; requestIds: Set<number> } | null>(null);
+  const lifecycleRef = useRef(0);
+  const pendingReorderRef = useRef<{
+    gameId: number;
+    requestIds: Set<number>;
+    release: () => void;
+    overlapped: boolean;
+    streamVersion: number;
+  } | null>(null);
+  const recoveryRef = useRef<AbortController | null>(null);
   const streamVersionRef = useRef(0);
   useIsomorphicLayoutEffect(() => {
+    lifecycleRef.current += 1;
     requestIdRef.current += 1;
     pendingReorderRef.current = null;
+    return () => {
+      lifecycleRef.current += 1;
+      recoveryRef.current?.abort();
+      recoveryRef.current = null;
+      pendingReorderRef.current?.release();
+      pendingReorderRef.current = null;
+      requestIdRef.current += 1;
+    };
   }, [gameId]);
   const { data: players = NO_PLAYERS } = useQuery({
     ...gameQueries.roster(gameId ?? 0),
@@ -92,13 +109,7 @@ export function useRoster(
           streamVersionRef.current += 1;
           updatePlayers((current) => {
             if (pendingReorderRef.current?.gameId !== gameId) return roster;
-            const incoming = new Map(roster.map((seat) => [seat.id, seat]));
-            const kept = current.flatMap((seat) => {
-              const updated = incoming.get(seat.id);
-              incoming.delete(seat.id);
-              return updated ? [updated] : [];
-            });
-            return [...kept, ...incoming.values()].map((seat, position) => ({ ...seat, position }));
+            return mergeRosterOrder(current, roster);
           });
         }
       } catch (error) {
@@ -190,13 +201,16 @@ export function useRoster(
     async (payload: AddGuestPayload): Promise<AddGuestResult> => {
       if (gameId === null) return { status: "failed", error: new Error("No active game") };
       const activeGameId = gameId;
+      const lifecycle = lifecycleRef.current;
       const result = await mutateSeat({
         gameId: activeGameId,
         request: () => addGuestPlayer(activeGameId, payload),
+        isRequestCurrent: () => lifecycleRef.current === lifecycle,
         seatsLog: "room.guest.seats-not-editable",
       });
       if (result.status === "success") {
-        if (!isCurrentGame(activeGameId)) return { status: "stale", error: null };
+        if (!isCurrentGame(activeGameId) || lifecycleRef.current !== lifecycle)
+          return { status: "stale", error: null };
         appendOptimisticPlayer(result.value);
         return { status: "added" };
       }
@@ -209,6 +223,7 @@ export function useRoster(
     async (playerId: number): Promise<void> => {
       if (gameId === null) return;
       const activeGameId = gameId;
+      const lifecycle = lifecycleRef.current;
       const roster =
         queryClient.getQueryData(gameQueries.roster(activeGameId).queryKey) ?? NO_PLAYERS;
       const removedIndex = roster.findIndex((player) => player.id === playerId);
@@ -219,7 +234,12 @@ export function useRoster(
         gameId: activeGameId,
         request: () => leaveRoom(activeGameId, playerId),
         rollback: () => {
-          if (removed && streamVersionRef.current === streamVersion) {
+          if (
+            removed &&
+            isCurrentGame(activeGameId) &&
+            lifecycleRef.current === lifecycle &&
+            streamVersionRef.current === streamVersion
+          ) {
             updatePlayers((current) => {
               if (current.some((seat) => seat.id === playerId)) return current;
               const restored = [...current];
@@ -228,6 +248,7 @@ export function useRoster(
             });
           }
         },
+        isRequestCurrent: () => lifecycleRef.current === lifecycle,
         seatsLog: "room.leave.seats-not-editable",
       });
       if (result.status === "stale") {
@@ -246,7 +267,15 @@ export function useRoster(
         onError(toUserErrorMessage(result.error, "Could not remove player. Please try again."));
       }
     },
-    [gameId, mutateSeat, onError, queryClient, removeOptimisticPlayer, updatePlayers],
+    [
+      gameId,
+      isCurrentGame,
+      mutateSeat,
+      onError,
+      queryClient,
+      removeOptimisticPlayer,
+      updatePlayers,
+    ],
   );
 
   const reorderPlayers = useCallback(
@@ -261,10 +290,24 @@ export function useRoster(
       if (oldIndex === -1 || newIndex === -1) return;
       const nextOrder = arrayMove(items, oldIndex, newIndex);
       if (gameId !== null) {
+        recoveryRef.current?.abort();
+        recoveryRef.current = null;
         const requestId = ++requestIdRef.current;
         if (pendingReorderRef.current?.gameId !== gameId) {
-          pendingReorderRef.current = { gameId, requestIds: new Set() };
+          const release = holdRosterOrder(gameId, (roster) => {
+            streamVersionRef.current += 1;
+            updatePlayers((current) => mergeRosterOrder(current, roster));
+          });
+          pendingReorderRef.current = {
+            gameId,
+            requestIds: new Set(),
+            release,
+            overlapped: false,
+            streamVersion: streamVersionRef.current,
+          };
         }
+        if (pendingReorderRef.current.requestIds.size > 0)
+          pendingReorderRef.current.overlapped = true;
         pendingReorderRef.current.requestIds.add(requestId);
         const previous = current;
         const ordered = arrayMove(current, oldIndex, newIndex).map((seat, position) => ({
@@ -280,27 +323,68 @@ export function useRoster(
               nextOrder.map((playerId, position) => ({ playerId, position })),
             ),
           rollback: () => {
-            updatePlayers((currentSeats) => {
-              const incoming = new Map(currentSeats.map((seat) => [seat.id, seat]));
-              const kept = previous.flatMap((seat) => {
-                const updated = incoming.get(seat.id);
-                incoming.delete(seat.id);
-                return updated ? [updated] : [];
-              });
-              return [...kept, ...incoming.values()].map((seat, position) => ({
-                ...seat,
-                position,
-              }));
-            });
+            updatePlayers((currentSeats) => mergeRosterOrder(previous, currentSeats));
           },
           shouldRollback: () => requestIdRef.current === requestId && isCurrentGame(gameId),
           isRequestCurrent: () => requestIdRef.current === requestId,
           failureLog: "room.player-order.persist.failed",
         }).then((result) => {
           const pending = pendingReorderRef.current;
-          if (pending?.gameId === gameId) {
+          if (pending?.gameId === gameId && pending.requestIds.has(requestId)) {
             pending.requestIds.delete(requestId);
-            if (pending.requestIds.size === 0) pendingReorderRef.current = null;
+            if (pending.requestIds.size === 0) {
+              pending.release();
+              pendingReorderRef.current = null;
+              if (pending.overlapped && isCurrentGame(gameId)) {
+                const controller = new AbortController();
+                recoveryRef.current = controller;
+                const recoveryRequestId = requestIdRef.current;
+                const { queryKey } = gameQueries.roster(gameId);
+                const recover = async (): Promise<void> => {
+                  try {
+                    while (
+                      !controller.signal.aborted &&
+                      isCurrentGame(gameId) &&
+                      requestIdRef.current === recoveryRequestId
+                    ) {
+                      const version = queryClient.getQueryState(queryKey)?.dataUpdateCount;
+                      const streamVersion = streamVersionRef.current;
+                      const roster = await readRoster(gameId, controller.signal);
+                      if (
+                        controller.signal.aborted ||
+                        !isCurrentGame(gameId) ||
+                        requestIdRef.current !== recoveryRequestId ||
+                        streamVersionRef.current !== streamVersion
+                      )
+                        return;
+                      if (queryClient.getQueryState(queryKey)?.dataUpdateCount !== version)
+                        continue;
+                      const current = queryClient.getQueryData(queryKey) ?? NO_PLAYERS;
+                      writeRoster(
+                        gameId,
+                        streamVersionRef.current === pending.streamVersion
+                          ? roster
+                          : mergeRosterOrder(roster, current),
+                      );
+                      return;
+                    }
+                  } catch (error: unknown) {
+                    if (!controller.signal.aborted && isCurrentGame(gameId)) {
+                      clientLogger.error("room.player-order.reload.failed", { error });
+                      onError(
+                        toUserErrorMessage(
+                          error,
+                          "Could not refresh player order. Please try again.",
+                        ),
+                      );
+                    }
+                  } finally {
+                    if (recoveryRef.current === controller) recoveryRef.current = null;
+                  }
+                };
+                void recover();
+              }
+            }
           }
           if (result.status !== "success" && result.status !== "stale")
             onError(

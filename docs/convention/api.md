@@ -15,6 +15,7 @@ call sites today:
 
 - `src/pages/StartPage/startPageLoader.ts`: `getGameThrows` and `getInvitation` in the
   StartPage loader.
+- `src/shared/query/roster.ts`: `getGameThrows` to recover after overlapping reorder failures.
 - `src/pages/StartPage/useCreateStartFlow.ts`: `getGameSettings` before a game starts.
 - `src/shared/api/auth.ts`: `loginWithCredentials` calls `getAuthenticatedUser` in the
   post-login session fallback.

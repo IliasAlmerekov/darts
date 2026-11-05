@@ -11,6 +11,9 @@ export function useIsCurrentGame(gameId: number | null): (requestGameId: number)
   // A layout effect, so the ref is current before a response can land after a route commit.
   useIsomorphicLayoutEffect(() => {
     currentGameIdRef.current = gameId;
+    return () => {
+      currentGameIdRef.current = null;
+    };
   }, [gameId]);
 
   return useCallback((requestGameId) => currentGameIdRef.current === requestGameId, []);
