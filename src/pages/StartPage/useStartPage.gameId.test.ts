@@ -1,4 +1,5 @@
 // @vitest-environment jsdom
+import { FakeEventSource } from "@/test/FakeEventSource";
 /**
  * TDD — Ticket 4: Single source of truth for gameId
  *
@@ -51,48 +52,8 @@ import {
 import { buildGameThrowsResponse } from "@/shared/types/game.test-support";
 
 // ---------------------------------------------------------------------------
-// MockEventSource — browser API boundary stub
+// FakeEventSource — browser API boundary stub
 // ---------------------------------------------------------------------------
-
-type EventHandler = (event: MessageEvent<string>) => void;
-
-class MockEventSource {
-  static last: MockEventSource | null = null;
-
-  onopen: (() => void) | null = null;
-  onerror: (() => void) | null = null;
-
-  private handlers = new Map<string, EventHandler[]>();
-
-  constructor() {
-    MockEventSource.last = this;
-  }
-
-  addEventListener(event: string, handler: EventHandler): void {
-    const existing = this.handlers.get(event) ?? [];
-    this.handlers.set(event, [...existing, handler]);
-  }
-
-  removeEventListener(event: string, handler: EventHandler): void {
-    const existing = this.handlers.get(event) ?? [];
-    this.handlers.set(
-      event,
-      existing.filter((h) => h !== handler),
-    );
-  }
-
-  dispatch(event: string, data: string): void {
-    const eventHandlers = this.handlers.get(event) ?? [];
-    const messageEvent = new MessageEvent(event, { data });
-    for (const handler of eventHandlers) {
-      handler(messageEvent);
-    }
-  }
-
-  close(): void {
-    // noop
-  }
-}
 
 // ---------------------------------------------------------------------------
 // MockAudio — browser API boundary stub
@@ -140,13 +101,13 @@ function makeWrapper(
 
 function sharedBeforeEach(): void {
   vi.clearAllMocks();
-  MockEventSource.last = null;
+  FakeEventSource.last = null;
   sessionStorage.clear();
   resetRoomStore();
   resetGameStore();
   resetPreCreateGameSettings();
   queryClient.clear();
-  vi.stubGlobal("EventSource", MockEventSource);
+  vi.stubGlobal("EventSource", FakeEventSource);
   vi.stubGlobal("Audio", MockAudio);
   vi.mocked(getGameThrows).mockResolvedValue(buildGameThrowsResponse({ status: "lobby" }));
   vi.mocked(getInvitation).mockResolvedValue({ gameId: 0, invitationLink: "" });

@@ -28,7 +28,6 @@ describe("LivePlayersList", () => {
             buildBackendPlayer({ id: 2, name: "Sam", position: 0 }),
           ]}
           playerCount={2}
-          playerOrder={[1, 2]}
           onRemovePlayer={onRemovePlayer}
         />
       </Wrapper>,

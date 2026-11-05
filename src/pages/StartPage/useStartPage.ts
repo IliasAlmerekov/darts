@@ -1,18 +1,18 @@
 import { useCallback, useMemo, useState } from "react";
 import { useNavigate, useParams, useRevalidator } from "react-router-dom";
 import { useStore } from "@nanostores/react";
-import { useLobbyRoster } from "./useLobbyRoster";
-import { useCreateStartFlow } from "./useCreateStartFlow";
-import { useGuestFlow } from "./useGuestFlow";
+import { useRoster } from "./roster/useRoster";
+import { useCreateStartFlow } from "./create/useCreateStartFlow";
+import { useGuestFlow } from "./guest/useGuestFlow";
 import { parseRouteGameId } from "@/lib/router/tabletGameRoute";
 import { $invitation } from "@/shared/store";
 
-type GamePlayersResult = ReturnType<typeof useLobbyRoster>;
+type GamePlayersResult = ReturnType<typeof useRoster>;
 
 interface UseStartPageResult {
   invitation: ReturnType<typeof useStore<typeof $invitation>>;
   gameId: number | null;
-  players: GamePlayersResult["players"];
+  players: GamePlayersResult["seats"];
   playerCount: number;
   isLobbyFull: boolean;
   playerOrder: number[];
@@ -24,7 +24,7 @@ interface UseStartPageResult {
   guestError: string | null;
   guestSuggestions: string[];
   isAddingGuest: boolean;
-  handleDragEnd: ReturnType<typeof useLobbyRoster>["reorderPlayers"];
+  reorder: GamePlayersResult["reorder"];
   handleRemovePlayer: (playerId: number, currentGameId: number) => Promise<void>;
   handleStartGame: () => Promise<void>;
   handleCreateRoom: () => Promise<void>;
@@ -50,13 +50,15 @@ export function useStartPage(): UseStartPageResult {
   const [pageError, setPageError] = useState<string | null>(null);
   const clearPageError = useCallback((): void => setPageError(null), []);
   const {
-    players,
-    count: playerCount,
-    playerOrder,
-    addGuest,
-    removePlayer: handleRemovePlayer,
-    reorderPlayers: handleDragEnd,
-  } = useLobbyRoster(gameId, revalidate, setPageError);
+    seats: players,
+    add,
+    remove,
+    reorder,
+  } = useRoster(gameId, { onStreamClosed: revalidate, onError: setPageError });
+  const playerCount = players.length;
+  const playerOrder = players.map(({ id }) => id);
+  const addGuest = (_gameId: number, username: string) => add({ username });
+  const handleRemovePlayer = (playerId: number) => remove(playerId);
   const { creating, starting, handleCreateRoom, handleStartGame } = useCreateStartFlow({
     gameId,
     invitationGameId: invitation?.gameId,
@@ -105,7 +107,7 @@ export function useStartPage(): UseStartPageResult {
     guestError,
     guestSuggestions,
     isAddingGuest,
-    handleDragEnd,
+    reorder,
     handleRemovePlayer,
     handleStartGame,
     handleCreateRoom,

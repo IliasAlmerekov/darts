@@ -1,4 +1,5 @@
 // @vitest-environment jsdom
+import { FakeEventSource } from "@/test/FakeEventSource";
 
 const navigateMock = vi.fn();
 const revalidateMock = vi.fn();
@@ -60,59 +61,8 @@ import {
 } from "@/shared/types/game.test-support";
 
 // ---------------------------------------------------------------------------
-// MockEventSource — browser API boundary stub
+// FakeEventSource — browser API boundary stub
 // ---------------------------------------------------------------------------
-
-type EventHandler = (event: MessageEvent<string>) => void;
-
-class MockEventSource {
-  static CONNECTING = 0 as const;
-  static OPEN = 1 as const;
-  static CLOSED = 2 as const;
-  static last: MockEventSource | null = null;
-  static urls: string[] = [];
-
-  onopen: (() => void) | null = null;
-  onerror: (() => void) | null = null;
-  readyState: 0 | 1 | 2 = MockEventSource.CONNECTING;
-
-  private handlers = new Map<string, EventHandler[]>();
-
-  constructor(url: string | URL) {
-    MockEventSource.urls.push(String(url));
-    MockEventSource.last = this;
-  }
-
-  addEventListener(event: string, handler: EventHandler): void {
-    const existing = this.handlers.get(event) ?? [];
-    this.handlers.set(event, [...existing, handler]);
-  }
-
-  removeEventListener(event: string, handler: EventHandler): void {
-    const existing = this.handlers.get(event) ?? [];
-    this.handlers.set(
-      event,
-      existing.filter((h) => h !== handler),
-    );
-  }
-
-  dispatch(event: string, data: string): void {
-    const eventHandlers = this.handlers.get(event) ?? [];
-    const messageEvent = new MessageEvent(event, { data });
-    for (const handler of eventHandlers) {
-      handler(messageEvent);
-    }
-  }
-
-  fail(readyState: 0 | 1 | 2): void {
-    this.readyState = readyState;
-    this.onerror?.();
-  }
-
-  close(): void {
-    this.readyState = MockEventSource.CLOSED;
-  }
-}
 
 // ---------------------------------------------------------------------------
 // MockAudio — browser API boundary stub
@@ -192,14 +142,14 @@ function makeWrapper(
 describe("useStartPage action guards", () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    MockEventSource.last = null;
-    MockEventSource.urls = [];
+    FakeEventSource.last = null;
+    FakeEventSource.urls = [];
     sessionStorage.clear();
     resetRoomStore();
     resetGameStore();
     resetPreCreateGameSettings();
     queryClient.clear();
-    vi.stubGlobal("EventSource", MockEventSource);
+    vi.stubGlobal("EventSource", FakeEventSource);
     vi.stubGlobal("Audio", MockAudio);
     audioSources.length = 0;
     setSoundEnabled(true);
@@ -530,34 +480,6 @@ describe("useStartPage action guards", () => {
     expect(result.current.guestError).toBe("Username must contain at least 3 letters.");
   });
 
-  it("should use the latest players snapshot for remove rollback after rerender", async () => {
-    setInvitation({ gameId: 10, invitationLink: "/invite/10" });
-    vi.mocked(getGameThrows).mockResolvedValue(
-      buildGameThrowsResponse({
-        id: 10,
-        players: [buildBackendPlayer({ id: 2, name: "Sam", isActive: true, position: 1 })],
-      }),
-    );
-    vi.mocked(leaveRoom).mockRejectedValueOnce(new Error("network"));
-
-    const { result } = renderHook(() => useStartPage(), {
-      wrapper: makeWrapper("/start/10"),
-    });
-
-    await waitFor(() => {
-      expect(result.current.players.some((p) => p.id === 2)).toBe(true);
-    });
-
-    const removePlayer = result.current.handleRemovePlayer;
-
-    await act(async () => {
-      await removePlayer(2, 10);
-    });
-
-    expect(leaveRoom).toHaveBeenCalledWith(10, 2);
-    expect(result.current.players.some((p) => p.id === 2)).toBe(true);
-  });
-
   describe("seat conflicts", () => {
     let warnSpy: ReturnType<typeof vi.spyOn>;
 
@@ -581,72 +503,6 @@ describe("useStartPage action guards", () => {
         },
       });
     }
-
-    async function renderLobbyWithPlayer(): Promise<
-      ReturnType<typeof renderHook<ReturnType<typeof useStartPage>, unknown>>
-    > {
-      setInvitation({ gameId: 10, invitationLink: "/invite/10" });
-      vi.mocked(getGameThrows).mockResolvedValue(
-        buildGameThrowsResponse({
-          id: 10,
-          players: [buildBackendPlayer({ id: 2, name: "Sam", isActive: true, position: 1 })],
-        }),
-      );
-      const rendered = renderHook(() => useStartPage(), { wrapper: makeWrapper("/start/10") });
-      await waitFor(() => {
-        expect(rendered.result.current.players.some((p) => p.id === 2)).toBe(true);
-      });
-      return rendered;
-    }
-
-    it("should restore the removed player, show a readable message and reload when remove hits GAME_SEATS_NOT_EDITABLE", async () => {
-      vi.mocked(leaveRoom).mockRejectedValueOnce(seatsNotEditable());
-      const { result } = await renderLobbyWithPlayer();
-
-      await act(async () => {
-        await result.current.handleRemovePlayer(2, 10);
-      });
-
-      expect(result.current.players.some((p) => p.id === 2)).toBe(true);
-      expect(result.current.pageError).toBe(SEATS_MESSAGE);
-      expect(result.current.invitation?.gameId).toBe(10);
-      expect(revalidateMock).toHaveBeenCalledTimes(1);
-      expect(warnSpy).toHaveBeenCalledWith(
-        "room.leave.seats-not-editable",
-        expect.objectContaining({ context: { gameId: 10 } }),
-      );
-    });
-
-    it("should roll back the order, show a readable message and reload when reorder hits GAME_SEATS_NOT_EDITABLE", async () => {
-      setInvitation({ gameId: 10, invitationLink: "/invite/10" });
-      vi.mocked(getGameThrows).mockResolvedValue(
-        buildGameThrowsResponse({
-          id: 10,
-          players: [
-            buildBackendPlayer({ id: 1, name: "Ann", isActive: true, position: 0 }),
-            buildBackendPlayer({ id: 2, name: "Sam", isActive: true, position: 1 }),
-          ],
-        }),
-      );
-      vi.mocked(updatePlayerOrder).mockRejectedValueOnce(seatsNotEditable());
-      const { result } = renderHook(() => useStartPage(), { wrapper: makeWrapper("/start/10") });
-      await waitFor(() => {
-        expect(result.current.playerOrder).toEqual([1, 2]);
-      });
-
-      await act(async () => {
-        result.current.handleDragEnd({
-          active: { id: 2 },
-          over: { id: 1 },
-        } as unknown as Parameters<typeof result.current.handleDragEnd>[0]);
-      });
-
-      await waitFor(() => {
-        expect(result.current.pageError).toBe(SEATS_MESSAGE);
-      });
-      expect(result.current.playerOrder).toEqual([1, 2]);
-      expect(revalidateMock).toHaveBeenCalledTimes(1);
-    });
 
     it("should show a readable message and reload when add guest hits GAME_SEATS_NOT_EDITABLE", async () => {
       setInvitation({ gameId: 10, invitationLink: "/invite/10" });
@@ -756,34 +612,6 @@ describe("useStartPage action guards", () => {
         return { ...rendered, moveTo };
       }
 
-      it("should ignore a late GAME_SEATS_NOT_EDITABLE from remove player", async () => {
-        const pending = deferred<void>();
-        vi.mocked(leaveRoom).mockReturnValueOnce(pending.promise);
-        const { result, moveTo } = await renderOnGame10();
-
-        let removal = Promise.resolve();
-        await act(async () => {
-          removal = result.current.handleRemovePlayer(2, 10);
-        });
-        await moveTo("/start/11");
-        await waitFor(() => {
-          expect(result.current.playerOrder).toEqual([3, 4]);
-        });
-        await act(async () => {
-          pending.reject(seatsNotEditable());
-          await removal;
-        });
-
-        expect(result.current.pageError).toBeNull();
-        expect(revalidateMock).not.toHaveBeenCalled();
-        expect(result.current.players.map((p) => p.id)).toEqual([3, 4]);
-        expect(warnSpy).toHaveBeenCalledTimes(1);
-        expect(warnSpy).toHaveBeenCalledWith(
-          "room.leave.seats-not-editable",
-          expect.objectContaining({ context: { gameId: 10 } }),
-        );
-      });
-
       it("should ignore a late GAME_SEATS_NOT_EDITABLE from add guest", async () => {
         const pending = deferred<never>();
         vi.mocked(addGuestPlayer).mockReturnValueOnce(pending.promise);
@@ -837,29 +665,6 @@ describe("useStartPage action guards", () => {
         expect(result.current.isGuestOverlayOpen).toBe(true);
       });
 
-      it("should log a stale remove failure that is not a seat conflict", async () => {
-        const pending = deferred<void>();
-        vi.mocked(leaveRoom).mockReturnValueOnce(pending.promise);
-        const { result, moveTo } = await renderOnGame10();
-
-        let removal = Promise.resolve();
-        await act(async () => {
-          removal = result.current.handleRemovePlayer(2, 10);
-        });
-        await moveTo("/start/11");
-        const failure = new ApiError("Server error", { status: 500, data: null });
-        await act(async () => {
-          pending.reject(failure);
-          await removal;
-        });
-
-        expect(result.current.pageError).toBeNull();
-        expect(warnSpy).toHaveBeenCalledWith("room.leave.stale-answer", {
-          context: { gameId: 10 },
-          error: failure,
-        });
-      });
-
       it("should log a stale add guest failure that is not a seat conflict or a full lobby", async () => {
         const pending = deferred<never>();
         vi.mocked(addGuestPlayer).mockReturnValueOnce(pending.promise);
@@ -888,31 +693,6 @@ describe("useStartPage action guards", () => {
           context: { gameId: 10 },
           error: failure,
         });
-      });
-
-      it("should not roll back the order of the new game or reload on a late conflict from reorder", async () => {
-        const pending = deferred<void>();
-        vi.mocked(updatePlayerOrder).mockReturnValueOnce(pending.promise);
-        const { result, moveTo } = await renderOnGame10();
-
-        await act(async () => {
-          result.current.handleDragEnd({
-            active: { id: 2 },
-            over: { id: 1 },
-          } as unknown as Parameters<typeof result.current.handleDragEnd>[0]);
-        });
-        await moveTo("/start/11");
-        await waitFor(() => {
-          expect(result.current.playerOrder).toEqual([3, 4]);
-        });
-        await act(async () => {
-          pending.reject(seatsNotEditable());
-          await Promise.resolve();
-        });
-
-        expect(result.current.pageError).toBeNull();
-        expect(result.current.playerOrder).toEqual([3, 4]);
-        expect(revalidateMock).not.toHaveBeenCalled();
       });
     });
 
@@ -976,7 +756,7 @@ describe("useStartPage action guards", () => {
       renderHook(() => useStartPage(), { wrapper: makeWrapper("/start/10") });
 
       act(() => {
-        MockEventSource.last?.fail(MockEventSource.CLOSED);
+        FakeEventSource.last?.fail(FakeEventSource.CLOSED);
       });
 
       expect(revalidateMock).toHaveBeenCalledTimes(1);
@@ -989,17 +769,17 @@ describe("useStartPage action guards", () => {
         renderHook(() => useStartPage(), { wrapper: makeWrapper("/start/10") });
 
         act(() => {
-          MockEventSource.last?.fail(MockEventSource.CLOSED);
+          FakeEventSource.last?.fail(FakeEventSource.CLOSED);
         });
 
         expect(revalidateMock).toHaveBeenCalledTimes(1);
-        expect(MockEventSource.urls).toEqual(["/api/room/10/stream"]);
+        expect(FakeEventSource.urls).toEqual(["/api/room/10/stream"]);
 
         act(() => {
           vi.advanceTimersByTime(1000);
         });
 
-        expect(MockEventSource.urls).toEqual(["/api/room/10/stream", "/api/room/10/stream"]);
+        expect(FakeEventSource.urls).toEqual(["/api/room/10/stream", "/api/room/10/stream"]);
       } finally {
         vi.useRealTimers();
       }
@@ -1010,7 +790,7 @@ describe("useStartPage action guards", () => {
       renderHook(() => useStartPage(), { wrapper: makeWrapper("/start/10") });
 
       act(() => {
-        MockEventSource.last?.fail(MockEventSource.CONNECTING);
+        FakeEventSource.last?.fail(FakeEventSource.CONNECTING);
       });
 
       expect(revalidateMock).not.toHaveBeenCalled();

@@ -1,8 +1,13 @@
 // @vitest-environment node
 import { describe, expect, it } from "vitest";
-import { parsePlayersEvent } from "./playersEvent";
+import { parsePlayersEvent } from "@/shared/api/room";
+import { toRoster } from "@/lib/game/roster";
 
 describe("parsePlayersEvent", () => {
+  it("matches the HTTP roster when a position is null", () => {
+    const players = [{ id: 1, name: "Alice", position: null }];
+    expect(parsePlayersEvent({ players })).toEqual(toRoster(players));
+  });
   it("maps a valid player from the backend contract", () => {
     expect(
       parsePlayersEvent({
@@ -21,7 +26,7 @@ describe("parsePlayersEvent", () => {
     ).toEqual([{ id: 1, name: "Bob", position: 0 }]);
   });
 
-  it("falls back to an empty name and the list index for missing or null fields", () => {
+  it("falls back to an empty name and null position", () => {
     expect(
       parsePlayersEvent({
         players: [
@@ -31,9 +36,9 @@ describe("parsePlayersEvent", () => {
         ],
       }),
     ).toEqual([
-      { id: 1, name: "", position: 0 },
-      { id: 2, name: "", position: 1 },
-      { id: 3, name: "Carol", position: 2 },
+      { id: 1, name: "", position: null },
+      { id: 2, name: "", position: null },
+      { id: 3, name: "Carol", position: null },
     ]);
   });
 

@@ -1,4 +1,4 @@
-import React, { useMemo } from "react";
+import React from "react";
 import clsx from "clsx";
 import SelectedPlayerItem from "../player-items/SelectedPlayerItem";
 import styles from "./LivePlayersList.module.css";
@@ -12,7 +12,6 @@ interface LivePlayer {
 interface LivePlayersListProps {
   onRemovePlayer?: (playerId: number) => void;
   dragEnd?: boolean;
-  playerOrder?: number[];
   maxPlayers?: number;
   players: LivePlayer[];
   playerCount: number;
@@ -21,30 +20,11 @@ interface LivePlayersListProps {
 function LivePlayersListComponent({
   onRemovePlayer,
   dragEnd,
-  playerOrder,
   maxPlayers = 10,
   players,
   playerCount,
 }: LivePlayersListProps): React.JSX.Element {
   const isFull = playerCount >= maxPlayers;
-
-  const sortedPlayers = useMemo(() => {
-    if (!playerOrder || playerOrder.length === 0) {
-      return [...players].sort(
-        (a, b) => (a.position ?? Number.MAX_SAFE_INTEGER) - (b.position ?? Number.MAX_SAFE_INTEGER),
-      );
-    }
-
-    return [...players].sort((a, b) => {
-      const indexA = playerOrder.indexOf(a.id);
-      const indexB = playerOrder.indexOf(b.id);
-
-      if (indexA === -1) return 1;
-      if (indexB === -1) return -1;
-
-      return indexA - indexB;
-    });
-  }, [players, playerOrder]);
 
   return (
     <div className={styles.livePlayersContainer}>
@@ -58,12 +38,12 @@ function LivePlayersListComponent({
         </div>
       </div>
       <div className={styles.selectedPlayerListScroll}>
-        {sortedPlayers.length === 0 ? (
+        {players.length === 0 ? (
           <div className={styles.noPlayersMessage}>
             <p>No players yet. Scan the QR code to join!</p>
           </div>
         ) : (
-          sortedPlayers.map((player) => (
+          players.map((player) => (
             <SelectedPlayerItem
               key={player.id}
               name={player.name}
@@ -89,7 +69,6 @@ export const LivePlayersList = React.memo(LivePlayersListComponent, (previousPro
     previousProps.maxPlayers === nextProps.maxPlayers &&
     previousProps.onRemovePlayer === nextProps.onRemovePlayer &&
     previousProps.playerCount === nextProps.playerCount &&
-    previousProps.players === nextProps.players &&
-    previousProps.playerOrder === nextProps.playerOrder
+    previousProps.players === nextProps.players
   );
 });

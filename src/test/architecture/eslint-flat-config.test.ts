@@ -86,7 +86,7 @@ describe("shared lib import aliases", () => {
     "src/app/App.tsx",
     "src/shared/lib/guards/guards.ts",
     "src/pages/StartPage/startPageLoader.ts",
-    "src/pages/StartPage/useIsCurrentGame.ts",
+    "src/pages/StartPage/lib/useIsCurrentGame.ts",
     "src/pages/StatisticsPage/StatisticsPage.tsx",
   ])(
     "rejects the long alias in production file %s",
@@ -116,6 +116,15 @@ describe("DTO mapper imports", () => {
     overrideConfig: { languageOptions: { parserOptions: { project: null } } },
   });
 
+  it("rejects the roster mapper in render-flow hooks", async () => {
+    const [result] = await eslint.lintText('import { toRoster } from "@/lib/game/roster";', {
+      filePath: "src/pages/StartPage/roster/useRoster.ts",
+    });
+    expect(result?.messages.some((message) => message.ruleId === "no-restricted-imports")).toBe(
+      true,
+    );
+  });
+
   it("rejects the scoreboard mapper in render-flow hooks", async () => {
     const [result] = await eslint.lintText(
       'import { applyScoreboardDelta } from "@/lib/game/applyScoreboardDelta";',
@@ -137,7 +146,7 @@ describe("dynamic shared lib imports", () => {
     "src/app/App.tsx",
     "src/shared/lib/guards/guards.ts",
     "src/pages/StartPage/startPageLoader.ts",
-    "src/pages/StartPage/useIsCurrentGame.ts",
+    "src/pages/StartPage/lib/useIsCurrentGame.ts",
     "src/pages/StatisticsPage/StatisticsPage.tsx",
   ])(
     "rejects dynamic imports in %s",

@@ -15,6 +15,7 @@ call sites today:
 
 - `src/pages/StartPage/startPageLoader.ts`: `getGameThrows` and `getInvitation` in the
   StartPage loader.
+- `src/shared/query/roster.ts`: `getGameThrows` to recover after overlapping reorder failures.
 - `src/pages/StartPage/useCreateStartFlow.ts`: `getGameSettings` before a game starts.
 - `src/shared/api/auth.ts`: `loginWithCredentials` calls `getAuthenticatedUser` in the
   post-login session fallback.
@@ -179,7 +180,7 @@ game id, room store, game store) stays in Nanostores (`state.md`).
   `["auth", "me"]`, `["game", gameId, "settings"]`,
   `["stats", "players", { limit, offset, sortParam }]`. The one exception is
   `["finishedGame", gameId]` (`FINISHED_GAME_KEY` in `game.queries.ts`).
-- Callers take keys and options from the builder (`gameQueries.lobbyPlayers(id).queryKey`,
+- Callers take keys and options from the builder (`gameQueries.roster(id).queryKey`,
   `useQuery({ ...gameQueries.finished(id), enabled })`), never from an inline array.
 - `queryFn` passes its `signal` to the domain function. On an unexpected failure it logs
   through `clientLogger.error` unless `signal.aborted`, then rethrows. A factory may treat
@@ -187,7 +188,7 @@ game id, room store, game store) stays in Nanostores (`state.md`).
   abort, and `playerQueries.currentGame` rethrows network, timeout, and 401 errors without
   logging, because it polls.
 - When the UI needs another shape, `queryFn` runs the mapper, so the cache holds the mapped
-  value (`toLobbyPlayers` in `gameQueries.lobbyPlayers`).
+  value (`toRoster` in `gameQueries.roster`).
 - `queryClient.ts` keeps the old fetch behaviour: no retry, no refetch on focus or
   reconnect, `staleTime: 0`. A builder opts out per query with a comment giving the reason
   (`staleTime: Infinity` for finished games, `refetchInterval` polling in
@@ -221,7 +222,7 @@ cache itself:
 
 - `cancelQueries({ queryKey })`, then `setQueryData(queryKey, value)`, so a read still in
   flight cannot overwrite the new value (`SettingsPage/useGameSettings.ts`, the game page's
-  settings save in `GamePage/useGameActions.ts`, `useGamePlayers.ts`,
+  settings save in `GamePage/useGameActions.ts`, `shared/query/roster.ts`,
   `acceptLoggedInUser.ts` for login and registration).
 - `removeQueries({ queryKey })` drops an entry the write made invalid (undo and rematch
   in `useGameSummaryPage.ts`).
@@ -237,8 +238,8 @@ cache itself:
 A mapper is a pure function that turns a backend DTO shape into a UI type. Two kinds of
 function are not mappers, and render-flow hooks may call them:
 
-- functions that reorder or derive values within UI types (`sortLobbyPlayers` takes and
-  returns `LobbyPlayer[]`, `getFinishedPlayers` takes and returns `UIPlayer[]`);
+- functions that reorder or derive values within UI types (`sortRoster` takes and
+  returns `Seat[]`, `getFinishedPlayers` takes and returns `UIPlayer[]`);
 - error -> user message functions (`mapInvitationErrorMessage`), which follow
   "Error -> user message".
 
@@ -246,12 +247,12 @@ Mapper rules:
 
 - Mappers live in `src/shared/lib/<domain>/`: `shared/lib/game/` holds `gameStateNormalizer`,
   `applyScoreboardDelta`, `player-mappers` (`mapPlayersToUI`), `roundAverage`, `parseThrowValue`,
-  `finishedGameStandings`, `lobbyPlayers` (`toLobbyPlayers`); `shared/lib/player/` holds
+  `finishedGameStandings`, `roster` (`toRoster`); `shared/lib/player/` holds
   `currentGame`, `gameSeat` and `profile`.
 - Every mapper has a co-located `*.test.ts`.
 - Mappers are called from an API domain function (`getGameThrows` calls `normalizeGameData`),
   a `queryFn` in `src/shared/query/` (`playerQueries.profile` calls `toPlayerProfile`),
-  a store action (`acceptGame` calls `toLobbyPlayers`), a route loader, or a page-private
+  a store action (`acceptGame` calls `toRoster`), a route loader, or a page-private
   logic file under `src/pages/<Page>/` that is
   neither JSX nor a `use*` file.
 - JSX files (`src/pages/**/*.tsx`) and render-flow hooks (`src/pages/**/use*.ts`) receive the
@@ -318,6 +319,6 @@ rg -n 'queryKey:\s*\[|(get|set|remove|cancel|invalidate|refetch|reset)Quer(y|ies
 **6. Mappers imported by render-flow files:** `npm run eslint` passes. The
 `no-restricted-imports` rule for `src/pages/**/*.tsx` and `src/pages/**/use*.ts` in
 `eslint.config.mjs` lists the mapper modules by file, so a new mapper module is added to its
-regex. `lobbyPlayers` and `player-mappers` also hold UI-to-UI helpers (`sortLobbyPlayers`,
+regex. `roster` and `player-mappers` also hold UI-to-UI helpers (`sortRoster`,
 `getFinishedPlayers`), which are not mappers, so a separate pattern bans only their mapper
-imports (`toLobbyPlayers`, `mapPlayersToUI`). A new mixed module goes into that pattern.
+imports (`toRoster`, `mapPlayersToUI`). A new mixed module goes into that pattern.

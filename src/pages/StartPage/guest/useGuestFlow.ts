@@ -3,9 +3,9 @@ import { ApiError } from "@/shared/api";
 import { isApiErrorCode } from "@/lib/error/api-error-code";
 import { toUserErrorMessage } from "@/lib/error/error-to-user-message";
 import { clientLogger } from "@/shared/services/browser/clientLogger";
-import type { AddGuestResult } from "./useLobbyRoster";
-import { useIsCurrentGame } from "./useIsCurrentGame";
-import { validateGuestUsername } from "./lib/guestUsername";
+import type { AddGuestResult } from "../roster/useRoster";
+import { useIsCurrentGame } from "../lib/useIsCurrentGame";
+import { validateGuestUsername } from "./guestUsername";
 import type { AddGuestErrorResponse } from "@/shared/api/room";
 
 const MAX_LOBBY_PLAYERS = 10;
@@ -152,20 +152,19 @@ export function useGuestFlow({
           break;
       }
       const { error } = result;
-      const seatsNotEditable = isApiErrorCode(error, "GAME_SEATS_NOT_EDITABLE");
       const lobbyFull = isApiErrorCode(error, "GAME_ROOM_FULL");
       if (lobbyFull) {
         clientLogger.warn("room.guest.lobby-full", { context: { gameId }, error });
       }
       // The route moved to another game while the request ran: its answer is not for this page.
       if (result.status === "stale") {
-        if (!seatsNotEditable && !lobbyFull) {
+        if (!result.seatsNotEditable && !lobbyFull && error !== null) {
           clientLogger.warn("room.guest.stale-answer", { context: { gameId }, error });
         }
         return;
       }
 
-      if (seatsNotEditable) {
+      if (result.status === "seats-not-editable") {
         setGuestError(toUserErrorMessage(error));
         return;
       }

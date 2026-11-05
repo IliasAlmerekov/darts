@@ -68,10 +68,8 @@ src/pages/StartPage/
   startPageLoader.ts         # the route loader
   startPageLoader.test.ts
   roster/                    # one folder per part of the page
-    useLobbyRoster.ts
-    useLobbyRoster.test.tsx
-    playerOrder.ts
-    playerOrder.test.ts
+    useRoster.ts
+    useRoster.test.tsx
   components/                # page-private UI that serves the whole page
   lib/                       # page-private helpers that serve the whole page
 ```
