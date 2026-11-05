@@ -6,6 +6,7 @@ import {
   DOUBLE_OUTER,
   hash,
   OUTER_BULL_RADIUS,
+  pointAt,
   SEGMENT_ANGLE,
   segmentCentre,
   TREBLE_INNER,
@@ -88,12 +89,6 @@ function dotRadii(field: NumberField, spot: Point): [number, number] {
 /** How far off the centre line, in degrees, a dot centre at `radius` clears the segment edge. */
 function maxOffset(radius: number): number {
   return SEGMENT_ANGLE / 2 - (Math.asin(DOT_EDGE / radius) * 180) / Math.PI;
-}
-
-/** A point `radius` from the centre and `degrees` clockwise from the top. */
-function pointAt(radius: number, degrees: number): Point {
-  const radians = ((degrees - 90) * Math.PI) / 180;
-  return { x: radius * Math.cos(radians), y: radius * Math.sin(radians) };
 }
 
 /** A point's distance from the centre and its angle off the centre line at `centre`. */

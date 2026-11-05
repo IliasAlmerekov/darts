@@ -50,6 +50,15 @@ function between([low, high]: readonly [number, number], fraction: number): numb
   return low + (high - low) * fraction;
 }
 
+/**
+ * A point `radius` millimetres from the centre and `degrees` clockwise from the top, in
+ * board millimetres with y pointing down.
+ */
+export function pointAt(radius: number, degrees: number): { x: number; y: number } {
+  const radians = ((degrees - 90) * Math.PI) / 180;
+  return { x: radius * Math.cos(radians), y: radius * Math.sin(radians) };
+}
+
 /** The angle of a board field's segment centre line, in degrees clockwise from the top. */
 export function segmentCentre(field: NumberField): number {
   const segment = field.slice(1);
@@ -77,6 +86,5 @@ export function boardFieldSpot(field: NumberField): { x: number; y: number } {
         : between(value & 1 ? OUTER_SINGLE : INNER_SINGLE, share(value, 8));
   const side = value & 2 ? 1 : -1;
   const offset = side * between([MIN_OFFSET, MAX_OFFSET], share(value, 16));
-  const radians = ((segmentCentre(field) + offset - 90) * Math.PI) / 180;
-  return { x: radius * Math.cos(radians), y: radius * Math.sin(radians) };
+  return pointAt(radius, segmentCentre(field) + offset);
 }
