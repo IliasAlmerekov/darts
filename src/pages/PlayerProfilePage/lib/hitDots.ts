@@ -40,8 +40,11 @@ interface Point {
   y: number;
 }
 
-/** Two shares from the 16-bit halves of a hash: the first in (0, 1], the second in [0, 1). */
-function shares(seed: string): [number, number] {
+/**
+ * Two uniform values from the 16-bit halves of a hash: the first in (0, 1], so Box-Muller
+ * can take its logarithm, the second in [0, 1).
+ */
+function uniforms(seed: string): [number, number] {
   const value = hash(seed);
   return [((value & 0xffff) + 1) / 0x10000, (value >>> 16) / 0x10000];
 }
@@ -58,11 +61,11 @@ function dotCounts(hitDistribution: PlayerProfile["hitDistribution"]): number[] 
   }
   const parts = hits.map((count, order) => {
     const quota = (count * DOT_BUDGET) / total;
-    return { order, hits: count, count: Math.floor(quota), rest: quota - Math.floor(quota) };
+    return { order, hits: count, count: Math.floor(quota), remainder: quota - Math.floor(quota) };
   });
-  const left = DOT_BUDGET - parts.reduce((sum, part) => sum + part.count, 0);
-  const byRest = [...parts].sort((a, b) => b.rest - a.rest || a.order - b.order);
-  for (const part of byRest.slice(0, left)) {
+  const remaining = DOT_BUDGET - parts.reduce((sum, part) => sum + part.count, 0);
+  const byRemainder = [...parts].sort((a, b) => b.remainder - a.remainder || a.order - b.order);
+  for (const part of byRemainder.slice(0, remaining)) {
     part.count += 1;
   }
   return parts.map((part) => (part.hits > 0 ? Math.max(1, part.count) : 0));
@@ -101,19 +104,20 @@ function polarOf({ x, y }: Point, centre: number): { radius: number; offset: num
 }
 
 /**
- * A dot of a treble or double. The ring leaves a dot centre only 3.4 mm of room across it, so
- * the radius is drawn evenly across that room and only the offset along the ring follows a
- * Gaussian around the spot. An offset past the segment edge is drawn again from the next
+ * A dot of a treble or double. The ring leaves a dot centre only 3.4 mm of room across it,
+ * so the radius is drawn evenly across that room and only the offset along the ring follows
+ * a Gaussian around the spot. An offset past the segment edge is drawn again from the next
  * seed; after `MAX_DRAWS` the dot takes the spot's offset.
  */
 function ringDot(seed: string, spot: Point, centre: number, [low, high]: [number, number]): Point {
-  const [, across] = shares(seed);
+  const [, across] = uniforms(seed);
   const radius = low + (high - low) * across;
   const limit = maxOffset(radius);
   const spotOffset = polarOf(spot, centre).offset;
   for (let draw = 0; draw < MAX_DRAWS; draw += 1) {
-    const [first, second] = shares(`${seed}:${draw}`);
-    const along = SPREAD * Math.sqrt(-2 * Math.log(first)) * Math.cos(2 * Math.PI * second);
+    // Box-Muller: the uniforms u1 and u2 give one normal offset along the ring.
+    const [u1, u2] = uniforms(`${seed}:${draw}`);
+    const along = SPREAD * Math.sqrt(-2 * Math.log(u1)) * Math.cos(2 * Math.PI * u2);
     const offset = spotOffset + (along / radius) * (180 / Math.PI);
     if (Math.abs(offset) <= limit) {
       return pointAt(radius, centre + offset);
@@ -134,10 +138,10 @@ function singleDot(
   [low, high]: [number, number],
 ): Point {
   for (let draw = 0; draw < MAX_DRAWS; draw += 1) {
-    const [first, second] = shares(`${seed}:${draw}`);
-    // Box-Muller: a normal distance and a uniform direction.
-    const distance = SPREAD * Math.sqrt(-2 * Math.log(first));
-    const direction = 2 * Math.PI * second;
+    // Box-Muller: the uniforms u1 and u2 give a normal distance and a uniform direction.
+    const [u1, u2] = uniforms(`${seed}:${draw}`);
+    const distance = SPREAD * Math.sqrt(-2 * Math.log(u1));
+    const direction = 2 * Math.PI * u2;
     const point = {
       x: spot.x + distance * Math.cos(direction),
       y: spot.y + distance * Math.sin(direction),
@@ -150,7 +154,7 @@ function singleDot(
   const spotOffset = polarOf(spot, centre).offset;
   const clear = DOT_EDGE / Math.sin(((SEGMENT_ANGLE / 2 - Math.abs(spotOffset)) * Math.PI) / 180);
   const inner = Math.max(low, clear);
-  const [, across] = shares(seed);
+  const [, across] = uniforms(seed);
   return pointAt(inner + (high - inner) * across, centre + spotOffset);
 }
 
@@ -167,7 +171,7 @@ function numberFieldDot(field: NumberField, index: number): Point {
 
 /** A dot of Bull or Bullseye, spread evenly over its ring, the painted dot inside it. */
 function centreDot(field: "BULL" | "BULLSEYE", index: number): Point {
-  const [area, direction] = shares(`${field}:${index}`);
+  const [area, direction] = uniforms(`${field}:${index}`);
   const [inner, outer] =
     field === "BULLSEYE"
       ? [0, BULL_RADIUS - DOT_EDGE]
