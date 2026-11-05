@@ -46,6 +46,7 @@ import {
 import { ROUTES } from "@/lib/router/routes";
 import { createQueryClient } from "@/shared/query/queryClient";
 import PlayerProfilePage from ".";
+import { toHitDots } from "./lib/hitDots";
 
 type Router = ReturnType<typeof createMemoryRouter>;
 
@@ -127,6 +128,13 @@ function block(name: string): HTMLElement {
 /** The heat spots drawn on the board, one per spot above Very low. */
 function heatSpots(): Element[] {
   return Array.from(block("Hit distribution").querySelectorAll("circle[filter]"));
+}
+
+/** The hit dots, drawn in a group that assistive technology skips. */
+function hitDots(): Element[] {
+  return Array.from(
+    block("Hit distribution").querySelectorAll('svg g[aria-hidden="true"] > circle'),
+  );
 }
 
 /** The board fields that have a heat spot, in board order. */
@@ -393,14 +401,48 @@ describe("PlayerProfilePage", () => {
     expect(heatSpots()).toHaveLength(4);
   });
 
-  it("draws the dot of every treble and double spot inside its ring", async () => {
+  it("draws each treble and double hit as a dot inside its own ring", async () => {
+    // Different counts per ring, so trebles drawn on the double ring would show.
+    const hitDistribution = buildPlayerProfileStats().hitDistribution.map(({ field }) => ({
+      field,
+      hits: field.startsWith("T") ? 3 : field.startsWith("D") ? 5 : 0,
+    }));
+    vi.mocked(getPlayerProfile).mockResolvedValue(
+      buildProfile({ stats: buildPlayerProfileStats({ hitDistribution }) }),
+    );
+
+    renderPage();
+    await screen.findByRole("img", { name: "Dartboard heatmap, most hits on 20" });
+
+    // Treble ring 99 to 107 mm, double ring 162 to 170 mm from the centre.
+    const inRing = (dot: Element, [inner, outer]: [number, number]): boolean => {
+      const radius = Math.hypot(Number(dot.getAttribute("cx")), Number(dot.getAttribute("cy")));
+      // The outline is centred on the circle, so half of it paints past the radius.
+      const edge = Number(dot.getAttribute("r")) + Number(dot.getAttribute("stroke-width")) / 2;
+      return radius - edge >= inner - 1e-9 && radius + edge <= outer + 1e-9;
+    };
+
+    // 20 trebles with 3 hits each and 20 doubles with 5.
+    expect(hitDots()).toHaveLength(160);
+    expect(hitDots().every((dot) => dot.getAttribute("stroke-width") === "0.6")).toBe(true);
+    expect(hitDots().filter((dot) => inRing(dot, [99, 107]))).toHaveLength(60);
+    expect(hitDots().filter((dot) => inRing(dot, [162, 170]))).toHaveLength(100);
+    // Each dot sits where the position function put it, so no swapped or mirrored axis.
+    expect(
+      hitDots().map((dot) => [Number(dot.getAttribute("cx")), Number(dot.getAttribute("cy"))]),
+    ).toEqual(toHitDots(hitDistribution).map(({ x, y }) => [x, y]));
+  });
+
+  it("draws one hidden dot per hit above the heat spots and keeps the legend", async () => {
+    const hits: Record<string, number> = { T20: 40, D16: 30, T19: 20, S5: 10, BULL: 12 };
     vi.mocked(getPlayerProfile).mockResolvedValue(
       buildProfile({
         stats: buildPlayerProfileStats({
           hitDistribution: buildPlayerProfileStats().hitDistribution.map(({ field }) => ({
             field,
-            hits: 5,
+            hits: hits[field] ?? 0,
           })),
+          mostHitSegment: { segment: "20", hits: 40, share: 35.7 },
         }),
       }),
     );
@@ -408,21 +450,23 @@ describe("PlayerProfilePage", () => {
     renderPage();
     await screen.findByRole("img", { name: "Dartboard heatmap, most hits on 20" });
 
-    // Treble ring 99 to 107 mm, double ring 162 to 170 mm from the centre.
-    const rings: Record<string, [number, number]> = { T: [99, 107], D: [162, 170] };
-    const outside = Array.from(block("Hit distribution").querySelectorAll("[data-field]")).filter(
-      (spot) => {
-        const ring = rings[spot.getAttribute("data-field")?.charAt(0) ?? ""];
-        const dot = spot.querySelector("circle:not([filter])");
-        if (ring === undefined || dot === null) return false;
-        const radius = Math.hypot(Number(dot.getAttribute("cx")), Number(dot.getAttribute("cy")));
-        const dotRadius = Number(dot.getAttribute("r"));
-        return radius - dotRadius < ring[0] - 1e-9 || radius + dotRadius > ring[1] + 1e-9;
-      },
-    );
-
-    expect(heatSpotFields()).toHaveLength(60);
-    expect(outside.map((spot) => spot.getAttribute("data-field"))).toEqual([]);
+    const dots = hitDots();
+    const lastSpot = heatSpots().at(-1);
+    expect(dots).toHaveLength(112);
+    expect(dots.every((dot) => dot.getAttribute("r") === "2")).toBe(true);
+    // Four board fields and the centre, whose 12 Bull hits are Low.
+    expect(heatSpots()).toHaveLength(5);
+    expect(
+      lastSpot !== undefined &&
+        dots.every(
+          (dot) => lastSpot.compareDocumentPosition(dot) & Node.DOCUMENT_POSITION_FOLLOWING,
+        ),
+    ).toBe(true);
+    expect(
+      within(block("Hit distribution"))
+        .getAllByRole("listitem")
+        .map((item) => item.textContent),
+    ).toEqual(["Very high", "High", "Medium", "Low", "Very low"]);
   });
 
   it("shows a dash for missing rates and one line for each empty block", async () => {

@@ -11,7 +11,8 @@ export const HIT_FREQUENCY_LABELS: Record<HitFrequency, string> = {
   4: "Very low",
 };
 
-type BoardField = PlayerProfile["hitDistribution"][number]["field"];
+/** One of the 62 board fields, `S1` to `T20`, `BULL` and `BULLSEYE`. */
+export type BoardField = PlayerProfile["hitDistribution"][number]["field"];
 
 /** A board field of a number, `S1` to `T20`: every board field but the centre. */
 export type NumberField = Exclude<BoardField, "BULL" | "BULLSEYE">;

@@ -3,6 +3,7 @@ import barChartIcon from "@/assets/icons/bar-chart.svg";
 import targetIcon from "@/assets/icons/target.svg";
 import trophyIcon from "@/assets/icons/trophy.svg";
 import type { PlayerProfile } from "@/lib/player/profile";
+import type { HitDot } from "../lib/hitDots";
 import type { BoardHitFrequencies } from "../lib/hitFrequency";
 import { HitDistribution } from "./HitDistribution";
 import { ProfileBlock } from "./ProfileBlock";
@@ -13,6 +14,7 @@ import styles from "./OverviewTab.module.css";
 interface OverviewTabProps {
   profile: PlayerProfile;
   hitFrequencies: BoardHitFrequencies;
+  hitDots: HitDot[];
   displayName: string;
 }
 
@@ -51,6 +53,7 @@ function EmptyBlock({ text }: EmptyBlockProps): React.JSX.Element {
 export function OverviewTab({
   profile,
   hitFrequencies,
+  hitDots,
   displayName,
 }: OverviewTabProps): React.JSX.Element {
   const { favoriteDoubles, highestFinish, mostHitSegment } = profile;
@@ -63,7 +66,11 @@ export function OverviewTab({
         description={`See where ${displayName} hits the dartboard most often.`}
         action={<RangeSelect label="Games in the hit distribution" option="All games" />}
       >
-        <HitDistribution hitFrequencies={hitFrequencies} mostHitSegment={mostHitSegment} />
+        <HitDistribution
+          hitFrequencies={hitFrequencies}
+          hitDots={hitDots}
+          mostHitSegment={mostHitSegment}
+        />
       </ProfileBlock>
 
       <div className={styles.firstRow}>

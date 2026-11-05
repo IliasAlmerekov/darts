@@ -54,9 +54,9 @@
   fill-opacity: var(--heat);
 }
 
-.spotDot {
-  fill: var(--color-primary);
-  fill-opacity: calc(var(--heat) * 0.9);
+.hitDot {
+  fill: var(--darkblue);
+  stroke: var(--white);
 }
 
 .heatVeryHigh {
