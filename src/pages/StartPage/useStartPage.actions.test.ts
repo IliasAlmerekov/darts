@@ -205,6 +205,10 @@ describe("useStartPage action guards", () => {
   });
 
   it("should start with canonical room settings and clear stale game state before navigation", async () => {
+    queryClient.setQueryData(gameQueries.tablet().queryKey, {
+      game: null,
+      lastFinishedGameId: null,
+    });
     setInvitation({ gameId: 10, invitationLink: "/invite/10" });
     vi.mocked(getGameSettings).mockResolvedValueOnce(
       buildGameSettingsResponse({ startScore: 101 }),
@@ -227,6 +231,7 @@ describe("useStartPage action guards", () => {
       status: "started",
     });
     expect(navigateMock).toHaveBeenCalledWith("/game/10");
+    expect(queryClient.getQueryState(gameQueries.tablet().queryKey)?.isInvalidated).toBe(true);
   });
 
   it("should play the start sound only while game sound is on", async () => {
