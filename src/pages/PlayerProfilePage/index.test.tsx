@@ -393,6 +393,38 @@ describe("PlayerProfilePage", () => {
     expect(heatSpots()).toHaveLength(4);
   });
 
+  it("draws the dot of every treble and double spot inside its ring", async () => {
+    vi.mocked(getPlayerProfile).mockResolvedValue(
+      buildProfile({
+        stats: buildPlayerProfileStats({
+          hitDistribution: buildPlayerProfileStats().hitDistribution.map(({ field }) => ({
+            field,
+            hits: 5,
+          })),
+        }),
+      }),
+    );
+
+    renderPage();
+    await screen.findByRole("img", { name: "Dartboard heatmap, most hits on 20" });
+
+    // Treble ring 99 to 107 mm, double ring 162 to 170 mm from the centre.
+    const rings: Record<string, [number, number]> = { T: [99, 107], D: [162, 170] };
+    const outside = Array.from(block("Hit distribution").querySelectorAll("[data-field]")).filter(
+      (spot) => {
+        const ring = rings[spot.getAttribute("data-field")?.charAt(0) ?? ""];
+        const dot = spot.querySelector("circle:not([filter])");
+        if (ring === undefined || dot === null) return false;
+        const radius = Math.hypot(Number(dot.getAttribute("cx")), Number(dot.getAttribute("cy")));
+        const dotRadius = Number(dot.getAttribute("r"));
+        return radius - dotRadius < ring[0] - 1e-9 || radius + dotRadius > ring[1] + 1e-9;
+      },
+    );
+
+    expect(heatSpotFields()).toHaveLength(60);
+    expect(outside.map((spot) => spot.getAttribute("data-field"))).toEqual([]);
+  });
+
   it("shows a dash for missing rates and one line for each empty block", async () => {
     vi.mocked(getPlayerProfile).mockResolvedValue(
       buildProfile({

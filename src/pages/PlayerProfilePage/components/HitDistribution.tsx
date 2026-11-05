@@ -75,8 +75,8 @@ const SEGMENTS = BOARD_ORDER.map((segment, index) => {
 const FIELD_SPOTS = BOARD_ORDER.flatMap((segment) =>
   (["S", "D", "T"] as const).map((ring) => {
     const field: NumberField = `${ring}${segment}`;
-    const { x, y } = boardFieldSpot(field);
-    return { field, x: Math.round(x * 10) / 10, y: Math.round(y * 10) / 10 };
+    // Unrounded: a treble or double dot fills its ring, so rounding would push it out.
+    return { field, ...boardFieldSpot(field) };
   }),
 );
 
