@@ -129,6 +129,13 @@ function heatSpots(): Element[] {
   return Array.from(block("Hit distribution").querySelectorAll("circle[filter]"));
 }
 
+/** The board fields that have a heat spot, in board order. */
+function heatSpotFields(): string[] {
+  return Array.from(block("Hit distribution").querySelectorAll("[data-field]")).map(
+    (spot) => spot.getAttribute("data-field") ?? "",
+  );
+}
+
 describe("PlayerProfilePage", () => {
   beforeEach(() => {
     vi.mocked(logout).mockReset();
@@ -317,7 +324,7 @@ describe("PlayerProfilePage", () => {
       "Most hit segment207% of all throwsYou hit segment 20 more than any other segment.",
     );
     expect(screen.getByRole("img", { name: "Dartboard heatmap, most hits on 20" })).toBeTruthy();
-    // 20 is Very high, the centre spot's 24 hits Low, and every other segment Very low.
+    // T20 is Very high, the centre spot's 24 hits Low, and every other board field Very low.
     expect(heatSpots()).toHaveLength(2);
     expect(screen.queryByText("Sample data")).toBeNull();
     expect(screen.queryByText("Consistent finisher")).toBeNull();
@@ -332,9 +339,9 @@ describe("PlayerProfilePage", () => {
           checkoutRate: 38.2,
           checkoutHits: 21,
           checkoutAttempts: 55,
-          hitDistribution: buildPlayerProfileStats().hitDistribution.map(({ segment }) => ({
-            segment,
-            hits: segment === "BULL" ? 10 : 0,
+          hitDistribution: buildPlayerProfileStats().hitDistribution.map(({ field }) => ({
+            field,
+            hits: field === "BULL" ? 10 : 0,
           })),
           mostHitSegment: { segment: "BULL", hits: 10, share: 4.6 },
           favoriteDoubles: [
@@ -362,6 +369,30 @@ describe("PlayerProfilePage", () => {
     expect(heatSpots()).toHaveLength(1);
   });
 
+  it("draws a heat spot for each hit treble and double, not for their single", async () => {
+    const hits: Record<string, number> = { T20: 40, D16: 30, T19: 20, S5: 10 };
+    vi.mocked(getPlayerProfile).mockResolvedValue(
+      buildProfile({
+        stats: buildPlayerProfileStats({
+          hitDistribution: buildPlayerProfileStats().hitDistribution.map(({ field }) => ({
+            field,
+            hits: hits[field] ?? 0,
+          })),
+          mostHitSegment: { segment: "20", hits: 40, share: 40 },
+        }),
+      }),
+    );
+
+    renderPage();
+
+    expect(
+      await screen.findByRole("img", { name: "Dartboard heatmap, most hits on 20" }),
+    ).toBeTruthy();
+    // S5 has a quarter of T20's hits, Low; every board field without hits stays Very low.
+    expect(heatSpotFields().sort()).toEqual(["D16", "S5", "T19", "T20"]);
+    expect(heatSpots()).toHaveLength(4);
+  });
+
   it("shows a dash for missing rates and one line for each empty block", async () => {
     vi.mocked(getPlayerProfile).mockResolvedValue(
       buildProfile({
@@ -371,8 +402,8 @@ describe("PlayerProfilePage", () => {
           checkoutRate: null,
           checkoutHits: 0,
           checkoutAttempts: 0,
-          hitDistribution: buildPlayerProfileStats().hitDistribution.map(({ segment }) => ({
-            segment,
+          hitDistribution: buildPlayerProfileStats().hitDistribution.map(({ field }) => ({
+            field,
             hits: 0,
           })),
           mostHitSegment: null,

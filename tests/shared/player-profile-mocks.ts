@@ -24,7 +24,7 @@ interface PlayerProfileStatsBody {
   checkoutRate: number | null;
   checkoutHits: number;
   checkoutAttempts: number;
-  hitDistribution: { segment: string; hits: number }[];
+  hitDistribution: { field: string; hits: number }[];
   mostHitSegment: { segment: string; hits: number; share: number } | null;
   favoriteDoubles: { double: string; hits: number; attempts: number; hitRate: number }[];
   highestFinish: { score: number; darts: number; throws: string[] } | null;
@@ -37,8 +37,10 @@ interface PlayerProfileBody {
   registeredAt: string | null;
 }
 
-const SEGMENTS = [
-  ...Array.from({ length: 20 }, (_, index) => String(index + 1)),
+const BOARD_FIELDS = [
+  ...Array.from({ length: 20 }, (_, index) =>
+    ["S", "D", "T"].map((ring) => `${ring}${index + 1}`),
+  ).flat(),
   "BULL",
   "BULLSEYE",
 ];
@@ -52,7 +54,7 @@ export const PLAYER_PROFILE: PlayerProfileBody = {
     checkoutRate: 31.8,
     checkoutHits: 7,
     checkoutAttempts: 22,
-    hitDistribution: SEGMENTS.map((segment) => ({ segment, hits: segment === "20" ? 96 : 12 })),
+    hitDistribution: BOARD_FIELDS.map((field) => ({ field, hits: field === "T20" ? 96 : 12 })),
     mostHitSegment: { segment: "20", hits: 96, share: 7.4 },
     favoriteDoubles: [{ double: "D16", hits: 4, attempts: 11, hitRate: 36.4 }],
     highestFinish: { score: 121, darts: 3, throws: ["T20", "S11", "BULLSEYE"] },

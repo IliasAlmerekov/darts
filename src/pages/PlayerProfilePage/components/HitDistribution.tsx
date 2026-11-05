@@ -2,22 +2,25 @@ import React, { useId } from "react";
 import clsx from "clsx";
 import type { PlayerProfile } from "@/lib/player/profile";
 import {
+  BOARD_ORDER,
+  boardFieldSpot,
+  DOUBLE_INNER,
+  DOUBLE_OUTER,
+  OUTER_BULL_RADIUS,
+  SEGMENT_ANGLE,
+  SPOT_DOT_RADIUS,
+  TREBLE_INNER,
+  TREBLE_OUTER,
+} from "../lib/boardFieldSpot";
+import {
   HIT_FREQUENCY_LABELS,
   type BoardHitFrequencies,
   type HitFrequency,
+  type NumberField,
 } from "../lib/hitFrequency";
 import styles from "./HitDistribution.module.css";
 
-// Clockwise from the top, as on a real board.
-const BOARD_ORDER = [20, 1, 18, 4, 13, 6, 10, 15, 2, 17, 3, 19, 7, 16, 8, 11, 14, 9, 12, 5];
-const SEGMENT_ANGLE = 360 / BOARD_ORDER.length;
-// Ring radii in millimetres of a regulation board.
 const BULL_RADIUS = 6.4;
-const OUTER_BULL_RADIUS = 16;
-const TREBLE_INNER = 99;
-const TREBLE_OUTER = 107;
-const DOUBLE_INNER = 162;
-const DOUBLE_OUTER = 170;
 const BOARD_RADIUS = 226;
 const NUMBER_RADIUS = 198;
 const FREQUENCIES: HitFrequency[] = [0, 1, 2, 3, 4];
@@ -53,8 +56,6 @@ const SEGMENTS = BOARD_ORDER.map((segment, index) => {
   const start = center - SEGMENT_ANGLE / 2;
   const end = center + SEGMENT_ANGLE / 2;
   const [labelX, labelY] = point(NUMBER_RADIUS, center);
-  // Alternate the spot between the inner and outer single field, as real hits scatter.
-  const [spotX, spotY] = point(index % 2 === 0 ? 135 : 62, center);
   return {
     segment,
     isDark: index % 2 === 0,
@@ -68,10 +69,16 @@ const SEGMENTS = BOARD_ORDER.map((segment, index) => {
     ],
     labelX,
     labelY,
-    spotX,
-    spotY,
   };
 });
+
+const FIELD_SPOTS = BOARD_ORDER.flatMap((segment) =>
+  (["S", "D", "T"] as const).map((ring) => {
+    const field: NumberField = `${ring}${segment}`;
+    const { x, y } = boardFieldSpot(field);
+    return { field, x: Math.round(x * 10) / 10, y: Math.round(y * 10) / 10 };
+  }),
+);
 
 interface HitDistributionProps {
   hitFrequencies: BoardHitFrequencies;
@@ -83,7 +90,7 @@ export function HitDistribution({
   hitFrequencies,
   mostHitSegment,
 }: HitDistributionProps): React.JSX.Element {
-  const { segments, bull } = hitFrequencies;
+  const { fields, bull } = hitFrequencies;
   const blurId = useId();
 
   return (
@@ -125,18 +132,18 @@ export function HitDistribution({
         <circle className={styles.ringRed} r={BULL_RADIUS} />
 
         <g>
-          {SEGMENTS.map(({ segment, spotX, spotY }) => {
-            const frequency = segments[String(segment)] ?? 4;
+          {FIELD_SPOTS.map(({ field, x, y }) => {
+            const frequency = fields[field] ?? 4;
             return SPOT_RADII[frequency] > 0 ? (
-              <g key={segment} className={HEAT_CLASSES[frequency]}>
+              <g key={field} className={HEAT_CLASSES[frequency]} data-field={field}>
                 <circle
                   className={styles.spotGlow}
-                  cx={spotX}
-                  cy={spotY}
+                  cx={x}
+                  cy={y}
                   r={SPOT_RADII[frequency]}
                   filter={`url(#${blurId})`}
                 />
-                <circle className={styles.spotDot} cx={spotX} cy={spotY} r={8} />
+                <circle className={styles.spotDot} cx={x} cy={y} r={SPOT_DOT_RADIUS} />
               </g>
             ) : null;
           })}
