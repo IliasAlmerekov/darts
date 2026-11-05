@@ -226,6 +226,24 @@ describe("useRoster", () => {
     await waitFor(() => expect(result.current.seats).toEqual([{ id: 1, name: "A", position: 0 }]));
   });
 
+  it("restores a removed seat with no position after other unpositioned seats", async () => {
+    testQueryClient.setQueryData(gameQueries.roster(5).queryKey, [
+      { id: 1, name: "A", position: null },
+      { id: 2, name: "B", position: null },
+    ]);
+    vi.mocked(apiClient.delete).mockRejectedValueOnce(new Error("network"));
+    const { result } = renderGamePlayers(5);
+    await act(async () => {
+      await result.current.remove(1);
+    });
+    await waitFor(() =>
+      expect(result.current.seats).toEqual([
+        { id: 2, name: "B", position: null },
+        { id: 1, name: "A", position: null },
+      ]),
+    );
+  });
+
   it("logs unexpected removal failures", async () => {
     const error = new Error("network");
     const log = vi.spyOn(clientLogger, "error").mockImplementation(() => {});
@@ -801,7 +819,7 @@ describe("useRoster", () => {
 
   it("should write optimistic appends and removals into the lobby players query", async () => {
     testQueryClient.setQueryData(gameQueries.roster(5).queryKey, [
-      { id: 1, name: "Alice", position: 0 },
+      { id: 1, name: "Alice", position: null },
     ]);
     const { result } = renderGamePlayers(5);
 
@@ -813,8 +831,8 @@ describe("useRoster", () => {
     });
 
     expect(testQueryClient.getQueryData(gameQueries.roster(5).queryKey)).toEqual([
-      { id: 1, name: "Alice", position: 0 },
-      { id: 2, name: "Bob", position: 1 },
+      { id: 1, name: "Alice", position: null },
+      { id: 2, name: "Bob", position: null },
     ]);
     await waitFor(() => {
       expect(result.current.seats.length).toBe(2);
@@ -828,7 +846,7 @@ describe("useRoster", () => {
     });
 
     expect(testQueryClient.getQueryData(gameQueries.roster(5).queryKey)).toEqual([
-      { id: 2, name: "Bob", position: 1 },
+      { id: 2, name: "Bob", position: null },
     ]);
   });
 

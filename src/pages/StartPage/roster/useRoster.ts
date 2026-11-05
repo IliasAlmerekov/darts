@@ -122,17 +122,15 @@ export function useRoster(
           return currentPlayers;
         }
 
-        const fallbackPosition =
-          currentPlayers.length > 0
-            ? Math.max(...currentPlayers.map((existingPlayer) => existingPlayer.position ?? 0)) + 1
-            : 0;
         const nextPlayer: Seat = {
           id: player.id,
           name: player.name,
-          position: player.position ?? fallbackPosition,
+          position: player.position ?? null,
         };
 
-        return sortRoster([...currentPlayers, nextPlayer]);
+        return player.position == null
+          ? [...currentPlayers, nextPlayer]
+          : sortRoster([...currentPlayers, nextPlayer]);
       });
     },
     [updatePlayers],
