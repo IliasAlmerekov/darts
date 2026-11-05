@@ -84,7 +84,8 @@ Rules:
 
 Rules:
 
-- Mock API domain modules when testing pages, hooks, and components.
+- Mock API domain modules when testing pages, hooks, and components. Workflow integration
+  tests may mock `apiClient` with `respondWith` to exercise the workflow and its API calls.
 - Mock `apiClient` when testing API domain functions.
 - Mock `fetch` only when testing `apiClient` itself or auth bootstrap code that
   intentionally bypasses `apiClient`.

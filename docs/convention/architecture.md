@@ -123,10 +123,11 @@ The API layer has a **two-level public surface**:
   `rematch.ts` are internal files behind `@/shared/api/game`, not domain modules; `game.ts`
   re-exports them.
 
-Internals -- `client.ts`, `errors.ts`, `types.ts`, `endpoints.ts`, `schemas.ts`,
+Production internals -- `client.ts`, `errors.ts`, `types.ts`, `endpoints.ts`, `schemas.ts`,
 `throws.ts`, `rematch.ts` -- are
 imported only inside `shared/api/`. Everything else uses what the barrel or a domain module
-exports; `apiClient` stays inside `shared/api/` (see `api.md`). Each domain file owns its
+exports; `apiClient` stays inside `shared/api/` in production. Workflow integration tests may
+mock it with `respondWith` (see `api.md`). Each domain file owns its
 paths (see `api.md`, "Endpoints").
 
 ### `shared/types/`

@@ -23,7 +23,7 @@ function wrapper({ children }: { children: ReactNode }): ReactNode {
 
 describe("useGameSummaryPage", () => {
   beforeEach(() => {
-    vi.clearAllMocks();
+    vi.resetAllMocks();
     client.clear();
     routeId = "42";
     client.setQueryData(gameQueries.finished(42).queryKey, []);
@@ -166,5 +166,142 @@ describe("useGameSummaryPage", () => {
       await client.invalidateQueries({ queryKey: gameQueries.finished(42).queryKey });
     });
     expect(fetchFinished).not.toHaveBeenCalled();
+  });
+
+  it.each([
+    { kind: "navigate" as const, path: "/game/42" },
+    { kind: "leave" as const, path: "/start/77", lobbyGameId: 77, message: "old" },
+    { kind: "failed" as const, message: "old" },
+  ])("lets the new route act when an old $kind result arrives", async (oldOutcome) => {
+    let finish: (value: typeof oldOutcome) => void = () => {};
+    vi.mocked(runSummaryAction).mockReturnValueOnce(
+      new Promise((resolve) => {
+        finish = resolve;
+      }),
+    );
+    let finishNew: (value: { kind: "failed"; message: string }) => void = () => {};
+    vi.mocked(runSummaryAction).mockReturnValueOnce(
+      new Promise((resolve) => {
+        finishNew = resolve;
+      }),
+    );
+    const { result, rerender } = renderHook(() => useGameSummaryPage(), { wrapper });
+    let oldPending = Promise.resolve();
+    act(() => {
+      oldPending = result.current.handleUndo();
+    });
+    routeId = "43";
+    rerender();
+    let newPending = Promise.resolve();
+    act(() => {
+      newPending = result.current.handlePlayAgain();
+    });
+    expect(runSummaryAction).toHaveBeenCalledTimes(2);
+    await act(async () => {
+      finish(oldOutcome);
+      await oldPending;
+    });
+    expect(navigate).not.toHaveBeenCalled();
+    expect(result.current.error).toBeNull();
+    expect(result.current.leaving).toBe(false);
+    expect(result.current.isActionPending).toBe(true);
+    await act(async () => {
+      finishNew({ kind: "failed", message: "new" });
+      await newPending;
+    });
+    expect(result.current.error).toBe("new");
+    expect(result.current.isActionPending).toBe(false);
+  });
+
+  it("does not let a result from an earlier visit unlock a later visit to the same game", async () => {
+    let finishOld: (value: { kind: "failed"; message: string }) => void = () => {};
+    let finishNew: (value: { kind: "failed"; message: string }) => void = () => {};
+    vi.mocked(runSummaryAction)
+      .mockReturnValueOnce(
+        new Promise((resolve) => {
+          finishOld = resolve;
+        }),
+      )
+      .mockReturnValueOnce(
+        new Promise((resolve) => {
+          finishNew = resolve;
+        }),
+      );
+    const { result, rerender } = renderHook(() => useGameSummaryPage(), { wrapper });
+    let oldPending = Promise.resolve();
+    act(() => {
+      oldPending = result.current.handleUndo();
+    });
+    routeId = "43";
+    rerender();
+    routeId = "42";
+    rerender();
+    expect(result.current.isActionPending).toBe(false);
+    let newPending = Promise.resolve();
+    act(() => {
+      newPending = result.current.handlePlayAgain();
+    });
+    expect(runSummaryAction).toHaveBeenCalledTimes(2);
+    await act(async () => {
+      finishOld({ kind: "failed", message: "old" });
+      await oldPending;
+    });
+    expect(result.current.error).toBeNull();
+    expect(result.current.isActionPending).toBe(true);
+    await act(async () => {
+      finishNew({ kind: "failed", message: "new" });
+      await newPending;
+    });
+    expect(result.current.error).toBe("new");
+  });
+
+  it("ignores an action result after unmount", async () => {
+    let finish: (value: { kind: "navigate"; path: string }) => void = () => {};
+    vi.mocked(runSummaryAction).mockReturnValueOnce(
+      new Promise((resolve) => {
+        finish = resolve;
+      }),
+    );
+    const { result, unmount } = renderHook(() => useGameSummaryPage(), { wrapper });
+    let pending = Promise.resolve();
+    act(() => {
+      pending = result.current.handleUndo();
+    });
+    unmount();
+    await act(async () => {
+      finish({ kind: "navigate", path: "/game/42" });
+      await pending;
+    });
+    expect(navigate).not.toHaveBeenCalled();
+  });
+
+  it.each([
+    { kind: "failed" as const, message: "old" },
+    { kind: "leave" as const, path: "/start/77", lobbyGameId: 77, message: "old" },
+  ])("does not revive a completed $kind result on returning to the same game", async (outcome) => {
+    vi.useFakeTimers();
+    vi.mocked(runSummaryAction)
+      .mockResolvedValueOnce(outcome)
+      .mockResolvedValueOnce({ kind: "failed", message: "new" });
+    const { result, rerender } = renderHook(() => useGameSummaryPage(), { wrapper });
+    await act(async () => {
+      await result.current.handleUndo();
+    });
+    routeId = "43";
+    rerender();
+    routeId = "42";
+    rerender();
+    expect(result.current.error).toBeNull();
+    expect(result.current.leaving).toBe(false);
+    expect(result.current.isActionPending).toBe(false);
+    act(() => {
+      vi.advanceTimersByTime(2_000);
+    });
+    expect(navigate).not.toHaveBeenCalled();
+    expect(enterRematchLobby).not.toHaveBeenCalled();
+    await act(async () => {
+      await result.current.handleUndo();
+    });
+    expect(result.current.error).toBe("new");
   });
 });

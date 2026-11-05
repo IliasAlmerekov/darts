@@ -39,4 +39,19 @@ describe("startLobbyGame", () => {
     expect($gameData.get()).toEqual(game);
     expect(queryClient.getQueryState(gameQueries.tablet().queryKey)?.isInvalidated).toBe(false);
   });
+  it("keeps a different game loaded while the start request is pending", async () => {
+    let finish: (value: never) => void = () => {};
+    vi.mocked(apiClient.post).mockReturnValueOnce(
+      new Promise((resolve) => {
+        finish = resolve;
+      }),
+    );
+    const pending = startLobbyGame(1, settings);
+    const newerGame = buildGameThrowsResponse({ id: 2 });
+    acceptGame(newerGame);
+    finish(game as never);
+    await pending;
+    expect($gameData.get()).toEqual(newerGame);
+    expect(queryClient.getQueryState(gameQueries.tablet().queryKey)?.isInvalidated).toBe(true);
+  });
 });

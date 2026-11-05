@@ -5,7 +5,8 @@ import { apiClient } from "@/shared/api/client";
 import { respondWith } from "@/shared/api/test-utils";
 import { gameQueries } from "@/shared/query/game.queries";
 import { queryClient } from "@/shared/query/queryClient";
-import { $currentGameId, $invitation, setInvitation } from "@/shared/store";
+import { $currentGameId, $invitation, $gameData, acceptGame, setInvitation } from "@/shared/store";
+import { buildGameThrowsResponse } from "@/shared/types/game.test-support";
 import { enterRematchLobby, runSummaryAction, type SummaryAction } from "./summaryActions";
 
 vi.mock("@/shared/api/client", async (original) => ({
@@ -118,4 +119,33 @@ describe("summary actions", () => {
     expect(queryClient.getQueryData(gameQueries.finished(42).queryKey)).toBeUndefined();
     expect(queryClient.getQueryState(gameQueries.tablet().queryKey)?.isInvalidated).toBe(true);
   });
+
+  it.each(["rematch", "rematch-start"] as const)(
+    "preserves the new room when a stale %s completes",
+    async (action) => {
+      let resolveRequest: (value: never) => void = () => {};
+      vi.mocked(apiClient.get).mockImplementation(respondWith(settings));
+      vi.mocked(apiClient.post).mockReturnValueOnce(
+        new Promise((resolve) => {
+          resolveRequest = resolve;
+        }),
+      );
+      vi.mocked(apiClient.post).mockImplementationOnce(respondWith(started));
+      let current = true;
+      const pending = runSummaryAction(action, 42, () => current);
+      await vi.waitFor(() => expect(apiClient.post).toHaveBeenCalledTimes(1));
+      current = false;
+      const nextInvitation = { gameId: 99, invitationLink: "/invite/99" };
+      const nextGame = buildGameThrowsResponse({ id: 99 });
+      setInvitation(nextInvitation);
+      acceptGame(nextGame);
+      resolveRequest(rematch as never);
+      await pending;
+      expect($currentGameId.get()).toBe(99);
+      expect($invitation.get()).toEqual(nextInvitation);
+      expect($gameData.get()).toEqual(nextGame);
+      expect(queryClient.getQueryData(gameQueries.finished(42).queryKey)).toBeUndefined();
+      expect(queryClient.getQueryState(gameQueries.tablet().queryKey)?.isInvalidated).toBe(true);
+    },
+  );
 });

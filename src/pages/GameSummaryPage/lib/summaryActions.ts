@@ -30,23 +30,27 @@ export function enterRematchLobby(finishedGameId: number, lobbyGameId: number): 
 export async function runSummaryAction(
   action: SummaryAction,
   finishedGameId: number,
+  isCurrent: () => boolean = () => true,
 ): Promise<SummaryOutcome> {
   try {
     if (action === "undo") {
       await undoLastThrow(finishedGameId);
-      playSound("undo");
+      if (isCurrent()) playSound("undo");
       releaseFinishedGame(finishedGameId);
       return { kind: "navigate", path: ROUTES.game(finishedGameId) };
     }
     if (action === "rematch-start") {
-      const rematch = await startRematch(finishedGameId);
+      const rematch = await startRematch(finishedGameId, isCurrent);
       releaseFinishedGame(finishedGameId);
-      setCurrentGameId(rematch.gameId);
-      setInvitation({ gameId: rematch.gameId, invitationLink: rematch.invitationLink });
+      if (isCurrent()) {
+        setCurrentGameId(rematch.gameId);
+        setInvitation({ gameId: rematch.gameId, invitationLink: rematch.invitationLink });
+      }
       return { kind: "navigate", path: ROUTES.game(rematch.gameId) };
     }
     const rematch = await createRematchGame(finishedGameId);
-    enterRematchLobby(finishedGameId, rematch.gameId);
+    if (isCurrent()) enterRematchLobby(finishedGameId, rematch.gameId);
+    else releaseFinishedGame(finishedGameId);
     return { kind: "navigate", path: ROUTES.start(rematch.gameId) };
   } catch (error) {
     const failure = error instanceof RematchNotStartedError ? error.cause : error;

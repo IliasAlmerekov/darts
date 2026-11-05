@@ -35,10 +35,10 @@ export function useGameSummaryPage(): UseGameSummaryPageResult {
     gameId: number | null;
     message: string;
   } | null>(null);
-  const [isActionPending, setIsActionPending] = useState<boolean>(false);
+  const [pendingGameId, setPendingGameId] = useState<number | null>(null);
   const [releasedGameId, setReleasedGameId] = useState<number | null>(null);
   // Synchronous, so a second tap before the next render finds the lock taken.
-  const actionInFlightRef = useRef<boolean>(false);
+  const actionInFlightRef = useRef<{ gameId: number; active: boolean } | null>(null);
   // `lobbyGameId` is set when the page leaves for a rematch lobby the server created but did
   // not start; the client state moves to that lobby only when the page leaves.
   const [leaveState, setLeaveState] = useState<{
@@ -51,6 +51,19 @@ export function useGameSummaryPage(): UseGameSummaryPageResult {
     () => parseRouteGameId(summaryGameIdParam),
     [summaryGameIdParam],
   );
+
+  useEffect(() => {
+    return () => {
+      setLeaveState(null);
+      setActionErrorState(null);
+      const owner = actionInFlightRef.current;
+      if (owner?.gameId === finishedGameIdFromRoute) {
+        owner.active = false;
+        actionInFlightRef.current = null;
+        setPendingGameId(null);
+      }
+    };
+  }, [finishedGameIdFromRoute]);
 
   // A late 409 for a game the route has left must not move the summary now on screen.
   const leaveTarget = leaveState?.gameId === finishedGameIdFromRoute ? leaveState : null;
@@ -99,21 +112,6 @@ export function useGameSummaryPage(): UseGameSummaryPageResult {
     return () => window.clearTimeout(timer);
   }, [finishedGameIdFromRoute, leaveLobbyGameId, leavePath, navigate]);
 
-  // The lock stays taken after a success and after a 409 GAME_NOT_NEWEST: the summary stays on
-  // screen while the page moves away, and a tap in that time must not start a second mutation.
-  // Any other failure releases it, so the player can try again.
-  const lockAction = useCallback((): boolean => {
-    if (actionInFlightRef.current) return false;
-    actionInFlightRef.current = true;
-    setIsActionPending(true);
-    return true;
-  }, []);
-
-  const unlockAction = useCallback((): void => {
-    actionInFlightRef.current = false;
-    setIsActionPending(false);
-  }, []);
-
   const { podiumData, leaderBoardList } = summaryQuery.data ?? {
     podiumData: [],
     leaderBoardList: [],
@@ -121,9 +119,13 @@ export function useGameSummaryPage(): UseGameSummaryPageResult {
 
   const runAction = useCallback(
     async (action: SummaryAction): Promise<void> => {
-      if (finishedGameIdFromRoute === null || !lockAction()) return;
+      if (finishedGameIdFromRoute === null || actionInFlightRef.current !== null) return;
+      const owner = { gameId: finishedGameIdFromRoute, active: true };
+      actionInFlightRef.current = owner;
+      setPendingGameId(finishedGameIdFromRoute);
       setActionError(null);
-      const outcome = await runSummaryAction(action, finishedGameIdFromRoute);
+      const outcome = await runSummaryAction(action, finishedGameIdFromRoute, () => owner.active);
+      if (!owner.active) return;
       if (outcome.kind === "navigate") {
         setReleasedGameId(finishedGameIdFromRoute);
         navigate(outcome.path);
@@ -136,11 +138,13 @@ export function useGameSummaryPage(): UseGameSummaryPageResult {
             lobbyGameId: outcome.lobbyGameId,
           });
         } else {
-          unlockAction();
+          owner.active = false;
+          actionInFlightRef.current = null;
+          setPendingGameId(null);
         }
       }
     },
-    [finishedGameIdFromRoute, lockAction, navigate, setActionError, unlockAction],
+    [finishedGameIdFromRoute, navigate, setActionError],
   );
 
   const handleUndo = useCallback(() => runAction("undo"), [runAction]);
@@ -150,7 +154,7 @@ export function useGameSummaryPage(): UseGameSummaryPageResult {
   return {
     error,
     leaving: leavePath !== null,
-    isActionPending,
+    isActionPending: pendingGameId !== null && pendingGameId === finishedGameIdFromRoute,
     podiumData,
     leaderBoardList,
     loadSummary,

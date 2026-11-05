@@ -114,7 +114,7 @@ ADR 0002 records why responses are described by Valibot schemas.
   `@/shared/api/<domain>`; `@/types` re-exports none.
 - Types without a schema are hand-written types in the same domain file: a type a
   resource function builds (`FinishedPlayerResponse`, `RematchResponse`,
-  `RematchGameResponse`, `StartRematchResponse`, `GameSummaryResponse`), an error payload
+  `RematchGameResponse`, `GameSummaryResponse`), an error payload
   read by a guard (`AddGuestErrorResponse`), and request bodies and payloads
   (`StartGameRequest`, `ThrowRequest`, `CreateGameSettingsPayload`). The guard itself
   stays with its caller.
@@ -261,6 +261,8 @@ Mapper rules:
 ## Game reads
 
 Read the game unconditionally with `getGameThrows`. The session reloads after a rejected throw or undo.
+
+`StartRematchResponse` is a workflow result in `src/shared/lib/game/startLobbyGame.ts`.
 
 ## Error -> user message
 

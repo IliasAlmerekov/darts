@@ -4,7 +4,7 @@ import {
   startGame,
   type GameSettingsResponse,
 } from "@/shared/api/game";
-import { resetGameStore } from "@/shared/store";
+import { $gameData, resetGameStore } from "@/shared/store";
 import { gameQueries } from "@/shared/query/game.queries";
 import { queryClient } from "@/shared/query/queryClient";
 
@@ -28,7 +28,9 @@ export class RematchNotStartedError extends Error {
 export async function startLobbyGame(
   gameId: number,
   settings: GameSettingsResponse,
+  isCurrent: () => boolean = () => true,
 ): Promise<void> {
+  const previousGame = $gameData.get();
   await startGame(gameId, {
     startScore: settings.startScore,
     doubleOut: settings.doubleOut,
@@ -36,15 +38,18 @@ export async function startLobbyGame(
     round: 1,
     status: "started",
   });
-  resetGameStore();
+  if (isCurrent() && $gameData.get() === previousGame) resetGameStore();
   void queryClient.invalidateQueries({ queryKey: gameQueries.tablet().queryKey });
 }
 
-export async function startRematch(previousGameId: number): Promise<StartRematchResponse> {
+export async function startRematch(
+  previousGameId: number,
+  isCurrent: () => boolean = () => true,
+): Promise<StartRematchResponse> {
   const settings = await getGameSettings(previousGameId);
   const rematch = await createRematchGame(previousGameId);
   try {
-    await startLobbyGame(rematch.gameId, settings);
+    await startLobbyGame(rematch.gameId, settings, isCurrent);
   } catch (error) {
     throw new RematchNotStartedError(rematch.gameId, error);
   }
