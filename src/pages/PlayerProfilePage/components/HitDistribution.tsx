@@ -4,14 +4,15 @@ import type { PlayerProfile } from "@/lib/player/profile";
 import {
   BOARD_ORDER,
   boardFieldSpot,
+  BULL_RADIUS,
   DOUBLE_INNER,
   DOUBLE_OUTER,
   OUTER_BULL_RADIUS,
   SEGMENT_ANGLE,
-  SPOT_DOT_RADIUS,
   TREBLE_INNER,
   TREBLE_OUTER,
 } from "../lib/boardFieldSpot";
+import { HIT_DOT_RADIUS, type HitDot } from "../lib/hitDots";
 import {
   HIT_FREQUENCY_LABELS,
   type BoardHitFrequencies,
@@ -20,7 +21,6 @@ import {
 } from "../lib/hitFrequency";
 import styles from "./HitDistribution.module.css";
 
-const BULL_RADIUS = 6.4;
 const BOARD_RADIUS = 226;
 const NUMBER_RADIUS = 198;
 const FREQUENCIES: HitFrequency[] = [0, 1, 2, 3, 4];
@@ -75,19 +75,21 @@ const SEGMENTS = BOARD_ORDER.map((segment, index) => {
 const FIELD_SPOTS = BOARD_ORDER.flatMap((segment) =>
   (["S", "D", "T"] as const).map((ring) => {
     const field: NumberField = `${ring}${segment}`;
-    // Unrounded: a treble or double dot fills its ring, so rounding would push it out.
     return { field, ...boardFieldSpot(field) };
   }),
 );
 
 interface HitDistributionProps {
   hitFrequencies: BoardHitFrequencies;
+  /** One dot per hit, or the board's share of 600 dots. */
+  hitDots: HitDot[];
   mostHitSegment: PlayerProfile["mostHitSegment"];
 }
 
-/** A dartboard with a heat spot where the player's darts land most. */
+/** A dartboard with a heat spot where the player's darts land most and a dot per hit. */
 export function HitDistribution({
   hitFrequencies,
+  hitDots,
   mostHitSegment,
 }: HitDistributionProps): React.JSX.Element {
   const { fields, bull } = hitFrequencies;
@@ -135,16 +137,15 @@ export function HitDistribution({
           {FIELD_SPOTS.map(({ field, x, y }) => {
             const frequency = fields[field] ?? 4;
             return SPOT_RADII[frequency] > 0 ? (
-              <g key={field} className={HEAT_CLASSES[frequency]} data-field={field}>
-                <circle
-                  className={styles.spotGlow}
-                  cx={x}
-                  cy={y}
-                  r={SPOT_RADII[frequency]}
-                  filter={`url(#${blurId})`}
-                />
-                <circle className={styles.spotDot} cx={x} cy={y} r={SPOT_DOT_RADIUS} />
-              </g>
+              <circle
+                key={field}
+                className={clsx(styles.spotGlow, HEAT_CLASSES[frequency])}
+                data-field={field}
+                cx={x}
+                cy={y}
+                r={SPOT_RADII[frequency]}
+                filter={`url(#${blurId})`}
+              />
             ) : null;
           })}
           {SPOT_RADII[bull] > 0 ? (
@@ -154,6 +155,18 @@ export function HitDistribution({
               filter={`url(#${blurId})`}
             />
           ) : null}
+        </g>
+        <g aria-hidden="true">
+          {hitDots.map(({ field, index, x, y }) => (
+            // Unrounded: a dot fills most of an 8 mm ring, so rounding could push it out.
+            <circle
+              key={`${field}:${index}`}
+              className={styles.hitDot}
+              cx={x}
+              cy={y}
+              r={HIT_DOT_RADIUS}
+            />
+          ))}
         </g>
       </svg>
 

@@ -129,6 +129,13 @@ function heatSpots(): Element[] {
   return Array.from(block("Hit distribution").querySelectorAll("circle[filter]"));
 }
 
+/** The hit dots, drawn in a group that assistive technology skips. */
+function hitDots(): Element[] {
+  return Array.from(
+    block("Hit distribution").querySelectorAll('svg g[aria-hidden="true"] > circle'),
+  );
+}
+
 /** The board fields that have a heat spot, in board order. */
 function heatSpotFields(): string[] {
   return Array.from(block("Hit distribution").querySelectorAll("[data-field]")).map(
@@ -393,13 +400,13 @@ describe("PlayerProfilePage", () => {
     expect(heatSpots()).toHaveLength(4);
   });
 
-  it("draws the dot of every treble and double spot inside its ring", async () => {
+  it("draws each treble and double hit as a dot inside its ring", async () => {
     vi.mocked(getPlayerProfile).mockResolvedValue(
       buildProfile({
         stats: buildPlayerProfileStats({
           hitDistribution: buildPlayerProfileStats().hitDistribution.map(({ field }) => ({
             field,
-            hits: 5,
+            hits: field.startsWith("T") || field.startsWith("D") ? 5 : 0,
           })),
         }),
       }),
@@ -409,20 +416,58 @@ describe("PlayerProfilePage", () => {
     await screen.findByRole("img", { name: "Dartboard heatmap, most hits on 20" });
 
     // Treble ring 99 to 107 mm, double ring 162 to 170 mm from the centre.
-    const rings: Record<string, [number, number]> = { T: [99, 107], D: [162, 170] };
-    const outside = Array.from(block("Hit distribution").querySelectorAll("[data-field]")).filter(
-      (spot) => {
-        const ring = rings[spot.getAttribute("data-field")?.charAt(0) ?? ""];
-        const dot = spot.querySelector("circle:not([filter])");
-        if (ring === undefined || dot === null) return false;
-        const radius = Math.hypot(Number(dot.getAttribute("cx")), Number(dot.getAttribute("cy")));
-        const dotRadius = Number(dot.getAttribute("r"));
-        return radius - dotRadius < ring[0] - 1e-9 || radius + dotRadius > ring[1] + 1e-9;
-      },
+    const rings: [number, number][] = [
+      [99, 107],
+      [162, 170],
+    ];
+    const outside = hitDots().filter((dot) => {
+      const radius = Math.hypot(Number(dot.getAttribute("cx")), Number(dot.getAttribute("cy")));
+      const dotRadius = Number(dot.getAttribute("r"));
+      return !rings.some(
+        ([inner, outer]) =>
+          radius - dotRadius >= inner - 1e-9 && radius + dotRadius <= outer + 1e-9,
+      );
+    });
+
+    // 20 trebles and 20 doubles with 5 hits each.
+    expect(hitDots()).toHaveLength(200);
+    expect(outside).toEqual([]);
+  });
+
+  it("draws one hidden dot per hit above the heat spots and keeps the legend", async () => {
+    const hits: Record<string, number> = { T20: 40, D16: 30, T19: 20, S5: 10, BULL: 12 };
+    vi.mocked(getPlayerProfile).mockResolvedValue(
+      buildProfile({
+        stats: buildPlayerProfileStats({
+          hitDistribution: buildPlayerProfileStats().hitDistribution.map(({ field }) => ({
+            field,
+            hits: hits[field] ?? 0,
+          })),
+          mostHitSegment: { segment: "20", hits: 40, share: 35.7 },
+        }),
+      }),
     );
 
-    expect(heatSpotFields()).toHaveLength(60);
-    expect(outside.map((spot) => spot.getAttribute("data-field"))).toEqual([]);
+    renderPage();
+    await screen.findByRole("img", { name: "Dartboard heatmap, most hits on 20" });
+
+    const dots = hitDots();
+    const lastSpot = heatSpots().at(-1);
+    expect(dots).toHaveLength(112);
+    expect(dots.every((dot) => dot.getAttribute("r") === "2")).toBe(true);
+    // Four board fields and the centre, whose 12 Bull hits are Low.
+    expect(heatSpots()).toHaveLength(5);
+    expect(
+      lastSpot !== undefined &&
+        dots.every(
+          (dot) => lastSpot.compareDocumentPosition(dot) & Node.DOCUMENT_POSITION_FOLLOWING,
+        ),
+    ).toBe(true);
+    expect(
+      within(block("Hit distribution"))
+        .getAllByRole("listitem")
+        .map((item) => item.textContent),
+    ).toEqual(["Very high", "High", "Medium", "Low", "Very low"]);
   });
 
   it("shows a dash for missing rates and one line for each empty block", async () => {

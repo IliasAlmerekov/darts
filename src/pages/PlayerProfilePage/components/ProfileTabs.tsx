@@ -63,6 +63,7 @@ function renderPanel(
         <OverviewTab
           profile={profileState.profile}
           hitFrequencies={profileState.hitFrequencies}
+          hitDots={profileState.hitDots}
           displayName={displayName}
         />
       );

@@ -1,16 +1,23 @@
+import { useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useSearchParams } from "react-router-dom";
 import type { PlayerProfile } from "@/lib/player/profile";
 import { toUserErrorMessage } from "@/lib/error/error-to-user-message";
 import { useAuthenticatedUser } from "@/shared/hooks/useAuthenticatedUser";
 import { playerQueries } from "@/shared/query/player.queries";
+import { toHitDots, type HitDot } from "./lib/hitDots";
 import { toBoardHitFrequencies, type BoardHitFrequencies } from "./lib/hitFrequency";
 import { getDisplayName, parseProfileTab, type ProfileTab } from "./lib/profilePage";
 
 export type ProfileState =
   | { status: "pending" }
   | { status: "error"; message: string; retry: () => void }
-  | { status: "success"; profile: PlayerProfile; hitFrequencies: BoardHitFrequencies };
+  | {
+      status: "success";
+      profile: PlayerProfile;
+      hitFrequencies: BoardHitFrequencies;
+      hitDots: HitDot[];
+    };
 
 interface UsePlayerProfilePageResult {
   /** Null until the logged-in user is known. */
@@ -36,6 +43,12 @@ export function usePlayerProfilePage(): UsePlayerProfilePageResult {
     );
   };
 
+  // Up to 600 dots, so they are worked out once per profile answer, not on every render.
+  const hitDots = useMemo(
+    () => (data === undefined ? [] : toHitDots(data.hitDistribution)),
+    [data],
+  );
+
   // A failed request shows its error even when an older answer is still cached.
   const profileState: ProfileState =
     error !== null
@@ -50,6 +63,7 @@ export function usePlayerProfilePage(): UsePlayerProfilePageResult {
             status: "success",
             profile: data,
             hitFrequencies: toBoardHitFrequencies(data.hitDistribution),
+            hitDots,
           };
 
   return {
