@@ -207,14 +207,23 @@ describe("toHitDots", () => {
     },
   );
 
-  it.each(["BULL", "BULLSEYE"] as const)("spreads the dots of %s over its ring", (field) => {
-    const dots = toHitDots(board({ [field]: 200 }));
+  it.each([
+    ["BULLSEYE", 0, 4.1],
+    ["BULL", 8.7, 13.7],
+  ] as const)("spreads the dots of %s evenly over its area", (field, inner, outer) => {
+    // Dot centres stay 2.3 mm inside the ring: Bullseye a disc of 4.1 mm, Bull 8.7 to 13.7 mm.
+    const dots = toHitDots(board({ [field]: 600 }));
     const radii = dots.map(({ x, y }) => Math.hypot(x, y));
-    const quadrants = new Set(dots.map(({ x, y }) => `${Math.sign(x)}${Math.sign(y)}`));
+    const quadrants = new Set(dots.map(({ x, y }) => `${x >= 0}${y >= 0}`));
+    // The radius that splits the area in two halves.
+    const halfArea = Math.sqrt((inner ** 2 + outer ** 2) / 2);
+    const innerShare = radii.filter((radius) => radius < halfArea).length / radii.length;
 
     expect(quadrants.size).toBe(4);
-    // Bull leaves 3.4 mm of room across its ring, Bullseye a 4.1 mm radius.
-    expect(Math.max(...radii) - Math.min(...radii)).toBeGreaterThan(2.5);
+    expect(Math.min(...radii)).toBeLessThan(inner + 0.5);
+    expect(Math.max(...radii)).toBeGreaterThan(outer - 0.5);
+    expect(innerShare).toBeGreaterThan(0.45);
+    expect(innerShare).toBeLessThan(0.55);
   });
 
   it("puts no dot on a board field without hits", () => {
