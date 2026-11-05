@@ -46,6 +46,7 @@ import {
 import { ROUTES } from "@/lib/router/routes";
 import { createQueryClient } from "@/shared/query/queryClient";
 import PlayerProfilePage from ".";
+import { toHitDots } from "./lib/hitDots";
 
 type Router = ReturnType<typeof createMemoryRouter>;
 
@@ -401,16 +402,13 @@ describe("PlayerProfilePage", () => {
   });
 
   it("draws each treble and double hit as a dot inside its own ring", async () => {
+    // Different counts per ring, so trebles drawn on the double ring would show.
+    const hitDistribution = buildPlayerProfileStats().hitDistribution.map(({ field }) => ({
+      field,
+      hits: field.startsWith("T") ? 3 : field.startsWith("D") ? 5 : 0,
+    }));
     vi.mocked(getPlayerProfile).mockResolvedValue(
-      buildProfile({
-        stats: buildPlayerProfileStats({
-          // Different counts per ring, so trebles drawn on the double ring would show.
-          hitDistribution: buildPlayerProfileStats().hitDistribution.map(({ field }) => ({
-            field,
-            hits: field.startsWith("T") ? 3 : field.startsWith("D") ? 5 : 0,
-          })),
-        }),
-      }),
+      buildProfile({ stats: buildPlayerProfileStats({ hitDistribution }) }),
     );
 
     renderPage();
@@ -429,6 +427,10 @@ describe("PlayerProfilePage", () => {
     expect(hitDots().every((dot) => dot.getAttribute("stroke-width") === "0.6")).toBe(true);
     expect(hitDots().filter((dot) => inRing(dot, [99, 107]))).toHaveLength(60);
     expect(hitDots().filter((dot) => inRing(dot, [162, 170]))).toHaveLength(100);
+    // Each dot sits where the position function put it, so no swapped or mirrored axis.
+    expect(
+      hitDots().map((dot) => [Number(dot.getAttribute("cx")), Number(dot.getAttribute("cy"))]),
+    ).toEqual(toHitDots(hitDistribution).map(({ x, y }) => [x, y]));
   });
 
   it("draws one hidden dot per hit above the heat spots and keeps the legend", async () => {
