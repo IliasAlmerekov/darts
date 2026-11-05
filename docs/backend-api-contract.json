@@ -91,6 +91,16 @@
                                 }
                             }
                         }
+                    },
+                    "404": {
+                        "description": "Kein Spiel hat diese ID (`GAME_NOT_FOUND`).",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ApiError"
+                                }
+                            }
+                        }
                     }
                 }
             }
@@ -136,6 +146,16 @@
                     },
                     "409": {
                         "description": "Das Spiel ist in der Lobby oder abgebrochen (`GAME_FINISH_NOT_ALLOWED`). Ein bereits beendetes Spiel bleibt unver\u00e4ndert (200). Eine parallele Anfrage hat dieselben Daten gesperrt, und MySQL hat die Transaktion als Deadlock oder nach einem Lock-Wait-Timeout zur\u00fcckgerollt (`CONCURRENT_CHANGE`). Der Request kann wiederholt werden."
+                    },
+                    "404": {
+                        "description": "Kein Spiel hat diese ID (`GAME_NOT_FOUND`).",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ApiError"
+                                }
+                            }
+                        }
                     }
                 }
             }
@@ -181,6 +201,16 @@
                     },
                     "409": {
                         "description": "Das Spiel ist weder beendet noch gestartet (`GAME_REOPEN_NOT_ALLOWED`), oder es ist beendet, aber nicht das neueste Spiel (`GAME_NOT_NEWEST`). Eine parallele Anfrage hat dieselben Daten gesperrt, und MySQL hat die Transaktion als Deadlock oder nach einem Lock-Wait-Timeout zur\u00fcckgerollt (`CONCURRENT_CHANGE`). Der Request kann wiederholt werden."
+                    },
+                    "404": {
+                        "description": "Kein Spiel hat diese ID (`GAME_NOT_FOUND`).",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ApiError"
+                                }
+                            }
+                        }
                     }
                 }
             }
@@ -226,6 +256,16 @@
                     },
                     "409": {
                         "description": "Das Spiel ist nicht beendet (`GAME_NOT_FINISHED`)."
+                    },
+                    "404": {
+                        "description": "Kein Spiel hat diese ID (`GAME_NOT_FOUND`).",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ApiError"
+                                }
+                            }
+                        }
                     }
                 }
             }
@@ -293,6 +333,16 @@
                                 }
                             }
                         }
+                    },
+                    "404": {
+                        "description": "Kein Spiel hat diese ID (`GAME_NOT_FOUND`).",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ApiError"
+                                }
+                            }
+                        }
                     }
                 }
             }
@@ -338,6 +388,16 @@
                     },
                     "409": {
                         "description": "Das Spiel ist in der Lobby oder beendet (`GAME_ABORT_NOT_ALLOWED`). Ein bereits abgebrochenes Spiel bleibt unver\u00e4ndert (200). Eine parallele Anfrage hat dieselben Daten gesperrt, und MySQL hat die Transaktion als Deadlock oder nach einem Lock-Wait-Timeout zur\u00fcckgerollt (`CONCURRENT_CHANGE`). Der Request kann wiederholt werden."
+                    },
+                    "404": {
+                        "description": "Kein Spiel hat diese ID (`GAME_NOT_FOUND`).",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ApiError"
+                                }
+                            }
+                        }
                     }
                 }
             }
@@ -480,7 +540,7 @@
                         }
                     },
                     "404": {
-                        "description": "Das Spiel existiert nicht (`GAME_NOT_FOUND`) oder der Spieler sitzt nicht in diesem Spiel (`GAME_PLAYER_NOT_FOUND`).",
+                        "description": "Kein Spiel hat diese ID (`GAME_NOT_FOUND`). Der Spieler sitzt nicht in diesem Spiel (`GAME_PLAYER_NOT_FOUND`).",
                         "content": {
                             "application/json": {
                                 "schema": {
@@ -640,6 +700,16 @@
                                 }
                             }
                         }
+                    },
+                    "404": {
+                        "description": "Kein Spiel hat diese ID (`GAME_NOT_FOUND`).",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ApiError"
+                                }
+                            }
+                        }
                     }
                 }
             }
@@ -692,9 +762,6 @@
                             }
                         }
                     },
-                    "404": {
-                        "description": "Spiel nicht gefunden."
-                    },
                     "409": {
                         "description": "Das Spiel ist nicht mehr in der Lobby (`GAME_SEATS_NOT_EDITABLE`), auch bei leerem `positions`. Die Positionen bleiben unver\u00e4ndert. Eine parallele Anfrage hat dieselben Daten gesperrt, und MySQL hat die Transaktion als Deadlock oder nach einem Lock-Wait-Timeout zur\u00fcckgerollt (`CONCURRENT_CHANGE`). Der Request kann wiederholt werden."
                     },
@@ -714,6 +781,16 @@
                             "application/json": {
                                 "schema": {
                                     "$ref": "#/components/schemas/RequestValidationFailed"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Kein Spiel hat diese ID (`GAME_NOT_FOUND`).",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ApiError"
                                 }
                             }
                         }
@@ -750,7 +827,14 @@
                         "description": "Das Spiel ist nicht in der Lobby (gestartet, beendet oder abgebrochen). Ohne Body, damit EventSource nicht neu verbindet."
                     },
                     "404": {
-                        "description": "Spiel nicht gefunden."
+                        "description": "Kein Spiel hat diese ID (`GAME_NOT_FOUND`).",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ApiError"
+                                }
+                            }
+                        }
                     }
                 }
             }
@@ -786,7 +870,7 @@
                         }
                     },
                     "404": {
-                        "description": "Vorheriges Spiel nicht gefunden (`GAME_NOT_FOUND`).",
+                        "description": "Kein Spiel hat diese ID (`GAME_NOT_FOUND`).",
                         "content": {
                             "application/json": {
                                 "schema": {
@@ -843,6 +927,16 @@
                     },
                     "403": {
                         "description": "Zugriff verweigert: Nur ROLE_ADMIN (das Tablet) darf diese Route nutzen (`ACCESS_DENIED`).",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ApiError"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Kein Spiel hat diese ID (`GAME_NOT_FOUND`).",
                         "content": {
                             "application/json": {
                                 "schema": {
@@ -931,6 +1025,16 @@
                     },
                     "409": {
                         "description": "Das Spiel ist gestartet und der Request sendet `startScore` (`GAME_START_SCORE_CHANGE_NOT_ALLOWED`), oder das Spiel hat schon einen Wurf und der Request sendet `outMode`, `doubleOut` oder `tripleOut`, auch mit dem aktuellen Wert (`GAME_OUT_RULE_CHANGE_NOT_ALLOWED`). Nachdem Undo jeden Wurf entfernt hat, ist die Out-Regel wieder \u00e4nderbar. Eine parallele Anfrage hat dieselben Daten gesperrt, und MySQL hat die Transaktion als Deadlock oder nach einem Lock-Wait-Timeout zur\u00fcckgerollt (`CONCURRENT_CHANGE`). Der Request kann wiederholt werden."
+                    },
+                    "404": {
+                        "description": "Kein Spiel hat diese ID (`GAME_NOT_FOUND`).",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ApiError"
+                                }
+                            }
+                        }
                     }
                 }
             }
@@ -1123,6 +1227,16 @@
                                 }
                             }
                         }
+                    },
+                    "404": {
+                        "description": "Kein Spiel hat diese ID (`GAME_NOT_FOUND`).",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ApiError"
+                                }
+                            }
+                        }
                     }
                 }
             },
@@ -1166,6 +1280,16 @@
                     },
                     "409": {
                         "description": "Das Spiel ist in der Lobby oder abgebrochen (`GAME_THROW_NOT_ALLOWED`); es wird nichts gel\u00f6scht. Oder der letzte Wurf hat das Spiel beendet, und das Spiel ist nicht das neueste Spiel (`GAME_NOT_NEWEST`). Das R\u00fcckg\u00e4ngigmachen w\u00fcrde das laufende Spiel abbrechen. Eine parallele Anfrage hat dieselben Daten gesperrt, und MySQL hat die Transaktion als Deadlock oder nach einem Lock-Wait-Timeout zur\u00fcckgerollt (`CONCURRENT_CHANGE`). Der Request kann wiederholt werden."
+                    },
+                    "404": {
+                        "description": "Kein Spiel hat diese ID (`GAME_NOT_FOUND`).",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ApiError"
+                                }
+                            }
+                        }
                     }
                 }
             }
@@ -1312,11 +1436,6 @@
                                                 },
                                                 "type": "object"
                                             }
-                                        },
-                                        "message": {
-                                            "type": "string",
-                                            "example": "Spiel nicht gefunden",
-                                            "nullable": true
                                         }
                                     },
                                     "type": "object"
@@ -1325,7 +1444,7 @@
                         }
                     },
                     "404": {
-                        "description": "Unbekannte Spiel-ID (`NOT_FOUND`, schon vom Entity-Resolver). Meldet der Service ein fehlendes Spiel, antwortet der Endpoint mit `GAME_NOT_FOUND`.",
+                        "description": "Kein Spiel hat diese ID (`GAME_NOT_FOUND`).",
                         "content": {
                             "application/json": {
                                 "schema": {
@@ -1582,7 +1701,7 @@
                         }
                     },
                     "404": {
-                        "description": "Spiel nicht gefunden (`GAME_NOT_FOUND`).",
+                        "description": "Kein Spiel hat diese ID (`GAME_NOT_FOUND`).",
                         "content": {
                             "application/json": {
                                 "schema": {
@@ -3318,35 +3437,75 @@
                 },
                 "type": "object"
             },
-            "PlayerProfileSegmentHitsDto": {
+            "PlayerProfileFieldHitsDto": {
                 "required": [
-                    "segment",
+                    "field",
                     "hits"
                 ],
                 "properties": {
-                    "segment": {
+                    "field": {
                         "type": "string",
                         "enum": [
-                            "1",
-                            "2",
-                            "3",
-                            "4",
-                            "5",
-                            "6",
-                            "7",
-                            "8",
-                            "9",
-                            "10",
-                            "11",
-                            "12",
-                            "13",
-                            "14",
-                            "15",
-                            "16",
-                            "17",
-                            "18",
-                            "19",
-                            "20",
+                            "S1",
+                            "D1",
+                            "T1",
+                            "S2",
+                            "D2",
+                            "T2",
+                            "S3",
+                            "D3",
+                            "T3",
+                            "S4",
+                            "D4",
+                            "T4",
+                            "S5",
+                            "D5",
+                            "T5",
+                            "S6",
+                            "D6",
+                            "T6",
+                            "S7",
+                            "D7",
+                            "T7",
+                            "S8",
+                            "D8",
+                            "T8",
+                            "S9",
+                            "D9",
+                            "T9",
+                            "S10",
+                            "D10",
+                            "T10",
+                            "S11",
+                            "D11",
+                            "T11",
+                            "S12",
+                            "D12",
+                            "T12",
+                            "S13",
+                            "D13",
+                            "T13",
+                            "S14",
+                            "D14",
+                            "T14",
+                            "S15",
+                            "D15",
+                            "T15",
+                            "S16",
+                            "D16",
+                            "T16",
+                            "S17",
+                            "D17",
+                            "T17",
+                            "S18",
+                            "D18",
+                            "T18",
+                            "S19",
+                            "D19",
+                            "T19",
+                            "S20",
+                            "D20",
+                            "T20",
                             "BULL",
                             "BULLSEYE"
                         ]
@@ -3530,13 +3689,13 @@
                         "type": "integer"
                     },
                     "hitDistribution": {
-                        "description": "Immer 22 Eintr\u00e4ge in der Reihenfolge `1` bis `20`, `BULL`, `BULLSEYE`. Single, Double und Triple z\u00e4hlen f\u00fcr dasselbe Segment, Busts z\u00e4hlen mit, Fehlw\u00fcrfe nicht.",
+                        "description": "Immer 62 Eintr\u00e4ge, einer pro Board-Feld, in der Reihenfolge `S1`, `D1`, `T1` bis `S20`, `D20`, `T20`, `BULL`, `BULLSEYE`. Single, Double und Triple z\u00e4hlen getrennt, Busts z\u00e4hlen mit, Fehlw\u00fcrfe nicht.",
                         "type": "array",
                         "items": {
-                            "$ref": "#/components/schemas/PlayerProfileSegmentHitsDto"
+                            "$ref": "#/components/schemas/PlayerProfileFieldHitsDto"
                         },
-                        "maxItems": 22,
-                        "minItems": 22
+                        "maxItems": 62,
+                        "minItems": 62
                     },
                     "mostHitSegment": {
                         "description": "Segment mit den meisten Treffern, bei Gleichstand das h\u00f6here; `null` ohne Treffer.",

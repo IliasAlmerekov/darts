@@ -1,6 +1,6 @@
 import type { PlayerProfile } from "@/lib/player/profile";
 
-/** Five steps, from the most hit segments (0) to the least hit ones (4). */
+/** Five steps, from the most hit board fields (0) to the least hit ones (4). */
 export type HitFrequency = 0 | 1 | 2 | 3 | 4;
 
 export const HIT_FREQUENCY_LABELS: Record<HitFrequency, string> = {
@@ -11,9 +11,14 @@ export const HIT_FREQUENCY_LABELS: Record<HitFrequency, string> = {
   4: "Very low",
 };
 
+type BoardField = PlayerProfile["hitDistribution"][number]["field"];
+
+/** A board field of a number, `S1` to `T20`: every board field but the centre. */
+export type NumberField = Exclude<BoardField, "BULL" | "BULLSEYE">;
+
 export interface BoardHitFrequencies {
-  /** Segment `1` to `20` to its step. */
-  segments: Partial<Record<string, HitFrequency>>;
+  /** Board field `S1` to `T20` to its step. */
+  fields: Partial<Record<NumberField, HitFrequency>>;
   /** The centre spot, Bull and Bullseye together. */
   bull: HitFrequency;
 }
@@ -27,25 +32,27 @@ function toHitFrequency(hits: number, maxHits: number): HitFrequency {
   return 4;
 }
 
-/** Each board spot's hit frequency, compared with the spot the player hits most. */
+/**
+ * Each board spot's hit frequency, compared with the spot the player hits most: one scale
+ * for every board field and the centre, which counts Bull and Bullseye together.
+ */
 export function toBoardHitFrequencies(
   hitDistribution: PlayerProfile["hitDistribution"],
 ): BoardHitFrequencies {
   let bullHits = 0;
-  const segmentHits: [string, number][] = [];
-  for (const { segment, hits } of hitDistribution) {
-    if (segment === "BULL" || segment === "BULLSEYE") {
+  const fieldHits: [NumberField, number][] = [];
+  for (const { field, hits } of hitDistribution) {
+    if (field === "BULL" || field === "BULLSEYE") {
       bullHits += hits;
     } else {
-      segmentHits.push([segment, hits]);
+      fieldHits.push([field, hits]);
     }
   }
-  const maxHits = Math.max(bullHits, ...segmentHits.map(([, hits]) => hits));
+  const maxHits = Math.max(bullHits, ...fieldHits.map(([, hits]) => hits));
+  const fields: BoardHitFrequencies["fields"] = {};
+  for (const [field, hits] of fieldHits) {
+    fields[field] = toHitFrequency(hits, maxHits);
+  }
 
-  return {
-    segments: Object.fromEntries(
-      segmentHits.map(([segment, hits]) => [segment, toHitFrequency(hits, maxHits)]),
-    ),
-    bull: toHitFrequency(bullHits, maxHits),
-  };
+  return { fields, bull: toHitFrequency(bullHits, maxHits) };
 }

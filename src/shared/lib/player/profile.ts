@@ -52,7 +52,7 @@ export interface PlayerProfile {
     /** Checkout hits over attempts, such as `7 / 22`. */
     checkouts: string;
   };
-  /** Hits per segment, `1` to `20`, `BULL` and `BULLSEYE`, as the API sends them. */
+  /** Hits per board field, `S1` to `T20`, `BULL` and `BULLSEYE`, as the API sends them. */
   hitDistribution: ProfileStats["hitDistribution"];
   /** `name` reads in a sentence: `segment 20`, or `Bull`. */
   mostHitSegment: { segment: string; name: string; share: string } | null;

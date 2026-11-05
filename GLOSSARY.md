@@ -35,6 +35,14 @@ _Avoid_: joined page, lobby
 The darts with which the active participant can check out using the darts left in the current turn, shown in their empty throw slots.
 _Avoid_: hint, tip, finish route
 
+**Segment**:
+A number from 1 to 20 across all its rings, or BULL, or BULLSEYE. S20, D20 and T20 all belong to segment 20.
+_Avoid_: Field (for the number across its rings)
+
+**Board field**:
+One spot a dart can score: a single, double or triple of a number, such as T20, or BULL, or BULLSEYE. The board has 62. The inner and outer single field count as one board field, because the app records only the score, not where in the single field a dart landed.
+_Avoid_: Segment (for one ring of a number), ring
+
 ## Accounts
 
 **Remembered login**:
@@ -50,7 +58,7 @@ The picture of a player's character, taken from the company's set of employee pi
 _Avoid_: Character picture, profile picture, photo
 
 **Hit frequency**:
-How often a player hits a board segment compared with the segment they hit most, in five steps from Very high to Very low.
+How often a player hits a board field compared with the board field they hit most, in five steps from Very high to Very low. BULL and BULLSEYE count together as the centre.
 _Avoid_: heat, hit rate
 
 **Three-dart average**:

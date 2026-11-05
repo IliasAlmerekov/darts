@@ -139,10 +139,13 @@ describe("toPlayerProfile", () => {
     ]);
   });
 
-  it("passes the hit distribution on as the API sends it", () => {
+  it("passes the hit distribution on as the API sends it, one entry per board field", () => {
     const stats = buildStats();
+    const { hitDistribution } = toPlayerProfile(buildProfile({ stats }));
 
-    expect(toPlayerProfile(buildProfile({ stats })).hitDistribution).toEqual(stats.hitDistribution);
+    expect(hitDistribution).toEqual(stats.hitDistribution);
+    expect(hitDistribution).toHaveLength(62);
+    expect(hitDistribution).toContainEqual({ field: "T20", hits: 96 });
   });
 
   it("shows a dash for a missing average", () => {

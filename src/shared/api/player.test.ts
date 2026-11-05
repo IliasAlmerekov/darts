@@ -10,6 +10,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { getCurrentGame, getPlayerGameSeat, getPlayerProfile, playerAvatarUrl } from "./player";
 import { apiClient, ApiValidationError } from "./client";
 import { respondWith } from "./test-utils";
+import { BOARD_FIELDS } from "@/shared/types/player.test-support";
 
 // Contract examples: GET /api/player/current-game
 const lobbyExample = { gameId: 12, status: "lobby" };
@@ -73,8 +74,8 @@ const profileStatsExample = {
   checkoutRate: 25,
   checkoutHits: 1,
   checkoutAttempts: 4,
-  hitDistribution: SEGMENTS.map((segment) => ({ segment, hits: segment === "20" ? 12 : 1 })),
-  mostHitSegment: { segment: "20", hits: 12, share: 26.7 },
+  hitDistribution: BOARD_FIELDS.map((field) => ({ field, hits: field === "T20" ? 12 : 1 })),
+  mostHitSegment: { segment: "20", hits: 14, share: 21.2 },
   favoriteDoubles: [{ double: "D16", hits: 1, attempts: 3, hitRate: 33.3 }],
   highestFinish: { score: 32, darts: 1, throws: ["D16"] },
 };
@@ -167,7 +168,28 @@ describe("getPlayerProfile", () => {
   });
 
   it.each([
-    ["a hit distribution without all 22 segments", { hitDistribution: [] }],
+    ["an empty hit distribution", { hitDistribution: [] }],
+    [
+      "the old hit distribution of 22 segments",
+      { hitDistribution: SEGMENTS.map((segment) => ({ segment, hits: 1 })) },
+    ],
+    [
+      "a hit distribution with an unknown board field",
+      {
+        hitDistribution: BOARD_FIELDS.map((field) => ({
+          field: field === "T20" ? "Q20" : field,
+          hits: 1,
+        })),
+      },
+    ],
+    [
+      "a hit distribution without all 62 board fields",
+      { hitDistribution: BOARD_FIELDS.slice(1).map((field) => ({ field, hits: 1 })) },
+    ],
+    [
+      "a hit distribution with more than 62 board fields",
+      { hitDistribution: [...BOARD_FIELDS, "T20"].map((field) => ({ field, hits: 1 })) },
+    ],
     [
       "more than 3 favorite doubles",
       {
