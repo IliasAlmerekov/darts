@@ -188,8 +188,8 @@ export async function logout(onSuccess?: () => void): Promise<void> {
 
 /**
  * Registers a new user account; the backend logs the new player in. A failed request is
- * logged and rethrown. A redirect that would leave the app is logged and still returned:
- * `resolveAuthDestination` replaces it with an in-app route.
+ * logged and rethrown. A non-empty redirect that would leave the app is logged and still
+ * returned: `resolveAuthDestination` replaces it with an in-app route.
  */
 export async function registerUser(data: RegistrationData): Promise<RegistrationResponse> {
   let response: RegistrationResponse;
@@ -212,7 +212,8 @@ export async function registerUser(data: RegistrationData): Promise<Registration
     throw error;
   }
 
-  if (toSafeRedirectPath(response.redirect) === null) {
+  // An empty redirect is missing, not unsafe: the destination falls back to the start page.
+  if (response.redirect !== "" && toSafeRedirectPath(response.redirect) === null) {
     // The URL itself stays out of the log: it may carry a token.
     clientLogger.warn("auth.registration.unsafe_redirect");
   }

@@ -430,6 +430,16 @@ describe("registerUser", () => {
     expect(clientLogger.warn).toHaveBeenCalledExactlyOnceWith("auth.registration.unsafe_redirect");
   });
 
+  it("does not warn about an empty redirect", async () => {
+    vi.spyOn(apiClient, "post").mockImplementationOnce(
+      respondWith({ ...registrationExample, redirect: "" }),
+    );
+
+    await registerUser(registration);
+
+    expect(clientLogger.warn).not.toHaveBeenCalled();
+  });
+
   it("does not warn about a same-origin redirect", async () => {
     vi.spyOn(apiClient, "post").mockImplementationOnce(
       respondWith({ ...registrationExample, redirect: `${window.location.origin}/start` }),
