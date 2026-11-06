@@ -39,6 +39,7 @@ import { logout, type AuthenticatedUser } from "@/shared/api/auth";
 import { NetworkError } from "@/shared/api";
 import { getPlayerProfile, type PlayerProfileResponse } from "@/shared/api/player";
 import {
+  BOARD_FIELDS,
   buildPlayerProfile,
   buildPlayerProfileGame,
   buildPlayerProfileStats,
@@ -47,6 +48,8 @@ import { ROUTES } from "@/lib/router/routes";
 import { createQueryClient } from "@/shared/query/queryClient";
 import PlayerProfilePage from ".";
 import { toHitDots, type HitDot } from "./lib/hitDots";
+import { BOARD_ORDER } from "./lib/boardFieldSpot";
+import hitStyles from "./components/HitDistribution.module.css";
 
 type Router = ReturnType<typeof createMemoryRouter>;
 
@@ -130,6 +133,21 @@ function hitDots(): Element[] {
   return Array.from(
     block("Hit distribution").querySelectorAll('svg g[aria-hidden="true"] > circle'),
   );
+}
+
+/** Identify fields from rendered coordinates, independently of the dot generator's order. */
+function dotsInField(field: HitDot["field"]): Element[] {
+  return hitDots().filter((dot) => {
+    const x = Number(dot.getAttribute("cx"));
+    const y = Number(dot.getAttribute("cy"));
+    const radius = Math.hypot(x, y);
+    if (field === "BULLSEYE") return radius < 6.4;
+    if (field === "BULL") return radius >= 6.4 && radius < 16;
+    const angle = ((Math.atan2(x, -y) * 180) / Math.PI + 369) % 360;
+    const segment = BOARD_ORDER[Math.floor(angle / 18)];
+    const ring = radius >= 162 && radius <= 170 ? "D" : radius >= 99 && radius <= 107 ? "T" : "S";
+    return radius >= 16 && radius <= 170 && `${ring}${segment}` === field;
+  });
 }
 
 describe("PlayerProfilePage", () => {
@@ -383,8 +401,10 @@ describe("PlayerProfilePage", () => {
     expect(
       await screen.findByRole("img", { name: "Dartboard heatmap, most hits on 20" }),
     ).toBeTruthy();
-    // T20, D16, T19 and S5 only, and no blur filter merges the dots into blobs.
     expect(hitDots()).toHaveLength(100);
+    for (const field of BOARD_FIELDS) {
+      expect(dotsInField(field), field).toHaveLength(hits[field] ?? 0);
+    }
     expect(block("Hit distribution").querySelectorAll("[filter]")).toHaveLength(0);
   });
 
@@ -437,20 +457,24 @@ describe("PlayerProfilePage", () => {
     await screen.findByRole("img", { name: "Dartboard heatmap, most hits on 20" });
 
     const dots = hitDots();
-    const fields = toHitDots(
-      buildPlayerProfileStats().hitDistribution.map(({ field }) => ({
-        field,
-        hits: hits[field] ?? 0,
-      })),
-    ).map(({ field }) => field);
-    const classOf = (field: HitDot["field"]): string | null =>
-      dots[fields.indexOf(field)]?.getAttribute("class") ?? null;
     expect(dots).toHaveLength(112);
     expect(dots.every((dot) => dot.getAttribute("r") === "6")).toBe(true);
     expect(dots.every((dot) => dot.getAttribute("stroke-width") === "1.5")).toBe(true);
-    // A dot takes its board field's step: T20 is Very high, S5 and Bull are Low.
-    expect(classOf("T20")).not.toBe(classOf("S5"));
-    expect(classOf("S5")).toBe(classOf("BULL"));
+    const expectedClasses: Partial<Record<HitDot["field"], string | undefined>> = {
+      T20: hitStyles.heatVeryHigh,
+      D16: hitStyles.heatHigh,
+      T19: hitStyles.heatMedium,
+      S5: hitStyles.heatLow,
+      BULL: hitStyles.heatLow,
+    };
+    for (const field of BOARD_FIELDS) {
+      if (!(field in expectedClasses)) continue;
+      const fieldDots = dotsInField(field);
+      expect(fieldDots, field).toHaveLength(hits[field] ?? 0);
+      for (const dot of fieldDots) {
+        expect(dot.classList, field).toContain(expectedClasses[field]);
+      }
+    }
     expect(
       within(block("Hit distribution"))
         .getAllByRole("listitem")
