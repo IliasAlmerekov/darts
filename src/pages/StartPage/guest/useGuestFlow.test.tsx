@@ -7,7 +7,7 @@ import { useGuestFlow } from "./useGuestFlow";
 
 const LOBBY_FULL_MESSAGE = "The lobby is full. Remove a player to add another.";
 
-const addGuest = vi.fn<() => Promise<AddGuestResult>>();
+const addGuest = vi.fn<(username: string) => Promise<AddGuestResult>>();
 
 function renderGuestFlow({
   gameId = 10,
@@ -100,7 +100,7 @@ describe("useGuestFlow", () => {
 
     await typeAndAdd(result, "  Alex  ");
 
-    expect(addGuest).toHaveBeenCalledTimes(1);
+    expect(addGuest).toHaveBeenCalledExactlyOnceWith("Alex");
     expect(result.current.isGuestOverlayOpen).toBe(false);
     expect(result.current.guestUsername).toBe("");
     expect(result.current.guestError).toBeNull();
@@ -121,6 +121,46 @@ describe("useGuestFlow", () => {
     );
     expect(result.current.guestSuggestions).toEqual([]);
     expect(result.current.isGuestOverlayOpen).toBe(true);
+  });
+
+  it("shows the lobby full message when the server reports a full lobby", async () => {
+    const error = new ApiError("Conflict", {
+      status: 409,
+      data: { success: false, error: "GAME_ROOM_FULL", message: "Room is full." },
+    });
+    addGuest.mockResolvedValueOnce({ status: "lobby-full", error });
+    const { result } = renderGuestFlow();
+
+    await typeAndAdd(result);
+
+    expect(result.current.guestError).toBe(LOBBY_FULL_MESSAGE);
+    expect(result.current.guestSuggestions).toEqual([]);
+    expect(result.current.isGuestOverlayOpen).toBe(true);
+  });
+
+  it("shows the server message and suggestions when the name is taken", async () => {
+    addGuest.mockResolvedValueOnce({
+      status: "username-taken",
+      message: "That name is taken.",
+      suggestions: ["Alex2", "Alex3"],
+    });
+    const { result } = renderGuestFlow();
+
+    await typeAndAdd(result);
+
+    expect(result.current.guestError).toBe("That name is taken.");
+    expect(result.current.guestSuggestions).toEqual(["Alex2", "Alex3"]);
+    expect(result.current.isGuestOverlayOpen).toBe(true);
+  });
+
+  it("falls back to the default message when a taken name comes without one", async () => {
+    addGuest.mockResolvedValueOnce({ status: "username-taken", message: "", suggestions: [] });
+    const { result } = renderGuestFlow();
+
+    await typeAndAdd(result);
+
+    expect(result.current.guestError).toBe("Username already taken in this game.");
+    expect(result.current.guestSuggestions).toEqual([]);
   });
 
   it("shows the generic error when the add fails", async () => {
@@ -145,19 +185,29 @@ describe("useGuestFlow", () => {
     expect(result.current.isAddingGuest).toBe(false);
   });
 
-  it("clears the error when the name changes", async () => {
-    addGuest.mockResolvedValueOnce({ status: "failed", error: new Error("network") });
+  it("clears the error and suggestions when the name changes", async () => {
+    addGuest.mockResolvedValueOnce({
+      status: "username-taken",
+      message: "Taken.",
+      suggestions: ["Alex2"],
+    });
     const { result } = renderGuestFlow();
     await typeAndAdd(result);
+    expect(result.current.guestSuggestions).toEqual(["Alex2"]);
 
     act(() => result.current.setGuestUsername("Alexa"));
 
     expect(result.current.guestUsername).toBe("Alexa");
     expect(result.current.guestError).toBeNull();
+    expect(result.current.guestSuggestions).toEqual([]);
   });
 
   it("fills the name with a picked suggestion", async () => {
-    addGuest.mockResolvedValueOnce({ status: "failed", error: new Error("network") });
+    addGuest.mockResolvedValueOnce({
+      status: "username-taken",
+      message: "Taken.",
+      suggestions: ["Alex2"],
+    });
     const { result } = renderGuestFlow();
     await typeAndAdd(result);
 

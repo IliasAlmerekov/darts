@@ -57,7 +57,7 @@ export function useStartPage(): UseStartPageResult {
   } = useRoster(gameId, { onStreamClosed: revalidate, onError: setPageError });
   const playerCount = players.length;
   const playerOrder = players.map(({ id }) => id);
-  const addGuest = (_gameId: number, username: string) => add({ username });
+  const addGuest = (username: string) => add({ username });
   const handleRemovePlayer = (playerId: number) => remove(playerId);
   const { creating, starting, handleCreateRoom, handleStartGame } = useCreateStartFlow({
     gameId,
