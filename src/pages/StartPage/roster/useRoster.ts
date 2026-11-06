@@ -9,6 +9,7 @@ import { isApiErrorCode } from "@/lib/error/api-error-code";
 import { toUserErrorMessage } from "@/lib/error/error-to-user-message";
 import { parsePlayersEvent } from "@/shared/api/room";
 import { useIsCurrentGame } from "../lib/useIsCurrentGame";
+import { readUsernameTaken, type UsernameTaken } from "./usernameTaken";
 import { useCallback, useMemo, useRef } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEventSource, type EventSourceListener } from "@/shared/hooks/useEventSource";
@@ -26,8 +27,10 @@ type OptimisticPlayer = {
 
 export type AddGuestResult =
   | { status: "added" }
-  | { status: "stale"; error: unknown; seatsNotEditable?: true }
+  | { status: "stale"; error: unknown }
   | { status: "seats-not-editable"; error: unknown }
+  | { status: "lobby-full"; error: unknown }
+  | ({ status: "username-taken" } & UsernameTaken)
   | { status: "failed"; error: unknown };
 
 interface UseRosterResult {
@@ -214,6 +217,24 @@ export function useRoster(
         appendOptimisticPlayer(result.value);
         return { status: "added" };
       }
+      const { error } = result;
+      const lobbyFull = isApiErrorCode(error, "GAME_ROOM_FULL");
+      if (lobbyFull) {
+        clientLogger.warn("room.guest.lobby-full", { context: { gameId: activeGameId }, error });
+      }
+      if (result.status === "stale") {
+        if (!result.seatsNotEditable && !lobbyFull && error !== null) {
+          clientLogger.warn("room.guest.stale-answer", {
+            context: { gameId: activeGameId },
+            error,
+          });
+        }
+        return { status: "stale", error };
+      }
+      if (result.status === "seats-not-editable") return result;
+      if (lobbyFull) return { status: "lobby-full", error };
+      const usernameTaken = readUsernameTaken(error);
+      if (usernameTaken) return { status: "username-taken", ...usernameTaken };
       return result;
     },
     [appendOptimisticPlayer, gameId, isCurrentGame, mutateSeat],

@@ -1,39 +1,30 @@
 import { useCallback, useMemo, useState } from "react";
 import { useNavigate, useParams, useRevalidator } from "react-router-dom";
 import { useStore } from "@nanostores/react";
+import type { Seat } from "@/lib/game/roster";
 import { useRoster } from "./roster/useRoster";
-import { useCreateStartFlow } from "./create/useCreateStartFlow";
-import { useGuestFlow } from "./guest/useGuestFlow";
+import { useCreateStartFlow, type UseCreateStartFlowResult } from "./create/useCreateStartFlow";
+import { useGuestFlow, type UseGuestFlowResult } from "./guest/useGuestFlow";
 import { parseRouteGameId } from "@/lib/router/tabletGameRoute";
 import { $invitation } from "@/shared/store";
 
-type GamePlayersResult = ReturnType<typeof useRoster>;
+/** The lobby seats as the page shows them, with the actions that change them. */
+interface StartPageRoster {
+  seats: Seat[];
+  count: number;
+  order: number[];
+  reorder: (playerId: number, overPlayerId: number) => void;
+  remove: (playerId: number) => Promise<void>;
+}
 
 interface UseStartPageResult {
   invitation: ReturnType<typeof useStore<typeof $invitation>>;
   gameId: number | null;
-  players: GamePlayersResult["seats"];
-  playerCount: number;
-  isLobbyFull: boolean;
-  playerOrder: number[];
-  creating: boolean;
-  starting: boolean;
   pageError: string | null;
-  isGuestOverlayOpen: boolean;
-  guestUsername: string;
-  guestError: string | null;
-  guestSuggestions: string[];
-  isAddingGuest: boolean;
-  reorder: GamePlayersResult["reorder"];
-  handleRemovePlayer: (playerId: number, currentGameId: number) => Promise<void>;
-  handleStartGame: () => Promise<void>;
-  handleCreateRoom: () => Promise<void>;
   clearPageError: () => void;
-  openGuestOverlay: () => void;
-  closeGuestOverlay: () => void;
-  setGuestUsername: (value: string) => void;
-  handleGuestSuggestion: (suggestion: string) => void;
-  handleAddGuest: () => Promise<void>;
+  roster: StartPageRoster;
+  guest: UseGuestFlowResult;
+  create: UseCreateStartFlowResult;
 }
 
 /**
@@ -49,38 +40,20 @@ export function useStartPage(): UseStartPageResult {
   const gameId = useMemo(() => parseRouteGameId(gameIdParam), [gameIdParam]);
   const [pageError, setPageError] = useState<string | null>(null);
   const clearPageError = useCallback((): void => setPageError(null), []);
-  const {
-    seats: players,
-    add,
-    remove,
-    reorder,
-  } = useRoster(gameId, { onStreamClosed: revalidate, onError: setPageError });
-  const playerCount = players.length;
-  const playerOrder = players.map(({ id }) => id);
-  const addGuest = (_gameId: number, username: string) => add({ username });
-  const handleRemovePlayer = (playerId: number) => remove(playerId);
-  const { creating, starting, handleCreateRoom, handleStartGame } = useCreateStartFlow({
+  const { seats, add, remove, reorder } = useRoster(gameId, {
+    onStreamClosed: revalidate,
+    onError: setPageError,
+  });
+  const create = useCreateStartFlow({
     gameId,
     invitationGameId: invitation?.gameId,
     navigate,
     setPageError,
   });
-  const {
-    isLobbyFull,
-    isGuestOverlayOpen,
-    guestUsername,
-    guestError,
-    guestSuggestions,
-    isAddingGuest,
-    openGuestOverlay,
-    closeGuestOverlay,
-    setGuestUsername,
-    handleGuestSuggestion,
-    handleAddGuest,
-  } = useGuestFlow({
+  const guest = useGuestFlow({
     gameId,
-    playerCount,
-    addGuest,
+    playerCount: seats.length,
+    addGuest: (username) => add({ username }),
   });
 
   // The loader can send /start/10 to /start (a finished or aborted game) without remounting the
@@ -89,33 +62,22 @@ export function useStartPage(): UseStartPageResult {
   if (shownGameId !== gameId) {
     setShownGameId(gameId);
     clearPageError();
-    closeGuestOverlay();
+    guest.closeGuestOverlay();
   }
 
   return {
     invitation,
     gameId,
-    players,
-    playerCount,
-    isLobbyFull,
-    playerOrder,
-    creating,
-    starting,
     pageError,
-    isGuestOverlayOpen,
-    guestUsername,
-    guestError,
-    guestSuggestions,
-    isAddingGuest,
-    reorder,
-    handleRemovePlayer,
-    handleStartGame,
-    handleCreateRoom,
     clearPageError,
-    openGuestOverlay,
-    closeGuestOverlay,
-    setGuestUsername,
-    handleGuestSuggestion,
-    handleAddGuest,
+    roster: {
+      seats,
+      count: seats.length,
+      order: seats.map(({ id }) => id),
+      reorder,
+      remove,
+    },
+    guest,
+    create,
   };
 }

@@ -220,6 +220,117 @@ describe("useRoster", () => {
     });
   });
 
+  it("reports a full lobby on add without revalidating", async () => {
+    const revalidate = vi.fn();
+    const warn = vi.spyOn(clientLogger, "warn").mockImplementation(() => {});
+    const error = new ApiError("Conflict", {
+      status: 409,
+      data: { success: false, error: "GAME_ROOM_FULL", message: "Room is full." },
+    });
+    testQueryClient.setQueryData(gameQueries.roster(5).queryKey, []);
+    const { result } = renderHook(
+      () => useRoster(5, { onStreamClosed: revalidate, onError: vi.fn() }),
+      {
+        wrapper: Providers,
+      },
+    );
+    vi.mocked(apiClient.post).mockRejectedValueOnce(error);
+
+    await act(async () => {
+      expect(await result.current.add({ username: "A" })).toEqual({ status: "lobby-full", error });
+    });
+
+    expect(revalidate).not.toHaveBeenCalled();
+    expect(warn).toHaveBeenCalledWith("room.guest.lobby-full", { context: { gameId: 5 }, error });
+  });
+
+  it("reports a taken username on add with the server message and suggestions", async () => {
+    testQueryClient.setQueryData(gameQueries.roster(5).queryKey, []);
+    const { result } = renderGamePlayers(5);
+    const taken = (data: Record<string, unknown>): ApiError =>
+      new ApiError("Conflict", {
+        status: 409,
+        data: { success: false, error: "USERNAME_TAKEN", ...data },
+      });
+
+    vi.mocked(apiClient.post).mockRejectedValueOnce(
+      taken({ message: "Taken.", suggestions: ["A2", "A3"] }),
+    );
+    await act(async () => {
+      expect(await result.current.add({ username: "A" })).toEqual({
+        status: "username-taken",
+        message: "Taken.",
+        suggestions: ["A2", "A3"],
+      });
+    });
+
+    vi.mocked(apiClient.post).mockRejectedValueOnce(taken({ message: "" }));
+    await act(async () => {
+      expect(await result.current.add({ username: "A" })).toEqual({
+        status: "username-taken",
+        message: "",
+        suggestions: [],
+      });
+    });
+
+    const malformed = taken({ suggestions: ["A2", 3] });
+    vi.mocked(apiClient.post).mockRejectedValueOnce(malformed);
+    await act(async () => {
+      expect(await result.current.add({ username: "A" })).toEqual({
+        status: "failed",
+        error: malformed,
+      });
+    });
+  });
+
+  it("logs a stale add answer unless it is a seat conflict or a full lobby", async () => {
+    const warn = vi.spyOn(clientLogger, "warn").mockImplementation(() => {});
+    testQueryClient.setQueryData(gameQueries.roster(5).queryKey, []);
+    const conflict = (code: string): ApiError =>
+      new ApiError("Conflict", { status: 409, data: { success: false, error: code } });
+    const { result, rerender } = renderHook(
+      ({ gameId }) => useRoster(gameId, { onStreamClosed: vi.fn(), onError: vi.fn() }),
+      { initialProps: { gameId: 5 }, wrapper: Providers },
+    );
+
+    async function staleAnswer(error: unknown): Promise<unknown> {
+      const pending = deferred<never>();
+      vi.mocked(apiClient.post).mockReturnValueOnce(pending.promise);
+      let answer: Promise<unknown> = Promise.resolve();
+      act(() => {
+        answer = result.current.add({ username: "A" });
+      });
+      rerender({ gameId: 6 });
+      rerender({ gameId: 5 });
+      let settled: unknown;
+      await act(async () => {
+        pending.resolve(Promise.reject(error) as never);
+        settled = await answer;
+      });
+      return settled;
+    }
+
+    const full = conflict("GAME_ROOM_FULL");
+    expect(await staleAnswer(full)).toEqual({ status: "stale", error: full });
+    expect(warn).toHaveBeenCalledWith("room.guest.lobby-full", {
+      context: { gameId: 5 },
+      error: full,
+    });
+    const locked = conflict("GAME_SEATS_NOT_EDITABLE");
+    expect(await staleAnswer(locked)).toEqual({ status: "stale", error: locked });
+    expect(warn.mock.calls.map(([event]) => event)).toEqual([
+      "room.guest.lobby-full",
+      "room.guest.seats-not-editable",
+    ]);
+
+    const taken = conflict("USERNAME_TAKEN");
+    expect(await staleAnswer(taken)).toEqual({ status: "stale", error: taken });
+    expect(warn).toHaveBeenLastCalledWith("room.guest.stale-answer", {
+      context: { gameId: 5 },
+      error: taken,
+    });
+  });
+
   it("rolls back a failed removal and revalidates locked seats", async () => {
     const revalidate = vi.fn();
     const onError = vi.fn();

@@ -17,6 +17,7 @@ and this project does **not** yet follow [Semantic Versioning](https://semver.or
 
 ### Changed
 
+- Start page: `useStartPage` returns its values grouped as `roster`, `guest` and `create`, the roster's guest add reports a full lobby and a taken username as their own results, the remove handler takes only the player id, and the guest and create/start hooks have their own tests (#471)
 - Game: the finish overlay shows "Player Finished!" with the subtitle "Continue the game with the remaining players?" on a white card. Its buttons are, top to bottom, a blue "Continue game", a grey "Finish game" and an outlined "Undo last throw" with the undo icon (#472)
 - Agent context: scope and checks follow the change; optional runtime and publishing guidance loads on demand, sibling paths resolve from the main checkout, contract refreshes preserve the existing dump on failure, Codex keeps project-level Context7 access, and bot reviews require current-head evidence (#483)
 - Agent rules: each issue is worked in a git worktree that `scripts/worktree.sh new` creates and `prune` removes after the merge; a mocked e2e run from a worktree starts its own Vite on :5174. Review rules and the CodeRabbit loop move to `docs/agents/review.md`, and the PR body rules into the comments of the PR template (#483)
