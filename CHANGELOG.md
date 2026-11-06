@@ -17,6 +17,7 @@ and this project does **not** yet follow [Semantic Versioning](https://semver.or
 
 ### Changed
 
+- Login and register pages: `LoginForm`, `RegisterForm` and `JoiningScreen` move from the page root into `components/`, so every page root now holds only the entry, its CSS Module, the page hook, the route loader and their tests. Behaviour is unchanged (#457)
 - Player profile and start page: files move into part folders. The profile gets `overview/`, `performance/`, `history/` and `hit-distribution/`, and the components the tabs share stay in `components/`. The start page moves its remaining components into `guest/`, `roster/` and `qr-code/`. Behaviour is unchanged (#457)
 - Game page: files move into part folders (`scoreboard/`, `checkout-suggestion/`, `keyboard/`, `overlays/`), and `useGameSounds`, `useWakeLock` and `useGamePageEffects` move to `lib/`. The page root keeps the entry, its CSS Module, `useGameSession` and their tests. `GLOSSARY.md` adds the Scoreboard term. Behaviour is unchanged (#457)
 - API: the contract dump shows `maxItems: 10` on `positions` of the reorder request and on `playerIds` and `excludePlayerIds` of room create (darts-backend#267), and room create no longer lists 409 `GAME_ROOM_FULL`. The client sends neither list on room create and one entry per lobby seat on reorder, so no code changes (#490)
