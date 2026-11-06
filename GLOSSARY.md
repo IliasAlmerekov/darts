@@ -31,6 +31,10 @@ A lobby the server returns for the newest finished or aborted game, with that ga
 The screen a player sees after joining a game, until that game starts.
 _Avoid_: joined page, lobby
 
+**Scoreboard**:
+The players of a started game, in throwing order, each with their score and the throws of the current turn. Players who have checked out appear below it with their placement.
+_Avoid_: player list, game player list
+
 **Checkout suggestion**:
 The darts with which the active participant can check out using the darts left in the current turn, shown in their empty throw slots.
 _Avoid_: hint, tip, finish route
