@@ -408,7 +408,7 @@
                     "Game Rooms"
                 ],
                 "summary": "Spielraum erstellen oder die offene Lobby zur\u00fcckgeben",
-                "description": "Es ist h\u00f6chstens ein Spiel in der Lobby. Ist ein Spiel in der Lobby, liefert der Endpoint dessen `gameId` und legt kein Spiel an. Die Lobby \u00fcbernimmt `startScore`, `doubleOut` und `tripleOut` aus dem Request und beh\u00e4lt ihre Spieler; `playerIds` und `excludePlayerIds` werden dann ignoriert. Ohne offene Lobby wird eine neue Lobby mit den Spielern aus `playerIds` ohne `excludePlayerIds` angelegt. `previousGameId` ist veraltet und wird immer ignoriert.",
+                "description": "Es ist h\u00f6chstens ein Spiel in der Lobby. Ist ein Spiel in der Lobby, liefert der Endpoint dessen `gameId` und legt kein Spiel an. Die Lobby \u00fcbernimmt `startScore`, `doubleOut` und `tripleOut` aus dem Request und beh\u00e4lt ihre Spieler; der Inhalt von `playerIds` und `excludePlayerIds` wird dann ignoriert. Die L\u00e4ngengrenze beider Listen wird zuerst gepr\u00fcft und gilt auch bei einem Spiel in der Lobby: Eine l\u00e4ngere Liste ergibt 422, und die Lobby bleibt unver\u00e4ndert. Ohne offene Lobby wird eine neue Lobby mit den Spielern aus `playerIds` ohne `excludePlayerIds` angelegt. `previousGameId` ist veraltet und wird immer ignoriert.",
                 "operationId": "post_room_create",
                 "requestBody": {
                     "required": false,
@@ -472,7 +472,7 @@
                         "description": "Eine ID in `playerIds` geh\u00f6rt zu keinem Benutzer (`PLAYER_NOT_FOUND`). Es wird keine Lobby angelegt."
                     },
                     "409": {
-                        "description": "Die neue Lobby h\u00e4tte mehr als 10 Spieler (`GAME_ROOM_FULL`). Es wird keine Lobby angelegt. Eine offene Lobby ignoriert `playerIds`. Eine parallele Anfrage hat dieselben Daten gesperrt, und MySQL hat die Transaktion als Deadlock oder nach einem Lock-Wait-Timeout zur\u00fcckgerollt (`CONCURRENT_CHANGE`). Der Request kann wiederholt werden."
+                        "description": "Eine parallele Anfrage hat dieselben Daten gesperrt, und MySQL hat die Transaktion als Deadlock oder nach einem Lock-Wait-Timeout zur\u00fcckgerollt (`CONCURRENT_CHANGE`). Der Request kann wiederholt werden."
                     }
                 }
             }
@@ -2459,7 +2459,8 @@
                             "type": "integer"
                         },
                         "nullable": true,
-                        "default": null
+                        "default": null,
+                        "maxItems": 10
                     },
                     "excludePlayerIds": {
                         "type": "array",
@@ -2467,7 +2468,8 @@
                             "type": "integer"
                         },
                         "nullable": true,
-                        "default": null
+                        "default": null,
+                        "maxItems": 10
                     },
                     "startScore": {
                         "type": "integer",
@@ -2526,7 +2528,8 @@
                                 "type": "integer"
                             }
                         },
-                        "default": []
+                        "default": [],
+                        "maxItems": 10
                     }
                 },
                 "type": "object"
