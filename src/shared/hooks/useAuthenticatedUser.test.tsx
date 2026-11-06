@@ -169,7 +169,7 @@ describe("useAuthenticatedUser", () => {
     expect(setCurrentGameIdMock).toHaveBeenCalledWith(42);
   });
 
-  it("should clear the current game of a remembered player who is in no game", async () => {
+  it("should keep the current game when a remembered player's session answer has no game", async () => {
     getAuthenticatedUserMock.mockResolvedValue(
       buildAuthenticatedUser({ roles: ["ROLE_PLAYER"], redirect: "/playerprofile" }),
     );
@@ -180,7 +180,9 @@ describe("useAuthenticatedUser", () => {
       expect(result.current.loading).toBe(false);
     });
 
-    expect(setCurrentGameIdMock).toHaveBeenCalledExactlyOnceWith(null);
+    // Only a fresh login or registration clears it; the Waiting room needs the old id to
+    // tell a removal.
+    expect(setCurrentGameIdMock).not.toHaveBeenCalled();
   });
 
   it("should leave the current game alone for a remembered admin", async () => {

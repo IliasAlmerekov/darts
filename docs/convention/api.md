@@ -47,7 +47,7 @@ src/shared/query/
   queryClient.ts       # the one QueryClient and its defaults
   <domain>.queries.ts  # queryOptions factories: auth, game, player, statistics
   postAuth.ts          # after login or registration: auth key, current game, destination
-  postAuthCurrentGame.ts # the current game rule that postAuth.ts and authQueries.me share
+  postAuthCurrentGame.ts # current game writes after login (postAuth.ts) and session check (authQueries.me)
   tabletGameLoader.ts  # loader builder for the admin routes that follow the tablet game
 src/shared/lib/auth/
   clearClientSession.ts # drops the query cache, the room store and the game store

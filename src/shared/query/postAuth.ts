@@ -1,18 +1,18 @@
 import type { AuthenticatedUser } from "@/shared/api/auth";
 import { authQueries } from "@/shared/query/auth.queries";
-import { applyCurrentGameRule } from "@/shared/query/postAuthCurrentGame";
+import { applyLoginCurrentGame } from "@/shared/query/postAuthCurrentGame";
 import { queryClient } from "@/shared/query/queryClient";
 import { ROUTES } from "@/lib/router/routes";
 import { resolveSafeRedirect } from "@/lib/router/safeRedirect";
 
 /**
- * Takes over a user who just logged in or registered: applies the current game rule and
- * fills the auth cache, where `useAuthRedirect` reads the user.
+ * Takes over a user who just logged in or registered: sets a player's current game to the
+ * game of the answer, or none, and fills the auth cache, where `useAuthRedirect` reads the user.
  */
 export async function acceptAuthenticatedUser(user: AuthenticatedUser): Promise<void> {
   // A session check still running would overwrite the new user with its late answer.
   await queryClient.cancelQueries({ queryKey: authQueries.me().queryKey });
-  applyCurrentGameRule(user);
+  applyLoginCurrentGame(user);
   queryClient.setQueryData(authQueries.me().queryKey, user);
 }
 

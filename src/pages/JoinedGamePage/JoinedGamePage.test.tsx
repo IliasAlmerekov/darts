@@ -9,6 +9,7 @@ vi.mock("@/shared/hooks/useAuthenticatedUser", () => ({
 
 vi.mock("@/shared/api/auth", () => ({
   logout: vi.fn(),
+  getAuthenticatedUser: vi.fn(),
 }));
 
 vi.mock("@/shared/api/player", () => ({
@@ -23,12 +24,13 @@ vi.mock("@/shared/services/browser/clientLogger", () => ({
 import { act, fireEvent, render, screen } from "@testing-library/react";
 import { onlineManager, QueryClientProvider } from "@tanstack/react-query";
 import { createMemoryRouter, RouterProvider } from "react-router-dom";
-import { logout, type AuthenticatedUser } from "@/shared/api/auth";
+import { getAuthenticatedUser, logout, type AuthenticatedUser } from "@/shared/api/auth";
 import { getCurrentGame, getPlayerGameSeat, type GameSeatResponse } from "@/shared/api/player";
 import type { CurrentGame } from "@/lib/player/currentGame";
 import { ApiError, NetworkError, UnauthorizedError } from "@/shared/api";
 import { clientLogger } from "@/shared/services/browser/clientLogger";
 import { ROUTES } from "@/lib/router/routes";
+import { authQueries } from "@/shared/query/auth.queries";
 import { createQueryClient } from "@/shared/query/queryClient";
 import { CURRENT_GAME_POLL_INTERVAL_MS } from "@/shared/query/player.queries";
 import { $currentGameId, $invitation, setCurrentGameId, setInvitation } from "@/shared/store";
@@ -251,6 +253,22 @@ describe("JoinedGamePage", () => {
     expect(await screen.findByText("You are no longer in this game")).toBeTruthy();
     expect(router.state.location.pathname).toBe(ROUTES.joined);
     expect(screen.queryByRole("link", { name: "My profile" })).toBeNull();
+    expect(getPlayerGameSeat).toHaveBeenCalledWith(42, expect.any(AbortSignal));
+  });
+
+  it("should tell a removed player on a cold load after a session check without a game", async () => {
+    setCurrentGameId(42);
+    // The protected route runs the session check before the Waiting room mounts. The
+    // session answer of a removed player carries no game id.
+    vi.mocked(getAuthenticatedUser).mockResolvedValueOnce(
+      buildAuthenticatedUser({ redirect: "/playerprofile" }),
+    );
+    await createQueryClient().fetchQuery(authQueries.me());
+    respondWithCurrentGames(noCurrentGame);
+    vi.mocked(getPlayerGameSeat).mockResolvedValue(seat("lobby", false));
+    renderPage();
+
+    expect(await screen.findByText("You are no longer in this game")).toBeTruthy();
     expect(getPlayerGameSeat).toHaveBeenCalledWith(42, expect.any(AbortSignal));
   });
 
