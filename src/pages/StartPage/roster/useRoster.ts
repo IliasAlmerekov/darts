@@ -9,7 +9,7 @@ import { isApiErrorCode } from "@/lib/error/api-error-code";
 import { toUserErrorMessage } from "@/lib/error/error-to-user-message";
 import { parsePlayersEvent } from "@/shared/api/room";
 import { useIsCurrentGame } from "../lib/useIsCurrentGame";
-import { readUsernameTaken } from "./usernameTaken";
+import { readUsernameTaken, type UsernameTaken } from "./usernameTaken";
 import { useCallback, useMemo, useRef } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEventSource, type EventSourceListener } from "@/shared/hooks/useEventSource";
@@ -30,7 +30,7 @@ export type AddGuestResult =
   | { status: "stale"; error: unknown }
   | { status: "seats-not-editable"; error: unknown }
   | { status: "lobby-full"; error: unknown }
-  | { status: "username-taken"; message: string; suggestions: string[] }
+  | ({ status: "username-taken" } & UsernameTaken)
   | { status: "failed"; error: unknown };
 
 interface UseRosterResult {

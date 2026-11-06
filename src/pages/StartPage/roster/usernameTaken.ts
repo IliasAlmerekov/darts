@@ -2,7 +2,7 @@ import { ApiError } from "@/shared/api";
 import type { AddGuestErrorResponse } from "@/shared/api/room";
 import { isRecord } from "@/lib/guards/guards";
 
-interface UsernameTaken {
+export interface UsernameTaken {
   message: string;
   suggestions: string[];
 }
