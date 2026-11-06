@@ -32,7 +32,7 @@ The screen a player sees after joining a game, until that game starts.
 _Avoid_: joined page, lobby
 
 **Scoreboard**:
-The players of a started game, in throwing order, each with their score and the throws of the current turn. Players who have checked out appear below it with their placement.
+Every participant of a started game: first those still playing, in throwing order, each with their score and throws, then those who have checked out, with their placement. A participant waiting for their turn shows the throws of their last turn until the next one starts.
 _Avoid_: player list, game player list
 
 **Checkout suggestion**:
