@@ -7,6 +7,9 @@ import {
 } from "../shared/auth-route-mocks";
 import { mockPlayerProfile, PLAYER_PROFILE } from "../shared/player-profile-mocks";
 
+/** A Very low step's dot strength: the 0.45 floor plus the step's share, never faded out. */
+const VERY_LOW_DOT_OPACITY = 0.516;
+
 test.describe("Player profile", () => {
   test("a player who logs in reaches the profile and sees their stats", async ({ page }) => {
     const { email, password } = MOCK_LOGIN_CREDENTIALS;
@@ -45,6 +48,32 @@ test.describe("Player profile", () => {
     await expect(games).toContainText("2nd of 3 · Ø AVG 45.30");
     await expect(games).toContainText("2. Captain Double (you)");
     await expect(games).toContainText("3. Guest");
+  });
+
+  test("the hit dots of the least hit board fields stay visible", async ({ page }) => {
+    await mockRememberedPlayerSession(page, {
+      ...REMEMBERED_PLAYER_RESPONSE,
+      redirect: "/playerprofile",
+    });
+    await mockPlayerProfile(page);
+
+    await page.goto("/playerprofile");
+
+    const dots = page
+      .getByRole("region", { name: "Hit distribution" })
+      .locator('svg g[aria-hidden="true"] > circle');
+    await expect(dots.first()).toBeAttached();
+    // PLAYER_PROFILE gives T20 96 hits and every other board field 12: T20 is the Very high
+    // step and draws at full strength, the number fields are Very low (12 / 96), and the
+    // centre's 24 hits are Low.
+    const opacities = (): Promise<number[]> =>
+      dots.evaluateAll((circles) =>
+        circles.map((circle) => Number(getComputedStyle(circle).fillOpacity)),
+      );
+    await expect.poll(async () => Math.max(...(await opacities()))).toBe(1);
+    await expect
+      .poll(async () => Math.min(...(await opacities())))
+      .toBeCloseTo(VERY_LOW_DOT_OPACITY, 3);
   });
 
   test("at 600px the tabs lead the page and the stats card sits above the tab panel", async ({
