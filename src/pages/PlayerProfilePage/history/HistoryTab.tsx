@@ -1,6 +1,6 @@
 import React from "react";
 import type { PlayerProfile } from "@/lib/player/profile";
-import { ProfileMessage } from "./ProfileMessage";
+import { ProfileMessage } from "../components/ProfileMessage";
 import styles from "./HistoryTab.module.css";
 
 interface HistoryTabProps {

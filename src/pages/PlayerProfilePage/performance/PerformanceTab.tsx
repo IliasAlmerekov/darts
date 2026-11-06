@@ -1,8 +1,8 @@
 import React from "react";
 import barChartIcon from "@/assets/icons/bar-chart.svg";
 import type { PlayerProfile } from "@/lib/player/profile";
-import { ProfileBlock } from "./ProfileBlock";
-import { ScoringTrendChart } from "./ScoringTrendChart";
+import { ProfileBlock } from "../components/ProfileBlock";
+import { ScoringTrendChart } from "../components/ScoringTrendChart";
 import styles from "./PerformanceTab.module.css";
 
 interface PerformanceTabProps {

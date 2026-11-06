@@ -3,9 +3,9 @@ import clsx from "clsx";
 import { ErrorState } from "@/shared/ui/error-state";
 import { PROFILE_TAB_LABELS, PROFILE_TABS, type ProfileTab } from "../lib/profilePage";
 import type { ProfileState } from "../usePlayerProfilePage";
-import { HistoryTab } from "./HistoryTab";
-import { OverviewTab } from "./OverviewTab";
-import { PerformanceTab } from "./PerformanceTab";
+import { HistoryTab } from "../history/HistoryTab";
+import { OverviewTab } from "../overview/OverviewTab";
+import { PerformanceTab } from "../performance/PerformanceTab";
 import { ProfileMessage } from "./ProfileMessage";
 import styles from "./ProfileTabs.module.css";
 

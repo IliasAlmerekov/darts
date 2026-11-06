@@ -48,9 +48,9 @@ import {
 import { ROUTES } from "@/lib/router/routes";
 import { createQueryClient } from "@/shared/query/queryClient";
 import PlayerProfilePage from ".";
-import { toHitDots, type HitDot } from "./lib/hitDots";
-import { BOARD_ORDER } from "./lib/boardFieldSpot";
-import hitStyles from "./components/HitDistribution.module.css";
+import { toHitDots, type HitDot } from "./hit-distribution/hitDots";
+import { BOARD_ORDER } from "./hit-distribution/boardFieldSpot";
+import hitStyles from "./hit-distribution/HitDistribution.module.css";
 
 type Router = ReturnType<typeof createMemoryRouter>;
 
