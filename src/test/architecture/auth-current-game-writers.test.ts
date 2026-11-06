@@ -1,26 +1,8 @@
 // @vitest-environment node
-import { readdirSync, readFileSync } from "node:fs";
-import { extname, join, relative, resolve } from "node:path";
+import { readFileSync } from "node:fs";
+import { relative } from "node:path";
 import { describe, expect, it } from "vitest";
-
-const SOURCE_ROOT = resolve(process.cwd(), "src");
-const SOURCE_FILE_EXTENSIONS = new Set([".ts", ".tsx"]);
-
-function collectApplicationSourceFiles(directoryPath: string): string[] {
-  return readdirSync(directoryPath, { withFileTypes: true }).flatMap((entry) => {
-    const entryPath = join(directoryPath, entry.name);
-
-    if (entry.isDirectory()) {
-      return collectApplicationSourceFiles(entryPath);
-    }
-
-    if (!SOURCE_FILE_EXTENSIONS.has(extname(entry.name)) || entry.name.includes(".test.")) {
-      return [];
-    }
-
-    return [entryPath];
-  });
-}
+import { collectApplicationSourceFiles, SOURCE_ROOT } from "./applicationSourceFiles";
 
 function filesMatching(pattern: RegExp): string[] {
   return collectApplicationSourceFiles(SOURCE_ROOT)
