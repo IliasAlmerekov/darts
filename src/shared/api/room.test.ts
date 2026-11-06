@@ -14,7 +14,6 @@ vi.mock("@/shared/api/client", async (importOriginal) => ({
 import { beforeEach, describe, expect, expectTypeOf, it, vi } from "vitest";
 import { addGuestPlayer, createRoom, getInvitation, leaveRoom, updatePlayerOrder } from "./room";
 import { apiClient, ApiValidationError } from "./client";
-import { ApiError } from "./errors";
 import { respondWith } from "./test-utils";
 
 // Contract example: POST /api/invite/create/{id}. An unknown id is a 404 in the shared error
@@ -24,7 +23,6 @@ const invitationExample = {
   gameId: 123,
   invitationLink: "/api/invite/join/xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx",
   users: [{ id: 1, username: "alice" }],
-  message: null,
 };
 
 // Contract example: POST /api/room/create
@@ -69,12 +67,18 @@ describe("getInvitation", () => {
     await expect(getInvitation(123)).rejects.toBeInstanceOf(ApiValidationError);
   });
 
-  it("rejects with ApiError when the contract-valid payload has no invitation link", async () => {
+  it("rejects with ApiValidationError when gameId is missing", async () => {
     vi.mocked(apiClient.post).mockImplementationOnce(
-      respondWith({ success: false, gameId: null, invitationLink: null }),
+      respondWith({ success: true, invitationLink: "/api/invite/join/x" }),
     );
 
-    await expect(getInvitation(123)).rejects.toBeInstanceOf(ApiError);
+    await expect(getInvitation(123)).rejects.toBeInstanceOf(ApiValidationError);
+  });
+
+  it("rejects with ApiValidationError when invitationLink is missing", async () => {
+    vi.mocked(apiClient.post).mockImplementationOnce(respondWith({ success: true, gameId: 123 }));
+
+    await expect(getInvitation(123)).rejects.toBeInstanceOf(ApiValidationError);
   });
 });
 
@@ -210,6 +214,16 @@ describe("addGuestPlayer", () => {
       position: 2,
       isGuest: true,
     });
+  });
+
+  it("rejects with ApiValidationError when the player has no isGuest flag", async () => {
+    vi.mocked(apiClient.post).mockImplementationOnce(
+      respondWith({ success: true, player: { id: 123, name: "Alex", position: 2 } }),
+    );
+
+    await expect(addGuestPlayer(123, { username: "Alex" })).rejects.toBeInstanceOf(
+      ApiValidationError,
+    );
   });
 
   it("rejects with ApiValidationError when the player has no name", async () => {
