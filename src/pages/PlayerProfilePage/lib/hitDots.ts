@@ -1,4 +1,3 @@
-import type { PlayerProfile } from "@/lib/player/profile";
 import {
   boardFieldSpot,
   BULL_RADIUS,
@@ -12,15 +11,13 @@ import {
   TREBLE_INNER,
   TREBLE_OUTER,
 } from "./boardFieldSpot";
-import type { BoardField, NumberField } from "./hitFrequency";
+import type { BoardField, HitDistribution, NumberField } from "./hitFrequency";
 
 /**
  * How far a dot's centre keeps from every edge of its board field, in board millimetres. The
  * drawn dot is larger and may reach past a thin ring; its centre always stays in the field.
  */
 const DOT_EDGE = 2.3;
-/** The most dots a board draws before each board field's share shrinks. */
-const DOT_BUDGET = 600;
 /** The spread of a number field's dots around its spot, in millimetres per axis. */
 const SPREAD = 6;
 /** Draws per dot before a dot that keeps leaving its board field falls back to a fixed point. */
@@ -47,28 +44,6 @@ interface Point {
 function uniforms(seed: string): [number, number] {
   const value = hash(seed);
   return [((value & 0xffff) + 1) / 0x10000, (value >>> 16) / 0x10000];
-}
-
-/**
- * How many dots each entry gets: one per hit while the board fits the budget, otherwise a
- * share of the budget by largest remainder, with at least one dot for an entry with hits.
- */
-function dotCounts(hitDistribution: PlayerProfile["hitDistribution"]): number[] {
-  const hits = hitDistribution.map((entry) => Math.max(0, entry.hits));
-  const total = hits.reduce((sum, count) => sum + count, 0);
-  if (total <= DOT_BUDGET) {
-    return hits;
-  }
-  const parts = hits.map((count, order) => {
-    const quota = (count * DOT_BUDGET) / total;
-    return { order, hits: count, count: Math.floor(quota), remainder: quota - Math.floor(quota) };
-  });
-  const remaining = DOT_BUDGET - parts.reduce((sum, part) => sum + part.count, 0);
-  const byRemainder = [...parts].sort((a, b) => b.remainder - a.remainder || a.order - b.order);
-  for (const part of byRemainder.slice(0, remaining)) {
-    part.count += 1;
-  }
-  return parts.map((part) => (part.hits > 0 ? Math.max(1, part.count) : 0));
 }
 
 /** The radii a number field's dot centres may take, the painted dot inside its ring. */
@@ -175,14 +150,13 @@ function centreDot(field: "BULL" | "BULLSEYE", index: number): Point {
 }
 
 /**
- * One dot per hit, scattered inside its board field as if thrown; past 600 hits each board
- * field keeps its share of 600 dots. Dot `index` of a board field always lands on the same
- * spot, so more hits add dots and never move the ones already drawn.
+ * One dot per hit, scattered inside its board field as if thrown. Dot `index` of a board
+ * field always lands on the same spot, so more hits add dots and never move the ones already
+ * drawn.
  */
-export function toHitDots(hitDistribution: PlayerProfile["hitDistribution"]): HitDot[] {
-  const counts = dotCounts(hitDistribution);
-  return hitDistribution.flatMap(({ field }, order) =>
-    Array.from({ length: counts[order] ?? 0 }, (_, index) => ({
+export function toHitDots(hitDistribution: HitDistribution): HitDot[] {
+  return hitDistribution.flatMap(({ field, hits }) =>
+    Array.from({ length: Math.max(0, hits) }, (_, index) => ({
       field,
       index,
       ...(field === "BULL" || field === "BULLSEYE"

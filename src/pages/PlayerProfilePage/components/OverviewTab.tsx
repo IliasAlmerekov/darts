@@ -1,10 +1,8 @@
-import React from "react";
+import React, { useState } from "react";
 import barChartIcon from "@/assets/icons/bar-chart.svg";
 import targetIcon from "@/assets/icons/target.svg";
 import trophyIcon from "@/assets/icons/trophy.svg";
-import type { PlayerProfile } from "@/lib/player/profile";
-import type { HitDot } from "../lib/hitDots";
-import type { BoardHitFrequencies } from "../lib/hitFrequency";
+import type { HitDistributionFilter, PlayerProfile } from "@/lib/player/profile";
 import { HitDistribution } from "./HitDistribution";
 import { ProfileBlock } from "./ProfileBlock";
 import { RangeSelect } from "./RangeSelect";
@@ -13,10 +11,25 @@ import styles from "./OverviewTab.module.css";
 
 interface OverviewTabProps {
   profile: PlayerProfile;
-  hitFrequencies: BoardHitFrequencies;
-  hitDots: HitDot[];
   displayName: string;
 }
+
+const HIT_FILTER_OPTIONS: { value: HitDistributionFilter; label: string }[] = [
+  { value: "all", label: "All games" },
+  { value: "singleout", label: "Single-Out" },
+  { value: "doubleout", label: "Double-Out" },
+  { value: "tripleout", label: "Triple-Out" },
+];
+
+const BOARD_LABELS: Record<HitDistributionFilter, string> = {
+  all: "Dartboard heatmap of all games",
+  singleout: "Dartboard heatmap of Single-Out games",
+  doubleout: "Dartboard heatmap of Double-Out games",
+  tripleout: "Dartboard heatmap of Triple-Out games",
+};
+
+// shortcut: the API serves one scoring trend range, so the menu has one item; add items with ranges.
+const SCORING_TREND_OPTIONS = [{ value: "last10", label: "Last 10 games" }] as const;
 
 function LightbulbIcon(): React.JSX.Element {
   return (
@@ -50,13 +63,9 @@ function EmptyBlock({ text }: EmptyBlockProps): React.JSX.Element {
   );
 }
 
-export function OverviewTab({
-  profile,
-  hitFrequencies,
-  hitDots,
-  displayName,
-}: OverviewTabProps): React.JSX.Element {
+export function OverviewTab({ profile, displayName }: OverviewTabProps): React.JSX.Element {
   const { favoriteDoubles, highestFinish, mostHitSegment } = profile;
+  const [hitFilter, setHitFilter] = useState<HitDistributionFilter>("all");
 
   return (
     <div className={styles.overview}>
@@ -64,12 +73,18 @@ export function OverviewTab({
         className={styles.hitDistributionBlock}
         title="Hit distribution"
         description={`See where ${displayName} hits the dartboard most often.`}
-        action={<RangeSelect label="Games in the hit distribution" option="All games" />}
+        action={
+          <RangeSelect
+            label="Games in the hit distribution"
+            options={HIT_FILTER_OPTIONS}
+            value={hitFilter}
+            onSelect={setHitFilter}
+          />
+        }
       >
         <HitDistribution
-          hitFrequencies={hitFrequencies}
-          hitDots={hitDots}
-          mostHitSegment={mostHitSegment}
+          hitDistribution={profile.hitDistributions[hitFilter]}
+          boardLabel={BOARD_LABELS[hitFilter]}
         />
       </ProfileBlock>
 
@@ -117,7 +132,13 @@ export function OverviewTab({
         <ProfileBlock
           title="Scoring trend"
           iconSrc={barChartIcon}
-          action={<RangeSelect label="Games in the scoring trend" option="Last 10 games" />}
+          action={
+            <RangeSelect
+              label="Games in the scoring trend"
+              options={SCORING_TREND_OPTIONS}
+              value="last10"
+            />
+          }
         >
           <ScoringTrendChart points={profile.scoringTrend} />
         </ProfileBlock>

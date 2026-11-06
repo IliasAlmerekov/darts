@@ -1,13 +1,9 @@
 // @vitest-environment node
 import { describe, expect, it } from "vitest";
-import type { PlayerProfile } from "@/lib/player/profile";
 import { BOARD_FIELDS } from "@/shared/types/player.test-support";
 import { boardFieldSpot } from "./boardFieldSpot";
 import { toHitDots, type HitDot } from "./hitDots";
-import type { NumberField } from "./hitFrequency";
-
-type HitDistribution = PlayerProfile["hitDistribution"];
-type BoardField = HitDistribution[number]["field"];
+import type { BoardField, HitDistribution, NumberField } from "./hitFrequency";
 
 // A regulation board, clockwise from 20 at the top; every segment spans 18°.
 const BOARD_ORDER = [
@@ -150,27 +146,11 @@ describe("toHitDots", () => {
     expect(dotsOf(dots, "BULLSEYE")).toHaveLength(5);
   });
 
-  it("draws at most 600 dots plus the one-dot minimums on a board with 3000 hits", () => {
-    // Nine board fields with one hit each would get 1.8 dots between them; each keeps one.
-    const lowFields = ["S1", "S2", "S3", "S4", "S6", "S7", "S8", "S9", "S10"] as const;
-    const dots = toHitDots(
-      board({
-        T20: 1991,
-        S20: 600,
-        D20: 400,
-        ...Object.fromEntries(lowFields.map((field) => [field, 1])),
-      }),
-    );
+  it("draws one dot per hit past 600 hits, with no dot budget", () => {
+    const dots = toHitDots(board({ T20: 650, S1: 1 }));
 
-    expect(dots.length).toBeGreaterThanOrEqual(600);
-    expect(dots.length).toBeLessThanOrEqual(600 + lowFields.length);
-    for (const field of lowFields) {
-      expect(dotsOf(dots, field)).toHaveLength(1);
-    }
-    // 1991 of 3000 hits, about 398 of the 600 dots.
-    expect(dotsOf(dots, "T20").length).toBeGreaterThanOrEqual(397);
-    expect(dotsOf(dots, "T20").length).toBeLessThanOrEqual(399);
-    expect(dotsOf(dots, "S5")).toHaveLength(0);
+    expect(dots).toHaveLength(651);
+    expect(dotsOf(dots, "S1")).toHaveLength(1);
   });
 
   it.each(["S20", "S3", "S11", "S6"] as const)(
