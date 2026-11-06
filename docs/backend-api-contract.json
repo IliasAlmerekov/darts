@@ -599,44 +599,7 @@
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "required": [
-                                        "success",
-                                        "player"
-                                    ],
-                                    "properties": {
-                                        "success": {
-                                            "type": "boolean",
-                                            "example": true
-                                        },
-                                        "player": {
-                                            "properties": {
-                                                "id": {
-                                                    "type": "integer",
-                                                    "example": 123
-                                                },
-                                                "name": {
-                                                    "type": "string",
-                                                    "example": "Alex"
-                                                },
-                                                "position": {
-                                                    "type": "integer",
-                                                    "example": 2,
-                                                    "nullable": true
-                                                },
-                                                "placement": {
-                                                    "type": "integer",
-                                                    "example": null,
-                                                    "nullable": true
-                                                },
-                                                "isGuest": {
-                                                    "type": "boolean",
-                                                    "example": true
-                                                }
-                                            },
-                                            "type": "object"
-                                        }
-                                    },
-                                    "type": "object"
+                                    "$ref": "#/components/schemas/GuestPlayerResponseDto"
                                 }
                             }
                         }
@@ -748,16 +711,7 @@
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "required": [
-                                        "success"
-                                    ],
-                                    "properties": {
-                                        "success": {
-                                            "type": "boolean",
-                                            "example": true
-                                        }
-                                    },
-                                    "type": "object"
+                                    "$ref": "#/components/schemas/SuccessResponseDto"
                                 }
                             }
                         }
@@ -1400,45 +1354,7 @@
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "required": [
-                                        "success"
-                                    ],
-                                    "properties": {
-                                        "success": {
-                                            "type": "boolean",
-                                            "example": true
-                                        },
-                                        "gameId": {
-                                            "type": "integer",
-                                            "example": 123,
-                                            "nullable": true
-                                        },
-                                        "invitationLink": {
-                                            "type": "string",
-                                            "example": "/api/invite/join/xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx",
-                                            "nullable": true
-                                        },
-                                        "users": {
-                                            "description": "Spieler/Benutzer, die aktuell im Spiel sind (vereinfachte Darstellung).",
-                                            "type": "array",
-                                            "items": {
-                                                "properties": {
-                                                    "id": {
-                                                        "type": "integer",
-                                                        "example": 1,
-                                                        "nullable": true
-                                                    },
-                                                    "username": {
-                                                        "type": "string",
-                                                        "example": "alice",
-                                                        "nullable": true
-                                                    }
-                                                },
-                                                "type": "object"
-                                            }
-                                        }
-                                    },
-                                    "type": "object"
+                                    "$ref": "#/components/schemas/InvitationResponseDto"
                                 }
                             }
                         }
@@ -3015,6 +2931,68 @@
                 },
                 "type": "object"
             },
+            "GuestPlayerDto": {
+                "required": [
+                    "id",
+                    "name",
+                    "isGuest"
+                ],
+                "properties": {
+                    "id": {
+                        "type": "integer",
+                        "example": 123
+                    },
+                    "name": {
+                        "type": "string",
+                        "example": "Alex"
+                    },
+                    "position": {
+                        "type": "integer",
+                        "example": 2,
+                        "nullable": true
+                    },
+                    "placement": {
+                        "type": "integer",
+                        "example": null,
+                        "nullable": true
+                    },
+                    "isGuest": {
+                        "type": "boolean",
+                        "example": true
+                    }
+                },
+                "type": "object"
+            },
+            "GuestPlayerResponseDto": {
+                "required": [
+                    "success",
+                    "player"
+                ],
+                "properties": {
+                    "success": {
+                        "type": "boolean",
+                        "example": true,
+                        "default": true
+                    },
+                    "player": {
+                        "$ref": "#/components/schemas/GuestPlayerDto"
+                    }
+                },
+                "type": "object"
+            },
+            "SuccessResponseDto": {
+                "required": [
+                    "success"
+                ],
+                "properties": {
+                    "success": {
+                        "type": "boolean",
+                        "example": true,
+                        "default": true
+                    }
+                },
+                "type": "object"
+            },
             "RematchResponseDto": {
                 "required": [
                     "success",
@@ -3386,6 +3364,49 @@
                     },
                     "serverTs": {
                         "type": "string"
+                    }
+                },
+                "type": "object"
+            },
+            "InvitationResponseDto": {
+                "required": [
+                    "success",
+                    "gameId",
+                    "invitationLink"
+                ],
+                "properties": {
+                    "success": {
+                        "type": "boolean",
+                        "example": true,
+                        "default": true
+                    },
+                    "gameId": {
+                        "type": "integer",
+                        "example": 123
+                    },
+                    "invitationLink": {
+                        "type": "string",
+                        "example": "/api/invite/join/xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
+                    },
+                    "users": {
+                        "description": "Spieler/Benutzer, die aktuell im Spiel sind (vereinfachte Darstellung).",
+                        "type": "array",
+                        "items": {
+                            "properties": {
+                                "id": {
+                                    "type": "integer",
+                                    "example": 1,
+                                    "nullable": true
+                                },
+                                "username": {
+                                    "type": "string",
+                                    "example": "alice",
+                                    "nullable": true
+                                }
+                            },
+                            "type": "object"
+                        },
+                        "default": []
                     }
                 },
                 "type": "object"

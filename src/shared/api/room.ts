@@ -1,8 +1,7 @@
 import * as v from "valibot";
 import { toRoster, type Seat } from "@/lib/game/roster";
 import { apiClient } from "./client";
-import { ApiError } from "./errors";
-import { integerSchema, invitationResponseSchema, successMessageResponseSchema } from "./schemas";
+import { integerSchema, successMessageResponseSchema } from "./schemas";
 import type { CreateGameSettingsPayload } from "./game";
 
 const createRoomResponseSchema = v.object({
@@ -10,11 +9,28 @@ const createRoomResponseSchema = v.object({
   gameId: integerSchema,
 });
 
+/** Contract `SuccessResponseDto`. */
 const updatePlayerOrderResponseSchema = v.object({
   success: v.boolean(),
 });
 
-// The contract marks no player field as required; a guest without id and name cannot be shown.
+/** Contract `InvitationResponseDto`. */
+const invitationResponseSchema = v.object({
+  success: v.boolean(),
+  gameId: integerSchema,
+  invitationLink: v.string(),
+  users: v.optional(
+    v.array(
+      v.object({
+        id: v.optional(v.nullable(integerSchema)),
+        username: v.optional(v.nullable(v.string())),
+      }),
+    ),
+    [],
+  ),
+});
+
+/** Contract `GuestPlayerResponseDto`. */
 const addGuestResponseSchema = v.object({
   success: v.boolean(),
   player: v.object({
@@ -22,7 +38,7 @@ const addGuestResponseSchema = v.object({
     name: v.string(),
     position: v.optional(v.nullable(integerSchema), null),
     placement: v.optional(v.nullable(integerSchema)),
-    isGuest: v.optional(v.boolean()),
+    isGuest: v.boolean(),
   }),
 });
 
@@ -43,21 +59,6 @@ interface RoomInvitation {
 }
 
 type GuestPlayer = v.InferOutput<typeof addGuestResponseSchema>["player"];
-
-/**
- * Reads the game id and link from an invitation. The contract allows both to be null, for
- * example when the game does not exist; without them there is nothing to join.
- */
-function toRoomInvitation(invite: v.InferOutput<typeof invitationResponseSchema>): RoomInvitation {
-  if (typeof invite.gameId !== "number" || typeof invite.invitationLink !== "string") {
-    throw new ApiError("Invitation response has no game id or link", {
-      status: 200,
-      data: invite,
-    });
-  }
-
-  return { gameId: invite.gameId, invitationLink: invite.invitationLink };
-}
 
 // ---------------------------------------------------------------------------
 // Endpoints
@@ -86,7 +87,7 @@ export async function getInvitation(gameId: number, signal?: AbortSignal): Promi
     ...(signal ? { signal } : {}),
     validate: invitationResponseSchema,
   });
-  return toRoomInvitation(invite);
+  return { gameId: invite.gameId, invitationLink: invite.invitationLink };
 }
 
 /**
