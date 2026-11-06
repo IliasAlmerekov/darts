@@ -1,12 +1,8 @@
 import { useCallback, useRef, useState } from "react";
-import { ApiError } from "@/shared/api";
-import { isApiErrorCode } from "@/lib/error/api-error-code";
 import { toUserErrorMessage } from "@/lib/error/error-to-user-message";
-import { clientLogger } from "@/shared/services/browser/clientLogger";
 import type { AddGuestResult } from "../roster/useRoster";
 import { useIsCurrentGame } from "../lib/useIsCurrentGame";
 import { validateGuestUsername } from "./guestUsername";
-import type { AddGuestErrorResponse } from "@/shared/api/room";
 
 const MAX_LOBBY_PLAYERS = 10;
 const LOBBY_FULL_MESSAGE = "The lobby is full. Remove a player to add another.";
@@ -14,10 +10,10 @@ const LOBBY_FULL_MESSAGE = "The lobby is full. Remove a player to add another.";
 interface UseGuestFlowParams {
   gameId: number | null;
   playerCount: number;
-  addGuest: (gameId: number, username: string) => Promise<AddGuestResult>;
+  addGuest: (username: string) => Promise<AddGuestResult>;
 }
 
-interface UseGuestFlowResult {
+export interface UseGuestFlowResult {
   isLobbyFull: boolean;
   isGuestOverlayOpen: boolean;
   guestUsername: string;
@@ -29,34 +25,6 @@ interface UseGuestFlowResult {
   setGuestUsername: (value: string) => void;
   handleGuestSuggestion: (suggestion: string) => void;
   handleAddGuest: () => Promise<void>;
-}
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === "object" && value !== null;
-}
-
-function isAddGuestErrorResponse(data: unknown): data is AddGuestErrorResponse {
-  if (!isRecord(data)) {
-    return false;
-  }
-
-  return (
-    data.success === false &&
-    data.error === "USERNAME_TAKEN" &&
-    typeof data.message === "string" &&
-    (data.suggestions === undefined ||
-      (Array.isArray(data.suggestions) &&
-        data.suggestions.every((suggestion) => typeof suggestion === "string")))
-  );
-}
-
-function getGuestErrorFromApi(error: unknown): AddGuestErrorResponse | null {
-  if (!(error instanceof ApiError) || error.status !== 409) {
-    return null;
-  }
-
-  const data = error.data;
-  return isAddGuestErrorResponse(data) ? data : null;
 }
 
 /**
@@ -141,47 +109,26 @@ export function useGuestFlow({
     setGuestSuggestions([]);
 
     try {
-      const result = await addGuest(gameId, trimmedUsername);
+      const result = await addGuest(trimmedUsername);
       switch (result.status) {
         case "added":
           if (isCurrentGame(gameId)) closeGuestOverlay();
           return;
         case "stale":
+          // The route moved to another game while the request ran: its answer is not for this page.
+          return;
         case "seats-not-editable":
+        case "lobby-full":
+          setGuestError(toUserErrorMessage(result.error));
+          return;
+        case "username-taken":
+          setGuestError(result.message || "Username already taken in this game.");
+          setGuestSuggestions(result.suggestions);
+          return;
         case "failed":
-          break;
+          setGuestError("Could not add guest. Please try again.");
+          return;
       }
-      const { error } = result;
-      const lobbyFull = isApiErrorCode(error, "GAME_ROOM_FULL");
-      if (lobbyFull) {
-        clientLogger.warn("room.guest.lobby-full", { context: { gameId }, error });
-      }
-      // The route moved to another game while the request ran: its answer is not for this page.
-      if (result.status === "stale") {
-        if (!result.seatsNotEditable && !lobbyFull && error !== null) {
-          clientLogger.warn("room.guest.stale-answer", { context: { gameId }, error });
-        }
-        return;
-      }
-
-      if (result.status === "seats-not-editable") {
-        setGuestError(toUserErrorMessage(error));
-        return;
-      }
-
-      if (lobbyFull) {
-        setGuestError(toUserErrorMessage(error));
-        return;
-      }
-
-      const apiError = getGuestErrorFromApi(error);
-      if (apiError) {
-        setGuestError(apiError.message || "Username already taken in this game.");
-        setGuestSuggestions(apiError.suggestions ?? []);
-        return;
-      }
-
-      setGuestError("Could not add guest. Please try again.");
     } finally {
       addGuestInFlightRef.current = false;
       setIsAddingGuest(false);
