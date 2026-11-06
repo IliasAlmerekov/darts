@@ -20,10 +20,10 @@ import Plus from "@/assets/icons/plus.svg";
 import UserAddIcon from "@/assets/icons/user-add.svg";
 import { Button } from "@/shared/ui/button";
 import { ErrorState } from "@/shared/ui/error-state";
-import QRCode from "./components/qr-code/QRCode";
-import { LivePlayersList } from "./components/live-players-list/LivePlayersList";
+import QRCode from "./qr-code/QRCode";
+import { LivePlayersList } from "./roster/LivePlayersList";
 import { useStartPage } from "./useStartPage";
-import GuestPlayerOverlay from "./components/guest-player-overlay/GuestPlayerOverlay";
+import GuestPlayerOverlay from "./guest/GuestPlayerOverlay";
 
 function toAbsoluteInvitationLink(invitationLink: string): string {
   const normalizedInvitationLink = invitationLink.trim();

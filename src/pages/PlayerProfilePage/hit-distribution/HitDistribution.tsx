@@ -10,15 +10,15 @@ import {
   SEGMENT_ANGLE,
   TREBLE_INNER,
   TREBLE_OUTER,
-} from "../lib/boardFieldSpot";
-import { drawsHitDots, sectorHits, topHitFields, type BoardSector } from "../lib/hitFields";
-import { toHitDots } from "../lib/hitDots";
+} from "./boardFieldSpot";
+import { drawsHitDots, sectorHits, topHitFields, type BoardSector } from "./hitFields";
+import { toHitDots } from "./hitDots";
 import {
   toBoardHitFrequencies,
   type BoardField,
   type HitDistribution as Hits,
   type HitFrequency,
-} from "../lib/hitFrequency";
+} from "./hitFrequency";
 import styles from "./HitDistribution.module.css";
 
 const BOARD_RADIUS = 226;

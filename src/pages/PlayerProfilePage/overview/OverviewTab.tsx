@@ -3,10 +3,10 @@ import barChartIcon from "@/assets/icons/bar-chart.svg";
 import targetIcon from "@/assets/icons/target.svg";
 import trophyIcon from "@/assets/icons/trophy.svg";
 import type { HitDistributionFilter, PlayerProfile } from "@/lib/player/profile";
-import { HitDistribution } from "./HitDistribution";
-import { ProfileBlock } from "./ProfileBlock";
+import { HitDistribution } from "../hit-distribution/HitDistribution";
+import { ProfileBlock } from "../components/ProfileBlock";
 import { RangeSelect } from "./RangeSelect";
-import { ScoringTrendChart } from "./ScoringTrendChart";
+import { ScoringTrendChart } from "../components/ScoringTrendChart";
 import styles from "./OverviewTab.module.css";
 
 interface OverviewTabProps {

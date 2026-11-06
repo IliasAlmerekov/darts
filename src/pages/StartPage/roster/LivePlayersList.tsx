@@ -1,6 +1,6 @@
 import React from "react";
 import clsx from "clsx";
-import SelectedPlayerItem from "../player-items/SelectedPlayerItem";
+import SelectedPlayerItem from "./SelectedPlayerItem";
 import styles from "./LivePlayersList.module.css";
 
 interface LivePlayer {
