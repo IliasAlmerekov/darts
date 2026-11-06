@@ -39,6 +39,7 @@ import { logout, type AuthenticatedUser } from "@/shared/api/auth";
 import { NetworkError } from "@/shared/api";
 import { getPlayerProfile, type PlayerProfileResponse } from "@/shared/api/player";
 import {
+  BOARD_FIELDS,
   buildPlayerProfile,
   buildPlayerProfileGame,
   buildPlayerProfileStats,
@@ -46,7 +47,9 @@ import {
 import { ROUTES } from "@/lib/router/routes";
 import { createQueryClient } from "@/shared/query/queryClient";
 import PlayerProfilePage from ".";
-import { toHitDots } from "./lib/hitDots";
+import { toHitDots, type HitDot } from "./lib/hitDots";
+import { BOARD_ORDER } from "./lib/boardFieldSpot";
+import hitStyles from "./components/HitDistribution.module.css";
 
 type Router = ReturnType<typeof createMemoryRouter>;
 
@@ -125,23 +128,26 @@ function block(name: string): HTMLElement {
   return screen.getByRole("region", { name });
 }
 
-/** The heat spots drawn on the board, one per spot above Very low. */
-function heatSpots(): Element[] {
-  return Array.from(block("Hit distribution").querySelectorAll("circle[filter]"));
-}
-
-/** The hit dots, drawn in a group that assistive technology skips. */
+/** The hit dots, one per hit in the order of `toHitDots`, in a group assistive technology skips. */
 function hitDots(): Element[] {
   return Array.from(
     block("Hit distribution").querySelectorAll('svg g[aria-hidden="true"] > circle'),
   );
 }
 
-/** The board fields that have a heat spot, in board order. */
-function heatSpotFields(): string[] {
-  return Array.from(block("Hit distribution").querySelectorAll("[data-field]")).map(
-    (spot) => spot.getAttribute("data-field") ?? "",
-  );
+/** Identify fields from rendered coordinates, independently of the dot generator's order. */
+function dotsInField(field: HitDot["field"]): Element[] {
+  return hitDots().filter((dot) => {
+    const x = Number(dot.getAttribute("cx"));
+    const y = Number(dot.getAttribute("cy"));
+    const radius = Math.hypot(x, y);
+    if (field === "BULLSEYE") return radius < 6.4;
+    if (field === "BULL") return radius >= 6.4 && radius < 16;
+    const angle = ((Math.atan2(x, -y) * 180) / Math.PI + 369) % 360;
+    const segment = BOARD_ORDER[Math.floor(angle / 18)];
+    const ring = radius >= 162 && radius <= 170 ? "D" : radius >= 99 && radius <= 107 ? "T" : "S";
+    return radius >= 16 && radius <= 170 && `${ring}${segment}` === field;
+  });
 }
 
 describe("PlayerProfilePage", () => {
@@ -332,8 +338,7 @@ describe("PlayerProfilePage", () => {
       "Most hit segment207% of all throwsYou hit segment 20 more than any other segment.",
     );
     expect(screen.getByRole("img", { name: "Dartboard heatmap, most hits on 20" })).toBeTruthy();
-    // T20 is Very high, the centre spot's 24 hits Low, and every other board field Very low.
-    expect(heatSpots()).toHaveLength(2);
+    expect(hitDots()).toHaveLength(toHitDots(buildPlayerProfileStats().hitDistribution).length);
     expect(screen.queryByText("Sample data")).toBeNull();
     expect(screen.queryByText("Consistent finisher")).toBeNull();
   });
@@ -374,10 +379,10 @@ describe("PlayerProfilePage", () => {
       "Most hit segmentBull5% of all throwsYou hit Bull more than any other segment.",
     );
     expect(screen.getByRole("img", { name: "Dartboard heatmap, most hits on Bull" })).toBeTruthy();
-    expect(heatSpots()).toHaveLength(1);
+    expect(hitDots()).toHaveLength(10);
   });
 
-  it("draws a heat spot for each hit treble and double, not for their single", async () => {
+  it("draws a dot for each hit and none for a board field without hits", async () => {
     const hits: Record<string, number> = { T20: 40, D16: 30, T19: 20, S5: 10 };
     vi.mocked(getPlayerProfile).mockResolvedValue(
       buildProfile({
@@ -396,9 +401,11 @@ describe("PlayerProfilePage", () => {
     expect(
       await screen.findByRole("img", { name: "Dartboard heatmap, most hits on 20" }),
     ).toBeTruthy();
-    // S5 has a quarter of T20's hits, Low; every board field without hits stays Very low.
-    expect(heatSpotFields().sort()).toEqual(["D16", "S5", "T19", "T20"]);
-    expect(heatSpots()).toHaveLength(4);
+    expect(hitDots()).toHaveLength(100);
+    for (const field of BOARD_FIELDS) {
+      expect(dotsInField(field), field).toHaveLength(hits[field] ?? 0);
+    }
+    expect(block("Hit distribution").querySelectorAll("[filter]")).toHaveLength(0);
   });
 
   it("draws each treble and double hit as a dot inside its own ring", async () => {
@@ -417,14 +424,13 @@ describe("PlayerProfilePage", () => {
     // Treble ring 99 to 107 mm, double ring 162 to 170 mm from the centre.
     const inRing = (dot: Element, [inner, outer]: [number, number]): boolean => {
       const radius = Math.hypot(Number(dot.getAttribute("cx")), Number(dot.getAttribute("cy")));
-      // The outline is centred on the circle, so half of it paints past the radius.
-      const edge = Number(dot.getAttribute("r")) + Number(dot.getAttribute("stroke-width")) / 2;
+      // The dot's centre keeps 2.3 mm from the ring's edges; the drawn dot may reach past them.
+      const edge = 2.3;
       return radius - edge >= inner - 1e-9 && radius + edge <= outer + 1e-9;
     };
 
     // 20 trebles with 3 hits each and 20 doubles with 5.
     expect(hitDots()).toHaveLength(160);
-    expect(hitDots().every((dot) => dot.getAttribute("stroke-width") === "0.6")).toBe(true);
     expect(hitDots().filter((dot) => inRing(dot, [99, 107]))).toHaveLength(60);
     expect(hitDots().filter((dot) => inRing(dot, [162, 170]))).toHaveLength(100);
     // Each dot sits where the position function put it, so no swapped or mirrored axis.
@@ -433,7 +439,7 @@ describe("PlayerProfilePage", () => {
     ).toEqual(toHitDots(hitDistribution).map(({ x, y }) => [x, y]));
   });
 
-  it("draws one hidden dot per hit above the heat spots and keeps the legend", async () => {
+  it("draws one hidden dot per hit in its board field's step and keeps the legend", async () => {
     const hits: Record<string, number> = { T20: 40, D16: 30, T19: 20, S5: 10, BULL: 12 };
     vi.mocked(getPlayerProfile).mockResolvedValue(
       buildProfile({
@@ -451,17 +457,24 @@ describe("PlayerProfilePage", () => {
     await screen.findByRole("img", { name: "Dartboard heatmap, most hits on 20" });
 
     const dots = hitDots();
-    const lastSpot = heatSpots().at(-1);
     expect(dots).toHaveLength(112);
-    expect(dots.every((dot) => dot.getAttribute("r") === "2")).toBe(true);
-    // Four board fields and the centre, whose 12 Bull hits are Low.
-    expect(heatSpots()).toHaveLength(5);
-    expect(
-      lastSpot !== undefined &&
-        dots.every(
-          (dot) => lastSpot.compareDocumentPosition(dot) & Node.DOCUMENT_POSITION_FOLLOWING,
-        ),
-    ).toBe(true);
+    expect(dots.every((dot) => dot.getAttribute("r") === "6")).toBe(true);
+    expect(dots.every((dot) => dot.getAttribute("stroke-width") === "1.5")).toBe(true);
+    const expectedClasses: Partial<Record<HitDot["field"], string | undefined>> = {
+      T20: hitStyles.heatVeryHigh,
+      D16: hitStyles.heatHigh,
+      T19: hitStyles.heatMedium,
+      S5: hitStyles.heatLow,
+      BULL: hitStyles.heatLow,
+    };
+    for (const field of BOARD_FIELDS) {
+      if (!(field in expectedClasses)) continue;
+      const fieldDots = dotsInField(field);
+      expect(fieldDots, field).toHaveLength(hits[field] ?? 0);
+      for (const dot of fieldDots) {
+        expect(dot.classList, field).toContain(expectedClasses[field]);
+      }
+    }
     expect(
       within(block("Hit distribution"))
         .getAllByRole("listitem")
@@ -500,7 +513,7 @@ describe("PlayerProfilePage", () => {
     expect(block("Highest finish").textContent).toBe("Highest finishNo finish yet");
     expect(block("Most hit segment").textContent).toBe("Most hit segmentNo hits yet");
     expect(screen.getByRole("img", { name: "Dartboard heatmap" })).toBeTruthy();
-    expect(heatSpots()).toHaveLength(0);
+    expect(hitDots()).toHaveLength(0);
   });
 
   it("shows the month the player registered", async () => {

@@ -40,9 +40,12 @@ pr_verdict() {
           else \"keep\" end" </dev/null
 }
 
-# Deletes the branch only if its tip is still the commit that was checked, so a commit
-# made while prune runs survives.
+# Recheck worktree use after gh returns, then compare-and-delete the checked tip.
+# Keep a branch checked out or advanced while prune waited for GitHub.
 delete_branch() {
+  local worktrees
+  worktrees=$(git worktree list --porcelain) || return 1
+  if grep -Fxq "branch refs/heads/$1" <<<"$worktrees"; then return 1; fi
   git update-ref -d "refs/heads/$1" "$2"
 }
 
@@ -115,7 +118,7 @@ prune() {
           if delete_branch "$branch" "$tip"; then
             echo "removed $dir and branch $branch"
           else
-            echo "removed $dir; kept branch $branch: it moved during prune"
+            echo "removed $dir; kept branch $branch: it moved or is checked out"
           fi
         fi
         ;;

@@ -16,6 +16,8 @@ export GIT_AUTHOR_NAME=t GIT_AUTHOR_EMAIL=t@t GIT_COMMITTER_NAME=t GIT_COMMITTER
 export GIT_CONFIG_GLOBAL=/dev/null GIT_CONFIG_NOSYSTEM=1
 
 mkdir -p "$tmp/bin" "$tmp/prs"
+# Standalone jq is not part of the developer setup; fail if the tests try to use it.
+printf '#!/bin/sh\necho "unexpected standalone jq dependency" >&2\nexit 127\n' > "$tmp/bin/jq"
 cat > "$tmp/bin/gh" <<'EOF'
 #!/usr/bin/env bash
 # gh pr list -R <slug> --head <branch> ... -q <jq>: answers from $PRS/<branch>.json.
@@ -31,7 +33,17 @@ file="$PRS/${head//\//_}.json"
 # A <branch>.hook fixture runs while prune is between reading the tip and deleting it.
 if [ -f "${file%.json}.hook" ]; then bash "${file%.json}.hook"; fi
 [ -f "$file" ] || file=/dev/null
-{ [ "$file" = /dev/null ] && echo '[]' || cat "$file"; } | jq -r "$query"
+node - "$file" "$query" <<'JS'
+const { readFileSync } = require("node:fs");
+const [file, query] = process.argv.slice(2);
+const owner = query.match(/headRepositoryOwner\.login == "([^"]+)"/)?.[1];
+const tip = query.match(/headRefOid == "([^"]+)"/)?.[1];
+if (!owner || !tip) throw new Error("Unexpected gh query");
+const prs = JSON.parse(readFileSync(file, "utf8") || "[]")
+  .filter((pr) => pr.headRepositoryOwner.login === owner);
+console.log(prs.some((pr) => pr.state === "OPEN") ? "open"
+  : prs.some((pr) => pr.state === "MERGED" && pr.headRefOid === tip) ? "merged" : "keep");
+JS
 EOF
 # docker logs its arguments and the worktrees that still exist at that moment.
 printf '#!/bin/sh\necho "$* | worktrees: $(ls "%s/ws/worktrees" | tr "\\n" " ")" >> "%s/docker.log"\n' \
@@ -43,10 +55,13 @@ export PATH="$tmp/bin:$PATH" PRS="$tmp/prs"
 # pr <branch> <state> <sha> [owner]: one PR in the branch's fixture.
 pr() {
   local f="$tmp/prs/${1//\//_}.json"
-  [ -f "$f" ] || echo '[]' > "$f"
-  jq --arg s "$2" --arg o "$3" --arg w "${4:-acme}" \
-    '. + [{state: $s, headRefOid: $o, headRepositoryOwner: {login: $w}}]' "$f" > "$f.new"
-  mv "$f.new" "$f"
+  node - "$f" "$2" "$3" "${4:-acme}" <<'JS'
+const { existsSync, readFileSync, writeFileSync } = require("node:fs");
+const [file, state, headRefOid, owner] = process.argv.slice(2);
+const prs = existsSync(file) ? JSON.parse(readFileSync(file, "utf8")) : [];
+prs.push({ state, headRefOid, headRepositoryOwner: { login: owner } });
+writeFileSync(file, JSON.stringify(prs));
+JS
 }
 
 # A bare "GitHub" repo, and a main checkout whose push URL names github.com.
@@ -103,6 +118,10 @@ echo "git -C '$tmp/ws/worktrees/app-18' commit -q --allow-empty -m 'during prune
 git branch -q feat/16-loose main;     pr feat/16-loose MERGED "$(git rev-parse feat/16-loose)"
 git branch -q feat/17-loose-open main; pr feat/17-loose-open OPEN "$(git rev-parse feat/17-loose-open)"
 
+# A loose branch becomes checked out while gh answers its merged-PR query.
+git branch -q feat/19-checkout main; pr feat/19-checkout MERGED "$(git rev-parse feat/19-checkout)"
+echo "git worktree add -q '$tmp/ws/worktrees/app-19' feat/19-checkout" > "$tmp/prs/feat_19-checkout.hook"
+
 # prune runs from inside the worktree it removes.
 out=$(cd "$tmp/ws/worktrees/app-10" && "$tmp/ws/app/scripts/worktree.sh" prune 2>&1) ||
   fail "prune failed: $out"
@@ -121,6 +140,9 @@ kept 15;  branch_kept feat/15-nopr
 branch_kept feat/18-moving
 branch_gone feat/16-loose
 branch_kept feat/17-loose-open
+kept 19; branch_kept feat/19-checkout
+[ "$(git -C "$tmp/ws/worktrees/app-19" rev-parse HEAD)" = "$(git rev-parse feat/19-checkout)" ] ||
+  fail "prune left the new worktree on a missing branch"
 grep -q 'DROP DATABASE IF EXISTS `shop_db_test_wt10`' "$tmp/docker.log" ||
   fail "prune did not drop the test database of app-10: $(cat "$tmp/docker.log")"
 ! grep 'shop_db_test_wt10' "$tmp/docker.log" | grep -q 'app-10' ||

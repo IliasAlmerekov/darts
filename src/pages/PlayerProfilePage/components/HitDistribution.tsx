@@ -1,9 +1,8 @@
-import React, { useId } from "react";
+import React from "react";
 import clsx from "clsx";
 import type { PlayerProfile } from "@/lib/player/profile";
 import {
   BOARD_ORDER,
-  boardFieldSpot,
   BULL_RADIUS,
   DOUBLE_INNER,
   DOUBLE_OUTER,
@@ -12,16 +11,19 @@ import {
   TREBLE_INNER,
   TREBLE_OUTER,
 } from "../lib/boardFieldSpot";
-import { HIT_DOT_OUTLINE, HIT_DOT_RADIUS, type HitDot } from "../lib/hitDots";
+import type { HitDot } from "../lib/hitDots";
 import {
   HIT_FREQUENCY_LABELS,
   type BoardHitFrequencies,
   type HitFrequency,
-  type NumberField,
 } from "../lib/hitFrequency";
 import styles from "./HitDistribution.module.css";
 
 const BOARD_RADIUS = 226;
+// A hit's dot in board millimetres. Its centre stays inside the board field; the dot itself
+// may reach past a thin ring, so overlapping hits stay readable as separate dots.
+const DOT_RADIUS = 6;
+const DOT_OUTLINE = 1.5;
 const NUMBER_RADIUS = 198;
 const FREQUENCIES: HitFrequency[] = [0, 1, 2, 3, 4];
 
@@ -32,8 +34,6 @@ const HEAT_CLASSES: Record<HitFrequency, string | undefined> = {
   3: styles.heatLow,
   4: styles.heatVeryLow,
 };
-
-const SPOT_RADII: Record<HitFrequency, number> = { 0: 34, 1: 26, 2: 20, 3: 14, 4: 0 };
 
 function point(radius: number, degrees: number): [number, number] {
   const radians = ((degrees - 90) * Math.PI) / 180;
@@ -72,13 +72,6 @@ const SEGMENTS = BOARD_ORDER.map((segment, index) => {
   };
 });
 
-const FIELD_SPOTS = BOARD_ORDER.flatMap((segment) =>
-  (["S", "D", "T"] as const).map((ring) => {
-    const field: NumberField = `${ring}${segment}`;
-    return { field, ...boardFieldSpot(field) };
-  }),
-);
-
 interface HitDistributionProps {
   hitFrequencies: BoardHitFrequencies;
   /** One dot per hit, or the board's share of 600 dots. */
@@ -86,14 +79,13 @@ interface HitDistributionProps {
   mostHitSegment: PlayerProfile["mostHitSegment"];
 }
 
-/** A dartboard with a heat spot where the player's darts land most and a dot per hit. */
+/** A dartboard with a blue dot per hit; the dots pile up where the player's darts land most. */
 export function HitDistribution({
   hitFrequencies,
   hitDots,
   mostHitSegment,
 }: HitDistributionProps): React.JSX.Element {
   const { fields, bull } = hitFrequencies;
-  const blurId = useId();
 
   return (
     <div className={styles.hitDistribution}>
@@ -107,11 +99,6 @@ export function HitDistribution({
             : `Dartboard heatmap, most hits on ${mostHitSegment.segment}`
         }
       >
-        <defs>
-          <filter id={blurId} x="-50%" y="-50%" width="200%" height="200%">
-            <feGaussianBlur stdDeviation="9" />
-          </filter>
-        </defs>
         <circle className={styles.surround} r={BOARD_RADIUS} />
         {SEGMENTS.map(({ segment, isDark, singles, rings, labelX, labelY }) => (
           <g key={segment}>
@@ -133,39 +120,20 @@ export function HitDistribution({
         <circle className={styles.ringGreen} r={OUTER_BULL_RADIUS} />
         <circle className={styles.ringRed} r={BULL_RADIUS} />
 
-        <g>
-          {FIELD_SPOTS.map(({ field, x, y }) => {
-            const frequency = fields[field] ?? 4;
-            return SPOT_RADII[frequency] > 0 ? (
-              <circle
-                key={field}
-                className={clsx(styles.spotGlow, HEAT_CLASSES[frequency])}
-                data-field={field}
-                cx={x}
-                cy={y}
-                r={SPOT_RADII[frequency]}
-                filter={`url(#${blurId})`}
-              />
-            ) : null;
-          })}
-          {SPOT_RADII[bull] > 0 ? (
-            <circle
-              className={clsx(styles.spotGlow, HEAT_CLASSES[bull])}
-              r={SPOT_RADII[bull]}
-              filter={`url(#${blurId})`}
-            />
-          ) : null}
-        </g>
         <g aria-hidden="true">
           {hitDots.map(({ field, index, x, y }) => (
-            // Unrounded: a dot fills most of an 8 mm ring, so rounding could push it out.
             <circle
               key={`${field}:${index}`}
-              className={styles.hitDot}
+              className={clsx(
+                styles.hitDot,
+                HEAT_CLASSES[
+                  field === "BULL" || field === "BULLSEYE" ? bull : (fields[field] ?? 4)
+                ],
+              )}
               cx={x}
               cy={y}
-              r={HIT_DOT_RADIUS}
-              strokeWidth={HIT_DOT_OUTLINE}
+              r={DOT_RADIUS}
+              strokeWidth={DOT_OUTLINE}
             />
           ))}
         </g>

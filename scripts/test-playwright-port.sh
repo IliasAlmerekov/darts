@@ -11,6 +11,11 @@ root=$(cd "$(dirname "$0")/.." && pwd)
 tmp=$(mktemp -d)
 trap 'rm -rf "$tmp"' EXIT
 unset PLAYWRIGHT_BASE_URL
+mkdir -p "$tmp/bin"
+# Keep the config test runnable with only the documented Node.js toolchain.
+printf '#!/bin/sh\necho "unexpected standalone jq dependency" >&2\nexit 127\n' > "$tmp/bin/jq"
+chmod +x "$tmp/bin/jq"
+export PATH="$tmp/bin:$PATH"
 
 fail() { echo "test-playwright-port: $*" >&2; exit 1; }
 prepare() {
@@ -19,7 +24,9 @@ prepare() {
 }
 server() {
   (cd "$1" && npx playwright test --list --project=mocked --reporter=json 2>/dev/null) |
-    jq -r '.config.webServer | "\(.url) \(.reuseExistingServer)"'
+    node -e 'const fs = require("node:fs");
+      const { webServer } = JSON.parse(fs.readFileSync(0, "utf8")).config;
+      console.log(`${webServer.url} ${webServer.reuseExistingServer}`);'
 }
 
 git clone -q --shared "$root" "$tmp/main"
