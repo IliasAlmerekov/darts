@@ -5,8 +5,9 @@
 #       Cuts the branch from the latest main into ../worktrees/<repo>-<issue>, copies the
 #       local env files from the main checkout and installs npm packages. Prints the path.
 #   scripts/worktree.sh prune
-#       Removes every worktree and local branch whose pull request is merged. Keeps a
-#       worktree with uncommitted changes, and anything whose PR is open, closed or missing.
+#       Removes every worktree and local branch whose tip is the head commit of a merged
+#       pull request from this repository. Keeps a worktree with uncommitted changes, a
+#       branch with commits after the merge, and anything whose PR is open, closed or missing.
 set -euo pipefail
 
 die() { echo "worktree.sh: $*" >&2; exit 1; }
@@ -17,10 +18,18 @@ repo=$(basename "$main_dir")
 wt_root=$(dirname "$main_dir")/worktrees
 remote=$(git remote -v | awk '/github\.com/ && /\(push\)/ { print $1; exit }')
 [ -n "$remote" ] || die "no GitHub remote"
-slug=$(git remote get-url "$remote" | sed -E 's#^(git@github\.com:|https://github\.com/)##; s#\.git$##')
+slug=$(git remote get-url "$remote" | sed -E 's#^.*github\.com[:/]##; s#\.git$##')
+owner=${slug%%/*}
+# Every git call runs from the main checkout, so prune can remove the worktree it was started in.
+cd "$main_dir"
 
-pr_state() {
-  gh pr list -R "$slug" --head "$1" --state all --json state -q '.[0].state'
+# True when the branch tip is the head commit of a merged PR opened from this repository,
+# so a commit added after a squash merge, or a fork PR with the same branch name, never counts.
+merged() {
+  local tip
+  tip=$(git rev-parse "refs/heads/$1")
+  gh pr list -R "$slug" --head "$1" --state merged --json headRefOid,headRepositoryOwner \
+    -q ".[] | select(.headRepositoryOwner.login == \"$owner\") | .headRefOid" </dev/null | grep -qx "$tip"
 }
 
 new() {
@@ -31,6 +40,7 @@ new() {
   [ ! -e "$dir" ] || die "$dir already exists"
   git fetch -q "$remote" main
   git worktree add --no-track -b "$branch" "$dir" "$remote/main" >&2
+  echo "created $dir" >&2
   for f in .env .env.local app/.env.local app/.env.test.local; do
     if [ -f "$main_dir/$f" ]; then cp "$main_dir/$f" "$dir/$f"; fi
   done
@@ -41,7 +51,7 @@ new() {
 }
 
 prune() {
-  local dir="" branch state line
+  local dir="" branch line
   git fetch -q --prune "$remote"
   while read -r line; do
     case $line in
@@ -49,15 +59,15 @@ prune() {
       "branch "*)
         branch=${line#branch refs/heads/}
         [ "$dir" != "$main_dir" ] || continue
-        state=$(pr_state "$branch")
-        if [ "$state" != MERGED ]; then
-          echo "keep $dir ($branch): ${state:-no PR}"
+        if ! merged "$branch"; then
+          echo "keep $dir ($branch): no merged PR at this commit"
         elif [ -n "$(git -C "$dir" status --porcelain)" ]; then
           echo "keep $dir ($branch): uncommitted changes"
-        else
-          git worktree remove "$dir"
+        elif git worktree remove "$dir"; then
           git branch -D "$branch" >/dev/null
           echo "removed $dir and branch $branch"
+        else
+          echo "keep $dir ($branch): git worktree remove failed"
         fi
         ;;
     esac
@@ -68,7 +78,7 @@ prune() {
   git for-each-ref --format='%(refname:short) %(worktreepath)' refs/heads |
     while read -r branch dir; do
       [ "$branch" != main ] && [ -z "$dir" ] || continue
-      if [ "$(pr_state "$branch")" = MERGED ]; then
+      if merged "$branch"; then
         git branch -D "$branch" >/dev/null
         echo "removed branch $branch"
       fi

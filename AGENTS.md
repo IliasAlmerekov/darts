@@ -142,8 +142,8 @@ criteria are met and that comment carries the verification.
 Every PR adds its change to `CHANGELOG.md` under `## [Unreleased]`, in the group it fits
 (Added, Changed, Removed, Fixed), as `Area: change (#N)`.
 
-Commits, PRs, and issue comments carry the human author only, without the `triage` skill's
-AI disclaimer.
+Commits, PR titles and bodies, and issue comments carry the human author only: no
+`Co-Authored-By` trailer, no agent footer, no `triage` skill AI disclaimer.
 
 ## Review
 
