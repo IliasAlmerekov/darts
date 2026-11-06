@@ -66,13 +66,13 @@ export function segmentCentre(field: NumberField): number {
 }
 
 /**
- * Where a board field's heat spot sits, in board millimetres from the centre, with y
+ * Where a board field's spot sits, in board millimetres from the centre, with y
  * pointing down. Trebles and doubles sit on the middle of their ring, singles in the inner
  * or outer single field; every spot sits 3° to 4° off its segment's centre line. Same field
  * in, same position out.
  *
  * shortcut: the app has no real throw positions, so this spot is the centre of the board
- * field's glow and of its cluster of hit dots; replace it once the backend records where
+ * field's cluster of hit dots; replace it once the backend records where
  * each dart landed.
  */
 export function boardFieldSpot(field: NumberField): { x: number; y: number } {
