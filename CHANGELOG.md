@@ -17,7 +17,7 @@ and this project does **not** yet follow [Semantic Versioning](https://semver.or
 
 ### Changed
 
-- API contract: the dump shows `maxItems: 10` on `positions` of the reorder request and on `playerIds` and `excludePlayerIds` of room create (darts-backend#267), and room create no longer lists 409 `GAME_ROOM_FULL`. The client sends neither list on room create and one entry per lobby seat on reorder, so no code changes (#490)
+- API: the contract dump shows `maxItems: 10` on `positions` of the reorder request and on `playerIds` and `excludePlayerIds` of room create (darts-backend#267), and room create no longer lists 409 `GAME_ROOM_FULL`. The client sends neither list on room create and one entry per lobby seat on reorder, so no code changes (#490)
 - Start page: `useStartPage` returns its values grouped as `roster`, `guest` and `create`, the roster's guest add reports a full lobby and a taken username as their own results, the remove handler takes only the player id, and the guest and create/start hooks have their own tests (#471)
 - Game: the finish overlay shows "Player Finished!" with the subtitle "Continue the game with the remaining players?" on a white card. Its buttons are, top to bottom, a blue "Continue game", a grey "Finish game" and an outlined "Undo last throw" with the undo icon (#472)
 - Agent context: scope and checks follow the change; optional runtime and publishing guidance loads on demand, sibling paths resolve from the main checkout, contract refreshes preserve the existing dump on failure, Codex keeps project-level Context7 access, and bot reviews require current-head evidence (#483)
