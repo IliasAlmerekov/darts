@@ -4,19 +4,19 @@ import { ErrorState } from "@/shared/ui/error-state";
 import { toUserErrorMessage } from "@/lib/error/error-to-user-message";
 import { ROUTES } from "@/lib/router/routes";
 import { DEFAULT_START_SCORE, resolveGameMode } from "@/lib/game/gameMode";
-import GamePlayerItemList from "./components/game-player-item/GamePlayerItemList";
-import FinishedGamePlayerItemList from "./components/game-player-item/FinishedGamePlayerItemList";
+import GamePlayerItemList from "./scoreboard/GamePlayerItemList";
+import FinishedGamePlayerItemList from "./scoreboard/FinishedGamePlayerItemList";
 // shortcut: HeaderSection stays the first section import so LinkButton's CSS loads before
 // GamePage.module.css overrides it; drop the ordering once .settingsBtn wins on specificity.
 import { HeaderSection } from "./components/HeaderSection";
-import { KeyboardSection } from "./components/KeyboardSection";
-import { OverlaysSection } from "./components/OverlaysSection";
+import { KeyboardSection } from "./keyboard/KeyboardSection";
+import { OverlaysSection } from "./overlays/OverlaysSection";
 import styles from "./GamePage.module.css";
 import { useGameSession } from "./useGameSession";
-import { useGameSounds } from "./useGameSounds";
-import { useWakeLock } from "./useWakeLock";
-import { useGameExitFlow, useGameSettingsFlow } from "./useGameActions";
-import { useGameSummaryNavigation, useInteractionSoundUnlock } from "./useGamePageEffects";
+import { useGameSounds } from "./lib/useGameSounds";
+import { useWakeLock } from "./lib/useWakeLock";
+import { useGameExitFlow, useGameSettingsFlow } from "./overlays/useGameActions";
+import { useGameSummaryNavigation, useInteractionSoundUnlock } from "./lib/useGamePageEffects";
 import { parseRouteGameId } from "@/lib/router/tabletGameRoute";
 
 function GamePage(): React.JSX.Element {

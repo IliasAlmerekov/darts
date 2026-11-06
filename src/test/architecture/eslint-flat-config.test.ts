@@ -102,7 +102,7 @@ describe("shared lib import aliases", () => {
   it.each([
     "src/app/App.test.tsx",
     "src/shared/ui/navigation-bar/NavigationBar.test.tsx",
-    "src/pages/GamePage/components/SettingsOverlay.test.tsx",
+    "src/pages/GamePage/overlays/SettingsOverlay.test.tsx",
   ])("allows the long alias in test file %s", async (filePath) => {
     const [result] = await eslint.lintText('import "@/shared/lib/guards/guards";', { filePath });
     expect(result?.messages.some((message) => message.ruleId === "no-restricted-imports")).toBe(
@@ -168,7 +168,7 @@ describe("dynamic shared lib imports", () => {
   it.each([
     "src/app/App.test.tsx",
     "src/shared/ui/navigation-bar/NavigationBar.test.tsx",
-    "src/pages/GamePage/components/SettingsOverlay.test.tsx",
+    "src/pages/GamePage/overlays/SettingsOverlay.test.tsx",
   ])("allows dynamic imports in %s", async (filePath) => {
     const [result] = await eslint.lintText('import("@/shared/lib/guards/guards");', { filePath });
     expect(result?.messages.some((message) => message.ruleId === "no-restricted-syntax")).toBe(

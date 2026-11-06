@@ -1,4 +1,4 @@
-import { getCheckoutSuggestion } from "./checkoutSuggestion.logic";
+import { getCheckoutSuggestion } from "../checkout-suggestion/checkoutSuggestion.logic";
 import type { GameMode } from "@/types";
 import type { WinnerPlayerProps } from "@/types";
 

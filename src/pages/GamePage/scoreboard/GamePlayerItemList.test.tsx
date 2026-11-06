@@ -3,7 +3,7 @@ import { render, screen } from "@testing-library/react";
 import { describe, expect, it, vi, beforeEach, afterEach } from "vitest";
 import { mapPlayersToUI } from "@/lib/game/player-mappers";
 import { buildBackendPlayer, buildGameThrowsResponse } from "@/shared/types/game.test-support";
-import { applyOptimisticThrow, applyOptimisticUndo } from "../../lib/optimisticThrow.logic";
+import { applyOptimisticThrow, applyOptimisticUndo } from "../lib/optimisticThrow.logic";
 import type { WinnerPlayerProps } from "@/types";
 import GamePlayerItemList from "./GamePlayerItemList";
 

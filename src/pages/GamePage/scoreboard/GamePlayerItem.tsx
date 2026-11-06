@@ -2,7 +2,7 @@ import React from "react";
 import styles from "./GamePlayerItem.module.css";
 import bustIconX from "@/assets/icons/delete-grey.svg";
 import clsx from "clsx";
-import type { ThrowSlot, ThrowSlots } from "../../lib/playerThrowsDisplay.logic";
+import type { ThrowSlot, ThrowSlots } from "./playerThrowsDisplay.logic";
 
 interface GamePlayerItemProps {
   name?: string;
