@@ -2,9 +2,16 @@ import React from "react";
 import { DropdownMenu } from "@fujiui/react";
 import styles from "./RangeSelect.module.css";
 
-interface RangeSelectProps {
+interface RangeSelectOption<Value extends string> {
+  value: Value;
   label: string;
-  option: string;
+}
+
+interface RangeSelectProps<Value extends string> {
+  label: string;
+  options: readonly RangeSelectOption<Value>[];
+  value: Value;
+  onSelect?: (value: Value) => void;
 }
 
 function ChevronIcon(): React.JSX.Element {
@@ -45,19 +52,32 @@ function CheckIcon(): React.JSX.Element {
   );
 }
 
-// shortcut: the API serves one range, so the menu has one item; add items with ranges.
-export function RangeSelect({ label, option }: RangeSelectProps): React.JSX.Element {
+/** A menu of the games a block counts; the trigger shows the selected option. */
+export function RangeSelect<Value extends string>({
+  label,
+  options,
+  value,
+  onSelect,
+}: RangeSelectProps<Value>): React.JSX.Element {
+  const selected = options.find((option) => option.value === value)?.label ?? value;
+
   return (
     <DropdownMenu>
-      <DropdownMenu.Trigger className={styles.trigger} aria-label={`${label}: ${option}`}>
-        {option}
+      <DropdownMenu.Trigger className={styles.trigger} aria-label={`${label}: ${selected}`}>
+        {selected}
         <ChevronIcon />
       </DropdownMenu.Trigger>
       <DropdownMenu.Content className={styles.menu} align="center">
-        <DropdownMenu.Item className={styles.item}>
-          {option}
-          <CheckIcon />
-        </DropdownMenu.Item>
+        {options.map((option) => (
+          <DropdownMenu.Item
+            key={option.value}
+            className={styles.item}
+            onClick={() => onSelect?.(option.value)}
+          >
+            {option.label}
+            {option.value === value ? <CheckIcon /> : null}
+          </DropdownMenu.Item>
+        ))}
       </DropdownMenu.Content>
     </DropdownMenu>
   );

@@ -75,6 +75,11 @@ const profileStatsExample = {
   checkoutHits: 1,
   checkoutAttempts: 4,
   hitDistribution: BOARD_FIELDS.map((field) => ({ field, hits: field === "T20" ? 12 : 1 })),
+  hitDistributionByOutRule: {
+    singleout: BOARD_FIELDS.map((field) => ({ field, hits: field === "T20" ? 2 : 0 })),
+    doubleout: BOARD_FIELDS.map((field) => ({ field, hits: field === "T20" ? 10 : 1 })),
+    tripleout: BOARD_FIELDS.map((field) => ({ field, hits: 0 })),
+  },
   mostHitSegment: { segment: "20", hits: 14, share: 21.2 },
   favoriteDoubles: [{ double: "D16", hits: 1, attempts: 3, hitRate: 33.3 }],
   highestFinish: { score: 32, darts: 1, throws: ["D16"] },
@@ -199,6 +204,25 @@ describe("getPlayerProfile", () => {
           attempts: 2,
           hitRate: 50,
         })),
+      },
+    ],
+    ["no hit distribution by out rule", { hitDistributionByOutRule: undefined }],
+    [
+      "a hit distribution by out rule without triple out",
+      {
+        hitDistributionByOutRule: {
+          singleout: profileStatsExample.hitDistributionByOutRule.singleout,
+          doubleout: profileStatsExample.hitDistributionByOutRule.doubleout,
+        },
+      },
+    ],
+    [
+      "a double-out hit distribution without all 62 board fields",
+      {
+        hitDistributionByOutRule: {
+          ...profileStatsExample.hitDistributionByOutRule,
+          doubleout: BOARD_FIELDS.slice(1).map((field) => ({ field, hits: 1 })),
+        },
       },
     ],
     ["a win rate above 100", { winRate: 100.1 }],
