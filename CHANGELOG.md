@@ -7,6 +7,8 @@ and this project does **not** yet follow [Semantic Versioning](https://semver.or
 
 ## [Unreleased]
 
+## [0.5.0] - 2026-11-06
+
 ### Added
 
 - Player profile: the hit distribution filters by All games, Single-Out, Double-Out or Triple-Out from `hitDistributionByOutRule` of `GET /api/player/profile` (darts-backend#289). Up to 150 hits the board draws a dot per hit, past that the board keeps its own colours, faded, and lays blue over each hit board field as strong as its hit frequency; Bull and Bullseye each have their own hit frequency step. "Most hit fields" lists the five most hit fields in place of the hit frequency legend, and a click, Enter or Space on a sector opens a card beside the sector with its single, double and triple hits (#481)
@@ -17,6 +19,7 @@ and this project does **not** yet follow [Semantic Versioning](https://semver.or
 
 ### Changed
 
+- Deploy: releases build `darts-backend` at `1439f51`, so 0.5.0 ships the backend this frontend already follows. `GET /api/player/profile` counts hits per board field and splits them by out rule (darts-backend#286, darts-backend#289). `positions`, `playerIds` and `excludePlayerIds` take at most 10 entries, and a longer list gets 422 `REQUEST_VALIDATION_FAILED` (darts-backend#294). Guest add, reorder and invitation create answer with fixed response objects (darts-backend#293). An unknown game id gets 404 `GAME_NOT_FOUND` on every route, a leave without `playerId` gets 400, a query parameter of the wrong type gets 400, and a rolled-back transaction gets 409 `CONCURRENT_CHANGE` (darts-backend#273, darts-backend#278, darts-backend#279, darts-backend#280). Symfony moves to 8.1.11 for security advisories (darts-backend#283). No migrations run (#498)
 - Login and register pages: `LoginForm`, `RegisterForm` and `JoiningScreen` move from the page root into `components/`, so every page root now holds only the entry, its CSS Module, the page hook, the route loader and their tests. Behaviour is unchanged (#457)
 - Player profile and start page: files move into part folders. The profile gets `overview/`, `performance/`, `history/` and `hit-distribution/`, and the components the tabs share stay in `components/`. The start page moves its remaining components into `guest/`, `roster/` and `qr-code/`. Behaviour is unchanged (#457)
 - Game page: files move into part folders (`scoreboard/`, `checkout-suggestion/`, `keyboard/`, `overlays/`), and `useGameSounds`, `useWakeLock` and `useGamePageEffects` move to `lib/`. The page root keeps the entry, its CSS Module, `useGameSession` and their tests. `GLOSSARY.md` adds the Scoreboard term. Behaviour is unchanged (#457)
