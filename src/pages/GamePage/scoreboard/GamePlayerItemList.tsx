@@ -3,7 +3,7 @@ import clsx from "clsx";
 import type { GameMode } from "@/types";
 import type { WinnerPlayerProps } from "@/types";
 import useIsomorphicLayoutEffect from "@/lib/useIsomorphicLayoutEffect";
-import { getPlayerThrowsDisplay } from "../../lib/playerThrowsDisplay.logic";
+import { getPlayerThrowsDisplay } from "./playerThrowsDisplay.logic";
 import GamePlayerItem from "./GamePlayerItem";
 import styles from "./GamePlayerItem.module.css";
 

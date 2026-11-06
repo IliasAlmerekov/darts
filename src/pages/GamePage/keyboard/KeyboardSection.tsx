@@ -4,7 +4,7 @@ import { Keyboard } from "./Keyboard";
 import { NumberButton } from "./NumberButton";
 import styles from "../GamePage.module.css";
 import type { SyncStatus } from "../lib/gameSession.logic";
-import { getSyncMessage } from "../lib/syncMessage";
+import { getSyncMessage } from "./syncMessage";
 
 interface KeyboardSectionProps {
   onUndo: () => void;

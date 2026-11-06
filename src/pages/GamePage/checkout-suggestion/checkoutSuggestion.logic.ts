@@ -1,5 +1,5 @@
 import type { GameMode } from "@/types";
-import { allowsCheckoutWith, isDeadScore, type Ring } from "./outRule.logic";
+import { allowsCheckoutWith, isDeadScore, type Ring } from "../lib/outRule.logic";
 
 interface Segment {
   ring: Ring;

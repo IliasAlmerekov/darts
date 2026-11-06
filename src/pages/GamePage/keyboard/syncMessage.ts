@@ -1,4 +1,4 @@
-import type { SyncStatus } from "./gameSession.logic";
+import type { SyncStatus } from "../lib/gameSession.logic";
 
 export function getSyncMessage(syncStatus: SyncStatus, isQueueFull: boolean): string | null {
   if (syncStatus === "failed" || syncStatus === "offline") {

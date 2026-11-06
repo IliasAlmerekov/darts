@@ -1,6 +1,6 @@
 // @vitest-environment node
 import { describe, expect, it } from "vitest";
-import type { SyncStatus } from "./gameSession.logic";
+import type { SyncStatus } from "../lib/gameSession.logic";
 import { getSyncMessage } from "./syncMessage";
 
 const NOT_SAVED = "Your last throws were not saved.";
