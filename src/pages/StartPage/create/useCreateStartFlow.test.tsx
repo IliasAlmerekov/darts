@@ -9,7 +9,7 @@ vi.mock("@/shared/api/game", () => ({
 }));
 
 import { act, renderHook } from "@testing-library/react";
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import React from "react";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { getGameSettings, startGame } from "@/shared/api/game";
@@ -70,12 +70,6 @@ describe("useCreateStartFlow", () => {
     resetGameStore();
     resetPreCreateGameSettings();
     setSoundEnabled(false);
-  });
-
-  afterEach(() => {
-    sessionStorage.clear();
-    resetRoomStore();
-    resetGameStore();
   });
 
   describe("create", () => {
