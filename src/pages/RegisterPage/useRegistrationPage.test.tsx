@@ -102,6 +102,8 @@ describe("useRegistrationPage", () => {
     expect(navigateMock).not.toHaveBeenCalled();
   });
 
+  // The one redirect case here: the page hook redirects through useAuthRedirect. Every
+  // destination lives in the table of src/shared/query/postAuth.test.ts.
   it("should show the login check to a remembered user and send them away", async () => {
     queryClient.setQueryData(AUTH_KEY, joinedPlayer);
 
@@ -134,16 +136,12 @@ describe("useRegistrationPage", () => {
     expect(result.current.screen).toEqual({ type: "invitation-error", message });
   });
 
-  it("should open the Player profile from the invitation error and drop the handled error", async () => {
+  it("should drop the handled invitation error on Go to player profile", async () => {
     registerUserMock.mockResolvedValueOnce({ ...player, invitationError: "GAME_ROOM_FULL" });
     const result = await register();
-    expect(navigateMock).not.toHaveBeenCalled();
 
     act(() => result.current.goToPlayerProfile());
 
-    await waitFor(() => {
-      expect(navigateMock).toHaveBeenCalledExactlyOnceWith(ROUTES.playerProfile);
-    });
     expect(queryClient.getQueryData(AUTH_KEY)).toEqual({
       ...player,
       redirect: ROUTES.playerProfile,
@@ -195,31 +193,17 @@ describe("useRegistrationPage", () => {
       password: "123",
     });
     expect(result.current.screen).toEqual({ type: "form" });
-    expect(navigateMock).not.toHaveBeenCalled();
     // `registerUser` logs its own failures.
     expect(vi.mocked(clientLogger.error)).not.toHaveBeenCalled();
   });
 
-  it("should store the game id, cache the user and open the Waiting room when registration joins a game", async () => {
+  it("should store the game id and cache the user when registration joins a game", async () => {
     registerUserMock.mockResolvedValueOnce(joinedPlayer);
 
     await register();
 
     expect(getActiveGameId()).toBe(42);
     expect(queryClient.getQueryData(AUTH_KEY)).toEqual(joinedPlayer);
-    await waitFor(() => {
-      expect(navigateMock).toHaveBeenCalledWith(ROUTES.joined);
-    });
-  });
-
-  it("should clear a game id left over from an earlier session when registration joins none", async () => {
-    setCurrentGameId(7);
-    registerUserMock.mockResolvedValueOnce({ ...player, invitationError: "GAME_ALREADY_STARTED" });
-
-    await register();
-
-    expect(getActiveGameId()).toBeNull();
-    expect(navigateMock).not.toHaveBeenCalled();
   });
 
   it("should keep the registered user when a pending session check answers late with no user", async () => {

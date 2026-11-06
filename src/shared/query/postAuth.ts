@@ -20,14 +20,14 @@ export async function acceptAuthenticatedUser(user: AuthenticatedUser): Promise<
  * Picks the route an authenticated user goes to. A redirect away from the start page, such
  * as the Waiting room or the Player profile, wins. Otherwise the user goes to `from`, the
  * protected route that sent them to log in, or the start page, whose loader finds the
- * Tablet game.
+ * Tablet game. Both the redirect and `from` stay inside the app.
  */
 export function resolveAuthDestination(user: AuthenticatedUser, from: string): string {
   const redirectPath = resolveSafeRedirect(user.redirect, ROUTES.start());
   const isStartPage =
     redirectPath === ROUTES.start() || redirectPath.startsWith(`${ROUTES.start()}/`);
 
-  return isStartPage ? from : redirectPath;
+  return isStartPage ? resolveSafeRedirect(from, ROUTES.start()) : redirectPath;
 }
 
 /**

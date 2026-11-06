@@ -8,7 +8,6 @@ import { isLoginLocationState } from "./lib/loginLocationState";
 import { mapAuthErrorMessage } from "@/lib/error/auth-error-handling";
 import { mapInvitationErrorMessage } from "@/lib/error/invitation-error-message";
 import { ROUTES } from "@/lib/router/routes";
-import { resolveSafeRedirect } from "@/lib/router/safeRedirect";
 import { parseLocationState } from "@/lib/router/locationState";
 
 /** The login fields as submitted. */
@@ -65,10 +64,8 @@ export function useLoginPage(): UseLoginPageResult {
   const location = useLocation();
   const { user, loading: checkingLogin } = useAuthenticatedUser();
 
-  const from = resolveSafeRedirect(
-    parseLocationState(location.state, isLoginLocationState)?.from,
-    ROUTES.start(),
-  );
+  // `resolveAuthDestination` keeps this route inside the app.
+  const from = parseLocationState(location.state, isLoginLocationState)?.from ?? ROUTES.start();
 
   const successMessage =
     new URLSearchParams(location.search).get("left") === "1"
