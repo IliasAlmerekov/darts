@@ -2,7 +2,6 @@ import React from "react";
 import clsx from "clsx";
 import { Overlay } from "@/shared/ui/overlay";
 import { Button } from "@/shared/ui/button";
-import { LinkButton } from "@/shared/ui/link-button";
 import deleteIcon from "@/assets/icons/delete.svg";
 import Undo from "@/assets/icons/undo-dark.svg";
 import styles from "../GamePage.module.css";
@@ -65,43 +64,49 @@ export const OverlaysSection = React.memo(function OverlaysSection({
   return (
     <>
       <Overlay
-        className={clsx(styles.overlayBox, styles.centeredOverlayBox)}
+        className={clsx(styles.overlayBox, styles.centeredOverlayBox, styles.finishOverlayCard)}
         isOpen={shouldShowFinishOverlay}
-        src={deleteIcon}
         ariaLabelledBy={finishOverlayTitleId}
         {...finishOverlayProps}
       >
-        <div className={styles.finishGameOverlay}>
-          <p className={styles.overlayHeading} id={finishOverlayTitleId}>
-            Player Finished! Continue Game?
+        <div className={styles.finishOverlayContent}>
+          <h2 className={styles.finishOverlayHeading} id={finishOverlayTitleId}>
+            Player Finished!
+          </h2>
+          <p className={styles.finishOverlaySubtitle}>
+            Continue the game with the remaining players?
           </p>
           {finishError ? (
-            <p className={styles.overlayError} role="alert">
+            <p className={styles.finishOverlayError} role="alert">
               {finishError}
             </p>
           ) : null}
-          <div>
-            <Button
-              label="Finish game"
-              handleClick={handleFinishGame}
-              type="primary"
-              link=""
+          <div className={styles.finishOverlayActions}>
+            <button
+              type="button"
+              className={clsx(styles.finishOverlayButton, styles.finishOverlayContinue)}
+              onClick={handleContinueGame}
+              disabled={isFinishPending}
+            >
+              Continue game
+            </button>
+            <button
+              type="button"
+              className={clsx(styles.finishOverlayButton, styles.finishOverlayFinish)}
+              onClick={handleFinishGame}
               disabled={isFinishGameDisabled}
-            />
-            <Button
-              label="Continue"
-              handleClick={handleContinueGame}
-              type="secondary"
-              link=""
+            >
+              Finish game
+            </button>
+            <button
+              type="button"
+              className={clsx(styles.finishOverlayButton, styles.finishOverlayUndo)}
+              onClick={handleUndoFromOverlay}
               disabled={isFinishPending}
-            />
-            <LinkButton
-              icon={Undo}
-              label="Undo Throw"
-              handleClick={handleUndoFromOverlay}
-              disabled={isFinishPending}
-              {...(styles.undoThrow !== undefined ? { className: styles.undoThrow } : {})}
-            />
+            >
+              <img src={Undo} alt="" aria-hidden="true" />
+              Undo last throw
+            </button>
           </div>
         </div>
       </Overlay>
