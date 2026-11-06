@@ -2,7 +2,7 @@ import { queryOptions } from "@tanstack/react-query";
 import { TimeoutError } from "@/shared/api";
 import { getAuthenticatedUser } from "@/shared/api/auth";
 import { clientLogger } from "@/shared/services/browser/clientLogger";
-import { setCurrentGameId } from "@/shared/store";
+import { applyCurrentGameRule } from "@/shared/query/postAuthCurrentGame";
 
 const AUTHENTICATED_USER_TIMEOUT_MS = 5000;
 
@@ -26,8 +26,10 @@ export const authQueries = {
             signal,
             timeoutMs: AUTHENTICATED_USER_TIMEOUT_MS,
           });
-          if (!signal.aborted && typeof user?.gameId === "number") {
-            setCurrentGameId(user.gameId);
+          // The query writes the cache itself; only the current game rule runs here. A guest
+          // (null) leaves the current game alone.
+          if (!signal.aborted && user !== null) {
+            applyCurrentGameRule(user);
           }
           return user;
         } catch (error: unknown) {

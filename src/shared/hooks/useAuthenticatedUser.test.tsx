@@ -169,6 +169,46 @@ describe("useAuthenticatedUser", () => {
     expect(setCurrentGameIdMock).toHaveBeenCalledWith(42);
   });
 
+  it("should clear the current game of a remembered player who is in no game", async () => {
+    getAuthenticatedUserMock.mockResolvedValue(
+      buildAuthenticatedUser({ roles: ["ROLE_PLAYER"], redirect: "/playerprofile" }),
+    );
+
+    const { result } = renderHook(() => useAuthenticatedUser(), { wrapper });
+
+    await waitFor(() => {
+      expect(result.current.loading).toBe(false);
+    });
+
+    expect(setCurrentGameIdMock).toHaveBeenCalledExactlyOnceWith(null);
+  });
+
+  it("should leave the current game alone for a remembered admin", async () => {
+    getAuthenticatedUserMock.mockResolvedValue(
+      buildAuthenticatedUser({ roles: ["ROLE_ADMIN", "ROLE_PLAYER"], gameId: 42 }),
+    );
+
+    const { result } = renderHook(() => useAuthenticatedUser(), { wrapper });
+
+    await waitFor(() => {
+      expect(result.current.loading).toBe(false);
+    });
+
+    expect(setCurrentGameIdMock).not.toHaveBeenCalled();
+  });
+
+  it("should leave the current game alone when the session check finds no login", async () => {
+    getAuthenticatedUserMock.mockResolvedValue(null);
+
+    const { result } = renderHook(() => useAuthenticatedUser(), { wrapper });
+
+    await waitFor(() => {
+      expect(result.current.loading).toBe(false);
+    });
+
+    expect(setCurrentGameIdMock).not.toHaveBeenCalled();
+  });
+
   it("should mark auth as unauthenticated when the auth API resolves null", async () => {
     getAuthenticatedUserMock.mockResolvedValue(null);
 
