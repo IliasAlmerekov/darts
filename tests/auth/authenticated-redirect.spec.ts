@@ -38,10 +38,9 @@ test.describe("Authentication Flow and Redirects", () => {
     // 3. Navigate directly to '/register' page while authenticated
     await page.goto("/register");
 
-    // Verify user can or cannot access registration page based on app behavior
-    // Note: Based on testing, the register page was accessible even when authenticated
-    // This may be the intended behavior for this application
-    const currentPath = new URL(page.url()).pathname;
-    expect(["/start", "/register"]).toContain(currentPath);
+    // Verify the Remembered login leaves the registration page as well
+    await expect(page).toHaveURL("/start");
+    await expect(page.getByRole("heading", { name: "Selected Players" })).toBeVisible();
+    await expect(page.getByRole("button", { name: "Create account" })).toHaveCount(0);
   });
 });

@@ -2,7 +2,7 @@ import { queryOptions } from "@tanstack/react-query";
 import { TimeoutError } from "@/shared/api";
 import { getAuthenticatedUser } from "@/shared/api/auth";
 import { clientLogger } from "@/shared/services/browser/clientLogger";
-import { setCurrentGameId } from "@/shared/store";
+import { applySessionCheckCurrentGame } from "@/shared/query/postAuthCurrentGame";
 
 const AUTHENTICATED_USER_TIMEOUT_MS = 5000;
 
@@ -26,8 +26,10 @@ export const authQueries = {
             signal,
             timeoutMs: AUTHENTICATED_USER_TIMEOUT_MS,
           });
-          if (!signal.aborted && typeof user?.gameId === "number") {
-            setCurrentGameId(user.gameId);
+          // The query writes the cache itself; this only follows a game id in the answer. A
+          // guest (null) and an answer without a game keep the stored current game.
+          if (!signal.aborted && user !== null) {
+            applySessionCheckCurrentGame(user);
           }
           return user;
         } catch (error: unknown) {

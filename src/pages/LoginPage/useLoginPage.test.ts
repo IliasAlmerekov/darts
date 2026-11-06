@@ -1,5 +1,6 @@
 // @vitest-environment jsdom
-import { startTransition } from "react";
+import { createElement, startTransition, type ReactNode } from "react";
+import { QueryClientProvider } from "@tanstack/react-query";
 import { act, renderHook, waitFor } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { useLoginPage } from "./useLoginPage";
@@ -11,11 +12,9 @@ import { queryClient } from "@/shared/query/queryClient";
 import { $currentGameId, setCurrentGameId } from "@/shared/store";
 
 const navigateMock = vi.fn();
-const useAuthenticatedUserMock = vi.fn();
 const useLocationMock = vi.fn();
 const loginWithCredentialsMock = vi.fn();
 const getAuthenticatedUserMock = vi.fn();
-const assignMock = vi.fn();
 
 vi.mock("react-router-dom", async (importOriginal) => {
   const actual = await importOriginal<typeof import("react-router-dom")>();
@@ -31,33 +30,42 @@ vi.mock("@/shared/api/auth", () => ({
   getAuthenticatedUser: (...args: unknown[]) => getAuthenticatedUserMock(...args),
 }));
 
-vi.mock("@/shared/hooks/useAuthenticatedUser", () => ({
-  useAuthenticatedUser: () => useAuthenticatedUserMock(),
-}));
-
-const loggedInPlayer = {
+const loggedInPlayer: AuthenticatedUser = {
   success: true,
   roles: ["ROLE_PLAYER"],
   id: 23,
   username: "Ton Eighty",
-  redirect: "http://localhost:3000/joined",
+  redirect: "http://localhost:3000/playerprofile",
 };
-const joinedPlayer = { ...loggedInPlayer, gameId: 42 };
+const joinedPlayer: AuthenticatedUser = {
+  ...loggedInPlayer,
+  redirect: "http://localhost:3000/joined",
+  gameId: 42,
+};
+const admin: AuthenticatedUser = {
+  success: true,
+  roles: ["ROLE_ADMIN", "ROLE_PLAYER"],
+  id: 1,
+  redirect: "http://localhost:3000/start",
+};
 
 const AUTH_KEY = authQueries.me().queryKey;
-const SEEDED_USER: AuthenticatedUser = {
-  success: true,
-  roles: ["ROLE_ADMIN"],
-  id: 99,
-  redirect: "/start",
-};
 
-function givenAuthCheck(user: unknown, loading = false): void {
-  useAuthenticatedUserMock.mockReturnValue({ user, loading, error: null });
+function wrapper({ children }: { children: ReactNode }): React.JSX.Element {
+  return createElement(QueryClientProvider, { client: queryClient }, children);
+}
+
+/** Answers the Remembered login check from the cache, as after a finished check. */
+function givenAuthCheck(user: AuthenticatedUser | null): void {
+  queryClient.setQueryData(AUTH_KEY, user);
+}
+
+function renderLoginPage(): { current: ReturnType<typeof useLoginPage> } {
+  return renderHook(() => useLoginPage(), { wrapper }).result;
 }
 
 async function submitLogin(): Promise<ReturnType<typeof useLoginPage>> {
-  const { result } = renderHook(() => useLoginPage());
+  const result = renderLoginPage();
 
   const formData = new FormData();
   formData.set("_username", "player@test.com");
@@ -76,14 +84,6 @@ describe("useLoginPage", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     queryClient.clear();
-    Object.defineProperty(window, "location", {
-      configurable: true,
-      value: {
-        ...window.location,
-        assign: assignMock,
-      },
-    });
-    givenAuthCheck(null);
     setCurrentGameId(null);
     useLocationMock.mockReturnValue({
       pathname: "/",
@@ -95,56 +95,37 @@ describe("useLoginPage", () => {
   });
 
   it("shows the login check while the auth check is pending", () => {
-    givenAuthCheck(null, true);
+    getAuthenticatedUserMock.mockReturnValueOnce(new Promise(() => undefined));
 
-    const { result } = renderHook(() => useLoginPage());
+    const result = renderLoginPage();
 
     expect(result.current.screen).toEqual({ type: "checking" });
     expect(navigateMock).not.toHaveBeenCalled();
   });
 
-  it("shows the form when the auth check finds no login", () => {
-    const { result } = renderHook(() => useLoginPage());
+  it("shows the form when the auth check finds no login", async () => {
+    getAuthenticatedUserMock.mockResolvedValueOnce(null);
 
-    expect(result.current.screen).toEqual({ type: "form" });
+    const result = renderLoginPage();
+
+    await waitFor(() => {
+      expect(result.current.screen).toEqual({ type: "form" });
+    });
+    expect(navigateMock).not.toHaveBeenCalled();
   });
 
-  it("sends a remembered player to the redirect and keeps the form hidden", async () => {
+  it("keeps the form hidden for a remembered login", () => {
     givenAuthCheck(joinedPlayer);
 
-    const { result } = renderHook(() => useLoginPage());
+    const result = renderLoginPage();
 
     expect(result.current.screen).toEqual({ type: "checking" });
-    await waitFor(() => {
-      expect(navigateMock).toHaveBeenCalledWith(ROUTES.joined);
-    });
   });
 
-  it("does not send a player with a stale stored game to the host start page", async () => {
-    givenAuthCheck(joinedPlayer);
-    setCurrentGameId(99);
-
-    renderHook(() => useLoginPage());
-
-    await waitFor(() => {
-      expect(navigateMock).toHaveBeenCalledWith(ROUTES.joined);
-    });
-    expect(navigateMock).not.toHaveBeenCalledWith(ROUTES.start(99));
-  });
-
-  it("sends an admin with a stored game to that game's start page", async () => {
-    givenAuthCheck({ success: true, roles: ["ROLE_ADMIN"], id: 1, redirect: "/start" });
-    setCurrentGameId(99);
-
-    renderHook(() => useLoginPage());
-
-    await waitFor(() => {
-      expect(navigateMock).toHaveBeenCalledWith("/start/99");
-    });
-  });
-
-  it("sends an admin to the protected source route", async () => {
-    givenAuthCheck({ success: true, roles: ["ROLE_ADMIN"], id: 1, redirect: "/start/42" });
+  // The one redirect case here: the hook reads the source route from the location state.
+  // Every other destination lives in the table of src/shared/query/postAuth.test.ts.
+  it("sends a remembered admin to the source route from the location state", async () => {
+    givenAuthCheck(admin);
     useLocationMock.mockReturnValue({
       pathname: "/",
       search: "",
@@ -153,34 +134,17 @@ describe("useLoginPage", () => {
       state: { from: "/statistics" },
     });
 
-    renderHook(() => useLoginPage());
+    renderLoginPage();
 
     await waitFor(() => {
       expect(navigateMock).toHaveBeenCalledWith("/statistics");
     });
   });
 
-  it("falls back to the internal start route when the user has an external redirect", async () => {
-    givenAuthCheck({
-      success: true,
-      roles: ["ROLE_ADMIN"],
-      id: 1,
-      redirect: "https://evil.example/phishing",
-    });
-
-    renderHook(() => useLoginPage());
-
-    await waitFor(() => {
-      expect(navigateMock).toHaveBeenCalledWith(ROUTES.start());
-    });
-    expect(assignMock).not.toHaveBeenCalled();
-  });
-
   it("shows the invitation error instead of navigating", async () => {
-    const rejectedInvitation = { ...loggedInPlayer, invitationError: "GAME_ROOM_FULL" };
-    givenAuthCheck(rejectedInvitation);
+    givenAuthCheck({ ...loggedInPlayer, invitationError: "GAME_ROOM_FULL" });
 
-    const { result } = renderHook(() => useLoginPage());
+    const result = renderLoginPage();
 
     expect(result.current.screen).toEqual({
       type: "invitation-error",
@@ -191,18 +155,15 @@ describe("useLoginPage", () => {
     });
   });
 
-  it("drops the handled invitation error and sends the player to the profile", () => {
-    const rejectedInvitation = { ...loggedInPlayer, invitationError: "GAME_ROOM_FULL" };
-    givenAuthCheck(rejectedInvitation);
-    queryClient.setQueryData(["auth", "me"], rejectedInvitation);
-
-    const { result } = renderHook(() => useLoginPage());
+  it("drops the handled invitation error on Go to player profile", () => {
+    givenAuthCheck({ ...loggedInPlayer, invitationError: "GAME_ROOM_FULL" });
+    const result = renderLoginPage();
 
     act(() => {
       result.current.goToPlayerProfile();
     });
 
-    expect(queryClient.getQueryData(["auth", "me"])).toEqual({
+    expect(queryClient.getQueryData(AUTH_KEY)).toEqual({
       ...loggedInPlayer,
       redirect: ROUTES.playerProfile,
     });
@@ -210,7 +171,7 @@ describe("useLoginPage", () => {
 
   describe("form login", () => {
     beforeEach(() => {
-      queryClient.setQueryData(AUTH_KEY, SEEDED_USER);
+      givenAuthCheck(null);
     });
 
     it("stores the logged-in user and the joined game", async () => {
@@ -227,19 +188,11 @@ describe("useLoginPage", () => {
       expect(state.error).toBeNull();
     });
 
-    it("keeps a stored Current game id when the logged-in user has no game", async () => {
-      setCurrentGameId(7);
-      loginWithCredentialsMock.mockResolvedValueOnce(loggedInPlayer);
-
-      const state = await submitLogin();
-
-      expect(queryClient.getQueryData(AUTH_KEY)).toEqual(loggedInPlayer);
-      expect($currentGameId.get()).toBe(7);
-      expect(state.error).toBeNull();
-    });
-
     it("stores the user with the invitation error", async () => {
-      const rejectedInvitation = { ...loggedInPlayer, invitationError: "GAME_ALREADY_STARTED" };
+      const rejectedInvitation: AuthenticatedUser = {
+        ...loggedInPlayer,
+        invitationError: "GAME_ALREADY_STARTED",
+      };
       loginWithCredentialsMock.mockResolvedValueOnce(rejectedInvitation);
 
       const state = await submitLogin();
@@ -273,7 +226,7 @@ describe("useLoginPage", () => {
 
       const state = await submitLogin();
 
-      expect(queryClient.getQueryData(AUTH_KEY)).toEqual(SEEDED_USER);
+      expect(queryClient.getQueryData(AUTH_KEY)).toBeNull();
       expect(state.error).toBe("Network error. Please check your connection and try again.");
       expect(state.values).toEqual({ email: "player@test.com", password: "password" });
     });
@@ -289,7 +242,7 @@ describe("useLoginPage", () => {
 
       const state = await submitLogin();
 
-      expect(queryClient.getQueryData(AUTH_KEY)).toEqual(SEEDED_USER);
+      expect(queryClient.getQueryData(AUTH_KEY)).toBeNull();
       expect(state.error).toBe("Incorrect email or password.");
     });
   });
