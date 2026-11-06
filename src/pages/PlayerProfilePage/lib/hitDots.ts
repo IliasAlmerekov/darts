@@ -14,12 +14,10 @@ import {
 } from "./boardFieldSpot";
 import type { BoardField, NumberField } from "./hitFrequency";
 
-/** A hit dot's radius in board millimetres. */
-export const HIT_DOT_RADIUS = 2;
-/** The width of a hit dot's outline in board millimetres. */
-export const HIT_DOT_OUTLINE = 0.6;
-// SVG centres the outline on the circle, so half of it paints past the radius.
-const DOT_EDGE = HIT_DOT_RADIUS + HIT_DOT_OUTLINE / 2;
+/** The part of a hit dot kept inside its board field, in board millimetres. */
+const HIT_DOT_RADIUS = 2;
+// Dot centres keep 0.3 mm more than the radius from every edge, so a dot's core stays in its field.
+const DOT_EDGE = HIT_DOT_RADIUS + 0.3;
 /** The most dots a board draws before each board field's share shrinks. */
 const DOT_BUDGET = 600;
 /** The spread of a number field's dots around its spot, in millimetres per axis. */
