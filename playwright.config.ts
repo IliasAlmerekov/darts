@@ -1,4 +1,4 @@
-import { existsSync } from "node:fs";
+import { existsSync, statSync } from "node:fs";
 import { defineConfig, devices } from "@playwright/test";
 
 const EMPTY_STORAGE_STATE = {
@@ -14,7 +14,12 @@ if (existsSync(".env.local")) {
   process.loadEnvFile(".env.local");
 }
 
-const baseURL = process.env.PLAYWRIGHT_BASE_URL ?? "http://localhost:5173";
+// A linked git worktree has a `.git` file; the main checkout has a `.git` directory. The dev
+// container on :5173 serves the main checkout, so a worktree runs its own Vite on :5174 and
+// never reuses a running server: a busy port fails the run instead of testing another branch.
+const isLinkedWorktree = existsSync(".git") && statSync(".git").isFile();
+const baseURL =
+  process.env.PLAYWRIGHT_BASE_URL ?? `http://localhost:${isLinkedWorktree ? 5174 : 5173}`;
 const baseUrlParts = new URL(baseURL);
 const devServerHost = baseUrlParts.hostname;
 const devServerPort = baseUrlParts.port || (baseUrlParts.protocol === "https:" ? "443" : "80");
@@ -67,7 +72,7 @@ export default defineConfig({
   webServer: {
     command: `npm run dev -- --host ${devServerHost} --port ${devServerPort} --strictPort`,
     url: baseURL,
-    reuseExistingServer: !process.env.CI,
+    reuseExistingServer: !process.env.CI && !isLinkedWorktree,
     timeout: 120000,
     stdout: "ignore",
     stderr: "pipe",

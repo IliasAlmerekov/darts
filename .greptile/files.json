@@ -1,0 +1,77 @@
+{
+  "files": [
+    {
+      "path": "AGENTS.md",
+      "description": "Repo rules: scope, conventions table, backend contract, guardrails."
+    },
+    {
+      "path": "docs/agents/review.md",
+      "description": "Review guidelines: severities P0-P2 and the checks for every diff."
+    },
+    {
+      "path": "SECURITY.md",
+      "description": "Threat model for security review."
+    },
+    {
+      "path": "GLOSSARY.md",
+      "description": "Domain terms."
+    },
+    {
+      "path": "docs/convention/architecture.md",
+      "description": "Convention: File layout, imports, routes."
+    },
+    {
+      "path": "docs/convention/typescript.md",
+      "description": "Convention: TypeScript rules for all TS code."
+    },
+    {
+      "path": "docs/convention/state.md",
+      "description": "Convention: Nanostores store rules."
+    },
+    {
+      "path": "docs/convention/api.md",
+      "description": "Convention: API calls, Valibot schemas, mappers, query factories."
+    },
+    {
+      "path": "docs/convention/react.md",
+      "description": "Convention: Components, hooks, effects, routing helpers."
+    },
+    {
+      "path": "docs/convention/styling.md",
+      "description": "Convention: CSS Modules, class names, style props."
+    },
+    {
+      "path": "docs/convention/errors.md",
+      "description": "Convention: Throwing, catching, logging, showing errors."
+    },
+    {
+      "path": "docs/convention/testing.md",
+      "description": "Convention: Unit, component and Playwright test rules."
+    },
+    {
+      "path": "docs/backend-api-contract.json",
+      "description": "OpenAPI dump of the backend; every Valibot schema must match it.",
+      "scope": ["src/shared/api/**"]
+    },
+    {
+      "path": "docs/adr/0001-tanstack-query-for-server-reads.md",
+      "description": "Architecture decision record: a rule the code must keep."
+    },
+    {
+      "path": "docs/adr/0002-valibot-response-schemas.md",
+      "description": "Architecture decision record: a rule the code must keep."
+    },
+    {
+      "path": "docs/adr/0003-optimistic-throw-queue.md",
+      "description": "Architecture decision record: a rule the code must keep."
+    },
+    {
+      "path": "docs/adr/0004-tablet-game-from-server.md",
+      "description": "Architecture decision record: a rule the code must keep."
+    },
+    {
+      "path": "docs/adr/0005-pages-based-structure.md",
+      "description": "Architecture decision record: a rule the code must keep."
+    }
+  ]
+}
