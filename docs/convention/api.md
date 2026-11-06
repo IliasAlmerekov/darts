@@ -46,7 +46,8 @@ src/shared/api/
 src/shared/query/
   queryClient.ts       # the one QueryClient and its defaults
   <domain>.queries.ts  # queryOptions factories: auth, game, player, statistics
-  acceptLoggedInUser.ts # writes the logged-in user into the auth key
+  postAuth.ts          # after login or registration: auth key, current game, destination
+  postAuthCurrentGame.ts # current game writes after login (postAuth.ts) and session check (authQueries.me)
   tabletGameLoader.ts  # loader builder for the admin routes that follow the tablet game
 src/shared/lib/auth/
   clearClientSession.ts # drops the query cache, the room store and the game store
@@ -206,7 +207,7 @@ cache itself:
 - `cancelQueries({ queryKey })`, then `setQueryData(queryKey, value)`, so a read still in
   flight cannot overwrite the new value (`SettingsPage/useGameSettings.ts`, the game page's
   settings save in `GamePage/useGameActions.ts`, `shared/query/roster.ts`,
-  `acceptLoggedInUser.ts` for login and registration).
+  `postAuth.ts` for login and registration).
 - `removeQueries({ queryKey })` drops an entry the write made invalid (undo and rematch
   in `GameSummaryPage/lib/summaryActions.ts`).
 - `invalidateQueries({ queryKey })` marks a read the write changed on the server when the

@@ -2,8 +2,8 @@ import React from "react";
 import styles from "./LoginPage.module.css";
 import { useLoginPage } from "./useLoginPage";
 import { LoginForm } from "./LoginForm";
-import LoginCheckScreen from "./LoginCheckScreen";
 import { InvitationErrorScreen } from "@/shared/ui/invitation-error-screen";
+import { LoginCheckScreen } from "@/shared/ui/login-check-screen";
 import deepblueLogo from "@/assets/icons/madeByDeepblue.svg";
 
 function LoginPage(): React.JSX.Element {
