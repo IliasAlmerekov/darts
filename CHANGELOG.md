@@ -22,7 +22,7 @@ and this project does **not** yet follow [Semantic Versioning](https://semver.or
 - Player profile: the hit distribution heatmap draws each hit as one blue dot of 6 mm radius with a white outline in its board field, in place of a large glow per board field plus a small dark dot per hit; the hit frequency step sets each dot's strength (#479)
 - Summary: move actions into one workflow and share game start cleanup between rematches and the start page (#451)
 - Player profile: the hit distribution heatmap reads the 62 board fields of `hitDistribution` from `GET /api/player/profile` (darts-backend#286) and draws one heat spot per board field, so a treble or double shows on its ring; every board field and the centre share one scale against the most hit board field (#426)
-- Player profile: the hit distribution heatmap draws every hit as a small dot scattered inside its board field, on top of the heat glow, in place of the heat spot's solid dot; a board with more than 600 hits shows each board field's share of 600 dots (#431)
+- Player profile: the hit distribution heatmap draws every hit as a small dot scattered inside its board field, on top of the heat glow, in place of the heat spot's solid dot (#431)
 - Agent rules: `## Review feedback` in `AGENTS.md` has agents comment `@coderabbitai review` once a PR is open and after each push of fixes for CodeRabbit findings, because CodeRabbit no longer reviews this repo on its own with fewer than 10 stars. It says when a review is finished and when the loop ends (#474)
 - Roster: keep seat order in the query cache and reconcile room stream updates (#452)
 - Game: centralize game state and settings cache writes (#453)
@@ -34,7 +34,6 @@ and this project does **not** yet follow [Semantic Versioning](https://semver.or
 
 ### Removed
 
-- Player profile: the hit distribution heatmap has no 600-dot budget any more, since only a board of up to 150 hits draws dots (#481)
 - Assets: 14 icons and the CircularXX Black and Italic font files that nothing referenced (#358)
 
 ### Fixed
