@@ -134,10 +134,7 @@ export function HitDistribution({
     () => (showsDots ? toHitDots(hitDistribution) : []),
     [showsDots, hitDistribution],
   );
-  const { fields: frequencies, bull } = useMemo(
-    () => toBoardHitFrequencies(hitDistribution),
-    [hitDistribution],
-  );
+  const frequencies = useMemo(() => toBoardHitFrequencies(hitDistribution), [hitDistribution]);
   const { hitsByField, topFields } = useMemo(
     () => ({
       hitsByField: new Map(hitDistribution.map(({ field, hits }) => [field, hits])),
@@ -147,8 +144,7 @@ export function HitDistribution({
   );
   const leaderHits = topFields[0]?.hits ?? 0;
 
-  const frequencyOf = (field: BoardField): HitFrequency =>
-    field === "BULL" || field === "BULLSEYE" ? bull : (frequencies[field] ?? 4);
+  const frequencyOf = (field: BoardField): HitFrequency => frequencies[field] ?? 4;
 
   const renderField = ({ field, path, className }: BoardFieldShape): React.JSX.Element => {
     if (showsDots) {

@@ -532,6 +532,27 @@ describe("PlayerProfilePage", () => {
     expect(colours.size).toBeGreaterThanOrEqual(4);
   });
 
+  it("fills Bull and Bullseye each by its own hit frequency step past 150 hits", async () => {
+    vi.mocked(getPlayerProfile).mockResolvedValue(
+      buildProfile({
+        stats: buildPlayerProfileStats({
+          hitDistribution: buildHitDistribution({ BULL: 200, BULLSEYE: 1 }),
+        }),
+      }),
+    );
+
+    renderPage();
+    await screen.findByRole("group", { name: "Dartboard heatmap of all games" });
+
+    const classOf = (field: string): string | null =>
+      heatFields()
+        .find((element) => element.getAttribute("data-field") === field)
+        ?.getAttribute("class") ?? null;
+    // Bull leads the board and is Very high; 1 Bullseye hit against 200 is Very low.
+    expect(classOf("BULL")).toContain(hitStyles.heatVeryHigh);
+    expect(classOf("BULLSEYE")).toContain(hitStyles.heatVeryLow);
+  });
+
   it("draws dots again for a board with 150 hits", async () => {
     vi.mocked(getPlayerProfile).mockResolvedValue(
       buildProfile({
