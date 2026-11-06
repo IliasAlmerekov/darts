@@ -15,7 +15,6 @@ const navigateMock = vi.fn();
 const useLocationMock = vi.fn();
 const loginWithCredentialsMock = vi.fn();
 const getAuthenticatedUserMock = vi.fn();
-const assignMock = vi.fn();
 
 vi.mock("react-router-dom", async (importOriginal) => {
   const actual = await importOriginal<typeof import("react-router-dom")>();
@@ -85,13 +84,6 @@ describe("useLoginPage", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     queryClient.clear();
-    Object.defineProperty(window, "location", {
-      configurable: true,
-      value: {
-        ...window.location,
-        assign: assignMock,
-      },
-    });
     setCurrentGameId(null);
     useLocationMock.mockReturnValue({
       pathname: "/",

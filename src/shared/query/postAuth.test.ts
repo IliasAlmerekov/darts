@@ -31,6 +31,7 @@ interface PostAuthCase {
   invitationError?: InvitationError;
   from: string;
   storedGameId: number | null;
+  /** Where the user goes; after an invitation error, once they dismiss it. */
   destination: string;
   currentGameId: number | null;
 }
@@ -47,7 +48,7 @@ const JOINED_PLAYER: PostAuthCase = {
 };
 
 const REJECTED_PLAYER: PostAuthCase = {
-  name: "a player whose invitation failed points to the Player profile and drops a stale stored game",
+  name: "a player whose invitation failed opens the Player profile once it is dismissed and drops a stale stored game",
   role: "ROLE_PLAYER",
   redirect: `${ORIGIN}/playerprofile`,
   invitationError: "GAME_ROOM_FULL",
@@ -90,7 +91,7 @@ const CASES: PostAuthCase[] = [
   },
   REJECTED_PLAYER,
   {
-    name: "a player whose invitation failed ignores the protected source route",
+    name: "a player whose invitation failed opens the Player profile once it is dismissed, not the source route",
     role: "ROLE_PLAYER",
     redirect: `${ORIGIN}/playerprofile`,
     invitationError: "GAME_NOT_FOUND",
@@ -173,13 +174,13 @@ const CASES: PostAuthCase[] = [
     currentGameId: 7,
   },
   {
-    name: "an admin whose invitation failed goes to the source route and keeps the stored game",
+    name: "an admin whose invitation failed opens the Player profile once it is dismissed and keeps the stored game",
     role: "ROLE_ADMIN",
     redirect: `${ORIGIN}/start`,
     invitationError: "GAME_ALREADY_STARTED",
     from: "/statistics",
     storedGameId: 99,
-    destination: "/statistics",
+    destination: ROUTES.playerProfile,
     currentGameId: 99,
   },
 ];
@@ -235,9 +236,16 @@ describe("post-auth", () => {
       const user = await authenticate();
       await acceptAuthenticatedUser(user);
 
-      expect(resolveAuthDestination(user, testCase.from)).toBe(testCase.destination);
-      expect($currentGameId.get()).toBe(testCase.currentGameId);
       expect(queryClient.getQueryData(AUTH_KEY)).toEqual(answer);
+      expect($currentGameId.get()).toBe(testCase.currentGameId);
+      // useAuthRedirect waits while the invitation error shows; Go to player profile dismisses it.
+      if (testCase.invitationError !== undefined) {
+        dismissInvitationError();
+      }
+      const cachedUser = queryClient.getQueryData(AUTH_KEY);
+      expect(cachedUser?.invitationError).toBeUndefined();
+      expect(resolveAuthDestination(cachedUser!, testCase.from)).toBe(testCase.destination);
+      expect($currentGameId.get()).toBe(testCase.currentGameId);
     });
   });
 
