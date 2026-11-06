@@ -16,6 +16,7 @@ and this project does **not** yet follow [Semantic Versioning](https://semver.or
 
 ### Changed
 
+- Agent rules: each issue is worked in a git worktree that `scripts/worktree.sh new` creates and `prune` removes after the merge; a mocked e2e run from a worktree starts its own Vite on :5174. Review rules and the CodeRabbit loop move to `docs/agents/review.md`, and the PR body rules into the comments of the PR template (#483)
 - Summary: move actions into one workflow and share game start cleanup between rematches and the start page (#451)
 - Player profile: the hit distribution heatmap reads the 62 board fields of `hitDistribution` from `GET /api/player/profile` (darts-backend#286) and draws one heat spot per board field, so a treble or double shows on its ring; every board field and the centre share one scale against the most hit board field (#426)
 - Player profile: the hit distribution heatmap draws every hit as a small dot scattered inside its board field, on top of the heat glow, in place of the heat spot's solid dot; a board with more than 600 hits shows each board field's share of 600 dots (#431)
