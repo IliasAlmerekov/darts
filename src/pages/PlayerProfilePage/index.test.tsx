@@ -521,6 +521,15 @@ describe("PlayerProfilePage", () => {
         ?.getAttribute("class") ?? null;
     expect(classOf("T20")).not.toBe(classOf("S5"));
     expect(classOf("S5")).not.toBe(classOf("D16"));
+    // The board keeps all 82 of its own fields under the blue layers: 4 per segment and the
+    // two centre fields, so the board still reads as a dartboard.
+    const boardPaths = screen
+      .getByRole("group", { name: "Dartboard heatmap of all games" })
+      .querySelectorAll("path:not([data-field])");
+    expect(boardPaths).toHaveLength(82);
+    // ...each in its own colour: dark and light singles, red and green rings.
+    const colours = new Set(Array.from(boardPaths, (path) => path.getAttribute("class")));
+    expect(colours.size).toBeGreaterThanOrEqual(4);
   });
 
   it("draws dots again for a board with 150 hits", async () => {
