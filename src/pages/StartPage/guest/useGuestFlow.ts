@@ -13,7 +13,7 @@ interface UseGuestFlowParams {
   addGuest: (username: string) => Promise<AddGuestResult>;
 }
 
-interface UseGuestFlowResult {
+export interface UseGuestFlowResult {
   isLobbyFull: boolean;
   isGuestOverlayOpen: boolean;
   guestUsername: string;

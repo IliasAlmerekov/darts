@@ -181,8 +181,8 @@ describe("useStartPage action guards", () => {
     let firstCall = Promise.resolve();
     let secondCall = Promise.resolve();
     await act(async () => {
-      firstCall = result.current.handleStartGame();
-      secondCall = result.current.handleStartGame();
+      firstCall = result.current.create.handleStartGame();
+      secondCall = result.current.create.handleStartGame();
     });
 
     expect(getGameSettings).toHaveBeenCalledTimes(1);
@@ -220,7 +220,7 @@ describe("useStartPage action guards", () => {
     });
 
     await act(async () => {
-      await result.current.handleStartGame();
+      await result.current.create.handleStartGame();
     });
 
     expect(startGame).toHaveBeenCalledWith(10, {
@@ -244,13 +244,13 @@ describe("useStartPage action guards", () => {
 
     setSoundEnabled(false);
     await act(async () => {
-      await result.current.handleStartGame();
+      await result.current.create.handleStartGame();
     });
     expect(audioSources).toEqual([]);
 
     setSoundEnabled(true);
     await act(async () => {
-      await result.current.handleStartGame();
+      await result.current.create.handleStartGame();
     });
     expect(audioSources).toContain("/sounds/start-round-sound.mp3");
   });
@@ -267,8 +267,8 @@ describe("useStartPage action guards", () => {
     let firstCall = Promise.resolve();
     let secondCall = Promise.resolve();
     await act(async () => {
-      firstCall = result.current.handleCreateRoom();
-      secondCall = result.current.handleCreateRoom();
+      firstCall = result.current.create.handleCreateRoom();
+      secondCall = result.current.create.handleCreateRoom();
     });
 
     expect(createRoom).toHaveBeenCalledTimes(1);
@@ -307,7 +307,7 @@ describe("useStartPage action guards", () => {
     });
 
     await act(async () => {
-      await result.current.handleCreateRoom();
+      await result.current.create.handleCreateRoom();
     });
 
     expect(client.getQueryState(gameQueries.tablet().queryKey)?.isInvalidated).toBe(true);
@@ -332,18 +332,18 @@ describe("useStartPage action guards", () => {
     });
 
     await act(async () => {
-      result.current.openGuestOverlay();
-      result.current.setGuestUsername("Alex");
+      result.current.guest.openGuestOverlay();
+      result.current.guest.setGuestUsername("Alex");
     });
 
     await act(async () => {
-      await result.current.handleAddGuest();
+      await result.current.guest.handleAddGuest();
     });
 
     expect(addGuestPlayer).toHaveBeenCalledWith(10, { username: "Alex" });
-    expect(result.current.guestError).toBe("Username already taken in this game.");
-    expect(result.current.guestSuggestions).toEqual(["Alex2", "Alex3"]);
-    expect(result.current.isGuestOverlayOpen).toBe(true);
+    expect(result.current.guest.guestError).toBe("Username already taken in this game.");
+    expect(result.current.guest.guestSuggestions).toEqual(["Alex2", "Alex3"]);
+    expect(result.current.guest.isGuestOverlayOpen).toBe(true);
   });
 
   it("should fall back to a generic guest error when the 409 payload shape is invalid", async () => {
@@ -364,16 +364,16 @@ describe("useStartPage action guards", () => {
     });
 
     await act(async () => {
-      result.current.openGuestOverlay();
-      result.current.setGuestUsername("Alex");
+      result.current.guest.openGuestOverlay();
+      result.current.guest.setGuestUsername("Alex");
     });
 
     await act(async () => {
-      await result.current.handleAddGuest();
+      await result.current.guest.handleAddGuest();
     });
 
-    expect(result.current.guestError).toBe("Could not add guest. Please try again.");
-    expect(result.current.guestSuggestions).toEqual([]);
+    expect(result.current.guest.guestError).toBe("Could not add guest. Please try again.");
+    expect(result.current.guest.guestSuggestions).toEqual([]);
   });
 
   it("should prevent duplicate addGuest calls while first request is pending", async () => {
@@ -387,15 +387,15 @@ describe("useStartPage action guards", () => {
     });
 
     await act(async () => {
-      result.current.openGuestOverlay();
-      result.current.setGuestUsername("Alex");
+      result.current.guest.openGuestOverlay();
+      result.current.guest.setGuestUsername("Alex");
     });
 
     let firstCall = Promise.resolve();
     let secondCall = Promise.resolve();
     await act(async () => {
-      firstCall = result.current.handleAddGuest();
-      secondCall = result.current.handleAddGuest();
+      firstCall = result.current.guest.handleAddGuest();
+      secondCall = result.current.guest.handleAddGuest();
     });
 
     expect(addGuestPlayer).toHaveBeenCalledTimes(1);
@@ -417,18 +417,18 @@ describe("useStartPage action guards", () => {
     });
 
     await act(async () => {
-      result.current.openGuestOverlay();
-      result.current.setGuestUsername("Alex");
+      result.current.guest.openGuestOverlay();
+      result.current.guest.setGuestUsername("Alex");
     });
 
     await act(async () => {
-      await result.current.handleAddGuest();
+      await result.current.guest.handleAddGuest();
     });
 
     expect(addGuestPlayer).toHaveBeenCalledWith(10, { username: "Alex" });
-    expect(result.current.isGuestOverlayOpen).toBe(false);
-    expect(result.current.guestUsername).toBe("");
-    expect(result.current.guestError).toBeNull();
+    expect(result.current.guest.isGuestOverlayOpen).toBe(false);
+    expect(result.current.guest.guestUsername).toBe("");
+    expect(result.current.guest.guestError).toBeNull();
   });
 
   it("should block guest creation when lobby is full", async () => {
@@ -452,17 +452,19 @@ describe("useStartPage action guards", () => {
     });
 
     await waitFor(() => {
-      expect(result.current.playerCount).toBe(10);
+      expect(result.current.roster.count).toBe(10);
     });
 
     await act(async () => {
-      result.current.openGuestOverlay();
-      result.current.setGuestUsername("Alex");
-      await result.current.handleAddGuest();
+      result.current.guest.openGuestOverlay();
+      result.current.guest.setGuestUsername("Alex");
+      await result.current.guest.handleAddGuest();
     });
 
     expect(addGuestPlayer).not.toHaveBeenCalled();
-    expect(result.current.guestError).toBe("The lobby is full. Remove a player to add another.");
+    expect(result.current.guest.guestError).toBe(
+      "The lobby is full. Remove a player to add another.",
+    );
   });
 
   it("should validate guest username requires at least 3 letters before api call", async () => {
@@ -473,16 +475,27 @@ describe("useStartPage action guards", () => {
     });
 
     await act(async () => {
-      result.current.openGuestOverlay();
-      result.current.setGuestUsername("A1-");
+      result.current.guest.openGuestOverlay();
+      result.current.guest.setGuestUsername("A1-");
     });
 
     await act(async () => {
-      await result.current.handleAddGuest();
+      await result.current.guest.handleAddGuest();
     });
 
     expect(addGuestPlayer).not.toHaveBeenCalled();
-    expect(result.current.guestError).toBe("Username must contain at least 3 letters.");
+    expect(result.current.guest.guestError).toBe("Username must contain at least 3 letters.");
+  });
+
+  it("should not remove a seat while the route has no game", async () => {
+    const { result } = renderHook(() => useStartPage(), { wrapper: makeWrapper("/start") });
+
+    await act(async () => {
+      await result.current.roster.remove(2);
+    });
+
+    expect(leaveRoom).not.toHaveBeenCalled();
+    expect(result.current.pageError).toBeNull();
   });
 
   describe("seat conflicts", () => {
@@ -515,15 +528,15 @@ describe("useStartPage action guards", () => {
       const { result } = renderHook(() => useStartPage(), { wrapper: makeWrapper("/start/10") });
 
       await act(async () => {
-        result.current.openGuestOverlay();
-        result.current.setGuestUsername("Alex");
+        result.current.guest.openGuestOverlay();
+        result.current.guest.setGuestUsername("Alex");
       });
       await act(async () => {
-        await result.current.handleAddGuest();
+        await result.current.guest.handleAddGuest();
       });
 
-      expect(result.current.guestError).toBe(SEATS_MESSAGE);
-      expect(result.current.guestSuggestions).toEqual([]);
+      expect(result.current.guest.guestError).toBe(SEATS_MESSAGE);
+      expect(result.current.guest.guestSuggestions).toEqual([]);
       expect(revalidateMock).toHaveBeenCalledTimes(1);
       expect(warnSpy).toHaveBeenCalledWith(
         "room.guest.seats-not-editable",
@@ -553,19 +566,19 @@ describe("useStartPage action guards", () => {
           React.createElement(Wrapper, null, React.createElement(NavigateProbe), children),
       });
       await waitFor(() => {
-        expect(result.current.players.some((p) => p.id === 2)).toBe(true);
+        expect(result.current.roster.seats.some((p) => p.id === 2)).toBe(true);
       });
       await act(async () => {
-        await result.current.handleRemovePlayer(2, 10);
-        result.current.openGuestOverlay();
-        result.current.setGuestUsername("Alex");
+        await result.current.roster.remove(2);
+        result.current.guest.openGuestOverlay();
+        result.current.guest.setGuestUsername("Alex");
       });
       await act(async () => {
-        await result.current.handleAddGuest();
+        await result.current.guest.handleAddGuest();
       });
       expect(result.current.pageError).toBe(SEATS_MESSAGE);
-      expect(result.current.isGuestOverlayOpen).toBe(true);
-      expect(result.current.guestError).toBe(SEATS_MESSAGE);
+      expect(result.current.guest.isGuestOverlayOpen).toBe(true);
+      expect(result.current.guest.guestError).toBe(SEATS_MESSAGE);
 
       await act(async () => {
         routerNavigate?.("/start");
@@ -573,8 +586,8 @@ describe("useStartPage action guards", () => {
 
       expect(result.current.gameId).toBeNull();
       expect(result.current.pageError).toBeNull();
-      expect(result.current.isGuestOverlayOpen).toBe(false);
-      expect(result.current.guestError).toBeNull();
+      expect(result.current.guest.isGuestOverlayOpen).toBe(false);
+      expect(result.current.guest.guestError).toBeNull();
     });
 
     describe("answers that arrive after the route moved to another game", () => {
@@ -607,7 +620,7 @@ describe("useStartPage action guards", () => {
             React.createElement(Wrapper, null, React.createElement(NavigateProbe), children),
         });
         await waitFor(() => {
-          expect(rendered.result.current.playerOrder).toEqual([1, 2]);
+          expect(rendered.result.current.roster.order).toEqual([1, 2]);
         });
         const moveTo = async (path: string): Promise<void> => {
           await act(async () => {
@@ -623,25 +636,25 @@ describe("useStartPage action guards", () => {
         const { result, moveTo } = await renderOnGame10();
 
         await act(async () => {
-          result.current.openGuestOverlay();
-          result.current.setGuestUsername("Alex");
+          result.current.guest.openGuestOverlay();
+          result.current.guest.setGuestUsername("Alex");
         });
         let adding = Promise.resolve();
         await act(async () => {
-          adding = result.current.handleAddGuest();
+          adding = result.current.guest.handleAddGuest();
         });
         await moveTo("/start/11");
         await act(async () => {
-          result.current.openGuestOverlay();
+          result.current.guest.openGuestOverlay();
         });
         await act(async () => {
           pending.reject(seatsNotEditable());
           await adding;
         });
 
-        expect(result.current.guestError).toBeNull();
-        expect(result.current.isGuestOverlayOpen).toBe(true);
-        expect(result.current.isAddingGuest).toBe(false);
+        expect(result.current.guest.guestError).toBeNull();
+        expect(result.current.guest.isGuestOverlayOpen).toBe(true);
+        expect(result.current.guest.isAddingGuest).toBe(false);
         expect(revalidateMock).not.toHaveBeenCalled();
       });
 
@@ -651,23 +664,23 @@ describe("useStartPage action guards", () => {
         const { result, moveTo } = await renderOnGame10();
 
         await act(async () => {
-          result.current.openGuestOverlay();
-          result.current.setGuestUsername("Alex");
+          result.current.guest.openGuestOverlay();
+          result.current.guest.setGuestUsername("Alex");
         });
         let adding = Promise.resolve();
         await act(async () => {
-          adding = result.current.handleAddGuest();
+          adding = result.current.guest.handleAddGuest();
         });
         await moveTo("/start/11");
         await act(async () => {
-          result.current.openGuestOverlay();
+          result.current.guest.openGuestOverlay();
         });
         await act(async () => {
           pending.resolve({ id: 9, name: "Alex", position: null });
           await adding;
         });
 
-        expect(result.current.isGuestOverlayOpen).toBe(true);
+        expect(result.current.guest.isGuestOverlayOpen).toBe(true);
       });
 
       it("should log a stale add guest failure that is not a seat conflict or a full lobby", async () => {
@@ -676,12 +689,12 @@ describe("useStartPage action guards", () => {
         const { result, moveTo } = await renderOnGame10();
 
         await act(async () => {
-          result.current.openGuestOverlay();
-          result.current.setGuestUsername("Alex");
+          result.current.guest.openGuestOverlay();
+          result.current.guest.setGuestUsername("Alex");
         });
         let adding = Promise.resolve();
         await act(async () => {
-          adding = result.current.handleAddGuest();
+          adding = result.current.guest.handleAddGuest();
         });
         await moveTo("/start/11");
         const failure = new ApiError("Conflict", {
@@ -693,7 +706,7 @@ describe("useStartPage action guards", () => {
           await adding;
         });
 
-        expect(result.current.guestError).toBeNull();
+        expect(result.current.guest.guestError).toBeNull();
         expect(warnSpy).toHaveBeenCalledWith("room.guest.stale-answer", {
           context: { gameId: 10 },
           error: failure,
@@ -712,14 +725,16 @@ describe("useStartPage action guards", () => {
       const { result } = renderHook(() => useStartPage(), { wrapper: makeWrapper("/start/10") });
 
       await act(async () => {
-        result.current.openGuestOverlay();
-        result.current.setGuestUsername("Alex");
+        result.current.guest.openGuestOverlay();
+        result.current.guest.setGuestUsername("Alex");
       });
       await act(async () => {
-        await result.current.handleAddGuest();
+        await result.current.guest.handleAddGuest();
       });
 
-      expect(result.current.guestError).toBe("The lobby is full. Remove a player to add another.");
+      expect(result.current.guest.guestError).toBe(
+        "The lobby is full. Remove a player to add another.",
+      );
       expect(revalidateMock).not.toHaveBeenCalled();
       expect(warnSpy).toHaveBeenCalledWith(
         "room.guest.lobby-full",
@@ -743,14 +758,14 @@ describe("useStartPage action guards", () => {
       const { result } = renderHook(() => useStartPage(), { wrapper: makeWrapper("/start/10") });
 
       await act(async () => {
-        result.current.openGuestOverlay();
-        result.current.setGuestUsername("Alex");
+        result.current.guest.openGuestOverlay();
+        result.current.guest.setGuestUsername("Alex");
       });
       await act(async () => {
-        await result.current.handleAddGuest();
+        await result.current.guest.handleAddGuest();
       });
 
-      expect(result.current.guestSuggestions).toEqual(["Alex2"]);
+      expect(result.current.guest.guestSuggestions).toEqual(["Alex2"]);
       expect(revalidateMock).not.toHaveBeenCalled();
     });
   });

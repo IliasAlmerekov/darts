@@ -47,49 +47,22 @@ function StartPage(): React.JSX.Element {
     useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
     useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
   );
-  const {
-    invitation,
-    gameId,
-    players,
-    playerCount,
-    isLobbyFull,
-    playerOrder,
-    creating,
-    starting,
-    pageError,
-    isGuestOverlayOpen,
-    guestUsername,
-    guestError,
-    guestSuggestions,
-    isAddingGuest,
-    reorder,
-    handleRemovePlayer,
-    handleStartGame,
-    handleCreateRoom,
-    clearPageError,
-    openGuestOverlay,
-    closeGuestOverlay,
-    setGuestUsername,
-    handleGuestSuggestion,
-    handleAddGuest,
-  } = useStartPage();
+  const { invitation, gameId, pageError, clearPageError, roster, guest, create } = useStartPage();
+  const { remove: removePlayer } = roster;
 
   const handleDragEnd = ({ active, over }: DragEndEvent): void => {
     if (!over) return;
     const playerId = Number(active.id);
     const overPlayerId = Number(over.id);
-    if (Number.isFinite(playerId) && Number.isFinite(overPlayerId)) reorder(playerId, overPlayerId);
+    if (Number.isFinite(playerId) && Number.isFinite(overPlayerId))
+      roster.reorder(playerId, overPlayerId);
   };
 
   const handleRemovePlayerFromList = React.useCallback(
     (playerId: number): void => {
-      if (gameId === null) {
-        return;
-      }
-
-      void handleRemovePlayer(playerId, gameId);
+      void removePlayer(playerId);
     },
-    [gameId, handleRemovePlayer],
+    [removePlayer],
   );
 
   const createGameButton = (
@@ -97,8 +70,8 @@ function StartPage(): React.JSX.Element {
       label={invitation ? "Created" : "Create Game"}
       iconSrc={Plus}
       type="primary"
-      handleClick={handleCreateRoom}
-      disabled={!!invitation || creating}
+      handleClick={create.handleCreateRoom}
+      disabled={!!invitation || create.creating}
       {...(styles.createNewPlayerButton !== undefined
         ? { className: styles.createNewPlayerButton }
         : {})}
@@ -112,8 +85,8 @@ function StartPage(): React.JSX.Element {
         label="Create Game"
         iconSrc={Plus}
         type="primary"
-        handleClick={handleCreateRoom}
-        disabled={creating}
+        handleClick={create.handleCreateRoom}
+        disabled={create.creating}
         {...(styles.createNewPlayerButton !== undefined
           ? { className: styles.createNewPlayerButton }
           : {})}
@@ -127,9 +100,9 @@ function StartPage(): React.JSX.Element {
       <div className={styles.mobileActionStart}>
         <Button
           label="Start"
-          disabled={starting || playerCount < 2 || gameId === null}
+          disabled={create.starting || roster.count < 2 || gameId === null}
           type="secondary"
-          handleClick={handleStartGame}
+          handleClick={create.handleStartGame}
           {...(styles.startButton !== undefined ? { className: styles.startButton } : {})}
         />
       </div>
@@ -138,10 +111,12 @@ function StartPage(): React.JSX.Element {
           <button
             type="button"
             className={styles.guestButtonMobile}
-            onClick={openGuestOverlay}
-            disabled={gameId === null || isLobbyFull}
+            onClick={guest.openGuestOverlay}
+            disabled={gameId === null || guest.isLobbyFull}
             aria-label="Play as a guest"
-            title={isLobbyFull ? "The lobby is full. Remove a player to add another." : undefined}
+            title={
+              guest.isLobbyFull ? "The lobby is full. Remove a player to add another." : undefined
+            }
           >
             <img src={UserAddIcon} alt="Play as a guest" className={styles.guestButtonIcon} />
           </button>
@@ -170,7 +145,7 @@ function StartPage(): React.JSX.Element {
                   <QRCode
                     invitationLink={toAbsoluteInvitationLink(invitation.invitationLink)}
                     gameId={invitation.gameId}
-                    isLobbyFull={isLobbyFull}
+                    isLobbyFull={guest.isLobbyFull}
                   />
                 </div>
               ) : null}
@@ -186,10 +161,10 @@ function StartPage(): React.JSX.Element {
                 onDragEnd={handleDragEnd}
                 modifiers={[restrictToVerticalAxis]}
               >
-                <SortableContext items={playerOrder} strategy={verticalListSortingStrategy}>
+                <SortableContext items={roster.order} strategy={verticalListSortingStrategy}>
                   <LivePlayersList
-                    players={players}
-                    playerCount={playerCount}
+                    players={roster.seats}
+                    playerCount={roster.count}
                     onRemovePlayer={handleRemovePlayerFromList}
                     dragEnd={false}
                     maxPlayers={10}
@@ -200,7 +175,7 @@ function StartPage(): React.JSX.Element {
 
             <div
               className={clsx(styles.startBtn, {
-                [styles.startBtnScrolled ?? ""]: playerCount > 5,
+                [styles.startBtnScrolled ?? ""]: roster.count > 5,
               })}
             >
               {mobileCreateGameButton}
@@ -210,15 +185,15 @@ function StartPage(): React.JSX.Element {
         </div>
       </div>
       <GuestPlayerOverlay
-        isOpen={isGuestOverlayOpen}
-        username={guestUsername}
-        onUsernameChange={setGuestUsername}
-        onAdd={handleAddGuest}
-        onClose={closeGuestOverlay}
-        isAdding={isAddingGuest}
-        error={guestError}
-        suggestions={guestSuggestions}
-        onSuggestionClick={handleGuestSuggestion}
+        isOpen={guest.isGuestOverlayOpen}
+        username={guest.guestUsername}
+        onUsernameChange={guest.setGuestUsername}
+        onAdd={guest.handleAddGuest}
+        onClose={guest.closeGuestOverlay}
+        isAdding={guest.isAddingGuest}
+        error={guest.guestError}
+        suggestions={guest.guestSuggestions}
+        onSuggestionClick={guest.handleGuestSuggestion}
       />
     </>
   );
