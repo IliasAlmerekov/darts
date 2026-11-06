@@ -90,6 +90,16 @@ const CASES: PostAuthCase[] = [
   },
   REJECTED_PLAYER,
   {
+    name: "a player whose invitation failed ignores the protected source route",
+    role: "ROLE_PLAYER",
+    redirect: `${ORIGIN}/playerprofile`,
+    invitationError: "GAME_NOT_FOUND",
+    from: "/statistics",
+    storedGameId: null,
+    destination: ROUTES.playerProfile,
+    currentGameId: null,
+  },
+  {
     name: "an admin goes to the start page",
     role: "ROLE_ADMIN",
     redirect: `${ORIGIN}/start`,
@@ -120,9 +130,9 @@ const CASES: PostAuthCase[] = [
     name: "an admin with a game-specific start redirect goes to the source route",
     role: "ROLE_ADMIN",
     redirect: "/start/42",
-    from: ROUTES.start(),
+    from: "/statistics",
     storedGameId: null,
-    destination: ROUTES.start(),
+    destination: "/statistics",
     currentGameId: null,
   },
   {
@@ -143,6 +153,16 @@ const CASES: PostAuthCase[] = [
     storedGameId: 7,
     destination: ROUTES.joined,
     currentGameId: 7,
+  },
+  {
+    name: "an admin whose invitation failed goes to the source route and keeps the stored game",
+    role: "ROLE_ADMIN",
+    redirect: `${ORIGIN}/start`,
+    invitationError: "GAME_ALREADY_STARTED",
+    from: "/statistics",
+    storedGameId: 99,
+    destination: "/statistics",
+    currentGameId: 99,
   },
 ];
 
