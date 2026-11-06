@@ -155,6 +155,12 @@ const doubleSchema = v.picklist([
 /** Contract rates and shares: 0 to 100 with one decimal. */
 const percentSchema = v.pipe(v.number(), v.minValue(0), v.maxValue(100));
 
+/** Contract `PlayerProfileFieldHitsDto` list: one entry per board field, `S1` to `BULLSEYE`. */
+const hitDistributionSchema = v.pipe(
+  v.array(v.object({ field: boardFieldSchema, hits: integerSchema })),
+  v.length(62),
+);
+
 /** Contract `PlayerProfileStatsDto`. */
 const playerProfileStatsSchema = v.object({
   gamesPlayed: integerSchema,
@@ -164,11 +170,13 @@ const playerProfileStatsSchema = v.object({
   checkoutRate: v.optional(v.nullable(percentSchema)),
   checkoutHits: integerSchema,
   checkoutAttempts: integerSchema,
-  /** Contract `PlayerProfileFieldHitsDto`: one entry per board field, `S1` to `BULLSEYE`. */
-  hitDistribution: v.pipe(
-    v.array(v.object({ field: boardFieldSchema, hits: integerSchema })),
-    v.length(62),
-  ),
+  hitDistribution: hitDistributionSchema,
+  /** Contract `PlayerProfileHitDistributionByOutRuleDto`: the hits of each out rule's games. */
+  hitDistributionByOutRule: v.object({
+    singleout: hitDistributionSchema,
+    doubleout: hitDistributionSchema,
+    tripleout: hitDistributionSchema,
+  }),
   /** Contract `PlayerProfileMostHitSegmentDto`. */
   mostHitSegment: v.optional(
     v.nullable(v.object({ segment: segmentSchema, hits: integerSchema, share: percentSchema })),

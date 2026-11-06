@@ -9,6 +9,7 @@ and this project does **not** yet follow [Semantic Versioning](https://semver.or
 
 ### Added
 
+- Player profile: the hit distribution filters by All games, Single-Out, Double-Out or Triple-Out from `hitDistributionByOutRule` of `GET /api/player/profile` (darts-backend#289). Up to 150 hits the board draws a dot per hit, past that it fills each hit board field with blue as strong as its hit frequency. "Most hit fields" lists the five most hit fields in place of the hit frequency legend, and a click, Enter or Space on a sector opens a card with its single, double and triple hits (#481)
 - Deploy: CI tests avatar directory permissions and configuration in rollout and rollback, including ACLs and closed parent directories (#429)
 - Player profile and Statistics: the player's avatar from `GET /api/player/{id}/avatar` shows in the profile circle and left of each name on Statistics, with the user icon when there is no picture; production mounts the avatar folder named by `AVATAR_HOST_DIR` read-only into the backend (#429)
 - Game: show checkout suggestions in empty throw slots (#427)
@@ -33,6 +34,7 @@ and this project does **not** yet follow [Semantic Versioning](https://semver.or
 
 ### Removed
 
+- Player profile: the hit distribution heatmap has no 600-dot budget any more, since only a board of up to 150 hits draws dots (#481)
 - Assets: 14 icons and the CircularXX Black and Italic font files that nothing referenced (#358)
 
 ### Fixed

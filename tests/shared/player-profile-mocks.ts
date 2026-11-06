@@ -25,6 +25,10 @@ interface PlayerProfileStatsBody {
   checkoutHits: number;
   checkoutAttempts: number;
   hitDistribution: { field: string; hits: number }[];
+  hitDistributionByOutRule: Record<
+    "singleout" | "doubleout" | "tripleout",
+    { field: string; hits: number }[]
+  >;
   mostHitSegment: { segment: string; hits: number; share: number } | null;
   favoriteDoubles: { double: string; hits: number; attempts: number; hitRate: number }[];
   highestFinish: { score: number; darts: number; throws: string[] } | null;
@@ -55,6 +59,12 @@ export const PLAYER_PROFILE: PlayerProfileBody = {
     checkoutHits: 7,
     checkoutAttempts: 22,
     hitDistribution: BOARD_FIELDS.map((field) => ({ field, hits: field === "T20" ? 96 : 12 })),
+    // Double out holds 60 of the 96 T20 hits and single out the rest; no game used triple out.
+    hitDistributionByOutRule: {
+      singleout: BOARD_FIELDS.map((field) => ({ field, hits: field === "T20" ? 36 : 12 })),
+      doubleout: BOARD_FIELDS.map((field) => ({ field, hits: field === "T20" ? 60 : 0 })),
+      tripleout: BOARD_FIELDS.map((field) => ({ field, hits: 0 })),
+    },
     mostHitSegment: { segment: "20", hits: 96, share: 7.4 },
     favoriteDoubles: [{ double: "D16", hits: 4, attempts: 11, hitRate: 36.4 }],
     highestFinish: { score: 121, darts: 3, throws: ["T20", "S11", "BULLSEYE"] },
