@@ -116,7 +116,10 @@ data: ${JSON.stringify({ players })}
       roundHistory: [],
     };
     players.push(player);
-    await fulfillJson(route, { success: true, player: { id: player.id, name: player.name } });
+    await fulfillJson(route, {
+      success: true,
+      player: { id: player.id, name: player.name, isGuest: true },
+    });
   });
 
   await page.route(matchPath(/^\/api\/room\/\d+\/positions$/), async (route) => {

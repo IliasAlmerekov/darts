@@ -379,7 +379,7 @@ describe("useStartPage action guards", () => {
   it("should prevent duplicate addGuest calls while first request is pending", async () => {
     setInvitation({ gameId: 10, invitationLink: "/invite/10" });
 
-    const pending = deferred<{ id: number; name: string; position: number | null }>();
+    const pending = deferred<Awaited<ReturnType<typeof addGuestPlayer>>>();
     vi.mocked(addGuestPlayer).mockReturnValueOnce(pending.promise);
 
     const { result } = renderHook(() => useStartPage(), {
@@ -402,7 +402,7 @@ describe("useStartPage action guards", () => {
     expect(addGuestPlayer).toHaveBeenCalledWith(10, { username: "Alex" });
 
     await act(async () => {
-      pending.resolve({ id: 1, name: "Alex", position: null });
+      pending.resolve({ id: 1, name: "Alex", position: null, isGuest: true });
       await firstCall;
       await secondCall;
     });
@@ -410,7 +410,12 @@ describe("useStartPage action guards", () => {
 
   it("should close guest overlay after successful guest creation", async () => {
     setInvitation({ gameId: 10, invitationLink: "/invite/10" });
-    vi.mocked(addGuestPlayer).mockResolvedValueOnce({ id: 1, name: "Alex", position: null });
+    vi.mocked(addGuestPlayer).mockResolvedValueOnce({
+      id: 1,
+      name: "Alex",
+      position: null,
+      isGuest: true,
+    });
 
     const { result } = renderHook(() => useStartPage(), {
       wrapper: makeWrapper("/start/10"),
@@ -676,7 +681,7 @@ describe("useStartPage action guards", () => {
           result.current.guest.openGuestOverlay();
         });
         await act(async () => {
-          pending.resolve({ id: 9, name: "Alex", position: null });
+          pending.resolve({ id: 9, name: "Alex", position: null, isGuest: true });
           await adding;
         });
 

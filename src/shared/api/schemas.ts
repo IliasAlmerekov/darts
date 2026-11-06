@@ -13,22 +13,6 @@ export const successMessageResponseSchema = v.object({
 
 export type SuccessMessageResponse = v.InferOutput<typeof successMessageResponseSchema>;
 
-/** Contract response of `POST /api/invite/create/{id}`. */
-export const invitationResponseSchema = v.object({
-  success: v.boolean(),
-  gameId: v.optional(v.nullable(integerSchema)),
-  invitationLink: v.optional(v.nullable(v.string())),
-  users: v.optional(
-    v.array(
-      v.object({
-        id: v.optional(v.nullable(integerSchema)),
-        username: v.optional(v.nullable(v.string())),
-      }),
-    ),
-  ),
-  message: v.optional(v.nullable(v.string())),
-});
-
 // The contract types status as a plain string; these are the values the backend sends.
 export const gameStatusSchema = v.picklist(["lobby", "started", "finished"]);
 

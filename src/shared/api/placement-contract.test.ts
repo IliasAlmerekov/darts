@@ -102,7 +102,10 @@ describe("placement response contract", () => {
 
   it.each([1, null])("preserves placement %s in room players", async (placement) => {
     vi.mocked(apiClient.post).mockImplementationOnce(
-      respondWith({ success: true, player: { id: 2, name: "Bob", position: 1, placement } }),
+      respondWith({
+        success: true,
+        player: { id: 2, name: "Bob", position: 1, placement, isGuest: true },
+      }),
     );
     expect(await addGuestPlayer(1, { username: "Bob" })).toMatchObject({ position: 1, placement });
   });
@@ -122,7 +125,10 @@ describe("placement response contract", () => {
       ApiValidationError,
     );
     vi.mocked(apiClient.post).mockImplementationOnce(
-      respondWith({ success: true, player: { id: 2, name: "Bob", position: 1, placement } }),
+      respondWith({
+        success: true,
+        player: { id: 2, name: "Bob", position: 1, placement, isGuest: true },
+      }),
     );
     await expect(addGuestPlayer(1, { username: "Bob" })).rejects.toBeInstanceOf(ApiValidationError);
   });

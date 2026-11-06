@@ -186,7 +186,7 @@ describe("useRoster", () => {
       { initialProps: { gameId: 5 }, wrapper: Providers },
     );
     vi.mocked(apiClient.post).mockImplementationOnce(
-      respondWith({ success: true, player: { id: 1, name: "A", position: 0 } }),
+      respondWith({ success: true, player: { id: 1, name: "A", position: 0, isGuest: true } }),
     );
     await act(async () => {
       expect(await result.current.add({ username: "A" })).toEqual({ status: "added" });
@@ -1010,7 +1010,7 @@ describe("useRoster", () => {
       .mockReturnValueOnce(first.promise)
       .mockReturnValueOnce(second.promise)
       .mockImplementationOnce(
-        respondWith({ success: true, player: { id: 4, name: "D", position: null } }),
+        respondWith({ success: true, player: { id: 4, name: "D", position: null, isGuest: true } }),
       );
     vi.mocked(apiClient.get)
       .mockImplementationOnce(async (...args) => respondWith(await read.promise)(...args))
@@ -1253,7 +1253,10 @@ describe("useRoster", () => {
     const pending = deferred<void>();
     vi.mocked(apiClient.post).mockImplementationOnce(async (...args) => {
       await pending.promise;
-      return respondWith({ success: true, player: { id: 1, name: "A", position: null } })(...args);
+      return respondWith({
+        success: true,
+        player: { id: 1, name: "A", position: null, isGuest: true },
+      })(...args);
     });
     testQueryClient.setQueryData(gameQueries.roster(5).queryKey, []);
     testQueryClient.setQueryData(gameQueries.roster(6).queryKey, []);
@@ -1511,7 +1514,7 @@ describe("useRoster", () => {
     const { result } = renderGamePlayers(5);
 
     vi.mocked(apiClient.post).mockImplementationOnce(
-      respondWith({ success: true, player: { id: 2, name: "Bob", position: null } }),
+      respondWith({ success: true, player: { id: 2, name: "Bob", position: null, isGuest: true } }),
     );
     await act(async () => {
       await result.current.add({ username: "Bob" });
