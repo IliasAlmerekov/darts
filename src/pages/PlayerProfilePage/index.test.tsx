@@ -320,12 +320,7 @@ describe("PlayerProfilePage", () => {
       "Most hit segment207% of all throwsYou hit segment 20 more than any other segment.",
     );
     expect(screen.getByRole("img", { name: "Dartboard heatmap, most hits on 20" })).toBeTruthy();
-    expect(hitDots()).toHaveLength(
-      Math.min(
-        600,
-        buildPlayerProfileStats().hitDistribution.reduce((sum, { hits }) => sum + hits, 0),
-      ),
-    );
+    expect(hitDots()).toHaveLength(toHitDots(buildPlayerProfileStats().hitDistribution).length);
     expect(screen.queryByText("Sample data")).toBeNull();
     expect(screen.queryByText("Consistent finisher")).toBeNull();
   });
@@ -409,8 +404,8 @@ describe("PlayerProfilePage", () => {
     // Treble ring 99 to 107 mm, double ring 162 to 170 mm from the centre.
     const inRing = (dot: Element, [inner, outer]: [number, number]): boolean => {
       const radius = Math.hypot(Number(dot.getAttribute("cx")), Number(dot.getAttribute("cy")));
-      // The dot's centre keeps 2 mm from the ring's edges; the dot itself may reach past them.
-      const edge = 2;
+      // The dot's centre keeps 2.3 mm from the ring's edges; the drawn dot may reach past them.
+      const edge = 2.3;
       return radius - edge >= inner - 1e-9 && radius + edge <= outer + 1e-9;
     };
 

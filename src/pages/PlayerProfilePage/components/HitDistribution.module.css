@@ -112,7 +112,9 @@
   width: 30px;
   height: 30px;
   border-radius: var(--radius-pill);
-  background: rgb(0 0 219 / calc(var(--heat) * 100%));
+
+  /* The same strength as the hit dots of this step. */
+  background: rgb(0 0 219 / calc((0.45 + var(--heat) * 0.55) * 100%));
 }
 
 @media (width <= 600px) {

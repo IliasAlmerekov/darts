@@ -14,7 +14,7 @@ const BOARD_ORDER = [
   20, 1, 18, 4, 13, 6, 10, 15, 2, 17, 3, 19, 7, 16, 8, 11, 14, 9, 12, 5,
 ] as const;
 const HALF_SEGMENT = 9;
-// A dot paints 2.3 mm from its centre: radius 2 plus half its 0.6 mm outline.
+// How far a dot's centre keeps from every edge of its board field.
 const DOT_EDGE = 2.3;
 // Ring radii in board millimetres.
 const RINGS = {
