@@ -78,4 +78,35 @@ test.describe("Player profile hit distribution", () => {
     await page.keyboard.press("Space");
     await expect(bull).toBeVisible();
   });
+
+  test.describe("at 390 px", () => {
+    test.use({ viewport: { width: 390, height: 844 } });
+
+    test("Most hit fields and the sector card fit the screen", async ({ page }) => {
+      const topFields = page
+        .getByRole("region", { name: "Hit distribution" })
+        .getByRole("region", { name: "Most hit fields" });
+      await expect(topFields).toBeVisible();
+      await expect(topFields.getByRole("listitem")).toHaveCount(5);
+      const overflow = await page.evaluate(
+        () => document.documentElement.scrollWidth - document.documentElement.clientWidth,
+      );
+      expect(overflow).toBeLessThanOrEqual(0);
+
+      await page.getByRole("button", { name: "Sector 20" }).click();
+      const card = page.getByRole("dialog", { name: "Sector 20" });
+      await expect(card).toContainText("120 hits");
+      // The card scales in, so the check retries until the card has settled.
+      await expect(async () => {
+        const box = await card.boundingBox();
+        expect(box).not.toBeNull();
+        if (box !== null) {
+          expect(box.x).toBeGreaterThanOrEqual(0);
+          expect(box.y).toBeGreaterThanOrEqual(0);
+          expect(box.x + box.width).toBeLessThanOrEqual(390);
+          expect(box.y + box.height).toBeLessThanOrEqual(844);
+        }
+      }).toPass();
+    });
+  });
 });
