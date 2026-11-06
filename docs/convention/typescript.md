@@ -18,7 +18,7 @@ Keep all six on. Two of them change how code is written:
 - `@ts-ignore`, `@ts-nocheck`, `@ts-expect-error`
 - non-null assertions (`value!.prop`)
 - `as X as Y`
-- `as T` without full preceding runtime validation of the shape (see `as` casts below)
+- Unjustified type assertions that bypass validation (see `as` casts below)
 - `as unknown` in production code; replace it with runtime validation (test files may use
   it to build mocks)
 - bare `JSX.Element`; `@types/react` 19 has no global `JSX` namespace, so use
@@ -36,22 +36,11 @@ Keep all six on. Two of them change how code is written:
 
 ## `as` casts -- when allowed
 
-Only in these cases:
-
-1. After a full local type guard in the same function:
-
-```ts
-if (!isRecord(value)) return null;
-const obj = value as Record<string, unknown>;
-```
-
-2. At the API adapter boundary, with an inline rationale comment:
-
-```ts
-fetchConfig.body = isJsonBody(body) ? JSON.stringify(body) : (body as BodyInit); // safe: BodyInit accepts any serializable value
-```
-
-3. In tests (`*.test.ts`, `*.test.tsx`), isolated to mock construction.
+Prefer narrowing and schema inference; guards already narrow their validated type.
+Use an assertion only for a verified boundary inference gap that TypeScript cannot
+express, with a local rationale explaining the runtime evidence. An assertion never
+replaces API schema validation. Test mock construction may use isolated assertions.
+`as const` preserves literals and does not bypass runtime validation.
 
 ## Type guards
 
