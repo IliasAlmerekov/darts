@@ -49,28 +49,9 @@ Rules:
 - Reset mocks in `beforeEach`. Use `afterEach` only for mandatory cleanup such as
   restoring spies or browser globals.
 
-Example:
-
-```ts
-// @vitest-environment node
-import { describe, expect, it, vi } from "vitest";
-import { apiClient } from "@/shared/api/client";
-import { getGameThrows } from "./get-game";
-
-vi.mock("@/shared/api/client", () => ({
-  apiClient: {
-    get: vi.fn(),
-  },
-}));
-
-describe("getGameThrows", () => {
-  it("returns validated game state", async () => {
-    vi.mocked(apiClient.get).mockResolvedValueOnce(validResponse);
-
-    await expect(getGameThrows(1)).resolves.toEqual(validResponse);
-  });
-});
-```
+For API examples, read [`src/shared/api/get-game.test.ts`](../../src/shared/api/get-game.test.ts).
+It uses `respondWith` to run each supplied `validate` schema against valid and malformed
+payloads. A mocked resolved return value bypasses validation and cannot prove a schema.
 
 ## Testing Library
 
@@ -159,21 +140,7 @@ Rules:
 
 ## Verification
 
-Run:
-
-```bash
-npm run test
-npm run test:e2e
-npm run test:e2e:live   # when tests/live/ changes; needs a backend and credentials
-npm run coverage
-rg --files src tests | rg '(^|[/\\])__tests__([/\\]|$)'
-rg -n '^\s*test\(' src --glob '*.test.{ts,tsx}'
-rg -n '\b(describe|it|test)\.only\b|\bfit\b|\bfdescribe\b' src tests --glob '*.{test,spec}.{ts,tsx}'
-rg -n 'test-support' src --glob '!**/*.test.{ts,tsx}' --glob '!**/*.test-support.ts'
-rg -n "spyOn\([^,]+,\s*[\"']set[\"']|screen\.debug" src --glob '*.test.{ts,tsx}'
-```
-
-Expected:
-
-- `npm run test`, `npm run test:e2e`, and `npm run coverage` pass.
-- The `rg` commands produce no project matches.
+Run affected Vitest files and, for browser flows, the relevant mocked Playwright specs.
+Run live specs when the change requires a real backend and credentials; report missing
+prerequisites. Run coverage when changing coverage-sensitive logic or thresholds.
+The full before-commit gate is defined once in `AGENTS.md`.

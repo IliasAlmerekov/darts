@@ -134,26 +134,10 @@ ADR 0002 records why responses are described by Valibot schemas.
 
 ## Typed errors
 
-All errors thrown by `apiClient` are instances of `ApiError` or its subclasses:
-
-| Class               | Status | When                                                                              |
-| ------------------- | ------ | --------------------------------------------------------------------------------- |
-| `ApiError`          | n      | Generic non-OK status not covered below                                           |
-| `UnauthorizedError` | 401    | Session invalid; triggers global redirect handler unless `skipAuthRedirect: true` |
-| `ForbiddenError`    | 403    | Authenticated user lacks permission                                               |
-| `NetworkError`      | 0      | `fetch` rejection (no response received)                                          |
-| `TimeoutError`      | 0      | Built-in 30s timeout aborted the request                                          |
-
-`ApiValidationError` (in `client.ts`) is a separate class that does not extend `ApiError`.
-It is thrown when the body does not match the `validate` schema; `raw` holds the body.
-
-- Throw HTTP failures as `new ApiError(message, { status, data, url })`.
-- Catch by class (`error instanceof UnauthorizedError`); branch on `error.status` only when
-  you need the numeric value.
-- Per-domain data goes into the `data` field of the existing hierarchy, not into a new
-  `ApiError` subclass.
-- A 429 carries the `Retry-After` header as whole seconds in `retryAfterSeconds`. The value
-  comes from a header, not the body, so it has its own field instead of `data`.
+[errors.md](errors.md) defines error handling and the typed hierarchy. HTTP, network,
+and timeout failures use `ApiError` or its subclasses. Schema mismatches throw the separate
+`ApiValidationError`; cancellations may propagate an abort error. Catch by class and keep
+domain payloads in `data`. A 429's `Retry-After` header uses `retryAfterSeconds`.
 
 ## Endpoints
 

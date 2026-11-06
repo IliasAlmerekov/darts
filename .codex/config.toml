@@ -3,8 +3,3 @@
 approval_policy = "on-request"
 sandbox_mode = "workspace-write"
 web_search = "cached"
-model = "gpt-6.1-Sol"
-model_reasoning_effort = "medium"
-
-[mcp_servers.context7]
-url = "https://mcp.context7.com/mcp"

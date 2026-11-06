@@ -16,6 +16,7 @@ and this project does **not** yet follow [Semantic Versioning](https://semver.or
 
 ### Changed
 
+- Agent context: scope and checks follow the change; optional runtime and publishing guidance loads on demand, sibling paths resolve from the main checkout, and bot reviews require current-head evidence (#483)
 - Agent rules: each issue is worked in a git worktree that `scripts/worktree.sh new` creates and `prune` removes after the merge; a mocked e2e run from a worktree starts its own Vite on :5174. Review rules and the CodeRabbit loop move to `docs/agents/review.md`, and the PR body rules into the comments of the PR template (#483)
 - Player profile: the hit distribution heatmap draws each hit as one blue dot of 6 mm radius with a white outline in its board field, in place of a large glow per board field plus a small dark dot per hit; the hit frequency step sets each dot's strength (#479)
 - Summary: move actions into one workflow and share game start cleanup between rematches and the start page (#451)

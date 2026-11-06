@@ -90,7 +90,7 @@ Rules:
 - JSX renders the mapper's output, never `error.message` or `ApiError.data.message`.
 - Local validation strings may be assigned directly (`"Please create a game first."`).
 - A typed backend business payload may supply a user message only after a runtime guard
-  proves its shape (`isAddGuestErrorResponse` in `src/pages/StartPage/useGuestFlow.ts`).
+  proves its shape (`isAddGuestErrorResponse` in `src/pages/StartPage/guest/useGuestFlow.ts`).
 - When a new backend phrase needs a safer message, extend the mapper in
   `src/shared/lib/error/*`.
 
