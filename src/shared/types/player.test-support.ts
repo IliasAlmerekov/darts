@@ -42,7 +42,17 @@ export const BOARD_FIELDS = [
   "BULLSEYE" as const,
 ];
 
-/** Stats of `GET /api/player/profile` for 18 counted games, T20 the most hit board field. */
+/** The 62 board fields with `hits` on the given ones and 0 on every other. */
+export function buildHitDistribution(
+  hits: Partial<Record<(typeof BOARD_FIELDS)[number], number>> = {},
+): PlayerProfileStats["hitDistribution"] {
+  return BOARD_FIELDS.map((field) => ({ field, hits: hits[field] ?? 0 }));
+}
+
+/**
+ * Stats of `GET /api/player/profile` for 18 counted games, T20 the most hit board field.
+ * Double out holds 60 of the 96 T20 hits and single out the rest; no game used triple out.
+ */
 export function buildPlayerProfileStats(
   overrides: Partial<PlayerProfileStats> = {},
 ): PlayerProfileStats {
@@ -55,6 +65,11 @@ export function buildPlayerProfileStats(
     checkoutHits: 7,
     checkoutAttempts: 22,
     hitDistribution: BOARD_FIELDS.map((field) => ({ field, hits: field === "T20" ? 96 : 12 })),
+    hitDistributionByOutRule: {
+      singleout: BOARD_FIELDS.map((field) => ({ field, hits: field === "T20" ? 36 : 12 })),
+      doubleout: buildHitDistribution({ T20: 60 }),
+      tripleout: buildHitDistribution(),
+    },
     mostHitSegment: { segment: "20", hits: 96, share: 7.4 },
     favoriteDoubles: [{ double: "D16", hits: 4, attempts: 11, hitRate: 36.4 }],
     highestFinish: { score: 121, darts: 3, throws: ["T20", "S11", "BULLSEYE"] },

@@ -139,13 +139,18 @@ describe("toPlayerProfile", () => {
     ]);
   });
 
-  it("passes the hit distribution on as the API sends it, one entry per board field", () => {
+  it("keeps each hit distribution as the API sends it, all games and one per out rule", () => {
     const stats = buildStats();
-    const { hitDistribution } = toPlayerProfile(buildProfile({ stats }));
+    const { hitDistributions } = toPlayerProfile(buildProfile({ stats }));
 
-    expect(hitDistribution).toEqual(stats.hitDistribution);
-    expect(hitDistribution).toHaveLength(62);
-    expect(hitDistribution).toContainEqual({ field: "T20", hits: 96 });
+    expect(hitDistributions).toEqual({
+      all: stats.hitDistribution,
+      singleout: stats.hitDistributionByOutRule.singleout,
+      doubleout: stats.hitDistributionByOutRule.doubleout,
+      tripleout: stats.hitDistributionByOutRule.tripleout,
+    });
+    expect(hitDistributions.all).toContainEqual({ field: "T20", hits: 96 });
+    expect(hitDistributions.doubleout).toContainEqual({ field: "T20", hits: 60 });
   });
 
   it("shows a dash for a missing average", () => {

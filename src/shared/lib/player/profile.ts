@@ -41,6 +41,9 @@ interface FinishDart {
   label: string;
 }
 
+/** The games a hit distribution counts: all of them, or those of one out rule. */
+export type HitDistributionFilter = "all" | keyof ProfileStats["hitDistributionByOutRule"];
+
 /** The Player profile as the page shows it. */
 export interface PlayerProfile {
   stats: {
@@ -52,8 +55,8 @@ export interface PlayerProfile {
     /** Checkout hits over attempts, such as `7 / 22`. */
     checkouts: string;
   };
-  /** Hits per board field, `S1` to `T20`, `BULL` and `BULLSEYE`, as the API sends them. */
-  hitDistribution: ProfileStats["hitDistribution"];
+  /** Hits per board field, `S1` to `T20`, `BULL` and `BULLSEYE`, for all games and for each out rule. */
+  hitDistributions: Record<HitDistributionFilter, ProfileStats["hitDistribution"]>;
   /** `name` reads in a sentence: `segment 20`, or `Bull`. */
   mostHitSegment: { segment: string; name: string; share: string } | null;
   favoriteDoubles: FavoriteDouble[];
@@ -214,7 +217,7 @@ export function toPlayerProfile(response: PlayerProfileResponse): PlayerProfile 
       checkoutRate: formatPercent(stats.checkoutRate),
       checkouts: `${stats.checkoutHits} / ${stats.checkoutAttempts}`,
     },
-    hitDistribution: stats.hitDistribution,
+    hitDistributions: { all: stats.hitDistribution, ...stats.hitDistributionByOutRule },
     mostHitSegment:
       mostHitSegment === null || mostHitSegment === undefined
         ? null

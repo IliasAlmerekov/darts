@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 // Dates show in the browser's time zone; the formatter reads it when the module loads.
 vi.hoisted(() => {
@@ -32,7 +32,7 @@ vi.mock("@/assets/icons/trophy.svg", () => ({ default: "trophy.svg" }));
 vi.mock("@/assets/icons/bar-chart.svg", () => ({ default: "bar-chart.svg" }));
 vi.mock("@/assets/icons/target.svg", () => ({ default: "target.svg" }));
 
-import { act, fireEvent, render, screen, within } from "@testing-library/react";
+import { act, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { createMemoryRouter, RouterProvider } from "react-router-dom";
 import { logout, type AuthenticatedUser } from "@/shared/api/auth";
@@ -40,6 +40,7 @@ import { NetworkError } from "@/shared/api";
 import { getPlayerProfile, type PlayerProfileResponse } from "@/shared/api/player";
 import {
   BOARD_FIELDS,
+  buildHitDistribution,
   buildPlayerProfile,
   buildPlayerProfileGame,
   buildPlayerProfileStats,
@@ -135,6 +136,11 @@ function hitDots(): Element[] {
   );
 }
 
+/** The board fields filled with blue, in board order, when the board has too many hits for dots. */
+function heatFields(): Element[] {
+  return Array.from(block("Hit distribution").querySelectorAll("svg [data-field]"));
+}
+
 /** Identify fields from rendered coordinates, independently of the dot generator's order. */
 function dotsInField(field: HitDot["field"]): Element[] {
   return hitDots().filter((dot) => {
@@ -159,6 +165,18 @@ describe("PlayerProfilePage", () => {
     );
     useAuthenticatedUserMock.mockReset();
     useAuthenticatedUserMock.mockReturnValue({ user: createUser(), loading: false, error: null });
+    // jsdom lacks DOMMatrixReadOnly; the sector card's positioner reads a translate from it.
+    vi.stubGlobal(
+      "DOMMatrixReadOnly",
+      class {
+        m41 = 0;
+        m42 = 0;
+      },
+    );
+  });
+
+  afterEach(() => {
+    vi.unstubAllGlobals();
   });
 
   it("shows the player's name and the stats from the profile request", async () => {
@@ -337,8 +355,7 @@ describe("PlayerProfilePage", () => {
     expect(block("Most hit segment").textContent).toBe(
       "Most hit segment207% of all throwsYou hit segment 20 more than any other segment.",
     );
-    expect(screen.getByRole("img", { name: "Dartboard heatmap, most hits on 20" })).toBeTruthy();
-    expect(hitDots()).toHaveLength(toHitDots(buildPlayerProfileStats().hitDistribution).length);
+    expect(screen.getByRole("group", { name: "Dartboard heatmap of all games" })).toBeTruthy();
     expect(screen.queryByText("Sample data")).toBeNull();
     expect(screen.queryByText("Consistent finisher")).toBeNull();
   });
@@ -378,7 +395,6 @@ describe("PlayerProfilePage", () => {
     expect(block("Most hit segment").textContent).toBe(
       "Most hit segmentBull5% of all throwsYou hit Bull more than any other segment.",
     );
-    expect(screen.getByRole("img", { name: "Dartboard heatmap, most hits on Bull" })).toBeTruthy();
     expect(hitDots()).toHaveLength(10);
   });
 
@@ -399,7 +415,7 @@ describe("PlayerProfilePage", () => {
     renderPage();
 
     expect(
-      await screen.findByRole("img", { name: "Dartboard heatmap, most hits on 20" }),
+      await screen.findByRole("group", { name: "Dartboard heatmap of all games" }),
     ).toBeTruthy();
     expect(hitDots()).toHaveLength(100);
     for (const field of BOARD_FIELDS) {
@@ -412,14 +428,14 @@ describe("PlayerProfilePage", () => {
     // Different counts per ring, so trebles drawn on the double ring would show.
     const hitDistribution = buildPlayerProfileStats().hitDistribution.map(({ field }) => ({
       field,
-      hits: field.startsWith("T") ? 3 : field.startsWith("D") ? 5 : 0,
+      hits: field.startsWith("T") ? 2 : field.startsWith("D") ? 3 : 0,
     }));
     vi.mocked(getPlayerProfile).mockResolvedValue(
       buildProfile({ stats: buildPlayerProfileStats({ hitDistribution }) }),
     );
 
     renderPage();
-    await screen.findByRole("img", { name: "Dartboard heatmap, most hits on 20" });
+    await screen.findByRole("group", { name: "Dartboard heatmap of all games" });
 
     // Treble ring 99 to 107 mm, double ring 162 to 170 mm from the centre.
     const inRing = (dot: Element, [inner, outer]: [number, number]): boolean => {
@@ -429,17 +445,17 @@ describe("PlayerProfilePage", () => {
       return radius - edge >= inner - 1e-9 && radius + edge <= outer + 1e-9;
     };
 
-    // 20 trebles with 3 hits each and 20 doubles with 5.
-    expect(hitDots()).toHaveLength(160);
-    expect(hitDots().filter((dot) => inRing(dot, [99, 107]))).toHaveLength(60);
-    expect(hitDots().filter((dot) => inRing(dot, [162, 170]))).toHaveLength(100);
+    // 20 trebles with 2 hits each and 20 doubles with 3.
+    expect(hitDots()).toHaveLength(100);
+    expect(hitDots().filter((dot) => inRing(dot, [99, 107]))).toHaveLength(40);
+    expect(hitDots().filter((dot) => inRing(dot, [162, 170]))).toHaveLength(60);
     // Each dot sits where the position function put it, so no swapped or mirrored axis.
     expect(
       hitDots().map((dot) => [Number(dot.getAttribute("cx")), Number(dot.getAttribute("cy"))]),
     ).toEqual(toHitDots(hitDistribution).map(({ x, y }) => [x, y]));
   });
 
-  it("draws one hidden dot per hit in its board field's step and keeps the legend", async () => {
+  it("draws one hidden dot per hit in its board field's step", async () => {
     const hits: Record<string, number> = { T20: 40, D16: 30, T19: 20, S5: 10, BULL: 12 };
     vi.mocked(getPlayerProfile).mockResolvedValue(
       buildProfile({
@@ -454,7 +470,7 @@ describe("PlayerProfilePage", () => {
     );
 
     renderPage();
-    await screen.findByRole("img", { name: "Dartboard heatmap, most hits on 20" });
+    await screen.findByRole("group", { name: "Dartboard heatmap of all games" });
 
     const dots = hitDots();
     expect(dots).toHaveLength(112);
@@ -475,11 +491,215 @@ describe("PlayerProfilePage", () => {
         expect(dot.classList, field).toContain(expectedClasses[field]);
       }
     }
+  });
+
+  it("fills each hit board field instead of drawing dots past 150 hits", async () => {
+    // 161 hits: past the 150 a board draws as dots.
+    vi.mocked(getPlayerProfile).mockResolvedValue(
+      buildProfile({
+        stats: buildPlayerProfileStats({
+          hitDistribution: buildHitDistribution({ T20: 100, S5: 40, D16: 20, BULLSEYE: 1 }),
+        }),
+      }),
+    );
+
+    renderPage();
+    await screen.findByRole("group", { name: "Dartboard heatmap of all games" });
+
+    expect(hitDots()).toHaveLength(0);
+    expect(heatFields().map((field) => field.getAttribute("data-field"))).toEqual([
+      "T20",
+      "D16",
+      "S5",
+      "S5",
+      "BULLSEYE",
+    ]);
+    // The fill follows the step: T20 is Very high, S5 Medium, D16 Low.
+    const classOf = (field: string): string | null =>
+      heatFields()
+        .find((element) => element.getAttribute("data-field") === field)
+        ?.getAttribute("class") ?? null;
+    expect(classOf("T20")).not.toBe(classOf("S5"));
+    expect(classOf("S5")).not.toBe(classOf("D16"));
+    // The board keeps all 82 of its own fields under the blue layers: 4 per segment and the
+    // two centre fields, so the board still reads as a dartboard.
+    const boardPaths = screen
+      .getByRole("group", { name: "Dartboard heatmap of all games" })
+      .querySelectorAll("path:not([data-field])");
+    expect(boardPaths).toHaveLength(82);
+    // ...each in its own colour: dark and light singles, red and green rings.
+    const colours = new Set(Array.from(boardPaths, (path) => path.getAttribute("class")));
+    expect(colours.size).toBeGreaterThanOrEqual(4);
+  });
+
+  it("fills Bull and Bullseye each by its own hit frequency step past 150 hits", async () => {
+    vi.mocked(getPlayerProfile).mockResolvedValue(
+      buildProfile({
+        stats: buildPlayerProfileStats({
+          hitDistribution: buildHitDistribution({ BULL: 200, BULLSEYE: 1 }),
+        }),
+      }),
+    );
+
+    renderPage();
+    await screen.findByRole("group", { name: "Dartboard heatmap of all games" });
+
+    const classOf = (field: string): string | null =>
+      heatFields()
+        .find((element) => element.getAttribute("data-field") === field)
+        ?.getAttribute("class") ?? null;
+    // Bull leads the board and is Very high; 1 Bullseye hit against 200 is Very low.
+    expect(classOf("BULL")).toContain(hitStyles.heatVeryHigh);
+    expect(classOf("BULLSEYE")).toContain(hitStyles.heatVeryLow);
+  });
+
+  it("draws dots again for a board with 150 hits", async () => {
+    vi.mocked(getPlayerProfile).mockResolvedValue(
+      buildProfile({
+        stats: buildPlayerProfileStats({
+          hitDistribution: buildHitDistribution({ T20: 100, S5: 50 }),
+        }),
+      }),
+    );
+
+    renderPage();
+    await screen.findByRole("group", { name: "Dartboard heatmap of all games" });
+
+    expect(hitDots()).toHaveLength(150);
+    expect(heatFields()).toHaveLength(0);
+  });
+
+  it("lists the five most hit fields, ties in board order, with bars relative to the leader", async () => {
+    vi.mocked(getPlayerProfile).mockResolvedValue(
+      buildProfile({
+        stats: buildPlayerProfileStats({
+          hitDistribution: buildHitDistribution({
+            S20: 48,
+            T20: 26,
+            D20: 12,
+            BULL: 12,
+            BULLSEYE: 24,
+            S1: 12,
+            S5: 3,
+          }),
+        }),
+      }),
+    );
+
+    renderPage();
+    const panel = await screen.findByRole("region", { name: "Most hit fields" });
+
+    const rows = within(panel).getAllByRole("listitem");
+    expect(rows.map((row) => row.textContent)).toEqual([
+      "S2048 hits",
+      "T2026 hits",
+      "Bullseye24 hits",
+      "S112 hits",
+      "D2012 hits",
+    ]);
     expect(
-      within(block("Hit distribution"))
+      rows.map((row) => row.querySelector<HTMLElement>('[aria-hidden="true"] > span')?.style.width),
+    ).toEqual(["100%", "54.17%", "50%", "25%", "25%"]);
+  });
+
+  it("switches the board and the most hit fields to the games of one out rule", async () => {
+    renderPage();
+    await screen.findByRole("group", { name: "Dartboard heatmap of all games" });
+    expect(hitDots()).toHaveLength(0);
+
+    fireEvent.click(
+      screen.getByRole("button", { name: "Games in the hit distribution: All games" }),
+    );
+    expect((await screen.findAllByRole("menuitem")).map((item) => item.textContent)).toEqual([
+      "All games",
+      "Single-Out",
+      "Double-Out",
+      "Triple-Out",
+    ]);
+    fireEvent.click(screen.getByRole("menuitem", { name: "Double-Out" }));
+
+    expect(
+      await screen.findByRole("group", { name: "Dartboard heatmap of Double-Out games" }),
+    ).toBeTruthy();
+    expect(
+      screen.getByRole("button", { name: "Games in the hit distribution: Double-Out" }),
+    ).toBeTruthy();
+    // Double out holds 60 T20 hits and nothing else: dots, and one row.
+    expect(hitDots()).toHaveLength(60);
+    expect(
+      within(block("Most hit fields"))
         .getAllByRole("listitem")
-        .map((item) => item.textContent),
-    ).toEqual(["Very high", "High", "Medium", "Low", "Very low"]);
+        .map((row) => row.textContent),
+    ).toEqual(["T2060 hits"]);
+    // The out rule filter leaves the other blocks on all games.
+    expect(block("Most hit segment").textContent).toContain("7% of all throws");
+  });
+
+  it("keeps an out rule without games selectable, with an empty board", async () => {
+    renderPage();
+    await screen.findByRole("group", { name: "Dartboard heatmap of all games" });
+
+    fireEvent.click(
+      screen.getByRole("button", { name: "Games in the hit distribution: All games" }),
+    );
+    fireEvent.click(await screen.findByRole("menuitem", { name: "Triple-Out" }));
+
+    expect(
+      await screen.findByRole("group", { name: "Dartboard heatmap of Triple-Out games" }),
+    ).toBeTruthy();
+    expect(hitDots()).toHaveLength(0);
+    expect(heatFields()).toHaveLength(0);
+    expect(within(block("Most hit fields")).getByText("No hits yet")).toBeTruthy();
+  });
+
+  it("opens a sector's card on click, with the hits of the selected games", async () => {
+    renderPage();
+    await screen.findByRole("group", { name: "Dartboard heatmap of all games" });
+
+    const sector = screen.getByRole("button", { name: "Sector 20" });
+    fireEvent.click(sector);
+
+    const card = await screen.findByRole("dialog", { name: "Sector 20" });
+    expect(card.textContent).toBe("Sector 20120 hitsSingle 20: 12Double 20: 12Triple 20: 96");
+
+    // A second click on the same sector closes the card.
+    fireEvent.click(sector);
+    await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
+
+    fireEvent.click(
+      screen.getByRole("button", { name: "Games in the hit distribution: All games" }),
+    );
+    fireEvent.click(await screen.findByRole("menuitem", { name: "Double-Out" }));
+    await screen.findByRole("group", { name: "Dartboard heatmap of Double-Out games" });
+    fireEvent.click(screen.getByRole("button", { name: "Sector 20" }));
+
+    expect((await screen.findByRole("dialog", { name: "Sector 20" })).textContent).toBe(
+      "Sector 2060 hitsSingle 20: 0Double 20: 0Triple 20: 60",
+    );
+  });
+
+  it("opens the centre's card with Bull and Bullseye, and closes it on Escape back to the sector", async () => {
+    vi.mocked(getPlayerProfile).mockResolvedValue(
+      buildProfile({
+        stats: buildPlayerProfileStats({
+          hitDistribution: buildHitDistribution({ BULL: 5, BULLSEYE: 2, T20: 3 }),
+        }),
+      }),
+    );
+
+    renderPage();
+    await screen.findByRole("group", { name: "Dartboard heatmap of all games" });
+    fireEvent.click(screen.getByRole("button", { name: "Bull" }));
+
+    const card = await screen.findByRole("dialog", { name: "Bull" });
+    expect(card.textContent).toBe("Bull7 hitsBull: 5Bullseye: 2");
+
+    fireEvent.keyDown(card, { key: "Escape" });
+    await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
+    // Focus goes back to the sector that opened the card.
+    await waitFor(() =>
+      expect(document.activeElement).toBe(screen.getByRole("button", { name: "Bull" })),
+    );
   });
 
   it("shows a dash for missing rates and one line for each empty block", async () => {
@@ -512,8 +732,9 @@ describe("PlayerProfilePage", () => {
     );
     expect(block("Highest finish").textContent).toBe("Highest finishNo finish yet");
     expect(block("Most hit segment").textContent).toBe("Most hit segmentNo hits yet");
-    expect(screen.getByRole("img", { name: "Dartboard heatmap" })).toBeTruthy();
+    expect(screen.getByRole("group", { name: "Dartboard heatmap of all games" })).toBeTruthy();
     expect(hitDots()).toHaveLength(0);
+    expect(within(block("Most hit fields")).getByText("No hits yet")).toBeTruthy();
   });
 
   it("shows the month the player registered", async () => {

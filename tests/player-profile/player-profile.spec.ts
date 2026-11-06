@@ -56,16 +56,36 @@ test.describe("Player profile", () => {
       redirect: "/playerprofile",
     });
     await mockPlayerProfile(page);
+    // T20 with 50 hits and S1 with 5: few enough hits for dots, T20 is the Very high step
+    // and draws at full strength, S1 is Very low (5 / 50).
+    const hitDistribution = PLAYER_PROFILE.stats.hitDistribution.map(({ field }) => ({
+      field,
+      hits: field === "T20" ? 50 : field === "S1" ? 5 : 0,
+    }));
+    await page.route("**/api/player/profile", (route) =>
+      route.fulfill({
+        json: {
+          ...PLAYER_PROFILE,
+          stats: {
+            ...PLAYER_PROFILE.stats,
+            hitDistribution,
+            // All of these hits come from Single-Out games.
+            hitDistributionByOutRule: {
+              singleout: hitDistribution,
+              doubleout: hitDistribution.map(({ field }) => ({ field, hits: 0 })),
+              tripleout: hitDistribution.map(({ field }) => ({ field, hits: 0 })),
+            },
+          },
+        },
+      }),
+    );
 
     await page.goto("/playerprofile");
 
     const dots = page
       .getByRole("region", { name: "Hit distribution" })
       .locator('svg g[aria-hidden="true"] > circle');
-    await expect(dots.first()).toBeAttached();
-    // PLAYER_PROFILE gives T20 96 hits and every other board field 12: T20 is the Very high
-    // step and draws at full strength, the number fields are Very low (12 / 96), and the
-    // centre's 24 hits are Low.
+    await expect(dots).toHaveCount(55);
     const opacities = (): Promise<number[]> =>
       dots.evaluateAll((circles) =>
         circles.map((circle) => Number(getComputedStyle(circle).fillOpacity)),

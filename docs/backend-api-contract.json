@@ -3516,6 +3516,44 @@
                 },
                 "type": "object"
             },
+            "PlayerProfileHitDistributionByOutRuleDto": {
+                "description": "`hitDistribution` getrennt nach der Out-Regel, mit der das Spiel endete. Je Out-Regel 62 Eintr\u00e4ge in derselben Reihenfolge; eine Out-Regel ohne Spiele hat \u00fcberall 0. Feldweise summiert ergeben die drei Listen `hitDistribution`.",
+                "required": [
+                    "singleout",
+                    "doubleout",
+                    "tripleout"
+                ],
+                "properties": {
+                    "singleout": {
+                        "description": "Trefferverteilung der Single-Out-Spiele, aufgebaut wie `hitDistribution`.",
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/PlayerProfileFieldHitsDto"
+                        },
+                        "maxItems": 62,
+                        "minItems": 62
+                    },
+                    "doubleout": {
+                        "description": "Trefferverteilung der Double-Out-Spiele, aufgebaut wie `hitDistribution`.",
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/PlayerProfileFieldHitsDto"
+                        },
+                        "maxItems": 62,
+                        "minItems": 62
+                    },
+                    "tripleout": {
+                        "description": "Trefferverteilung der Triple-Out-Spiele, aufgebaut wie `hitDistribution`.",
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/PlayerProfileFieldHitsDto"
+                        },
+                        "maxItems": 62,
+                        "minItems": 62
+                    }
+                },
+                "type": "object"
+            },
             "PlayerProfileMostHitSegmentDto": {
                 "required": [
                     "segment",
@@ -3648,6 +3686,7 @@
                     "checkoutHits",
                     "checkoutAttempts",
                     "hitDistribution",
+                    "hitDistributionByOutRule",
                     "favoriteDoubles"
                 ],
                 "properties": {
@@ -3696,6 +3735,9 @@
                         },
                         "maxItems": 62,
                         "minItems": 62
+                    },
+                    "hitDistributionByOutRule": {
+                        "$ref": "#/components/schemas/PlayerProfileHitDistributionByOutRuleDto"
                     },
                     "mostHitSegment": {
                         "description": "Segment mit den meisten Treffern, bei Gleichstand das h\u00f6here; `null` ohne Treffer.",

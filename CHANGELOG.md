@@ -9,6 +9,7 @@ and this project does **not** yet follow [Semantic Versioning](https://semver.or
 
 ### Added
 
+- Player profile: the hit distribution filters by All games, Single-Out, Double-Out or Triple-Out from `hitDistributionByOutRule` of `GET /api/player/profile` (darts-backend#289). Up to 150 hits the board draws a dot per hit, past that the board keeps its own colours, faded, and lays blue over each hit board field as strong as its hit frequency; Bull and Bullseye each have their own hit frequency step. "Most hit fields" lists the five most hit fields in place of the hit frequency legend, and a click, Enter or Space on a sector opens a card beside the sector with its single, double and triple hits (#481)
 - Deploy: CI tests avatar directory permissions and configuration in rollout and rollback, including ACLs and closed parent directories (#429)
 - Player profile and Statistics: the player's avatar from `GET /api/player/{id}/avatar` shows in the profile circle and left of each name on Statistics, with the user icon when there is no picture; production mounts the avatar folder named by `AVATAR_HOST_DIR` read-only into the backend (#429)
 - Game: show checkout suggestions in empty throw slots (#427)
@@ -21,7 +22,7 @@ and this project does **not** yet follow [Semantic Versioning](https://semver.or
 - Player profile: the hit distribution heatmap draws each hit as one blue dot of 6 mm radius with a white outline in its board field, in place of a large glow per board field plus a small dark dot per hit; the hit frequency step sets each dot's strength (#479)
 - Summary: move actions into one workflow and share game start cleanup between rematches and the start page (#451)
 - Player profile: the hit distribution heatmap reads the 62 board fields of `hitDistribution` from `GET /api/player/profile` (darts-backend#286) and draws one heat spot per board field, so a treble or double shows on its ring; every board field and the centre share one scale against the most hit board field (#426)
-- Player profile: the hit distribution heatmap draws every hit as a small dot scattered inside its board field, on top of the heat glow, in place of the heat spot's solid dot; a board with more than 600 hits shows each board field's share of 600 dots (#431)
+- Player profile: the hit distribution heatmap draws every hit as a small dot scattered inside its board field, on top of the heat glow, in place of the heat spot's solid dot (#431)
 - Agent rules: `## Review feedback` in `AGENTS.md` has agents comment `@coderabbitai review` once a PR is open and after each push of fixes for CodeRabbit findings, because CodeRabbit no longer reviews this repo on its own with fewer than 10 stars. It says when a review is finished and when the loop ends (#474)
 - Roster: keep seat order in the query cache and reconcile room stream updates (#452)
 - Game: centralize game state and settings cache writes (#453)
