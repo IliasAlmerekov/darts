@@ -534,17 +534,17 @@ test.describe("Basic Throw Mechanics and Validation", () => {
     await expect(page.getByRole("list", { name: "Finished players list" })).toContainText(
       "Player 1",
     );
-    await expect(page.getByText("Player Finished! Continue Game?")).toBeVisible();
-    await expect(page.getByRole("button", { name: "Continue" })).toBeVisible();
-    await expect(page.getByRole("button", { name: "Undo Throw" })).toBeVisible();
+    await expect(page.getByRole("dialog", { name: "Player Finished!" })).toBeVisible();
+    await expect(page.getByRole("button", { name: "Continue game" })).toBeVisible();
+    await expect(page.getByRole("button", { name: "Undo last throw" })).toBeVisible();
 
     const number20 = page.getByRole("button", { name: "20", exact: true });
     await expect(number20).toBeDisabled();
 
-    await page.getByRole("button", { name: "Undo Throw" }).click();
+    await page.getByRole("button", { name: "Undo last throw" }).click();
 
     await expect(playerCard(page, "Player 1")).toContainText("20");
-    await expect(page.getByText("Player Finished! Continue Game?")).toHaveCount(0);
+    await expect(page.getByRole("dialog", { name: "Player Finished!" })).toHaveCount(0);
     await expect(number20).toBeEnabled();
   });
 
@@ -619,11 +619,11 @@ test.describe("Basic Throw Mechanics and Validation", () => {
     await openGame(page);
 
     await page.getByRole("button", { name: "20", exact: true }).click();
-    await expect(page.getByText("Player Finished! Continue Game?")).toBeVisible();
+    await expect(page.getByRole("dialog", { name: "Player Finished!" })).toBeVisible();
 
-    await page.getByRole("button", { name: "Undo Throw" }).dblclick();
+    await page.getByRole("button", { name: "Undo last throw" }).dblclick();
 
-    await expect(page.getByText("Player Finished! Continue Game?")).toHaveCount(0);
+    await expect(page.getByRole("dialog", { name: "Player Finished!" })).toHaveCount(0);
     expect(undoRequestCount).toBe(1);
 
     const numberFive = page.getByRole("button", { name: "5", exact: true });

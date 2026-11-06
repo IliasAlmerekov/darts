@@ -146,7 +146,7 @@ test.describe("Throw sync on the game page", () => {
       { ...CARA, score: 301, isActive: false },
     ];
     const finishOverlay = (page: Page): Locator =>
-      page.getByRole("dialog", { name: "Player Finished! Continue Game?" });
+      page.getByRole("dialog", { name: "Player Finished!" });
 
     let backend: ReturnType<typeof createScriptedGameBackend>;
     test.beforeEach(async ({ page }) => {
@@ -225,7 +225,7 @@ test.describe("Throw sync on the game page", () => {
 
       await expect(finishOverlay(page).getByRole("alert")).toBeVisible();
       await expect(page).toHaveURL(`/game/${gameId}`);
-      await finishOverlay(page).getByRole("button", { name: "Continue" }).click();
+      await finishOverlay(page).getByRole("button", { name: "Continue game" }).click();
 
       await expect(finishOverlay(page)).toBeHidden();
       await expect(page.getByRole("button", { name: "20", exact: true })).toBeEnabled();

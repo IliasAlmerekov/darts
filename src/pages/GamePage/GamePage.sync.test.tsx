@@ -282,12 +282,12 @@ describe("GamePage throw sync", () => {
     await openGame(game);
 
     tap("19");
-    expect(screen.getByText("Player Finished! Continue Game?")).toBeTruthy();
+    expect(screen.getByText("Player Finished!")).toBeTruthy();
 
     checkout.reject(stateVersionConflict());
 
     await waitFor(() => {
-      expect(screen.queryByText("Player Finished! Continue Game?")).toBeNull();
+      expect(screen.queryByText("Player Finished!")).toBeNull();
     });
     expect(
       within(playerCard("Alice")).getByText("19", { selector: "div:not([aria-hidden])" }),

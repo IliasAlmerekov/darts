@@ -22,10 +22,6 @@
   margin-top: clamp(8px, 1.6vw, 12px);
 }
 
-.finishGameOverlay p.overlayError {
-  color: var(--red-strong);
-}
-
 .overlayBox {
   position: relative;
   display: flex;
@@ -66,27 +62,95 @@
   margin-bottom: var(--space-md);
 }
 
-.undoThrow {
-  width: 100%;
-  height: var(--button-height);
-  border-radius: clamp(10px, 1.5vw, 14px);
-  border: none;
-  background-color: var(--red);
-  color: var(--white);
-  justify-content: center;
-  align-items: center;
+.finishOverlayCard {
+  background-color: var(--white);
+  border-radius: var(--radius-lg);
+}
+
+.finishOverlayContent {
   display: flex;
-  margin-top: var(--space-sm);
+  flex-direction: column;
+  width: 100%;
+  text-align: center;
+}
+
+.finishOverlayHeading {
+  margin: 0;
+  font-size: clamp(22px, 4.6vw, 28px);
+  font-weight: 700;
+  line-height: 1.2;
+  letter-spacing: 0;
+  text-align: center;
+  color: var(--color-text);
+}
+
+.finishOverlaySubtitle {
+  margin: var(--space-2xs) 0 0;
+  font-size: clamp(14px, 2.4vw, 18px);
+  line-height: 1.35;
+  color: var(--color-text-muted);
+}
+
+.finishOverlayError {
+  margin: var(--space-xs) 0 0;
+  font-size: clamp(14px, 2.4vw, 16px);
+  color: var(--red-strong);
+}
+
+.finishOverlayActions {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+  margin-top: var(--space-md);
+}
+
+.finishOverlayButton {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-sm);
+  width: 100%;
+  min-height: var(--button-height);
+  padding: 0 var(--space-sm);
+  border: 1px solid transparent;
+  border-radius: var(--radius-md);
+  font-family: inherit;
   font-size: var(--font-size-18);
   font-weight: 700;
   line-height: var(--line-height-24);
-  letter-spacing: 0.02em;
-  text-align: center;
-  gap: 8px;
+  cursor: pointer;
 }
 
-.undoThrow img {
-  filter: brightness(0) invert(1);
+.finishOverlayButton:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.finishOverlayButton:focus-visible {
+  outline: 2px solid var(--blue);
+  outline-offset: 2px;
+}
+
+.finishOverlayContinue {
+  background-color: var(--color-primary);
+  color: var(--white);
+}
+
+.finishOverlayFinish {
+  /* Alpha tint of --darkblue: the light grey fill from the design, readable on white. */
+  background-color: rgb(0 0 33 / 10%);
+  color: var(--color-text);
+}
+
+.finishOverlayUndo {
+  background-color: var(--white);
+  border-color: var(--color-border);
+  color: var(--color-text);
+}
+
+.finishOverlayUndo img {
+  width: 28px;
+  height: 28px;
 }
 
 .settingsBtn {
