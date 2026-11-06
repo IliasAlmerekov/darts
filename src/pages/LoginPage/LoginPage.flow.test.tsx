@@ -2,7 +2,7 @@
 
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { QueryClientProvider } from "@tanstack/react-query";
-import { MemoryRouter, Route, Routes } from "react-router-dom";
+import { Link, MemoryRouter, Route, Routes } from "react-router-dom";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import LoginPage from "./index";
 import { UnauthorizedError } from "@/shared/api";
@@ -39,7 +39,15 @@ function renderLoginRoute(): void {
         <Routes>
           <Route path={ROUTES.login} element={<LoginPage />} />
           <Route path={ROUTES.joined} element={<h1>Waiting room</h1>} />
-          <Route path={ROUTES.playerProfile} element={<h1>Player profile</h1>} />
+          <Route
+            path={ROUTES.playerProfile}
+            element={
+              <>
+                <h1>Player profile</h1>
+                <Link to={ROUTES.login}>Open login</Link>
+              </>
+            }
+          />
         </Routes>
       </MemoryRouter>
     </QueryClientProvider>,
@@ -88,6 +96,11 @@ describe("LoginPage form login", () => {
     fireEvent.click(screen.getByRole("button", { name: "Go to my profile" }));
 
     expect(await screen.findByRole("heading", { name: "Player profile" })).toBeTruthy();
+
+    fireEvent.click(screen.getByRole("link", { name: "Open login" }));
+
+    expect(await screen.findByRole("heading", { name: "Player profile" })).toBeTruthy();
+    expect(screen.queryByRole("heading", { name: "This game has already started" })).toBeNull();
   });
 
   it("shows the mapped error and keeps the typed values after a failed login", async () => {

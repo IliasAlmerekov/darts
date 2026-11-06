@@ -1,5 +1,6 @@
 // @vitest-environment jsdom
-import { startTransition } from "react";
+import { createElement, startTransition, type ReactNode } from "react";
+import { QueryClientProvider } from "@tanstack/react-query";
 import { act, renderHook, waitFor } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { useLoginPage } from "./useLoginPage";
@@ -11,7 +12,6 @@ import { queryClient } from "@/shared/query/queryClient";
 import { $currentGameId, setCurrentGameId } from "@/shared/store";
 
 const navigateMock = vi.fn();
-const useAuthenticatedUserMock = vi.fn();
 const useLocationMock = vi.fn();
 const loginWithCredentialsMock = vi.fn();
 const getAuthenticatedUserMock = vi.fn();
@@ -31,33 +31,42 @@ vi.mock("@/shared/api/auth", () => ({
   getAuthenticatedUser: (...args: unknown[]) => getAuthenticatedUserMock(...args),
 }));
 
-vi.mock("@/shared/hooks/useAuthenticatedUser", () => ({
-  useAuthenticatedUser: () => useAuthenticatedUserMock(),
-}));
-
-const loggedInPlayer = {
+const loggedInPlayer: AuthenticatedUser = {
   success: true,
   roles: ["ROLE_PLAYER"],
   id: 23,
   username: "Ton Eighty",
-  redirect: "http://localhost:3000/joined",
+  redirect: "http://localhost:3000/playerprofile",
 };
-const joinedPlayer = { ...loggedInPlayer, gameId: 42 };
+const joinedPlayer: AuthenticatedUser = {
+  ...loggedInPlayer,
+  redirect: "http://localhost:3000/joined",
+  gameId: 42,
+};
+const admin: AuthenticatedUser = {
+  success: true,
+  roles: ["ROLE_ADMIN", "ROLE_PLAYER"],
+  id: 1,
+  redirect: "http://localhost:3000/start",
+};
 
 const AUTH_KEY = authQueries.me().queryKey;
-const SEEDED_USER: AuthenticatedUser = {
-  success: true,
-  roles: ["ROLE_ADMIN"],
-  id: 99,
-  redirect: "/start",
-};
 
-function givenAuthCheck(user: unknown, loading = false): void {
-  useAuthenticatedUserMock.mockReturnValue({ user, loading, error: null });
+function wrapper({ children }: { children: ReactNode }): React.JSX.Element {
+  return createElement(QueryClientProvider, { client: queryClient }, children);
+}
+
+/** Answers the Remembered login check from the cache, as after a finished check. */
+function givenAuthCheck(user: AuthenticatedUser | null): void {
+  queryClient.setQueryData(AUTH_KEY, user);
+}
+
+function renderLoginPage(): { current: ReturnType<typeof useLoginPage> } {
+  return renderHook(() => useLoginPage(), { wrapper }).result;
 }
 
 async function submitLogin(): Promise<ReturnType<typeof useLoginPage>> {
-  const { result } = renderHook(() => useLoginPage());
+  const result = renderLoginPage();
 
   const formData = new FormData();
   formData.set("_username", "player@test.com");
@@ -83,7 +92,6 @@ describe("useLoginPage", () => {
         assign: assignMock,
       },
     });
-    givenAuthCheck(null);
     setCurrentGameId(null);
     useLocationMock.mockReturnValue({
       pathname: "/",
@@ -95,24 +103,29 @@ describe("useLoginPage", () => {
   });
 
   it("shows the login check while the auth check is pending", () => {
-    givenAuthCheck(null, true);
+    getAuthenticatedUserMock.mockReturnValueOnce(new Promise(() => undefined));
 
-    const { result } = renderHook(() => useLoginPage());
+    const result = renderLoginPage();
 
     expect(result.current.screen).toEqual({ type: "checking" });
     expect(navigateMock).not.toHaveBeenCalled();
   });
 
-  it("shows the form when the auth check finds no login", () => {
-    const { result } = renderHook(() => useLoginPage());
+  it("shows the form when the auth check finds no login", async () => {
+    getAuthenticatedUserMock.mockResolvedValueOnce(null);
 
-    expect(result.current.screen).toEqual({ type: "form" });
+    const result = renderLoginPage();
+
+    await waitFor(() => {
+      expect(result.current.screen).toEqual({ type: "form" });
+    });
+    expect(navigateMock).not.toHaveBeenCalled();
   });
 
   it("sends a remembered player to the redirect and keeps the form hidden", async () => {
     givenAuthCheck(joinedPlayer);
 
-    const { result } = renderHook(() => useLoginPage());
+    const result = renderLoginPage();
 
     expect(result.current.screen).toEqual({ type: "checking" });
     await waitFor(() => {
@@ -120,31 +133,8 @@ describe("useLoginPage", () => {
     });
   });
 
-  it("does not send a player with a stale stored game to the host start page", async () => {
-    givenAuthCheck(joinedPlayer);
-    setCurrentGameId(99);
-
-    renderHook(() => useLoginPage());
-
-    await waitFor(() => {
-      expect(navigateMock).toHaveBeenCalledWith(ROUTES.joined);
-    });
-    expect(navigateMock).not.toHaveBeenCalledWith(ROUTES.start(99));
-  });
-
-  it("sends an admin with a stored game to that game's start page", async () => {
-    givenAuthCheck({ success: true, roles: ["ROLE_ADMIN"], id: 1, redirect: "/start" });
-    setCurrentGameId(99);
-
-    renderHook(() => useLoginPage());
-
-    await waitFor(() => {
-      expect(navigateMock).toHaveBeenCalledWith("/start/99");
-    });
-  });
-
-  it("sends an admin to the protected source route", async () => {
-    givenAuthCheck({ success: true, roles: ["ROLE_ADMIN"], id: 1, redirect: "/start/42" });
+  it("sends a remembered admin to the protected source route", async () => {
+    givenAuthCheck(admin);
     useLocationMock.mockReturnValue({
       pathname: "/",
       search: "",
@@ -153,22 +143,24 @@ describe("useLoginPage", () => {
       state: { from: "/statistics" },
     });
 
-    renderHook(() => useLoginPage());
+    renderLoginPage();
 
     await waitFor(() => {
       expect(navigateMock).toHaveBeenCalledWith("/statistics");
     });
   });
 
-  it("falls back to the internal start route when the user has an external redirect", async () => {
-    givenAuthCheck({
-      success: true,
-      roles: ["ROLE_ADMIN"],
-      id: 1,
-      redirect: "https://evil.example/phishing",
+  it("ignores a source route outside the app", async () => {
+    givenAuthCheck(admin);
+    useLocationMock.mockReturnValue({
+      pathname: "/",
+      search: "",
+      hash: "",
+      key: "test",
+      state: { from: "https://evil.example/phishing" },
     });
 
-    renderHook(() => useLoginPage());
+    renderLoginPage();
 
     await waitFor(() => {
       expect(navigateMock).toHaveBeenCalledWith(ROUTES.start());
@@ -177,10 +169,9 @@ describe("useLoginPage", () => {
   });
 
   it("shows the invitation error instead of navigating", async () => {
-    const rejectedInvitation = { ...loggedInPlayer, invitationError: "GAME_ROOM_FULL" };
-    givenAuthCheck(rejectedInvitation);
+    givenAuthCheck({ ...loggedInPlayer, invitationError: "GAME_ROOM_FULL" });
 
-    const { result } = renderHook(() => useLoginPage());
+    const result = renderLoginPage();
 
     expect(result.current.screen).toEqual({
       type: "invitation-error",
@@ -191,18 +182,18 @@ describe("useLoginPage", () => {
     });
   });
 
-  it("drops the handled invitation error and sends the player to the profile", () => {
-    const rejectedInvitation = { ...loggedInPlayer, invitationError: "GAME_ROOM_FULL" };
-    givenAuthCheck(rejectedInvitation);
-    queryClient.setQueryData(["auth", "me"], rejectedInvitation);
-
-    const { result } = renderHook(() => useLoginPage());
+  it("opens the Player profile from the invitation error and drops the handled error", async () => {
+    givenAuthCheck({ ...loggedInPlayer, invitationError: "GAME_ROOM_FULL" });
+    const result = renderLoginPage();
 
     act(() => {
       result.current.goToPlayerProfile();
     });
 
-    expect(queryClient.getQueryData(["auth", "me"])).toEqual({
+    await waitFor(() => {
+      expect(navigateMock).toHaveBeenCalledExactlyOnceWith(ROUTES.playerProfile);
+    });
+    expect(queryClient.getQueryData(AUTH_KEY)).toEqual({
       ...loggedInPlayer,
       redirect: ROUTES.playerProfile,
     });
@@ -210,10 +201,10 @@ describe("useLoginPage", () => {
 
   describe("form login", () => {
     beforeEach(() => {
-      queryClient.setQueryData(AUTH_KEY, SEEDED_USER);
+      givenAuthCheck(null);
     });
 
-    it("stores the logged-in user and the joined game", async () => {
+    it("stores the logged-in user and the joined game, then opens the Waiting room", async () => {
       loginWithCredentialsMock.mockResolvedValueOnce(joinedPlayer);
 
       const state = await submitLogin();
@@ -225,27 +216,47 @@ describe("useLoginPage", () => {
       expect(queryClient.getQueryData(AUTH_KEY)).toEqual(joinedPlayer);
       expect($currentGameId.get()).toBe(42);
       expect(state.error).toBeNull();
+      await waitFor(() => {
+        expect(navigateMock).toHaveBeenCalledWith(ROUTES.joined);
+      });
     });
 
-    it("keeps a stored Current game id when the logged-in user has no game", async () => {
+    it("clears a stored Current game id when the logged-in player has no game", async () => {
       setCurrentGameId(7);
       loginWithCredentialsMock.mockResolvedValueOnce(loggedInPlayer);
 
       const state = await submitLogin();
 
       expect(queryClient.getQueryData(AUTH_KEY)).toEqual(loggedInPlayer);
-      expect($currentGameId.get()).toBe(7);
+      expect($currentGameId.get()).toBeNull();
       expect(state.error).toBeNull();
     });
 
-    it("stores the user with the invitation error", async () => {
-      const rejectedInvitation = { ...loggedInPlayer, invitationError: "GAME_ALREADY_STARTED" };
+    it("sends an admin with a stored game to the start page and keeps the stored game", async () => {
+      setCurrentGameId(99);
+      loginWithCredentialsMock.mockResolvedValueOnce(admin);
+
+      await submitLogin();
+
+      await waitFor(() => {
+        expect(navigateMock).toHaveBeenCalledWith(ROUTES.start());
+      });
+      expect(navigateMock).not.toHaveBeenCalledWith(ROUTES.start(99));
+      expect($currentGameId.get()).toBe(99);
+    });
+
+    it("stores the user with the invitation error and stays on the page", async () => {
+      const rejectedInvitation: AuthenticatedUser = {
+        ...loggedInPlayer,
+        invitationError: "GAME_ALREADY_STARTED",
+      };
       loginWithCredentialsMock.mockResolvedValueOnce(rejectedInvitation);
 
       const state = await submitLogin();
 
       expect(queryClient.getQueryData(AUTH_KEY)).toEqual(rejectedInvitation);
       expect(state.error).toBeNull();
+      expect(navigateMock).not.toHaveBeenCalled();
     });
 
     it("keeps the logged-in user when a pending Remembered login check answers late with no user", async () => {
@@ -273,9 +284,10 @@ describe("useLoginPage", () => {
 
       const state = await submitLogin();
 
-      expect(queryClient.getQueryData(AUTH_KEY)).toEqual(SEEDED_USER);
+      expect(queryClient.getQueryData(AUTH_KEY)).toBeNull();
       expect(state.error).toBe("Network error. Please check your connection and try again.");
       expect(state.values).toEqual({ email: "player@test.com", password: "password" });
+      expect(navigateMock).not.toHaveBeenCalled();
     });
 
     it("shows the credentials message for a 401 LOGIN_INVALID_CREDENTIALS", async () => {
@@ -289,7 +301,7 @@ describe("useLoginPage", () => {
 
       const state = await submitLogin();
 
-      expect(queryClient.getQueryData(AUTH_KEY)).toEqual(SEEDED_USER);
+      expect(queryClient.getQueryData(AUTH_KEY)).toBeNull();
       expect(state.error).toBe("Incorrect email or password.");
     });
   });

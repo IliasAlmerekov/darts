@@ -1,11 +1,10 @@
-import { useActionState, useEffect } from "react";
-import { useNavigate, useLocation } from "react-router-dom";
+import { useActionState } from "react";
+import { useLocation } from "react-router-dom";
 import { loginWithCredentials } from "@/shared/api/auth";
 import { useAuthenticatedUser } from "@/shared/hooks/useAuthenticatedUser";
-import { acceptLoggedInUser, markInvitationErrorHandled } from "@/shared/query/acceptLoggedInUser";
-import { resolveLoginDestination } from "./lib/loginDestination";
+import { useAuthRedirect } from "@/shared/hooks/useAuthRedirect";
+import { acceptAuthenticatedUser, dismissInvitationError } from "@/shared/query/postAuth";
 import { isLoginLocationState } from "./lib/loginLocationState";
-import { getActiveGameId } from "@/shared/store";
 import { mapAuthErrorMessage } from "@/lib/error/auth-error-handling";
 import { mapInvitationErrorMessage } from "@/lib/error/invitation-error-message";
 import { ROUTES } from "@/lib/router/routes";
@@ -46,7 +45,7 @@ interface UseLoginPageResult {
 const INITIAL_STATE: LoginFormState = { error: null, values: { email: "", password: "" } };
 
 /**
- * A successful login puts the user into the auth query, where the login page reads it the
+ * A successful login puts the user into the auth query, where `useAuthRedirect` reads it the
  * same way as after a Remembered login check.
  */
 async function submitLogin(_previous: LoginFormState, formData: FormData): Promise<LoginFormState> {
@@ -54,7 +53,7 @@ async function submitLogin(_previous: LoginFormState, formData: FormData): Promi
   const password = String(formData.get("_password") ?? "");
 
   try {
-    await acceptLoggedInUser(await loginWithCredentials({ email, password }));
+    await acceptAuthenticatedUser(await loginWithCredentials({ email, password }));
     return { error: null, values: { email, password } };
   } catch (error) {
     return { error: mapAuthErrorMessage({ flow: "login", error }), values: { email, password } };
@@ -63,7 +62,6 @@ async function submitLogin(_previous: LoginFormState, formData: FormData): Promi
 
 export function useLoginPage(): UseLoginPageResult {
   const [state, formAction, loading] = useActionState(submitLogin, INITIAL_STATE);
-  const navigate = useNavigate();
   const location = useLocation();
   const { user, loading: checkingLogin } = useAuthenticatedUser();
 
@@ -90,18 +88,11 @@ export function useLoginPage(): UseLoginPageResult {
     screen = { type: "form" };
   }
 
-  // The handled error leaves the cached user, so a later visit to the login page redirects
-  // instead of showing it again. The redirect effect below then opens the profile.
-  // The handled error leaves the cached user, so the redirect effect below opens the profile.
-  const goToPlayerProfile = markInvitationErrorHandled;
+  useAuthRedirect(from);
 
-  useEffect(() => {
-    if (user === null || user.invitationError !== undefined) {
-      return;
-    }
-
-    navigate(resolveLoginDestination(user, { currentGameId: getActiveGameId(), from }));
-  }, [user, from, navigate]);
+  // The handled error leaves the cached user, so `useAuthRedirect` opens the profile and a
+  // later visit to the login page redirects instead of showing it again.
+  const goToPlayerProfile = dismissInvitationError;
 
   return {
     screen,

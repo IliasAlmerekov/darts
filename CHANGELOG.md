@@ -17,6 +17,7 @@ and this project does **not** yet follow [Semantic Versioning](https://semver.or
 
 ### Changed
 
+- Auth: login and registration pick the next page the same way. A Remembered login on `/register` shows "Checking your login…" and redirects like `/` does, instead of showing the form. An admin who logs in goes to the protected page they came from or to `/start`, where the start page finds the Tablet game; the login page no longer sends them to a stored `/start/<id>`. A player whose login answer has no game no longer keeps a game id from an earlier session. `registerUser` logs `auth.registration.failed` and `auth.registration.unsafe_redirect` itself (#454)
 - Start page: `useStartPage` returns its values grouped as `roster`, `guest` and `create`, the roster's guest add reports a full lobby and a taken username as their own results, the remove handler takes only the player id, and the guest and create/start hooks have their own tests (#471)
 - Game: the finish overlay shows "Player Finished!" with the subtitle "Continue the game with the remaining players?" on a white card. Its buttons are, top to bottom, a blue "Continue game", a grey "Finish game" and an outlined "Undo last throw" with the undo icon (#472)
 - Agent context: scope and checks follow the change; optional runtime and publishing guidance loads on demand, sibling paths resolve from the main checkout, contract refreshes preserve the existing dump on failure, Codex keeps project-level Context7 access, and bot reviews require current-head evidence (#483)

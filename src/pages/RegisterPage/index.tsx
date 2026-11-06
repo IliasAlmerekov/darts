@@ -3,11 +3,16 @@ import styles from "./RegisterPage.module.css";
 import { useRegistrationPage } from "./useRegistrationPage";
 import { RegisterForm } from "./RegisterForm";
 import { InvitationErrorScreen } from "@/shared/ui/invitation-error-screen";
+import { LoginCheckScreen } from "@/shared/ui/login-check-screen";
 import JoiningScreen from "./JoiningScreen";
 import deepblueLogo from "@/assets/icons/madeByDeepblue.svg";
 
 function RegisterPage(): React.JSX.Element {
   const { screen, error, loading, formAction, values, goToPlayerProfile } = useRegistrationPage();
+
+  if (screen.type === "checking") {
+    return <LoginCheckScreen />;
+  }
 
   if (screen.type === "joining") {
     return <JoiningScreen />;
