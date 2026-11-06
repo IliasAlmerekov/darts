@@ -44,6 +44,18 @@ test.describe("Player profile hit distribution", () => {
     await sector.click();
     const card = page.getByRole("dialog", { name: "Sector 20" });
     await expect(card).toContainText("120 hits");
+    // The card opens beside the sector, clear of the block heading above the board. It
+    // scales in, so the check retries until the card has settled.
+    const heading = page.getByRole("heading", { name: "Hit distribution" });
+    await expect(async () => {
+      const headingBox = await heading.boundingBox();
+      const cardBox = await card.boundingBox();
+      expect(headingBox).not.toBeNull();
+      expect(cardBox).not.toBeNull();
+      if (headingBox !== null && cardBox !== null) {
+        expect(cardBox.y).toBeGreaterThanOrEqual(headingBox.y + headingBox.height);
+      }
+    }).toPass();
     await expect(card.getByRole("listitem")).toHaveText([
       "Single 20: 12",
       "Double 20: 12",

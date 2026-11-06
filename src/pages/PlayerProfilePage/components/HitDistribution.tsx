@@ -1,4 +1,4 @@
-import React, { useId, useMemo, useRef } from "react";
+import React, { Fragment, useId, useMemo, useRef } from "react";
 import clsx from "clsx";
 import { Popover } from "@fujiui/react";
 import {
@@ -154,17 +154,21 @@ export function HitDistribution({
     if (showsDots) {
       return <path key={path} className={className} d={path} fillRule="evenodd" />;
     }
+    // Past the dot limit the board keeps its colours, faded, and each hit board field gets a
+    // blue layer on top, so the board still reads as a dartboard.
     const isHit = (hitsByField.get(field) ?? 0) > 0;
     return (
-      <path
-        key={path}
-        className={
-          isHit ? clsx(styles.heatField, HEAT_CLASSES[frequencyOf(field)]) : styles.emptyField
-        }
-        d={path}
-        fillRule="evenodd"
-        data-field={isHit ? field : undefined}
-      />
+      <Fragment key={path}>
+        <path className={clsx(className, styles.fadedField)} d={path} fillRule="evenodd" />
+        {isHit ? (
+          <path
+            className={clsx(styles.heatField, HEAT_CLASSES[frequencyOf(field)])}
+            d={path}
+            fillRule="evenodd"
+            data-field={field}
+          />
+        ) : null}
+      </Fragment>
     );
   };
 
@@ -234,7 +238,7 @@ export function HitDistribution({
                 </g>
               </svg>
 
-              <Popover.Content className={styles.sectorCard} side="top">
+              <Popover.Content className={styles.sectorCard} side="right">
                 {card === null ? null : (
                   <>
                     <Popover.Title className={styles.sectorTitle}>{card.name}</Popover.Title>
