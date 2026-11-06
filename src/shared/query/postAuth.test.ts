@@ -22,6 +22,15 @@ import { $currentGameId, setCurrentGameId } from "@/shared/store";
 const AUTH_KEY = authQueries.me().queryKey;
 const ORIGIN = window.location.origin;
 
+/** The user in the auth cache; the test fails when the cache is empty. */
+function readCachedUser(): AuthenticatedUser {
+  const user = queryClient.getQueryData(AUTH_KEY);
+  if (!user) {
+    throw new Error("The auth cache holds no user.");
+  }
+  return user;
+}
+
 /** One answer of the backend, the context the page passes, and what must come out. */
 interface PostAuthCase {
   name: string;
@@ -242,9 +251,10 @@ describe("post-auth", () => {
       if (testCase.invitationError !== undefined) {
         dismissInvitationError();
       }
-      const cachedUser = queryClient.getQueryData(AUTH_KEY);
-      expect(cachedUser?.invitationError).toBeUndefined();
-      expect(resolveAuthDestination(cachedUser!, testCase.from)).toBe(testCase.destination);
+      const cachedUser = readCachedUser();
+      expect(cachedUser.invitationError).toBeUndefined();
+      expect(resolveAuthDestination(cachedUser, testCase.from)).toBe(testCase.destination);
+      // Dismissing the invitation error leaves the current game as it was.
       expect($currentGameId.get()).toBe(testCase.currentGameId);
     });
   });
@@ -279,9 +289,9 @@ describe("post-auth", () => {
 
       dismissInvitationError();
 
-      const dismissed = queryClient.getQueryData(AUTH_KEY);
+      const dismissed = readCachedUser();
       expect(dismissed).toStrictEqual(expected);
-      expect(resolveAuthDestination(dismissed!, ROUTES.start())).toBe(ROUTES.playerProfile);
+      expect(resolveAuthDestination(dismissed, ROUTES.start())).toBe(ROUTES.playerProfile);
     });
 
     it("leaves an empty cache empty", () => {
