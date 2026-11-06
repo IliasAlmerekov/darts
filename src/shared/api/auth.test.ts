@@ -404,8 +404,41 @@ const registrationExample = {
 };
 
 describe("registerUser", () => {
+  const registration = { username: "alice", email: "alice@example.com", password: "s3cr3t" };
+
   beforeEach(() => {
     vi.restoreAllMocks();
+    vi.spyOn(clientLogger, "error").mockImplementation(() => undefined);
+    vi.spyOn(clientLogger, "warn").mockImplementation(() => undefined);
+  });
+
+  it("logs a failed registration and rejects with the original error", async () => {
+    const failure = new ApiError("Server error", { status: 500 });
+    vi.spyOn(apiClient, "post").mockRejectedValueOnce(failure);
+
+    await expect(registerUser(registration)).rejects.toBe(failure);
+    expect(clientLogger.error).toHaveBeenCalledWith("auth.registration.failed", {
+      error: failure,
+    });
+  });
+
+  it("logs an off-origin redirect without the URL and still resolves with the user", async () => {
+    const response = { ...registrationExample, redirect: "/\\evil.example" };
+    vi.spyOn(apiClient, "post").mockImplementationOnce(respondWith(response));
+
+    await expect(registerUser(registration)).resolves.toEqual(response);
+    expect(clientLogger.warn).toHaveBeenCalledExactlyOnceWith("auth.registration.unsafe_redirect");
+  });
+
+  it("does not warn about a same-origin redirect", async () => {
+    vi.spyOn(apiClient, "post").mockImplementationOnce(
+      respondWith({ ...registrationExample, redirect: `${window.location.origin}/start` }),
+    );
+
+    await registerUser(registration);
+
+    expect(clientLogger.warn).not.toHaveBeenCalled();
+    expect(clientLogger.error).not.toHaveBeenCalled();
   });
 
   it("should call apiClient.post with mapped registration payload", async () => {

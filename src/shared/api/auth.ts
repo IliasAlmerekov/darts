@@ -2,6 +2,7 @@ import * as v from "valibot";
 import { apiClient, ApiValidationError } from "./client";
 import { ApiError, UnauthorizedError } from "./errors";
 import { integerSchema } from "./schemas";
+import { toSafeRedirectPath } from "@/lib/router/safeRedirect";
 import { clientLogger } from "@/shared/services/browser/clientLogger";
 
 // ---------------------------------------------------------------------------
@@ -186,20 +187,36 @@ export async function logout(onSuccess?: () => void): Promise<void> {
 }
 
 /**
- * Registers a new user account.
+ * Registers a new user account; the backend logs the new player in. A failed request is
+ * logged and rethrown. A redirect that would leave the app is logged and still returned:
+ * `resolveAuthDestination` replaces it with an in-app route.
  */
 export async function registerUser(data: RegistrationData): Promise<RegistrationResponse> {
-  return apiClient.post(
-    REGISTER_ENDPOINT,
-    {
-      username: data.username,
-      email: data.email,
-      plainPassword: data.password,
-    },
-    {
-      validate: registrationResponseSchema,
-    },
-  );
+  let response: RegistrationResponse;
+  try {
+    response = await apiClient.post(
+      REGISTER_ENDPOINT,
+      {
+        username: data.username,
+        email: data.email,
+        plainPassword: data.password,
+      },
+      {
+        validate: registrationResponseSchema,
+      },
+    );
+  } catch (error) {
+    clientLogger.error("auth.registration.failed", {
+      error,
+    });
+    throw error;
+  }
+
+  if (toSafeRedirectPath(response.redirect) === null) {
+    // The URL itself stays out of the log: it may carry a token.
+    clientLogger.warn("auth.registration.unsafe_redirect");
+  }
+  return response;
 }
 
 /**
