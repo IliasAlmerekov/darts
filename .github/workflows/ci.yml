@@ -71,6 +71,9 @@ jobs:
       - name: Unit tests
         run: npm run test
 
+      - name: Script tests
+        run: npm run test:scripts
+
   e2e:
     if: github.event.pull_request.draft == false
     runs-on: ubuntu-latest
