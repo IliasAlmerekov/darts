@@ -109,6 +109,9 @@ export const playerQueries = {
     queryOptions({
       queryKey: ["player", "publicProfile", playerId] as const,
       staleTime: PUBLIC_PROFILE_STALE_TIME_MS,
+      // Offline the default mode would pause the request, so the route loader would never
+      // settle and the navigation would hang instead of showing the error with Retry.
+      networkMode: "always",
       queryFn:
         playerId === null
           ? skipToken

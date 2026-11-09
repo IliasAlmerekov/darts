@@ -12,8 +12,9 @@ vi.mock("@/shared/services/browser/clientLogger", () => ({
   clientLogger: { error: vi.fn() },
 }));
 
-import { beforeEach, describe, expect, it, vi } from "vitest";
-import { ApiError } from "@/shared/api";
+import { onlineManager } from "@tanstack/react-query";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { ApiError, NetworkError } from "@/shared/api";
 import { getAuthenticatedUser } from "@/shared/api/auth";
 import { getPlayerPublicProfile } from "@/shared/api/player";
 import { ROUTES } from "@/lib/router/routes";
@@ -41,6 +42,22 @@ describe("publicProfileLoader", () => {
     queryClient.clear();
     vi.mocked(getAuthenticatedUser).mockResolvedValue(buildAuthenticatedPlayer());
     vi.mocked(getPlayerPublicProfile).mockResolvedValue(buildPlayerPublicProfile());
+  });
+
+  afterEach(() => {
+    onlineManager.setOnline(true);
+  });
+
+  it("lets an offline read fail, so the page shows the error instead of waiting", async () => {
+    onlineManager.setOnline(false);
+    vi.mocked(getPlayerPublicProfile).mockRejectedValue(new NetworkError("Failed to fetch"));
+
+    await expect(load("7")).resolves.toBeNull();
+
+    expect(getPlayerPublicProfile).toHaveBeenCalledWith(7, expect.any(AbortSignal));
+    expect(
+      queryClient.getQueryState(playerQueries.publicProfile(7).queryKey)?.error,
+    ).toBeInstanceOf(NetworkError);
   });
 
   it("fills the Public profile query of the route id", async () => {
