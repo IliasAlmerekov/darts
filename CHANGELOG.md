@@ -14,6 +14,7 @@ and this project does **not** yet follow [Semantic Versioning](https://semver.or
 ### Fixed
 
 - Start page: a long press on the move icon of a selected player on a tablet no longer opens the browser's image menu, so press and drag reorders the player. The move and delete icons and the "Play as a guest" icon can no longer be dragged as images or selected, and the move button cancels its context menu (#504)
+- Start page: after a drop, the selected players show the new order in the same render in which the drag ends, so the rows between the old and the new place no longer jump back for a frame (#504)
 
 ## [0.5.0] - 2026-11-06
 

@@ -539,6 +539,47 @@ describe("useRoster", () => {
     await waitFor(() => expect(result.current.seats.map(({ id }) => id)).toEqual([2, 3]));
   });
 
+  it("shows the new order in the render that follows the drop", () => {
+    testQueryClient.setQueryData(gameQueries.roster(5).queryKey, [
+      { id: 1, name: "A", position: 0 },
+      { id: 2, name: "B", position: 1 },
+      { id: 3, name: "C", position: 2 },
+    ]);
+    vi.mocked(apiClient.post).mockReturnValue(new Promise(() => {}));
+    const { result } = renderGamePlayers(5);
+
+    // A synchronous act runs no timers, like the render in which dnd-kit clears the row
+    // transforms after a drop.
+    act(() => {
+      result.current.reorder(1, 3);
+    });
+
+    expect(result.current.seats.map(({ id }) => id)).toEqual([2, 3, 1]);
+  });
+
+  it("shows the second drop on top of the first before the query notifies", async () => {
+    testQueryClient.setQueryData(gameQueries.roster(5).queryKey, [
+      { id: 1, name: "A", position: 0 },
+      { id: 2, name: "B", position: 1 },
+      { id: 3, name: "C", position: 2 },
+    ]);
+    vi.mocked(apiClient.post).mockReturnValue(new Promise(() => {}));
+    const { result } = renderGamePlayers(5);
+
+    act(() => {
+      result.current.reorder(1, 3);
+    });
+    act(() => {
+      result.current.reorder(2, 3);
+    });
+
+    expect(result.current.seats.map(({ id }) => id)).toEqual([3, 2, 1]);
+    await act(async () => {
+      await new Promise((resolve) => setTimeout(resolve, 0));
+    });
+    expect(result.current.seats.map(({ id }) => id)).toEqual([3, 2, 1]);
+  });
+
   it("sends one reorder request per drag in Strict Mode", async () => {
     testQueryClient.setQueryData(gameQueries.roster(5).queryKey, [
       { id: 1, name: "A", position: 0 },
