@@ -20,6 +20,11 @@
   padding-top: var(--page-padding);
 }
 
+/* The logo keeps the right edge, as on the Player profile. */
+.brand {
+  margin-left: auto;
+}
+
 .publicProfile {
   padding-top: var(--space-md);
   padding-bottom: var(--page-padding);
