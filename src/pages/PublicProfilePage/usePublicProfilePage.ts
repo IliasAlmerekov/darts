@@ -17,10 +17,7 @@ export function usePublicProfilePage(): PublicProfileState {
   const { id } = useParams<{ id?: string }>();
   // The loader answers an invalid id with a 404 route error, so the page never sees one.
   const playerId = parseRouteId(id);
-  const { data, error, refetch } = useQuery({
-    ...playerQueries.publicProfile(playerId ?? 0),
-    enabled: playerId !== null,
-  });
+  const { data, error, refetch } = useQuery(playerQueries.publicProfile(playerId));
 
   if (error instanceof ApiError && error.status === 404) {
     return { status: "not-found" };

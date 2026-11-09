@@ -12,3 +12,16 @@ export function parseRouteId(idParam: string | undefined): number | null {
   const id = Number(idParam);
   return Number.isSafeInteger(id) ? id : null;
 }
+
+/**
+ * Reads the id of a route loader. A missing id or one that `parseRouteId` rejects throws a 404
+ * route error response, so the loader sends no request and `ErrorBoundary` shows the not found
+ * page.
+ */
+export function routeIdOrNotFound(idParam: string | undefined): number {
+  const id = parseRouteId(idParam);
+  if (id === null) {
+    throw new Response(null, { status: 404, statusText: "Not Found" });
+  }
+  return id;
+}

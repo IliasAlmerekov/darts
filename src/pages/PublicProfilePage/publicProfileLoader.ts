@@ -1,5 +1,5 @@
 import { replace, type LoaderFunctionArgs } from "react-router-dom";
-import { parseRouteId } from "@/lib/router/routeId";
+import { routeIdOrNotFound } from "@/lib/router/routeId";
 import { ROUTES } from "@/lib/router/routes";
 import { authQueries } from "@/shared/query/auth.queries";
 import { playerQueries } from "@/shared/query/player.queries";
@@ -11,10 +11,7 @@ import { queryClient } from "@/shared/query/queryClient";
  * own Player profile. A failed read stays in the query, and the page shows it.
  */
 export async function publicProfileLoader({ params }: LoaderFunctionArgs): Promise<null> {
-  const playerId = parseRouteId(params.id);
-  if (playerId === null) {
-    throw new Response(null, { status: 404, statusText: "Not Found" });
-  }
+  const playerId = routeIdOrNotFound(params.id);
 
   const user = await queryClient.ensureQueryData(authQueries.me()).catch(() => null);
   // ProtectedRoutes sends a visitor without a player session away, so they need no read.

@@ -104,25 +104,28 @@ export const playerQueries = {
         }
       },
     }),
-  /** Another registered player's Public profile: name and statistics. */
-  publicProfile: (playerId: number) =>
+  /** Another registered player's Public profile: name and statistics; no id skips the read. */
+  publicProfile: (playerId: number | null) =>
     queryOptions({
       queryKey: ["player", "publicProfile", playerId] as const,
       staleTime: PUBLIC_PROFILE_STALE_TIME_MS,
-      queryFn: async ({ signal }): Promise<PublicProfile> => {
-        try {
-          return toPublicProfile(await getPlayerPublicProfile(playerId, signal));
-        } catch (error: unknown) {
-          // An unknown id, a guest or the admin account is an answer, not a failure.
-          const isPlayerNotFound = error instanceof ApiError && error.status === 404;
-          if (!signal.aborted && !isPlayerNotFound) {
-            clientLogger.error("player.public-profile.fetch.failed", {
-              context: { playerId },
-              error,
-            });
-          }
-          throw error;
-        }
-      },
+      queryFn:
+        playerId === null
+          ? skipToken
+          : async ({ signal }): Promise<PublicProfile> => {
+              try {
+                return toPublicProfile(await getPlayerPublicProfile(playerId, signal));
+              } catch (error: unknown) {
+                // An unknown id, a guest or the admin account is an answer, not a failure.
+                const isPlayerNotFound = error instanceof ApiError && error.status === 404;
+                if (!signal.aborted && !isPlayerNotFound) {
+                  clientLogger.error("player.public-profile.fetch.failed", {
+                    context: { playerId },
+                    error,
+                  });
+                }
+                throw error;
+              }
+            },
     }),
 };

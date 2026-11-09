@@ -1,5 +1,5 @@
 import type { TabletGame } from "@/shared/api/game";
-import { parseRouteId } from "./routeId";
+import { parseRouteId, routeIdOrNotFound } from "./routeId";
 import { ROUTES } from "./routes";
 
 /** The admin routes that follow the tablet game. */
@@ -15,11 +15,7 @@ export function parseRouteGameId(gameIdParam: string | undefined): number | null
  * `parseRouteGameId` rejects throws a 404 route error response, so the loader sends no request.
  */
 export function routeGameIdOrNotFound(gameIdParam: string | undefined): number | null {
-  const gameId = parseRouteGameId(gameIdParam);
-  if (gameIdParam !== undefined && gameId === null) {
-    throw new Response(null, { status: 404, statusText: "Not Found" });
-  }
-  return gameId;
+  return gameIdParam === undefined ? null : routeIdOrNotFound(gameIdParam);
 }
 
 /** The path of the tablet game on an admin route: the page a nav link or a redirect opens. */
