@@ -1454,7 +1454,7 @@
                 ],
                 "responses": {
                     "200": {
-                        "description": "Avatar image. Cache-Control is private, no-cache; ETag identifies the bytes.",
+                        "description": "Avatar image. Every player may read the avatar of every registered player, the admin that of every non-guest. Cache-Control is private, no-cache; ETag identifies the bytes.",
                         "content": {
                             "image/png": {},
                             "image/jpeg": {}
@@ -1467,7 +1467,7 @@
                         "description": "Authentication required."
                     },
                     "404": {
-                        "description": "Avatar not found.",
+                        "description": "Avatar not found: unknown id, guest, no image, or for a player caller the admin account; all with the same body (`PLAYER_NOT_FOUND`).",
                         "content": {
                             "application/json": {
                                 "schema": {
@@ -1652,6 +1652,61 @@
                     },
                     "403": {
                         "description": "Angemeldet ohne `ROLE_PLAYER` (z. B. der Admin) (`ACCESS_DENIED`).",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ApiError"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/player/{id}/profile": {
+            "get": {
+                "tags": [
+                    "Player"
+                ],
+                "summary": "Returns the Public profile of a registered player: name and Profile statistics.",
+                "operationId": "get_app_player_public_profile",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "pattern": "\\d+"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "\u00d6ffentliches Profil eines registrierten Spielers, lesbar f\u00fcr jeden Spieler, auch f\u00fcr sich selbst: `playerId`, Anzeigename (sonst Benutzername) und dieselbe Statistik wie im eigenen Profil. Ohne Spiele ist die Statistik leer. Letzte Spiele, Registrierungsdatum und E-Mail fehlen.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/PlayerPublicProfileResponseDto"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Nicht angemeldet."
+                    },
+                    "403": {
+                        "description": "Angemeldet ohne `ROLE_PLAYER` (z. B. der Admin) (`ACCESS_DENIED`).",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ApiError"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Kein registrierter Spieler: unbekannte ID, Gast oder Admin-Konto, alle mit derselben Antwort (`PLAYER_NOT_FOUND`).",
                         "content": {
                             "application/json": {
                                 "schema": {
@@ -3882,6 +3937,26 @@
                         "type": "string",
                         "format": "date-time",
                         "nullable": true
+                    }
+                },
+                "type": "object"
+            },
+            "PlayerPublicProfileResponseDto": {
+                "required": [
+                    "playerId",
+                    "displayName",
+                    "stats"
+                ],
+                "properties": {
+                    "playerId": {
+                        "type": "integer"
+                    },
+                    "displayName": {
+                        "description": "Anzeigename des Spielers, sonst sein Benutzername.",
+                        "type": "string"
+                    },
+                    "stats": {
+                        "$ref": "#/components/schemas/PlayerProfileStatsDto"
                     }
                 },
                 "type": "object"
