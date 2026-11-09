@@ -21,31 +21,20 @@ import { fireEvent, render, screen, within } from "@testing-library/react";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { createMemoryRouter, RouterProvider } from "react-router-dom";
 import { ApiError } from "@/shared/api";
-import { getAuthenticatedUser, type AuthenticatedUser } from "@/shared/api/auth";
+import { getAuthenticatedUser } from "@/shared/api/auth";
 import { getPlayerPublicProfile } from "@/shared/api/player";
 import { ROUTES } from "@/lib/router/routes";
 import { queryClient } from "@/shared/query/queryClient";
 import { clientLogger } from "@/shared/services/browser/clientLogger";
 import {
-  buildPlayerProfileStats,
+  buildAuthenticatedPlayer,
+  buildEmptyPlayerProfileStats,
   buildPlayerPublicProfile,
 } from "@/shared/types/player.test-support";
 import PublicProfilePage from ".";
 import { publicProfileLoader } from "./publicProfileLoader";
 
 type Router = ReturnType<typeof createMemoryRouter>;
-
-function createUser(overrides: Partial<AuthenticatedUser> = {}): AuthenticatedUser {
-  return {
-    success: true,
-    id: 42,
-    roles: ["ROLE_PLAYER"],
-    email: "alice@example.com",
-    username: "Alice",
-    redirect: ROUTES.playerProfile,
-    ...overrides,
-  };
-}
 
 function renderPage(playerId = 7): Router {
   const router = createMemoryRouter(
@@ -88,7 +77,7 @@ describe("PublicProfilePage", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     queryClient.clear();
-    vi.mocked(getAuthenticatedUser).mockResolvedValue(createUser());
+    vi.mocked(getAuthenticatedUser).mockResolvedValue(buildAuthenticatedPlayer());
     vi.mocked(getPlayerPublicProfile).mockResolvedValue(buildPlayerPublicProfile());
     // jsdom lacks DOMMatrixReadOnly; the sector card's positioner reads a translate from it.
     vi.stubGlobal(
@@ -143,24 +132,7 @@ describe("PublicProfilePage", () => {
 
   it("shows empty statistics, not an error, for a player without games", async () => {
     vi.mocked(getPlayerPublicProfile).mockResolvedValue(
-      buildPlayerPublicProfile({
-        stats: buildPlayerProfileStats({
-          gamesPlayed: 0,
-          scoreAverage: null,
-          wins: 0,
-          winRate: null,
-          checkoutRate: null,
-          checkoutHits: 0,
-          checkoutAttempts: 0,
-          hitDistribution: buildPlayerProfileStats().hitDistribution.map(({ field }) => ({
-            field,
-            hits: 0,
-          })),
-          mostHitSegment: null,
-          favoriteDoubles: [],
-          highestFinish: null,
-        }),
-      }),
+      buildPlayerPublicProfile({ stats: buildEmptyPlayerProfileStats() }),
     );
 
     renderPage();

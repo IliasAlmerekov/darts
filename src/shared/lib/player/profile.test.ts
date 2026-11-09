@@ -4,6 +4,7 @@ import {
   buildPlayerProfile as buildProfile,
   buildPlayerProfileGame as buildGame,
   buildPlayerProfileStats as buildStats,
+  buildEmptyPlayerProfileStats,
   buildPlayerPublicProfile,
 } from "@/shared/types/player.test-support";
 import { toPlayerProfile, toPublicProfile } from "./profile";
@@ -341,20 +342,7 @@ describe("toPublicProfile", () => {
 
   it("returns empty stats for a player without games", () => {
     const profile = toPublicProfile(
-      buildPlayerPublicProfile({
-        stats: buildStats({
-          gamesPlayed: 0,
-          scoreAverage: null,
-          wins: 0,
-          winRate: null,
-          checkoutRate: null,
-          checkoutHits: 0,
-          checkoutAttempts: 0,
-          mostHitSegment: null,
-          favoriteDoubles: [],
-          highestFinish: null,
-        }),
-      }),
+      buildPlayerPublicProfile({ stats: buildEmptyPlayerProfileStats() }),
     );
 
     expect(profile.stats).toEqual({

@@ -14,27 +14,18 @@ vi.mock("@/shared/services/browser/clientLogger", () => ({
 
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { ApiError } from "@/shared/api";
-import { getAuthenticatedUser, type AuthenticatedUser } from "@/shared/api/auth";
+import { getAuthenticatedUser } from "@/shared/api/auth";
 import { getPlayerPublicProfile } from "@/shared/api/player";
 import { ROUTES } from "@/lib/router/routes";
 import { playerQueries } from "@/shared/query/player.queries";
 import { queryClient } from "@/shared/query/queryClient";
 import { clientLogger } from "@/shared/services/browser/clientLogger";
-import { buildPlayerPublicProfile } from "@/shared/types/player.test-support";
+import {
+  buildAuthenticatedPlayer,
+  buildPlayerPublicProfile,
+} from "@/shared/types/player.test-support";
 import { makeLoaderArgs } from "@/test/loaderArgs";
 import { publicProfileLoader } from "./publicProfileLoader";
-
-function createUser(overrides: Partial<AuthenticatedUser> = {}): AuthenticatedUser {
-  return {
-    success: true,
-    id: 42,
-    roles: ["ROLE_PLAYER"],
-    email: "alice@example.com",
-    username: "Alice",
-    redirect: ROUTES.playerProfile,
-    ...overrides,
-  };
-}
 
 function load(id: string): Promise<unknown> {
   return Promise.resolve(
@@ -48,7 +39,7 @@ describe("publicProfileLoader", () => {
   beforeEach(() => {
     vi.resetAllMocks();
     queryClient.clear();
-    vi.mocked(getAuthenticatedUser).mockResolvedValue(createUser());
+    vi.mocked(getAuthenticatedUser).mockResolvedValue(buildAuthenticatedPlayer());
     vi.mocked(getPlayerPublicProfile).mockResolvedValue(buildPlayerPublicProfile());
   });
 
@@ -96,7 +87,7 @@ describe("publicProfileLoader", () => {
     });
   });
 
-  it.each([null, createUser({ roles: ["ROLE_ADMIN"] })])(
+  it.each([null, buildAuthenticatedPlayer({ roles: ["ROLE_ADMIN"] })])(
     "sends no read when the session is not a player's (%o)",
     async (user) => {
       vi.mocked(getAuthenticatedUser).mockResolvedValue(user);

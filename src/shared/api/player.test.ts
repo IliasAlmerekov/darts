@@ -16,7 +16,7 @@ import {
 } from "./player";
 import { apiClient, ApiValidationError } from "./client";
 import { respondWith } from "./test-utils";
-import { BOARD_FIELDS } from "@/shared/types/player.test-support";
+import { BOARD_FIELDS, buildEmptyPlayerProfileStats } from "@/shared/types/player.test-support";
 
 // Contract examples: GET /api/player/current-game
 const lobbyExample = { gameId: 12, status: "lobby" };
@@ -319,22 +319,7 @@ describe("getPlayerPublicProfile", () => {
   });
 
   it("accepts the empty stats of a player without games", async () => {
-    const payload = {
-      ...publicProfileExample,
-      stats: {
-        ...profileStatsExample,
-        gamesPlayed: 0,
-        scoreAverage: null,
-        wins: 0,
-        winRate: null,
-        checkoutRate: null,
-        checkoutHits: 0,
-        checkoutAttempts: 0,
-        mostHitSegment: null,
-        favoriteDoubles: [],
-        highestFinish: null,
-      },
-    };
+    const payload = { ...publicProfileExample, stats: buildEmptyPlayerProfileStats() };
     vi.mocked(apiClient.get).mockImplementationOnce(respondWith(payload));
 
     await expect(getPlayerPublicProfile(7)).resolves.toEqual(payload);
