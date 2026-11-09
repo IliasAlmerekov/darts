@@ -8,14 +8,14 @@ import { PlayerAvatar } from "@/shared/ui/player-avatar";
 import type { ProfileStatistics } from "@/lib/player/profile";
 import styles from "./ProfileStatsCard.module.css";
 
-type ProfileStats = ProfileStatistics["stats"];
+type HeadlineStats = ProfileStatistics["stats"];
 
 interface ProfileStatsCardProps {
   /** Null while the player is unknown: the avatar shows its icon. */
   playerId: number | null;
   displayName: string;
   /** Null while the profile loads or after it failed; `isPending` tells the two apart. */
-  stats: ProfileStats | null;
+  stats: HeadlineStats | null;
   isPending: boolean;
   /** The Registration month; only the own Player profile shows it. */
   memberSince?: string | null;
@@ -82,9 +82,9 @@ function CalendarIcon(): React.JSX.Element {
 }
 
 function readStat(
-  stats: ProfileStats | null,
+  stats: HeadlineStats | null,
   isPending: boolean,
-  stat: keyof ProfileStats,
+  stat: keyof HeadlineStats,
 ): string {
   if (stats !== null) {
     return stats[stat];

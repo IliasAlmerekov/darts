@@ -134,7 +134,7 @@ export function ProfileStatisticsOverview({
         </ProfileBlock>
       </div>
 
-      <div className={clsx(styles.secondRow, { [styles.singleBlockRow ?? ""]: !trendBlock })}>
+      <div className={clsx(styles.secondRow, !trendBlock && styles.singleBlockRow)}>
         {trendBlock}
 
         <ProfileBlock title="Most hit segment" iconSrc={targetIcon}>
