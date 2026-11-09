@@ -28,6 +28,16 @@ function matchPath(pattern: RegExp): (url: URL) => boolean {
   return (url) => pattern.test(url.pathname);
 }
 
+/**
+ * Mirrors the backend's `nextPosition`: one past the highest seat position, or the seat
+ * count plus one when no seat has a position. A reorder stores the positions the client
+ * sends, so after one the next guest follows the client's 0-based order.
+ */
+function nextPosition(players: LobbyPlayer[]): number {
+  const positions = players.flatMap(({ position }) => (position === null ? [] : [position]));
+  return positions.length > 0 ? Math.max(...positions) + 1 : players.length + 1;
+}
+
 function lastPathSegmentAsId(route: Route): number {
   return Number(new URL(route.request().url()).pathname.split("/").pop());
 }
@@ -110,7 +120,7 @@ data: ${JSON.stringify({ players })}
       isActive: false,
       isBust: false,
       isGuest: true,
-      position: players.length + 1,
+      position: nextPosition(players),
       throwsInCurrentRound: 0,
       currentRoundThrows: [],
       roundHistory: [],
