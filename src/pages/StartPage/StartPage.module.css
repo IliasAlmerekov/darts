@@ -156,9 +156,15 @@
   cursor: not-allowed;
 }
 
+/* A long press must not open the image menu; the touch lands on the guest button. */
 .guestButtonIcon {
   width: 24px;
   height: 24px;
+  pointer-events: none;
+  -webkit-touch-callout: none;
+  /* stylelint-disable-next-line property-no-vendor-prefix -- Safari supports user-select only with the prefix */
+  -webkit-user-select: none;
+  user-select: none;
 }
 
 .userPlus {

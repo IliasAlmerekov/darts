@@ -123,6 +123,24 @@ data: ${JSON.stringify({ players })}
   });
 
   await page.route(matchPath(/^\/api\/room\/\d+\/positions$/), async (route) => {
+    const payload: unknown = route.request().postDataJSON();
+    const positions =
+      typeof payload === "object" && payload !== null && "positions" in payload
+        ? payload.positions
+        : [];
+    if (Array.isArray(positions)) {
+      // Keep the new order, so a later game read or stream event does not undo the reorder.
+      for (const entry of positions) {
+        if (typeof entry !== "object" || entry === null) continue;
+        const player = players.find(
+          (candidate) => "playerId" in entry && candidate.id === entry.playerId,
+        );
+        if (player && "position" in entry && typeof entry.position === "number") {
+          player.position = entry.position;
+        }
+      }
+      players.sort((a, b) => (a.position ?? 0) - (b.position ?? 0));
+    }
     await fulfillJson(route, { success: true });
   });
 
