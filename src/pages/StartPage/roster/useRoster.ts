@@ -10,7 +10,7 @@ import { toUserErrorMessage } from "@/lib/error/error-to-user-message";
 import { parsePlayersEvent } from "@/shared/api/room";
 import { useIsCurrentGame } from "../lib/useIsCurrentGame";
 import { readUsernameTaken, type UsernameTaken } from "./usernameTaken";
-import { useCallback, useMemo, useRef, useState } from "react";
+import { useCallback, useMemo, useReducer, useRef } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEventSource, type EventSourceListener } from "@/shared/hooks/useEventSource";
 import { sortRoster, type Seat } from "@/lib/game/roster";
@@ -83,24 +83,11 @@ export function useRoster(
     ...gameQueries.roster(gameId ?? 0),
     enabled: gameId !== null,
   });
-  // dnd-kit clears the row transforms in the render that follows a drop, but the query
-  // notifies its observers a macrotask later. Until the query data changes, the hook shows
-  // the dropped order itself, so no render shows the old order without transforms.
-  const [droppedOrder, setDroppedOrder] = useState<{
-    gameId: number;
-    shownPlayers: Seat[];
-    seats: Seat[];
-  } | null>(null);
-  if (
-    droppedOrder !== null &&
-    (droppedOrder.gameId !== gameId || droppedOrder.shownPlayers !== players)
-  ) {
-    setDroppedOrder(null);
-  }
-  const seats =
-    droppedOrder?.gameId === gameId && droppedOrder.shownPlayers === players
-      ? droppedOrder.seats
-      : players;
+  // `setQueryData` updates the cache at once, but TanStack Query notifies observers a
+  // macrotask later through `notifyManager`. dnd-kit clears the row transforms in the render
+  // that follows a drop, so `reorder` bumps this counter in the same batch: that render
+  // reads the new order from the cache, and no frame shows the old order without transforms.
+  const [, rerender] = useReducer((count: number) => count + 1, 0);
 
   const updatePlayers = useCallback(
     (update: (currentPlayers: Seat[]) => Seat[]): void => {
@@ -354,7 +341,7 @@ export function useRoster(
           position,
         }));
         updatePlayers(() => ordered);
-        setDroppedOrder({ gameId, shownPlayers: players, seats: ordered });
+        rerender();
         void mutateSeat({
           gameId,
           request: () =>
@@ -433,10 +420,10 @@ export function useRoster(
         });
       }
     },
-    [gameId, isCurrentGame, mutateSeat, onError, players, queryClient, updatePlayers],
+    [gameId, isCurrentGame, mutateSeat, onError, queryClient, updatePlayers],
   );
 
   useEventSource(url, listeners, { withCredentials: true, onClosed: onStreamClosed });
 
-  return { seats, add: addGuest, remove: removePlayer, reorder: reorderPlayers };
+  return { seats: players, add: addGuest, remove: removePlayer, reorder: reorderPlayers };
 }
