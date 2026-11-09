@@ -1,4 +1,8 @@
-import type { PlayerProfileGame, PlayerProfileResponse } from "@/shared/api/player";
+import type {
+  PlayerProfileGame,
+  PlayerProfileResponse,
+  PlayerPublicProfileResponse,
+} from "@/shared/api/player";
 
 const MISSING_VALUE = "–";
 const UNKNOWN_NAME = "Unknown";
@@ -6,6 +10,8 @@ const UNKNOWN_NAME = "Unknown";
 interface ProfileParticipant {
   key: string;
   label: string;
+  /** The id whose Public profile the name opens; null for a guest and for the player. */
+  publicProfileId: number | null;
 }
 
 interface ProfileHistoryRow {
@@ -44,8 +50,8 @@ interface FinishDart {
 /** The games a hit distribution counts: all of them, or those of one out rule. */
 export type HitDistributionFilter = "all" | keyof ProfileStats["hitDistributionByOutRule"];
 
-/** The Player profile as the page shows it. */
-export interface PlayerProfile {
+/** The statistics of a Profile, as the own Player profile and a Public profile show them. */
+export interface ProfileStatistics {
   stats: {
     gamesPlayed: string;
     scoreAverage: string;
@@ -61,10 +67,20 @@ export interface PlayerProfile {
   mostHitSegment: { segment: string; name: string; share: string } | null;
   favoriteDoubles: FavoriteDouble[];
   highestFinish: { score: string; darts: string; throws: FinishDart[] } | null;
+}
+
+/** The Player profile as the page shows it. */
+export interface PlayerProfile extends ProfileStatistics {
   history: ProfileHistoryRow[];
   scoringTrend: ScoringTrendPoint[];
   /** The Registration month, such as `Feb 2026`, or null without a valid Registration date. */
   memberSince: string | null;
+}
+
+/** Another player's Public profile: name and statistics, without recent games. */
+export interface PublicProfile extends ProfileStatistics {
+  playerId: number;
+  displayName: string;
 }
 
 const dateTimeFormat = new Intl.DateTimeFormat("en-US", {
@@ -173,13 +189,12 @@ function toHistoryRow(game: PlayerProfileGame): ProfileHistoryRow {
           ? MISSING_VALUE
           : `${participant.placement}.`;
       const name = participant.displayName ?? UNKNOWN_NAME;
+      const playerId = participant.playerId ?? null;
       return {
         // A Guest has no player id; its position in the finished game never changes.
-        key:
-          participant.playerId === null || participant.playerId === undefined
-            ? `guest-${index}`
-            : `player-${participant.playerId}`,
+        key: playerId === null ? `guest-${index}` : `player-${playerId}`,
         label: `${position} ${name}${participant.isSelf ? " (you)" : ""}`,
+        publicProfileId: participant.isSelf ? null : playerId,
       };
     }),
   };
@@ -197,12 +212,8 @@ function toScoringTrendPoint(game: PlayerProfileGame): ScoringTrendPoint {
   };
 }
 
-/**
- * Reads the profile answer. Recent games arrive newest first: history keeps that order,
- * and the scoring trend runs oldest first, left to right.
- */
-export function toPlayerProfile(response: PlayerProfileResponse): PlayerProfile {
-  const { stats } = response;
+/** Formats the stats both profile answers share. */
+function toProfileStatistics(stats: ProfileStats): ProfileStatistics {
   const { scoreAverage, mostHitSegment, highestFinish } = stats;
 
   return {
@@ -243,8 +254,27 @@ export function toPlayerProfile(response: PlayerProfileResponse): PlayerProfile 
               label: formatDart(dart),
             })),
           },
+  };
+}
+
+/**
+ * Reads the profile answer. Recent games arrive newest first: history keeps that order,
+ * and the scoring trend runs oldest first, left to right.
+ */
+export function toPlayerProfile(response: PlayerProfileResponse): PlayerProfile {
+  return {
+    ...toProfileStatistics(response.stats),
     history: response.recentGames.map(toHistoryRow),
     scoringTrend: response.recentGames.map(toScoringTrendPoint).reverse(),
     memberSince: formatRegistrationMonth(response.registeredAt),
+  };
+}
+
+/** Reads another player's Public profile answer. */
+export function toPublicProfile(response: PlayerPublicProfileResponse): PublicProfile {
+  return {
+    ...toProfileStatistics(response.stats),
+    playerId: response.playerId,
+    displayName: response.displayName,
   };
 }

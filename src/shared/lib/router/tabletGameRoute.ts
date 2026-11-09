@@ -1,22 +1,13 @@
 import type { TabletGame } from "@/shared/api/game";
+import { parseRouteId } from "./routeId";
 import { ROUTES } from "./routes";
 
 /** The admin routes that follow the tablet game. */
 export type TabletGameRouteKind = "start" | "game" | "settings";
 
-const POSITIVE_INTEGER = /^[1-9]\d*$/;
-
-/**
- * Parses a game id from the URL. Only a positive safe integer in plain digits counts:
- * `-5`, `0`, `abc` and `1e3` are invalid and return null.
- */
+/** Parses a game id from the URL with the rules of `parseRouteId`. */
 export function parseRouteGameId(gameIdParam: string | undefined): number | null {
-  if (gameIdParam === undefined || !POSITIVE_INTEGER.test(gameIdParam)) {
-    return null;
-  }
-
-  const gameId = Number(gameIdParam);
-  return Number.isSafeInteger(gameId) ? gameId : null;
+  return parseRouteId(gameIdParam);
 }
 
 /**

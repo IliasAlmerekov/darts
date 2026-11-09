@@ -29,3 +29,14 @@
   font-size: var(--font-size-14);
   list-style: none;
 }
+
+.participantLink {
+  color: var(--color-primary);
+  text-underline-offset: 2px;
+}
+
+.participantLink:focus-visible {
+  border-radius: var(--radius-sm);
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+}

@@ -6,7 +6,7 @@ import type { ProfileState } from "../usePlayerProfilePage";
 import { HistoryTab } from "../history/HistoryTab";
 import { OverviewTab } from "../overview/OverviewTab";
 import { PerformanceTab } from "../performance/PerformanceTab";
-import { ProfileMessage } from "./ProfileMessage";
+import { ProfileMessage } from "@/shared/ui/profile-statistics";
 import styles from "./ProfileTabs.module.css";
 
 interface ProfileTabListProps {

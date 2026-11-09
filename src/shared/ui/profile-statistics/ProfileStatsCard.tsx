@@ -4,16 +4,23 @@ import barChartIcon from "@/assets/icons/bar-chart.svg";
 import gamepadIcon from "@/assets/icons/gamepad.svg";
 import targetIcon from "@/assets/icons/target.svg";
 import trophyIcon from "@/assets/icons/trophy.svg";
-import { LogoutButton } from "@/shared/ui/logout-button";
 import { PlayerAvatar } from "@/shared/ui/player-avatar";
-import type { PlayerProfile } from "@/lib/player/profile";
-import type { ProfileState } from "../usePlayerProfilePage";
-import styles from "./StatsCard.module.css";
+import type { ProfileStatistics } from "@/lib/player/profile";
+import styles from "./ProfileStatsCard.module.css";
 
-interface StatsCardProps {
+type ProfileStats = ProfileStatistics["stats"];
+
+interface ProfileStatsCardProps {
+  /** Null while the player is unknown: the avatar shows its icon. */
   playerId: number | null;
   displayName: string;
-  profileState: ProfileState;
+  /** Null while the profile loads or after it failed; `isPending` tells the two apart. */
+  stats: ProfileStats | null;
+  isPending: boolean;
+  /** The Registration month; only the own Player profile shows it. */
+  memberSince?: string | null;
+  /** Controls under the stats, such as Log out on the own Player profile. */
+  actions?: React.ReactNode;
   className?: string | undefined;
 }
 
@@ -74,31 +81,37 @@ function CalendarIcon(): React.JSX.Element {
   );
 }
 
-function readStat(profileState: ProfileState, stat: keyof PlayerProfile["stats"]): string {
-  if (profileState.status === "pending") {
-    return "Loading…";
+function readStat(
+  stats: ProfileStats | null,
+  isPending: boolean,
+  stat: keyof ProfileStats,
+): string {
+  if (stats !== null) {
+    return stats[stat];
   }
-  // The error message itself shows once, in the tab panel.
-  return profileState.status === "error" ? "–" : profileState.profile.stats[stat];
+  // The error message itself shows once, next to the card.
+  return isPending ? "Loading…" : "–";
 }
 
-export function StatsCard({
+/** The player's avatar, name and four headline stats. */
+export function ProfileStatsCard({
   playerId,
   displayName,
-  profileState,
+  stats,
+  isPending,
+  memberSince = null,
+  actions,
   className,
-}: StatsCardProps): React.JSX.Element {
-  const profile = profileState.status === "success" ? profileState.profile : null;
-
+}: ProfileStatsCardProps): React.JSX.Element {
   return (
     <section className={clsx(styles.statsCard, className)} aria-label="Player stats">
       <div className={styles.identity}>
         <PlayerAvatar className={styles.avatar} playerId={playerId} />
         <h2 className={styles.displayName}>{displayName}</h2>
-        {profile === null || profile.memberSince === null ? null : (
+        {memberSince === null ? null : (
           <p className={styles.memberSince} role="group" aria-label="Member since">
             <CalendarIcon />
-            Member since {profile.memberSince}
+            Member since {memberSince}
           </p>
         )}
       </div>
@@ -106,34 +119,32 @@ export function StatsCard({
       <ul className={styles.statList}>
         <StatItem
           label="Games played"
-          value={readStat(profileState, "gamesPlayed")}
+          value={readStat(stats, isPending, "gamesPlayed")}
           detail={null}
           iconSrc={gamepadIcon}
         />
         <StatItem
           label="Won"
-          value={readStat(profileState, "wins")}
-          detail={profile === null ? null : `${profile.stats.winRate} win rate`}
+          value={readStat(stats, isPending, "wins")}
+          detail={stats === null ? null : `${stats.winRate} win rate`}
           iconSrc={trophyIcon}
         />
         <StatItem
           label="Ø AVG"
           accessibleName="three-dart average"
-          value={readStat(profileState, "scoreAverage")}
+          value={readStat(stats, isPending, "scoreAverage")}
           detail={null}
           iconSrc={barChartIcon}
         />
         <StatItem
           label="Checkout rate"
-          value={readStat(profileState, "checkoutRate")}
-          detail={profile === null ? null : `${profile.stats.checkouts} checkouts`}
+          value={readStat(stats, isPending, "checkoutRate")}
+          detail={stats === null ? null : `${stats.checkouts} checkouts`}
           iconSrc={targetIcon}
         />
       </ul>
 
-      <div className={styles.actions}>
-        <LogoutButton />
-      </div>
+      {actions === undefined ? null : <div className={styles.actions}>{actions}</div>}
     </section>
   );
 }

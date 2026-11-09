@@ -7,7 +7,13 @@ vi.mock("@/shared/api/client", async (importOriginal) => ({
 }));
 
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { getCurrentGame, getPlayerGameSeat, getPlayerProfile, playerAvatarUrl } from "./player";
+import {
+  getCurrentGame,
+  getPlayerGameSeat,
+  getPlayerProfile,
+  getPlayerPublicProfile,
+  playerAvatarUrl,
+} from "./player";
 import { apiClient, ApiValidationError } from "./client";
 import { respondWith } from "./test-utils";
 import { BOARD_FIELDS } from "@/shared/types/player.test-support";
@@ -288,6 +294,60 @@ describe("getPlayerProfile", () => {
     );
 
     await expect(getPlayerProfile()).rejects.toBeInstanceOf(ApiValidationError);
+  });
+});
+
+// Contract example: GET /api/player/{id}/profile
+const publicProfileExample = { playerId: 7, displayName: "Anna", stats: profileStatsExample };
+
+describe("getPlayerPublicProfile", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it("returns another player's name and stats from the contract example", async () => {
+    const controller = new AbortController();
+    vi.mocked(apiClient.get).mockImplementationOnce(respondWith(publicProfileExample));
+
+    await expect(getPlayerPublicProfile(7, controller.signal)).resolves.toEqual(
+      publicProfileExample,
+    );
+    expect(apiClient.get).toHaveBeenCalledWith("/player/7/profile", {
+      signal: controller.signal,
+      validate: expect.any(Object),
+    });
+  });
+
+  it("accepts the empty stats of a player without games", async () => {
+    const payload = {
+      ...publicProfileExample,
+      stats: {
+        ...profileStatsExample,
+        gamesPlayed: 0,
+        scoreAverage: null,
+        wins: 0,
+        winRate: null,
+        checkoutRate: null,
+        checkoutHits: 0,
+        checkoutAttempts: 0,
+        mostHitSegment: null,
+        favoriteDoubles: [],
+        highestFinish: null,
+      },
+    };
+    vi.mocked(apiClient.get).mockImplementationOnce(respondWith(payload));
+
+    await expect(getPlayerPublicProfile(7)).resolves.toEqual(payload);
+  });
+
+  it.each([
+    { playerId: 7, stats: profileStatsExample },
+    { ...publicProfileExample, displayName: null },
+    { ...publicProfileExample, stats: { ...profileStatsExample, wins: "1" } },
+  ])("rejects with ApiValidationError for a malformed response", async (payload) => {
+    vi.mocked(apiClient.get).mockImplementationOnce(respondWith(payload));
+
+    await expect(getPlayerPublicProfile(7)).rejects.toBeInstanceOf(ApiValidationError);
   });
 });
 

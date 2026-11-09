@@ -218,12 +218,25 @@ const playerProfileResponseSchema = v.object({
 export type PlayerProfileResponse = v.InferOutput<typeof playerProfileResponseSchema>;
 export type PlayerProfileGame = PlayerProfileResponse["recentGames"][number];
 
+/**
+ * Contract `PlayerPublicProfileResponseDto`: another registered player's name and the same
+ * stats as the own profile. A player without games gets empty stats.
+ */
+const playerPublicProfileResponseSchema = v.object({
+  playerId: integerSchema,
+  displayName: v.string(),
+  stats: playerProfileStatsSchema,
+});
+
+export type PlayerPublicProfileResponse = v.InferOutput<typeof playerPublicProfileResponseSchema>;
+
 // ---------------------------------------------------------------------------
 // Endpoints
 // ---------------------------------------------------------------------------
 
 const CURRENT_GAME_ENDPOINT = "/player/current-game";
 const PROFILE_ENDPOINT = "/player/profile";
+const PUBLIC_PROFILE_ENDPOINT = (playerId: number) => `/player/${playerId}/profile`;
 const GAME_SEAT_ENDPOINT = (gameId: number) => `/player/games/${gameId}/seat`;
 const AVATAR_ENDPOINT = (playerId: number) => `/player/${playerId}/avatar`;
 
@@ -257,6 +270,20 @@ export async function getPlayerProfile(signal?: AbortSignal): Promise<PlayerProf
   return apiClient.get(PROFILE_ENDPOINT, {
     ...(signal ? { signal } : {}),
     validate: playerProfileResponseSchema,
+  });
+}
+
+/**
+ * Reads the Public profile of another registered player. An unknown id, a guest and the
+ * admin account answer 404 `PLAYER_NOT_FOUND`.
+ */
+export async function getPlayerPublicProfile(
+  playerId: number,
+  signal?: AbortSignal,
+): Promise<PlayerPublicProfileResponse> {
+  return apiClient.get(PUBLIC_PROFILE_ENDPOINT(playerId), {
+    ...(signal ? { signal } : {}),
+    validate: playerPublicProfileResponseSchema,
   });
 }
 

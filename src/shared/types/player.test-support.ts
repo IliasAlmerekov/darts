@@ -1,4 +1,8 @@
-import type { PlayerProfileGame, PlayerProfileResponse } from "@/shared/api/player";
+import type {
+  PlayerProfileGame,
+  PlayerProfileResponse,
+  PlayerPublicProfileResponse,
+} from "@/shared/api/player";
 import type { UserProps } from "./player";
 
 type PlayerProfileStats = PlayerProfileResponse["stats"];
@@ -83,6 +87,18 @@ export function buildPlayerProfile(
   return {
     stats: buildPlayerProfileStats(),
     recentGames: [buildPlayerProfileGame()],
+    ...overrides,
+  };
+}
+
+/** `GET /api/player/{id}/profile` of Anna, another registered player, with the default stats. */
+export function buildPlayerPublicProfile(
+  overrides: Partial<PlayerPublicProfileResponse> = {},
+): PlayerPublicProfileResponse {
+  return {
+    playerId: 7,
+    displayName: "Anna",
+    stats: buildPlayerProfileStats(),
     ...overrides,
   };
 }

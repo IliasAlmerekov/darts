@@ -48,9 +48,9 @@ import {
 import { ROUTES } from "@/lib/router/routes";
 import { createQueryClient } from "@/shared/query/queryClient";
 import PlayerProfilePage from ".";
-import { toHitDots, type HitDot } from "./hit-distribution/hitDots";
-import { BOARD_ORDER } from "./hit-distribution/boardFieldSpot";
-import hitStyles from "./hit-distribution/HitDistribution.module.css";
+import { toHitDots, type HitDot } from "@/shared/ui/profile-statistics/hitDots";
+import { BOARD_ORDER } from "@/shared/ui/profile-statistics/boardFieldSpot";
+import hitStyles from "@/shared/ui/profile-statistics/HitDistribution.module.css";
 
 type Router = ReturnType<typeof createMemoryRouter>;
 
@@ -60,6 +60,7 @@ function renderPage(search = ""): Router {
       { path: ROUTES.login, element: <p>Login form</p> },
       { path: ROUTES.joined, element: <p>Waiting room</p> },
       { path: ROUTES.playerProfile, element: <PlayerProfilePage /> },
+      { path: ROUTES.publicProfilePattern, element: <p>Public profile</p> },
     ],
     { initialEntries: [`${ROUTES.playerProfile}${search}`] },
   );
@@ -268,6 +269,32 @@ describe("PlayerProfilePage", () => {
       "19 Oct 2026, 09:05 · 1st of 2 · Ø AVG 60.00",
     );
     expect(screen.queryByRole("link", { name: /AVG/ })).toBeNull();
+  });
+
+  it("links another registered player's name in History to their Public profile", async () => {
+    const router = renderPage("?tab=history");
+
+    const history = await screen.findByRole("list", { name: "Recent games" });
+    const links = within(history).getAllByRole("link");
+    expect(links.map((link) => [link.textContent, link.getAttribute("href")])).toEqual([
+      ["1. Anna", ROUTES.publicProfile(7)],
+    ]);
+
+    fireEvent.click(screen.getByRole("link", { name: "1. Anna" }));
+
+    expect(await screen.findByText("Public profile")).toBeTruthy();
+    expect(router.state.location.pathname).toBe(ROUTES.publicProfile(7));
+  });
+
+  it("keeps the player's own name and a guest in History as plain text", async () => {
+    renderPage("?tab=history");
+
+    const history = await screen.findByRole("list", { name: "Recent games" });
+    for (const label of ["2. Alice (you)", "1. Alice (you)", "2. Guest"]) {
+      const [entry] = within(history).getAllByText(label);
+      expect(entry?.tagName).toBe("LI");
+      expect(entry?.querySelector("a")).toBeNull();
+    }
   });
 
   it("tells a player without finished games so in History", async () => {

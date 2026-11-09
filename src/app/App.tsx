@@ -22,6 +22,7 @@ import { gameDetailLoader } from "@/pages/GameDetailPage/gameDetailLoader";
 import { startPageLoader } from "@/pages/StartPage/startPageLoader";
 import { gameSummaryLoader } from "@/pages/GameSummaryPage/gameSummaryLoader";
 import { gamesOverviewLoader } from "@/pages/GamesOverviewPage/gamesOverviewLoader";
+import { publicProfileLoader } from "@/pages/PublicProfilePage/publicProfileLoader";
 import { clearUnauthorizedHandler, setUnauthorizedHandler } from "@/shared/api";
 import { ROUTES } from "@/lib/router/routes";
 import { clearClientSession } from "@/lib/auth/clearClientSession";
@@ -40,6 +41,7 @@ const SettingsPage = lazy(() => import("@/pages/SettingsPage"));
 const Statistics = lazy(() => import("@/pages/StatisticsPage/StatisticsPage"));
 const JoinedGamePage = lazy(() => import("@/pages/JoinedGamePage"));
 const PlayerProfile = lazy(() => import("@/pages/PlayerProfilePage"));
+const PublicProfile = lazy(() => import("@/pages/PublicProfilePage"));
 
 function withSuspense(element: React.ReactNode): React.JSX.Element {
   return <Suspense fallback={<UniversalSkeleton />}>{element}</Suspense>;
@@ -162,6 +164,13 @@ function createAppRouter(): ReturnType<typeof createBrowserRouter> {
           <Route
             path={ROUTES.playerProfile}
             element={withSuspense(<PlayerProfile />)}
+            errorElement={<ErrorBoundary />}
+          />
+          <Route
+            path={ROUTES.publicProfilePattern}
+            element={withSuspense(<PublicProfile />)}
+            loader={publicProfileLoader}
+            hydrateFallbackElement={<UniversalSkeleton />}
             errorElement={<ErrorBoundary />}
           />
         </Route>

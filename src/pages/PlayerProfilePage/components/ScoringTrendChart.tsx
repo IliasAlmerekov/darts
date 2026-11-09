@@ -1,7 +1,7 @@
 import React from "react";
 import clsx from "clsx";
 import type { ScoringTrendPoint } from "@/lib/player/profile";
-import { ProfileMessage } from "./ProfileMessage";
+import { ProfileMessage } from "@/shared/ui/profile-statistics";
 import styles from "./ScoringTrendChart.module.css";
 
 interface ScoringTrendChartProps {
