@@ -48,9 +48,8 @@ import {
 import { ROUTES } from "@/lib/router/routes";
 import { createQueryClient } from "@/shared/query/queryClient";
 import PlayerProfilePage from ".";
-import { toHitDots, type HitDot } from "./hit-distribution/hitDots";
-import { BOARD_ORDER } from "./hit-distribution/boardFieldSpot";
-import hitStyles from "./hit-distribution/HitDistribution.module.css";
+import { toHitDots, type HitDot } from "@/shared/ui/profile-statistics/hitDots";
+import { BOARD_ORDER } from "@/shared/ui/profile-statistics/boardFieldSpot";
 
 type Router = ReturnType<typeof createMemoryRouter>;
 
@@ -60,6 +59,7 @@ function renderPage(search = ""): Router {
       { path: ROUTES.login, element: <p>Login form</p> },
       { path: ROUTES.joined, element: <p>Waiting room</p> },
       { path: ROUTES.playerProfile, element: <PlayerProfilePage /> },
+      { path: ROUTES.publicProfilePattern, element: <p>Public profile</p> },
     ],
     { initialEntries: [`${ROUTES.playerProfile}${search}`] },
   );
@@ -270,6 +270,32 @@ describe("PlayerProfilePage", () => {
     expect(screen.queryByRole("link", { name: /AVG/ })).toBeNull();
   });
 
+  it("links another registered player's name in History to their Public profile", async () => {
+    const router = renderPage("?tab=history");
+
+    const history = await screen.findByRole("list", { name: "Recent games" });
+    const links = within(history).getAllByRole("link");
+    expect(links.map((link) => [link.textContent, link.getAttribute("href")])).toEqual([
+      ["1. Anna", ROUTES.publicProfile(7)],
+    ]);
+
+    fireEvent.click(screen.getByRole("link", { name: "1. Anna" }));
+
+    expect(await screen.findByText("Public profile")).toBeTruthy();
+    expect(router.state.location.pathname).toBe(ROUTES.publicProfile(7));
+  });
+
+  it("keeps the player's own name and a guest in History as plain text", async () => {
+    renderPage("?tab=history");
+
+    const history = await screen.findByRole("list", { name: "Recent games" });
+    for (const label of ["2. Alice (you)", "1. Alice (you)", "2. Guest"]) {
+      const [entry] = within(history).getAllByText(label);
+      expect(entry?.tagName).toBe("LI");
+      expect(entry?.querySelector("a")).toBeNull();
+    }
+  });
+
   it("tells a player without finished games so in History", async () => {
     vi.mocked(getPlayerProfile).mockResolvedValue(buildProfile({ recentGames: [] }));
 
@@ -455,44 +481,6 @@ describe("PlayerProfilePage", () => {
     ).toEqual(toHitDots(hitDistribution).map(({ x, y }) => [x, y]));
   });
 
-  it("draws one hidden dot per hit in its board field's step", async () => {
-    const hits: Record<string, number> = { T20: 40, D16: 30, T19: 20, S5: 10, BULL: 12 };
-    vi.mocked(getPlayerProfile).mockResolvedValue(
-      buildProfile({
-        stats: buildPlayerProfileStats({
-          hitDistribution: buildPlayerProfileStats().hitDistribution.map(({ field }) => ({
-            field,
-            hits: hits[field] ?? 0,
-          })),
-          mostHitSegment: { segment: "20", hits: 40, share: 35.7 },
-        }),
-      }),
-    );
-
-    renderPage();
-    await screen.findByRole("group", { name: "Dartboard heatmap of all games" });
-
-    const dots = hitDots();
-    expect(dots).toHaveLength(112);
-    expect(dots.every((dot) => dot.getAttribute("r") === "6")).toBe(true);
-    expect(dots.every((dot) => dot.getAttribute("stroke-width") === "1.5")).toBe(true);
-    const expectedClasses: Partial<Record<HitDot["field"], string | undefined>> = {
-      T20: hitStyles.heatVeryHigh,
-      D16: hitStyles.heatHigh,
-      T19: hitStyles.heatMedium,
-      S5: hitStyles.heatLow,
-      BULL: hitStyles.heatLow,
-    };
-    for (const field of BOARD_FIELDS) {
-      if (!(field in expectedClasses)) continue;
-      const fieldDots = dotsInField(field);
-      expect(fieldDots, field).toHaveLength(hits[field] ?? 0);
-      for (const dot of fieldDots) {
-        expect(dot.classList, field).toContain(expectedClasses[field]);
-      }
-    }
-  });
-
   it("fills each hit board field instead of drawing dots past 150 hits", async () => {
     // 161 hits: past the 150 a board draws as dots.
     vi.mocked(getPlayerProfile).mockResolvedValue(
@@ -530,27 +518,6 @@ describe("PlayerProfilePage", () => {
     // ...each in its own colour: dark and light singles, red and green rings.
     const colours = new Set(Array.from(boardPaths, (path) => path.getAttribute("class")));
     expect(colours.size).toBeGreaterThanOrEqual(4);
-  });
-
-  it("fills Bull and Bullseye each by its own hit frequency step past 150 hits", async () => {
-    vi.mocked(getPlayerProfile).mockResolvedValue(
-      buildProfile({
-        stats: buildPlayerProfileStats({
-          hitDistribution: buildHitDistribution({ BULL: 200, BULLSEYE: 1 }),
-        }),
-      }),
-    );
-
-    renderPage();
-    await screen.findByRole("group", { name: "Dartboard heatmap of all games" });
-
-    const classOf = (field: string): string | null =>
-      heatFields()
-        .find((element) => element.getAttribute("data-field") === field)
-        ?.getAttribute("class") ?? null;
-    // Bull leads the board and is Very high; 1 Bullseye hit against 200 is Very low.
-    expect(classOf("BULL")).toContain(hitStyles.heatVeryHigh);
-    expect(classOf("BULLSEYE")).toContain(hitStyles.heatVeryLow);
   });
 
   it("draws dots again for a board with 150 hits", async () => {

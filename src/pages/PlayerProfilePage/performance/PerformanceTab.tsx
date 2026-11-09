@@ -1,7 +1,7 @@
 import React from "react";
 import barChartIcon from "@/assets/icons/bar-chart.svg";
 import type { PlayerProfile } from "@/lib/player/profile";
-import { ProfileBlock } from "../components/ProfileBlock";
+import { ProfileBlock } from "@/shared/ui/profile-statistics";
 import { ScoringTrendChart } from "../components/ScoringTrendChart";
 import styles from "./PerformanceTab.module.css";
 

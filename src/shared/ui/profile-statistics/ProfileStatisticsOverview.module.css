@@ -25,6 +25,11 @@
   grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr);
 }
 
+/* Without a trend block, Most hit segment takes the whole row. */
+.secondRow.singleBlockRow {
+  grid-template-columns: minmax(0, 1fr);
+}
+
 .doublesList {
   display: flex;
   flex-direction: column;

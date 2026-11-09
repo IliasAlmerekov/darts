@@ -1,0 +1,73 @@
+.page {
+  flex: 1 0 auto;
+  min-height: 100dvh;
+  background: var(--color-surface);
+}
+
+.navRow,
+.publicProfile {
+  width: min(100%, 1200px);
+  margin: 0 auto;
+  padding: 0 var(--page-padding);
+  box-sizing: border-box;
+}
+
+.navRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-sm);
+  padding-top: var(--page-padding);
+}
+
+/* The logo keeps the right edge, as on the Player profile. */
+.brand {
+  margin-left: auto;
+}
+
+.publicProfile {
+  padding-top: var(--space-md);
+  padding-bottom: var(--page-padding);
+}
+
+.content {
+  display: grid;
+  grid-template-areas:
+    "title title"
+    "card panel";
+  grid-template-columns: minmax(260px, 320px) minmax(0, 1fr);
+  gap: var(--space-md);
+}
+
+.pageTitle {
+  grid-area: title;
+  margin: 0;
+}
+
+.card {
+  grid-area: card;
+  align-self: stretch;
+}
+
+.panel {
+  grid-area: panel;
+  min-width: 0;
+  padding: var(--padding-md);
+  border-radius: var(--radius-lg);
+  background: var(--color-bg);
+  box-sizing: border-box;
+}
+
+@media (width <= 600px) {
+  .content {
+    grid-template-areas:
+      "title"
+      "card"
+      "panel";
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .panel {
+    padding: var(--padding-sm);
+  }
+}

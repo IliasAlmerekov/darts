@@ -101,6 +101,14 @@ vi.mock("@/pages/PlayerProfilePage", () => ({
   default: () => <div>Player Profile</div>,
 }));
 
+vi.mock("@/pages/PublicProfilePage", () => ({
+  default: () => <div>Public Profile</div>,
+}));
+
+vi.mock("@/pages/PublicProfilePage/publicProfileLoader", () => ({
+  publicProfileLoader: vi.fn(() => null),
+}));
+
 import { act, render, screen, waitForElementToBeRemoved } from "@testing-library/react";
 import { Outlet } from "react-router-dom";
 import { beforeEach, describe, expect, it, vi } from "vitest";
@@ -189,6 +197,15 @@ describe("App routing", () => {
     await renderApp();
 
     expect(await screen.findByRole("heading", { name: "Page not found" })).toBeTruthy();
+  });
+
+  it("should render the Public profile page when the current route is /playerprofile/:id", async () => {
+    window.history.pushState({}, "", "/playerprofile/7");
+
+    await renderApp();
+
+    expect(await screen.findByText("Public Profile")).toBeTruthy();
+    expect(screen.queryByTestId("admin-layout-route")).toBeNull();
   });
 
   it("should render the admin layout route when the current route is an admin shell page", async () => {

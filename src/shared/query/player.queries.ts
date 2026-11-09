@@ -1,13 +1,26 @@
 import { queryOptions, skipToken, type Query } from "@tanstack/react-query";
 import { ApiError, NetworkError, TimeoutError, UnauthorizedError } from "@/shared/api";
-import { getCurrentGame, getPlayerGameSeat, getPlayerProfile } from "@/shared/api/player";
+import {
+  getCurrentGame,
+  getPlayerGameSeat,
+  getPlayerProfile,
+  getPlayerPublicProfile,
+} from "@/shared/api/player";
 import type { CurrentGame } from "@/lib/player/currentGame";
 import { toSeatOutcome, type SeatOutcome } from "@/lib/player/gameSeat";
-import { toPlayerProfile, type PlayerProfile } from "@/lib/player/profile";
+import {
+  toPlayerProfile,
+  toPublicProfile,
+  type PlayerProfile,
+  type PublicProfile,
+} from "@/lib/player/profile";
 import { clientLogger } from "@/shared/services/browser/clientLogger";
 import { setServerCurrentGameId } from "@/shared/store";
 
 export const CURRENT_GAME_POLL_INTERVAL_MS = 3000;
+
+// Long enough that the page does not fetch again right after its loader filled the key.
+const PUBLIC_PROFILE_STALE_TIME_MS = 30_000;
 
 /**
  * A lost connection is expected on a phone and the page shows it. An expired session goes
@@ -90,5 +103,32 @@ export const playerQueries = {
           throw error;
         }
       },
+    }),
+  /** Another registered player's Public profile: name and statistics; no id skips the read. */
+  publicProfile: (playerId: number | null) =>
+    queryOptions({
+      queryKey: ["player", "publicProfile", playerId] as const,
+      staleTime: PUBLIC_PROFILE_STALE_TIME_MS,
+      // Offline the default mode would pause the request, so the route loader would never
+      // settle and the navigation would hang instead of showing the error with Retry.
+      networkMode: "always",
+      queryFn:
+        playerId === null
+          ? skipToken
+          : async ({ signal }): Promise<PublicProfile> => {
+              try {
+                return toPublicProfile(await getPlayerPublicProfile(playerId, signal));
+              } catch (error: unknown) {
+                // An unknown id, a guest or the admin account is an answer, not a failure.
+                const isPlayerNotFound = error instanceof ApiError && error.status === 404;
+                if (!signal.aborted && !isPlayerNotFound) {
+                  clientLogger.error("player.public-profile.fetch.failed", {
+                    context: { playerId },
+                    error,
+                  });
+                }
+                throw error;
+              }
+            },
     }),
 };

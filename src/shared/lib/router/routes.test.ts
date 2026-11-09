@@ -62,4 +62,12 @@ describe("ROUTES", () => {
   it("should return playerProfile path", () => {
     expect(ROUTES.playerProfile).toBe("/playerprofile");
   });
+
+  it("should return publicProfile path with the player id", () => {
+    expect(ROUTES.publicProfile(7)).toBe("/playerprofile/7");
+  });
+
+  it("should return publicProfile pattern", () => {
+    expect(ROUTES.publicProfilePattern).toBe("/playerprofile/:id");
+  });
 });

@@ -188,8 +188,8 @@ Rules:
 - Every `<Route>` carries an explicit `errorElement={<ErrorBoundary />}`. There is no
   single global error boundary outside the router.
 - React Router 7 loaders fetch route data (`startPageLoader`, `tabletGameLoader`,
-  `gameDetailLoader`, `gameSummaryLoader`, `gamesOverviewLoader`). New page-level data fetches go through a
-  loader, not `useEffect` after mount. The loader fills the query cache with
+  `gameDetailLoader`, `gameSummaryLoader`, `gamesOverviewLoader`, `publicProfileLoader`). New
+  page-level data fetches go through a loader, not `useEffect` after mount. The loader fills the query cache with
   `queryClient.ensureQueryData(...)` and the page reads the same key with `useQuery`
   ([ADR 0001](../adr/0001-tanstack-query-for-server-reads.md)). The tablet game is the
   exception: its loaders call `fetchQuery` to read it fresh

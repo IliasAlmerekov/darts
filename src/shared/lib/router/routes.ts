@@ -13,4 +13,6 @@ export const ROUTES = {
   statistics: "/statistics",
   joined: "/joined",
   playerProfile: "/playerprofile",
+  publicProfile: (playerId: number) => `/playerprofile/${playerId}`,
+  publicProfilePattern: "/playerprofile/:id",
 } as const;

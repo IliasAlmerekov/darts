@@ -1,13 +1,15 @@
 import React, { useId } from "react";
 import madeByDeepblue from "@/assets/icons/madeByDeepblue.svg";
 import { ProfileTabList, ProfileTabPanel } from "./components/ProfileTabs";
-import { StatsCard } from "./components/StatsCard";
+import { LogoutButton } from "@/shared/ui/logout-button";
+import { ProfileStatsCard } from "@/shared/ui/profile-statistics";
 import { usePlayerProfilePage } from "./usePlayerProfilePage";
 import styles from "./PlayerProfilePage.module.css";
 
 function PlayerProfilePage(): React.JSX.Element {
   const { playerId, displayName, profileState, tab, selectTab } = usePlayerProfilePage();
   const tabsId = useId();
+  const profile = profileState.status === "success" ? profileState.profile : null;
 
   return (
     <div className={styles.page}>
@@ -17,11 +19,14 @@ function PlayerProfilePage(): React.JSX.Element {
       </header>
       <main className={styles.playerProfile}>
         <h1 className={styles.pageTitle}>Player Profile</h1>
-        <StatsCard
+        <ProfileStatsCard
           className={styles.card}
           playerId={playerId}
           displayName={displayName}
-          profileState={profileState}
+          stats={profile?.stats ?? null}
+          isPending={profileState.status === "pending"}
+          memberSince={profile?.memberSince ?? null}
+          actions={<LogoutButton />}
         />
         <ProfileTabPanel
           className={styles.panel}

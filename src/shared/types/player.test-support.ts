@@ -1,4 +1,9 @@
-import type { PlayerProfileGame, PlayerProfileResponse } from "@/shared/api/player";
+import type { AuthenticatedUser } from "@/shared/api/auth";
+import type {
+  PlayerProfileGame,
+  PlayerProfileResponse,
+  PlayerPublicProfileResponse,
+} from "@/shared/api/player";
 import type { UserProps } from "./player";
 
 type PlayerProfileStats = PlayerProfileResponse["stats"];
@@ -77,12 +82,61 @@ export function buildPlayerProfileStats(
   };
 }
 
+/** Stats of a player without counted games: zero counts, no rates, no hits, no finish. */
+export function buildEmptyPlayerProfileStats(): PlayerProfileStats {
+  return {
+    gamesPlayed: 0,
+    scoreAverage: null,
+    wins: 0,
+    winRate: null,
+    checkoutRate: null,
+    checkoutHits: 0,
+    checkoutAttempts: 0,
+    hitDistribution: buildHitDistribution(),
+    hitDistributionByOutRule: {
+      singleout: buildHitDistribution(),
+      doubleout: buildHitDistribution(),
+      tripleout: buildHitDistribution(),
+    },
+    mostHitSegment: null,
+    favoriteDoubles: [],
+    highestFinish: null,
+  };
+}
+
 export function buildPlayerProfile(
   overrides: Partial<PlayerProfileResponse> = {},
 ): PlayerProfileResponse {
   return {
     stats: buildPlayerProfileStats(),
     recentGames: [buildPlayerProfileGame()],
+    ...overrides,
+  };
+}
+
+/** `GET /api/player/{id}/profile` of Anna, another registered player, with the default stats. */
+export function buildPlayerPublicProfile(
+  overrides: Partial<PlayerPublicProfileResponse> = {},
+): PlayerPublicProfileResponse {
+  return {
+    playerId: 7,
+    displayName: "Anna",
+    stats: buildPlayerProfileStats(),
+    ...overrides,
+  };
+}
+
+/** The session answer of Alice, a logged-in player with the id 42. */
+export function buildAuthenticatedPlayer(
+  overrides: Partial<AuthenticatedUser> = {},
+): AuthenticatedUser {
+  return {
+    success: true,
+    id: 42,
+    roles: ["ROLE_PLAYER"],
+    email: "alice@example.com",
+    username: "Alice",
+    redirect: "/playerprofile",
     ...overrides,
   };
 }

@@ -4,8 +4,10 @@ import {
   buildPlayerProfile as buildProfile,
   buildPlayerProfileGame as buildGame,
   buildPlayerProfileStats as buildStats,
+  buildEmptyPlayerProfileStats,
+  buildPlayerPublicProfile,
 } from "@/shared/types/player.test-support";
-import { toPlayerProfile } from "./profile";
+import { toPlayerProfile, toPublicProfile } from "./profile";
 
 // Dates show in the browser's time zone; the formatter reads it when the module loads.
 vi.hoisted(() => {
@@ -196,6 +198,19 @@ describe("toPlayerProfile", () => {
     ]);
   });
 
+  it("gives each other registered player a Public profile id, none to the player and a guest", () => {
+    const [row] = toPlayerProfile(
+      buildProfile({ recentGames: [buildGame(FOUR_PLAYER_GAME)] }),
+    ).history;
+
+    expect(row?.participants.map((participant) => participant.publicProfileId)).toEqual([
+      7,
+      null,
+      null,
+      9,
+    ]);
+  });
+
   it("leaves out a missing date and shows dashes and Unknown for missing values", () => {
     const [row] = toPlayerProfile(
       buildProfile({
@@ -306,5 +321,40 @@ describe("toPlayerProfile", () => {
 
     expect(profile.history).toEqual([]);
     expect(profile.scoringTrend).toEqual([]);
+  });
+});
+
+describe("toPublicProfile", () => {
+  it("keeps the player's id and name and formats the stats like the own profile", () => {
+    const response = buildPlayerPublicProfile();
+    const ownProfile = toPlayerProfile(buildProfile({ stats: response.stats }));
+
+    expect(toPublicProfile(response)).toEqual({
+      playerId: 7,
+      displayName: "Anna",
+      stats: ownProfile.stats,
+      hitDistributions: ownProfile.hitDistributions,
+      mostHitSegment: ownProfile.mostHitSegment,
+      favoriteDoubles: ownProfile.favoriteDoubles,
+      highestFinish: ownProfile.highestFinish,
+    });
+  });
+
+  it("returns empty stats for a player without games", () => {
+    const profile = toPublicProfile(
+      buildPlayerPublicProfile({ stats: buildEmptyPlayerProfileStats() }),
+    );
+
+    expect(profile.stats).toEqual({
+      gamesPlayed: "0",
+      scoreAverage: "–",
+      wins: "0",
+      winRate: "–",
+      checkoutRate: "–",
+      checkouts: "0 / 0",
+    });
+    expect(profile.mostHitSegment).toBeNull();
+    expect(profile.favoriteDoubles).toEqual([]);
+    expect(profile.highestFinish).toBeNull();
   });
 });
