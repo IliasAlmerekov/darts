@@ -19,7 +19,7 @@ jobs:
     # The image ships Chromium and its system libraries, so no step waits on apt (#275).
     # Keep its tag on the @playwright/test version from package-lock.json.
     container:
-      image: mcr.microsoft.com/playwright:v1.64.1-noble
+      image: mcr.microsoft.com/playwright:v1.65.0-noble
       options: --user 1001
     steps:
       - name: Checkout
