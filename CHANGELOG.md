@@ -7,9 +7,15 @@ and this project does **not** yet follow [Semantic Versioning](https://semver.or
 
 ## [Unreleased]
 
+## [0.5.1] - 2026-11-10
+
 ### Added
 
 - Profile: in the History tab, another registered player's name links to their Public profile at `/playerprofile/{id}`, read from `GET /api/player/{id}/profile`. The player-only page shows the player's name, avatar and Profile statistics, without recent games, registration date or Log out. A player without games sees empty statistics, the own id redirects to the Player profile, and `404` shows "Player not found". The admin has no route to it. The statistics card and the Overview blocks move to `src/shared/ui/profile-statistics/`, so both pages share them (#498)
+
+### Changed
+
+- Deploy: releases build `darts-backend` at `c8efdfa`, so 0.5.1 ships the backend that the Public profile needs. `GET /api/player/{id}/profile` returns another registered player's name and statistics to a player; the admin gets 403 `ACCESS_DENIED`, and a guest, the admin account or an unknown id gets 404 `PLAYER_NOT_FOUND`. `GET /api/player/{id}/avatar` now returns any registered player's avatar to a player, not only their own (darts-backend#298). No migrations run (#503)
 
 ### Fixed
 
