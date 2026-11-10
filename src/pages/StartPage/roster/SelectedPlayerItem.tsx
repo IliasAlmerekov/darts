@@ -43,6 +43,14 @@ function SelectedPlayerItem({ ...props }: Props): React.JSX.Element {
     transition,
   };
 
+  // A long press on a touch screen opens the browser's context menu instead of starting the
+  // drag. This handler sits after the listener spread, so it forwards any context menu
+  // listener dnd-kit adds instead of replacing it.
+  const handleMoveContextMenu = (event: React.MouseEvent<HTMLButtonElement>): void => {
+    event.preventDefault();
+    listeners?.["onContextMenu"]?.(event);
+  };
+
   return (
     <div ref={setNodeRef} style={style} className={styles.selectedPlayerItem}>
       <div className={styles.playerMain}>
@@ -51,10 +59,11 @@ function SelectedPlayerItem({ ...props }: Props): React.JSX.Element {
           type="button"
           {...attributes}
           {...listeners}
+          onContextMenu={handleMoveContextMenu}
           className={styles.moveButton}
           aria-label="Move player"
         >
-          <img src={moveIcon} alt="Move icon" className={styles.moveIcon} />
+          <img src={moveIcon} alt="Move icon" className={styles.moveIcon} draggable={false} />
         </button>
         <div className={styles.playerName}>{props?.name}</div>
       </div>
@@ -63,7 +72,7 @@ function SelectedPlayerItem({ ...props }: Props): React.JSX.Element {
         className={styles.deleteButton}
         aria-label="Delete player"
       >
-        <img src={deleteIcon} alt={props.alt || "Delete"} />
+        <img src={deleteIcon} alt={props.alt || "Delete"} draggable={false} />
       </button>
     </div>
   );

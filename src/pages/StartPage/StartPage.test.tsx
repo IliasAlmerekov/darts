@@ -164,6 +164,16 @@ describe("StartPage", () => {
     expect(guestButton.querySelector("svg")).toBeNull();
   });
 
+  it("should stop the guest button icon from being dragged as a native image", async () => {
+    setInvitation({ gameId: 1, invitationLink: "/invite/1" });
+    vi.mocked(getGameThrows).mockResolvedValueOnce(buildGameThrowsResponse({ id: 1 }));
+
+    renderStartPage("/start/1");
+
+    const guestIcon = await screen.findByRole("img", { name: "Play as a guest" });
+    expect(guestIcon.getAttribute("draggable")).toBe("false");
+  });
+
   it("should render page-level error and allow dismissing it when room creation fails", async () => {
     vi.mocked(createRoom).mockRejectedValueOnce(new Error("server error"));
 

@@ -28,6 +28,22 @@
   justify-content: center;
 }
 
+/* A long press on a tablet must start the drag, not open the image menu or select the icon. */
+.moveButton,
+.moveIcon,
+.deleteButton img {
+  -webkit-touch-callout: none;
+  /* stylelint-disable-next-line property-no-vendor-prefix -- Safari supports user-select only with the prefix */
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+/* The touch lands on the button, which owns the click handler or the drag listeners. */
+.moveIcon,
+.deleteButton img {
+  pointer-events: none;
+}
+
 .moveButton:active {
   cursor: grabbing;
 }

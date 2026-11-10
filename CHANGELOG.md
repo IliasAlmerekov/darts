@@ -11,6 +11,11 @@ and this project does **not** yet follow [Semantic Versioning](https://semver.or
 
 - Profile: in the History tab, another registered player's name links to their Public profile at `/playerprofile/{id}`, read from `GET /api/player/{id}/profile`. The player-only page shows the player's name, avatar and Profile statistics, without recent games, registration date or Log out. A player without games sees empty statistics, the own id redirects to the Player profile, and `404` shows "Player not found". The admin has no route to it. The statistics card and the Overview blocks move to `src/shared/ui/profile-statistics/`, so both pages share them (#498)
 
+### Fixed
+
+- Start page: a long press on the move icon of a selected player on a tablet no longer opens the browser's image menu, so press and drag reorders the player. The move and delete icons and the "Play as a guest" icon can no longer be dragged as images or selected, and the move button cancels its context menu (#504)
+- Start page: after a drop, the selected players show the new order in the same render in which the drag ends, so the rows between the old and the new place no longer jump back for a frame (#504)
+
 ## [0.5.0] - 2026-11-06
 
 ### Added

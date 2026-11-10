@@ -118,7 +118,12 @@ function StartPage(): React.JSX.Element {
               guest.isLobbyFull ? "The lobby is full. Remove a player to add another." : undefined
             }
           >
-            <img src={UserAddIcon} alt="Play as a guest" className={styles.guestButtonIcon} />
+            <img
+              src={UserAddIcon}
+              alt="Play as a guest"
+              className={styles.guestButtonIcon}
+              draggable={false}
+            />
           </button>
         </div>
       )}
